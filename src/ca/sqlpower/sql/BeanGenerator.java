@@ -15,6 +15,7 @@ public class BeanGenerator {
 	String uniqueIdColName;
 
 	public BeanGenerator(ResultSet rs,
+						 String schemaName,
 						 String tableName,
 						 String packageName,
 						 String destDir)
@@ -23,7 +24,7 @@ public class BeanGenerator {
 		this.tableName=tableName;
 		className=convertToClassName(tableName);
 		List priKey=SQL.findPrimaryKey(rs.getStatement().getConnection(),
-									   tableName);
+									   schemaName, tableName);
 		uniqueIdColName=(String)priKey.get(priKey.size()-1);
 
 		try {
@@ -249,35 +250,45 @@ public class BeanGenerator {
 
 	public static void main(String args[]) throws Exception {
 
-		// Lookup the database named in args[0] in databases.xml
-		String dbxml="databases.xml";
-		String name=args[0];
-		DBCSSource xmlSource=new XMLFileDBCSSource(dbxml);
-		List dbcsList=xmlSource.getDBCSList();
-		DBConnectionSpec dbcs=DBConnectionSpec.searchListForName(dbcsList, name);
-		if(dbcs==null) {
-			System.err.println("No database definition '"+name+"' in "+dbxml+".");
-			return;
+		try {
+			// Lookup the database named in args[0] in databases.xml
+			String dbxml="databases.xml";
+			String name=args[0];
+			DBCSSource xmlSource=new XMLFileDBCSSource(dbxml);
+			List dbcsList=xmlSource.getDBCSList();
+			DBConnectionSpec dbcs=DBConnectionSpec.searchListForName(dbcsList, name);
+			if(dbcs==null) {
+				System.err.println("No database definition '"+name+"' in "+dbxml+".");
+				return;
+			}
+			String dbclass=dbcs.getDriverClass();
+			String dburl=dbcs.getUrl();
+			String dbuser=dbcs.getUser();
+			String dbpass=dbcs.getPass();
+			
+			String schemaName=args[1];
+			String tableName=args[2];
+			Connection con;
+			Statement stmt;
+			ResultSet rs;
+			ResultSetMetaData rsmd;
+			
+			Class.forName(dbclass).newInstance();
+			
+			con=DriverManager.getConnection(dburl, dbuser, dbpass);
+			stmt=con.createStatement();
+			rs=stmt.executeQuery("SELECT * FROM "+tableName);
+			
+			new BeanGenerator(rs, schemaName, tableName, null, "");
+			
+			con.close();
+		} catch (Exception e) {
+			if (e instanceof DatabaseListReadException) {
+				System.out.println("Caught DatabaseListReadException. Root cause:");
+				((DatabaseListReadException) e).getRootCause().printStackTrace();
+			} else {
+				e.printStackTrace();
+			}
 		}
-		String dbclass=dbcs.getDriverClass();
-		String dburl=dbcs.getUrl();
-		String dbuser=dbcs.getUser();
-		String dbpass=dbcs.getPass();
-
-		String tableName=args[1];
-		Connection con;
-		Statement stmt;
-		ResultSet rs;
-		ResultSetMetaData rsmd;
-
-		Class.forName(dbclass).newInstance();
-
-		con=DriverManager.getConnection(dburl, dbuser, dbpass);
-		stmt=con.createStatement();
-		rs=stmt.executeQuery("SELECT * FROM "+tableName);
-
-		new BeanGenerator(rs, tableName, null, "");
-
-		con.close();
 	}
 }
