@@ -153,4 +153,110 @@ public class SQL {
 			}
 		}
 	}
+
+	public static List getDatabaseOwners(Connection con) throws SQLException {
+		Statement stmt=null;
+		List list=new LinkedList();
+		
+		try {
+			stmt=con.createStatement();
+			ResultSet rs=stmt.executeQuery("SELECT DISTINCT owner FROM pl_tables ORDER BY owner");
+			
+			while(rs.next()) {
+				list.add(rs.getString("OWNER"));
+			}
+			
+		} finally {
+			if(stmt!=null) {
+				stmt.close();
+			}
+		}
+		return list;
+	}
+
+	public static List getDatabaseTables(Connection con, String owner) throws SQLException {
+		Statement stmt=null;
+		List list=new LinkedList();
+		
+		try {
+			StringBuffer sql=new StringBuffer();
+			stmt=con.createStatement();
+			sql.append("SELECT DISTINCT table_name");
+			sql.append(" FROM pl_tables");
+			if(owner != null || owner.length()>0) {
+				sql.append(" WHERE owner=").append(quote(owner));
+			}
+			sql.append(" ORDER BY table_name");
+			ResultSet rs=stmt.executeQuery(sql.toString());
+			
+			while(rs.next()) {
+				list.add(rs.getString("TABLE_NAME"));
+			}
+			
+		} finally {
+			if(stmt!=null) {
+				stmt.close();
+			}
+		}
+		return list;
+	}
+
+	/**
+	 * Returns the columns for a given owner.table in the database.
+	 * Uses the special pl_tab_columns view from SQLPower.
+	 *
+	 * @param con The database connection.
+	 * @param owner The desired table's owner.
+	 * @param table The desired table's name.
+	 * @param notLike a <code>List</code> of patterns which the column
+	 * name should not match.  '%' is a wildcard; '_' matches any
+	 * single character.
+	 * @param like a <code>List</code> of patterns which the column
+	 * name should match.  '%' is a wildcard; '_' matches any single
+	 * character.
+	 * @return The column names as a List of strings.
+	 * @exception SQLException if a database error occurs
+	 */
+	public static List getDatabaseColumns(Connection con, String owner, String table, 
+										  List notLike, List like)
+		throws SQLException {
+		Statement stmt=null;
+		List list=new LinkedList();
+
+		if(owner==null) {
+			throw new NullPointerException("owner must be non-null");
+		}
+		if(table==null) {
+			throw new NullPointerException("table must be non-null");
+		}
+		
+		try {
+			StringBuffer sql=new StringBuffer();
+			stmt=con.createStatement();
+			sql.append("SELECT DISTINCT column_name");
+			sql.append(" FROM pl_tab_columns");
+			sql.append(" WHERE owner=").append(quote(owner));
+			sql.append(" AND table_name=").append(quote(table));
+			Iterator it=notLike.iterator();
+			while(it.hasNext()) {
+				sql.append(" AND column_name NOT LIKE ").append(quote((String)it.next()));
+			}
+			it=like.iterator();
+			while(it.hasNext()) {
+				sql.append(" AND column_name LIKE ").append(quote((String)it.next()));
+			}
+			sql.append(" ORDER BY column_name");
+			ResultSet rs=stmt.executeQuery(sql.toString());
+			
+			while(rs.next()) {
+				list.add(rs.getString("COLUMN_NAME"));
+			}
+			
+		} finally {
+			if(stmt!=null) {
+				stmt.close();
+			}
+		}
+		return list;
+	}
 }
