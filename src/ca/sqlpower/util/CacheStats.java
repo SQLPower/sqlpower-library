@@ -38,7 +38,7 @@ public class CacheStats {
 	 * the cache is pre-populated.
 	 */
 	public double getHitRatio() {
-		if (totalHits == 0) return 0;
-		else return totalRequested / totalHits;
+		if (totalHits == 0) return 0.0;
+		else return ((double) totalHits) / ((double) totalRequested);
 	}
 }
