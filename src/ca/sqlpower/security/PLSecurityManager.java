@@ -280,6 +280,35 @@ public class PLSecurityManager implements java.io.Serializable {
 	}
 
 	/**
+	 * Use this method to find out if a given group has a certain
+	 * permission.  This is different from {@link #checkGroupPermission}
+	 * because it checks both specific and system privs
+	 * (checkGroupPermission only does one or the other).
+	 *
+	 * @param exceptionWhenDenied If true, this method will throw a
+	 * PLSecurityException instead of returning false.
+	 */
+	public static boolean checkPermission(Connection con,
+									   PLGroup g,
+									   DatabaseObject obj,
+									   String perm,
+									   boolean exceptionWhenDenied)
+		throws SQLException, PLSecurityException {
+
+		DatabaseObject sysObject = getSystemObject(obj.getObjectType());
+
+		if (checkGroupPermission(con, g, obj, perm)
+			|| checkGroupPermission(con, g, sysObject, perm)) {
+			return true;
+		}
+		
+		if (exceptionWhenDenied) {
+			throw new PLSecurityException(perm, INSUFFICIENT_ACCESS, obj);
+		}
+		return false;
+	}
+
+	/**
 	 * Returns true if and only if the given user has specifically
 	 * been granted access to the given database object.
 	 *
@@ -589,7 +618,7 @@ public class PLSecurityManager implements java.io.Serializable {
 			}
 			sql.append(permToColName(perm)).append("=").append(givingPerm?"'Y'":"'N'");
 			sql.append(", last_update_date=").append(DBConnection.getSystemDate(con));
-			sql.append(", last_update_user=").append(SQL.quote(principal.getUserName()));
+			sql.append(", last_update_user=").append(SQL.quote(principal.getUserId()));
 			sql.append(", last_update_os_user='Power*Dashboard Web Facility'");
 			if (granteeIsUser) {
 				sql.append(" WHERE user_id=").append(SQL.quote(granteeName));
@@ -598,7 +627,7 @@ public class PLSecurityManager implements java.io.Serializable {
 			}
 			sql.append(" AND object_type=").append(SQL.quote(obj.getObjectType()));
 			sql.append(" AND object_name=").append(SQL.quote(obj.getObjectName()));
-			
+
 			int updateCount = stmt.executeUpdate(sql.toString());
 			
 			if (updateCount > 1) {
@@ -619,15 +648,20 @@ public class PLSecurityManager implements java.io.Serializable {
 				} else {
 					sql.append(", group_name");
 				}
-				sql.append(", object_type, object_name, last_update_date");
-				sql.append(", last_update_user, last_update_os_user");
+				sql.append(", object_type, object_name");
+				sql.append(", last_update_user, last_update_os_user, last_update_date");
 				sql.append(") VALUES (").append(givingPerm?"'Y'":"'N'");;
 				sql.append(", ").append(SQL.quote(granteeName));
 				sql.append(", ").append(SQL.quote(obj.getObjectType()));
 				sql.append(", ").append(SQL.quote(obj.getObjectName()));
-				sql.append(", ").append(DBConnection.getSystemDate(con));
-				sql.append(", ").append(SQL.quote(principal.getUserName()));
-				sql.append(", 'Power*Dashboard Web Facility')");
+				sql.append(", ").append(SQL.quote(principal.getUserId()));
+				sql.append(", 'Power*Dashboard Web Facility'");
+
+				// XXX: in this specific place, the SQLServer2000 JDBC
+				// driver throws NoSuchElementException if the {fn
+				// NOW()} escape sequence is present.
+				sql.append(", null");//.append(DBConnection.getSystemDate(con));
+				sql.append(")");
 				
 				try {
 					updateCount = stmt.executeUpdate(sql.toString());
@@ -636,6 +670,7 @@ public class PLSecurityManager implements java.io.Serializable {
 					System.out.println("Query: "+sql);
 					throw e;
 				} catch (NoSuchElementException e) {
+					// SQLServer2000 JDBC driver throws this for unknown reason
 					System.out.println("Caught "+e.getMessage());
 					System.out.println("Query: "+sql);
 					throw e;

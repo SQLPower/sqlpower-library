@@ -121,12 +121,35 @@ public class EmailNotification implements java.io.Serializable {
 	 * on the given object.  Does nothing about groups that this user
 	 * may belong to.
 	 */
-	public static boolean checkStatus(Connection con, 
+	public static boolean checkUserStatus(Connection con, 
 									  PLUser user,
 									  DatabaseObject dbObj,
 									  String runStatus) 
 	throws SQLException {
 		return checkStatus(con, user.getUserId(), true, dbObj, runStatus);
+	}
+
+    /**
+	 * Returns the email notification preferences for the given user
+	 * on the given object, including the additional checks for the
+	 * groups the user belongs to.
+	 */
+	public static boolean checkStatus(Connection con, 
+									  PLUser user,
+									  DatabaseObject dbObj,
+									  String runStatus) 
+	throws SQLException {
+		if (checkStatus(con, user.getUserId(), true, dbObj, runStatus)) {
+			return true;
+		}
+		Iterator groups = user.getGroups(con).iterator();
+		while (groups.hasNext()) {
+			PLGroup g = (PLGroup) groups.next();
+			if (checkStatus(con, g.getGroupName(), false, dbObj, runStatus)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
     /**
