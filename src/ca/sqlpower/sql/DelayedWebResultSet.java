@@ -100,6 +100,8 @@ public class DelayedWebResultSet extends WebResultSet {
 			results.beforeFirst();
 			
 			System.out.println("HIT ("+results.size()+" rows)");
+			 // we don't want to close cached resultset
+			closeOldRS=false;
 		} else {
 			Statement stmt = null;
 			try {
