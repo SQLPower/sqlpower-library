@@ -12,6 +12,7 @@ public class ErrorConverterFactory {
 	private static PLErrorConverter plErrorConverter = new PLErrorConverter();
 	private static OracleErrorConverter oracleErrorConverter = new OracleErrorConverter();
 	private static SQLServerErrorConverter sqlServerErrorConverter = new SQLServerErrorConverter();
+	private static PostgreSQLErrorConverter pgErrorConverter = new PostgreSQLErrorConverter();
 
 	/**
 	 * Returns a reference to a error converter object based on the
@@ -26,6 +27,9 @@ public class ErrorConverterFactory {
 			return plErrorConverter;
 		} else if (message.indexOf("icrosoft") >= 0) {
 			return sqlServerErrorConverter;
+		} else if (message.indexOf("Backend") >= 0
+				   || message.indexOf("ERROR: ") >= 0) {
+			return pgErrorConverter;
 		} else if (message.startsWith("ORA")
 				   || message.indexOf("THIN") >= 0
 				   || message.indexOf("Io exception: The Network Adapter") >= 0
