@@ -317,7 +317,6 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 
             stmt = con.createStatement();
             ResultSet rs = stmt.executeQuery(sql.toString());
-			System.out.println("PLUser.find: "+sql);
 			
 			boolean hasRows = rs.next();
             if ( (!hasRows) && (userId != null) ) { 
@@ -503,7 +502,6 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 				if (stmt != null) stmt.close();
 			}
 		}
-		System.out.println("PLUser.isOmniscient() for "+getUserId()+" returns "+omniscient);
 		return omniscient.booleanValue();
 	}
 
