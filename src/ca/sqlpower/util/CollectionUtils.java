@@ -44,4 +44,20 @@ public class CollectionUtils {
 		}
 		return outputString.toString();
 	}
+
+	/**
+	 * Prints each object in the collection with commas between them.
+	 * Nulls will print as "null".  A null collection will cause NPE.
+	 */
+	public static String collectionToString(Collection col) {
+		StringBuffer outputString = new StringBuffer(100);
+		boolean firstItem = true;
+		Iterator it = col.iterator();
+		while (it.hasNext()) {
+			if (!firstItem) outputString.append(", ");
+			outputString.append(it.next());
+			firstItem = false;
+		}
+		return outputString.toString();
+	}
 }
