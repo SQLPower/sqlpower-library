@@ -112,6 +112,20 @@ public class PLSecurityManager implements java.io.Serializable {
 	}
 
 	/**
+	 * Checks the same way as checkModify, but returns true or false
+	 * rather than throwing an exception.  Useful for deciding whether
+	 * or not to disable a feature on a user interface (where
+	 * exceptions would be a nuisance).
+	 */
+	public boolean canModifyAny(Connection con, String objectType)
+		throws SQLException {
+		if (principal == null) {
+			throw new PLSecurityException(MODIFY_PERMISSION, INVALID_MANAGER, null);
+		}
+		return checkPermission(con, principal, getSystemObject(objectType), MODIFY_PERMISSION, false);
+	}
+
+	/**
 	 * Throws an exception if the current Principal user is not
 	 * allowed to modify the given object.  Useful last-minute
 	 * security checks in the business model.
