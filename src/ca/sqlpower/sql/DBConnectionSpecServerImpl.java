@@ -92,7 +92,7 @@ public class DBConnectionSpecServerImpl
 			writeDBSpecsToOutputStream(dbList, oldPass, newPass);
 		} catch (Exception e) {
 			// not much we can do on server side
-			e.printStackTrace();
+			throw new RemoteException("could not set databases",e);
 		}
 	}
 
@@ -108,8 +108,7 @@ public class DBConnectionSpecServerImpl
 			return argPassword.equals(password);
 		} catch (Exception e) {
 			// not much we can do on the remote side.
-			e.printStackTrace();
-			return false;
+			throw new RemoteException("could not check password",e);
 		}
 	}
 
