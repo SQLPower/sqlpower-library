@@ -94,38 +94,36 @@ public class LongMessageFormat extends Format {
 	 * @param toAppendTo
 	 * @param ignore Not used.  It is safe to pass in <code>null</code>.
 	 */
-	public StringBuffer format(Object[] objArray,
-							   StringBuffer toAppendTo,
-							   FieldPosition ignore) {
-		int chunkNum=0;
-		Iterator chunkIterator=stringChunks.iterator();
-		while(chunkIterator.hasNext()) {
+	public StringBuffer format(
+		Object[] objArray,
+		StringBuffer toAppendTo,
+		FieldPosition ignore) {
+		int chunkNum = 0;
+		Iterator chunkIterator = stringChunks.iterator();
+		while (chunkIterator.hasNext()) {
 			toAppendTo.append(chunkIterator.next());
-			if(chunkIterator.hasNext()) {
-				Object insertMe=objArray[formatNumber[chunkNum]];
-				Format thisFieldFormat=formats[chunkNum];
-				if(thisFieldFormat!=null) {
+			if (chunkIterator.hasNext()) {
+				Object insertMe = objArray[formatNumber[chunkNum]];
+				Format thisFieldFormat = formats[chunkNum];
+				String parsedString = null;
+				if (thisFieldFormat != null) {
 					Object parsedObject = null;
-					if (insertMe instanceof String) {
-						try {
-							parsedObject = thisFieldFormat.parseObject((String)insertMe);
-						} catch (ParseException e) {
-							parsedObject = insertMe;
-						}
-					} else {
-						parsedObject = insertMe;
+					try {
+						parsedObject = thisFieldFormat.parseObject((String) insertMe);
+						parsedString = thisFieldFormat.format(parsedObject);
+					} catch (ParseException e) {
+						parsedString = insertMe.toString();
 					}
-					String myString = thisFieldFormat.format(parsedObject);
-					toAppendTo.append(myString);
+					toAppendTo.append(parsedString);
 				} else {
 					toAppendTo.append(insertMe);
 				}
 			}
+
 			chunkNum++;
 		}
 		return toAppendTo;
 	}
-
 	/**
 	 * It's not feasible to parse a formatted message; the process is
 	 * not reliable.  Therefore, this method is not implemented.
@@ -247,7 +245,6 @@ public class LongMessageFormat extends Format {
 		int pos=0;  // Current parse position in the pattern string.
 		int nextPos=0; // Next parse position
 		int blockNum=0;
-
 		nextPos=pattern.indexOf('{', pos);
 		while(nextPos >= 0) {
 			stringChunks.add(pattern.substring(pos, nextPos));
@@ -270,7 +267,7 @@ public class LongMessageFormat extends Format {
 			}
 			if (formatType != null) {
 				if (formatType.equals("number")) {
-					setFormat(parsedFormatNum,new DecimalFormat("#,##0.##"));
+					setFormat(blockNum,new DecimalFormat("#,##0.##"));
 				} else {
 					throw new IllegalArgumentException("The format argument '"+formatType+"' is unknown.");
 				}
@@ -290,8 +287,8 @@ public class LongMessageFormat extends Format {
 		String pattern="0: {0,number}, 1: {1}, 2: {2}, 5: {5}, 6: {6}, 7: {7}, 8: {8}, 9: {9}, 10: {10}, 4: {4}, 11: {11}, 3: {3}, 12: {12}.";
 		String[] numbersEN = {
 			"234972349587.23947523947",
-			"one",
-			"two",
+			null,
+			null,
 			"three",
 			"four",
 			"five",
