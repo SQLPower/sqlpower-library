@@ -22,6 +22,7 @@ public class WebResultCSVFormatter extends WebResultFormatter {
 		for (int i = 1; i <= numCols; i++) {
 
 			if (columnNotAppropriate(wrs, i)) {
+				System.out.println("column "+i+" was not appropriate");
 				continue;
 			}
 
@@ -36,6 +37,7 @@ public class WebResultCSVFormatter extends WebResultFormatter {
 				out.print(sb);
 				thisIsTheFirstColumn = false;
 			} catch (ColumnNotDisplayableException e) {
+				System.out.println("column "+i+" was not displayable");
 				// Column didn't get printed (which is good)
 			}
 		}
@@ -53,6 +55,7 @@ public class WebResultCSVFormatter extends WebResultFormatter {
 			for (int i = 1; i <= numCols; i++) {
 
 				if (columnNotAppropriate(wrs, i)) {
+				System.out.println("column "+i+" was not appropriate");
 					continue;
 				}
 
@@ -147,9 +150,9 @@ public class WebResultCSVFormatter extends WebResultFormatter {
     }
 
     protected boolean columnNotAppropriate(WebResultSet wrs, int colNo) {
-		if(wrs.getColumnHyperlinks(colNo) != null) {
+/*		if(wrs.getColumnHyperlinks(colNo) != null) {
 			return true;
-		}
+		} */
 		int ctype=wrs.getColumnType(colNo);
 		switch(ctype) {
 		case FieldTypes.RADIO:
