@@ -38,6 +38,23 @@ public class Servlets {
 	 * @param out The PrintWriter to send the formatted session data to.
 	 * @param req The servlet session object you want to examine.
 	 */
+	public static void printRequestAttributes(PrintStream out, HttpServletRequest request) {
+		Enumeration attrs=request.getAttributeNames();
+		while(attrs.hasMoreElements()) {
+			String attr=(String)attrs.nextElement();
+			out.print(attr);
+			out.print(": ");
+			out.println(request.getAttribute(attr));
+		}
+	}
+
+	/**
+	 * Prints all the parameter names and values, one parameter per
+	 * line, to the given print writer.
+	 *
+	 * @param out The PrintWriter to send the formatted session data to.
+	 * @param req The servlet session object you want to examine.
+	 */
 	public static void printSession(PrintStream out, HttpSession session) {
 		Enumeration attrs=session.getAttributeNames();
 		while(attrs.hasMoreElements()) {
@@ -47,6 +64,8 @@ public class Servlets {
 			out.println(session.getAttribute(attr));
 		}
 	}
+
+
 
 	/**
 	 * Returns a comma-separated list of the <code>toString()</code>
