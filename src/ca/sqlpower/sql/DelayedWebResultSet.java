@@ -191,7 +191,13 @@ public class DelayedWebResultSet extends WebResultSet {
 
 	/**
 	 * Controls whether this DelayedWebResultSet is using the result
-	 * set cache for query execution.
+	 * set cache for query execution.  You can't change this value
+	 * after calling {@link #execute(Connection)}.
+	 *
+	 * @param v <code>True</code> if you want the result set to use
+	 * the cache; <code>false</code> if you want fresh data directly
+	 * from the database.
+	 * @throws IllegalStateException if called after <code>execute()</code>.
 	 */
 	public void setCacheEnabled(boolean v) {
 		cacheEnabled=v;
@@ -205,6 +211,15 @@ public class DelayedWebResultSet extends WebResultSet {
 	public void close() throws SQLException {
 		if(!cacheEnabled) {
 			super.close();
+		}
+	}
+
+	public boolean isEmpty() throws SQLException {
+		if(! (rs instanceof CachedRowSet) ) {
+			throw new UnsupportedOperationException
+				("Can't tell if result set is empty unless caching is enabled");
+		} else {
+			return ((CachedRowSet)rs).size() > 0 ? false : true;
 		}
 	}
 }
