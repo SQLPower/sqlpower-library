@@ -137,7 +137,7 @@ public class WebResultCSVFormatter extends WebResultFormatter {
     }
 
     protected boolean columnNotAppropriate(WebResultSet wrs, int colNo) {
-		if(wrs.getColumnHrefText(colNo) != null) {
+		if(wrs.getColumnHyperlinks(colNo) != null) {
 			return true;
 		}
 		int ctype=wrs.getColumnType(colNo);
