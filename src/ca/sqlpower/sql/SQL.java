@@ -78,6 +78,19 @@ public class SQL {
 		return "'"+escapeStatement(string)+"'";
     }
 
+	public static String quoteList(List strings) {
+		StringBuffer outputString = new StringBuffer(100);
+		boolean firstItem = true;
+		Iterator it = strings.iterator();
+		while (it.hasNext()) {
+			if (!firstItem) outputString.append(", ");
+			Object item = it.next();
+			outputString.append(item==null?"NULL":quote(item.toString()));
+			firstItem = false;
+		}
+		return outputString.toString();
+	}
+
 	/**
      * Returns the string <code>"NULL"</code> if the argument is
      * either null or the empty string.  Otherwise returns the
@@ -210,9 +223,7 @@ public class SQL {
 	 * @return A List of the column names that make up the primary key
 	 * of the table.  All elements in the list are guaranteed to be of
 	 * type String.
-	 * @throws SQLException if a database error occurs.  This will
-	 * almost certainly happen if you run this method on a non-Oracle
-	 * database.
+	 * @throws SQLException if a database error occurs.
 	 */
 	public static List findPrimaryKey(Connection con, String schemaName, String tableName) 
 		throws SQLException {
