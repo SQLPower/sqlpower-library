@@ -161,11 +161,12 @@ public class SQL {
      * Converts the character representation of a YES/NO value into
      * boolean.
      *
-     * @param indicator A string that says YES or NO or Y or N.
+     * @param indicator A string that says YES or NO or Y or N, or
+     * <code>null</code>, which is interpred as no.
      * @return true iff <code>indicator.charAt(0)=='Y'</code>.
      */
     public static boolean decodeInd(String indicator) {
-		if(indicator.charAt(0) == 'Y') {
+		if(indicator != null && indicator.charAt(0) == 'Y') {
 			return true;
 		}
 		return false;
