@@ -35,7 +35,7 @@ public class Pool {
 	 */
 	public Pool(DBConnectionSpec dbcs) throws Exception {
 		this.dbcs = dbcs;
-        poolName =  dbcs.getUrl()+"-"+dbcs.getUser();
+        poolName =  dbcs.getUrl()+"-"+dbcs.getUser()+"-"+dbcs.getPass();
         dataSource = (PoolingDataSource) pools.get(poolName);
         connectionPool = (ObjectPool) objPools.get(poolName); // for debugging
         
@@ -68,10 +68,22 @@ public class Pool {
 	/**
 	 * Returns a Connection from the pool.  Be sure to close it when you're done 
 	 * with it!
+	 *
+	 * <p>Note: if the getConnection() call throws a SQLException,
+	 * this method intercepts it and removes this connection pool from
+	 * the cache.  This is important because we don't want to keep
+	 * pools of connections with invalid username/password
+	 * combinations!
 	 */
 	public Connection getConnection() throws SQLException {
 		Connection con;
-		con = dataSource.getConnection();		
+		try {
+			con = dataSource.getConnection();
+		} catch (SQLException e) {
+			pools.remove(poolName);
+			objPools.remove(poolName);
+			throw e;
+		}
 		return con;
 	}		
 }
