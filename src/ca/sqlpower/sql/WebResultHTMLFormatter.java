@@ -65,7 +65,7 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	dropdownsInline=false;
 	dropdownsAbove=true;
 	dropdownsPerRow=3;
-	rowHighlightingOn=true;
+	rowHighlightingOn=false;
 	extraJavaScript=new String[FieldTypes.LAST_TYPE];
 	repeatHeaderRow=0;
     }
@@ -399,9 +399,12 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 		if(extraJavaScript[FieldTypes.RADIO] != null) {
 		    contents.append(extraJavaScript[FieldTypes.RADIO]);
 		}
+		if(rowHighlightingOn) {
 		contents.append("; highlightRow(this, ")
 		    .append("'00ff00',").append("'ff00ff'")
-		    .append("); this.form.submit()\" />");
+		    .append(")");
+		}
+		contents.append("; this.form.submit()\" />");
 	    }
 	    break;
 		
