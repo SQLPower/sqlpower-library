@@ -140,15 +140,17 @@ public abstract class WebResultFormatter {
 
 	case FieldTypes.CHECKBOX:
 	    align.append("center");
-	    contents.append("<input type=\"checkbox\" name=\"")
-		.append(wrs.getColumnLabel(i))
-		.append("\" value=\"")
-		.append(wrs.getRowid())
-		.append("\"");
-	    if(wrs.getString(i).equals(checkboxYesValue)) {
-		contents.append(" checked");
+	    if(wrs.getString(i) != null) {
+		contents.append("<input type=\"checkbox\" name=\"")
+		    .append(wrs.getColumnLabel(i))
+		    .append("\" value=\"")
+		    .append(wrs.getRowid())
+		    .append("\"");
+		if(wrs.getString(i).equals(checkboxYesValue)) {
+		    contents.append(" checked");
+		}
+		contents.append(" />");
 	    }
-	    contents.append(" />");
 	    break;
 
 	case FieldTypes.PERCENT:
@@ -165,7 +167,7 @@ public abstract class WebResultFormatter {
 	    align.append("center");
 	    java.sql.Date date=wrs.getDate(i);
 	    if(date==null) {
-		contents.append("(null)");
+		// leave empty
 	    } else {
 		contents.append(
 		    dateFormatter.format(new java.util.Date(date.getTime()))
