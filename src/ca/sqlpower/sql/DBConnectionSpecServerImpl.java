@@ -75,7 +75,7 @@ public class DBConnectionSpecServerImpl
 				"no databases file specified.  Please add -DdatabaseFile=filename to the command line.");
 		} else {
 			try {
-
+				java.rmi.registry.LocateRegistry.createRegistry(1099);
 				Naming.rebind("///DBConnectionSpecServer", obj);
 				System.out.println("DBConnectionSpecServer bound in registry");
 			} catch (Exception e) {
