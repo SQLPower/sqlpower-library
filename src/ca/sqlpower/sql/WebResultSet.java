@@ -23,6 +23,7 @@ public class WebResultSet implements Cloneable {
     protected int rowidColNo;
 	public String tableTitle;
 	public String emptyMessage; // the message to show when the result set is empty
+	protected Integer independentColumn;
 
     public WebResultSet(ResultSet results, String query) throws SQLException {
         sqlQuery=query;
@@ -89,6 +90,7 @@ public class WebResultSet implements Cloneable {
         rowidColNo=0;
 		tableTitle="";
 		emptyMessage="";
+		independentColumn = null;
     }
 
     /**
@@ -471,4 +473,42 @@ public class WebResultSet implements Cloneable {
     public void close() throws SQLException {
         rs.getStatement().close();
     }
+
+	/**
+	 * Returns the column number representing the independent variable
+	 * for graphing or charting the resultset.
+	 *
+	 * @return the column number
+	 * @throws IllegalStateException if no independant column was
+	 * previously specified.
+	 */ 
+	public int getIndependentColNo() {
+		if (this.independentColumn == null) {
+			throw new IllegalStateException("no independent column was specified.");
+		} else {
+			return this.independentColumn.intValue();
+		}
+	}
+	
+	/**
+	 * Sets the value of independentColumn.
+	 *
+	 * @param argIndependentColumn Value to assign to this.independentColumn
+	 */
+	public void setIndependentColNo(int argIndependentColumn){
+		this.independentColumn = new Integer(argIndependentColumn);
+	}
+
+	/**
+	 * Returns the value for this row which is stored in the
+	 * independant column.
+	 *
+	 * @throws SQLException if a database error occurs.  This
+	 * documentation is of no value.
+	 * @throws IllegalStateException if no independant column was
+	 * previously specified.
+	 */
+	public String getIndependentField() throws SQLException, IllegalStateException {
+		return getString(getIndependentColNo());
+	}
 }
