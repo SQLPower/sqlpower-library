@@ -47,6 +47,45 @@ public class PLSecurityManager implements java.io.Serializable {
 	}
 
 	/**
+	 * Returns true if and only if the given user has access to
+	 * modify at least one object of the given type.
+	 *
+	 * @param obj The object whose type we are using
+	 */
+	public static boolean checkModifiableObject(Connection con,
+												PLUser p,
+												DatabaseObject obj)
+		throws SQLException {
+
+		StringBuffer sql = new StringBuffer(500);
+		sql.append("SELECT COUNT(object_name)");
+		sql.append(" FROM have_i_the_right");
+		sql.append(" WHERE user_id=").append(SQL.quote(p.getUserId()));
+		sql.append(" AND object_type=").append(SQL.quote(obj.getObjectType()));
+		sql.append(" AND modify_ind='Y'");
+
+		Statement stmt = null;
+		try {
+			stmt = con.createStatement();
+			ResultSet rs = stmt.executeQuery(sql.toString());
+			rs.next();
+			int numResults = rs.getInt(1);
+
+			if(numResults>0){
+				return true;
+			}
+
+			return false;
+
+		} finally {
+			if (stmt != null) {
+				stmt.close();
+			}
+		} // end try
+	} // end checkModifiableObject
+
+
+	/**
 	 * Throws an exception if the current Principal user is not
 	 * allowed to create objects.  Useful last-minute
 	 * security checks in the business model.
@@ -451,7 +490,7 @@ public class PLSecurityManager implements java.io.Serializable {
 							 DatabaseObject obj,
 							 boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantUserPermission(con, principal, grantee, obj, EXECUTE_PERMISSION, givingPerm);
+		grantUserPermission(con, principal, grantee, obj, "","", (givingPerm?"'Y'":"'N'"),"");
 	}
 
 	/**
@@ -463,7 +502,7 @@ public class PLSecurityManager implements java.io.Serializable {
 							 DatabaseObject obj,
 							 boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantGroupPermission(con, principal, grantee, obj, EXECUTE_PERMISSION, givingPerm);
+		grantGroupPermission(con, principal, grantee, obj, "","", (givingPerm?"'Y'":"'N'"),"");
 	}
 
 	/**
@@ -475,7 +514,7 @@ public class PLSecurityManager implements java.io.Serializable {
 							DatabaseObject obj,
 							boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantUserPermission(con, principal, grantee, obj, DELETE_PERMISSION, givingPerm);
+		grantUserPermission(con, principal, grantee, obj, "", (givingPerm?"'Y'":"'N'"),"","");
 	}
 
 	/**
@@ -487,7 +526,7 @@ public class PLSecurityManager implements java.io.Serializable {
 							DatabaseObject obj,
 							boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantGroupPermission(con, principal, grantee, obj, DELETE_PERMISSION, givingPerm);
+		grantGroupPermission(con, principal, grantee, obj, "", (givingPerm?"'Y'":"'N'"),"","");
 	}
 
 	/**
@@ -499,7 +538,7 @@ public class PLSecurityManager implements java.io.Serializable {
 							DatabaseObject obj,
 							boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantUserPermission(con, principal, grantee, obj, MODIFY_PERMISSION, givingPerm);
+		grantUserPermission(con, principal, grantee, obj, (givingPerm?"'Y'":"'N'"),"","","");
 	}
 
 	/**
@@ -511,7 +550,7 @@ public class PLSecurityManager implements java.io.Serializable {
 							DatabaseObject obj,
 							boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantGroupPermission(con, principal, grantee, obj, MODIFY_PERMISSION, givingPerm);
+		grantGroupPermission(con, principal, grantee, obj, (givingPerm?"'Y'":"'N'"),"","","");
 	}
 
 	/**
@@ -523,7 +562,7 @@ public class PLSecurityManager implements java.io.Serializable {
 						   DatabaseObject obj,
 						   boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantUserPermission(con, principal, grantee, obj, GRANT_PERMISSION, givingPerm);
+		grantUserPermission(con, principal, grantee, obj, "","","",(givingPerm?"'Y'":"'N'"));
 	}
 
 	/**
@@ -535,8 +574,69 @@ public class PLSecurityManager implements java.io.Serializable {
 						   DatabaseObject obj,
 						   boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantGroupPermission(con, principal, grantee, obj, GRANT_PERMISSION, givingPerm);
+		grantGroupPermission(con, principal, grantee, obj, "","","",(givingPerm?"'Y'":"'N'"));
 	}
+
+	/**
+	 * Grants or revokes all permissions on obj to grantee if
+	 * current principal has the right.
+	 */
+	public void grantAll(Connection con,
+						 PLUser grantee,
+						 DatabaseObject obj,
+						 boolean modify,
+						 boolean delete,
+						 boolean execute,
+						 boolean grant)
+		throws SQLException, PLSecurityException {
+
+		grantUserPermission(con, principal, grantee, obj, 
+							(modify?"'Y'":"'N'"),
+							(delete?"'Y'":"'N'"),
+							(execute?"'Y'":"'N'"),
+							(grant?"'Y'":"'N'"));
+	}
+
+	/**
+	 * Grants or revokes all permissions on obj to grantee if
+	 * current principal has the right.
+	 */
+	public void grantAll(Connection con,
+						 PLGroup grantee,
+						 DatabaseObject obj,
+						 boolean modify,
+						 boolean delete,
+						 boolean execute,
+						 boolean grant)
+		throws SQLException, PLSecurityException {
+
+		grantGroupPermission(con, principal, grantee, obj, 
+							(modify?"'Y'":"'N'"),
+							(delete?"'Y'":"'N'"),
+							(execute?"'Y'":"'N'"),
+							(grant?"'Y'":"'N'"));
+	}
+
+	/**
+	 * Grants or revokes all permissions on obj to grantee if
+	 * current principal has the right.
+	 */
+	public void grantGrant(Connection con,
+						   PLGroup grantee,
+						   DatabaseObject obj,
+						   boolean modify,
+						   boolean delete,
+						   boolean execute,
+						   boolean grant)
+		throws SQLException, PLSecurityException {
+
+		grantGroupPermission(con, principal, grantee, obj,
+							 (modify?"'Y'":"'N'"),
+							 (delete?"'Y'":"'N'"),
+							 (execute?"'Y'":"'N'"),
+							 (grant?"'Y'":"'N'"));
+	}
+
 
 	/**
 	 * Grants the given permission on the given object to the given
@@ -560,11 +660,14 @@ public class PLSecurityManager implements java.io.Serializable {
 										   PLUser principal,
 										   PLUser grantee,
 										   DatabaseObject obj,
-										   String perm,
-										   boolean givingPerm)
+										   String modify,
+										   String delete,
+										   String execute,
+										   String grant)
 		throws PLSecurityException, SQLException {
 
-		grantPermission(con, principal, grantee.getUserId(), true, obj, perm, givingPerm);
+		grantPermission(con, principal, grantee.getUserId(), true, obj, 
+						modify, delete, execute, grant);
 	}
 	
 	/**
@@ -586,14 +689,17 @@ public class PLSecurityManager implements java.io.Serializable {
 	 * grantee, otherwise it will be revoked from the grantee.
 	 */
 	public static void grantGroupPermission(Connection con,
-										   PLUser principal,
-										   PLGroup grantee,
-										   DatabaseObject obj,
-										   String perm,
-										   boolean givingPerm)
+											PLUser principal,
+											PLGroup grantee,
+											DatabaseObject obj,
+											String modify,
+											String delete,
+											String execute,
+											String grant)
 		throws PLSecurityException, SQLException {
 
-		grantPermission(con, principal, grantee.getGroupName(), false, obj, perm, givingPerm);
+		grantPermission(con, principal, grantee.getGroupName(), false, obj, 
+						modify, delete, execute, grant);
 	}
 	
 	/**
@@ -615,8 +721,10 @@ public class PLSecurityManager implements java.io.Serializable {
 									   String granteeName,
 									   boolean granteeIsUser,
 									   DatabaseObject obj,
-									   String perm,
-									   boolean givingPerm)
+									   String modify,
+									   String delete,
+									   String execute,
+									   String grant)
 		throws PLSecurityException, SQLException {
 
 		checkPermission(con, principal, obj, GRANT_PERMISSION, true);
@@ -631,10 +739,23 @@ public class PLSecurityManager implements java.io.Serializable {
 			} else {
 				sql.append("UPDATE group_object_privs SET ");
 			}
-			sql.append(permToColName(perm)).append("=").append(givingPerm?"'Y'":"'N'");
-			sql.append(", last_update_date=").append(DBConnection.getSystemDate(con));
+			sql.append("last_update_date=").append(DBConnection.getSystemDate(con));
 			sql.append(", last_update_user=").append(SQL.quote(principal.getUserId()));
 			sql.append(", last_update_os_user='Power*Dashboard Web Facility'");
+
+			if(modify!=null && !modify.equals("")){
+				sql.append(", modify_ind=").append(modify);
+			}
+			if(delete!=null && !delete.equals("")){
+				sql.append(", delete_ind=").append(delete);
+			}
+			if(execute!=null && !execute.equals("")){
+				sql.append(", execute_ind=").append(execute);
+			}
+			if(grant!=null && !grant.equals("")){
+				sql.append(", grant_ind=").append(grant);
+			}
+
 			if (granteeIsUser) {
 				sql.append(" WHERE user_id=").append(SQL.quote(granteeName));
 			} else {
@@ -657,15 +778,20 @@ public class PLSecurityManager implements java.io.Serializable {
 				} else {
 					sql.append("INSERT INTO group_object_privs (");
 				}
-				sql.append(permToColName(perm));
+				sql.append("modify_ind,delete_ind,execute_ind,grant_ind");
+
 				if (granteeIsUser) {
-					sql.append(", user_id");
+					sql.append(",user_id");
 				} else {
-					sql.append(", group_name");
+					sql.append(",group_name");
 				}
+
 				sql.append(", object_type, object_name");
 				sql.append(", last_update_user, last_update_os_user, last_update_date");
-				sql.append(") VALUES (").append(givingPerm?"'Y'":"'N'");;
+				sql.append(") VALUES (").append(modify);
+				sql.append(", ").append(delete);
+				sql.append(", ").append(execute);
+				sql.append(", ").append(grant);
 				sql.append(", ").append(SQL.quote(granteeName));
 				sql.append(", ").append(SQL.quote(obj.getObjectType()));
 				sql.append(", ").append(SQL.quote(obj.getObjectName()));
