@@ -3,7 +3,12 @@ package ca.sqlpower.sql;
 import java.sql.*;
 
 public class OracleSequenceGenerator extends SequenceGenerator {
-
+	private Connection con;
+	public OracleSequenceGenerator(Connection con) {
+		super();
+		this.con=con;
+	}
+	
     /**
      * Retrieves a unique long integer value from the specified
      * Oracle sequence.
@@ -15,7 +20,7 @@ public class OracleSequenceGenerator extends SequenceGenerator {
      * this sequenceTable.
      * @throws SQLException if a database error occurs.
      */
-    public long nextLong(Connection con, String sequenceTable) 
+    public long nextLong( String sequenceTable) 
 	throws SQLException
     {
 	StringBuffer sql=new StringBuffer();

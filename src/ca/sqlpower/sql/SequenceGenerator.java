@@ -20,7 +20,7 @@ public abstract class SequenceGenerator {
      * this sequenceTable.
      * @throws SQLException if a database error occurs.
      */
-    public abstract long nextLong(Connection con, String sequenceTable) 
+    public abstract long nextLong(String sequenceTable) 
 	throws SQLException;
 
     /**
@@ -34,11 +34,11 @@ public abstract class SequenceGenerator {
      * RDBMS.
      * @throws SQLException if a database error occurs.
      */
-    public SequenceGenerator getInstance(Connection con) {
+    public static SequenceGenerator getInstance(Connection con) {
 	String dbClass=con.getClass().getName();
 
 	if(dbClass.indexOf("Oracle") != 0) {
-	    return new OracleSequenceGenerator();
+	    return new OracleSequenceGenerator(con);
 	}
 
 	throw new IllegalArgumentException(
