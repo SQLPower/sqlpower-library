@@ -11,62 +11,71 @@ public class WebResultCSVFormatter extends WebResultFormatter {
 
     public void formatToStream(WebResultSet wrs, PrintWriter out) 
 	throws SQLException, NoRowidException, IllegalStateException {
-	int numCols=wrs.getColumnCount();
-	StringBuffer sb=new StringBuffer(256);
-	StringBuffer contents=new StringBuffer(256);
-	StringBuffer align=new StringBuffer(32);
-
-	// FORMAT HEADINGS
-	boolean thisIsTheFirstColumn=true;
-	for(int i=1; i<=numCols; i++) {
-
-	    if(columnNotAppropriate(wrs, i)) {
-		continue;
-	    }
-
-	    sb.setLength(0);
-	    try {
-		if(!thisIsTheFirstColumn) {
-		    sb.append(",");
-		}
-
-		sb.append(makeStringSafe(beautifyHeading(wrs.getColumnLabel(i))));
-		out.print(sb);
-		thisIsTheFirstColumn=false;
-	    } catch(ColumnNotDisplayableException e) {
-		// Column didn't get printed (which is good)
-	    }
-	}
-	out.println("");
-
-	// FORMAT BODY
-	while(wrs.next()) {
-	    thisIsTheFirstColumn=true;
-	    for(int i=1; i<=numCols; i++) {
-
-		if(columnNotAppropriate(wrs, i)) {
-		    continue;
-		}
-
-		contents.setLength(0);
-		align.setLength(0);
-		try {
-		    getColumnFormatted(wrs, i, contents, align);
-		    if(!thisIsTheFirstColumn) {
-			out.print(",");
-		    }
-		    out.print(makeStringSafe(contents.toString()));
-		    thisIsTheFirstColumn=false;
-		} catch(ColumnNotDisplayableException e) {
-		    // Column didn't get printed (which is good)
-		} catch(UnsupportedOperationException e) {
-		    // Column didn't get printed, but we wanted it to
-		    out.print(makeStringSafe(wrs.getString(i)));
-		}
-	    }
-	    out.println("");
-	}
+		formatHeader(wrs,out);
+		formatBody(wrs,out);
     }
+
+	public void formatHeader(WebResultSet wrs, PrintWriter out) throws SQLException {
+		int numCols=wrs.getColumnCount();
+		StringBuffer sb=new StringBuffer(256);
+		boolean thisIsTheFirstColumn = true;
+		for (int i = 1; i <= numCols; i++) {
+
+			if (columnNotAppropriate(wrs, i)) {
+				continue;
+			}
+
+			sb.setLength(0);
+			try {
+				if (!thisIsTheFirstColumn) {
+					sb.append(",");
+				}
+
+				sb.append(
+					makeStringSafe(beautifyHeading(wrs.getColumnLabel(i))));
+				out.print(sb);
+				thisIsTheFirstColumn = false;
+			} catch (ColumnNotDisplayableException e) {
+				// Column didn't get printed (which is good)
+			}
+		}
+		out.println("");
+	}
+
+	public void formatBody(WebResultSet wrs, PrintWriter out)
+		throws SQLException, NoRowidException {
+		int numCols=wrs.getColumnCount();
+		StringBuffer sb=new StringBuffer(256);
+		StringBuffer contents=new StringBuffer(256);
+		StringBuffer align=new StringBuffer(32);
+		while (wrs.next()) {
+			boolean thisIsTheFirstColumn = true;
+			for (int i = 1; i <= numCols; i++) {
+
+				if (columnNotAppropriate(wrs, i)) {
+					continue;
+				}
+
+				contents.setLength(0);
+				align.setLength(0);
+				try {
+					getColumnFormatted(wrs, i, contents, align);
+					if (!thisIsTheFirstColumn) {
+						out.print(",");
+					}
+					out.print(makeStringSafe(contents.toString()));
+					thisIsTheFirstColumn = false;
+				} catch (ColumnNotDisplayableException e) {
+					// Column didn't get printed (which is good)
+				} catch (UnsupportedOperationException e) {
+					// Column didn't get printed, but we wanted it to
+					out.print(makeStringSafe(wrs.getString(i)));
+				}
+			}
+			out.println("");
+		}
+	}
+
 
     /**
      * Makes a CSV-file-safe version of a given string.  This includes
@@ -83,6 +92,7 @@ public class WebResultCSVFormatter extends WebResultFormatter {
 	if(original==null) {
 	    return "";
 	}
+
 
 	StringBuffer escaped = new StringBuffer(original.length());
 	StringCharacterIterator it = new StringCharacterIterator(original);
