@@ -141,7 +141,7 @@ public class LabelValueBean {
 	}
 
 	List nums=new ArrayList(30);
-	for(int i=start; i<end; i+=step) {
+	for(int i=start; i<=end; i+=step) {
 	    nums.add(new LabelValueBean(nf.format(i), String.valueOf(i)));
 	}
 	return nums;
