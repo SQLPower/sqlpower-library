@@ -4,6 +4,7 @@ import ca.sqlpower.util.*;
 import java.util.*;
 import java.sql.*;
 import java.io.*;
+import java.text.*;
 
 /**
  * WebResultFormFormatter exists in order to format WebResultSets into
@@ -21,6 +22,8 @@ public class WebResultFormFormatter extends WebResultFormatter {
     public WebResultFormFormatter() {
 	super();
 	numHTMLCols=3;
+	moneyFormatter=new DecimalFormat("#0.00");
+	numberFormatter=new DecimalFormat("#.#");
     }
 
     public void setNumHTMLCols(int numCols) {
@@ -35,7 +38,11 @@ public class WebResultFormFormatter extends WebResultFormatter {
 	throws SQLException {
 	int numCols=wrs.getColumnCount();
 	int cell=0, col=0;;
+
 	boolean fcShowFirstColumn=wrs.getShowFirstColumn();
+
+	StringBuffer contents=new StringBuffer(60);
+	StringBuffer align=new StringBuffer(10);
 
 	if(!wrs.next()) {
 	    return;
@@ -47,22 +54,27 @@ public class WebResultFormFormatter extends WebResultFormatter {
 	    if(!fcShowFirstColumn && cell==0) {
 		cell++;
 	    }
-	    out.println("  <td align=\"right\">");
+	    contents.setLength(0);
+	    align.setLength(0);
+	    getColumnFormatted(wrs, cell+1, contents, align);
+
+	    out.println("  <td align=\"right\" class=\"searchForm\">");
 	    out.println(beautifyHeading(wrs.getColumnLabel(cell+1)));
 	    out.println("  </td>");
 	    out.println("  <td>");
 	    out.print("   <input type=\"text\" length=\"30\" name=\"");
 	    out.print(wrs.getColumnLabel(cell+1));
 	    out.print("\" value=\"");
-	    out.print(wrs.getString(cell+1));
+	    out.print(contents.toString());
 	    out.println("\" />");
 	    out.println("  </td>");
 	    if(col==numHTMLCols-1) {
 		col=0;
 		out.println(" </tr>");
 		out.println(" <tr>");
+	    } else {
+		col++;
 	    }
-	    col++;
 	    cell++;
 	} while(cell<numCols);
 	out.println(" </tr>");
