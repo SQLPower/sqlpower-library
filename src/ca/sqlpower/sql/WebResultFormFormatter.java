@@ -51,7 +51,7 @@ public class WebResultFormFormatter extends WebResultFormatter {
 	    out.println(beautifyHeading(wrs.getColumnLabel(cell+1)));
 	    out.println("  </td>");
 	    out.println("  <td>");
-	    out.print("   <input type=\"text\" name=\"");
+	    out.print("   <input type=\"text\" length=\"30\" name=\"");
 	    out.print(wrs.getColumnLabel(cell+1));
 	    out.print("\" value=\"");
 	    out.print(wrs.getString(cell+1));

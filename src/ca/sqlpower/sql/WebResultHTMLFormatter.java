@@ -21,19 +21,11 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 
     private boolean dropdownsInline;
     private boolean dropdownsAbove;
-    private NumberFormat numberFormatter;
-    private NumberFormat moneyFormatter;
-    private NumberFormat percentFormatter;
-    private DateFormat dateFormatter;
 
     public WebResultHTMLFormatter() {
 	super();
 	dropdownsInline=false;
 	dropdownsAbove=true;
-	numberFormatter=new DecimalFormat("#,##0.#");
-	moneyFormatter=new DecimalFormat("$#,##0.00");
-	percentFormatter=new DecimalFormat("0%");
-	dateFormatter=DateFormat.getInstance();
     }
     
     /**
@@ -69,22 +61,6 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
      * @param v  Value to assign to dropdownsAbove.
      */
     public void setDropdownsAbove(boolean  v) {this.dropdownsAbove = v;}
-
-    public void setNumberFormatter(NumberFormat v) {
-	numberFormatter=v;
-    }
-
-    public void setMoneyFormatter(NumberFormat v) {
-	moneyFormatter=v;
-    }
-
-    public void setPercentFormatter(NumberFormat v) {
-	percentFormatter=v;
-    }
-
-    public void setDateFormatter(DateFormat v) {
-	dateFormatter=v;
-    }
 
     public void formatToStream(WebResultSet wrs, PrintWriter out) 
 	throws SQLException {
@@ -146,79 +122,19 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	    out.println(" </tr>");
 	}
 
+	StringBuffer align=new StringBuffer(10);
+	StringBuffer contents=new StringBuffer(50);
+
 	while(wrs.next()) {
 	    out.println(" <tr class=\"resultTableData\">");
 	    for(int i=1; i<=numCols; i++) {
-		int type=wrs.getColumnType(i);
-		String contents;
-		String tAlign;
-
-		switch(type) {
-		case FieldTypes.NUMBER:
-		    tAlign="right";
-		    contents=numberFormatter.format(wrs.getFloat(i));
-		    break;
-
-		default:
-		case FieldTypes.NAME:
-		    tAlign="left";
-		    contents=wrs.getString(i);
-		    break;
-
-		case FieldTypes.MONEY:
-		    tAlign="right";
-		    contents=moneyFormatter.format(wrs.getFloat(i));
-		    break;
-
-		case FieldTypes.BOOLEAN:
-		    tAlign="center";
-		    contents=wrs.getString(i);
-		    if(contents != null) {
-			contents="True";
-		    } else {
-			contents="False";
-		    }
-		    break;
-		    
-		case FieldTypes.RADIO:
-		    tAlign="center";
-		    contents="<input type=\"radio\" name=\""
-			+rowidParameterName
-			+"\" value=\""
-			+wrs.getString(i)
-			+"\" onClick=\"this.form.submit()\" />";
-		    break;
-
-		case FieldTypes.CHECKBOX:
-		    tAlign="center";
-		    contents="<input type=\"checkbox\" name=\""
-			+rowidParameterName
-			+"\" value=\""
-			+wrs.getString(i)
-			+"\" />";
-		    break;		    
-
-		case FieldTypes.PERCENT:
-		    tAlign="right";
-		    contents=percentFormatter.format(wrs.getFloat(i)/100);
-		    break;
-
-		case FieldTypes.DATE:
-		    tAlign="center";
-		    java.sql.Date date=wrs.getDate(i);
-		    if(date==null) {
-			contents="(null)";
-		    } else {
-			contents=dateFormatter
-			    .format(new java.util.Date(date.getTime()));
-		    }
-		    break;
-		}
-
+		align.setLength(0);
+		contents.setLength(0);
+		getColumnFormatted(wrs, i, contents, align);
 		out.print("  <td align=\"");
-		out.print(tAlign);
+		out.print(align.toString());
 		out.print("\">");
-		out.print(contents);
+		out.print(contents.toString());
 		out.println("</td>");
 	    }
 	    out.println(" </tr>");
