@@ -7,7 +7,6 @@ import java.security.NoSuchAlgorithmException;
 
 import ca.sqlpower.sql.*;
 import ca.sqlpower.util.ByteColonFormat;
-import ca.sqlpower.dashboard.DBConnection;
 
 /**
  * The User class represents a people who can log in to an application

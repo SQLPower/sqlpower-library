@@ -4,7 +4,6 @@ import java.sql.*;
 import java.util.*;
 
 import ca.sqlpower.sql.*;
-import ca.sqlpower.dashboard.DBConnection;
 
 /**
  * The PLGroup class represents groups that can be granted specific
