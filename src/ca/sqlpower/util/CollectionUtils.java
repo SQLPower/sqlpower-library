@@ -60,4 +60,19 @@ public class CollectionUtils {
 		}
 		return outputString.toString();
 	}
+
+	public static String enumerationToString(Enumeration enum) {
+		StringBuffer sb = new StringBuffer(100);
+		boolean firstItem = true;
+		sb.append("[");
+		while (enum.hasMoreElements()) {
+			if (!firstItem) {
+				sb.append(", ");
+			}
+			sb.append(enum.nextElement());
+			firstItem = false;
+		}
+		sb.append("]");
+		return sb.toString();
+	}
 }
