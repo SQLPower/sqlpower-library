@@ -281,9 +281,14 @@ public class WebResultSet {
 	return rs.next();
     }
 
-    //public String getString(String colName) throws SQLException {
-    //return rs.getString(colName);
-    //}
+    /**
+     * @deprecated In general, the names of columns are expected to
+     * change frequently.  Use the getString(int) method instead of
+     * this one.
+     */
+    public String getString(String colName) throws SQLException {
+	return rs.getString(colName);
+    }
 
     public String getString(int colNo) throws SQLException {
 	if(columnFilter[colNo-1]!=null) {
