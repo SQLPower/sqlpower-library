@@ -107,7 +107,7 @@ public class LongMessageFormat extends Format {
 				Object insertMe = objArray[formatNumber[chunkNum]];
 				Format thisFieldFormat = formats[chunkNum];
 				String parsedString = null;
-				if (thisFieldFormat != null) {
+				if (thisFieldFormat != null && insertMe != null) {
 					Object parsedObject = null;
 					try {
 						if (thisFieldFormat instanceof NumberFormat) {
