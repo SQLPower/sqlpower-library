@@ -69,9 +69,15 @@ import java.text.*;
  * Simple JavaBean to represent label-value pairs for use in collections
  * that are utilized by the <code>&lt;form:options&gt;</code> tag.
  *
- * @author Craig R. McClanahan
+ * NOTE: This class used to be deprecated in favour of the
+ * LabelValueBean in org.apache.struts.util, but it actually has some
+ * static methods that we use for building label/value lists of
+ * numbers for date forms and the like.  It's still best to use the
+ * struts one in struts apps, but it doesn't matter if you use this
+ * one instead.
+ *
+ * @author Craig R. McClanahan, Jonathan Fuerth
  * @version $Revision$ $Date$
- * @deprecated use org.apache.struts.LabelValueBean instead.
  */
 
 public class LabelValueBean {
