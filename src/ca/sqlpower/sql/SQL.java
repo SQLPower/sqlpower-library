@@ -31,6 +31,19 @@ public class SQL {
 	}
     }
 
+	/**
+     * convert number string to NULL if null
+     *
+     * @param string The string that you want to translate 
+     */
+    public static String nvl(String string) {
+	if(string==null || string.equals("")) {
+	    return "NULL";
+	} else {
+	    return string;
+	}
+}
+
     /**
      * Makes the input string safe to enclose in single-quotes in an
      * Oracle SQL expression.  Currently, this only means turning all
