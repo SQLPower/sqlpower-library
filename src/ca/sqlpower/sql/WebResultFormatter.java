@@ -3,6 +3,7 @@ package ca.sqlpower.sql;
 import java.io.*;
 import java.text.*;
 import java.sql.SQLException;
+import java.awt.Color;
 
 /**
  * The base class for utilities that format a {@link WebResultSet}
@@ -20,6 +21,8 @@ public abstract class WebResultFormatter {
     protected NumberFormat moneyFormatter;
     protected NumberFormat percentFormatter;
     protected DateFormat dateFormatter;
+    protected Color rowHighlightColour;
+    protected Color rowNormalColour;
 
     public WebResultFormatter() {
 	rowidParameterName="row_id";
@@ -28,6 +31,8 @@ public abstract class WebResultFormatter {
 	moneyFormatter=new DecimalFormat("$#,##0.00");
 	percentFormatter=new DecimalFormat("0%");
 	dateFormatter=DateFormat.getDateInstance();
+	rowHighlightColour=Color.yellow;
+	rowNormalColour=new Color(0xEE, 0xEE, 0xEE);
     }
 
     /**
@@ -84,6 +89,34 @@ public abstract class WebResultFormatter {
 	dateFormatter=v;
     }
 
+    /**
+     * Gets the current setting of the row highlighting colour.
+     *
+     * @return the current row highlighting colour
+     */
+    public Color getRowHighlightColour() {return rowHighlightColour;}
+    
+    /**
+     * Sets the value of the row highlight colour.
+     *
+     * @param v Value to assign to row highlight colour.
+     */
+    public void setRowHighlightColour(Color  v) {this.rowHighlightColour = v;}
+    
+    /**
+     * Gets the current setting of the row normal colour.
+     *
+     * @return the current row normal colour
+     */
+    public Color getRowNormalColour() {return rowNormalColour;}
+    
+    /**
+     * Sets the value of the row normal colour.
+     *
+     * @param v Value to assign to row normal colour.
+     */
+    public void setRowNormalColour(Color  v) {this.rowNormalColour = v;}
+    
     protected String beautifyHeading(String heading) {
 	StringBuffer newHeading=new StringBuffer(heading);
 
@@ -135,7 +168,9 @@ public abstract class WebResultFormatter {
 		.append(wrs.getColumnLabel(i))
 		.append("\" value=\"")
 		.append(wrs.getRowid())
-		.append("\" onClick=\"this.form.submit()\" />");
+		.append("\" onClick=\"highlightRow(this, ")
+		.append("'00ff00',").append("'ff00ff'")
+		.append("); this.form.submit()\" />");
 	    break;
 
 	case FieldTypes.CHECKBOX:

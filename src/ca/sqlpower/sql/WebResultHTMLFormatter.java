@@ -5,6 +5,7 @@ import java.text.*;
 import java.util.*;
 import java.sql.*;
 import java.io.*;
+import java.awt.Color;
 
 /**
  * WebResultHTMLFormatter exists in order to format WebResultSets into
@@ -22,23 +23,42 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
     private boolean dropdownsInline;
     private boolean dropdownsAbove;
     private int dropdownsPerRow;
+    private boolean rowHighlightingOn;
+
+    private static final String JS_HIGHLIGHT_CODE = 
+	"<script language=\"JavaScript\">\n"
+	+"// Derived from code found at javascript.faqts.com\n"
+	+"function highlightRow (boolean_element, h_color, n_color) {\n"
+	+" while (boolean_element.tagName.toUpperCase() != 'TR' && boolean_element != null)\n"
+	+" boolean_element = document.all?boolean_element.parentElement:boolean_element.parentNode;\n"
+	+" if (boolean_element) {\n"
+	+"  if(boolean_element.value) {\n"
+	+"   boolean_element.bgColor = h_color;\n"
+	+"  } else {\n"
+	+"   boolean_element.bgColor = n_color;\n"
+	+"  }\n"
+	+" }\n"
+	+"}\n"
+	+"</script>\n";
+
 
     public WebResultHTMLFormatter() {
 	super();
 	dropdownsInline=false;
 	dropdownsAbove=true;
 	dropdownsPerRow=3;
+	rowHighlightingOn=true;
     }
     
     /**
-     * Get the value of dropdownsInline.
+     * Gets the value of dropdownsInline.
      *
      * @return value of dropdownsInline.
      */
     public boolean isDropdownsInline() {return dropdownsInline;}
     
     /**
-     * Set the value of dropdownsInline.  DropdowsInline and
+     * Sets the value of dropdownsInline.  DropdowsInline and
      * DropdownsAbove are not mutually exclusive, so be sure to set
      * them to opposite values unless you want two sets of dropdown
      * boxes.
@@ -48,14 +68,14 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
     public void setDropdownsInline(boolean  v) {this.dropdownsInline = v;}
 
     /**
-     * Get the value of dropdownsAbove.
+     * Gets the value of dropdownsAbove.
      *
      * @return value of dropdownsAbove.
      */
     public boolean isDropdownsAbove() {return dropdownsAbove;}
     
     /**
-     * Set the value of dropdownsAbove.  DropdowsInline and
+     * Sets the value of dropdownsAbove.  DropdowsInline and
      * DropdownsAbove are not mutually exclusive, so be sure to set
      * them to opposite values unless you want two sets of dropdown
      * boxes.
@@ -65,23 +85,46 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
     public void setDropdownsAbove(boolean  v) {this.dropdownsAbove = v;}
     
     /**
-     * Get the value of dropdownsPerRow.
+     * Gets the value of dropdownsPerRow.
      *
      * @return value of dropdownsPerRow.
      */
     public int getDropdownsPerRow() {return dropdownsPerRow;}
     
     /**
-     * Set the value of dropdownsPerRow.
+     * Sets the value of dropdownsPerRow.
      *
      * @param v  Value to assign to dropdownsPerRow.
      */
     public void setDropdownsPerRow(int  v) {this.dropdownsPerRow = v;}
+        
+    /**
+     * Finds out if the Javascript row-highlighting code is enabled.
+     *
+     * @return true if row highlighting is enabled; false otherwise.
+     */
+    public boolean isRowHighlightingOn() {return rowHighlightingOn;}
     
+    /**
+     * Sets the status of whether or not the row-highlighting
+     * Javascript code will be included in the generated HTML.  Row
+     * highlighting will turn a row a different colour (controlled by
+     * the property "rowHighlightColour") when its radio box or
+     * checkbox is checked.
+     *
+     * @param v A value of true will enable row highlighting.  False
+     * will disable it.
+     */
+    public void setRowHighlightingOn(boolean  v) {this.rowHighlightingOn = v;}
+        
     public void formatToStream(WebResultSet wrs, PrintWriter out) 
 	throws SQLException, NoRowidException, IllegalStateException {
 	int numCols=wrs.getColumnCount();
 	StringBuffer sb=new StringBuffer(256);
+
+	if(rowHighlightingOn) {
+	    out.print(JS_HIGHLIGHT_CODE);
+	}
 
 	if(dropdownsAbove) {
 	    List choices=null;
