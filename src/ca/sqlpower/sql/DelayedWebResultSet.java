@@ -157,6 +157,9 @@ public class DelayedWebResultSet extends WebResultSet {
 			newRS=results;
 		} else {
 			// not using cache
+			if (closeOldRS && rs != null) {
+				rs.getStatement().close();
+			}
 			Statement stmt = con.createStatement();
 			newRS = stmt.executeQuery(sqlQuery);
 		}
