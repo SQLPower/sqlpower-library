@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.Collections;
 import java.sql.*;
 import java.math.BigDecimal;
+import org.apache.log4j.Logger;
 
 /**
  * The CachedRowSet is a serializable container for holding the
@@ -26,6 +27,8 @@ import java.math.BigDecimal;
  * @version $Id$
  */
 public class CachedRowSet implements ResultSet, java.io.Serializable {
+
+	private static final Logger logger = Logger.getLogger(CachedRowSet.class);
 
 	/**
 	 * The current row number in the result set.  Calling next() will
@@ -60,7 +63,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	/**
 	 * Our cached copy of the original ResultSetMetaData.
 	 */
-	protected ResultSetMetaData rsmd;
+	protected CachedResultSetMetaData rsmd;
 
 	/**
 	 * Makes an empty cached rowset.
@@ -204,13 +207,18 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * in a SQLException.  No exception will be thrown if the named
 	 * column simply doesn't exist in the result set.
 	 */
-	public int findColumnNoException(String columnName) throws SQLException {
+	public int getColumnIndex(String columnName) throws SQLException {
+		int idx = -1;
 		for (int i = 0; i < rsmd.getColumnCount(); i++) {
 			if (rsmd.getColumnName(i + 1).equalsIgnoreCase(columnName)) {
-				return i + 1;
+				idx = i + 1;
+				break;
 			}
 		}
-		return -1;
+		if (logger.isDebugEnabled()) {
+			logger.debug("getColumnIndex("+columnName+") returns "+idx);
+		}
+		return idx;
 	}
 
 	// =============================================
@@ -716,7 +724,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * @throws SQLException if there is no such column.
 	 */
     public int findColumn(String columnName) throws SQLException {
-		int index = findColumnNoException(columnName);
+		int index = getColumnIndex(columnName);
 		if (index == -1) {
 			throw new SQLException("No such column '"+columnName+"' in this result set.");
 		} else {

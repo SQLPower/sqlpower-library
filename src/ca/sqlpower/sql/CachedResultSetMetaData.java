@@ -11,7 +11,7 @@ import java.sql.*;
  * @author Jonathan Fuerth
  * @version $Id$
  */
-public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Serializable {
+public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Serializable, Cloneable {
 
 	private int columnCount;
 	private boolean autoIncrement[];
@@ -42,7 +42,11 @@ public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Seria
 	 */
 	public CachedResultSetMetaData(ResultSetMetaData source) throws SQLException {
 		this.columnCount = source.getColumnCount();
+		createArrays(columnCount);
+		populate(source);
+	}
 
+	protected void createArrays(int columnCount) {
 		this.autoIncrement = new boolean[columnCount];
 		this.caseSensitive = new boolean[columnCount];
 		this.searchable = new boolean[columnCount];
@@ -63,8 +67,10 @@ public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Seria
 		this.writable = new boolean[columnCount];
 		this.definitelyWritable = new boolean[columnCount];
 		this.columnClassName = new String[columnCount];
+	}
 
-		for (int i = 0; i < columnCount; i++) {
+	protected void populate(ResultSetMetaData source) throws SQLException {
+		for (int i = 0; i < source.getColumnCount(); i++) {
 			this.autoIncrement[i] = source.isAutoIncrement(i+1);
 			this.caseSensitive[i] = source.isCaseSensitive(i+1);
 			this.searchable[i] = source.isSearchable(i+1);
@@ -86,6 +92,70 @@ public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Seria
 			this.definitelyWritable[i] = source.isDefinitelyWritable(i+1);
 			this.columnClassName[i] = source.getColumnClassName(i+1);
 		}
+	}
+
+	/**
+	 * Adds a new column to the metadata.  Feel free to supply
+	 * whatever values you want for the various properties.  They
+	 * don't matter to internal CachedRowSet code.
+	 *
+	 * <p>I am aware that this method signature sucks, but what would you
+	 * have me do?  Implement setters for each property?
+	 */
+	public int addColumn(boolean autoIncrementArg,
+						 boolean caseSensitiveArg,
+						 boolean searchableArg,
+						 boolean currencyArg,
+						 int nullableArg,
+						 boolean signedArg,
+						 int columnDisplaySizeArg,
+						 String columnLabelArg,
+						 String columnNameArg,
+						 String schemaNameArg,
+						 int precisionArg,
+						 int scaleArg,
+						 String tableNameArg,
+						 String catalogNameArg,
+						 int columnTypeArg,
+						 String columnTypeNameArg,
+						 boolean readOnlyArg,
+						 boolean writableArg,
+						 boolean definitelyWritableArg,
+						 String columnClassNameArg)
+		throws SQLException {
+
+		ResultSetMetaData copy = null;
+		try {
+			copy = (ResultSetMetaData) this.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new IllegalStateException("Couldn't clone this instance");
+		}
+		createArrays(columnCount + 1);
+		populate(copy);
+		
+		this.autoIncrement[columnCount] = autoIncrementArg;
+		this.caseSensitive[columnCount] = caseSensitiveArg;
+		this.searchable[columnCount] = searchableArg;
+		this.currency[columnCount] = currencyArg;
+		this.nullable[columnCount] = nullableArg;
+		this.signed[columnCount] = signedArg;
+		this.columnDisplaySize[columnCount] = columnDisplaySizeArg;
+		this.columnLabel[columnCount] = columnLabelArg;
+		this.columnName[columnCount] = columnNameArg;
+		this.schemaName[columnCount] = schemaNameArg;
+		this.precision[columnCount] = precisionArg;
+		this.scale[columnCount] = scaleArg;
+		this.tableName[columnCount] = tableNameArg;
+		this.catalogName[columnCount] = catalogNameArg;
+		this.columnType[columnCount] = columnTypeArg;
+		this.columnTypeName[columnCount] = columnTypeNameArg;
+		this.readOnly[columnCount] = readOnlyArg;
+		this.writable[columnCount] = writableArg;
+		this.definitelyWritable[columnCount] = definitelyWritableArg;
+		this.columnClassName[columnCount] = columnClassNameArg;
+
+		columnCount += 1;
+		return columnCount;
 	}
 
 	// ==========================================
