@@ -82,7 +82,19 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		while (rs.next()) {
 			Object[] row = new Object[colCount];
 			for (int i = 0; i < colCount; i++) {
-				row[i] = rs.getObject(i+1);
+				Object o = rs.getObject(i+1);
+				if (o != null) {
+					if (o instanceof BigDecimal) {	
+						BigDecimal bd = (BigDecimal) o;
+						if (bd.scale() > 0) {
+							 o = new Double(bd.doubleValue()); 
+						}
+						else {
+							 o = new Integer(bd.intValue());
+						}
+					}
+				}				
+				row[i] = o;
 			}
 			newData.add(row);
 		}
