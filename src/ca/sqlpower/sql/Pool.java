@@ -42,7 +42,7 @@ public class Pool {
         	poolConfig.maxActive = 25;
         	poolConfig.maxIdle = 2;
         	poolConfig.maxWait = 10000;
-        	poolConfig.minEvictableIdleTimeMillis = 5000;
+        	poolConfig.minEvictableIdleTimeMillis = 1000*60*5;
         	poolConfig.timeBetweenEvictionRunsMillis = 10000;
         	poolConfig.numTestsPerEvictionRun = 100;
 
