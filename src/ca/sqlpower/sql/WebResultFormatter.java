@@ -137,6 +137,11 @@ public abstract class WebResultFormatter {
 		    );
 	    }
 	    break;
+
+	case FieldTypes.ALPHANUM_CODE:
+	    align.append("center");
+	    contents.append(wrs.getString(i));
+	    break;
 	}
     }
 
