@@ -1,7 +1,5 @@
 /*
  * $Header$
- * $Revision$
- * $Date$
  *
  * ====================================================================
  *
@@ -57,11 +55,15 @@
  * information on the Apache Software Foundation, please see
  * <http://www.apache.org/>.
  *
+ * This package contains code modified by employees of SQL Power Group
+ * Inc.
  */
 
 
 package ca.sqlpower.util;
 
+import java.util.*;
+import java.text.*;
 
 /**
  * Simple JavaBean to represent label-value pairs for use in collections
@@ -72,10 +74,6 @@ package ca.sqlpower.util;
  */
 
 public class LabelValueBean {
-
-
-    // ----------------------------------------------------------- Constructors
-
 
     /**
      * Construct a new LabelValueBean with the specified values.
@@ -88,10 +86,6 @@ public class LabelValueBean {
         this.value = value;
     }
 
-
-    // ------------------------------------------------------------- Properties
-
-
     /**
      * The label to be displayed to the user.
      */
@@ -100,7 +94,6 @@ public class LabelValueBean {
     public String getLabel() {
         return (this.label);
     }
-
 
     /**
      * The value to be returned to the server.
@@ -111,12 +104,8 @@ public class LabelValueBean {
         return (this.value);
     }
 
-
-    // --------------------------------------------------------- Public Methods
-
-
     /**
-     * Return a string representation of this object.
+     * Returns a string representation of this object.
      */
     public String toString() {
         StringBuffer sb = new StringBuffer("LabelValueBean[");
@@ -127,5 +116,49 @@ public class LabelValueBean {
         return (sb.toString());
     }
 
+    /**
+     * Builds a List of label-value beans that can be used to populate
+     * a drop-down list of numbers. Intended for web apps that want to
+     * make a SELECT list of numbers.
+     *
+     * @param start The lowest number present in the list.
+     * @param end The highest number present in the list. (Must be >= start)
+     * @param step The amount that one number differs from the next
+     * (must be positive)
+     * @param nf A number formatter that will be used to format the label.
+     * @return A List of LabelValueBeans as specified.
+     */
+    public static List getNumericList(int start, int end, int step,
+				      NumberFormat nf)
+	throws IllegalArgumentException {
+	if(start > end) {
+	    throw new IllegalArgumentException("Start number ("+start
+					       +") must be less than or equal to end number ("
+					       +end+").");
+	}
+	if(step <= 0) {
+	    throw new IllegalArgumentException("Step must be positive");
+	}
 
+	List nums=new ArrayList(30);
+	for(int i=start; i<end; i+=step) {
+	    nums.add(new LabelValueBean(nf.format(i), String.valueOf(i)));
+	}
+	return nums;
+    }
+
+    public static List getNumericList(int start, int end, int step)
+	throws IllegalArgumentException {
+	return getNumericList(start, end, step, new DecimalFormat("#"));
+    }
+
+    public static List getNumericList(int start, int end, NumberFormat nf)
+	throws IllegalArgumentException {
+	return getNumericList(start, end, 1, nf);
+    }
+
+    public static List getNumericList(int start, int end)
+	throws IllegalArgumentException {
+	return getNumericList(start, end, new DecimalFormat("#"));
+    }
 }
