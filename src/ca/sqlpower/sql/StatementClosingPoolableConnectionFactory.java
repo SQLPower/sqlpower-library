@@ -49,6 +49,7 @@ public class StatementClosingPoolableConnectionFactory
         Connection con = _connFactory.createConnection();
         try {
             con.setAutoCommit(_defaultAutoCommit);
+            con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
         } catch(SQLException e) {
             ; // ignored for now
         }
