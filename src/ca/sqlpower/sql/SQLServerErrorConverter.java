@@ -20,6 +20,7 @@ public class SQLServerErrorConverter extends AbstractErrorConverter {
 
 		case 18456:
 		case 4060:
+		case 18452:
 			return INVALID_LOGON;
 
 		default:
