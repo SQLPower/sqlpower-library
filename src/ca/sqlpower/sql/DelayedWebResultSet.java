@@ -87,11 +87,19 @@ public class DelayedWebResultSet extends WebResultSet {
 		throws IllegalStateException, SQLException {
 		this.con = con;
 
+		System.out.print(
+			"DelayedResultSet.execute: Finding results in cache of "
+				+ resultCache.size()
+				+ " items: ");
+
 		CachedRowSet results = (CachedRowSet) resultCache.get(sqlQuery);
 		if (results != null) {
 			results = (CachedRowSet) results.createShared();
-			results.beforeFirst();
+
 			// reset cursor, which is likely afterLast right now
+			results.beforeFirst();
+			
+			System.out.println("HIT ("+results.size()+" rows)");
 		} else {
 			Statement stmt = null;
 			try {
@@ -105,6 +113,7 @@ public class DelayedWebResultSet extends WebResultSet {
 				}
 			}
 			resultCache.put(sqlQuery, results);
+			System.out.println("MISS ("+results.size()+" rows)");
 		}
 		applyResultSet(results, closeOldRS);
 
