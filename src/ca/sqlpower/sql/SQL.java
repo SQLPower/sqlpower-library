@@ -2,9 +2,15 @@ package ca.sqlpower.sql;
 
 import java.sql.*;
 import java.util.*;
-import ca.sqlpower.util.LabelValueBean;
+import ca.sqlpower.util.*;
 
 public class SQL {
+
+	/**
+	 * A cache of the last 20 column types we looked up in the
+	 * database.  See {@link #columnType(Connection,String,String,String)}.
+	 */
+	private static Cache colTypeCache = new LeastRecentlyUsedCache(20);
 
     /**
      * This class cannot be instantiated
@@ -13,6 +19,42 @@ public class SQL {
     {
     }
 	
+	/**
+	 * Returns the java.sql.Types type of the given owner+table+column
+	 * combination.  Caches the N most recently used answers, so
+	 * calling this method on repeated requests shouldn't be a
+	 * significant slowdown.
+	 */
+	public static synchronized int columnType(Connection con, String owner, String table, String column)
+		throws SQLException {
+		String cacheKey = con.getMetaData().getURL()+owner+"."+table+"."+column;
+		Integer colType = (Integer) colTypeCache.get(cacheKey);
+		if(colType == null) {
+			Statement stmt=null;
+			try {
+				StringBuffer sql = new StringBuffer();
+				sql.append("SELECT ").append(column);
+				sql.append(" FROM ");
+				if(owner != null) {
+					sql.append(owner).append(".");
+				}
+				sql.append(table);
+				sql.append(" WHERE 0=1");
+				stmt = con.createStatement();
+				ResultSet rs = stmt.executeQuery(sql.toString());
+				ResultSetMetaData rsmd = rs.getMetaData();
+				colType = new Integer(rsmd.getColumnType(1));
+			} finally {
+				if(stmt != null) {
+					stmt.close();
+				}
+			}
+			colTypeCache.put(cacheKey, colType);
+		}
+
+		return colType.intValue();
+	}
+
     /**
      * A convenient way of using escapeStatement.  This method does the
      * same thing as escapeStatement, but also encloses the returned
