@@ -72,6 +72,48 @@ public class DBConnection {
 		return false;
 	}
 
+    /**
+     * Checks if this connection refers to a Microsoft SQLServer database.
+     *
+     * @return True if SQLServer, otherwise False
+     */
+	public static boolean isSQLServer(Connection con) {
+		DatabaseMetaData dmd;
+		
+		try {
+			dmd = con.getMetaData();
+			if(dmd.getDatabaseProductName().indexOf("Microsoft SQL Server") >= 0) {
+				return true;
+			} else {
+				return false;
+			}
+		} catch(SQLException e) {
+			System.out.println("problem in DBConnection.isSQLServer: "+e.getMessage());
+		}
+		return false;
+	}
+
+    /**
+     * Checks if this connection refers to a IBM DB2 database.
+     *
+     * @return True if DB2, otherwise False
+     */
+	public static boolean isDB2(Connection con) {
+		DatabaseMetaData dmd;
+		
+		try {
+			dmd = con.getMetaData();
+			if(dmd.getDatabaseProductName().indexOf("DB2") >= 0) {
+				return true;
+			} else {
+				return false;
+			}
+		} catch(SQLException e) {
+			System.out.println("problem in DBConnection.isDB2: "+e.getMessage());
+		}
+		return false;
+	}
+
 	public static String getSystemDate(Connection con) {
 		String systemDate="";
 		
