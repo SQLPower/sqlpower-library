@@ -40,4 +40,10 @@ public class OracleSequenceGenerator extends SequenceGenerator {
 		}
 		return nextval;
 	}
+
+	public void close() throws SQLException {
+		if (con != null) {
+			con.close();
+		}
+	}
 }
