@@ -28,7 +28,7 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	out.println("<table>");
 
 	out.println("<tr>");
-	for(int i=1; i<numCols; i++) {
+	for(int i=1; i<=numCols; i++) {
 	    out.println("<th>");
 	    if(fcRowid && i==1) {
 		out.println("&nbsp;");
@@ -41,7 +41,7 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 
 	while(wrs.next()) {
 	    out.println("<tr>");
-	    for(int i=1; i<numCols; i++) {
+	    for(int i=1; i<=numCols; i++) {
 		out.println("<td>");
 		if(fcRowid && i==1) {
 		    out.print("<input type=\"radio\" name=\"");
