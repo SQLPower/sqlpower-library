@@ -15,6 +15,7 @@ import java.sql.SQLException;
 public abstract class WebResultFormatter {
 
     protected String rowidParameterName;
+    protected String checkboxYesValue;
     protected NumberFormat numberFormatter;
     protected NumberFormat moneyFormatter;
     protected NumberFormat percentFormatter;
@@ -22,6 +23,7 @@ public abstract class WebResultFormatter {
 
     public WebResultFormatter() {
 	rowidParameterName="row_id";
+	checkboxYesValue="YES";
 	numberFormatter=new DecimalFormat("#,##0.#");
 	moneyFormatter=new DecimalFormat("$#,##0.00");
 	percentFormatter=new DecimalFormat("0%");
@@ -45,6 +47,26 @@ public abstract class WebResultFormatter {
     public void setRowidParameterName(String newName) {
         rowidParameterName=newName;
     }
+
+    /**
+     * Gets the value that indicates a "checked" (on) indicator in the
+     * database.
+     *
+     * @return the string representing "true"
+     */
+    public String getCheckboxYesValue() {
+	return checkboxYesValue;
+    }
+    
+    /**
+     * Sets the value that indicates a "checked" (on) indicator in the
+     * database. All other values are considered to mean "false."
+     *
+     * @param v The new value of the string representing "true."
+     */
+    public void setCheckboxYesValue(String  v) {
+	this.checkboxYesValue = v;
+    }    
 
     public void setNumberFormatter(NumberFormat v) {
 	numberFormatter=v;
@@ -77,7 +99,7 @@ public abstract class WebResultFormatter {
 				      int i,
 				      StringBuffer contents,
 				      StringBuffer align) 
-	throws SQLException {
+	throws SQLException, NoRowidException, ColumnNotDisplayableException {
 	int type=wrs.getColumnType(i);
 	
 	switch(type) {
@@ -110,19 +132,23 @@ public abstract class WebResultFormatter {
 	case FieldTypes.RADIO:
 	    align.append("center");
 	    contents.append("<input type=\"radio\" name=\"")
-		.append(rowidParameterName)
+		.append(wrs.getColumnLabel(i))
 		.append("\" value=\"")
-		.append(wrs.getString(i))
+		.append(wrs.getRowid())
 		.append("\" onClick=\"this.form.submit()\" />");
 	    break;
 
 	case FieldTypes.CHECKBOX:
 	    align.append("center");
 	    contents.append("<input type=\"checkbox\" name=\"")
-		.append(rowidParameterName)
+		.append(wrs.getColumnLabel(i))
 		.append("\" value=\"")
-		.append(wrs.getString(i))
-		.append("\" />");
+		.append(wrs.getRowid())
+		.append("\"");
+	    if(wrs.getString(i).equals(checkboxYesValue)) {
+		contents.append(" checked");
+	    }
+	    contents.append(" />");
 	    break;
 
 	case FieldTypes.PERCENT:
@@ -131,7 +157,6 @@ public abstract class WebResultFormatter {
 		contents.append(percentFormatter.format(wrs.getFloat(i)/100));
 	    } catch(SQLException e) {
 		// Non-numeric values cause a number-conversion problem
-		align.replace(0, align.length(), "center");
 		contents.append(wrs.getString(i));
 	    }
 	    break;
@@ -152,9 +177,12 @@ public abstract class WebResultFormatter {
 	    align.append("center");
 	    contents.append(wrs.getString(i));
 	    break;
+
+	case FieldTypes.ROWID:
+	    throw new ColumnNotDisplayableException();
 	}
     }
 
     public abstract void formatToStream(WebResultSet wrs, PrintWriter out) 
-	throws SQLException;
+	throws SQLException, NoRowidException;
 }

@@ -63,27 +63,34 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
     public void setDropdownsAbove(boolean  v) {this.dropdownsAbove = v;}
 
     public void formatToStream(WebResultSet wrs, PrintWriter out) 
-	throws SQLException {
+	throws SQLException, NoRowidException {
 	int numCols=wrs.getColumnCount();
-	boolean fcShowFirstColumn=wrs.getShowFirstColumn();
+	StringBuffer sb=new StringBuffer(256);
 
 	if(dropdownsAbove) {
 	    List choices=null;
 	    int i=1;
-	    if(!fcShowFirstColumn) i++;
-	    out.println("<table>");
+
+	    out.println("<table align=\"center\">");
 	    out.println(" <tr>");
 	    while(i<=numCols) {
-		choices=wrs.getColumnChoicesList(i);
-		if(choices != null) {
-		    out.print("  <td align=\"center\">");
-		    out.print(wrs.getColumnLabel(i));
-		    out.println("<br />");
-		    out.println(Web.makeSelectionList(wrs.getColumnChoicesName(i),
-						      choices,
-						      wrs.getColumnDefaultChoice(i),
-						      wrs.getColumnHasAnyAll(i)));
-		    out.println("  </td>");
+		sb.setLength(0);
+		try {
+		    choices=wrs.getColumnChoicesList(i);
+		    if(choices != null) {
+			sb.append("  <td align=\"center\">");
+			sb.append(wrs.getColumnLabel(i));
+			sb.append("<br />\n");
+			sb.append(Web.makeSelectionList(
+					  wrs.getColumnChoicesName(i),
+					  choices,
+					  wrs.getColumnDefaultChoice(i),
+					  wrs.getColumnHasAnyAll(i)));
+			sb.append("\n  </td>");
+		    }
+		    out.println(sb);
+		} catch(ColumnNotDisplayableException e) {
+		    // Column didn't get printed (which is good)
 		}
 		i++;
 	    }
@@ -91,33 +98,41 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	    out.println("</table>");
 	}
 
-	out.println("<table class=\"resultTable\">");
+	out.println("<table class=\"resultTable\" align=\"center\">");
 
-	out.print(" <tr class=\"resultTableHeading\">");
+	out.println(" <tr class=\"resultTableHeading\">");
 	for(int i=1; i<=numCols; i++) {
-	    out.print("  <th valign=\"bottom\">");
-	    if(!fcShowFirstColumn && i==1) {
-		out.print("&nbsp;");
-	    } else {
-		out.print(beautifyHeading(wrs.getColumnLabel(i)));
+	    sb.setLength(0);
+	    try {
+		sb.append("  <th valign=\"bottom\">");
+		sb.append(beautifyHeading(wrs.getColumnLabel(i)));
+		sb.append("</th>");
+		out.println(sb);
+	    } catch(ColumnNotDisplayableException e) {
+		// Column didn't get printed (which is good)
 	    }
-	    out.println("  </th>");
 	}
 	out.println(" </tr>");
 
 	if(dropdownsInline) {
 	    out.println(" <tr class=\"resultTableHeading\">");
 	    for(int i=1; i<=numCols; i++) {
-		List choices=wrs.getColumnChoicesList(i);
-		
-		out.print("  <td>");
-		if(choices != null) {
-		    out.print(Web.makeSelectionList(wrs.getColumnChoicesName(i),
-						    choices,
-						    wrs.getColumnDefaultChoice(i),
-						    wrs.getColumnHasAnyAll(i)));
+		sb.setLength(0);
+		try {
+		    List choices=wrs.getColumnChoicesList(i);
+		    sb.append("  <td>");
+		    if(choices != null) {
+			sb.append(Web.makeSelectionList(
+					  wrs.getColumnChoicesName(i),
+					  choices,
+					  wrs.getColumnDefaultChoice(i),
+					  wrs.getColumnHasAnyAll(i)));
+		    }
+		    sb.append("\n  </td>");
+		    out.println(sb);
+		} catch(ColumnNotDisplayableException e) {
+		    // Column didn't get printed (which is good)
 		}
-		out.println("  </td>");
 	    }
 	    out.println(" </tr>");
 	}
@@ -128,14 +143,20 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	while(wrs.next()) {
 	    out.println(" <tr class=\"resultTableData\">");
 	    for(int i=1; i<=numCols; i++) {
-		align.setLength(0);
-		contents.setLength(0);
-		getColumnFormatted(wrs, i, contents, align);
-		out.print("  <td align=\"");
-		out.print(align.toString());
-		out.print("\">");
-		out.print(contents.toString());
-		out.println("</td>");
+		sb.setLength(0);
+		try {
+		    align.setLength(0);
+		    contents.setLength(0);
+		    getColumnFormatted(wrs, i, contents, align);
+		    sb.append("  <td align=\"");
+		    sb.append(align);
+		    sb.append("\">");
+		    sb.append(contents);
+		    sb.append("</td>");
+		    out.println(sb);
+		} catch(ColumnNotDisplayableException e) {
+		    // Column didn't get printed (which is good)
+		}
 	    }
 	    out.println(" </tr>");
 	}
