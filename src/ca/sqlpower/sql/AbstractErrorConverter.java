@@ -19,6 +19,11 @@ public abstract class AbstractErrorConverter {
 	 */
 	public static final int UNKNOWN_COLUMN = 2;
 
+	/**
+	 * Used if the driver can't connect to the database server at all.
+	 */
+	public static final int SERVER_UNAVAILABLE = 3;
+
 	/** 
 	 * Used if an appropriate conversion for the database error
 	 * cannot be found

@@ -18,6 +18,8 @@ public class OracleErrorConverter extends AbstractErrorConverter {
 			return INVALID_LOGON;
 		case 17443 :
 			return INVALID_LOGON;
+		case 17002 :
+			return SERVER_UNAVAILABLE;
 		default :
 			return UNKNOWN_ERROR;
 		}
