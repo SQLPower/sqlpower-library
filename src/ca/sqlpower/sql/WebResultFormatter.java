@@ -219,6 +219,15 @@ public abstract class WebResultFormatter {
 			}
             break;
             
+        case FieldTypes.TEXT_DEFAULT_NONE:
+            align.append("left");
+            if(wrs.getString(i) == null || wrs.getString(i).equals("")){
+				contents.append("None");
+			} else {
+				contents.append(wrs.getString(i));
+			}
+            break;
+            
         case FieldTypes.MONEY:
             align.append("right");
             contents.append(moneyFormatter.format(wrs.getFloat(i)));
