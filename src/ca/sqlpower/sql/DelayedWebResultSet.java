@@ -97,7 +97,9 @@ public class DelayedWebResultSet extends WebResultSet {
 			System.out.println("MISS");
 			Statement stmt=con.createStatement();
 			results=new CachedRowSet();
-			results.populate(stmt.executeQuery(sqlQuery));
+			ResultSet rs = stmt.executeQuery(sqlQuery);
+			results.populate(rs);
+			stmt.close();
 			resultCache.put(sqlQuery, results);
 		}
 		applyResultSet(results, closeOldRS);
