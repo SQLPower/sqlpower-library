@@ -19,5 +19,12 @@ public interface DBConnectionSpecServer extends Remote {
 	 */
 	public Collection getAvailableDatabases() throws RemoteException;
 
+	public boolean checkPassword(String password) throws RemoteException;
+	
+
+		
+	public void setAvailableDatabases(Collection dbList, String oldPass, String newPass) 
+		throws RemoteException;
+
 }
 

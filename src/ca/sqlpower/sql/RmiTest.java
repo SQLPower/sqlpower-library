@@ -18,12 +18,14 @@ public class RmiTest {
     DBConnectionSpecServer obj = null; 
 
         try { 
-            obj = (DBConnectionSpecServer)Naming.lookup("///DBConnectionSpecServer"); 
+            obj = (DBConnectionSpecServer)Naming.lookup("//ford/DBConnectionSpecServer"); 
             message = obj.getAvailableDatabases();
             Iterator messageIt = message.iterator();
             while (messageIt.hasNext()) {
             	System.out.println(messageIt.next());
             }
+            System.out.println("passcheck: "+obj.checkPassword("mo"));
+            obj.setAvailableDatabases(message,"cow","cow");
         } catch (Exception e) { 
             System.out.println("exception: " + e.getMessage()); 
             e.printStackTrace(); 

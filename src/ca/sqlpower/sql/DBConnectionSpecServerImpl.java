@@ -7,6 +7,12 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 import java.io.*;
 
+import javax.xml.parsers.*;
+
+import org.apache.xml.serialize.OutputFormat;
+import org.apache.xml.serialize.XMLSerializer;
+import org.w3c.dom.*;
+
 /**
  * Implementation of the RMI interface used to get the database connection 
  * list remotely.
@@ -18,7 +24,9 @@ public class DBConnectionSpecServerImpl
 	extends UnicastRemoteObject
 	implements DBConnectionSpecServer {
 
-	protected static String xmlFileName = null;
+	Object fileLock = null;
+
+	protected String xmlFileName = null;
 
 	public DBConnectionSpecServerImpl() throws RemoteException {
 		super();
@@ -31,9 +39,8 @@ public class DBConnectionSpecServerImpl
 		Collection databases = null;
 		try {
 			InputStream xmlStream = new FileInputStream(xmlFileName);
-			databases=DBConnectionSpec.getDBSpecsFromInputStream(xmlStream);
-		}
-		catch (Exception e) {
+			databases = DBConnectionSpec.getDBSpecsFromInputStream(xmlStream);
+		} catch (Exception e) {
 			databases = null;
 			e.printStackTrace();
 			// could not get the database list, not much we can do.
@@ -51,26 +58,118 @@ public class DBConnectionSpecServerImpl
 	 *      -DdatabasesFile=../databases.xml \
 	 *      ca.sqlpower.sql.DBConnectionSpecServerImpl
 	 */
-	public static void main(String args[]) {
-	
-		// XXX: THIS WILL NEED TO BE PROPERLY CONFIGURED IN THE FUTURE
+	public static void main(String args[]) throws RemoteException{
+
 		// Create and install a security manager
-//		if (System.getSecurityManager() == null) {
-//		    System.setSecurityManager(new RMISecurityManager());
-//		}
-
-		xmlFileName = System.getProperty("databasesFile");
-	
-		try {
-		    DBConnectionSpecServerImpl obj = new DBConnectionSpecServerImpl();
-	
-		    Naming.rebind("///DBConnectionSpecServer", obj);
-		    System.out.println("DBConnectionSpecServer bound in registry");
-		} catch (Exception e) {
-		    System.out.println("DBConnectionSpecImpl err: " + e.getMessage());
-		    e.printStackTrace();
+		if (System.getSecurityManager() == null) {
+			System.setSecurityManager(new RMISecurityManager());
 		}
-    }
 
+		DBConnectionSpecServerImpl obj =
+				new DBConnectionSpecServerImpl();
+
+		obj.xmlFileName = System.getProperty("databasesFile");
+		if (obj.xmlFileName == null) {
+			System.out.println(
+				"no databases file specified.  Please add -DdatabaseFile=filename to the command line.");
+		} else {
+			try {
+
+				Naming.rebind("///DBConnectionSpecServer", obj);
+				System.out.println("DBConnectionSpecServer bound in registry");
+			} catch (Exception e) {
+				System.out.println(
+					"DBConnectionSpecImpl err: " + e.getMessage());
+				e.printStackTrace();
+			}
+		}
+	}
+
+
+	public void setAvailableDatabases(Collection dbList, String oldPass, String newPass)
+		throws RemoteException {
+		try {
+			writeDBSpecsToOutputStream(dbList, oldPass, newPass);
+		} catch (Exception e) {
+			// not much we can do on server side
+			e.printStackTrace();
+		}
+	}
+
+	public boolean checkPassword(String argPassword) throws RemoteException {
+		try {
+			InputStream xmlStream = new FileInputStream(xmlFileName);
+			DocumentBuilder db =
+				DocumentBuilderFactory.newInstance().newDocumentBuilder();
+			Document d = db.parse(xmlStream);
+			NodeList list = d.getElementsByTagName("databases");
+			Element e = (Element) list.item(0);
+			String password = e.getAttribute("password");
+			return argPassword.equals(password);
+		} catch (Exception e) {
+			// not much we can do on the remote side.
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	protected synchronized void writeDBSpecsToOutputStream(
+		Collection dbspecs, String oldPassword, String newPassword)
+		throws ParserConfigurationException, IOException {
+
+		if (!checkPassword(oldPassword)) {
+			return;
+		}
+		
+		OutputStream xmlStream = new FileOutputStream(xmlFileName);
+
+		DocumentBuilder db =
+			DocumentBuilderFactory.newInstance().newDocumentBuilder();
+		Document d = db.newDocument();
+		Element databases = d.createElement("databases");
+		if (newPassword != null) {
+			databases.setAttribute("password",newPassword);
+		} else {
+			databases.setAttribute("password",oldPassword);
+		}
+		
+		Iterator dbIter = dbspecs.iterator();
+		while (dbIter.hasNext()) {
+			DBConnectionSpec dbcs = (DBConnectionSpec) dbIter.next();
+			Element dbNode = d.createElement("database");
+			dbNode.setAttribute("name",dbcs.getName());
+			if (dbcs.getDisplayName() != null) {
+				Element displayName = d.createElement("display-name");
+				displayName.appendChild(d.createTextNode(dbcs.getDisplayName()));
+				dbNode.appendChild(displayName);
+			}
+			if (dbcs.getDriverClass() != null) {
+				Element driverClass = d.createElement("driver-class");
+				driverClass.appendChild(d.createTextNode(dbcs.getDriverClass()));
+				dbNode.appendChild(driverClass);
+			}
+			if (dbcs.getUrl() != null) {
+				Element url = d.createElement("url");
+				url.appendChild(d.createTextNode(dbcs.getUrl()));
+				dbNode.appendChild(url);
+			}
+			if (dbcs.getUser() != null) {
+				Element user = d.createElement("user");
+				user.appendChild(d.createTextNode(dbcs.getUser()));
+				dbNode.appendChild(user);
+			}
+			if (dbcs.getPass() != null) {
+				Element pass = d.createElement("pass");
+				pass.appendChild(d.createTextNode(dbcs.getPass()));
+				dbNode.appendChild(pass);
+			}
+			databases.appendChild(dbNode);
+		}
+		d.appendChild(databases);
+		OutputFormat of = new OutputFormat();
+		of.setIndenting(true);
+		XMLSerializer serializer = new XMLSerializer(xmlStream, of);
+		serializer.serialize(d);
+		xmlStream.close();
+	}
 }
-
