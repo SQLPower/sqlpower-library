@@ -481,9 +481,13 @@ public class WebResultSet implements Cloneable {
     }
 
     /**
-     * @deprecated In general, the names of columns are expected to
-     * change frequently.  Use the getString(int) method instead of
-     * this one.  Also, it does not support the columnFilter feature.
+	 * Never use this.
+	 *
+     * @deprecated Use the getString(int) method instead of this one,
+     * or don't use a WebResultSet.  String-based column specification
+     * does not support the columnFilter feature.  Subclasses that
+     * supply other special behaviours such as derived columns,
+     * security, and more will also be incompatible with this method.
      */
     public String getString(String colName) throws SQLException {
         return rs.getString(colName);
@@ -508,8 +512,47 @@ public class WebResultSet implements Cloneable {
 		return rs.getObject(colNo);
 	}
 
+    /**
+	 * Never use this.
+	 *
+     * @deprecated Use the getObject(int) method instead of this one,
+     * or don't use a WebResultSet.  String-based column specification
+     * does not support the columnFilter feature.  Subclasses that
+     * supply other special behaviours such as derived columns,
+     * security, and more will also be incompatible with this method.
+     */
     public Object getObject(String colName) throws SQLException {
         return rs.getObject(colName);
+    }
+
+    /**
+	 * Never use this.
+	 *
+     * @deprecated Use the getDouble(int) method instead of this one,
+     * or don't use a WebResultSet.  String-based column specification
+     * does not support the columnFilter feature.  Subclasses that
+     * supply other special behaviours such as derived columns,
+     * security, and more will also be incompatible with this method.
+     */
+    public Double getDouble(String colName) throws SQLException {
+         double val =rs.getDouble(colName);
+		if (rs.wasNull()) {
+			return null;
+		} else {
+			return new Double(val);
+		}
+    }
+
+	/**
+	 * Returns a Double of the given column on the current row.
+	 */
+    public Double getDouble(int colNo) throws SQLException {
+        double val = rs.getDouble(colNo);
+		if (rs.wasNull()) {
+			return null;
+		} else {
+			return new Double(val);
+		}
     }
 
 	/**
@@ -518,6 +561,9 @@ public class WebResultSet implements Cloneable {
 	 * format, and returning the parsed date.  I have no idea why it
 	 * doesn't use the underlying ResultSet.getDate(int) method, but
 	 * there must be a good reason...
+	 *
+	 * <p>I think it might be because of a funny timezone problem in
+	 * oracle 8i.
 	 */
     public java.sql.Date getDate(int colNo) throws SQLException {
     	String dateStr = rs.getString(colNo);
