@@ -326,7 +326,10 @@ public abstract class WebResultFormatter {
 				}
  				contents.append("\">");
  				textFormat.format(rowValues, contents, null);
- 				contents.append("</a><br>");
+ 				contents.append("</a>");
+ 				if (hlIter.hasNext()) {
+ 					contents.append("<br>");
+ 				}
  			}
 			break;
 
