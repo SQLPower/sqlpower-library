@@ -35,7 +35,7 @@ public class WebResultFormFormatter extends WebResultFormatter {
 	throws SQLException {
 	int numCols=wrs.getColumnCount();
 	int cell=0, col=0;;
-	boolean fcRowid=wrs.getFirstColumnIsRowid();
+	boolean fcShowFirstColumn=wrs.getShowFirstColumn();
 
 	if(!wrs.next()) {
 	    return;
@@ -44,7 +44,7 @@ public class WebResultFormFormatter extends WebResultFormatter {
 	out.println("<table>");
 	out.println(" <tr>");
 	do {
-	    if(fcRowid && cell==0) {
+	    if(!fcShowFirstColumn && cell==0) {
 		cell++;
 	    }
 	    out.println("  <td align=\"right\">");

@@ -7,7 +7,7 @@ public class WebResultSet {
     protected ResultSet rs;
     protected ResultSetMetaData rsmd;
     protected String sqlQuery;
-    protected boolean firstColumnIsRowid;
+    protected boolean showFirstColumn;
     protected List[] columnChoices;
     protected String[] columnChoicesName;
     protected String[] columnDefaultChoice;
@@ -18,7 +18,7 @@ public class WebResultSet {
 	rs=results;
 	rsmd=rs.getMetaData();
 	sqlQuery=query;
-	firstColumnIsRowid=false;
+	showFirstColumn=true;
 
 	int cols=rsmd.getColumnCount();
 	columnChoices=new List[cols];
@@ -60,15 +60,15 @@ public class WebResultSet {
 	return columnDefaultChoice[colNo-1];
     }
 
-    public void setFirstColumnIsRowid(boolean flag) {
-	firstColumnIsRowid=flag;
-	if(firstColumnIsRowid) {
+    public void setShowFirstColumn(boolean flag) {
+	showFirstColumn=flag;
+	if(!showFirstColumn) {
 	    setColumnType(1, FieldTypes.RADIO);
 	}
     }
 
-    public boolean getFirstColumnIsRowid() {
-	return firstColumnIsRowid;
+    public boolean getShowFirstColumn() {
+	return showFirstColumn;
     }
     
     /**

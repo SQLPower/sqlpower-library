@@ -65,12 +65,12 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
     public void formatToStream(WebResultSet wrs, PrintWriter out) 
 	throws SQLException {
 	int numCols=wrs.getColumnCount();
-	boolean fcRowid=wrs.getFirstColumnIsRowid();
+	boolean fcShowFirstColumn=wrs.getShowFirstColumn();
 
 	if(dropdownsAbove) {
 	    List choices=null;
 	    int i=1;
-	    if(fcRowid) i++;
+	    if(!fcShowFirstColumn) i++;
 	    out.println("<table>");
 	    out.println(" <tr>");
 	    while(i<=numCols) {
@@ -96,7 +96,7 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	out.print(" <tr class=\"resultTableHeading\">");
 	for(int i=1; i<=numCols; i++) {
 	    out.print("  <th valign=\"bottom\">");
-	    if(fcRowid && i==1) {
+	    if(!fcShowFirstColumn && i==1) {
 		out.print("&nbsp;");
 	    } else {
 		out.print(beautifyHeading(wrs.getColumnLabel(i)));
