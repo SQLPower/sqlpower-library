@@ -66,8 +66,8 @@ public class PoolableStatementClosingConnection extends PoolableConnection {
 			}
 		}
 		System.out.println("PSCC: attempted "+attemptedToClose+", closed "+closed+", closing super");
+		openStatements.clear();
 		super.close();
 		System.out.println("PSCC: done");
 	}
 }
-
