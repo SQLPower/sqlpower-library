@@ -80,7 +80,7 @@ import java.text.*;
  * @version $Revision$ $Date$
  */
 
-public class LabelValueBean {
+public class LabelValueBean implements java.io.Serializable {
 
     /**
      * Construct a new LabelValueBean with the specified values.
