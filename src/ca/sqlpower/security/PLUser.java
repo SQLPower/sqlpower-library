@@ -2,8 +2,11 @@ package ca.sqlpower.security;
 
 import java.sql.*;
 import java.util.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import ca.sqlpower.sql.*;
+import ca.sqlpower.util.ByteColonFormat;
 import ca.sqlpower.dashboard.DBConnection;
 
 /**
@@ -28,6 +31,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
     protected java.sql.Date lastUpdateDate;
     protected String lastUpdateUser;
     protected String lastUpdateOsUser;
+	protected Boolean omniscient;
 
 	/**
 	 * Creates a new user object with no user id.  For internal use
@@ -46,6 +50,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
         lastUpdateDate=null;
         lastUpdateUser=null;
 		lastUpdateOsUser=null;
+		omniscient=null;
     }
 
 	/**
@@ -273,6 +278,23 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 		if (userId == null && password != null) {
 			throw new IllegalArgumentException("You can't look up a user by password");
 		}
+		
+		MessageDigest md5 = null;
+		StringBuffer cryptedPassword = null;
+		if (password != null) {
+			try {
+				md5 = MessageDigest.getInstance("MD5");
+			} catch (NoSuchAlgorithmException e) {
+				throw new PLSecurityException(PLSecurityManager.LOGIN_PERMISSION,
+											  PLSecurityManager.INVALID_MANAGER,
+											  null);
+			}
+			byte[] hashBytes = md5.digest(password.getBytes());
+			ByteColonFormat bcf = new ByteColonFormat();
+			bcf.setUsingColons(false);
+			cryptedPassword = new StringBuffer(32);
+			bcf.format(hashBytes, cryptedPassword, null);
+		}
 
 		List results = new LinkedList();
         Statement stmt = null;
@@ -287,7 +309,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			if (userId != null) {
 				sql.append(" WHERE user_id = ").append(SQL.quote(userId));
 				if (password != null) {
-					sql.append(" AND (password = ").append(SQL.quote(password));
+					sql.append(" AND (password = ").append(SQL.quote(cryptedPassword.toString()));
 					sql.append(" OR password IS NULL)");
 				}
 			}
@@ -295,7 +317,8 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 
             stmt = con.createStatement();
             ResultSet rs = stmt.executeQuery(sql.toString());
-
+			System.out.println("PLUser.find: "+sql);
+			
 			boolean hasRows = rs.next();
             if ( (!hasRows) && (userId != null) ) { 
 				throw new PLSecurityException(PLSecurityManager.LOGIN_PERMISSION,
@@ -349,6 +372,27 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 	 */
 	public List getGroups(Connection con) throws SQLException {
 		return PLGroup.findByUser(con, this);
+	}
+
+	public List getGroupNames(Connection con) throws SQLException {
+
+		Statement stmt = null;
+		ResultSet rs = null;
+		List results = new LinkedList();
+		String sql = "SELECT group_name FROM user_group WHERE user_id="+SQL.quote(getUserId());
+
+		try {
+			stmt = con.createStatement();
+			rs = stmt.executeQuery(sql);
+			while (rs.next()) {
+				results.add(rs.getString(1));
+			}
+		} finally {
+			if (rs != null) rs.close();
+			if (stmt != null) stmt.close();
+		}
+
+		return results;
 	}
 
 	// GET and SET methods go below this line
@@ -432,6 +476,36 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
     public String getLastUpdateOsUser() {
         return lastUpdateOsUser;
     }
+
+	/**
+	 * Checks if this user is omniscient.  Omniscient users can see
+	 * all data regardless of data filtering/subsetting restrictions.
+	 * This method only checks the database the first time it is used
+	 * (for the current user instance), so feel free to call it many
+	 * times.
+	 */
+	public boolean isOmniscient(Connection con) throws SQLException {
+		if (omniscient == null) {
+			Statement stmt = null;
+			ResultSet rs = null;
+			try {
+				stmt = con.createStatement();
+				rs = stmt.executeQuery("SELECT 1 FROM user_group WHERE user_id="
+									   +SQL.quote(getUserId())+" AND group_name="
+									   +SQL.quote(PLGroup.OMNISCIENT_GROUP_NAME));
+				if (rs.next()) {
+					omniscient = new Boolean(true);
+				} else {
+					omniscient = new Boolean(false);
+				}
+			} finally {
+				if (rs != null) rs.close();
+				if (stmt != null) stmt.close();
+			}
+		}
+		System.out.println("PLUser.isOmniscient() for "+getUserId()+" returns "+omniscient);
+		return omniscient.booleanValue();
+	}
 
 	/**
 	 * For the DatabaseObject interface.
