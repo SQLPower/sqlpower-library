@@ -23,6 +23,8 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
     private boolean dropdownsAbove;
     private NumberFormat numberFormatter;
     private NumberFormat moneyFormatter;
+    private NumberFormat percentFormatter;
+    private DateFormat dateFormatter;
 
     public WebResultHTMLFormatter() {
 	super();
@@ -30,6 +32,8 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	dropdownsAbove=true;
 	numberFormatter=new DecimalFormat("#,##0.#");
 	moneyFormatter=new DecimalFormat("$#,##0.00");
+	percentFormatter=new DecimalFormat("0%");
+	dateFormatter=DateFormat.getInstance();
     }
     
     /**
@@ -72,6 +76,14 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 
     public void setMoneyFormatter(NumberFormat v) {
 	moneyFormatter=v;
+    }
+
+    public void setPercentFormatter(NumberFormat v) {
+	percentFormatter=v;
+    }
+
+    public void setDateFormatter(DateFormat v) {
+	dateFormatter=v;
     }
 
     public void formatToStream(WebResultSet wrs, PrintWriter out) 
@@ -185,6 +197,22 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 			+wrs.getString(i)
 			+"\" />";
 		    break;		    
+
+		case FieldTypes.PERCENT:
+		    tAlign="right";
+		    contents=percentFormatter.format(wrs.getFloat(i)/100);
+		    break;
+
+		case FieldTypes.DATE:
+		    tAlign="center";
+		    java.sql.Date date=wrs.getDate(i);
+		    if(date==null) {
+			contents="(null)";
+		    } else {
+			contents=dateFormatter
+			    .format(new java.util.Date(date.getTime()));
+		    }
+		    break;
 		}
 
 		out.print("  <td align=\"");

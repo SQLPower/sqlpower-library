@@ -120,7 +120,7 @@ public class WebResultSet {
 	return rs.getString(colNum);
     }
 
-    public java.sql.Date getDate(String colNum) throws SQLException {
+    public java.sql.Date getDate(int colNum) throws SQLException {
 	return rs.getDate(colNum);
     }
 
