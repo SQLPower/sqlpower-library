@@ -392,20 +392,22 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	
 	switch(type) {
 	case FieldTypes.RADIO:
-	    align.append("center");
-	    contents.append("<input type=\"radio\" name=\"")
-		.append(wrs.getColumnLabel(i))
-		.append("\" value=\"")
-		.append(wrs.getRowid())
-		.append("\" onClick=\"");
-	    if(extraJavaScript[FieldTypes.RADIO] != null) {
-		contents.append(extraJavaScript[FieldTypes.RADIO]);
+	    if(wrs.getString(i) != null) {
+		align.append("center");
+		contents.append("<input type=\"radio\" name=\"")
+		    .append(wrs.getColumnLabel(i))
+		    .append("\" value=\"")
+		    .append(wrs.getRowid())
+		    .append("\" onClick=\"");
+		if(extraJavaScript[FieldTypes.RADIO] != null) {
+		    contents.append(extraJavaScript[FieldTypes.RADIO]);
+		}
+		contents.append("; highlightRow(this, ")
+		    .append("'00ff00',").append("'ff00ff'")
+		    .append("); this.form.submit()\" />");
 	    }
-	    contents.append("; highlightRow(this, ")
-		.append("'00ff00',").append("'ff00ff'")
-		.append("); this.form.submit()\" />");
 	    break;
-
+		
 	case FieldTypes.CHECKBOX:
 	    align.append("center");
 	    if(wrs.getString(i) != null) {
