@@ -8,6 +8,7 @@ public class WebResultSet {
     protected ResultSetMetaData rsmd;
     protected String sqlQuery;
     protected List[] columnChoices;
+    protected List[] columnMutexList;
     protected String[] columnChoicesName;
     protected String[] columnDefaultChoice;
     protected boolean[] columnHasAny;
@@ -22,6 +23,7 @@ public class WebResultSet {
 
 	int cols=rsmd.getColumnCount();
 	columnChoices=new List[cols];
+	columnMutexList=new List[cols];
 	columnChoicesName=new String[cols];
 	columnDefaultChoice=new String[cols];
 	columnHasAny=new boolean[cols];
@@ -77,21 +79,20 @@ public class WebResultSet {
 	columnChoices[colNo-1]=choicesList;
     }
 
+    public List getColumnChoicesList(int colNo) {
+	return columnChoices[colNo-1];
+    }
+
+    public void setColumnMutexList(int colNo, List mutexList) {
+	columnMutexList[colNo-1]=mutexList;
+    }
+
+    public List getColumnMutexList(int colNo) {
+	return columnMutexList[colNo-1];
+    }
+
     public void setColumnChoicesName(int colNo, String choicesName) {
 	columnChoicesName[colNo-1]=choicesName;
-    }
-
-    public void setColumnDefaultChoice(int colNo, String defaultChoice) {
-	columnDefaultChoice[colNo-1]=defaultChoice;
-    }
-
-    public List getColumnChoicesList(int colNo)
-	throws ColumnNotDisplayableException {
-	if(colNo == rowidColNo) {
-	    throw new ColumnNotDisplayableException();
-	} else {
-	    return columnChoices[colNo-1];
-	}
     }
 
     public String getColumnChoicesName(int colNo)
@@ -101,6 +102,10 @@ public class WebResultSet {
 	} else {
 	    return columnChoicesName[colNo-1];
 	}
+    }
+
+    public void setColumnDefaultChoice(int colNo, String defaultChoice) {
+	columnDefaultChoice[colNo-1]=defaultChoice;
     }
 
     public String getColumnDefaultChoice(int colNo)
@@ -202,27 +207,6 @@ public class WebResultSet {
 	}
     }
 
-    // EXPOSED RESULTSET METHODS ARE BELOW HERE
-    public boolean next() throws SQLException {
-	return rs.next();
-    }
-
-    public String getString(String colName) throws SQLException {
-	return rs.getString(colName);
-    }
-
-    public String getString(int colNo) throws SQLException {
-	return rs.getString(colNo);
-    }
-
-    public java.sql.Date getDate(int colNo) throws SQLException {
-	return rs.getDate(colNo);
-    }
-
-    public float getFloat(int colNo) throws SQLException {
-	return rs.getFloat(colNo);
-    }
-
     public String toString() {
 	StringBuffer sb=new StringBuffer(1024);
 	int numCols=0;
@@ -249,5 +233,36 @@ public class WebResultSet {
 	    }
 	}
 	return sb.toString();
+    }
+
+    // EXPOSED RESULTSET METHODS ARE BELOW HERE
+    public boolean next() throws SQLException {
+	return rs.next();
+    }
+
+    public String getString(String colName) throws SQLException {
+	return rs.getString(colName);
+    }
+
+    public String getString(int colNo) throws SQLException {
+	return rs.getString(colNo);
+    }
+
+    public java.sql.Date getDate(int colNo) throws SQLException {
+	return rs.getDate(colNo);
+    }
+
+    public float getFloat(int colNo) throws SQLException {
+	return rs.getFloat(colNo);
+    }
+
+    /**
+     * Closes the JDBC ResultSet's Statement object, thereby freeing
+     * the database cursor.  Cursors are a limited resource, so it is
+     * important to do this explicitly rather than waiting for garbage
+     * collection.
+     */
+    public void close() throws SQLException {
+	rs.getStatement().close();
     }
 }

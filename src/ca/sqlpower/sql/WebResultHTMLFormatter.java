@@ -167,12 +167,35 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 
 	StringBuffer align=new StringBuffer(10);
 	StringBuffer contents=new StringBuffer(50);
+	boolean mutexOnThisRow=false;
+	int mutexRowNum=0;
 
 	while(wrs.next()) {
 	    out.println(" <tr class=\"resultTableData\">");
 	    for(int i=1; i<=numCols; i++) {
 		sb.setLength(0);
-		try {
+
+		if(wrs.getColumnType(i) == FieldTypes.MUTEX_CHECKBOX) {
+		    try {
+			sb.append("<td align=\"center\">");
+			if(wrs.getString(i) != null) {
+			    mutexOnThisRow=true;
+			    sb.append("<input type=\"checkbox\" name=\"");
+			    sb.append(wrs.getColumnLabel(i));
+			    sb.append("\" onClick=\"");
+			    sb.append(mutexBoxes(wrs.getColumnMutexList(i), mutexRowNum));
+			    sb.append("\"");
+			    if(wrs.getString(i).equals(checkboxYesValue)) {
+				sb.append(" checked");
+			    }
+			    sb.append(" />");
+			}
+			sb.append("</td>");
+			out.println(sb);			
+		    } catch(ColumnNotDisplayableException e) {
+			// Never happens
+		    }
+		} else try {
 		    align.setLength(0);
 		    contents.setLength(0);
 		    getColumnFormatted(wrs, i, contents, align);
@@ -187,8 +210,27 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 		}
 	    }
 	    out.println(" </tr>");
+
+	    // Increment the rows-with-mutexes count if necessary
+	    if(mutexOnThisRow) {
+		mutexRowNum++;
+	    }
+	    mutexOnThisRow=false;
 	}
 	out.println("</table>");
 	out.flush();
+    }
+
+    protected StringBuffer mutexBoxes(List mutexList, int mutexRowNum) {
+	StringBuffer sb=new StringBuffer(40);
+	ListIterator it=mutexList.listIterator();
+	String curVal;
+
+	while(it.hasNext()) {
+	    curVal=(String)it.next();
+	    sb.append("form.").append(curVal).append("[")
+		.append(mutexRowNum).append("].checked=false; ");
+	}
+	return sb;
     }
 }

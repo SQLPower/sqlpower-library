@@ -183,6 +183,10 @@ public abstract class WebResultFormatter {
 	case FieldTypes.ROWID:
 	case FieldTypes.DUMMY:
 	    throw new ColumnNotDisplayableException();
+	    //no break because throw makes it unnecessary
+
+	case FieldTypes.MUTEX_CHECKBOX:
+	    throw new UnsupportedOperationException();
 	}
     }
 

@@ -91,9 +91,26 @@ public class FieldTypes {
     public static final int DUMMY = 12;
 
     /**
+     * Indicates a field representing a checkbox which is mutually
+     * exclusive with all other MUTEX_CHECKBOXes in its row (see
+     * WARNINGs).  Note that this is not the same as RADIO because the
+     * exclusion applies to rowss, not columns; and it is possible to
+     * deselect all boxes in a group.<p>
+     *
+     * WARNING! The MUTEX_CHECKBOX type is only supported (currently)
+     * by the WebResultHTMLFormatter.  Using it elsewhere will signal
+     * an UnsupportedOperationException when you try to format the
+     * WebResultSet.<p>
+     *
+     * SECOND WARNING! The checkboxes will behave incorrectly if there
+     * is any row where some (but not all) checkboxes are NULL.
+     */
+    public static final int MUTEX_CHECKBOX = 13;
+
+    /**
      * It is guaranteed that no type code's value exceeds LAST_TYPE.
      */
-    public static final int LAST_TYPE=12;
+    public static final int LAST_TYPE=13;
 
     /**
      * This class is just a container for the type values; it cannot

@@ -1,5 +1,6 @@
 package ca.sqlpower.sql;
 
+//import ca.sqlpower.util.*;
 import java.beans.*;
 import java.sql.*;
 import java.io.*;
@@ -19,6 +20,13 @@ import java.io.*;
  * @see java.sql.Connection
  */
 public class User implements java.io.Serializable {
+
+    /**
+     * for debugging only
+     */
+    //private int numStatements=0;
+    //Logger dbug=new Logger(System.err, "User: ");
+
     protected String dburl;
     protected String ID;
     protected String pass;
@@ -118,6 +126,22 @@ public class User implements java.io.Serializable {
      * @see java.sql.Connection
      */
     public Statement createStatement() throws SQLException {
+	//incrementStatements();
+	//dbug.log(getNumStatements()+" open statements");
 	return con.createStatement();
     }
+
+    /*
+      public synchronized void incrementStatements() {
+      numStatements++;
+      }
+      
+      public synchronized void decrementStatements() {
+      numStatements--;
+      }
+      
+      public synchronized int getNumStatements() {
+      return numStatements;
+      }
+    */
 }
