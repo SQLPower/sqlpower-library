@@ -24,6 +24,7 @@ public class PLGroup implements DatabaseObject, java.io.Serializable {
 	protected java.sql.Date createDate;
 
 	public final static String ADMIN_GROUP="PL_ADMIN";
+	public final static String OMNISCIENT_GROUP_NAME="PL_SUPERUSER";
 
 	/**
 	 * Creates a new group object with all-null attributes.
@@ -428,7 +429,7 @@ public class PLGroup implements DatabaseObject, java.io.Serializable {
 
 	public String toString() {
 		StringBuffer meString=new StringBuffer();
-		meString.append("[User: ");
+		meString.append("[Group: ");
 		meString.append("groupName=").append(groupName).append(", ");
 		meString.append("groupDesc=").append(groupDesc).append(", ");
 		meString.append("lastUpdateDate=").append(lastUpdateDate).append(", ");
