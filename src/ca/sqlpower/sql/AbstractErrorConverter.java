@@ -30,13 +30,18 @@ public abstract class AbstractErrorConverter {
 	 */
 	public static final int BAD_PL_SCHEMA = 4;
 
+	/**
+	 * Used if the DMBS or JDBC driver throws an exception due to a
+	 * syntax error in a SQL query.
+	 */
+	public static final int SQL_SYNTAX_ERROR = 5;
+
 	/** 
 	 * Used if an appropriate conversion for the database error
 	 * cannot be found.
 	 */
 	public static final int UNKNOWN_ERROR = -1;
 	
-
 	/**
 	 * Converts a SQLException to a SQLPower error code.
 	 */
