@@ -36,7 +36,7 @@ public abstract class WebResultFormatter {
         numberFormatter=new DecimalFormat("#,##0.##############");
         moneyFormatter=new DecimalFormat("$#,##0.00");
         percentFormatter=new DecimalFormat("0%");
-        dateFormatter=DateFormat.getDateInstance();
+        dateFormatter=new SimpleDateFormat("yyyy-MM-dd");
         rowHighlightColour=Color.yellow;
         rowNormalColour=new Color(0xEE, 0xEE, 0xEE);
     }
