@@ -2,17 +2,18 @@ package ca.sqlpower.sql;
 
 import java.sql.*;
 import java.util.*;
+import ca.sqlpower.util.*;
 // The CachedRowSet from Sun is still Early Access, so we can't use it in production
 import sun.jdbc.rowset.*;
 
 public class DelayedWebResultSet extends WebResultSet {
+
 	/**
 	 * Holds the set of cached resultset objects (keyed on SQL query
-	 * string).  Currently, it's just a synchronized HashMap, but this
-	 * will be replaced with a more featureful cache-specific
-	 * implementation of java.util.Map in the future.
+	 * string).  The maximum number of members for this cache is
+	 * specified as 100.
 	 */
-	protected static Map resultCache=Collections.synchronizedMap(new HashMap());
+	protected static Map resultCache=Collections.synchronizedMap(new LeastRecentlyUsedCache(100));
 
 	protected int givenColCount;
 
@@ -86,19 +87,12 @@ public class DelayedWebResultSet extends WebResultSet {
 		throws IllegalStateException, SQLException {
 		this.con = con;
 
-		System.out.print(
-			"DelayedResultSet.execute: Finding results in cache of "
-				+ resultCache.size()
-				+ " items: ");
-
 		CachedRowSet results = (CachedRowSet) resultCache.get(sqlQuery);
 		if (results != null) {
-			System.out.println("HIT");
 			results = (CachedRowSet) results.createShared();
 			results.beforeFirst();
 			// reset cursor, which is likely afterLast right now
 		} else {
-			System.out.println("MISS");
 			Statement stmt = null;
 			try {
 				stmt = con.createStatement();
@@ -106,8 +100,9 @@ public class DelayedWebResultSet extends WebResultSet {
 				ResultSet rs = stmt.executeQuery(sqlQuery);
 				results.populate(rs);
 			} finally {
-				if (stmt != null)
+				if (stmt != null) {
 					stmt.close();
+				}
 			}
 			resultCache.put(sqlQuery, results);
 		}
