@@ -12,12 +12,14 @@ public class OracleErrorConverter extends AbstractErrorConverter {
 	 */
 	public int convert(SQLException e) {
 		switch (e.getErrorCode()) {
-			case 1017 :
-				return INVALID_LOGON;
-			case 17443 :
-				return INVALID_LOGON;
-			default :
-				return UNKNOWN_ERROR;
+		case 904: 
+			return UNKNOWN_COLUMN;
+		case 1017 :
+			return INVALID_LOGON;
+		case 17443 :
+			return INVALID_LOGON;
+		default :
+			return UNKNOWN_ERROR;
 		}
 	}
 }

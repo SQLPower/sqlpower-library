@@ -9,6 +9,8 @@ public class SQLServerErrorConverter extends AbstractErrorConverter {
 	
 	public int convert(SQLException e) {
 		switch (e.getErrorCode()) {
+		case 207:
+			return UNKNOWN_COLUMN;
 		case 18456:
 			return INVALID_LOGON;
 		default:

@@ -14,6 +14,11 @@ public abstract class AbstractErrorConverter {
 	 */
 	public static final int INVALID_LOGON = 1;
 
+	/**
+	 * Used if a query fails due to a missing or unknown column name.
+	 */
+	public static final int UNKNOWN_COLUMN = 2;
+
 	/** 
 	 * Used if an appropriate conversion for the database error
 	 * cannot be found
