@@ -153,6 +153,7 @@ public class DBConnectionSpecServerImpl
 			Element dbNode = d.createElement("database");
 			dbNode.setAttribute("name",dbcs.getName());
 			dbNode.setAttribute("seqNo",Integer.toString(dbcs.getSeqNo()));
+			dbNode.setAttribute("singleLogin",dbcs.isSingleLogin() ? "true" : "false");
 			if (dbcs.getDisplayName() != null) {
 				Element displayName = d.createElement("display-name");
 				displayName.appendChild(d.createTextNode(dbcs.getDisplayName()));

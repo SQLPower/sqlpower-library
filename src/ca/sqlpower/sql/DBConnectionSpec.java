@@ -15,18 +15,55 @@ import java.util.*;
 public class DBConnectionSpec implements Serializable, Comparable {
 
 	/**
-	 * this is the sequence number used to sort in the list
+	 * If true, this DBCS describes a single-database-user,
+	 * multi-dashboard-user connection.  (This improves connection
+	 * pooling performance, and eases max named users enforcement).
+	 * Specifically, the username and password in this DBCS describe
+	 * the RDBMS username and password, and will be the same for all
+	 * users (in all likelihood, they were loaded from databases.xml).
+	 * The username and password entered by the user on the login
+	 * screen will be user separately to validate against an entry in
+	 * the PL_USER table.
+	 */
+	boolean singleLogin;
+
+	/**
+	 * The sequence number used to sort in the list.
 	 */
 	int seqNo;
+
 	String name;
 	String displayName;
 	String driverClass;
 	String url;
+
+	/**
+	 * The RDMBS user name.
+	 *
+	 * @see #singleLogin
+	 */
 	String user;
+
+	/**
+	 * The RDMBS password.
+	 *
+	 * @see #singleLogin
+	 */
 	String pass;
 
+	/**
+	 * Prints some info from this DBCS.  For use in debugging.
+	 */
 	public String toString() {
-		return "DBConnectionSpec: "+name+", "+displayName+", "+driverClass+", "+url;
+		return "DBConnectionSpec: singleLogin="+singleLogin+", "+name+", "+displayName+", "+driverClass+", "+url;
+	}
+
+	public boolean isSingleLogin() {
+		return singleLogin;
+	}
+
+	public void setSingleLogin(boolean v) {
+		singleLogin = v;
 	}
 
 	/**

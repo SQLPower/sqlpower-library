@@ -70,7 +70,7 @@ public class DBCSSourceSupport {
 		throws DatabaseListReadException {
   	    return getDBSpecsFromInputStream(xmlStream);
 	}
-
+	
 	/**
 	 * Uses a list of available databases (set up by a sysadmin) to
 	 * generate a Collection of DBConnectionSpec objects.
@@ -124,6 +124,12 @@ public class DBCSSourceSupport {
 		DBConnectionSpec spec=new DBConnectionSpec();
 		spec.setName(dbElem.getAttributes().getNamedItem("name").getNodeValue());
 		spec.setSeqNo(Integer.parseInt(dbElem.getAttributes().getNamedItem("seqNo").getNodeValue()));
+		Node singleLoginAttr = dbElem.getAttributes().getNamedItem("singleLogin");
+		if (singleLoginAttr != null) {
+			spec.setSingleLogin(Boolean.valueOf(singleLoginAttr.getNodeValue()).booleanValue());
+		} else {
+			spec.setSingleLogin(false);
+		}
 		NodeList databaseProperties=dbElem.getChildNodes();
 		for(int j=0; j<databaseProperties.getLength(); j++) {
 			Node databaseProperty=databaseProperties.item(j);
