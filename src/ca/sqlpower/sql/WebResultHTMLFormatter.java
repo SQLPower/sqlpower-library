@@ -182,6 +182,8 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 			    mutexOnThisRow=true;
 			    sb.append("<input type=\"checkbox\" name=\"");
 			    sb.append(wrs.getColumnLabel(i));
+			    sb.append("\" value=\"");
+			    sb.append(wrs.getRowid());
 			    sb.append("\" onClick=\"");
 			    sb.append(mutexBoxes(wrs.getColumnMutexList(i), mutexRowNum));
 			    sb.append("\"");
