@@ -22,4 +22,17 @@ public class CollectionUtils {
 		}
 		out.println("]");
 	}
+
+	/**
+	 * Prints each object in the array with commas between them.
+	 * Nulls will print as "null".  A null array will cause NPE.
+	 */
+	public static String arrayToString(Object[] array) {
+		StringBuffer outputString = new StringBuffer(100);
+		for(int i=0, n=array.length; i<n; i++) {
+			if(i>0) outputString.append(", ");
+			outputString.append(array[i]);
+		}
+		return outputString.toString();
+	}
 }
