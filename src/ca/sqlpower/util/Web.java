@@ -74,7 +74,23 @@ public class Web {
         return sb.toString();
     }
 
-    public static String makeSelectionList(String name, List options, String defaultSelection, boolean hasAnyAll) {
+    /**
+     * @deprecated use the version that splits up the argument
+     * hasAnyAll into hasAny and hasAll
+     */
+    public static String makeSelectionList(String name,
+					   List options,
+					   String defaultSelection,
+					   boolean hasAnyAll) {
+	return makeSelectionList(name, options, defaultSelection,
+				 hasAnyAll, hasAnyAll);
+    }
+
+    public static String makeSelectionList(String name,
+					   List options,
+					   String defaultSelection,
+					   boolean hasAny,
+					   boolean hasAll) {
 	StringBuffer out=new StringBuffer();
 	String thisOption;
 
@@ -82,8 +98,10 @@ public class Web {
 	out.append(name);
 	out.append("\">");
 	
-	if(hasAnyAll) {
-	    appendOption(out, "---Any---", defaultSelection.equals("---Any---"));
+	if(hasAny) {
+	    appendOption(out, "---Total---", defaultSelection.equals("---Total---"));
+	}
+	if(hasAll) {
 	    appendOption(out, "---All---", defaultSelection.equals("---All---"));
 	}
 
