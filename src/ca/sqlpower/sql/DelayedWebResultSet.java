@@ -314,7 +314,7 @@ public class DelayedWebResultSet extends WebResultSet {
 			throw new UnsupportedOperationException
 				("Can't tell if result set is empty unless caching is enabled");
 		} else {
-			return ((CachedRowSet)rs).size() > 0 ? false : true;
+			return ((CachedRowSet) rs).size() == 0;
 		}
 	}
 
