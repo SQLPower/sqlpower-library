@@ -27,6 +27,7 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
     private int dropdownsPerRow;
     private boolean rowHighlightingOn;
     private String[] extraJavaScript;
+    private int repeatHeaderRow;
 
     /**
      * A javascript function that gets included in the output code if
@@ -57,7 +58,8 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
      * Dropdowns Above     = true;
      * Dropdowns Per Row   = 3;
      * Row Highlighting On = true;
-     * Extra JavaScript    = null for all FieldTypes.
+     * Extra JavaScript    = null for all FieldTypes;
+     * Repeat Header Row   = 0.
      * </pre>
      */
     public WebResultHTMLFormatter() {
@@ -67,6 +69,7 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	dropdownsPerRow=3;
 	rowHighlightingOn=true;
 	extraJavaScript=new String[FieldTypes.LAST_TYPE];
+	repeatHeaderRow=0;
     }
     
     /**
@@ -166,11 +169,38 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
     public void setExtraJavaScript(int type, String js) {
 	extraJavaScript[type]=js;
     }
-
+    
+    /**
+     * Get the current setting for the frequency of Header Row
+     * repetition. For instance, if repeatHeaderRow is 10, then every
+     * 10th row in the result table will be the header row.
+     *
+     * @return value of repeatHeaderRow.
+     */
+    public int getRepeatHeaderRow() {
+	return repeatHeaderRow;
+    }
+    
+    /**
+     * Set a new value for the frequency of Header Row repetition. For
+     * instance, if repeatHeaderRow is 10, then every 10th row in the
+     * result table will be the header row. A value of 0 disables
+     * header repetition.
+     *
+     * @param v Value to assign to repeatHeaderRow.
+     */
+    public void setRepeatHeaderRow(int v) {
+	this.repeatHeaderRow = v;
+    }
+    
     public void formatToStream(WebResultSet wrs, PrintWriter out) 
 	throws SQLException, NoRowidException, IllegalStateException {
 	int numCols=wrs.getColumnCount();
 	StringBuffer sb=new StringBuffer(256);
+	int countdownToNextHeader=repeatHeaderRow;
+	if(countdownToNextHeader==0) {
+	    countdownToNextHeader=-1;
+	}
 
 	if(rowHighlightingOn) {
 	    out.print(JS_HIGHLIGHT_CODE);
@@ -216,23 +246,7 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 
 	out.println("<table class=\"resultTable\" align=\"center\">");
 
-	out.println(" <tr class=\"resultTableHeading\">");
-	for(int i=1; i<=numCols; i++) {
-	    sb.setLength(0);
-	    int columnType = wrs.getColumnType(i);
-	    try {
-		if(columnType != FieldTypes.DUMMY &&
-		   columnType != FieldTypes.ROWID) {
-		    sb.append("  <th valign=\"bottom\">");
-		    sb.append(beautifyHeading(wrs.getColumnLabel(i)));
-		    sb.append("</th>");
-		    out.println(sb);
-		}
-	    } catch(ColumnNotDisplayableException e) {
-		// Column didn't get printed (which is good)
-	    }
-	}
-	out.println(" </tr>");
+	outputHeaderRow(wrs, out);
 
 	if(dropdownsInline) {
 	    out.println(" <tr class=\"resultTableHeading\">");
@@ -320,6 +334,12 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 		}
 	    }
 	    out.println(" </tr>");
+
+	    countdownToNextHeader--;
+	    if(countdownToNextHeader==0) {
+		outputHeaderRow(wrs, out);
+		countdownToNextHeader=repeatHeaderRow;
+	    }
 
 	    // Increment the rows-with-mutexes count if necessary
 	    if(mutexOnThisRow) {
@@ -410,5 +430,29 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	    super.getColumnFormatted(wrs, i, contents, align);
 	    break;
 	}
+    }
+
+    protected void outputHeaderRow(WebResultSet wrs, PrintWriter out)
+	throws SQLException {
+	StringBuffer sb=new StringBuffer();
+	int numCols=wrs.getColumnCount();
+
+	out.println(" <tr class=\"resultTableHeading\">");
+	for(int i=1; i<=numCols; i++) {
+	    sb.setLength(0);
+	    int columnType = wrs.getColumnType(i);
+	    try {
+		if(columnType != FieldTypes.DUMMY &&
+		   columnType != FieldTypes.ROWID) {
+		    sb.append("  <th valign=\"bottom\">");
+		    sb.append(beautifyHeading(wrs.getColumnLabel(i)));
+		    sb.append("</th>");
+		    out.println(sb);
+		}
+	    } catch(ColumnNotDisplayableException e) {
+		// Column didn't get printed (which is good)
+	    }
+	}
+	out.println(" </tr>");
     }
 }
