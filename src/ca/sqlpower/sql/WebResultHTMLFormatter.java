@@ -20,8 +20,6 @@ import java.awt.Color;
  */
 public class WebResultHTMLFormatter extends WebResultFormatter {
 
-    private Logger dbug = new Logger(System.err, "WebResultHTMLFormatter: ");
-
     private boolean dropdownsInline;
     private boolean dropdownsAbove;
     private int dropdownsPerRow;
@@ -320,7 +318,6 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 		    sb.append(align);
 		    sb.append("\">");
 		    if(!valueIsDefault) {
-			dbug.log("'"+rawContents+"' differs from '"+colDefault+"'");
 			sb.append("<font color=\"red\">");
 		    }
 		    sb.append(contents);
