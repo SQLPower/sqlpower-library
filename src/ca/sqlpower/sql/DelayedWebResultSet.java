@@ -40,6 +40,34 @@ public class DelayedWebResultSet extends WebResultSet {
 	protected boolean cacheEnabled;
 
 	/**
+	 * The amount of time spent in Statement.execute() for this query.
+	 * It only makes sense to check this value after calling
+	 * execute().
+	 */
+	protected long queryExecuteTime;
+
+	/**
+	 * The amount of time spent in CachedRowSet.populate() for this
+	 * query.  It only makes sense to check this value after calling
+	 * execute().
+	 */
+	protected long resultPopulateTime;
+
+	/**
+	 * This will be true iff the results were retrieved from the
+	 * result cache rather than the database.  It only makes sense to
+	 * check this value after calling execute().
+	 */
+	protected boolean fromCache;
+
+	/**
+	 * This is the total amount of time spent in the execute method,
+	 * regardless of how the results were obtained. It only makes
+	 * sense to check this value after calling execute().
+	 */
+	protected long totalExecuteTime;
+
+	/**
 	 * Creates a new <code>DelayedWebResultSet</code> which uses the
 	 * query resultset cache.
 	 *
@@ -118,8 +146,10 @@ public class DelayedWebResultSet extends WebResultSet {
 	 */
 	protected void execute(Connection con, boolean closeOldRS)
 		throws IllegalStateException, SQLException {
-		this.con = con;
 
+		long startTime = System.currentTimeMillis();
+		this.con = con;
+		this.fromCache = false;
 		ResultSet newRS=null;
 
 		if(cacheEnabled) {
@@ -137,13 +167,19 @@ public class DelayedWebResultSet extends WebResultSet {
 				
 				// we don't want to close cached resultset
 				closeOldRS=false;
+				queryExecuteTime = 0;
+				resultPopulateTime = 0;
+				fromCache = true;
 			} else {
+				long queryStartTime = System.currentTimeMillis();
 				Statement stmt = null;
 				try {
 					stmt = con.createStatement();
 					results = new CachedRowSet();
 					ResultSet rs = stmt.executeQuery(sqlQuery);
+					queryExecuteTime = System.currentTimeMillis() - queryStartTime;
 					results.populate(rs);
+					resultPopulateTime = System.currentTimeMillis() - queryStartTime - queryExecuteTime;
 				} finally {
 					if (stmt != null) {
 						stmt.close();
@@ -159,11 +195,16 @@ public class DelayedWebResultSet extends WebResultSet {
 				if (stmt !=null) stmt.close();
 			}
 			Statement stmt = con.createStatement();
+			long queryStartTime = System.currentTimeMillis();
 			newRS = stmt.executeQuery(sqlQuery);
+			queryExecuteTime = System.currentTimeMillis() - queryStartTime;
+			resultPopulateTime = 0;
 		}
-		applyResultSet(newRS, closeOldRS);
 
+		applyResultSet(newRS, closeOldRS);
 		columnCountSanityCheck();
+
+		this.totalExecuteTime = System.currentTimeMillis() - startTime;
 	}
 
 	/**
@@ -275,5 +316,33 @@ public class DelayedWebResultSet extends WebResultSet {
 		} else {
 			return ((CachedRowSet)rs).size() > 0 ? false : true;
 		}
+	}
+
+	/**
+	 * See @link{#queryExecuteTime}.
+	 */
+	public long getQueryExecuteTime() {
+		return queryExecuteTime;
+	}
+	
+	/**
+	 * See @link{#resultPopulateTime}.
+	 */
+	public long getResultPopulateTime() {
+		return resultPopulateTime;
+	}
+	
+	/**
+	 * See @link{#fromCache}.
+	 */
+	public boolean isFromCache() {
+		return fromCache;
+	}
+	
+	/**
+	 * See @link{#totalExecuteTime}.
+	 */
+	public long getTotalExecuteTime() {
+		return totalExecuteTime;
 	}
 }
