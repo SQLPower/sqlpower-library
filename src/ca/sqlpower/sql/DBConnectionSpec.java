@@ -191,50 +191,6 @@ public class DBConnectionSpec {
 		}
 	}
 
-	/**
-	 * this could in theory write out the list of dbconnectionspecs to a stream as an
-	 * xml file if it was to be finished and tested.
-	 */
-	public static void writeDBSpecsToOutputStream(List dbspecs, OutputStream xmlStream) 
-		throws DatabaseListWriteException {
-			DocumentBuilder db=DocumentBuilderFactory.newInstance().newDocumentBuilder();
-			Document d = db.newDocument();
-			Element databases = d.createElement("databases");
-			Iterator dbIter = dbspecs.iterator();
-			while (dbIter.hasNext()) {
-				DBConnectionSpec dbcs = next();
-				Element dbNode = d.createElement("database");
-				if (dbcs.getDisplayName() != null) {
-					Element displayName = d.createElement("display-name");
-					displayName.setNodeValue(dbcs.getDisplayName());
-					dbNode.appendChild(displayName);
-				}
-				if (dbcs.getDriverClass() != null) {
-					Element driverClass = d.createElement("driver-class");
-					driverClass.setNodeValue(dbcs.getDriverClass());
-					dbNode.appendChild(driverClass);
-				}
-				if (dbcs.getUrl() != null) {
-					Element url = d.createElement("url");
-					url.setNodeValue(dbcs.getUrl());
-					dbNode.appendChild(url);
-				}
-				if (dbcs.getUser() != null) {
-					Element user = d.createElement("user");
-					user.setNodeValue(dbcs.getUser());
-					dbNode.appendChild(user);
-				}
-				if (dbcs.getPass() != null) {
-					Element pass = d.createElement("pass");
-					pass.setNodeValue(dbcs.getPass());
-					dbNode.appendChild(pass);
-				}
-				databases.appendChild(dbNode);
-			}
-			OutputFormat of = new OutPutFormat();
-			XMLSerializer serializer = new XMLSerializer(of, xmlStream);
-			serializer.serialize(d);
-	}
 
 	/**
 	 * Reads the values from the children of the given DOM element,
