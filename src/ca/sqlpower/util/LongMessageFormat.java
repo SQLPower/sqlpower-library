@@ -10,8 +10,9 @@ import java.util.*;
  * looked into overriding MessageFormat, but it makes private
  * assumptions about the number of {} substitutions not exceeding 10.
  * The extended format syntax like {3,date} is <em>not</em> currently
- * supported (except for {x,number} which is a special case for the Dashboard
- * application).</p>
+ * supported (except for {x,number} and
+ * {x,number:&lt;customFormat&gt;} which are special cases for the
+ * Dashboard application).</p>
  *
  * <p>See java.text.MessageFormat in the J2SE API docs for details.
  *
@@ -109,9 +110,17 @@ public class LongMessageFormat extends Format {
 				if (thisFieldFormat != null) {
 					Object parsedObject = null;
 					try {
-						parsedObject = thisFieldFormat.parseObject((String) insertMe);
+						if (thisFieldFormat instanceof NumberFormat) {
+							parsedObject = new Float((String) insertMe);
+						} else {
+							parsedObject = thisFieldFormat.parseObject((String) insertMe);
+						}
 						parsedString = thisFieldFormat.format(parsedObject);
 					} catch (ParseException e) {
+						// XXX: We dump these exceptions to allow non-numerics in a number field
+						parsedString = insertMe.toString();
+					} catch (NumberFormatException e) {
+						// XXX: We dump these exceptions to allow non-numerics in a number field
 						parsedString = insertMe.toString();
 					}
 					toAppendTo.append(parsedString);
@@ -266,10 +275,24 @@ public class LongMessageFormat extends Format {
 				   ("The format argument '"+formatNumStr+"' is not a number.");
 			}
 			if (formatType != null) {
-				if (formatType.equals("number")) {
-					setFormat(blockNum,new DecimalFormat("#,##0.##"));
+				if (formatType.startsWith("number")) {
+					if (formatType.length() == "number".length()) {
+						setFormat(blockNum, new DecimalFormat("#,##0.##"));
+					} else {
+						// custom DecimalFormat pattern was specified
+						int formatIdx = formatType.indexOf(':');
+						if (formatIdx < 0) {
+							throw new IllegalArgumentException
+								("Custom number format '"+formatType+"' incorrect. "
+								 +"You must use the form \"{number:\"<format>\"}\" "
+								 +"where <format> is a DecimalFormat pattern.");
+						}
+						String formatStr = formatType.substring(formatIdx+1);
+						setFormat(blockNum, new DecimalFormat(formatStr));
+					}
 				} else {
-					throw new IllegalArgumentException("The format argument '"+formatType+"' is unknown.");
+					throw new IllegalArgumentException
+						("The format argument '"+formatType+"' is unknown.");
 				}
 			}
 			formatNumber[blockNum]=parsedFormatNum;
