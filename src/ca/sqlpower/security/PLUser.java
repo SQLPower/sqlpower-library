@@ -248,7 +248,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			throw new NullPointerException("You must specify a userId");
 		}
 
-		List oneUser = find(con, userId, password);
+		List oneUser = find(con, userId, password, false);
 		return (PLUser) oneUser.get(0);
 	}
 
@@ -259,7 +259,13 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 	public static List findAll(Connection con)
 		throws SQLException, ca.sqlpower.util.UnknownFreqCodeException,
 			   PLSecurityException{
-		return find(con, null, null);
+		return find(con, null, null, false);
+	}
+
+	public static List findByPrefix(Connection con, String searchPrefix)
+		throws SQLException, ca.sqlpower.util.UnknownFreqCodeException,
+			   PLSecurityException {
+		return find(con, searchPrefix, null, true);
 	}
 
 	/**
@@ -288,7 +294,8 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 	 * such user exists (also if userid and password are specified and
 	 * there is no such userid/password combination).
 	 */
-	protected static List find(Connection con, String userId, String password)
+	protected static List find(Connection con, String userId, String password,
+							   boolean searchByPrefix)
 		throws SQLException, ca.sqlpower.util.UnknownFreqCodeException,
 			   PLSecurityException {
 
@@ -325,7 +332,11 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			sql.append(" use_loader_ind, use_matchmaker_ind, use_summarizer_ind, use_dashboard_ind");
 			sql.append(" FROM pl_user");
 			if (userId != null) {
-				sql.append(" WHERE user_id = ").append(SQL.quote(userId));
+				if (searchByPrefix) {
+					sql.append(" WHERE user_id LIKE ").append(SQL.quote(userId+"%"));
+				} else {
+					sql.append(" WHERE user_id = ").append(SQL.quote(userId));
+				}
 				if (password != null) {
 					sql.append(" AND (password = ").append(SQL.quote(cryptedPassword.toString()));
 					sql.append(" OR password IS NULL)");
@@ -380,7 +391,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
             }
         }
 
-		if (userId != null && results.size() > 1) {
+		if (userId != null && !searchByPrefix && results.size() > 1) {
 			throw new IllegalStateException("Got more than one user for userId "+userId);
 		}
 

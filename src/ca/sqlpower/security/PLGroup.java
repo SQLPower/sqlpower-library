@@ -123,7 +123,7 @@ public class PLGroup implements DatabaseObject, java.io.Serializable {
 										   String groupName)
 		throws SQLException {
 
-		List oneGroup = find(con, groupName, null);
+		List oneGroup = find(con, groupName, null, false);
 		return (PLGroup) oneGroup.get(0);
     }
 
@@ -134,7 +134,7 @@ public class PLGroup implements DatabaseObject, java.io.Serializable {
 	 * @see PLUser.getGroups
 	 */
 	public static List findByUser(Connection con, PLUser user) throws SQLException {
-		return find(con, null, user.getUserId());
+		return find(con, null, user.getUserId(), false);
 	}
 
 	/**
@@ -142,17 +142,27 @@ public class PLGroup implements DatabaseObject, java.io.Serializable {
 	 * the given database.
 	 */
 	public static List findAll(Connection con) throws SQLException {
-		return find(con, null, null);
+		return find(con, null, null, false);
+	}
+
+	/**
+	 * Returns the list of PLGroup objects whose group name starts
+	 * with the given string.
+	 */
+	public static List findByPrefix(Connection con, String nameStartsWith)
+		throws SQLException {
+		return find(con, nameStartsWith, null, true);
 	}
 
 	/**
 	 * Retrieves a list of PLGroup objects from the database.  Lookup
-	 * can be based on group name (which will give at most one
-	 * record), user name (which will give all groups that the given
-	 * user belongs to), or neither (gives all groups), but not both
-	 * simultaneously.
+	 * can be based on group name (which will give at most one record
+	 * for non-prefix searches), user name (which will give all groups
+	 * that the given user belongs to), or neither (gives all groups),
+	 * but not both simultaneously.
 	 */
-	protected static List find(Connection con, String groupName, String userName)
+	protected static List find(Connection con, String groupName, String userName,
+							   boolean searchByPrefix)
 	throws SQLException {
 
 		if (groupName != null && userName != null) {
@@ -167,11 +177,19 @@ public class PLGroup implements DatabaseObject, java.io.Serializable {
 			sql.append(" g.last_update_user, g.last_update_os_user, g.create_date");
 			if (groupName != null) {
 				sql.append(" FROM pl_group g");
-				sql.append(" WHERE g.group_name=").append(SQL.quote(groupName));
+				if (searchByPrefix) {
+					sql.append(" WHERE g.group_name LIKE ").append(SQL.quote(groupName+"%"));
+				} else {
+					sql.append(" WHERE g.group_name=").append(SQL.quote(groupName));
+				}
 			} else if (userName != null) {
 				sql.append(" FROM pl_group g, user_group ug");
 				sql.append(" WHERE g.group_name = ug.group_name");
-				sql.append(" AND ug.user_id=").append(SQL.quote(userName));
+				if (searchByPrefix) {
+					sql.append(" AND ug.user_id LIKE ").append(SQL.quote(userName+"%"));
+				} else {
+					sql.append(" AND ug.user_id=").append(SQL.quote(userName));
+				}
 			} else {
 				sql.append(" FROM pl_group g");
 			}
@@ -209,7 +227,7 @@ public class PLGroup implements DatabaseObject, java.io.Serializable {
             }
         }
 
-		if (groupName != null && results.size() > 1) {
+		if (groupName != null && !searchByPrefix && results.size() > 1) {
 			throw new IllegalStateException("Got more than one result for group "+groupName);
 		}
 
