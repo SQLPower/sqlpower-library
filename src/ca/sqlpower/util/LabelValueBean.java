@@ -156,7 +156,7 @@ public class LabelValueBean implements java.io.Serializable {
 
     public static List getNumericList(int start, int end, int step)
 	throws IllegalArgumentException {
-	return getNumericList(start, end, step, new DecimalFormat("#"));
+	return getNumericList(start, end, step, new ca.sqlpower.util.NaanSafeNumberFormat("#"));
     }
 
     public static List getNumericList(int start, int end, NumberFormat nf)
@@ -166,6 +166,6 @@ public class LabelValueBean implements java.io.Serializable {
 
     public static List getNumericList(int start, int end)
 	throws IllegalArgumentException {
-	return getNumericList(start, end, new DecimalFormat("#"));
+	return getNumericList(start, end, new ca.sqlpower.util.NaanSafeNumberFormat("#"));
     }
 }

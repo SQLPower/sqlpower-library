@@ -277,7 +277,7 @@ public class LongMessageFormat extends Format {
 			if (formatType != null) {
 				if (formatType.startsWith("number")) {
 					if (formatType.length() == "number".length()) {
-						setFormat(blockNum, new DecimalFormat("#,##0.##"));
+						setFormat(blockNum, new ca.sqlpower.util.NaanSafeNumberFormat("#,##0.##"));
 					} else {
 						// custom DecimalFormat pattern was specified
 						int formatIdx = formatType.indexOf(':');
@@ -288,7 +288,7 @@ public class LongMessageFormat extends Format {
 								 +"where <format> is a DecimalFormat pattern.");
 						}
 						String formatStr = formatType.substring(formatIdx+1);
-						setFormat(blockNum, new DecimalFormat(formatStr));
+						setFormat(blockNum, new ca.sqlpower.util.NaanSafeNumberFormat(formatStr));
 					}
 				} else {
 					throw new IllegalArgumentException

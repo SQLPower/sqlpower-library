@@ -22,8 +22,8 @@ public class WebResultFormFormatter extends WebResultFormatter {
     public WebResultFormFormatter() {
 	super();
 	numHTMLCols=3;
-	moneyFormatter=new DecimalFormat("#0.00");
-	numberFormatter=new DecimalFormat("#.#");
+	moneyFormatter=new ca.sqlpower.util.NaanSafeNumberFormat("#0.00");
+	numberFormatter=new ca.sqlpower.util.NaanSafeNumberFormat("#.#");
     }
 
     public void setNumHTMLCols(int numCols) {

@@ -35,9 +35,9 @@ public abstract class WebResultFormatter {
     public WebResultFormatter() {
         rowidParameterName="row_id";
         checkboxYesValue="YES";
-        numberFormatter=new DecimalFormat("#,##0.##############");
-        moneyFormatter=new DecimalFormat("$#,##0.00");
-        percentFormatter=new DecimalFormat("0%");
+        numberFormatter=new ca.sqlpower.util.NaanSafeNumberFormat("#,##0.##############");
+        moneyFormatter=new ca.sqlpower.util.NaanSafeNumberFormat("$#,##0.00");
+        percentFormatter=new ca.sqlpower.util.NaanSafeNumberFormat("0%");
         dateFormatter=new SimpleDateFormat("yyyy-MM-dd");
         rowHighlightColour=Color.yellow;
         rowNormalColour=new Color(0xEE, 0xEE, 0xEE);
