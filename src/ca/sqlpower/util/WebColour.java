@@ -6,11 +6,11 @@ import java.text.*;
 /**
  * The WebColour class is a small wrapper around the Java AWT Color
  * class.  Its main enhancement is the existence of a constructor that
- * takes HTML "#<RGB Triple>" argument, and a corresponding toString()
+ * takes HTML "#[RGB Triple]" argument, and a corresponding toString()
  * method that outputs the colour in the same format.  The coolest
  * part is that you can use all the awt colour manipulation methods
- * (doing things like <code>out.println("<tr
- * bgcolor=\"+myWebColour.brighter()+\">")</code>)
+ * (doing things like <code>out.println("&lt;tr
+ * bgcolor=\"+myWebColour.brighter()+\"&gt;")</code>)
  *
  * @author Jonathan Fuerth
  * @version $Id$
