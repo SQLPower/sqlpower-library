@@ -5,6 +5,9 @@ import java.util.*;
 import ca.sqlpower.util.*;
 import ca.sqlpower.sql.CachedRowSet;
 
+import org.apache.log4j.Logger;
+
+
 public class DelayedWebResultSet extends WebResultSet {
 
 	/**
@@ -17,6 +20,8 @@ public class DelayedWebResultSet extends WebResultSet {
 	 */
 	private static Cache resultCache = null;
 	private static Object resultCacheMutex = new Object();
+
+	private static final Logger logger = Logger.getLogger(DelayedWebResultSet.class);
 
 	protected int givenColCount;
 
@@ -160,12 +165,14 @@ public class DelayedWebResultSet extends WebResultSet {
 			
 			CachedRowSet results = (CachedRowSet) getCachedResult(cacheKey);
 			if (results != null) {
+				logger.debug("cache hit, key: " + cacheKey);
 				// we don't want to close cached resultset
 				closeOldRS=false;
 				queryExecuteTime = 0;
 				resultPopulateTime = 0;
 				fromCache = true;
 			} else {
+				logger.debug("cache miss, key: " + cacheKey);
 				long queryStartTime = System.currentTimeMillis();
 				Statement stmt = null;
 				try {
@@ -180,6 +187,7 @@ public class DelayedWebResultSet extends WebResultSet {
 						stmt.close();
 					}
 				}
+				logger.debug("adding results to cache, key: " + cacheKey);
 				addResultsToCache(cacheKey, results);
 			}
 			newRS=results;
