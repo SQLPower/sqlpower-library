@@ -1,6 +1,7 @@
 package ca.sqlpower.sql;
 
 import java.sql.*;
+import org.apache.log4j.Logger;
 
 /**
  * A class that implements ResultSetMetaData by making a copy of all
@@ -12,6 +13,8 @@ import java.sql.*;
  * @version $Id$
  */
 public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Serializable, Cloneable {
+
+	private static final Logger logger = Logger.getLogger(CachedResultSetMetaData.class);
 
 	private int columnCount;
 	private boolean autoIncrement[];
@@ -41,6 +44,7 @@ public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Seria
 	 * database.
 	 */
 	public CachedResultSetMetaData(ResultSetMetaData source) throws SQLException {
+		logger.info("[34mCreating new CachedResultSetMetaData[0m");
 		this.columnCount = source.getColumnCount();
 		createArrays(columnCount);
 		populate(source);
