@@ -1,3 +1,5 @@
+package ca.sqlpower.util;
+
 import javax.servlet.*;
 import javax.servlet.http.*;
 import java.util.*;
@@ -70,5 +72,38 @@ public class Web {
 	}
         sb.append("</table>");
         return sb.toString();
+    }
+
+    public static String makeSelectionList(String name, List options, String defaultSelection, boolean hasAnyAll) {
+	StringBuffer out=new StringBuffer();
+	String thisOption;
+
+	out.append("<select size=\"1\" name=\"");
+	out.append(name);
+	out.append("\">");
+	
+	if(hasAnyAll) {
+	    appendOption(out, "---Any---", defaultSelection.equals("---Any---"));
+	    appendOption(out, "---All---", defaultSelection.equals("---All---"));
+	}
+
+	ListIterator i=options.listIterator();
+	while(i.hasNext()) {
+	    thisOption=(String)i.next();
+
+	    appendOption(out, thisOption, thisOption.equals(defaultSelection));
+	}
+	out.append("</select>");
+        return out.toString();
+    }
+
+    private static void appendOption(StringBuffer sb, String optionName, boolean selected) {
+	sb.append(" <option");
+	if(selected) {
+	    sb.append(" selected");
+	}
+	sb.append(">");
+	sb.append(optionName);
+	sb.append("</option>");
     }
 }

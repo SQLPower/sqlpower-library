@@ -1,5 +1,7 @@
 package ca.sqlpower.sql;
 
+import ca.sqlpower.util.*;
+import java.util.*;
 import java.sql.*;
 import java.io.*;
 
@@ -29,13 +31,28 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 
 	out.println("<tr>");
 	for(int i=1; i<=numCols; i++) {
-	    out.println("<th>");
+	    out.println("<th valign=\"bottom\">");
 	    if(fcRowid && i==1) {
 		out.println("&nbsp;");
 	    } else {
 		out.println(beautifyHeading(wrs.getColumnLabel(i)));
 	    }
 	    out.println("</th>");
+	}
+	out.println("</tr>");
+
+	out.println("<tr>");
+	for(int i=1; i<=numCols; i++) {
+	    List choices=wrs.getColumnChoicesList(i);
+
+	    out.println("<td>");
+	    if(choices != null) {
+		out.print(Web.makeSelectionList(wrs.getColumnChoicesName(i),
+						wrs.getColumnChoicesList(i),
+						wrs.getColumnDefaultChoice(i),
+						wrs.getColumnHasAnyAll(i)));
+	    }
+	    out.println("</td>");
 	}
 	out.println("</tr>");
 
