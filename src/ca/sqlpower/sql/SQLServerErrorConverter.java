@@ -14,10 +14,14 @@ public class SQLServerErrorConverter extends AbstractErrorConverter {
 			// "error establishing the socket," which is likely not
 			// unique.
 			return SERVER_UNAVAILABLE;
+
 		case 207:
 			return UNKNOWN_COLUMN;
+
 		case 18456:
+		case 4060:
 			return INVALID_LOGON;
+
 		default:
 			return UNKNOWN_ERROR;
 		}
