@@ -79,10 +79,18 @@ public class SQL {
 		return "'"+escapeStatement(string)+"'";
     }
 
+	/**
+	 * Alias for {@link #quoteCollection()}.
+	 */
 	public static String quoteList(List strings) {
 		return quoteCollection(strings);
 	}
 
+	/**
+	 * Creates a String of comma-separated, quoted SQL strings.  Null
+	 * values in the collection appear in the list as the unquoted
+	 * string <i>null</i>.
+	 */
 	public static String quoteCollection(Collection strings) {
 		StringBuffer outputString = new StringBuffer(100);
 		boolean firstItem = true;
