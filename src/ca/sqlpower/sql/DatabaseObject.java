@@ -14,7 +14,6 @@ package ca.sqlpower.sql;
  * @version $Id$
  */
 public interface DatabaseObject extends java.io.Serializable {
-	public static final String OBJECT_TYPE_KPI="KPI";
 
 	/**
 	 * Returns the object's name, suitable for use in SQL WHERE clauses.
