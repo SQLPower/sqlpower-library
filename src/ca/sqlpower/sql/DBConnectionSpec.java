@@ -13,6 +13,11 @@ import java.util.*;
  * @version $Id$
  */
 public class DBConnectionSpec implements Serializable, Comparable {
+
+	/**
+	 * this is the sequence number used to sort in the list
+	 */
+	int seqNo;
 	String name;
 	String displayName;
 	String driverClass;
@@ -198,7 +203,23 @@ public class DBConnectionSpec implements Serializable, Comparable {
 	}
 
 	public int compareTo(Object other) {
-		return this.getName().compareTo(((DBConnectionSpec) other).getName());
+		return new Integer(this.getSeqNo()).compareTo(new Integer(((DBConnectionSpec) other).getSeqNo()));
+	}
+
+	/**
+	 * Returns the seqNo.
+	 * @return int
+	 */
+	public int getSeqNo() {
+		return seqNo;
+	}
+
+	/**
+	 * Sets the seqNo.
+	 * @param seqNo The seqNo to set
+	 */
+	public void setSeqNo(int seqNo) {
+		this.seqNo = seqNo;
 	}
 
 }

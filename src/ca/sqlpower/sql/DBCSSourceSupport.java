@@ -123,6 +123,7 @@ public class DBCSSourceSupport {
  		}
 		DBConnectionSpec spec=new DBConnectionSpec();
 		spec.setName(dbElem.getAttributes().getNamedItem("name").getNodeValue());
+		spec.setSeqNo(Integer.parseInt(dbElem.getAttributes().getNamedItem("seqNo").getNodeValue()));
 		NodeList databaseProperties=dbElem.getChildNodes();
 		for(int j=0; j<databaseProperties.getLength(); j++) {
 			Node databaseProperty=databaseProperties.item(j);

@@ -152,6 +152,7 @@ public class DBConnectionSpecServerImpl
 			DBConnectionSpec dbcs = (DBConnectionSpec) dbIter.next();
 			Element dbNode = d.createElement("database");
 			dbNode.setAttribute("name",dbcs.getName());
+			dbNode.setAttribute("seqNo",Integer.toString(dbcs.getSeqNo()));
 			if (dbcs.getDisplayName() != null) {
 				Element displayName = d.createElement("display-name");
 				displayName.appendChild(d.createTextNode(dbcs.getDisplayName()));
