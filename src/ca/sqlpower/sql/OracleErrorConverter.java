@@ -1,0 +1,22 @@
+package ca.sqlpower.sql;
+
+import java.sql.SQLException;
+
+/**
+ * Converts SQLExceptions from Oracle into SQLPower error numbers.
+ */
+public class OracleErrorConverter extends AbstractErrorConverter {
+
+	/**
+	 * @see ca.sqlpower.sql.AbstractErrorConverter#convert(SQLException)
+	 */
+	public int convert(SQLException e) {
+		switch (e.getErrorCode()) {
+			case 1017 :
+				return INVALID_LOGON;
+			default :
+				return UNKNOWN_ERROR;
+		}
+	}
+}
+
