@@ -1,11 +1,14 @@
 package ca.sqlpower.sql;
+
 import ca.sqlpower.util.*;
 import java.sql.*;
 import java.util.*;
 import java.text.*;
-
+import org.apache.log4j.Logger;
 
 public class WebResultSet implements Cloneable {
+
+	private static final Logger logger = Logger.getLogger(WebResultSet.class);
 
     protected ResultSet rs;
     protected ResultSetMetaData rsmd;
@@ -274,6 +277,7 @@ public class WebResultSet implements Cloneable {
      * @param v Value to assign to the ith column's type.
      */
     public void setColumnType(int colNo, int  v) {
+		if (logger.isDebugEnabled()) logger.debug("Setting column "+colNo+" to type "+v);
         if(v==FieldTypes.ROWID) {
             if(rowidColNo > 0) {
                 throw new IllegalStateException("A resultset can have only one ROWID column");
