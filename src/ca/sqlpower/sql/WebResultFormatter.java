@@ -14,26 +14,58 @@ import java.sql.SQLException;
  */
 public abstract class WebResultFormatter {
 
-    protected String duplicate1ParameterName;
+    protected String rowidParameterName;
     protected NumberFormat numberFormatter;
     protected NumberFormat moneyFormatter;
     protected NumberFormat percentFormatter;
     protected DateFormat dateFormatter;
 
     public WebResultFormatter() {
-	duplicate1ParameterName="dup_candidate_1";
+	rowidParameterName="row_id";
 	numberFormatter=new DecimalFormat("#,##0.#");
 	moneyFormatter=new DecimalFormat("$#,##0.00");
 	percentFormatter=new DecimalFormat("0%");
 	dateFormatter=DateFormat.getDateInstance();
     }
 
+    /**
+     * Gets the desired parameter name for the row identifier column.
+     *
+     * @return The row identifier parameter name.
+     * @deprecated Use the more aptly-named getRowidParameterName
+     * method instead.
+     */
     public String getDuplicate1ParameterName() {
-	return duplicate1ParameterName;
+	return getRowidParameterName();
     }
 
+    /**
+     * Gets the desired parameter name for the row identifier column.
+     *
+     * @return The row identifier parameter name.
+     */
+    public String getRowidParameterName() {
+	return rowidParameterName;
+    }
+
+    /**
+     * Gets the desired parameter name for the row identifier column.
+     *
+     * @param newName The new row identifier parameter name.
+     * @deprecated Use the more aptly-named getRowidParameterName
+     * method instead.
+     */
     public void setDuplicate1ParameterName(String newName) {
-	duplicate1ParameterName=newName;
+	setRowidParameterName(newName);
+    }
+
+    /**
+     * Gets the desired parameter name for the row identifier column.
+     *
+     * @param newName The new row identifier parameter name.
+     */
+    public void setRowidParameterName(String newName) {
+        rowidParameterName=newName;
     }
 
     public void setNumberFormatter(NumberFormat v) {
@@ -100,7 +132,7 @@ public abstract class WebResultFormatter {
 	case FieldTypes.RADIO:
 	    align.append("center");
 	    contents.append("<input type=\"radio\" name=\"")
-		.append(duplicate1ParameterName)
+		.append(rowidParameterName)
 		.append("\" value=\"")
 		.append(wrs.getString(i))
 		.append("\" onClick=\"this.form.submit()\" />");
@@ -109,7 +141,7 @@ public abstract class WebResultFormatter {
 	case FieldTypes.CHECKBOX:
 	    align.append("center");
 	    contents.append("<input type=\"checkbox\" name=\"")
-		.append(duplicate1ParameterName)
+		.append(rowidParameterName)
 		.append("\" value=\"")
 		.append(wrs.getString(i))
 		.append("\" />");
