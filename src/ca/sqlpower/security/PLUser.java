@@ -32,6 +32,10 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
     protected String lastUpdateUser;
     protected String lastUpdateOsUser;
 	protected Boolean omniscient;
+	protected boolean loaderUser;
+	protected boolean summarizerUser;
+	protected boolean matchmakerUser;
+	protected boolean dashboardUser;
 
 	/**
 	 * Creates a new user object with no user id.  For internal use
@@ -51,6 +55,10 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
         lastUpdateUser=null;
 		lastUpdateOsUser=null;
 		omniscient=null;
+		loaderUser=false;
+		summarizerUser=false;
+		matchmakerUser=false;
+		dashboardUser=false;
     }
 
 	/**
@@ -82,7 +90,11 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			sql.append("   show_grey_ind=").append(SQL.quote(isGreyVisible()?"Y":"N")).append(",");
 			sql.append("   last_update_date=").append(DBConnection.getSystemDate(con)).append(",");
 			sql.append("   last_update_user=").append(SQL.quote(DBConnection.getUser(con).toUpperCase())).append(",");
-			sql.append("   last_update_os_user=").append(SQL.quote("DASHBOARD_FRONTEND"));
+			sql.append("   last_update_os_user=").append(SQL.quote("DASHBOARD_FRONTEND")).append(",");
+			sql.append("   use_loader_ind='").append(loaderUser ? 'Y' : 'N').append("',");
+			sql.append("   use_matchmaker_ind='").append(matchmakerUser ? 'Y' : 'N').append("',");
+			sql.append("   use_summarizer_ind='").append(summarizerUser ? 'Y' : 'N').append("',");
+			sql.append("   use_dashboard_ind='").append(dashboardUser ? 'Y' : 'N');
 			sql.append(" WHERE user_id = ").append(SQL.quote(getUserId()));
 			stmt.executeUpdate(sql.toString());
 		} else {
@@ -90,7 +102,8 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			sql.append(" user_id, user_name,");
 			sql.append(" email_address, default_kpi_frequency,");
 			sql.append(" show_red_ind, show_yellow_ind, show_green_ind, show_grey_ind,");
-			sql.append(" last_update_date, last_update_user, last_update_os_user)");
+			sql.append(" last_update_date, last_update_user, last_update_os_user,");
+			sql.append(" use_loader_ind, use_matchmaker_ind, use_summarizer_ind, use_dashboard_ind)");
 			sql.append(" VALUES( ");
 			sql.append(SQL.quote(userId.toUpperCase())).append(",");
 			sql.append(SQL.quote(userName)).append(",");
@@ -102,7 +115,11 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			sql.append(SQL.quote(isGreyVisible()?"Y":"N")).append(",");
 			sql.append(DBConnection.getSystemDate(con)).append(",");
 			sql.append(SQL.quote(DBConnection.getUser(con).toUpperCase())).append(",");
-			sql.append(SQL.quote("DASHBOARD_FRONTEND")).append(")");
+			sql.append(SQL.quote("DASHBOARD_FRONTEND")).append(",");
+			sql.append("'").append(loaderUser ? 'Y' : 'N').append("',");
+			sql.append("'").append(matchmakerUser ? 'Y' : 'N').append("',");
+			sql.append("'").append(summarizerUser ? 'Y' : 'N').append("',");
+			sql.append("'").append(dashboardUser ? 'Y' : 'N').append("')");
 				
 			stmt.executeUpdate(sql.toString());
 
@@ -225,7 +242,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 										  String password)
 
 		throws SQLException, ca.sqlpower.dashboard.UnknownFreqCodeException,
-		PLSecurityException {
+			   PLSecurityException {
 		
 		if (userId == null) {
 			throw new NullPointerException("You must specify a userId");
@@ -241,7 +258,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 	 */
 	public static List findAll(Connection con)
 		throws SQLException, ca.sqlpower.dashboard.UnknownFreqCodeException,
-		PLSecurityException{
+			   PLSecurityException{
 		return find(con, null, null);
 	}
 
@@ -273,7 +290,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 	 */
 	protected static List find(Connection con, String userId, String password)
 		throws SQLException, ca.sqlpower.dashboard.UnknownFreqCodeException,
-		PLSecurityException {
+			   PLSecurityException {
 
 		if (userId == null && password != null) {
 			throw new IllegalArgumentException("You can't look up a user by password");
@@ -304,7 +321,8 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			sql.append(" user_id, user_name,");
 			sql.append(" email_address, default_kpi_frequency,");
 			sql.append(" show_red_ind, show_yellow_ind, show_green_ind, show_grey_ind,");
-			sql.append(" last_update_date, last_update_user, last_update_os_user");
+			sql.append(" last_update_date, last_update_user, last_update_os_user,");
+			sql.append(" use_loader_ind, use_matchmaker_ind, use_summarizer_ind, use_dashboard_ind");
 			sql.append(" FROM pl_user");
 			if (userId != null) {
 				sql.append(" WHERE user_id = ").append(SQL.quote(userId));
@@ -347,6 +365,10 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 				newBean.lastUpdateDate = rs.getDate("last_update_date");
 				newBean.lastUpdateUser = rs.getString("last_update_user");
 				newBean.lastUpdateOsUser = rs.getString("last_update_os_user");
+				newBean.loaderUser = SQL.decodeInd(rs.getString("use_loader_ind"));
+				newBean.matchmakerUser = SQL.decodeInd(rs.getString("use_matchmaker_ind"));
+				newBean.summarizerUser = SQL.decodeInd(rs.getString("use_summarizer_ind"));
+				newBean.dashboardUser = SQL.decodeInd(rs.getString("use_dashboard_ind"));
 				newBean._alreadyInDatabase = true;
 				
 				results.add(newBean);
@@ -523,6 +545,78 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 		return getUserId();
 	}
 
+	/**
+	 * Gets the value of loaderUser
+	 *
+	 * @return the value of loaderUser
+	 */
+	public boolean isLoaderUser()  {
+		return this.loaderUser;
+	}
+
+	/**
+	 * Sets the value of loaderUser
+	 *
+	 * @param argLoaderUser Value to assign to this.loaderUser
+	 */
+	public void setLoaderUser(boolean argLoaderUser) {
+		this.loaderUser = argLoaderUser;
+	}
+
+	/**
+	 * Gets the value of summarizerUser
+	 *
+	 * @return the value of summarizerUser
+	 */
+	public boolean isSummarizerUser()  {
+		return this.summarizerUser;
+	}
+
+	/**
+	 * Sets the value of summarizerUser
+	 *
+	 * @param argSummarizerUser Value to assign to this.summarizerUser
+	 */
+	public void setSummarizerUser(boolean argSummarizerUser) {
+		this.summarizerUser = argSummarizerUser;
+	}
+
+	/**
+	 * Gets the value of matchmakerUser
+	 *
+	 * @return the value of matchmakerUser
+	 */
+	public boolean isMatchmakerUser()  {
+		return this.matchmakerUser;
+	}
+
+	/**
+	 * Sets the value of matchmakerUser
+	 *
+	 * @param argMatchmakerUser Value to assign to this.matchmakerUser
+	 */
+	public void setMatchmakerUser(boolean argMatchmakerUser) {
+		this.matchmakerUser = argMatchmakerUser;
+	}
+
+	/**
+	 * Gets the value of dashboardUser
+	 *
+	 * @return the value of dashboardUser
+	 */
+	public boolean isDashboardUser()  {
+		return this.dashboardUser;
+	}
+
+	/**
+	 * Sets the value of dashboardUser
+	 *
+	 * @param argDashboardUser Value to assign to this.dashboardUser
+	 */
+	public void setDashboardUser(boolean argDashboardUser) {
+		this.dashboardUser = argDashboardUser;
+	}
+
 	public String toString() {
 		StringBuffer meString=new StringBuffer();
 		meString.append("[PLUser: ");
@@ -534,6 +628,10 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 		meString.append(", yellowVisible=").append(yellowVisible);
 		meString.append(", greenVisible=").append(greenVisible);
 		meString.append(", greyVisible=").append(greyVisible);
+		meString.append(", loaderUser=").append(loaderUser);
+		meString.append(", summarizerUser=").append(summarizerUser);
+		meString.append(", matchmakerUser=").append(matchmakerUser);
+		meString.append(", dashboardUser=").append(dashboardUser);
 		meString.append("]");
 		return meString.toString();
 	}
