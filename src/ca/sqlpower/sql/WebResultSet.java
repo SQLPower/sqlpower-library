@@ -322,10 +322,16 @@ public class WebResultSet implements Cloneable {
 		this.columnHyperlinks[colNo-1]=links;
 	}
 
+	/**
+	 * Sets the CSS style class name that should be applied to the hyperlink column.
+	 */
 	public void setColumnHyperlinkStyle(int colNo, String style) {
 		this.columnHyperlinkStyle[colNo-1]=style;
 	}
 
+	/**
+	 * Gets the CSS style class name that should be applied to the hyperlink column.
+	 */
 	public String getColumnHyperlinkStyle(int colNo) {
 		return this.columnHyperlinkStyle[colNo-1];
 	}

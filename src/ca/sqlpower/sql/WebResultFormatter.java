@@ -163,6 +163,7 @@ public abstract class WebResultFormatter {
         return newColName.toString();
     }
 
+	
   	/**
  	 * Examines the <code>i</code>th column of with Web Result Set,
  	 * and fills the <code>contents</code> and <code>align</code>
@@ -202,7 +203,6 @@ public abstract class WebResultFormatter {
         throws SQLException, NoRowidException, ColumnNotDisplayableException,
 		IllegalStateException {
         int type=wrs.getColumnType(i);
-        
         switch(type) {
         case FieldTypes.NUMBER:
             align.append("right");
@@ -305,46 +305,11 @@ public abstract class WebResultFormatter {
  		case FieldTypes.HYPERLINK:
  		case FieldTypes.RANGEHYPERLINK:
 			align.append("center");
- 			List hyperlinks = wrs.getColumnHyperlinks(i);
-			String style = wrs.getColumnHyperlinkStyle(i);
- 			if (hyperlinks == null) {
- 				throw new IllegalStateException
+			if (wrs.getColumnHyperlinks(i) == null) {
+				throw new IllegalStateException
  					("You must supply hyperlink specs in the WebResultSet.");
- 			}
- 			Iterator hlIter = hyperlinks.iterator();
- 			while (hlIter.hasNext()) {
- 				Hyperlink link = (Hyperlink)hlIter.next();
- 				LongMessageFormat textFormat = new LongMessageFormat(link.getText());
- 				LongMessageFormat hrefFormat = new LongMessageFormat(link.getHref());
- 				int colCount = wrs.getColumnCount();
- 				String[] rowValues = new String[colCount+1];
- 				for (int col = 1; col <= colCount; col++) {
- 					rowValues[col] = wrs.getString(col);
- 				}
- 				contents.append("<a href=\"");
- 				hrefFormat.format(rowValues, contents, null);
-				if (style!=null) {
-					contents.append("\" class=\"").append(style);
-				}
- 				contents.append("\">");
- 				StringBuffer nullCheck = new StringBuffer();
- 				String checked;
- 				textFormat.format(rowValues, nullCheck, null);
- 				if (type == FieldTypes.RANGEHYPERLINK) {
- 					if (nullCheck.toString().equals("&nbsp;1&nbsp;-&nbsp;null")) {
- 						checked = "-";
- 					} else {
-	 					checked = nullCheck.toString();
- 					}
- 				} else {
- 					checked = nullCheck.toString();
- 				}
- 				contents.append(checked);
- 				contents.append("</a>");
- 				if (hlIter.hasNext()) {
- 					contents.append("<br>");
- 				}
- 			}
+			}
+			contents.append(makeHyperlinks(wrs, i));
 			break;
 
         case FieldTypes.ROWID:
@@ -392,7 +357,6 @@ public abstract class WebResultFormatter {
 
         }
 
-
     }
     
     public abstract void formatToStream(WebResultSet wrs, PrintWriter out) 
@@ -409,4 +373,46 @@ public abstract class WebResultFormatter {
 		formatToStream(wrs, new PrintWriter(sout));
 		return sout.toString();
 	}
+	protected String makeHyperlinks(WebResultSet wrs, int colNo) throws SQLException {
+		List hyperlinks = wrs.getColumnHyperlinks(colNo);
+		String style    = wrs.getColumnHyperlinkStyle(colNo);
+ 		int type        = wrs.getColumnType(colNo);
+		StringBuffer contents = new StringBuffer();
+ 		Iterator hlIter = hyperlinks.iterator();
+ 		while (hlIter.hasNext()) {
+ 			Hyperlink link = (Hyperlink)hlIter.next();
+ 			LongMessageFormat textFormat = new LongMessageFormat(link.getText());
+ 			LongMessageFormat hrefFormat = new LongMessageFormat(link.getHref());
+ 			int colCount = wrs.getColumnCount();
+ 			String[] rowValues = new String[colCount+1];
+ 			for (int col = 1; col <= colCount; col++) {
+ 				rowValues[col] = wrs.getString(col);
+ 			}
+ 			contents.append("<a href=\"");
+ 			hrefFormat.format(rowValues, contents, null);
+			if (style!=null) {
+				contents.append("\" class=\"").append(style);
+			}
+ 			contents.append("\">");
+ 			StringBuffer nullCheck = new StringBuffer();
+ 			String checked;
+ 			textFormat.format(rowValues, nullCheck, null);
+ 			if (type == FieldTypes.RANGEHYPERLINK) {
+ 				if (nullCheck.toString().equals("&nbsp;1&nbsp;-&nbsp;null")) {
+ 					checked = "-";
+ 				} else {
+	 				checked = nullCheck.toString();
+ 				}
+ 			} else {
+ 				checked = nullCheck.toString();
+ 			}
+ 			contents.append(checked);
+ 			contents.append("</a>");
+ 			if (hlIter.hasNext()) {
+ 				contents.append("<br>");
+ 			}
+ 		}
+	    return contents.toString();
+	} 
+	
 }
