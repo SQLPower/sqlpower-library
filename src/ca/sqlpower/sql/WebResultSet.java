@@ -1,4 +1,5 @@
 package ca.sqlpower.sql;
+import ca.sqlpower.util.*;
 import java.sql.*;
 import java.util.*;
 
@@ -7,6 +8,7 @@ public class WebResultSet {
     protected ResultSet rs;
     protected ResultSetMetaData rsmd;
     protected String sqlQuery;
+    protected ColumnFilter[] columnFilter;
     protected List[] columnChoices;
     protected List[] columnMutexList;
     protected String[] columnChoicesName;
@@ -23,6 +25,7 @@ public class WebResultSet {
 	sqlQuery=query;
 
 	int cols=rsmd.getColumnCount();
+	columnFilter=new ColumnFilter[cols];
 	columnChoices=new List[cols];
 	columnMutexList=new List[cols];
 	columnChoicesName=new String[cols];
@@ -75,6 +78,17 @@ public class WebResultSet {
 
     public boolean getColumnHasAll(int colNo) {
 	return columnHasAll[colNo-1];
+    }
+
+    /**
+     * Note that filters cannot apply to Date or Numeric column types.
+     */
+    public void setColumnFilter(int colNo, ColumnFilter filter) {
+	columnFilter[colNo-1]=filter;
+    }
+
+    public ColumnFilter getColumnFilter(int colNo) {
+	return columnFilter[colNo-1];
     }
 
     public void setColumnChoicesList(int colNo, List choicesList) {
@@ -267,11 +281,14 @@ public class WebResultSet {
 	return rs.next();
     }
 
-    public String getString(String colName) throws SQLException {
-	return rs.getString(colName);
-    }
+    //public String getString(String colName) throws SQLException {
+    //return rs.getString(colName);
+    //}
 
     public String getString(int colNo) throws SQLException {
+	if(columnFilter[colNo-1]!=null) {
+	    return columnFilter[colNo-1].filter(rs.getString(colNo));
+	}
 	return rs.getString(colNo);
     }
 
