@@ -96,6 +96,53 @@ public class SQL {
 		return outputString.toString();
 	}
 
+	/**
+	 * Creates a SQL "IN" expression. Each item in the collection
+	 * <code>values</code> is individually quoted.  If one or more of
+	 * the values is null, the returned expression will be in
+	 * parentheses and contain OR colName IS NULL.  In the special
+	 * case where all the values are null, the expression is just
+	 * "colName IS NULL".  In the degenerate case where values is an
+	 * empty collection, the expression "1=1" is returned so that the
+	 * calling code doesn't need special checks.
+	 *
+	 * @return a String of the form "(colName IN (s1, s2, s3, ...) 
+	 * OR colName IS NULL)" or "colName IS NULL" or "1=1".
+	 * @throws NullPointerException if colName is null.
+	 */
+	public static String in(String colName, Collection values) {
+		if (colName == null) {
+			throw new NullPointerException("colName argument must be non-null");
+		}
+		boolean foundNull = false;
+		StringBuffer outputString = new StringBuffer(100);
+		boolean firstItem = true;
+		Iterator it = values.iterator();
+		while (it.hasNext()) {
+			Object item = it.next();
+			if (item == null) {
+				foundNull = true;
+				continue;
+			}
+			if (!firstItem) outputString.append(", ");
+			outputString.append(quote(item.toString()));
+			firstItem = false;
+		}
+		if (firstItem) {
+			// nothing made it into outputString
+			if (foundNull) {
+				return colName+" IS NULL";
+			} else {
+				return "1=1";
+			}
+		} else {
+			if (foundNull) {
+				return "("+colName+" IN("+outputString+") OR "+colName+" IS NULL)";
+			} else {
+				return colName+" IN("+outputString+")";
+			}
+		}
+	}
 
 	/**
      * Returns the string <code>"NULL"</code> if the argument is
@@ -124,6 +171,33 @@ public class SQL {
 		}
 	}
 
+	/**
+	 * Returns the appropriate ifnull/nvl syntax for the database
+	 * system that <code>con</code> points to.
+	 *
+	 * <p>For databases that fully support JDBC, this is <code>{fn
+	 * ifnull(<i>sqlExpr</i>, <i>valueWhenNull</i>)}</code>, but
+	 * Oracle and PostgreSQL need special treatment.
+	 *
+	 * @param con The connection is used to determing database syntax.
+	 * @param sqlExpr The expression that should be tested for
+	 * nullness (by the database).  Quote this if you want to use a
+	 * constant value!  Unquoted sqlExpr will be evaluated as column
+	 * names or functions.
+	 * @param valueWhenNull The value that the database should use
+	 * when sqlExpr is null.  Quote this if you want to use a constant
+	 * value!
+	 */
+	public static String ifnull(Connection con, String sqlExpr, String valueWhenNull) {
+		if (DBConnection.isOracle(con)) {
+			return "NVL("+sqlExpr+","+valueWhenNull+")";
+		} else if (DBConnection.isPostgres(con)) {
+			return "COALSECE("+sqlExpr+","+valueWhenNull+")";
+		} else {
+			// no special case; assume JDBC compliance for fn ifnull
+			return "{fn IFNULL("+sqlExpr+","+valueWhenNull+")}";
+		}
+	}
 
 	/** 
 	 * Returns a string with the first letter capitalized, and the rest lower case
