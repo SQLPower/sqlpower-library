@@ -71,6 +71,7 @@ import java.text.*;
  *
  * @author Craig R. McClanahan
  * @version $Revision$ $Date$
+ * @deprecated use org.apache.struts.LabelValueBean instead.
  */
 
 public class LabelValueBean {
