@@ -73,6 +73,15 @@ public class DelayedWebResultSet extends WebResultSet {
 	protected long totalExecuteTime;
 
 	/**
+	 * Maximum number of rows that this DelayedWebResultSet will
+	 * contain.  If the query would have returned more rows, they are
+	 * silently discarded.
+	 *
+	 * <p>A maxRows value of 0 means no limit.
+	 */
+	protected int maxRows;
+
+	/**
 	 * Creates a new <code>DelayedWebResultSet</code> which uses the
 	 * query resultset cache.
 	 *
@@ -155,9 +164,9 @@ public class DelayedWebResultSet extends WebResultSet {
 		long startTime = System.currentTimeMillis();
 		this.con = con;
 		this.fromCache = false;
-		ResultSet newRS=null;
+		ResultSet newRS = null;
 
-		if(cacheEnabled) {
+		if (cacheEnabled) {
 				
 			String cacheKey = sqlQuery 
 				+"&"+con.getMetaData().getURL() 
@@ -177,6 +186,7 @@ public class DelayedWebResultSet extends WebResultSet {
 				Statement stmt = null;
 				try {
 					stmt = con.createStatement();
+					stmt.setMaxRows(getMaxRows());
 					results = new CachedRowSet();
 					ResultSet rs = stmt.executeQuery(sqlQuery);
 					queryExecuteTime = System.currentTimeMillis() - queryStartTime;
@@ -198,6 +208,7 @@ public class DelayedWebResultSet extends WebResultSet {
 				if (stmt !=null) stmt.close();
 			}
 			Statement stmt = con.createStatement();
+			stmt.setMaxRows(getMaxRows());
 			long queryStartTime = System.currentTimeMillis();
 			newRS = stmt.executeQuery(sqlQuery);
 			queryExecuteTime = System.currentTimeMillis() - queryStartTime;
@@ -375,5 +386,19 @@ public class DelayedWebResultSet extends WebResultSet {
 	 */
 	public long getTotalExecuteTime() {
 		return totalExecuteTime;
+	}
+	
+	/**
+	 * See @link{#maxRows}.
+	 */
+	public void setMaxRows(int v) {
+		maxRows = v;
+	}
+
+	/**
+	 * See @link{#maxRows}.
+	 */
+	public int getMaxRows() {
+		return maxRows;
 	}
 }
