@@ -45,6 +45,9 @@ public class WebResultSet {
 	 * @throws SQLException if a database error occurs.
 	 */
 	protected void applyResultSet(ResultSet results) throws SQLException {
+		if(rs!=null) {
+			rs.close();
+		}
         rs=results;
         rsmd=rs.getMetaData();
 	}
