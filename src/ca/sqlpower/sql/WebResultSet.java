@@ -508,6 +508,13 @@ public class WebResultSet implements Cloneable {
 		return rs.getObject(colNo);
 	}
 
+	/**
+	 * Gets the date out of the database by first getting it as a
+	 * string, then parsing the first 10 characters in yyyy-MM-dd
+	 * format, and returning the parsed date.  I have no idea why it
+	 * doesn't use the underlying ResultSet.getDate(int) method, but
+	 * there must be a good reason...
+	 */
     public java.sql.Date getDate(int colNo) throws SQLException {
     	String dateStr = rs.getString(colNo);
 		if (dateStr == null) {
