@@ -2,6 +2,7 @@ package ca.sqlpower.sql;
 
 import java.io.Serializable;
 import java.util.*;
+import java.beans.*;
 
 /**
  * The DBConnectionSpec class is a simple bean whose instances
@@ -10,9 +11,21 @@ import java.util.*;
  * username/password pair, you have all the information you need to
  * attempt to make a JDBC Connection to a target database.
  *
+ * <p>Note that all setXXX methods in this class fire property change
+ * events.
+ *
  * @version $Id$
  */
 public class DBConnectionSpec implements Serializable, Comparable {
+
+	/**
+	 * Provides compatibility with the DBConnectionSpec that had
+	 * properties singleLogin, seqNo, name, displayName, driverClass,
+	 * url, user, pass.  If you are updating DBConnectionSpec to
+	 * include new non-transient member variables, you will need to
+	 * implement a custom readObject method.
+	 */
+	static final long serialVersionUID = 6238643669579317332L;
 
 	/**
 	 * If true, this DBCS describes a single-database-user,
@@ -25,153 +38,39 @@ public class DBConnectionSpec implements Serializable, Comparable {
 	 * screen will be user separately to validate against an entry in
 	 * the PL_USER table.
 	 */
-	boolean singleLogin;
+	protected boolean singleLogin;
 
 	/**
 	 * The sequence number used to sort in the list.
 	 */
-	int seqNo;
+	protected int seqNo;
 
-	String name;
-	String displayName;
-	String driverClass;
-	String url;
+	protected String name;
+	protected String displayName;
+	protected String driverClass;
+	protected String url;
 
 	/**
 	 * The RDMBS user name.
 	 *
 	 * @see #singleLogin
 	 */
-	String user;
+	protected String user;
 
 	/**
 	 * The RDMBS password.
 	 *
 	 * @see #singleLogin
 	 */
-	String pass;
+	protected String pass;
 
-	/**
-	 * Prints some info from this DBCS.  For use in debugging.
-	 */
-	public String toString() {
-		return "DBConnectionSpec: singleLogin="+singleLogin+", "+name+", "+displayName+", "+driverClass+", "+url;
+	protected transient PropertyChangeSupport pcs;
+	protected PropertyChangeSupport getPcs() {
+		if (pcs == null) pcs = new PropertyChangeSupport(this);
+		return pcs;
 	}
 
-	public boolean isSingleLogin() {
-		return singleLogin;
-	}
-
-	public void setSingleLogin(boolean v) {
-		singleLogin = v;
-	}
-
-	/**
-	 * Gets the value of name
-	 *
-	 * @return the value of name
-	 */
-	public String getName() {
-		return this.name;
-	}
-
-	/**
-	 * Sets the value of name
-	 *
-	 * @param argName Value to assign to this.name
-	 */
-	public void setName(String argName){
-		this.name = argName;
-	}
-
-	/**
-	 * Gets the value of displayName
-	 *
-	 * @return the value of displayName
-	 */
-	public String getDisplayName() {
-		return this.displayName;
-	}
-
-	/**
-	 * Sets the value of displayName
-	 *
-	 * @param argDisplayName Value to assign to this.displayName
-	 */
-	public void setDisplayName(String argDisplayName){
-		this.displayName = argDisplayName;
-	}
-
-	/**
-	 * Gets the value of url
-	 *
-	 * @return the value of url
-	 */
-	public String getUrl() {
-		return this.url;
-	}
-
-	/**
-	 * Sets the value of url
-	 *
-	 * @param argUrl Value to assign to this.url
-	 */
-	public void setUrl(String argUrl){
-		this.url = argUrl;
-	}
-
-	/**
-	 * Gets the value of driverClass
-	 *
-	 * @return the value of driverClass
-	 */
-	public String getDriverClass() {
-		return this.driverClass;
-	}
-
-	/**
-	 * Sets the value of driverClass
-	 *
-	 * @param argDriverClass Value to assign to this.driverClass
-	 */
-	public void setDriverClass(String argDriverClass){
-		this.driverClass = argDriverClass;
-	}
-
-	/**
-	 * Gets the value of user
-	 *
-	 * @return the value of user
-	 */
-	public String getUser() {
-		return this.user;
-	}
-
-	/**
-	 * Sets the value of user
-	 *
-	 * @param argUser Value to assign to this.user
-	 */
-	public void setUser(String argUser){
-		this.user = argUser;
-	}
-
-	/**
-	 * Gets the value of pass
-	 *
-	 * @return the value of pass
-	 */
-	public String getPass() {
-		return this.pass;
-	}
-
-	/**
-	 * Sets the value of pass
-	 *
-	 * @param argPass Value to assign to this.pass
-	 */
-	public void setPass(String argPass){
-		this.pass = argPass;
+	public DBConnectionSpec() {
 	}
 
 	/**
@@ -244,6 +143,154 @@ public class DBConnectionSpec implements Serializable, Comparable {
 	}
 
 	/**
+	 * Prints some info from this DBCS.  For use in debugging.
+	 */
+	public String toString() {
+		return "DBConnectionSpec: singleLogin="+singleLogin+", "+name+", "+displayName+", "+driverClass+", "+url;
+	}
+
+	// --------------------- property change ---------------------------
+	public void addPropertyChangeListener(PropertyChangeListener l) {
+		getPcs().addPropertyChangeListener(l);
+	}
+
+	public void removePropertyChangeListener(PropertyChangeListener l) {
+		getPcs().removePropertyChangeListener(l);
+	}
+
+	// ------------------- accessors and mutators ------------------------
+
+	public boolean isSingleLogin() {
+		return singleLogin;
+	}
+
+	public void setSingleLogin(boolean v) {
+		boolean oldValue = singleLogin;
+		singleLogin = v;
+		getPcs().firePropertyChange("singleLogin", oldValue, singleLogin);
+	}
+
+	/**
+	 * Gets the value of name
+	 *
+	 * @return the value of name
+	 */
+	public String getName() {
+		return this.name;
+	}
+
+	/**
+	 * Sets the value of name
+	 *
+	 * @param argName Value to assign to this.name
+	 */
+	public void setName(String argName){
+		String oldValue = name;
+		this.name = argName;
+		getPcs().firePropertyChange("name", oldValue, name);
+	}
+
+	/**
+	 * Gets the value of displayName
+	 *
+	 * @return the value of displayName
+	 */
+	public String getDisplayName() {
+		return this.displayName;
+	}
+
+	/**
+	 * Sets the value of displayName
+	 *
+	 * @param argDisplayName Value to assign to this.displayName
+	 */
+	public void setDisplayName(String argDisplayName){
+		String oldValue = displayName;
+		this.displayName = argDisplayName;
+		getPcs().firePropertyChange("displayName", oldValue, displayName);
+	}
+
+	/**
+	 * Gets the value of url
+	 *
+	 * @return the value of url
+	 */
+	public String getUrl() {
+		return this.url;
+	}
+
+	/**
+	 * Sets the value of url
+	 *
+	 * @param argUrl Value to assign to this.url
+	 */
+	public void setUrl(String argUrl) {
+		String oldValue = url;
+		this.url = argUrl;
+		getPcs().firePropertyChange("url", oldValue, url);
+	}
+
+	/**
+	 * Gets the value of driverClass
+	 *
+	 * @return the value of driverClass
+	 */
+	public String getDriverClass() {
+		return this.driverClass;
+	}
+
+	/**
+	 * Sets the value of driverClass
+	 *
+	 * @param argDriverClass Value to assign to this.driverClass
+	 */
+	public void setDriverClass(String argDriverClass){
+		String oldValue = driverClass;
+		this.driverClass = argDriverClass;
+		getPcs().firePropertyChange("driverClass", oldValue, driverClass);
+	}
+
+	/**
+	 * Gets the value of user
+	 *
+	 * @return the value of user
+	 */
+	public String getUser() {
+		return this.user;
+	}
+
+	/**
+	 * Sets the value of user
+	 *
+	 * @param argUser Value to assign to this.user
+	 */
+	public void setUser(String argUser){
+		String oldValue = user;
+		this.user = argUser;
+		getPcs().firePropertyChange("user", oldValue, user);
+	}
+
+	/**
+	 * Gets the value of pass
+	 *
+	 * @return the value of pass
+	 */
+	public String getPass() {
+		return this.pass;
+	}
+
+	/**
+	 * Sets the value of pass
+	 *
+	 * @param argPass Value to assign to this.pass
+	 */
+	public void setPass(String argPass){
+		String oldValue = pass;
+		this.pass = argPass;
+		getPcs().firePropertyChange("pass", oldValue, pass);
+	}
+
+	/**
 	 * Returns the seqNo.
 	 * @return int
 	 */
@@ -255,8 +302,9 @@ public class DBConnectionSpec implements Serializable, Comparable {
 	 * Sets the seqNo.
 	 * @param seqNo The seqNo to set
 	 */
-	public void setSeqNo(int seqNo) {
-		this.seqNo = seqNo;
+	public void setSeqNo(int argSeqNo) {
+		int oldValue = seqNo;
+		this.seqNo = argSeqNo;
+		getPcs().firePropertyChange("seqNo", oldValue, seqNo);
 	}
-
 }
