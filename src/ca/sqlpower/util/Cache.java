@@ -1,6 +1,7 @@
 package ca.sqlpower.util;
 
 import java.util.Map;
+import java.util.Date;
 
 /**
  * The Cache interface extends the normal Java Map interface to
@@ -28,4 +29,17 @@ public interface Cache extends Map {
 	 */
 	public int getMaxMembers();
 
+	/**
+	 * Gets the last time this cache was fully emptied.  Useful for
+	 * deciding if the cache needs to be refreshed.  The cache will
+	 * set the flush date when it is first created, and again every
+	 * time the flush() method is called.
+	 */
+	public Date getLastFlushDate();
+
+	/**
+	 * Removes all items from the cache, and records the current time
+	 * as the last flush date.
+	 */
+	public void flush();
 }

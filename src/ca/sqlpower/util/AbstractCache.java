@@ -13,11 +13,12 @@ import java.util.*;
  * Therefore, it's not safe to assume an AbstractCache is a HashMap
  * but it is safe to assume an AbstractCache is a Map (or a Collection).
  */
-public abstract class AbstractCache extends HashMap implements Cache {
+public abstract class AbstractCache extends HashMap implements Cache, java.io.Serializable {
 	
 	public AbstractCache(int initialMaxMembers) {
 		super();
 		maxMembers=initialMaxMembers;
+		lastFlushDate=new Date();
 	}
 
 	/**
@@ -27,6 +28,13 @@ public abstract class AbstractCache extends HashMap implements Cache {
 	 * chosen.
 	 */
 	protected int maxMembers;
+
+	/**
+	 * This is initialized to the current date when the cache is first
+	 * created, and is updated to the current date whenever the {@link
+	 * #flush()} method is called.
+	 */
+	protected Date lastFlushDate;
 
 	/**
 	 * Whenever an item is inserted (using <code>put</code> or
@@ -113,5 +121,21 @@ public abstract class AbstractCache extends HashMap implements Cache {
 		Object retval=super.get(key);
 		itemRequested(key, retval!=null);
 		return retval;
+	}
+
+	/**
+	 * @see #lastFlushDate
+	 */
+	public Date getLastFlushDate() {
+		return lastFlushDate;
+	}
+
+	/**
+	 * Releases all objects in the cache and updates the last flush
+	 * date.
+	 */
+	public void flush() {
+		super.clear();
+		lastFlushDate = new Date();
 	}
 }

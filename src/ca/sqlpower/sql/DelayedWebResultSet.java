@@ -13,7 +13,7 @@ public class DelayedWebResultSet extends WebResultSet {
 	 * string).  The maximum number of members for this cache is
 	 * specified as 100.
 	 */
-	protected static Map resultCache=Collections.synchronizedMap(new LeastRecentlyUsedCache(100));
+	protected static Cache resultCache = new SynchronizedCache(new LeastRecentlyUsedCache(100));
 
 	protected int givenColCount;
 

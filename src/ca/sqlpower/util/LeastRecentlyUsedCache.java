@@ -10,7 +10,7 @@ import java.util.*;
  * @author Jonathan Fuerth
  * @version $Id$
  */
-public class LeastRecentlyUsedCache extends AbstractCache {
+public class LeastRecentlyUsedCache extends AbstractCache implements java.io.Serializable {
 
 	public LeastRecentlyUsedCache(int initialMaxMembers) {
 		super(initialMaxMembers);
