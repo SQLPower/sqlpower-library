@@ -18,6 +18,7 @@ public class WebResultSet {
     protected boolean[] columnHasAny;
     protected boolean[] columnHasAll;
     protected int[] columnType;
+	protected String[] columnHrefText;
     protected int rowidColNo;
 
     public WebResultSet(ResultSet results, String query) throws SQLException {
@@ -36,6 +37,7 @@ public class WebResultSet {
         columnHasAny=new boolean[cols];
         columnHasAll=new boolean[cols];
         columnType=new int[cols];
+		columnHrefText=new String[cols];
         rowidColNo=0;
     }
 
@@ -190,7 +192,7 @@ public class WebResultSet {
     }
     
     /**
-     * Get the value of columnType[].  See 
+     * Gets the value of columnType[].  See 
      * {@link ca.sqlpower.sql.FieldTypes} for valid types.
      * i is 1-based.
      *
@@ -202,7 +204,7 @@ public class WebResultSet {
     }
     
     /**
-     * Set the value of the ith column's columnType.  See
+     * Sets the value of the ith column's columnType.  See
      * {@link ca.sqlpower.sql.FieldTypes} for valid types.
      * i is 1-based.
      *
@@ -218,6 +220,32 @@ public class WebResultSet {
         }
         this.columnType[colNo-1] = v;   
     }
+
+	/**
+	 * Returns the href text for the given column.
+	 *
+	 * @param colNo The column number in question.
+	 * @return The href text for this column (<code>null</code> if no
+	 * text has been specified).
+	 */
+	public String getColumnHrefText(int colNo) {
+		return this.columnHrefText[colNo-1];
+	}
+
+	/**
+	 * Sets the text which should be used for making a hyperlink for
+	 * each entry in this column.  The character "!" is special:
+	 * Format classes will replace it with the column's textual value
+	 * before rendering the link to the screen.<p>
+	 *
+	 * @param colNo The column number to which the href text applies.
+	 * @param v The href text string, with the special "!" character
+	 * indicating where to substitute the column value.  There is
+	 * currently no way to include a literal "!" in the href.
+	 */
+	public void setColumnHrefText(int colNo, String v) {
+		this.columnHrefText[colNo-1]=v;
+	}
     
     public String getSqlQuery() {
         return sqlQuery;

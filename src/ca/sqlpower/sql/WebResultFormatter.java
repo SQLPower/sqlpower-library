@@ -158,6 +158,30 @@ public abstract class WebResultFormatter {
         return newColName.toString();
     }
 
+	/**
+	 * Replaces the first occurence of "!" in <code>format</code> with
+	 * the contents of <code>subst</code> and appends the result to
+	 * <code>toAppendTo</code>.
+	 *
+	 * @param format The format string.
+	 * @param subst The string to substitute into the format string.
+	 * @param toAppendTo The buffer which recieves the formatted text.
+	 */
+	public static void replaceAndAppend(String format,
+										String subst,
+										StringBuffer toAppendTo) {
+		int upTo=format.indexOf('!');
+		if(upTo>0) {
+			toAppendTo.append(format.substring(0, upTo));
+		}
+		if(upTo != -1) {
+			toAppendTo.append(subst);
+		}
+		if(upTo<format.length()) {
+			toAppendTo.append(format.substring(upTo+1));
+		}
+	}
+
     protected void getColumnFormatted(WebResultSet wrs,
                                       int i,
                                       StringBuffer contents,
