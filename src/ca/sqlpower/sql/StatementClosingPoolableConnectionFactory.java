@@ -42,23 +42,42 @@ public class StatementClosingPoolableConnectionFactory
 	 * Get a fancy new connection.
 	 */
 	synchronized public Object makeObject() throws Exception {
-        Connection conn = _connFactory.createConnection();
+        Connection con = _connFactory.createConnection();
         try {
-            conn.setAutoCommit(_defaultAutoCommit);
+            con.setAutoCommit(_defaultAutoCommit);
         } catch(SQLException e) {
             ; // ignored for now
         }
         try {
-            conn.setReadOnly(_defaultReadOnly);
+            con.setReadOnly(_defaultReadOnly);
         } catch(SQLException e) {
             ; // ignored for now
         }
         if(null != _stmtPoolFactory) {
             KeyedObjectPool stmtpool = _stmtPoolFactory.createPool();
-            conn = new PoolingConnection(conn,stmtpool);
-            stmtpool.setFactory((PoolingConnection)conn);
+            con = new PoolingConnection(con,stmtpool);
+            stmtpool.setFactory((PoolingConnection)con);
         }
+		
+		// check for requisite version of PL schema
+		Statement stmt = null;
+		try {
+			stmt = con.createStatement();
+			ResultSet rs = stmt.executeQuery("select schema_version from def_param");
+			if(!rs.next()) {
+				throw new SQLException("def_param table has no rows");
+			}
+			String schemaVersion = rs.getString(1);
+			if(schemaVersion.compareTo("4.0.0") < 0) {
+				throw new PLSchemaException("You have Power*Loader Schema version "+rs.getString(1)+" but you need a version of 4.0.0");
+			}
+		} finally {
+			if(stmt != null) {
+				stmt.close();
+			}
+		}
+
 		System.out.println("returning new PoolableStatementClosingConnection");
-        return new PoolableStatementClosingConnection(conn,_pool);
+        return new PoolableStatementClosingConnection(con,_pool);
     }
 }

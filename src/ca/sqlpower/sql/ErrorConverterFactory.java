@@ -9,6 +9,7 @@ import java.sql.*;
 
 public class ErrorConverterFactory {
 
+	private static PLErrorConverter plErrorConverter = new PLErrorConverter();
 	private static OracleErrorConverter oracleErrorConverter = new OracleErrorConverter();
 	private static SQLServerErrorConverter sqlServerErrorConverter = new SQLServerErrorConverter();
 
@@ -21,7 +22,9 @@ public class ErrorConverterFactory {
 	public static AbstractErrorConverter getInstance(SQLException e) {
 		String message = e.getMessage();
 
-		if (message.indexOf("icrosoft") >= 0) {
+		if (message.indexOf("PLSchemaException") >= 0) {
+			return plErrorConverter;
+		} else if (message.indexOf("icrosoft") >= 0) {
 			return sqlServerErrorConverter;
 		} else if (message.startsWith("ORA")
 				   || message.indexOf("THIN") >= 0

@@ -24,9 +24,15 @@ public abstract class AbstractErrorConverter {
 	 */
 	public static final int SERVER_UNAVAILABLE = 3;
 
+	/**
+	 * Used if the PLErrorConverter is asked to convert an exception.
+	 * Means the schema is too old or just plain missing.
+	 */
+	public static final int BAD_PL_SCHEMA = 4;
+
 	/** 
 	 * Used if an appropriate conversion for the database error
-	 * cannot be found
+	 * cannot be found.
 	 */
 	public static final int UNKNOWN_ERROR = -1;
 	

@@ -14,6 +14,8 @@ public class OracleErrorConverter extends AbstractErrorConverter {
 		switch (e.getErrorCode()) {
 		case 904: 
 			return UNKNOWN_COLUMN;
+		case 942:
+			return UNKNOWN_COLUMN;
 		case 1017 :
 			return INVALID_LOGON;
 		case 17443 :
