@@ -7,7 +7,7 @@ import ca.sqlpower.sql.*;
 
 /**
  * The EmailNotification class answers questions about email
- * notification for users or groups on specific objects, and allows
+ * notification for users or groups on spe*cific objects, and allows
  * updating of notification preferences.
  * 
  * @author Gillian Mereweather
@@ -279,6 +279,12 @@ public class EmailNotification implements java.io.Serializable {
 
 			sql.setLength(0);
 			sql.append("UPDATE pl_user_notification_log SET object_name=").append(SQL.quote(newName));
+			sql.append(" WHERE object_type=").append(SQL.quote(obj.getObjectType()));
+			sql.append(" AND object_name=").append(SQL.quote(obj.getObjectName()));
+			stmt.executeUpdate(sql.toString());
+
+			sql.setLength(0);
+			sql.append("UPDATE pl_group_notification SET object_name=").append(SQL.quote(newName));
 			sql.append(" WHERE object_type=").append(SQL.quote(obj.getObjectType()));
 			sql.append(" AND object_name=").append(SQL.quote(obj.getObjectName()));
 			stmt.executeUpdate(sql.toString());
