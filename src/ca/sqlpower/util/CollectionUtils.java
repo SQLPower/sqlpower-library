@@ -61,15 +61,15 @@ public class CollectionUtils {
 		return outputString.toString();
 	}
 
-	public static String enumerationToString(Enumeration enum) {
+	public static String enumerationToString(Enumeration enm) {
 		StringBuffer sb = new StringBuffer(100);
 		boolean firstItem = true;
 		sb.append("[");
-		while (enum.hasMoreElements()) {
+		while (enm.hasMoreElements()) {
 			if (!firstItem) {
 				sb.append(", ");
 			}
-			sb.append(enum.nextElement());
+			sb.append(enm.nextElement());
 			firstItem = false;
 		}
 		sb.append("]");

@@ -51,11 +51,11 @@ public class Web {
      * @see #formatRequestAsTable(HttpServletRequest)
      */
     public static String formatSessionAsTable(HttpSession s) {
-	Enumeration enum = s.getAttributeNames();
+	Enumeration enm = s.getAttributeNames();
 	StringBuffer sb = new StringBuffer(200);
 	sb.append("<table border=\"1\">");
-        while(enum.hasMoreElements()) {
-            String thisElement = (String)enum.nextElement();
+        while(enm.hasMoreElements()) {
+            String thisElement = (String)enm.nextElement();
 	    if(thisElement == null) {
 		sb.append("<tr><td>NULL ELEMENT!</td></tr>");
 	 continue;
