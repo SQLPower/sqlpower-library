@@ -24,13 +24,7 @@ public class BeanGenerator {
 		className=convertToClassName(tableName);
 		List priKey=SQL.findPrimaryKey(rs.getStatement().getConnection(),
 									   tableName);
-		if(priKey.size() != 1) {
-			throw new SQLException("The table "+tableName
-								   +" does not have a single-column primary "
-								   +"key (it has a "+priKey.size()
-								   +"-column key).");
-		}
-		uniqueIdColName=(String)priKey.get(0);
+		uniqueIdColName=(String)priKey.get(priKey.size()-1);
 
 		try {
 			out=new PrintWriter(new FileOutputStream(destDir+className+".java"));

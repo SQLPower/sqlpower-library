@@ -124,6 +124,6 @@ public class FieldTypes {
      * This class is just a container for the type values; it cannot
      * be instantiated.
      */
-    private FieldTypes() {
+    protected FieldTypes() {
     }
 }
