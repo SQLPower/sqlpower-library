@@ -126,4 +126,18 @@ public class Web {
 	sb.append(optionName);
 	sb.append("</option>");
     }
-}
+
+	/** Check if the given string contains any special characters (<, >, &) */
+	public static boolean containsHTMLMarkup(String testMe){
+		for(int i=0; i<testMe.length(); i++){
+			if(testMe.charAt(i)=='<' ||
+			   testMe.charAt(i)=='>' ||
+			   testMe.charAt(i)=='&'){
+
+				return true;
+			}
+		} // end for (loop through testMe)
+		return false;
+	}
+} // end class
+ 
