@@ -690,6 +690,52 @@ public class PLSecurityManager implements java.io.Serializable {
 	}
 
 	/**
+	 * Bootstraps permissions for a newly-created object.  Grants
+	 * MODIFY, DELETE, EXECUTE, and GRANT privs to the user
+	 * represented by <code>sm</code> if that user is allowed to
+	 * create the type of database object represented by
+	 * <code>obj</code>.
+	 *
+	 * @throws SQLException if there is a database problem.
+	 * @throws PLSecurityException if <code>sm</code> denies create
+	 * rights on obj.
+	 */
+	public static void createDatabaseObject(Connection con, PLSecurityManager sm,
+											DatabaseObject obj)
+		throws SQLException, PLSecurityException {
+
+		sm.checkCreateAny(con, obj.getObjectType());
+
+		StringBuffer sql = new StringBuffer(50);
+		sql.append("INSERT INTO user_object_privs (user_id");
+		sql.append(", object_type, object_name");
+		sql.append(", last_update_user, last_update_os_user, last_update_date");
+		sql.append(", execute_ind, modify_ind, delete_ind, grant_ind");
+		sql.append(") VALUES (").append(SQL.quote(sm.principal.getUserId()));
+		sql.append(", ").append(SQL.quote(obj.getObjectType()));
+		sql.append(", ").append(SQL.quote(obj.getObjectName()));
+		sql.append(", ").append(SQL.quote(sm.principal.getUserId()));
+		sql.append(", 'Power*Dashboard Web Facility'");
+		sql.append(", ").append(DBConnection.getSystemDate(con));
+		sql.append(", 'Y', 'Y', 'Y', 'Y'");
+		sql.append(")");
+
+		Statement stmt = null;
+		try {
+			stmt = con.createStatement();
+			stmt.executeUpdate(sql.toString());
+		} catch (SQLException e) {
+			System.out.println
+				("PLSecurityManager.createDatabaseObject: Error in SQL Statement: "
+				 +e.getMessage());
+			System.out.println("Query: "+sql);
+			throw e;
+		} finally {
+			if (stmt != null) stmt.close();
+		}
+	}
+
+	/**
 	 * Call this method to remove everything security-ish about a
 	 * database object.  It will not magically remove the object's own
 	 * data, but it will zap all the necessary rows from the following:
