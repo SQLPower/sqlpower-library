@@ -42,8 +42,8 @@ public class DBConnectionSpecServerImpl
 			databases = new LinkedList(xmlSource.getDBCSList());
 			Collections.sort(databases);
 		} catch (Exception e) {
-			databases = null;
 			e.printStackTrace();
+			throw new RemoteException("Could not read XML File (see RMI server log)", e);
 			// could not get the database list, not much we can do.
 		}
 		return databases;

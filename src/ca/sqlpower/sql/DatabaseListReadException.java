@@ -16,4 +16,12 @@ public class DatabaseListReadException extends Exception {
 	public Throwable getRootCause() {
 		return rootCause;
 	}
+
+	public String getMessage() {
+		if (rootCause != null) {
+			System.err.println("DatabaseListReadException: nested exception is:");
+			rootCause.printStackTrace();
+		}
+		return "DatabaseListReadException; root cause is: "+rootCause;
+	}
 }

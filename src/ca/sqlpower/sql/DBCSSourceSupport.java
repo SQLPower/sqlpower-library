@@ -142,9 +142,13 @@ public class DBCSSourceSupport {
 			} else if(databaseProperty.getNodeName().equals("url")) {
 				spec.setUrl(databaseProperty.getFirstChild().getNodeValue());
 			} else if(databaseProperty.getNodeName().equals("user")) {
-				spec.setUser(databaseProperty.getFirstChild().getNodeValue());
+				if (databaseProperty.getFirstChild() != null) {
+					spec.setUser(databaseProperty.getFirstChild().getNodeValue());
+				}
 			} else if(databaseProperty.getNodeName().equals("pass")) {
-				spec.setPass(databaseProperty.getFirstChild().getNodeValue());
+				if (databaseProperty.getFirstChild() != null) {
+					spec.setPass(databaseProperty.getFirstChild().getNodeValue());
+				}
 			}
 		}
 		return spec;
