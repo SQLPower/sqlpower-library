@@ -145,24 +145,15 @@ public class Web {
 	 * are converted to their character reference equivalents).
 	 */
 	public static String escapeAttribute(String attval) {
-		if (attval == null) return null;
-		StringBuffer escaped = new StringBuffer();
-		for (int i = 0, n = attval.length(); i < n; i++) {
-			switch (attval.charAt(i)) {
-			case '\"':
-				escaped.append("&quot;");
-				break;
-				
-			case '&':
-				escaped.append("&amp;");
-				break;
-				
-			default:
-				escaped.append(attval.charAt(i));
-				break;
-			}
-		}
-		return escaped.toString();
+		return escapeImpl(attval, false, false, true, true, false);
+	}
+
+	/**
+	 * Works like escapeAttribute, but converts spaces to non-breaking
+	 * spaces. 
+	 */
+	public static String escapeAttributeNbsp(String attval) {
+		return escapeImpl(attval, false, false, true, true, true);
 	}
 
 	/**
@@ -171,24 +162,64 @@ public class Web {
 	 * equivalents).
 	 */
 	public static String escapeHtml(String cdata) {
-		if (cdata == null) return null;
+		return escapeImpl(cdata, true, true, true, false, false);
+	}
+
+	/**
+	 * Performs the actual escaping for the escapeXXX methods.
+	 */
+	static String escapeImpl(String str,
+							 boolean lt,
+							 boolean gt,
+							 boolean amp,
+							 boolean quot,
+							 boolean nbsp) {
+		if (str == null) return null;
 		StringBuffer escaped = new StringBuffer();
-		for (int i = 0, n = cdata.length(); i < n; i++) {
-			switch (cdata.charAt(i)) {
+		for (int i = 0, n = str.length(); i < n; i++) {
+			switch (str.charAt(i)) {
 			case '<':
-				escaped.append("&lt;");
+				if (lt) {
+					escaped.append("&lt;");
+				} else {
+					escaped.append('<');
+				}
 				break;
 				
 			case '>':
-				escaped.append("&gt;");
+				if (lt) {
+					escaped.append("&gt;");
+				} else {
+					escaped.append('>');
+				}
 				break;
 				
 			case '&':
-				escaped.append("&amp;");
+				if (amp) {
+					escaped.append("&amp;");
+				} else {
+					escaped.append('&');
+				}
 				break;
 				
+			case '\"':
+				if (quot) {
+					escaped.append("&quot;");
+				} else {
+					escaped.append('"');
+				}
+				break;
+				
+			case ' ':
+				if (nbsp) {
+					escaped.append("&nbsp;");
+				} else {
+					escaped.append(' ');
+				}
+				break;
+
 			default:
-				escaped.append(cdata.charAt(i));
+				escaped.append(str.charAt(i));
 				break;
 			}
 		}
