@@ -26,15 +26,41 @@ public class DelayedWebResultSet extends WebResultSet {
 	protected Connection con;
 
 	/**
-	 * Creates a new <code>DelayedWebResultSet</code>.
+	 * Controls whether or not this instance of DelayedWebResultSet
+	 * will use the cache of query results.  It is almost always best
+	 * to use the cache, except:
+	 * <ul>
+	 *  <li>When the data rendered to this screen is expected to have changed
+	 *  <li>When the expected data set is too large to cache in RAM
+ 	 * </ul>
+	 */
+	protected boolean cacheEnabled;
+
+	/**
+	 * Creates a new <code>DelayedWebResultSet</code> which uses the
+	 * query resultset cache.
 	 *
 	 * @param cols The number of columns the <code>query</code> will
 	 * generate when executed.
 	 * @param query An SQL query statement.
 	 */
 	public DelayedWebResultSet(int cols, String query) {
+		this(cols, query, true);
+	}
+
+	/**
+	 * Creates a new <code>DelayedWebResultSet</code>.
+	 *
+	 * @param cols The number of columns the <code>query</code> will
+	 * generate when executed.
+	 * @param query An SQL query statement.
+	 * @param useCache If true, this DelayedWebResultSet will try to
+	 * read from or write to the cache on execute.
+	 */
+	public DelayedWebResultSet(int cols, String query, boolean useCache) {
 		this.sqlQuery=query;
 		this.givenColCount=cols;
+		this.cacheEnabled=useCache;
 		this.con=null;
 		initMembers(cols);
 	}
@@ -45,6 +71,10 @@ public class DelayedWebResultSet extends WebResultSet {
 	 */
 	protected DelayedWebResultSet() {
 		super();
+		this.sqlQuery=null;
+		this.givenColCount=0;
+		this.cacheEnabled=true;
+		this.con=null;		
 	}
 
 	/**
@@ -87,41 +117,50 @@ public class DelayedWebResultSet extends WebResultSet {
 		throws IllegalStateException, SQLException {
 		this.con = con;
 
-		System.out.print(
-			"DelayedResultSet.execute: Finding results in cache of "
-				+ resultCache.size()
-				+ " items: ");
+		ResultSet newRS=null;
+
+		if(cacheEnabled) {
+			System.out.print
+				("DelayedResultSet.execute: Finding results in cache of "
+				 + resultCache.size()
+				 + " items: ");
 				
-		String cacheKey = sqlQuery 
+			String cacheKey = sqlQuery 
 				+"&"+con.getMetaData().getURL() 
 				+"&"+con.getMetaData().getUserName();
-	
-		CachedRowSet results = (CachedRowSet) resultCache.get(cacheKey);
-		if (results != null) {
-			results = (CachedRowSet) results.createShared();
-
-			// reset cursor, which is likely afterLast right now
-			results.beforeFirst();
 			
-			System.out.println("HIT ("+results.size()+" rows)");
-			 // we don't want to close cached resultset
-			closeOldRS=false;
-		} else {
-			Statement stmt = null;
-			try {
-				stmt = con.createStatement();
-				results = new CachedRowSet();
-				ResultSet rs = stmt.executeQuery(sqlQuery);
-				results.populate(rs);
-			} finally {
-				if (stmt != null) {
-					stmt.close();
+			CachedRowSet results = (CachedRowSet) resultCache.get(cacheKey);
+			if (results != null) {
+				results = (CachedRowSet) results.createShared();
+				
+				// reset cursor, which is likely afterLast right now
+				results.beforeFirst();
+				
+				System.out.println("HIT ("+results.size()+" rows)");
+				// we don't want to close cached resultset
+				closeOldRS=false;
+			} else {
+				Statement stmt = null;
+				try {
+					stmt = con.createStatement();
+					results = new CachedRowSet();
+					ResultSet rs = stmt.executeQuery(sqlQuery);
+					results.populate(rs);
+				} finally {
+					if (stmt != null) {
+						stmt.close();
+					}
 				}
+				resultCache.put(cacheKey, results);
+				System.out.println("MISS ("+results.size()+" rows)");
 			}
-			resultCache.put(cacheKey, results);
-			System.out.println("MISS ("+results.size()+" rows)");
+			newRS=results;
+		} else {
+			// not using cache
+			Statement stmt = con.createStatement();
+			newRS = stmt.executeQuery(sqlQuery);
 		}
-		applyResultSet(results, closeOldRS);
+		applyResultSet(newRS, closeOldRS);
 
 		if (rsmd.getColumnCount() != givenColCount) {
 			throw new IllegalStateException(
@@ -140,5 +179,21 @@ public class DelayedWebResultSet extends WebResultSet {
 	 */
 	public int getColumnCount() {
 		return givenColCount;
+	}
+
+	/**
+	 * Returns true if this DelayedWebResultSet is using the result
+	 * set cache for query execution.
+	 */
+	public boolean isCacheEnabled() {
+		return cacheEnabled;
+	}
+
+	/**
+	 * Controls whether this DelayedWebResultSet is using the result
+	 * set cache for query execution.
+	 */
+	public void setCacheEnabled(boolean v) {
+		cacheEnabled=v;
 	}
 }
