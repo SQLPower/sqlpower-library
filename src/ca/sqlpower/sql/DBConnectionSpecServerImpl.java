@@ -36,10 +36,11 @@ public class DBConnectionSpecServerImpl
 	 * @see ca.sqlpower.sql.DBConnectionSpecServer
 	 */
 	public Collection getAvailableDatabases() throws RemoteException {
-		Collection databases = null;
+		List databases = null;
 		try {
 			DBCSSource xmlSource = new XMLFileDBCSSource(xmlFileName);
-			databases = xmlSource.getDBCSList();
+			databases = new LinkedList(xmlSource.getDBCSList());
+			Collections.sort(databases);
 		} catch (Exception e) {
 			databases = null;
 			e.printStackTrace();

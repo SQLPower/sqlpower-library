@@ -12,7 +12,7 @@ import java.util.*;
  *
  * @version $Id$
  */
-public class DBConnectionSpec implements Serializable {
+public class DBConnectionSpec implements Serializable, Comparable {
 	String name;
 	String displayName;
 	String driverClass;
@@ -196,4 +196,9 @@ public class DBConnectionSpec implements Serializable {
 		}
 		return dbcs;
 	}
+
+	public int compareTo(Object other) {
+		return this.getName().compareTo(((DBConnectionSpec) other).getName());
+	}
+
 }
