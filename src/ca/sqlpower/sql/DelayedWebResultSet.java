@@ -1,9 +1,28 @@
 package ca.sqlpower.sql;
 
 import java.sql.*;
+import java.util.*;
+// The CachedRowSet from Sun is still Early Access, so we can't use it in production
+import sun.jdbc.rowset.*;
 
 public class DelayedWebResultSet extends WebResultSet {
+	/**
+	 * Holds the set of cached resultset objects (keyed on SQL query
+	 * string).  Currently, it's just a synchronized HashMap, but this
+	 * will be replaced with a more featureful cache-specific
+	 * implementation of java.util.Map in the future.
+	 */
+	protected static Map resultCache=Collections.synchronizedMap(new HashMap());
+
 	protected int givenColCount;
+
+	/**
+	 * The JDBC Connection that was last passed to the execute()
+	 * method, or null if execute hasn't been called yet.  This
+	 * instance variable may be moved up to the WebResultSet class in
+	 * the future.
+	 */
+	protected Connection con;
 
 	/**
 	 * Creates a new <code>DelayedWebResultSet</code>.
@@ -15,6 +34,7 @@ public class DelayedWebResultSet extends WebResultSet {
 	public DelayedWebResultSet(int cols, String query) {
 		this.sqlQuery=query;
 		this.givenColCount=cols;
+		this.con=null;
 		initMembers(cols);
 	}
 
@@ -64,8 +84,22 @@ public class DelayedWebResultSet extends WebResultSet {
 	 */
 	protected void execute(Connection con, boolean closeOldRS)
 		throws IllegalStateException, SQLException {
-		Statement stmt=con.createStatement();
-		ResultSet results=stmt.executeQuery(sqlQuery);
+		this.con=con;
+
+		System.out.print("DelayedResultSet.execute: Finding results in cache of "+resultCache.size()+" items: ");
+		
+		CachedRowSet results=(CachedRowSet)resultCache.get(sqlQuery);
+		if (results != null) {
+			System.out.println("HIT");
+			results=(CachedRowSet)results.createShared();
+			results.beforeFirst(); // reset cursor, which is likely afterLast right now
+		} else {
+			System.out.println("MISS");
+			Statement stmt=con.createStatement();
+			results=new CachedRowSet();
+			results.populate(stmt.executeQuery(sqlQuery));
+			resultCache.put(sqlQuery, results);
+		}
 		applyResultSet(results, closeOldRS);
 
 		if(rsmd.getColumnCount() != givenColCount) {
