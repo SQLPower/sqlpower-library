@@ -47,7 +47,7 @@ public class Pool {
   
 			// XXX: this should come from a properties file.
         	poolConfig.maxActive = 25;
-        	poolConfig.maxIdle = 2;
+        	poolConfig.maxIdle = 25;
         	poolConfig.maxWait = 10000;
         	poolConfig.minEvictableIdleTimeMillis = 1000*60*5;
         	poolConfig.timeBetweenEvictionRunsMillis = 10000;
