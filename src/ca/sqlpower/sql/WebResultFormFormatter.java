@@ -34,15 +34,14 @@ public class WebResultFormFormatter extends WebResultFormatter {
 	return numHTMLCols;
     }
 
-    public void formatToStream(WebResultSet wrs, PrintWriter out) 
-	throws SQLException {
+    public void formatToStream(WebResultSet wrs, PrintWriter out)
+	throws SQLException, NoRowidException {
 	int numCols=wrs.getColumnCount();
-	int cell=0, col=0;;
-
-	boolean fcShowFirstColumn=wrs.getShowFirstColumn();
+	int cell=0, col=0;
 
 	StringBuffer contents=new StringBuffer(60);
 	StringBuffer align=new StringBuffer(10);
+	StringBuffer label=new StringBuffer(20);
 
 	if(!wrs.next()) {
 	    return;
@@ -51,19 +50,24 @@ public class WebResultFormFormatter extends WebResultFormatter {
 	out.println("<table>");
 	out.println(" <tr>");
 	do {
-	    if(!fcShowFirstColumn && cell==0) {
-		cell++;
-	    }
 	    contents.setLength(0);
 	    align.setLength(0);
-	    getColumnFormatted(wrs, cell+1, contents, align);
+	    label.setLength(0);
+
+	    try {
+		getColumnFormatted(wrs, cell+1, contents, align);
+		label.append(wrs.getColumnLabel(cell+1));
+	    } catch(ColumnNotDisplayableException e) {
+		cell++;
+		continue;
+	    }
 
 	    out.println("  <td align=\"right\" class=\"searchForm\">");
-	    out.println(beautifyHeading(wrs.getColumnLabel(cell+1)));
+	    out.println(beautifyHeading(label.toString()));
 	    out.println("  </td>");
 	    out.println("  <td>");
 	    out.print("   <input type=\"text\" length=\"30\" name=\"");
-	    out.print(wrs.getColumnLabel(cell+1));
+	    out.print(label);
 	    out.print("\" value=\"");
 	    out.print(contents.toString());
 	    out.println("\" />");

@@ -21,11 +21,13 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 
     private boolean dropdownsInline;
     private boolean dropdownsAbove;
+    private int dropdownsPerRow;
 
     public WebResultHTMLFormatter() {
 	super();
 	dropdownsInline=false;
 	dropdownsAbove=true;
+	dropdownsPerRow=3;
     }
     
     /**
@@ -61,7 +63,21 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
      * @param v  Value to assign to dropdownsAbove.
      */
     public void setDropdownsAbove(boolean  v) {this.dropdownsAbove = v;}
-
+    
+    /**
+     * Get the value of dropdownsPerRow.
+     *
+     * @return value of dropdownsPerRow.
+     */
+    public int getDropdownsPerRow() {return dropdownsPerRow;}
+    
+    /**
+     * Set the value of dropdownsPerRow.
+     *
+     * @param v  Value to assign to dropdownsPerRow.
+     */
+    public void setDropdownsPerRow(int  v) {this.dropdownsPerRow = v;}
+    
     public void formatToStream(WebResultSet wrs, PrintWriter out) 
 	throws SQLException, NoRowidException {
 	int numCols=wrs.getColumnCount();
@@ -70,6 +86,7 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	if(dropdownsAbove) {
 	    List choices=null;
 	    int i=1;
+	    int numRenderedCells=0;
 
 	    out.println("<table align=\"center\">");
 	    out.println(" <tr>");
@@ -78,9 +95,9 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 		try {
 		    choices=wrs.getColumnChoicesList(i);
 		    if(choices != null) {
-			sb.append("  <td align=\"center\">");
+			sb.append("\n  <td align=\"right\" class=\"searchForm\">");
 			sb.append(wrs.getColumnLabel(i));
-			sb.append("<br />\n");
+			sb.append("</td>\n  <td align=\"left\" class=\"searchForm\">");
 			sb.append(Web.makeSelectionList(
 					  wrs.getColumnChoicesName(i),
 					  choices,
@@ -88,6 +105,11 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 					  wrs.getColumnHasAny(i),
 					  wrs.getColumnHasAll(i)));
 			sb.append("\n  </td>");
+			numRenderedCells++;
+			if(numRenderedCells >= dropdownsPerRow) {
+			    numRenderedCells=0;
+			    sb.append("\n </tr>\n <tr>");
+			}
 		    }
 		    out.println(sb);
 		} catch(ColumnNotDisplayableException e) {
@@ -104,11 +126,15 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	out.println(" <tr class=\"resultTableHeading\">");
 	for(int i=1; i<=numCols; i++) {
 	    sb.setLength(0);
+	    int columnType = wrs.getColumnType(i);
 	    try {
-		sb.append("  <th valign=\"bottom\">");
-		sb.append(beautifyHeading(wrs.getColumnLabel(i)));
-		sb.append("</th>");
-		out.println(sb);
+		if(columnType != FieldTypes.DUMMY &&
+		   columnType != FieldTypes.ROWID) {
+		    sb.append("  <th valign=\"bottom\">");
+		    sb.append(beautifyHeading(wrs.getColumnLabel(i)));
+		    sb.append("</th>");
+		    out.println(sb);
+		}
 	    } catch(ColumnNotDisplayableException e) {
 		// Column didn't get printed (which is good)
 	    }

@@ -179,6 +179,7 @@ public abstract class WebResultFormatter {
 	    break;
 
 	case FieldTypes.ROWID:
+	case FieldTypes.DUMMY:
 	    throw new ColumnNotDisplayableException();
 	}
     }
