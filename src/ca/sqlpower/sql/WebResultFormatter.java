@@ -304,6 +304,7 @@ public abstract class WebResultFormatter {
  		case FieldTypes.HYPERLINK:
 			align.append("center");
  			List hyperlinks=wrs.getColumnHyperlinks(i);
+			String style=wrs.getColumnHyperlinkStyle(i);
  			if(hyperlinks == null) {
  				throw new IllegalStateException
  					("You must supply hyperlink specs in the WebResultSet.");
@@ -320,6 +321,9 @@ public abstract class WebResultFormatter {
  				}
  				contents.append("<a href=\"");
  				hrefFormat.format(rowValues, contents, null);
+				if(style!=null) {
+					contents.append("\" class=\"").append(style);
+				}
  				contents.append("\">");
  				textFormat.format(rowValues, contents, null);
  				contents.append("</a><br>");

@@ -3,8 +3,8 @@ package ca.sqlpower.sql;
 import java.sql.*;
 
 public class DelayedWebResultSet extends WebResultSet {
-	private int givenColCount;
-	private boolean alreadyExecuted;
+	protected int givenColCount;
+	protected boolean alreadyExecuted;
 
 	/**
 	 * Creates a new <code>DelayedWebResultSet</code>.
@@ -18,6 +18,14 @@ public class DelayedWebResultSet extends WebResultSet {
 		this.givenColCount=cols;
 		this.alreadyExecuted=false;
 		initMembers(cols);
+	}
+
+	/**
+	 * Does nothing.  Provided for subclasses that want to use
+	 * different constructor signatures.
+	 */
+	protected DelayedWebResultSet() {
+		super();
 	}
 
 	/**

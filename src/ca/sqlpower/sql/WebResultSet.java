@@ -19,6 +19,7 @@ public class WebResultSet {
     protected boolean[] columnHasAll;
     protected int[] columnType;
 	protected List[] columnHyperlinks;
+	protected String[] columnHyperlinkStyle;
     protected int rowidColNo;
 	public String tableTitle;
 	public String emptyMessage; // the message to show when the result set is empty
@@ -60,6 +61,7 @@ public class WebResultSet {
         columnHasAll=new boolean[cols];
         columnType=new int[cols];
 		columnHyperlinks=new List[cols];
+		columnHyperlinkStyle=new String[cols];
         rowidColNo=0;
 		tableTitle="";
 		emptyMessage="";
@@ -282,6 +284,14 @@ public class WebResultSet {
 	 */
 	public void setColumnHyperlinks(int colNo, List links) {
 		this.columnHyperlinks[colNo-1]=links;
+	}
+
+	public void setColumnHyperlinkStyle(int colNo, String style) {
+		this.columnHyperlinkStyle[colNo-1]=style;
+	}
+
+	public String getColumnHyperlinkStyle(int colNo) {
+		return this.columnHyperlinkStyle[colNo-1];
 	}
     
     public String getSqlQuery() {
