@@ -299,7 +299,7 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 		    contents.setLength(0);
 
 		    getColumnFormatted(wrs, i, contents, align);
-		    if(colDefault != null) {
+		    if(colDefault != null && rawContents != null) {
 			valueIsDefault = rawContents.equals(colDefault);
 		    }
 		    sb.append("  <td align=\"");
