@@ -429,6 +429,38 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 		return results;
 	}
 
+	/**
+	 * Refreshes this object's properties from its associated database
+	 * record. Also resets the internal state of the superuser and
+	 * omniscient properties to null so the getters will re-query the
+	 * database next time they are called.
+	 *
+	 * @throws IllegalStateException if the user cannot be found in the database.
+	 */
+	public void refresh(Connection con) throws SQLException, IllegalStateException {
+		List singleUser = find(con, this.getUserId(), null, false);
+		if (singleUser.size() != 1) {
+			throw new IllegalStateException("Couldn't find myself while attempting to refresh");
+		}
+		PLUser fresh = (PLUser) singleUser.get(0);
+		this.userName = fresh.userName;
+		this.emailAddress = fresh.emailAddress;
+		this.defaultKpiFrequency = fresh.defaultKpiFrequency;
+		this.redVisible = fresh.redVisible;
+		this.yellowVisible = fresh.yellowVisible;
+		this.greenVisible = fresh.greenVisible;
+		this.greyVisible = fresh.greyVisible;
+		this.lastUpdateDate = fresh.lastUpdateDate;
+		this.lastUpdateUser = fresh.lastUpdateUser;
+		this.lastUpdateOsUser = fresh.lastUpdateOsUser;
+		this.omniscient = null;
+		this.superuser = null;
+		this.loaderUser = fresh.loaderUser;
+		this.summarizerUser = fresh.summarizerUser;
+		this.matchmakerUser = fresh.matchmakerUser;
+		this.dashboardUser = fresh.dashboardUser;
+	}
+
 	// GET and SET methods go below this line
 
     public String getUserId() {
