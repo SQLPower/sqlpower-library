@@ -14,26 +14,26 @@ import java.sql.SQLException;
  */
 public abstract class WebResultFormatter {
 
-    protected String rowidParameterName;
+    protected String duplicate1ParameterName;
     protected NumberFormat numberFormatter;
     protected NumberFormat moneyFormatter;
     protected NumberFormat percentFormatter;
     protected DateFormat dateFormatter;
 
     public WebResultFormatter() {
-	rowidParameterName="rowid";
+	duplicate1ParameterName="dup_candidate_1";
 	numberFormatter=new DecimalFormat("#,##0.#");
 	moneyFormatter=new DecimalFormat("$#,##0.00");
 	percentFormatter=new DecimalFormat("0%");
 	dateFormatter=DateFormat.getDateInstance();
     }
 
-    public String getRowidParameterName() {
-	return rowidParameterName;
+    public String getDuplicate1ParameterName() {
+	return duplicate1ParameterName;
     }
 
-    public void setRowidParameterName(String newName) {
-	rowidParameterName=newName;
+    public void setDuplicate1ParameterName(String newName) {
+	duplicate1ParameterName=newName;
     }
 
     public void setNumberFormatter(NumberFormat v) {
@@ -100,7 +100,7 @@ public abstract class WebResultFormatter {
 	case FieldTypes.RADIO:
 	    align.append("center");
 	    contents.append("<input type=\"radio\" name=\"")
-		.append(rowidParameterName)
+		.append(duplicate1ParameterName)
 		.append("\" value=\"")
 		.append(wrs.getString(i))
 		.append("\" onClick=\"this.form.submit()\" />");
@@ -109,7 +109,7 @@ public abstract class WebResultFormatter {
 	case FieldTypes.CHECKBOX:
 	    align.append("center");
 	    contents.append("<input type=\"checkbox\" name=\"")
-		.append(rowidParameterName)
+		.append(duplicate1ParameterName)
 		.append("\" value=\"")
 		.append(wrs.getString(i))
 		.append("\" />");
