@@ -35,8 +35,6 @@ public class XMLFileDBCSSource implements DBCSSource, Serializable {
 		try {
 			dbXMLFile = new BufferedInputStream(new FileInputStream(xmlFileName));
 			dbcsList=new ArrayList(DBCSSourceSupport.getListUsingXMLStream(dbXMLFile));
-		} catch(FileNotFoundException e) {
-			throw new DatabaseListReadException(e);
 		} catch(IOException e) {
 			throw new DatabaseListReadException(e);
 		} finally {
