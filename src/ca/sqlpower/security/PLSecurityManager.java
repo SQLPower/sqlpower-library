@@ -782,6 +782,10 @@ public class PLSecurityManager implements java.io.Serializable {
 
 		Statement stmt = null;
 		try {
+
+			// this must come first, or the user will no longer have permission!
+			EmailNotification.deleteDatabaseObject(con, sm, obj);
+
 			stmt = con.createStatement();
 
 			StringBuffer sql = new StringBuffer();
@@ -796,8 +800,6 @@ public class PLSecurityManager implements java.io.Serializable {
 			sql.append(" AND object_name=").append(SQL.quote(obj.getObjectName()));
 			stmt.executeUpdate(sql.toString());
 			
-			EmailNotification.deleteDatabaseObject(con, sm, obj);
-
 			if (obj.getObjectType().equals("TRANSACTION")) {
 				sql.setLength(0);
 				sql.append("DELETE FROM pl_transform_stats");

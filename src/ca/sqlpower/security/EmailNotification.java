@@ -252,6 +252,12 @@ public class EmailNotification implements java.io.Serializable {
 			sql.append(" AND object_name=").append(SQL.quote(obj.getObjectName()));
 			stmt.executeUpdate(sql.toString());
 
+			sql.setLength(0);
+			sql.append("DELETE FROM pl_group_notification");
+			sql.append(" WHERE object_type=").append(SQL.quote(obj.getObjectType()));
+			sql.append(" AND object_name=").append(SQL.quote(obj.getObjectName()));
+			stmt.executeUpdate(sql.toString());
+
 		} finally {
 			if (stmt != null) {
 				stmt.close();
@@ -270,6 +276,7 @@ public class EmailNotification implements java.io.Serializable {
 	 * <ul>
 	 *  <li>PL_USER_NOTIFICATION_LOG
 	 *  <li>PL_USER_NOTIFICATION
+	 *  <li>PL_GROUP_NOTIFICATION
 	 * </ul>
 	 *
 	 * <p>It is expected that the given connection will <b>not</b> be
