@@ -32,6 +32,8 @@ public abstract class SequenceGenerator {
      * generate unique sequences in.
      * @return A suitable subclass of SequenceGenerator for your
      * RDBMS.
+	 * @throws IllegalArgumentException if the given connection is not
+	 * from a supported database.
      */
     public static SequenceGenerator getInstance(Connection con) {
         String dbClass=con.getClass().getName();

@@ -41,6 +41,11 @@ public class OracleSequenceGenerator extends SequenceGenerator {
 		return nextval;
 	}
 
+	/**
+	 * Closes the connection that was passed to the constructor.  You
+	 * should probably close it yourself rather than calling this
+	 * method.
+	 */
 	public void close() throws SQLException {
 		if (con != null) {
 			con.close();
