@@ -490,7 +490,7 @@ public class PLSecurityManager implements java.io.Serializable {
 							 DatabaseObject obj,
 							 boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantUserPermission(con, principal, grantee, obj, "","", (givingPerm?"'Y'":"'N'"),"");
+		grantUserPermission(con, principal, grantee, obj, "","","",(givingPerm?"'Y'":"'N'"),"");
 	}
 
 	/**
@@ -502,7 +502,7 @@ public class PLSecurityManager implements java.io.Serializable {
 							 DatabaseObject obj,
 							 boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantGroupPermission(con, principal, grantee, obj, "","", (givingPerm?"'Y'":"'N'"),"");
+		grantGroupPermission(con, principal, grantee, obj, "","","",(givingPerm?"'Y'":"'N'"),"");
 	}
 
 	/**
@@ -514,7 +514,7 @@ public class PLSecurityManager implements java.io.Serializable {
 							DatabaseObject obj,
 							boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantUserPermission(con, principal, grantee, obj, "", (givingPerm?"'Y'":"'N'"),"","");
+		grantUserPermission(con, principal, grantee, obj, "", (givingPerm?"'Y'":"'N'"),"","","");
 	}
 
 	/**
@@ -526,7 +526,7 @@ public class PLSecurityManager implements java.io.Serializable {
 							DatabaseObject obj,
 							boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantGroupPermission(con, principal, grantee, obj, "", (givingPerm?"'Y'":"'N'"),"","");
+		grantGroupPermission(con, principal, grantee, obj, "", (givingPerm?"'Y'":"'N'"),"","","");
 	}
 
 	/**
@@ -538,7 +538,7 @@ public class PLSecurityManager implements java.io.Serializable {
 							DatabaseObject obj,
 							boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantUserPermission(con, principal, grantee, obj, (givingPerm?"'Y'":"'N'"),"","","");
+		grantUserPermission(con, principal, grantee, obj, (givingPerm?"'Y'":"'N'"),"","","","");
 	}
 
 	/**
@@ -550,7 +550,7 @@ public class PLSecurityManager implements java.io.Serializable {
 							DatabaseObject obj,
 							boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantGroupPermission(con, principal, grantee, obj, (givingPerm?"'Y'":"'N'"),"","","");
+		grantGroupPermission(con, principal, grantee, obj, (givingPerm?"'Y'":"'N'"),"","","","");
 	}
 
 	/**
@@ -562,7 +562,7 @@ public class PLSecurityManager implements java.io.Serializable {
 						   DatabaseObject obj,
 						   boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantUserPermission(con, principal, grantee, obj, "","","",(givingPerm?"'Y'":"'N'"));
+		grantUserPermission(con, principal, grantee, obj, "","","","",(givingPerm?"'Y'":"'N'"));
 	}
 
 	/**
@@ -574,7 +574,7 @@ public class PLSecurityManager implements java.io.Serializable {
 						   DatabaseObject obj,
 						   boolean givingPerm)
 		throws SQLException, PLSecurityException {
-		grantGroupPermission(con, principal, grantee, obj, "","","",(givingPerm?"'Y'":"'N'"));
+		grantGroupPermission(con, principal, grantee, obj, "","","","",(givingPerm?"'Y'":"'N'"));
 	}
 
 	/**
@@ -586,6 +586,7 @@ public class PLSecurityManager implements java.io.Serializable {
 						 DatabaseObject obj,
 						 boolean modify,
 						 boolean delete,
+						 boolean prevExecute,
 						 boolean execute,
 						 boolean grant)
 		throws SQLException, PLSecurityException {
@@ -593,6 +594,7 @@ public class PLSecurityManager implements java.io.Serializable {
 		grantUserPermission(con, principal, grantee, obj, 
 							(modify?"'Y'":"'N'"),
 							(delete?"'Y'":"'N'"),
+							(prevExecute?"'Y'":"'N'"),
 							(execute?"'Y'":"'N'"),
 							(grant?"'Y'":"'N'"));
 	}
@@ -606,6 +608,7 @@ public class PLSecurityManager implements java.io.Serializable {
 						 DatabaseObject obj,
 						 boolean modify,
 						 boolean delete,
+						 boolean prevExecute,
 						 boolean execute,
 						 boolean grant)
 		throws SQLException, PLSecurityException {
@@ -613,28 +616,9 @@ public class PLSecurityManager implements java.io.Serializable {
 		grantGroupPermission(con, principal, grantee, obj, 
 							(modify?"'Y'":"'N'"),
 							(delete?"'Y'":"'N'"),
+							(prevExecute?"'Y'":"'N'"),
 							(execute?"'Y'":"'N'"),
 							(grant?"'Y'":"'N'"));
-	}
-
-	/**
-	 * Grants or revokes all permissions on obj to grantee if
-	 * current principal has the right.
-	 */
-	public void grantGrant(Connection con,
-						   PLGroup grantee,
-						   DatabaseObject obj,
-						   boolean modify,
-						   boolean delete,
-						   boolean execute,
-						   boolean grant)
-		throws SQLException, PLSecurityException {
-
-		grantGroupPermission(con, principal, grantee, obj,
-							 (modify?"'Y'":"'N'"),
-							 (delete?"'Y'":"'N'"),
-							 (execute?"'Y'":"'N'"),
-							 (grant?"'Y'":"'N'"));
 	}
 
 
@@ -662,12 +646,13 @@ public class PLSecurityManager implements java.io.Serializable {
 										   DatabaseObject obj,
 										   String modify,
 										   String delete,
+										   String prevExecute,
 										   String execute,
 										   String grant)
 		throws PLSecurityException, SQLException {
 
 		grantPermission(con, principal, grantee.getUserId(), true, obj, 
-						modify, delete, execute, grant);
+						modify, delete, prevExecute, execute, grant);
 	}
 	
 	/**
@@ -694,12 +679,13 @@ public class PLSecurityManager implements java.io.Serializable {
 											DatabaseObject obj,
 											String modify,
 											String delete,
+											String prevExecute,
 											String execute,
 											String grant)
 		throws PLSecurityException, SQLException {
 
 		grantPermission(con, principal, grantee.getGroupName(), false, obj, 
-						modify, delete, execute, grant);
+						modify, delete, prevExecute, execute, grant);
 	}
 	
 	/**
@@ -723,6 +709,7 @@ public class PLSecurityManager implements java.io.Serializable {
 									   DatabaseObject obj,
 									   String modify,
 									   String delete,
+									   String prevExecute,
 									   String execute,
 									   String grant)
 		throws PLSecurityException, SQLException {
@@ -822,7 +809,69 @@ public class PLSecurityManager implements java.io.Serializable {
 				} else if (updateCount == 0) {
 					throw new IllegalStateException("Could not update or insert permission!");
 				}
-			}
+			} // end if (updateCount == 0)
+
+			// If this is a kpi, and we are setting execute=y, and it didn't use to be y, 
+			// also set the view_kpi_ind to y.
+			System.out.println("~~~~checking condition");
+			System.out.println("~~~~kpi="+obj.getObjectName());
+			System.out.println("~~~~exe="+execute);
+			System.out.println("~~~~prev exe="+prevExecute);
+			if(obj.getObjectType().equals("KPI") && 
+			   execute.equals("'Y'") &&
+			   !prevExecute.equals("'Y'")){
+
+				System.out.println("~~~~passed condition");
+
+				// First, try to insert records into pl_user_notification for
+				// the object, in case there aren't any yet.
+				sql.setLength(0);
+				sql.append("INSERT INTO pl_user_notification(");
+				sql.append("  user_id, object_type, object_name,");
+				sql.append(" view_kpi_ind, email_red_ind, email_yellow_ind, email_green_ind)");
+				if (granteeIsUser) {
+					sql.append(" VALUES(").append(SQL.quote(granteeName)).append(",");
+					sql.append(SQL.quote(obj.getObjectType())).append(",");
+					sql.append(SQL.quote(obj.getObjectName())).append(",");
+					sql.append("'N','N','N','N'").append(")");
+				} else {
+					sql.append(" SELECT user_id,");
+					sql.append(SQL.quote(obj.getObjectType())).append(",");
+					sql.append(SQL.quote(obj.getObjectName())).append(",");
+					sql.append(" 'N','N','N','N'");
+					sql.append(" FROM user_group");
+					sql.append(" WHERE group_name=").append(SQL.quote(granteeName));
+				}
+
+				try {
+					System.out.println("~~~~insert="+sql.toString());
+					updateCount = stmt.executeUpdate(sql.toString());
+				} catch(SQLException e) {
+					// don't fail if the insert collides with an existing record
+				}
+
+
+				// Second, update the records in pl_user_notification to set
+				// the view_kpi_ind for this object.
+				sql.setLength(0);
+				sql.append("UPDATE pl_user_notification");
+				sql.append(" SET view_kpi_ind='Y'");
+				sql.append(" WHERE object_type=").append(SQL.quote(obj.getObjectType()));
+				sql.append(" AND object_name=").append(SQL.quote(obj.getObjectName()));
+
+				if (granteeIsUser) {
+					sql.append(" AND user_id=").append(SQL.quote(granteeName));
+				} else {
+					sql.append(" AND user_id IN(");
+					sql.append("   SELECT user_id");
+					sql.append("   FROM user_group");
+					sql.append("   WHERE group_name=").append(SQL.quote(granteeName)).append(")");
+				}
+
+				System.out.println("~~~~update="+sql.toString());
+				updateCount = stmt.executeUpdate(sql.toString());
+
+			} // end if (check if we need to update view_kpi_ind)
 		} finally {
 			if (stmt != null) {
 				stmt.close();
