@@ -10,11 +10,13 @@ import java.util.*;
  * looked into overriding MessageFormat, but it makes private
  * assumptions about the number of {} substitutions not exceeding 10.
  * The extended format syntax like {3,date} is <em>not</em> currently
- * supported.
+ * supported.</p>
+ *
+ * <p>See java.text.MessageFormat in the J2SE API docs for details.
  *
  * @author Jonathan Fuerth
  * @version $Id$
- * @see java.text.MessageFormat
+ * 
  */
 public class LongMessageFormat extends Format {
 	/**
