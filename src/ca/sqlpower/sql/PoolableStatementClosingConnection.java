@@ -19,7 +19,7 @@ import org.apache.commons.pool.ObjectPool;
  */
 public class PoolableStatementClosingConnection extends PoolableConnection {
 
-	List openStatements = new LinkedList();
+	List openStatements = java.util.Collections.synchronizedList(new LinkedList());
 
 	/**
 	 * Just call the superclass constructor
