@@ -104,8 +104,8 @@ public class SQL {
 	List list=new LinkedList();
 
 	while(rs.next()) {
-	    list.add(new LabelValueBean(rs.getString(1),
-					rs.getString(2)));
+//		System.err.println(rs.getString(1)+","+rs.getString(2));
+	    list.add(new LabelValueBean(rs.getString(1),rs.getString(2)));
 	}
 	
 	return list;
