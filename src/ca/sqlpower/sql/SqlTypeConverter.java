@@ -14,6 +14,8 @@ public abstract class SqlTypeConverter {
 	public static SqlTypeConverter getInstance(Connection con) {
 		if (con.getClass().getName().indexOf("postgresql") >= 0) {
 			return new PostgreSQLTypeConverter();
+		} else if (con.getClass().getName().indexOf("SQLServer") >= 0) {
+			return new SQLServerTypeConverter();
 		} else {
 			throw new UnsupportedOperationException("Unknown database type for driver "
 													+con.getClass().getName());
