@@ -23,7 +23,7 @@ import org.xml.sax.InputSource;
  * @author Jonathan Fuerth
  * @version $Id$
  */
-public final class License {
+public final class License implements java.io.Serializable {
 
 	protected String licenseeName;
 	protected String productName;
