@@ -24,6 +24,15 @@ public class CollectionUtils {
 	}
 
 	/**
+	 * Convenience method.  Just casts the given object to Object[]
+	 * and calls the other version of this method.
+	 */
+    public static String arrayToString(Object array) {
+		if (array == null) return "null";
+		else return arrayToString((Object[]) array);
+	}
+
+	/**
 	 * Prints each object in the array with commas between them.
 	 * Nulls will print as "null".  A null array will cause NPE.
 	 */
