@@ -79,6 +79,10 @@ public class SQL {
     }
 
 	public static String quoteList(List strings) {
+		return quoteCollection(strings);
+	}
+
+	public static String quoteCollection(Collection strings) {
 		StringBuffer outputString = new StringBuffer(100);
 		boolean firstItem = true;
 		Iterator it = strings.iterator();
@@ -90,6 +94,7 @@ public class SQL {
 		}
 		return outputString.toString();
 	}
+
 
 	/**
      * Returns the string <code>"NULL"</code> if the argument is

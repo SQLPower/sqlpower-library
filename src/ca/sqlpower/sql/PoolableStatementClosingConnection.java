@@ -1,6 +1,8 @@
 package ca.sqlpower.sql;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Statement;
+import java.sql.SQLException;
 import java.util.*;
 
 import org.apache.commons.dbcp.PoolableConnection;
@@ -89,5 +91,4 @@ public class PoolableStatementClosingConnection extends PoolableConnection {
 	public void setPlUsername(String argPlUsername) {
 		this.plUsername = argPlUsername;
 	}
-
 }
