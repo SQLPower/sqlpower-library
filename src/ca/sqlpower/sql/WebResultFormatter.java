@@ -27,7 +27,7 @@ public abstract class WebResultFormatter {
     public WebResultFormatter() {
 	rowidParameterName="row_id";
 	checkboxYesValue="YES";
-	numberFormatter=new DecimalFormat("#,##0.#");
+	numberFormatter=new DecimalFormat("#,##0.##############");
 	moneyFormatter=new DecimalFormat("$#,##0.00");
 	percentFormatter=new DecimalFormat("0%");
 	dateFormatter=DateFormat.getDateInstance();
