@@ -19,18 +19,14 @@ public class ErrorConverterFactory {
 	 * @throws IllegalArgumentException if the database type is unrecognized.
 	 */
 	public static AbstractErrorConverter getInstance(SQLException e) {
-		String driverClass = e.getClass().getName();
+		String message = e.getMessage();
 
-		if (driverClass.startsWith("com.microsoft.jdbc.sqlserver")) {
+		if (message.indexOf("icrosoft") >= 0) {
 			return sqlServerErrorConverter;
-		} 
-		else if (driverClass.startsWith("com.merant.datadirect.jdbc.sqlserver")) {
-			return sqlServerErrorConverter;
-		} 
-		else if (driverClass.startsWith("oracle")) {
+		} else if (message.startsWith("ORA")) {
 			return oracleErrorConverter;
 		}
-		throw new IllegalArgumentException("unrecognized database type: "+driverClass);
+		throw new IllegalArgumentException("unrecognized database type for message: "+message);
 	}
 
 }
