@@ -3,22 +3,23 @@ package ca.sqlpower.sql;
 import java.sql.*;
 import java.io.*;
 
+/**
+ * WebResultHTMLFormatter exists in order to format WebResultSets into
+ * an HTML table.  A growing list of options are supported, controlled
+ * by calling the various get and set methods before a call to
+ * formatToStream.  You may call formatToStream on the same instance
+ * as many times as you like; the output settings will remain in
+ * effect until you change them.
+ *
+ * @author Jonathan Fuerth
+ * @version $Id$
+ */
 public class WebResultHTMLFormatter extends WebResultFormatter {
-
-    private String rowidParameterName;
 
     public WebResultHTMLFormatter() {
 	rowidParameterName="rowid";
     }
 
-    public String getRowidParameterName() {
-	return rowidParameterName;
-    }
-
-    public void setRowidParameterName(String newName) {
-	rowidParameterName=newName;
-    }
-    
     public void formatToStream(WebResultSet wrs, PrintWriter out) 
 	throws SQLException {
 	int numCols=wrs.getColumnCount();
@@ -32,7 +33,7 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	    if(fcRowid && i==1) {
 		out.println("&nbsp;");
 	    } else {
-		out.println(wrs.getColumnLabel(i));
+		out.println(beautifyHeading(wrs.getColumnLabel(i)));
 	    }
 	    out.println("</th>");
 	}
