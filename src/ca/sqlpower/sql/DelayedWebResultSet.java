@@ -84,31 +84,42 @@ public class DelayedWebResultSet extends WebResultSet {
 	 */
 	protected void execute(Connection con, boolean closeOldRS)
 		throws IllegalStateException, SQLException {
-		this.con=con;
+		this.con = con;
 
-		System.out.print("DelayedResultSet.execute: Finding results in cache of "+resultCache.size()+" items: ");
-		
-		CachedRowSet results=(CachedRowSet)resultCache.get(sqlQuery);
+		System.out.print(
+			"DelayedResultSet.execute: Finding results in cache of "
+				+ resultCache.size()
+				+ " items: ");
+
+		CachedRowSet results = (CachedRowSet) resultCache.get(sqlQuery);
 		if (results != null) {
 			System.out.println("HIT");
-			results=(CachedRowSet)results.createShared();
-			results.beforeFirst(); // reset cursor, which is likely afterLast right now
+			results = (CachedRowSet) results.createShared();
+			results.beforeFirst();
+			// reset cursor, which is likely afterLast right now
 		} else {
 			System.out.println("MISS");
-			Statement stmt=con.createStatement();
-			results=new CachedRowSet();
-			ResultSet rs = stmt.executeQuery(sqlQuery);
-			results.populate(rs);
-			stmt.close();
+			Statement stmt = null;
+			try {
+				stmt = con.createStatement();
+				results = new CachedRowSet();
+				ResultSet rs = stmt.executeQuery(sqlQuery);
+				results.populate(rs);
+			} finally {
+				if (stmt != null)
+					stmt.close();
+			}
 			resultCache.put(sqlQuery, results);
 		}
 		applyResultSet(results, closeOldRS);
 
-		if(rsmd.getColumnCount() != givenColCount) {
-			throw new IllegalStateException
-				("The SQL query returned "+rsmd.getColumnCount()
-				 +" columns, but the number of columns originally specified was "
-				 +givenColCount+".");
+		if (rsmd.getColumnCount() != givenColCount) {
+			throw new IllegalStateException(
+				"The SQL query returned "
+					+ rsmd.getColumnCount()
+					+ " columns, but the number of columns originally specified was "
+					+ givenColCount
+					+ ".");
 		}
 	}
 

@@ -114,14 +114,5 @@ public abstract class User implements java.io.Serializable {
 	return sb.toString();
     }
 
-    /**
-     * exposed from java.sql.Connection
-     *
-     * @return a Statement for interacting with the target database
-     * @throws SQLException whenever java.sql.Connection.createStatement() would
-     * @see java.sql.Connection
-     */
-    public java.sql.Statement createStatement() throws SQLException {
-	return con.createStatement();
-    }
+ 
 }
