@@ -31,6 +31,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
     protected String lastUpdateUser;
     protected String lastUpdateOsUser;
 	protected Boolean omniscient;
+	protected Boolean superuser;
 	protected boolean loaderUser;
 	protected boolean summarizerUser;
 	protected boolean matchmakerUser;
@@ -54,6 +55,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
         lastUpdateUser=null;
 		lastUpdateOsUser=null;
 		omniscient=null;
+		superuser=null;
 		loaderUser=false;
 		summarizerUser=false;
 		matchmakerUser=false;
@@ -536,6 +538,33 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			}
 		}
 		return omniscient.booleanValue();
+	}
+
+	/**
+	 * Checks if this user is a superuser.  Superusers are the users
+	 * who belong to the special PL_ADMIN group.  They typically have
+	 * full rights to everything in the system.
+	 */
+	public boolean isSuperuser(Connection con) throws SQLException {
+		if (superuser == null) {
+			Statement stmt = null;
+			ResultSet rs = null;
+			try {
+				stmt = con.createStatement();
+				rs = stmt.executeQuery("SELECT 1 FROM user_group WHERE user_id="
+									   +SQL.quote(getUserId())+" AND group_name="
+									   +SQL.quote(PLGroup.ADMIN_GROUP));
+				if (rs.next()) {
+					superuser = new Boolean(true);
+				} else {
+					superuser = new Boolean(false);
+				}
+			} finally {
+				if (rs != null) rs.close();
+				if (stmt != null) stmt.close();
+			}
+		}
+		return superuser.booleanValue();
 	}
 
 	/**
