@@ -2,6 +2,8 @@ package ca.sqlpower.sql;
 import ca.sqlpower.util.*;
 import java.sql.*;
 import java.util.*;
+import java.text.*;
+
 
 public class WebResultSet implements Cloneable {
 
@@ -495,7 +497,18 @@ public class WebResultSet implements Cloneable {
 	}
 
     public java.sql.Date getDate(int colNo) throws SQLException {
-        return rs.getDate(colNo);
+    	String dateStr = rs.getString(colNo);
+		if (dateStr == null) {
+			return null;
+		}
+    	SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		java.util.Date date = null;
+		try {
+	    	date = sdf.parse(dateStr.substring(0,10));
+		} catch (ParseException e) {
+			throw new SQLException("invalid date format in column "+colNo);
+		}
+        return new java.sql.Date(date.getTime());
     }
 
     public float getFloat(int colNo) throws SQLException {
