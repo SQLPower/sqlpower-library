@@ -39,7 +39,12 @@ public class DelayedWebResultSet extends WebResultSet {
 	 * due to a syntax error in the SQL query).
 	 */
 	public void execute(Connection con) throws IllegalStateException, SQLException {
-		execute(con, true);
+		try {
+			execute(con, true);
+		} catch (SQLException e) {
+			System.out.println("dwrs caught sqlexception from query: "+sqlQuery);
+			throw e;
+		}
 	}
 
 	/**
