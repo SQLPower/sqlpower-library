@@ -5,6 +5,7 @@ import org.apache.commons.pool.*;
 
 import java.sql.*;
 
+
 /**
  * Extends the orginal factory to return fancy new 
  * PoolableStatementClosingConnections instead of the boring 
@@ -13,9 +14,11 @@ import java.sql.*;
  * @author dfraser
  * @version $Id$
  */
+
+
 public class StatementClosingPoolableConnectionFactory
 	extends PoolableConnectionFactory {
-	
+
 	/**
 	 * Default superclass constructor.
 	 * @param arg0
@@ -34,6 +37,7 @@ public class StatementClosingPoolableConnectionFactory
 		boolean arg4,
 		boolean arg5)
 		throws Exception {
+
 		super(arg0, arg1, arg2, arg3, arg4, arg5);
 	}
 
@@ -48,11 +52,13 @@ public class StatementClosingPoolableConnectionFactory
         } catch(SQLException e) {
             ; // ignored for now
         }
+
         try {
             con.setReadOnly(_defaultReadOnly);
         } catch(SQLException e) {
             ; // ignored for now
         }
+
         if(null != _stmtPoolFactory) {
             KeyedObjectPool stmtpool = _stmtPoolFactory.createPool();
             con = new PoolingConnection(con,stmtpool);
@@ -67,9 +73,10 @@ public class StatementClosingPoolableConnectionFactory
 			if(!rs.next()) {
 				throw new SQLException("def_param table has no rows");
 			}
+
 			String schemaVersion = rs.getString(1);
-			if(schemaVersion.compareTo("4.0.0") < 0) {
-				throw new PLSchemaException("You have Power*Loader Schema version "+rs.getString(1)+" but you need a version of 4.0.0");
+			if(schemaVersion.compareTo("4.1.2") < 0) {
+				throw new PLSchemaException("You have Power*Loader Schema version "+rs.getString(1)+" but you need a version of 4.1.2");
 			}
 		} finally {
 			if(stmt != null) {
@@ -79,5 +86,7 @@ public class StatementClosingPoolableConnectionFactory
 
 		System.out.println("returning new PoolableStatementClosingConnection");
         return new PoolableStatementClosingConnection(con,_pool);
-    }
-}
+    } // end makeObject
+} // end class
+
+
