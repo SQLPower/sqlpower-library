@@ -43,6 +43,7 @@ public class FieldTypes {
      */
     public static final int BOOLEAN = 4;
 
+
     /**
      * Indicates a data field representing a radio button.
      */
@@ -94,7 +95,7 @@ public class FieldTypes {
      * Indicates a field representing a checkbox which is mutually
      * exclusive with all other MUTEX_CHECKBOXes in its row (see
      * WARNINGs).  Note that this is not the same as RADIO because the
-     * exclusion applies to rows, not columns; and it is possible to
+     * exclusion applies to rowss, not columns; and it is possible to
      * deselect all boxes in a group.<p>
      *
      * WARNING! The MUTEX_CHECKBOX type is only supported (currently)
@@ -115,20 +116,47 @@ public class FieldTypes {
      */
     public static final int PASSWORD = 14;
 
-	/**
-	 * Specifies that each cell in this column should be rendered as a
-	 * set of hyperlinks.  For all columns of this type, you must call
-	 * <code>setColumnHyperlinks</code> on the curresponding
-	 * <code>WebResultSet</code> column.  The hyperlinks are currently
-	 * always rendered as HTML, but this may change in the future.
-	 * PDF supports hyperlinks, for instance.
-	 */
-	public static final int HYPERLINK = 15;
+
+ 	/**
+ 	 * Specifies that each cell in this column should be rendered as a
+ 	 * set of hyperlinks.  For all columns of this type, you must call
+ 	 * <code>setColumnHyperlinks</code> on the curresponding
+ 	 * <code>WebResultSet</code> column.  The hyperlinks are currently
+ 	 * always rendered as HTML, but this may change in the future.
+ 	 * PDF supports hyperlinks, for instance.
+ 	 */
+ 	public static final int HYPERLINK = 15;
+
+
+    /**
+     * Indicates a data field representing a yes/no value.
+	 * Default to 'N' if no value.
+     */
+    public static final int YESNO_DEFAULT_NO = 16;
+
+    /**
+     * Indicates a data field representing a yes/no value.
+	 * Default to 'Y' if no value.
+     */
+    public static final int YESNO_DEFAULT_YES = 17;
+
+    /**
+     * Indicates a data field representing a text value.
+	 * Default to 'n/a' if no value.
+     */
+    public static final int TEXT_DEFAULT_NA = 18;
+
+    /**
+     * Indicates a data field representing a text value.
+	 * Default to 'Unknown' if no value.
+     */
+    public static final int TEXT_DEFAULT_UNKNOWN = 19;
+
 
     /**
      * It is guaranteed that no type code's value exceeds LAST_TYPE.
      */
-    public static final int LAST_TYPE=15;
+    public static final int LAST_TYPE=19;
 
     /**
      * This class is just a container for the type values; it cannot
