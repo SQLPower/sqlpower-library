@@ -46,11 +46,20 @@ public class StatementClosingPoolableConnectionFactory extends PoolableConnectio
         Connection con = _connFactory.createConnection();
         try {
             con.setAutoCommit(_defaultAutoCommit);
-            con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
         } catch (SQLException e) {
             logger.error("Couldn't set autoCommit to "+_defaultAutoCommit+"!", e);
 			// continue anyway
         }
+
+		if (!DBConnection.isOracle(con)) {
+			// Oracle doesn't need this, and in fact doesn't support it either
+			try {
+				con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+			} catch (SQLException e) {
+				logger.error("Couldn't set transactionIsolation to TRANSACTION_READ_UNCOMMITTED!", e);
+				// continue anyway
+			}
+		}
 
         try {
             con.setReadOnly(_defaultReadOnly);

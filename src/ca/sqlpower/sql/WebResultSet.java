@@ -11,7 +11,6 @@ public class WebResultSet implements Cloneable {
 	private static final Logger logger = Logger.getLogger(WebResultSet.class);
 
     protected ResultSet rs;
-    protected ResultSetMetaData rsmd;
     protected String sqlQuery;
     protected ColumnFilter[] columnFilter;
     protected List[] columnChoices;
@@ -40,7 +39,7 @@ public class WebResultSet implements Cloneable {
     public WebResultSet(ResultSet results, String query) throws SQLException {
         sqlQuery=query;
 		applyResultSet(results);
-		initMembers(rsmd.getColumnCount());
+		initMembers(rs.getMetaData().getColumnCount());
 	}
 
 	/**
@@ -79,11 +78,10 @@ public class WebResultSet implements Cloneable {
 	 * @throws SQLException if a database error occurs.
 	 */
 	protected void applyResultSet(ResultSet results, boolean closeOldRS) throws SQLException {
-		if(closeOldRS && rs!=null) {
+		if (closeOldRS && rs != null) {
 			rs.close();
 		}
-        rs=results;
-        rsmd=rs.getMetaData();
+        rs = results;
 	}
 
 	protected void initMembers(int cols) {
@@ -345,7 +343,7 @@ public class WebResultSet implements Cloneable {
     }
 
     public int getColumnCount() throws SQLException {
-        return rsmd.getColumnCount();
+        return rs.getMetaData().getColumnCount();
     }
 
 	/**
@@ -361,7 +359,7 @@ public class WebResultSet implements Cloneable {
             if(columnLabel[colNo-1] != null) {
                 return columnLabel[colNo-1];
             } else {
-                return rsmd.getColumnLabel(colNo);
+                return rs.getMetaData().getColumnLabel(colNo);
             }
         }
     }
@@ -374,7 +372,7 @@ public class WebResultSet implements Cloneable {
 	 * <code>ResultSetMetaData</code>.
 	 */
 	public String getColumnName(int colNo) throws SQLException {
-		return rsmd.getColumnLabel(colNo);
+		return rs.getMetaData().getColumnLabel(colNo);
 	}
 
     /**
@@ -620,12 +618,12 @@ public class WebResultSet implements Cloneable {
     public void close() throws SQLException {
         rs.getStatement().close();
     }
+
 	/**
-	 * Returns the rsmd.
-	 * @return ResultSetMetaData
+	 * Returns the current result set's metadata.
 	 */
-	public ResultSetMetaData getRsmd() {
-		return rsmd;
+	public ResultSetMetaData getRsmd() throws SQLException {
+		return rs.getMetaData();
 	}
 
 }
