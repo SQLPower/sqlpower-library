@@ -252,8 +252,9 @@ public class BeanGenerator {
 		// Lookup the database named in args[0] in databases.xml
 		String dbxml="databases.xml";
 		String name=args[0];
-		InputStream in=new FileInputStream(dbxml);
-		DBConnectionSpec dbcs=DBConnectionSpec.getDBSpecFromInputStream(in, name);
+		DBCSSource xmlSource=new XMLFileDBCSSource(dbxml);
+		List dbcsList=xmlSource.getDBCSList();
+		DBConnectionSpec dbcs=DBConnectionSpec.searchListForName(dbcsList, name);
 		if(dbcs==null) {
 			System.err.println("No database definition '"+name+"' in "+dbxml+".");
 			return;

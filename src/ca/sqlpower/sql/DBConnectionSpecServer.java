@@ -8,9 +8,9 @@ import java.util.*;
 /**
  * Remote interface used to obtain the list of database connections
  * from a central server (for clustering this web application).
- * 
- * Will eventually be extended to allow modification of the remote 
- * list.
+ *
+ * @author Dan Fraser
+ * @version $Id$
  */
 public interface DBConnectionSpecServer extends Remote {
 

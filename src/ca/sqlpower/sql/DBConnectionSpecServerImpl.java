@@ -38,8 +38,8 @@ public class DBConnectionSpecServerImpl
 	public Collection getAvailableDatabases() throws RemoteException {
 		Collection databases = null;
 		try {
-			InputStream xmlStream = new FileInputStream(xmlFileName);
-			databases = DBConnectionSpec.getDBSpecsFromInputStream(xmlStream);
+			DBCSSource xmlSource = new XMLFileDBCSSource(xmlFileName);
+			databases = xmlSource.getDBCSList();
 		} catch (Exception e) {
 			databases = null;
 			e.printStackTrace();

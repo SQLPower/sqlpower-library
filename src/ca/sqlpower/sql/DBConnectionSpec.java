@@ -1,10 +1,7 @@
 package ca.sqlpower.sql;
 
-import javax.xml.parsers.*;
-import org.w3c.dom.*;
-import java.io.*;
+import java.io.Serializable;
 import java.util.*;
-import org.apache.xml.serialize.*;
 
 /**
  * The DBConnectionSpec class is a simple bean whose instances
@@ -136,20 +133,18 @@ public class DBConnectionSpec implements Serializable {
 	}
 
 	/**
-	 * Looks up a database connection spec by name in the given xml file.
+	 * Looks up a database connection spec by name in the given collection.
 	 *
-	 * @param xmlStream an input stream of database specs open for
-	 * reading.
+	 * @param dbcsList a java.util.Collection of DBConnectionSpec objects.
 	 * @param dbname the name of the database connection you want to
 	 * retrieve.
-	 * @return a DBConnectionSpec object populated from the given xml
-	 * stream, or null if no such connection spec exists in the xml.
+	 * @return The first DBConnectionSpec object returned by the
+	 * Collection's iterator whose name matches the dbname argument,
+	 * or null if no such connection spec exists in the list.
 	 */
-	public static DBConnectionSpec getDBSpecFromInputStream(InputStream xmlStream, String dbname)
-		throws DatabaseListReadException {
-		Collection dbs=getDBSpecsFromInputStream(xmlStream);
+	public static DBConnectionSpec searchListForName(List dbcsList, String dbname) {
 		DBConnectionSpec dbcs=null;
-		Iterator it=dbs.iterator();
+		Iterator it=dbcsList.iterator();
 		while(it.hasNext()) {
 			DBConnectionSpec temp=(DBConnectionSpec)it.next();
 			if(temp.getName().equals(dbname)) {
@@ -160,77 +155,42 @@ public class DBConnectionSpec implements Serializable {
 		return dbcs;
 	}
 	
-
 	/**
-	 * Uses a list of available databases (set up by a sysadmin) to
-	 * generate a Collection of DBConnectionSpec objects.
+	 * Looks up a database connection spec by hostname, connection
+	 * port number, and instance (database) name.
 	 *
-	 * @param xmlStream An input stream which contains a valid XML
-	 * document describing the list of available databases.  Typically
-	 * a FileInputStream from /WEB-INF/databases.xml.
-	 * @return a Collection of DBConnectionSpec objects describing all
-	 * available databases.
-	 * @throws DatabaseListReadException when the underlying list
-	 * could not be loaded and parsed.
+	 * @param dbcsList a java.util.Collection of DBConnectionSpec objects.
+	 * @param dbHostName The DNS name or IP address of the database
+	 * server.  Must match whatever was used in the dburl part of the
+	 * entry in the xml file.
+	 * @param dbPort The TCP port number that the database server
+	 * listens for connections on.  The port number must be explicitly
+	 * given in the dburl part of the entry in the xml file for this
+	 * to work.
+	 * @param dbInstanceName The logical database name or instance
+	 * name on the specified database server.  Must match whatever was
+	 * used in the dburl part of the entry in the xml file.
+	 * @return The first DBConnectionSpec object returned by the
+	 * Collection's iterator whose dbUrl contains the given dbHost,
+	 * dbPort, and dbInstanceName arguments, or null if no such
+	 * connection spec exists in the list.
 	 */
-	public static Collection getDBSpecsFromInputStream(InputStream xmlStream) 
-		throws DatabaseListReadException {
-		try {
-			DocumentBuilder db=DocumentBuilderFactory.newInstance().newDocumentBuilder();
-			Document d=db.parse(xmlStream);
-			NodeList databaseList=d.getElementsByTagName("database");
-			LinkedList dbcsList=new LinkedList();
-			for(int i=0; i<databaseList.getLength(); i++) {
-				Element databaseNode=(Element)databaseList.item(i);
-				String databaseName=databaseNode.getAttribute("name");
-				dbcsList.add(makeSpecFromDBNode(databaseNode));
-			}
-			return(dbcsList);
-		} catch(Exception e){
-			throw new DatabaseListReadException(e);
-		}
-	}
-
-
-	/**
-	 * Reads the values from the children of the given DOM element,
-	 * populating a DBConnectionSpec bean with the corresponding
-	 * values.  The child elements it looks for are:
-	 * <ul>
-	 *  <li>database element attribute <code>name</code>
-	 *  <li><code>display-name</code>
-	 *  <li><code>driver-class</code>
-	 *  <li><code>url</code>
-	 * </ul>
-	 *
-	 * @return The populated DBConnectionSpec bean.
-	 * @throws IllegalArgumentException if the given element isn't a
-	 * <code>database</code> element.
-	 */
-	protected static DBConnectionSpec makeSpecFromDBNode(Element dbElem) {
- 		if(!dbElem.getNodeName().equals("database")) {
- 			throw new IllegalArgumentException("This method only supports nodes of type 'database'.");
- 		}
-		DBConnectionSpec spec=new DBConnectionSpec();
-		spec.setName(dbElem.getAttributes().getNamedItem("name").getNodeValue());
-		NodeList databaseProperties=dbElem.getChildNodes();
-		for(int j=0; j<databaseProperties.getLength(); j++) {
-			Node databaseProperty=databaseProperties.item(j);
-			if(databaseProperty.getNodeType() != Node.ELEMENT_NODE) continue;
-			databaseProperty.normalize();
-			if(databaseProperty.getNodeName().equals("display-name")) {
-				spec.setDisplayName(databaseProperty.getFirstChild().getNodeValue());
-			} else if(databaseProperty.getNodeName().equals("driver-class")) {
-				spec.setDriverClass(databaseProperty.getFirstChild().getNodeValue());
-			} else if(databaseProperty.getNodeName().equals("url")) {
-				spec.setUrl(databaseProperty.getFirstChild().getNodeValue());
-			} else if(databaseProperty.getNodeName().equals("user")) {
-				spec.setUser(databaseProperty.getFirstChild().getNodeValue());
-			} else if(databaseProperty.getNodeName().equals("pass")) {
-				spec.setPass(databaseProperty.getFirstChild().getNodeValue());
+	public static DBConnectionSpec searchListForServer(List dbcsList,
+													   String dbHostName,
+													   int dbPort,
+													   String dbInstanceName) {
+		DBConnectionSpec dbcs=null;
+		Iterator it=dbcsList.iterator();
+		while(it.hasNext()) {
+			DBConnectionSpec temp=(DBConnectionSpec)it.next();
+			String url=temp.getUrl();
+			if(url.indexOf(dbHostName) >= 0 
+			   && url.indexOf(String.valueOf(dbPort)) >= 0 
+			   && url.indexOf(dbInstanceName) >= 0) {
+				dbcs=temp;
+				break;
 			}
 		}
-		return spec;
+		return dbcs;
 	}
-
 }
