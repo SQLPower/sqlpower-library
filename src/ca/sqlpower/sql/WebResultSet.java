@@ -508,6 +508,10 @@ public class WebResultSet implements Cloneable {
 		return rs.getObject(colNo);
 	}
 
+    public Object getObject(String colName) throws SQLException {
+        return rs.getObject(colName);
+    }
+
 	/**
 	 * Gets the date out of the database by first getting it as a
 	 * string, then parsing the first 10 characters in yyyy-MM-dd
