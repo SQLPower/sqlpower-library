@@ -16,51 +16,50 @@ import ca.sqlpower.sql.*;
  */
 public class EmailNotification implements java.io.Serializable {
 
-	public final static String RUN_STATUS_SUCCESS="SUCCESS";
-	public final static String RUN_STATUS_WARNING="WARNING";
-	public final static String RUN_STATUS_FAILED="FAILED";
-
 	/**
-	 * Stores a pl_user_notification record in the database.  We never
-	 * update (except for a rename).  You can delete/add only.
+	 * Stores a pl_user_notification record in the database.  
+	 * This could update an existing record or insert a new one.
 	 *
 	 * <p>Security requirements: setter requires modify permission on notifyUser.
 	 *
 	 * @param sm The current logged-in user's security manager.
-	 * @param onStatus The status on which to notify the user.  A null
-	 * means to remove notification records pertaining to the given
-	 * user/object combination.
 	 */
     public static void setPref(Connection con,
 							   PLSecurityManager sm,
 							   PLUser notifyUser,
 							   DatabaseObject notifyAbout,
-							   String onStatus)
+							   String viewKpi,
+							   String emailRed,
+							   String emailYellow,
+							   String emailGreen)
 		throws SQLException, PLSecurityException {
 
 		sm.checkModify(con, notifyUser);
-		setPref(con, notifyUser.getUserId(), true, notifyAbout, onStatus);
+		setPref(con, notifyUser.getUserId(), true, notifyAbout, 
+				viewKpi, emailRed, emailYellow, emailGreen);
 	}
 
 	/**
-	 * Stores a pl_group_notification record in the database.  We
-	 * never update (except for a rename).  You can delete/add only.
+	 * Stores a pl_group_notification record in the database.  
+	 * This may update an existing record or insert a new one.
 	 *
 	 * <p>Security requirements: setter requires modify permission on notifyGroup.
 	 *
-	 * @param onStatus The status on which to notify the user.  A null
-	 * means to remove notification records pertaining to the given
-	 * user/object combination.
+	 * @param sm The current logged-in user's security manager.
 	 */
     public static void setPref(Connection con,
 							   PLSecurityManager sm,
 							   PLGroup notifyGroup,
 							   DatabaseObject notifyAbout,
-							   String onStatus)
+							   String viewKpi,
+							   String emailRed,
+							   String emailYellow,
+							   String emailGreen)
 		throws SQLException, PLSecurityException {
 
 		sm.checkModify(con, notifyGroup);
-		setPref(con, notifyGroup.getGroupName(), false, notifyAbout, onStatus);
+		setPref(con, notifyGroup.getGroupName(), false, notifyAbout, 
+				viewKpi, emailRed, emailYellow, emailGreen);
 	}
 
 	/**
@@ -74,38 +73,78 @@ public class EmailNotification implements java.io.Serializable {
 								  String notifyName,
 								  boolean nameIsUser,
 								  DatabaseObject notifyAbout,
-								  String onStatus)
+								  String viewKpi,
+								  String emailRed,
+								  String emailYellow,
+								  String emailGreen)
 		throws SQLException {
 		// XXX: may need to check if notifyUser already has a
 		// notification preference on notifyAbout, and switch to update.
 
         Statement stmt = null;
 		try {
+			stmt = con.createStatement();
 			StringBuffer sql=new StringBuffer();
 
-			if (onStatus != null) {
-				if (nameIsUser) {
-					sql.append("INSERT INTO pl_user_notification(user_id,");
-				} else {
-					sql.append("INSERT INTO pl_group_notification(group_name,");
-				}
-				sql.append(" object_type, object_name, run_status, last_update_os_user)");
-				sql.append(" VALUES( ");
-				sql.append(SQL.quote(notifyName)).append(",");
-				sql.append(SQL.quote(notifyAbout.getObjectType())).append(",");
-				sql.append(SQL.quote(notifyAbout.getObjectName())).append(",");
-				sql.append(SQL.quote(onStatus)).append(",");
-				sql.append("'Power*Dashboard Web Facility')");
+			sql.setLength(0);
+			if (nameIsUser) {
+				sql.append("SELECT count(*) FROM pl_user_notification");
+				sql.append(" WHERE user_id=");
 			} else {
-				if (nameIsUser) {
-					sql.append("DELETE FROM pl_user_notification WHERE user_id=");
-				} else {
-					sql.append("DELETE FROM pl_group_notification WHERE group_name=");
-				}
-				sql.append(SQL.quote(notifyName));
-				sql.append(" AND object_type=").append(SQL.quote(notifyAbout.getObjectType()));
-				sql.append(" AND object_name=").append(SQL.quote(notifyAbout.getObjectName()));
+				sql.append("SELECT count(*) FROM pl_group_notification");
+				sql.append(" WHERE group_name=");
 			}
+			sql.append(SQL.quote(notifyName));
+			sql.append(" AND object_type=").append(SQL.quote(notifyAbout.getObjectType()));
+			sql.append(" AND object_name=").append(SQL.quote(notifyAbout.getObjectName()));
+			
+			ResultSet rs = stmt.executeQuery(sql.toString());
+
+			sql.setLength(0);
+
+			// If there is already a row, update the flags
+			if (rs.next()) {
+				int rowCount = rs.getInt(1);
+
+				/* If the record exists */
+				if (rowCount > 0) {
+					if (nameIsUser) {
+						sql.append("UPDATE pl_user_notification");
+					} else {
+						sql.append("UPDATE pl_group_notification");
+					}
+					sql.append(" SET view_kpi_ind=").append(SQL.quote(viewKpi)).append(",");
+					sql.append(" email_red_ind=").append(SQL.quote(emailRed)).append(",");
+					sql.append(" email_yellow_ind=").append(SQL.quote(emailYellow)).append(",");
+					sql.append(" email_green_ind=").append(SQL.quote(emailGreen));
+					if (nameIsUser) {
+						sql.append(" WHERE user_id=");
+					} else {
+						sql.append(" WHERE group_name=");
+					}
+					sql.append(SQL.quote(notifyName));
+					sql.append(" AND object_type=").append(SQL.quote(notifyAbout.getObjectType()));
+					sql.append(" AND object_name=").append(SQL.quote(notifyAbout.getObjectName()));
+
+					// The row does not exist - insert a record
+				} else {
+					if (nameIsUser) {
+						sql.append("INSERT INTO pl_user_notification(user_id,");
+					} else {
+						sql.append("INSERT INTO pl_group_notification(group_name,");
+					}
+					sql.append(" object_type, object_name, view_kpi_ind,");
+					sql.append(" email_red_ind, email_yellow_ind, email_green_ind)");
+					sql.append(" VALUES( ");
+					sql.append(SQL.quote(notifyName)).append(",");
+					sql.append(SQL.quote(notifyAbout.getObjectType())).append(",");
+					sql.append(SQL.quote(notifyAbout.getObjectName())).append(",");
+					sql.append(SQL.quote(viewKpi)).append(",");
+					sql.append(SQL.quote(emailRed)).append(",");
+					sql.append(SQL.quote(emailYellow)).append(",");
+					sql.append(SQL.quote(emailGreen)).append(")");
+				} // end if (the record exists)
+			} // end if (the rs has a value)
 
 			stmt = con.createStatement();
 			stmt.executeUpdate(sql.toString());
