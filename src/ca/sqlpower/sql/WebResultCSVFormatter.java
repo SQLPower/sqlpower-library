@@ -153,4 +153,37 @@ public class WebResultCSVFormatter extends WebResultFormatter {
 			return false;
 		}
     }
+    
+    
+    
+	/**
+	 * @see ca.sqlpower.sql.WebResultFormatter#getColumnFormatted(WebResultSet, int, StringBuffer, StringBuffer)
+	 */
+	protected void getColumnFormatted(
+		WebResultSet wrs,
+		int i,
+		StringBuffer contents,
+		StringBuffer align)
+		throws
+			SQLException,
+			NoRowidException,
+			ColumnNotDisplayableException,
+			IllegalStateException {
+	
+			java.sql.ResultSetMetaData md = wrs.getRsmd();
+			switch (md.getColumnType(i)) {
+				case java.sql.Types.TIMESTAMP:
+	       		    java.sql.Date tsDate=wrs.getDate(i);
+		            if(tsDate==null) {
+		                // leave empty
+		            } else {
+		                contents.append(
+	                    dateFormatter.format(new java.util.Date(tsDate.getTime())));
+    		        }
+    		        break;
+				default:
+					contents.append(wrs.getString(i));		
+			}
+	}
+
 }
