@@ -5,7 +5,9 @@ import ca.sqlpower.util.*;
 import java.io.*;
 import java.text.*;
 import java.util.*;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.awt.Color;
 import javax.servlet.jsp.JspWriter;
 
@@ -206,8 +208,7 @@ public abstract class WebResultFormatter {
             align.append("right");
             contents.append(numberFormatter.format(wrs.getFloat(i)));
             break;
-
-        default:
+        	
         case FieldTypes.NAME:
             align.append("left");
             contents.append(wrs.getString(i));
@@ -344,7 +345,41 @@ public abstract class WebResultFormatter {
             //There is no generic way to return a field of this type..
             // So it's left up to the concrete subclasses
             throw new UnsupportedOperationException();
+
+        default:
+			ResultSetMetaData md = wrs.getRsmd();
+			switch (md.getColumnType(i)) {
+				case java.sql.Types.BIGINT:
+				case java.sql.Types.INTEGER:
+				case java.sql.Types.DECIMAL:
+				case java.sql.Types.DOUBLE:
+				case java.sql.Types.FLOAT:
+				case java.sql.Types.NUMERIC:
+				case java.sql.Types.REAL:
+				case java.sql.Types.SMALLINT:
+				case java.sql.Types.TINYINT:
+		            align.append("right");
+		            contents.append(numberFormatter.format(wrs.getFloat(i)));
+		            break;
+		        case java.sql.Types.TIMESTAMP:
+		            align.append("center");
+        		    java.sql.Date tsDate=wrs.getDate(i);
+		            if(tsDate==null) {
+		                // leave empty
+		            } else {
+		                contents.append(
+	                    dateFormatter.format(new java.util.Date(tsDate.getTime())));
+    		        }
+	            break;
+				default: 	        	
+				     align.append("left");
+            		 contents.append(wrs.getString(i));
+                     break;
+			}
+
         }
+
+
     }
     
     public abstract void formatToStream(WebResultSet wrs, PrintWriter out) 

@@ -551,4 +551,12 @@ public class WebResultSet implements Cloneable {
     public void close() throws SQLException {
         rs.getStatement().close();
     }
+	/**
+	 * Returns the rsmd.
+	 * @return ResultSetMetaData
+	 */
+	public ResultSetMetaData getRsmd() {
+		return rsmd;
+	}
+
 }
