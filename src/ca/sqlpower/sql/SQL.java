@@ -3,6 +3,7 @@ package ca.sqlpower.sql;
 import java.sql.*;
 import java.util.*;
 import ca.sqlpower.util.*;
+import java.text.SimpleDateFormat;
 
 public class SQL {
 
@@ -175,6 +176,24 @@ public class SQL {
 		return(escaped.toString()); 
     } 
 	
+	/**
+	 * Supplies a SQL expression that should evaluate to the given
+	 * date.  Only accurate to the day (drops time-of-day information).
+	 */
+	public static String escapeDate(Connection con, java.util.Date date) throws SQLException {
+		if (date == null) {
+			return "null";
+		} else {
+			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+			if (DBConnection.isOracle(con)) {
+				return "TO_DATE('"+df.format(date)+"','YYYY-MM-DD')";
+			} else {
+				// most JDBC drivers support {d 'yyyy-MM-dd'} style escape
+				return "{d '"+df.format(date)+"'}";
+			}
+		}
+	}
+
     /**
      * Converts the character representation of a YES/NO value into
      * boolean.
