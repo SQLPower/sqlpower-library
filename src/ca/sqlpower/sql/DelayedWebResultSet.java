@@ -188,7 +188,7 @@ public class DelayedWebResultSet extends WebResultSet {
 					}
 				}
 				logger.debug("adding results to cache, key: " + cacheKey);
-				addResultsToCache(cacheKey, results);
+				results = addResultsToCache(cacheKey, results);
 			}
 			newRS=results;
 		} else {
@@ -301,8 +301,9 @@ public class DelayedWebResultSet extends WebResultSet {
 	 * and if this row set needs to be retrieved again.
 	 * @param results The CachedRowSet to add to the cache.
 	 */
-	protected void addResultsToCache(String key, CachedRowSet results) throws SQLException  {
+	protected CachedRowSet addResultsToCache(String key, CachedRowSet results) throws SQLException  {
 		getResultCache().put(key, results);
+		return results;
 	}
 
 	/**
