@@ -1,5 +1,9 @@
 package ca.sqlpower.sql;
 
+import java.sql.*;
+import java.util.*;
+import ca.sqlpower.util.LabelValueBean;
+
 public class SQL {
 
     /**
@@ -73,5 +77,24 @@ public class SQL {
 	    return true;
 	}
 	return false;
+    }
+
+    /**
+     * Returns a list of ca.sqlpower.util.LabelValueBean's [sic]
+     * representing all the 1st (label) and 2nd (value) columns in the
+     * given result set.
+     *
+     * @param rs The result set you want listified.
+     * @throws SQLException if a database error occurs.
+     */
+    public static List makeListFromRS(ResultSet rs) throws SQLException {
+	List list=new LinkedList();
+
+	while(rs.next()) {
+	    list.add(new LabelValueBean(rs.getString(1),
+					rs.getString(2)));
+	}
+	
+	return list;
     }
 }
