@@ -29,23 +29,36 @@ public class ResultSetClosingStatement implements Statement {
 	 */
 	protected ResultSet results;
 
+	/**
+	 * The last query that was attempted on this Statement.  Useful if
+	 * you get a SQLException and want to know what the query was.
+	 */
+	protected String lastQuery;
+
 	ResultSetClosingStatement(Connection con, Statement actualStmt) {
 		this.con=con;
 		this.actualStatement=actualStmt;
 		this.results=null;
 	}
- 
+
+	public String getLastQuery() {
+		return lastQuery;
+	}
+	
+	// ------------- java.sql.Statement interface -----------
+
 	/**
 	 * Closes the current resultset (if there is one) then executes
 	 * the given query.  Also logs the given sql statement at DEBUG
 	 * level before executing it.
 	 */
     public ResultSet executeQuery(String sql) throws SQLException {
-		if(results != null) {
+		if (results != null) {
 			results.close();
 		}
 		logger.debug(sql);
-		results=actualStatement.executeQuery(sql);
+		lastQuery = sql;
+		results = actualStatement.executeQuery(sql);
 		return results;
 	}
 
@@ -56,6 +69,7 @@ public class ResultSetClosingStatement implements Statement {
 	 */
     public int executeUpdate(String sql) throws SQLException {
 		logger.debug(sql);
+		lastQuery = sql;
 		int rowCount = actualStatement.executeUpdate(sql);
 		logger.debug("Affected "+rowCount+" rows");
 		return rowCount;
