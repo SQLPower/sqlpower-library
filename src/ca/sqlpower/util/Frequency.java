@@ -2,7 +2,6 @@ package ca.sqlpower.util;
 
 import java.util.*;
 
-import ca.sqlpower.dashboard.UnknownFreqCodeException;
 
 public class Frequency implements Comparable, java.io.Serializable {
 	public static final int YEARLY=1;

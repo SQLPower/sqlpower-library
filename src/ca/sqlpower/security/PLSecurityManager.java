@@ -1,11 +1,11 @@
 package ca.sqlpower.security;
 
-import ca.sqlpower.dashboard.UnknownFreqCodeException;
 import ca.sqlpower.sql.DBConnection;
 import ca.sqlpower.sql.DatabaseObject;
 import java.sql.*;
 import java.util.*;
 import ca.sqlpower.sql.*;
+import ca.sqlpower.util.UnknownFreqCodeException;
 
 
 public class PLSecurityManager implements java.io.Serializable {

@@ -241,7 +241,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 										  String userId,
 										  String password)
 
-		throws SQLException, ca.sqlpower.dashboard.UnknownFreqCodeException,
+		throws SQLException, ca.sqlpower.util.UnknownFreqCodeException,
 			   PLSecurityException {
 		
 		if (userId == null) {
@@ -257,7 +257,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 	 * given database.
 	 */
 	public static List findAll(Connection con)
-		throws SQLException, ca.sqlpower.dashboard.UnknownFreqCodeException,
+		throws SQLException, ca.sqlpower.util.UnknownFreqCodeException,
 			   PLSecurityException{
 		return find(con, null, null);
 	}
@@ -289,7 +289,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 	 * there is no such userid/password combination).
 	 */
 	protected static List find(Connection con, String userId, String password)
-		throws SQLException, ca.sqlpower.dashboard.UnknownFreqCodeException,
+		throws SQLException, ca.sqlpower.util.UnknownFreqCodeException,
 			   PLSecurityException {
 
 		if (userId == null && password != null) {
