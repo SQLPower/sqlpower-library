@@ -389,4 +389,11 @@ public abstract class WebResultFormatter {
         throws SQLException, NoRowidException {
         formatToStream(wrs, new PrintWriter(out));
     }   
+
+	public String format(WebResultSet wrs)
+		throws SQLException, NoRowidException {
+		StringWriter sout = new StringWriter();
+		formatToStream(wrs, new PrintWriter(sout));
+		return sout.toString();
+	}
 }
