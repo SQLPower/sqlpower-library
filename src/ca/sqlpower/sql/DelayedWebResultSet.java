@@ -3,8 +3,7 @@ package ca.sqlpower.sql;
 import java.sql.*;
 import java.util.*;
 import ca.sqlpower.util.*;
-// The CachedRowSet from Sun is still Early Access, so we can't use it in production
-import sun.jdbc.rowset.*;
+import ca.sqlpower.sql.CachedRowSet;
 
 public class DelayedWebResultSet extends WebResultSet {
 
