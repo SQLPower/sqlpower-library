@@ -23,6 +23,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 	private static final Logger logger = Logger.getLogger(PLUser.class);
 
     protected boolean _alreadyInDatabase;
+	protected Set groupNameFilter;
     protected String userId;
 	protected String password;
     protected String userName;
@@ -43,6 +44,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 	 */
     protected PLUser() {
         _alreadyInDatabase=false;
+		groupNameFilter = null;
         userId=null;
         userName=null;
 		emailAddress=null;
@@ -381,16 +383,36 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 		return PLGroup.findByUser(con, this);
 	}
 
+	/**
+	 * Returns a list of group names to which this user belongs.  If
+	 * there is a groupNameFilter installed on this user, it is
+	 * applied to the returned list.
+	 */
 	public List getGroupNames(Connection con) throws SQLException {
+		return getGroupNamesWithFilter(con, groupNameFilter);
+	}
 
+	/**
+	 * Returns a list of group names to which this user belongs which
+	 * are also present in the given filter set.  This method is
+	 * useful if you want a list of all groups this user belongs to
+	 * regardless of its current groupNameFilter.  In that case, call
+	 * this method with <code>filter = null</code>.
+	 */
+	public List getGroupNamesWithFilter(Connection con, Set filter) throws SQLException {
 		Statement stmt = null;
 		ResultSet rs = null;
 		List results = new LinkedList();
-		String sql = "SELECT group_name FROM user_group WHERE user_id="+SQL.quote(getUserId());
+		StringBuffer sql = new StringBuffer();
+		sql.append("SELECT group_name FROM user_group WHERE user_id=")
+			.append(SQL.quote(getUserId()));
+		if (filter != null) {
+			sql.append(" AND group_name IN(").append(SQL.quoteCollection(filter)).append(")");
+		}
 
 		try {
 			stmt = con.createStatement();
-			rs = stmt.executeQuery(sql);
+			rs = stmt.executeQuery(sql.toString());
 			while (rs.next()) {
 				results.add(rs.getString(1));
 			}
@@ -448,6 +470,41 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 
 	// GET and SET methods go below this line
 
+	/**
+	 * Returns the current group name filter that applies to this
+	 * user.
+	 *
+	 * @return a Set of strings which was previously installed using
+	 * {@link #setGroupNameFilter(Set)}.  Returns null if there is no
+	 * filter in place.
+	 */
+	public Set getGroupNameFilter() {
+		return groupNameFilter;
+	}
+
+	/**
+	 * Sets the current group name filter (discards previous filter).
+	 * When a non-null filter is installed, the PLUser will appear to
+	 * belong only to groups which are in the intersection of this
+	 * filter and its actual group list.  This functionality lets more
+	 * powerful users choose to temporarily give up some of their
+	 * group privs in order to simulate logging in as less powerful
+	 * users.
+	 *
+	 * @param namesToInclude A Set of Strings, each string
+	 * corresponding to the name of a group which the current user
+	 * belongs to.  null is an acceptable value, and means "don't
+	 * filter".  The empty set means to pretend this user doesn't
+	 * belong to any groups.  Although it is not an error to include
+	 * in this set names of groups to which this user does not belong,
+	 * such entries will have no effect.
+	 */
+	public void setGroupNameFilter(Set namesToInclude) {
+		this.groupNameFilter = namesToInclude;
+		omniscient = null;
+		superuser = null;
+	}
+
     public String getUserId() {
         return userId;
     }
@@ -491,12 +548,19 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 	/**
 	 * Checks if this user is omniscient.  Omniscient users can see
 	 * all data regardless of data filtering/subsetting restrictions.
-	 * This method only checks the database the first time it is used
-	 * (for the current user instance), so feel free to call it many
+	 * This method caches the answer, so feel free to call it many
 	 * times.
+	 * 
+	 * <p>Note that the groupNameFilter is consulted before returning the
+	 * cached value.  If there is a filter in place and it does not
+	 * name the PLGroup.OMNISCIENT_GROUP_NAME, this method will return
+	 * false regardless of the cached value.
 	 */
 	public boolean isOmniscient(Connection con) throws SQLException {
-		if (omniscient == null) {
+		if (groupNameFilter != null
+			&& !groupNameFilter.contains(PLGroup.OMNISCIENT_GROUP_NAME)) {
+			return false;
+		} else if (omniscient == null) {
 			Statement stmt = null;
 			ResultSet rs = null;
 			try {
@@ -505,9 +569,9 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 									   +SQL.quote(getUserId())+" AND group_name="
 									   +SQL.quote(PLGroup.OMNISCIENT_GROUP_NAME));
 				if (rs.next()) {
-					omniscient = new Boolean(true);
+					omniscient = Boolean.TRUE;
 				} else {
-					omniscient = new Boolean(false);
+					omniscient = Boolean.FALSE;
 				}
 			} finally {
 				if (rs != null) rs.close();
@@ -520,10 +584,19 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 	/**
 	 * Checks if this user is a superuser.  Superusers are the users
 	 * who belong to the special PL_ADMIN group.  They typically have
-	 * full rights to everything in the system.
+	 * full rights to everything in the system.This method caches the
+	 * answer, so feel free to call it many times.
+	 * 
+	 * <p>Note that the groupNameFilter is consulted before returning the
+	 * cached value.  If there is a filter in place and it does not
+	 * name the PLGroup.OMNISCIENT_GROUP_NAME, this method will return
+	 * false regardless of the cached value.
 	 */
 	public boolean isSuperuser(Connection con) throws SQLException {
-		if (superuser == null) {
+		if (groupNameFilter != null
+			&& !groupNameFilter.contains(PLGroup.ADMIN_GROUP)) {
+			return false;
+		} else if (superuser == null) {
 			Statement stmt = null;
 			ResultSet rs = null;
 			try {
@@ -534,9 +607,9 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 				logger.debug("isSuperuser query "+sql);
 				rs = stmt.executeQuery(sql);
 				if (rs.next()) {
-					superuser = new Boolean(true);
+					superuser = Boolean.TRUE;
 				} else {
-					superuser = new Boolean(false);
+					superuser = Boolean.FALSE;
 				}
 			} finally {
 				if (rs != null) rs.close();
@@ -642,7 +715,10 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 		meString.append("[PLUser: ");
 		meString.append("userId=").append(userId);
 		meString.append(", userName=").append(userName);
-		meString.append(", password=<").append(password != null ? "not " : "").append("null>");
+		meString.append(", password=[").append(password != null ? "not " : "").append("null]");
+		meString.append(", groupNameFilter=").append(groupNameFilter);
+		meString.append(", omniscient=").append(omniscient);
+		meString.append(", superuser=").append(superuser);
 		meString.append(", emailAddress=").append(emailAddress);
 		meString.append(", loaderUser=").append(loaderUser);
 		meString.append(", summarizerUser=").append(summarizerUser);

@@ -123,7 +123,7 @@ public class PLGroup implements DatabaseObject, java.io.Serializable {
 										   String groupName)
 		throws SQLException {
 
-		List oneGroup = find(con, groupName, null, false);
+		List oneGroup = find(con, groupName, null, false, null);
 		return (PLGroup) oneGroup.get(0);
     }
 
@@ -134,7 +134,7 @@ public class PLGroup implements DatabaseObject, java.io.Serializable {
 	 * @see PLUser.getGroups
 	 */
 	public static List findByUser(Connection con, PLUser user) throws SQLException {
-		return find(con, null, user.getUserId(), false);
+		return find(con, null, user.getUserId(), false, user.getGroupNameFilter());
 	}
 
 	/**
@@ -142,7 +142,7 @@ public class PLGroup implements DatabaseObject, java.io.Serializable {
 	 * the given database.
 	 */
 	public static List findAll(Connection con) throws SQLException {
-		return find(con, null, null, false);
+		return find(con, null, null, false, null);
 	}
 
 	/**
@@ -151,7 +151,7 @@ public class PLGroup implements DatabaseObject, java.io.Serializable {
 	 */
 	public static List findByPrefix(Connection con, String nameStartsWith)
 		throws SQLException {
-		return find(con, nameStartsWith, null, true);
+		return find(con, nameStartsWith, null, true, null);
 	}
 
 	/**
@@ -160,17 +160,29 @@ public class PLGroup implements DatabaseObject, java.io.Serializable {
 	 * for non-prefix searches), user name (which will give all groups
 	 * that the given user belongs to), or neither (gives all groups),
 	 * but not both simultaneously.
+	 *
+	 * @param filter If non-null, the returned list of groups will be
+	 * restricted to those named in this set.  All members of the set
+	 * must be of type String.  You can only use a non-null filter if
+	 * you specify a non-null userName.  (which implies a required
+	 * null groupName).
 	 */
 	protected static List find(Connection con, String groupName, String userName,
-							   boolean searchByPrefix)
+							   boolean searchByPrefix, Set filter)
 	throws SQLException {
 
 		if (groupName != null && userName != null) {
-			throw new IllegalArgumentException("Cannot specify both userName and groupName");
+			throw new IllegalArgumentException
+				("Cannot specify both userName and groupName");
+		}
+		
+		if (userName == null && filter != null) {
+			throw new IllegalArgumentException
+				("filter is not allowed unless non-null userName is specified");
 		}
 
 		List results = new LinkedList();
-        Statement stmt=null;
+        Statement stmt = null;
         try {
 			StringBuffer sql = new StringBuffer(500);
 			sql.append("SELECT g.group_name, g.group_desc, g.last_update_date,");
@@ -189,6 +201,11 @@ public class PLGroup implements DatabaseObject, java.io.Serializable {
 					sql.append(" AND ug.user_id LIKE ").append(SQL.quote(userName+"%"));
 				} else {
 					sql.append(" AND ug.user_id=").append(SQL.quote(userName));
+				}
+				if (filter != null) {
+					sql.append(" AND g.group_name IN(")
+						.append(SQL.quoteCollection(filter))
+						.append(")");
 				}
 			} else {
 				sql.append(" FROM pl_group g");
