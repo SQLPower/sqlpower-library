@@ -7,7 +7,8 @@ import javax.servlet.ServletContext;
 /**
  * A source for the list of DBConnectionSpec objects that should be
  * presented to the user when they need to pick a database to connect
- * to.
+ * to.  Can retrieve the list from a local XML file (using the servlet
+ * API's getResourceAsStream) or by an RMI call.
  *
  * @author Jonathan Fuerth
  * @version $Id$
