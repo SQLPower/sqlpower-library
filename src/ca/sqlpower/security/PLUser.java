@@ -327,6 +327,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			}
 			sql.append(" ORDER BY user_id");
 
+			if (logger.isDebugEnabled()) logger.debug("Finding user: "+sql.toString());
             stmt = con.createStatement();
             ResultSet rs = stmt.executeQuery(sql.toString());
 			
