@@ -34,11 +34,9 @@ public class IPNetwork {
 			throw new IllegalArgumentException("Couldn't find '/' in argument string.");
 		}
 		String addrString = addrMask.substring(0,slashIdx);
-		System.out.println("Address part: "+addrString);
 		this.addr = InetAddress.getByName(addrString);
 
 		String maskString = addrMask.substring(slashIdx+1, addrMask.length());
-		System.out.println("Mask part: "+maskString);
 		int maskInt = Integer.parseInt(maskString);
 
 		int[] myMask = new int[4];

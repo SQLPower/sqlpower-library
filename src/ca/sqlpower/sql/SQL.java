@@ -229,12 +229,9 @@ public class SQL {
 		throws SQLException {
 		ResultSet rs = null;
 		try {
-			System.out.println("Looking for primary key in table "+schemaName+"."+tableName);
-			
 			rs = con.getMetaData().getPrimaryKeys("", schemaName, tableName);
 			List prikey=new LinkedList();
 			while(rs.next()) {
-				System.out.println("Adding to prikey list: "+rs.getString("COLUMN_NAME"));
 				prikey.add(rs.getString("COLUMN_NAME"));
 			}
 			return prikey;

@@ -88,7 +88,6 @@ public class StatementClosingPoolableConnectionFactory
 			}
 		}
 
-		System.out.println("returning new PoolableStatementClosingConnection");
         return new PoolableStatementClosingConnection(con,_pool);
     } // end makeObject
 } // end class
