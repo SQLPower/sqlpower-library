@@ -12,13 +12,19 @@ public class SQL {
     /**
      * A convent way of using escapeStatement.  This method does the
      * same thing as escapeStatement, but also encloses the returned
-     * string in single-quotes.
+     * string in single-quotes.  If the argument is null, the unquoted
+     * string "NULL" is returned.
      *
-     * @param string The string that you want escaped and quoted.
+     * @param string The string that you want escaped and quoted. (or
+     * "NULL")
      * @return The same as escapeStatement would, but enclosed in quotes.
      */
     public static String quote(String string) {
-	return "'"+escapeStatement(string)+"'";
+	if(string==null) {
+	    return "NULL";
+	} else {
+	    return "'"+escapeStatement(string)+"'";
+	}
     }
 
     /**
