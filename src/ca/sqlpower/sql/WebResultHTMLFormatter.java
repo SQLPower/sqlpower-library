@@ -218,7 +218,8 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	    int i=1;
 	    int numRenderedCells=0;
 
-	    out.println("<table align=\"center\">");
+//	    out.println("<table align=\"center\">");
+	    out.println("<table>");
 	    out.println(" <tr>");
 	    while(i<=numCols) {
 		sb.setLength(0);
@@ -251,7 +252,8 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	    out.println("</table>");
 	}
 
-	out.println("<table class=\"resultTable\" align=\"center\">");
+//	out.println("<table class=\"resultTable\" align=\"center\">");
+	out.println("<table class=\"resultTable\">");
 
 	outputHeaderRow(wrs, out);
 
