@@ -401,7 +401,8 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		if (curRow[columnIndex - 1] == null) {
 			return null;
 		} else {
-			return (java.sql.Date) curRow[columnIndex - 1];
+			java.util.Date uDate = (java.util.Date) curRow[columnIndex - 1];
+			return new java.sql.Date (uDate.getTime());
 		}
 	}
 
