@@ -121,7 +121,7 @@ public abstract class User implements java.io.Serializable {
      * @throws SQLException whenever java.sql.Connection.createStatement() would
      * @see java.sql.Connection
      */
-    public Statement createStatement() throws SQLException {
+    public java.sql.Statement createStatement() throws SQLException {
 	return con.createStatement();
     }
 }
