@@ -11,6 +11,7 @@ package ca.sqlpower.sql;
  * @version $Id$
  */
 public interface DatabaseObject {
+	public static final String OBJECT_TYPE_KPI="KPI";
 
 	/**
 	 * Returns the object's name, suitable for use in SQL WHERE clauses.
