@@ -38,9 +38,9 @@ public class PoolableStatementClosingConnection extends PoolableConnection {
 	 * and returns it.
 	 */
 	public Statement createStatement() throws SQLException {
-		Statement stmt = super.createStatement();
+		Statement stmt = new ResultSetClosingStatement(this, super.createStatement());
 		openStatements.add(stmt);
-		return super.createStatement();
+		return stmt;
 	}
 	
 	/**
@@ -48,26 +48,19 @@ public class PoolableStatementClosingConnection extends PoolableConnection {
 	 * ignoring any resulting SQLExceptions.
 	 */
 	public void close() throws SQLException {
-		System.out.println("PSCC: closing statements");
 		Iterator stmtIt = openStatements.iterator();
-		int attemptedToClose = 0;
-		int closed = 0;
 		while (stmtIt.hasNext()) {
 			Statement stmt = (Statement) stmtIt.next();
 			if (stmt != null) {
 				try {
-					attemptedToClose++;
-					closed++;
 					stmt.close();
 				} catch (SQLException e) {
-					closed--;
 					// statement probably already closed
 				}
 			}
 		}
-		System.out.println("PSCC: attempted "+attemptedToClose+", closed "+closed+", closing super");
+
 		openStatements.clear();
 		super.close();
-		System.out.println("PSCC: done");
 	}
 }

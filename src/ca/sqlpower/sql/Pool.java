@@ -43,7 +43,6 @@ public class Pool {
         
         if (dataSource == null) {
         	GenericObjectPool.Config poolConfig = new GenericObjectPool.Config();
-        	System.out.println("Pool creating new pool for "+poolName);
   
 			// XXX: this should come from a properties file.
         	poolConfig.maxActive = 25;
@@ -52,17 +51,18 @@ public class Pool {
         	poolConfig.minEvictableIdleTimeMillis = 1000*60*5;
         	poolConfig.timeBetweenEvictionRunsMillis = 10000;
         	poolConfig.numTestsPerEvictionRun = 100;
+			poolConfig.testOnBorrow = true;
 
 		    connectionPool = new GenericObjectPool(null,poolConfig);
-			System.out.println("dbUrl = "+dbcs.getUrl());
 
 		    ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(dbcs.getUrl(),ls.getUsername(),ls.getPassword());
         	PoolableConnectionFactory poolableConnectionFactory = new StatementClosingPoolableConnectionFactory(connectionFactory,connectionPool,null,null,false,true);
+			poolableConnectionFactory.setValidationQuery("select 1 from def_param");
 	        this.dataSource = new PoolingDataSource(connectionPool);
 	        pools.put(poolName, dataSource);	
 	        objPools.put(poolName, connectionPool);   // for debugging      
         } else {
-        	System.out.println("Pool found cached pool for "+poolName);
+			// found connection pool in cache
         }
 	}
 		
@@ -72,10 +72,7 @@ public class Pool {
 	 */
 	public Connection getConnection() throws SQLException {
 		Connection con;
-		System.out.println("getting connection from the pool:");
-		System.out.println("before: "+connectionPool.numActive()+" active, "+connectionPool.numIdle()+" idle.");
 		con = dataSource.getConnection();		
-		System.out.println("after: "+connectionPool.numActive()+" active, "+connectionPool.numIdle()+" idle.");
 		return con;
 	}		
 }
