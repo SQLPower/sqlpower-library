@@ -196,4 +196,15 @@ public class DelayedWebResultSet extends WebResultSet {
 	public void setCacheEnabled(boolean v) {
 		cacheEnabled=v;
 	}
+
+	/**
+	 * Behaves like close() in WebResultSet unless the
+	 * DelayedWebResultSet result cache is turned on.  In that case,
+	 * does nothing because the database resources are already released.
+	 */
+	public void close() throws SQLException {
+		if(!cacheEnabled) {
+			super.close();
+		}
+	}
 }
