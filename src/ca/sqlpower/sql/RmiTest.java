@@ -18,7 +18,7 @@ public class RmiTest {
     DBConnectionSpecServer obj = null; 
 
         try { 
-            obj = (DBConnectionSpecServer)Naming.lookup("//ford/DBConnectionSpecServer"); 
+            obj = (DBConnectionSpecServer)Naming.lookup("//arthur/DBConnectionSpecServer"); 
             message = obj.getAvailableDatabases();
             Iterator messageIt = message.iterator();
             while (messageIt.hasNext()) {
