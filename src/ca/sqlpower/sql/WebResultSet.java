@@ -368,6 +368,11 @@ public class WebResultSet {
         return rs.getFloat(colNo);
     }
 
+    public int getInt(int colNo) throws SQLException {
+        return rs.getInt(colNo);
+    }
+
+
     /**
      * Closes the JDBC ResultSet's Statement object, thereby freeing
      * the database cursor.  Cursors are a limited resource, so it is
