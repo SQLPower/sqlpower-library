@@ -48,6 +48,24 @@ public class SQL {
 			return string;
 		}
 	}
+
+
+	/** 
+	 * Return a string with the first letter capitalized, and the rest lower case
+	 *
+	 * @param string The string you want to change the case of
+	 */
+	public static String initcap(String string){
+		String newString = "";
+
+		if(string==null || string.equals("")) {
+			return "";
+		} else {
+			newString=string.substring(0,1).toUpperCase();
+			newString=newString.concat(string.substring(1).toLowerCase());
+			return newString;
+		}		
+	} // end initcap
 	
     /**
      * Makes the input string safe to enclose in single-quotes in an
