@@ -18,7 +18,7 @@ public class SQL {
      * @return The same as escapeStatement would, but enclosed in quotes.
      */
     public static String quote(String string) {
-	return "'"+escapeStatement(string)+"+";
+	return "'"+escapeStatement(string)+"'";
     }
 
     /**
