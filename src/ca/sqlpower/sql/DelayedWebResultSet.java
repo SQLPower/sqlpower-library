@@ -361,42 +361,42 @@ public class DelayedWebResultSet extends WebResultSet {
 	}
 
 	/**
-	 * See @link{#queryExecuteTime}.
+	 * See {@link #queryExecuteTime}.
 	 */
 	public long getQueryExecuteTime() {
 		return queryExecuteTime;
 	}
 	
 	/**
-	 * See @link{#resultPopulateTime}.
+	 * See {@link #resultPopulateTime}.
 	 */
 	public long getResultPopulateTime() {
 		return resultPopulateTime;
 	}
 	
 	/**
-	 * See @link{#fromCache}.
+	 * See {@link #fromCache}.
 	 */
 	public boolean isFromCache() {
 		return fromCache;
 	}
 	
 	/**
-	 * See @link{#totalExecuteTime}.
+	 * See {@link #totalExecuteTime}.
 	 */
 	public long getTotalExecuteTime() {
 		return totalExecuteTime;
 	}
 	
 	/**
-	 * See @link{#maxRows}.
+	 * See {@link #maxRows}.
 	 */
 	public void setMaxRows(int v) {
 		maxRows = v;
 	}
 
 	/**
-	 * See @link{#maxRows}.
+	 * See {@link #maxRows}.
 	 */
 	public int getMaxRows() {
 		return maxRows;
