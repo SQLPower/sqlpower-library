@@ -18,12 +18,14 @@ public class OracleErrorConverter extends AbstractErrorConverter {
 			return SQL_SYNTAX_ERROR;
 		case 942:
 			return UNKNOWN_COLUMN;
-		case 1017 :
+		case 1017:
 			return INVALID_LOGON;
-		case 17443 :
+		case 17443:
 			return INVALID_LOGON;
-		case 17002 :
+		case 17002:
 			return SERVER_UNAVAILABLE;
+		case 17006:
+			return UNKNOWN_COLUMN;
 		default :
 			return UNKNOWN_ERROR;
 		}
