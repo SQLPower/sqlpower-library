@@ -27,6 +27,13 @@ public class WebResultSet implements Cloneable {
 	public String emptyMessage; // the message to show when the result set is empty
 	protected Integer independentColumn;
 
+	/**
+	 * Keeps track of the same thing as JDBC2.0 ResultSet.isAfterLast
+	 * because Microsoft's SQLServer2000 driver doesn't support this
+	 * method.
+	 */
+	protected boolean isAfterLast;
+
     public WebResultSet(ResultSet results, String query) throws SQLException {
         sqlQuery=query;
 		applyResultSet(results);
@@ -93,6 +100,7 @@ public class WebResultSet implements Cloneable {
 		tableTitle="";
 		emptyMessage="";
 		independentColumn = null;
+		isAfterLast=false;
     }
 
     /**
@@ -465,7 +473,11 @@ public class WebResultSet implements Cloneable {
 	// ****************************************
 
     public boolean next() throws SQLException {
-        return rs.next();
+		boolean hasMoreRows = rs.next();
+		if(!hasMoreRows) {
+			isAfterLast = true;
+		}
+        return hasMoreRows;
     }
 
     /**
@@ -520,7 +532,7 @@ public class WebResultSet implements Cloneable {
     }
 
 	public boolean isAfterLast() throws SQLException {
-		return rs.isAfterLast();
+		return isAfterLast;
 	}
 
     /**
