@@ -5,6 +5,12 @@ import java.util.*;
 
 public class ByteColonFormat extends Format {
 
+	/**
+	 * If this is set to false, the formatter will not output colons.
+	 * Otherwise it will.
+	 */
+	protected boolean usingColons = true;
+
     public StringBuffer format(Object obj,
                                StringBuffer toAppendTo,
                                FieldPosition pos) {
@@ -17,7 +23,7 @@ public class ByteColonFormat extends Format {
             if(i == (inputBytes.length)-1) {
                 break;
             }
-            toAppendTo.append(':');
+            if (usingColons) toAppendTo.append(':');
             i++;
         }
         return toAppendTo;
@@ -70,4 +76,24 @@ public class ByteColonFormat extends Format {
 
         return out;
     }
+
+
+	/**
+	 * Gets the value of usingColons
+	 *
+	 * @return the value of usingColons
+	 */
+	public boolean isUsingColons()  {
+		return this.usingColons;
+	}
+
+	/**
+	 * Sets the value of usingColons
+	 *
+	 * @param argUsingColons Value to assign to this.usingColons
+	 */
+	public void setUsingColons(boolean argUsingColons) {
+		this.usingColons = argUsingColons;
+	}
+	
 }
