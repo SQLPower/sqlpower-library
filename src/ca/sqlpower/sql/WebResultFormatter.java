@@ -4,11 +4,14 @@ import java.io.*;
 import java.text.*;
 import java.sql.SQLException;
 import java.awt.Color;
+import javax.servlet.jsp.JspWriter;
 
 /**
  * The base class for utilities that format a {@link WebResultSet}
- * into various human-readable formats.  Currently, HTML output is
- * available.  CSV is planned for the near future.
+ * into various human-readable formats.  Currently, HTML and CSV
+ * output is available.  The Power*Dashboard extends this class to
+ * provide an alternate HTML view as well as an applet-based graph
+ * view.
  *
  * @author Jonathan Fuerth
  * @version $Id$
@@ -25,14 +28,14 @@ public abstract class WebResultFormatter {
     protected Color rowNormalColour;
 
     public WebResultFormatter() {
-	rowidParameterName="row_id";
-	checkboxYesValue="YES";
-	numberFormatter=new DecimalFormat("#,##0.##############");
-	moneyFormatter=new DecimalFormat("$#,##0.00");
-	percentFormatter=new DecimalFormat("0%");
-	dateFormatter=DateFormat.getDateInstance();
-	rowHighlightColour=Color.yellow;
-	rowNormalColour=new Color(0xEE, 0xEE, 0xEE);
+        rowidParameterName="row_id";
+        checkboxYesValue="YES";
+        numberFormatter=new DecimalFormat("#,##0.##############");
+        moneyFormatter=new DecimalFormat("$#,##0.00");
+        percentFormatter=new DecimalFormat("0%");
+        dateFormatter=DateFormat.getDateInstance();
+        rowHighlightColour=Color.yellow;
+        rowNormalColour=new Color(0xEE, 0xEE, 0xEE);
     }
 
     /**
@@ -41,7 +44,7 @@ public abstract class WebResultFormatter {
      * @return The row identifier parameter name.
      */
     public String getRowidParameterName() {
-	return rowidParameterName;
+        return rowidParameterName;
     }
 
     /**
@@ -60,7 +63,7 @@ public abstract class WebResultFormatter {
      * @return the string representing "true"
      */
     public String getCheckboxYesValue() {
-	return checkboxYesValue;
+        return checkboxYesValue;
     }
     
     /**
@@ -70,23 +73,23 @@ public abstract class WebResultFormatter {
      * @param v The new value of the string representing "true."
      */
     public void setCheckboxYesValue(String  v) {
-	this.checkboxYesValue = v;
+        this.checkboxYesValue = v;
     }    
 
     public void setNumberFormatter(NumberFormat v) {
-	numberFormatter=v;
+        numberFormatter=v;
     }
 
     public void setMoneyFormatter(NumberFormat v) {
-	moneyFormatter=v;
+        moneyFormatter=v;
     }
 
     public void setPercentFormatter(NumberFormat v) {
-	percentFormatter=v;
+        percentFormatter=v;
     }
 
     public void setDateFormatter(DateFormat v) {
-	dateFormatter=v;
+        dateFormatter=v;
     }
 
     /**
@@ -118,91 +121,96 @@ public abstract class WebResultFormatter {
     public void setRowNormalColour(Color  v) {this.rowNormalColour = v;}
     
     protected String beautifyHeading(String heading) {
-	StringBuffer newHeading=new StringBuffer(heading);
+        StringBuffer newHeading=new StringBuffer(heading);
 
-	for(int i=0; i<newHeading.length(); i++) {
-	    if(newHeading.charAt(i) == '_') {
-		newHeading.setCharAt(i, ' ');
-	    }
-	}
-	return newHeading.toString();
+        for(int i=0; i<newHeading.length(); i++) {
+            if(newHeading.charAt(i) == '_') {
+                newHeading.setCharAt(i, ' ');
+            }
+        }
+        return newHeading.toString();
     }
 
     protected void getColumnFormatted(WebResultSet wrs,
-				      int i,
-				      StringBuffer contents,
-				      StringBuffer align) 
-	throws SQLException, NoRowidException, ColumnNotDisplayableException {
-	int type=wrs.getColumnType(i);
-	
-	switch(type) {
-	case FieldTypes.NUMBER:
-	    align.append("right");
-	    contents.append(numberFormatter.format(wrs.getFloat(i)));
-	    break;
+                                      int i,
+                                      StringBuffer contents,
+                                      StringBuffer align) 
+        throws SQLException, NoRowidException, ColumnNotDisplayableException {
+        int type=wrs.getColumnType(i);
+        
+        switch(type) {
+        case FieldTypes.NUMBER:
+            align.append("right");
+            contents.append(numberFormatter.format(wrs.getFloat(i)));
+            break;
 
-	default:
-	case FieldTypes.NAME:
-	    align.append("left");
-	    contents.append(wrs.getString(i));
-	    break;
-	    
-	case FieldTypes.MONEY:
-	    align.append("right");
-	    contents.append(moneyFormatter.format(wrs.getFloat(i)));
-	    break;
+        default:
+        case FieldTypes.NAME:
+            align.append("left");
+            contents.append(wrs.getString(i));
+            break;
+            
+        case FieldTypes.MONEY:
+            align.append("right");
+            contents.append(moneyFormatter.format(wrs.getFloat(i)));
+            break;
 
-	case FieldTypes.BOOLEAN:
-	    align.append("center");
-	    String tmp=wrs.getString(i);
-	    if(tmp != null && SQL.decodeInd(tmp)) {
-		contents.append("True");
-	    } else {
-		contents.append("False");
-	    }
-	    break;
-	    
-	case FieldTypes.PERCENT:
-	    align.append("right");
-	    try {
-		contents.append(percentFormatter.format(wrs.getFloat(i)/100));
-	    } catch(SQLException e) {
-		// Non-numeric values cause a number-conversion problem
-		contents.append(wrs.getString(i));
-	    }
-	    break;
-	    
-	case FieldTypes.DATE:
-	    align.append("center");
-	    java.sql.Date date=wrs.getDate(i);
-	    if(date==null) {
-		// leave empty
-	    } else {
-		contents.append(
-		    dateFormatter.format(new java.util.Date(date.getTime()))
-		    );
-	    }
-	    break;
+        case FieldTypes.BOOLEAN:
+            align.append("center");
+            String tmp=wrs.getString(i);
+            if(tmp != null && SQL.decodeInd(tmp)) {
+                contents.append("True");
+            } else {
+                contents.append("False");
+            }
+            break;
+            
+        case FieldTypes.PERCENT:
+            align.append("right");
+            try {
+                contents.append(percentFormatter.format(wrs.getFloat(i)/100));
+            } catch(SQLException e) {
+                // Non-numeric values cause a number-conversion problem
+                contents.append(wrs.getString(i));
+            }
+            break;
+            
+        case FieldTypes.DATE:
+            align.append("center");
+            java.sql.Date date=wrs.getDate(i);
+            if(date==null) {
+                // leave empty
+            } else {
+                contents.append(
+                    dateFormatter.format(new java.util.Date(date.getTime()))
+                    );
+            }
+            break;
 
-	case FieldTypes.ALPHANUM_CODE:
-	    align.append("center");
-	    contents.append(wrs.getString(i));
-	    break;
+        case FieldTypes.ALPHANUM_CODE:
+            align.append("center");
+            contents.append(wrs.getString(i));
+            break;
 
-	case FieldTypes.ROWID:
-	case FieldTypes.DUMMY:
-	    throw new ColumnNotDisplayableException();
-	    //no break because throw makes it unnecessary
+        case FieldTypes.ROWID:
+        case FieldTypes.DUMMY:
+            throw new ColumnNotDisplayableException();
+            //no break because throw makes it unnecessary
 
-	case FieldTypes.RADIO:
-	case FieldTypes.CHECKBOX:
-	case FieldTypes.MUTEX_CHECKBOX:
-	    //There is no generic way to return a field of this type..
-	    // So it's left up to the concrete subclasses
-	    throw new UnsupportedOperationException();
-	}
+        case FieldTypes.RADIO:
+        case FieldTypes.CHECKBOX:
+        case FieldTypes.MUTEX_CHECKBOX:
+            //There is no generic way to return a field of this type..
+            // So it's left up to the concrete subclasses
+            throw new UnsupportedOperationException();
+        }
     }
-
+    
     public abstract void formatToStream(WebResultSet wrs, PrintWriter out) 
-	throws SQLException, NoRowidException;
+        throws SQLException, NoRowidException;
+    
+    public void formatToStream(WebResultSet wrs, JspWriter out) 
+        throws SQLException, NoRowidException {
+        formatToStream(wrs, new PrintWriter(out));
+    }   
 }
