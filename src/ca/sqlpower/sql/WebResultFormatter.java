@@ -13,6 +13,10 @@ import java.sql.SQLException;
  */
 public abstract class WebResultFormatter {
 
+    public WebResultFormatter() {
+	rowidParameterName="rowid";
+    }
+
     protected String rowidParameterName;
 
     public String getRowidParameterName() {
