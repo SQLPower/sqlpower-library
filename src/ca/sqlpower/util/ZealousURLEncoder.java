@@ -7,6 +7,10 @@ public class ZealousURLEncoder {
     static final int caseDiff = ('a' - 'A');
 
     public static String zealousEncode(String s) {
+	if(s==null) {
+	    return "";
+	}
+
 	int maxBytesPerChar = 10;
         StringBuffer out = new StringBuffer(s.length());
         ByteArrayOutputStream buf = new ByteArrayOutputStream(maxBytesPerChar);
