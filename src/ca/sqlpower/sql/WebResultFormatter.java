@@ -32,31 +32,9 @@ public abstract class WebResultFormatter {
      * Gets the desired parameter name for the row identifier column.
      *
      * @return The row identifier parameter name.
-     * @deprecated Use the more aptly-named getRowidParameterName
-     * method instead.
-     */
-    public String getDuplicate1ParameterName() {
-	return getRowidParameterName();
-    }
-
-    /**
-     * Gets the desired parameter name for the row identifier column.
-     *
-     * @return The row identifier parameter name.
      */
     public String getRowidParameterName() {
 	return rowidParameterName;
-    }
-
-    /**
-     * Gets the desired parameter name for the row identifier column.
-     *
-     * @param newName The new row identifier parameter name.
-     * @deprecated Use the more aptly-named getRowidParameterName
-     * method instead.
-     */
-    public void setDuplicate1ParameterName(String newName) {
-	setRowidParameterName(newName);
     }
 
     /**
