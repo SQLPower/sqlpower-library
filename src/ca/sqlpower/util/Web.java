@@ -18,7 +18,7 @@ public class Web {
      *
      * @param req the request whose fields should be tabulated
      * @return an html <code>TABLE</code> element describing the request
-     * @see {@link #formatSessionAsTable(HttpSession)}
+     * @see #formatSessionAsTable(HttpSession)
      */
     public static String formatRequestAsTable(HttpServletRequest req) {
         StringBuffer sb = new StringBuffer(200);
@@ -48,7 +48,7 @@ public class Web {
      *
      * @param s the session whose fields should be tabulated
      * @return an html <code>TABLE</code> element describing the session
-     * @see {@link #formatRequestAsTable(HttpServletRequest)}
+     * @see #formatRequestAsTable(HttpServletRequest)
      */
     public static String formatSessionAsTable(HttpSession s) {
 	Enumeration enum = s.getAttributeNames();

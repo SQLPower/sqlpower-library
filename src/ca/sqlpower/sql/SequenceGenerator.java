@@ -21,7 +21,7 @@ public abstract class SequenceGenerator {
      * @throws SQLException if a database error occurs.
      */
     public abstract long nextLong(String sequenceTable) 
-	throws SQLException;
+        throws SQLException;
 
     /**
      * Examines the given (open) connection object and returns a
@@ -32,16 +32,15 @@ public abstract class SequenceGenerator {
      * generate unique sequences in.
      * @return A suitable subclass of SequenceGenerator for your
      * RDBMS.
-     * @throws SQLException if a database error occurs.
      */
     public static SequenceGenerator getInstance(Connection con) {
-	String dbClass=con.getClass().getName();
+        String dbClass=con.getClass().getName();
 
-	if(dbClass.indexOf("Oracle") != 0) {
-	    return new OracleSequenceGenerator(con);
-	}
-
-	throw new IllegalArgumentException(
-                "The driver class "+dbClass+" is not recognised.");
+        if(dbClass.indexOf("Oracle") != 0) {
+            return new OracleSequenceGenerator(con);
+        }
+        
+        throw new IllegalArgumentException(
+               "The driver class "+dbClass+" is not recognised.");
     }
 }
