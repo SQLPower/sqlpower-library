@@ -8,9 +8,12 @@ package ca.sqlpower.sql;
  * ca.sqlpower.dashboard.Kpi class will be the first to implement this
  * interface.
  *
+ * <p>Note that this interface extends Serializable, so you must
+ * ensure that your implementing classes are indeed serializable.
+ *
  * @version $Id$
  */
-public interface DatabaseObject {
+public interface DatabaseObject extends java.io.Serializable {
 	public static final String OBJECT_TYPE_KPI="KPI";
 
 	/**

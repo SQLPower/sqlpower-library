@@ -15,7 +15,7 @@ import org.apache.xml.serialize.*;
  *
  * @version $Id$
  */
-public class DBConnectionSpec {
+public class DBConnectionSpec implements Serializable {
 	String name;
 	String displayName;
 	String driverClass;
