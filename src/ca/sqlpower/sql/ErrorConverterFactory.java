@@ -23,7 +23,7 @@ public class ErrorConverterFactory {
 
 		if (message.indexOf("icrosoft") >= 0) {
 			return sqlServerErrorConverter;
-		} else if (message.startsWith("ORA")) {
+		} else if (message.startsWith("ORA") || message.indexOf("THIN") >= 0) {
 			return oracleErrorConverter;
 		}
 		throw new IllegalArgumentException("unrecognized database type for message: "+message);

@@ -14,6 +14,8 @@ public class OracleErrorConverter extends AbstractErrorConverter {
 		switch (e.getErrorCode()) {
 			case 1017 :
 				return INVALID_LOGON;
+			case 17443 :
+				return INVALID_LOGON;
 			default :
 				return UNKNOWN_ERROR;
 		}
