@@ -56,7 +56,9 @@ public class ResultSetClosingStatement implements Statement {
 	 */
     public int executeUpdate(String sql) throws SQLException {
 		logger.debug(sql);
-		return actualStatement.executeUpdate(sql);
+		int rowCount = actualStatement.executeUpdate(sql);
+		logger.debug("Affected "+rowCount+" rows");
+		return rowCount;
 	}
 	    
     public void close() throws SQLException {
