@@ -43,6 +43,10 @@ public class LicenseException extends Exception {
 		}
 	}
 
+	public LicenseException(String reasonCode, List errorParamList) {
+		this(reasonCode, errorParamList, null);
+	}
+
 	public LicenseException(String reasonCode) {
 		this(reasonCode, null, null);
 	}
