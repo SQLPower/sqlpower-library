@@ -2,9 +2,9 @@ package ca.sqlpower.sql;
 
 import org.apache.commons.dbcp.*;
 import org.apache.commons.pool.*;
+import org.apache.log4j.Logger;
 
 import java.sql.*;
-
 
 /**
  * Extends the orginal factory to return fancy new 
@@ -14,53 +14,52 @@ import java.sql.*;
  * @author dfraser
  * @version $Id$
  */
+public class StatementClosingPoolableConnectionFactory extends PoolableConnectionFactory {
 
-
-public class StatementClosingPoolableConnectionFactory
-	extends PoolableConnectionFactory {
+	private static final Logger logger
+		= Logger.getLogger(StatementClosingPoolableConnectionFactory.class);
 
 	/**
 	 * Default superclass constructor.
-	 * @param arg0
-	 * @param arg1
-	 * @param arg2
-	 * @param arg3
-	 * @param arg4
-	 * @param arg5
-	 * @throws Exception
+	 *
+	 * @throws Exception When there is an error in the PoolableConnectionFactory constructor.
 	 */
-	public StatementClosingPoolableConnectionFactory(
-		ConnectionFactory arg0,
-		ObjectPool arg1,
-		KeyedObjectPoolFactory arg2,
-		String arg3,
-		boolean arg4,
-		boolean arg5)
+	public StatementClosingPoolableConnectionFactory(ConnectionFactory factory,
+													 ObjectPool pool,
+													 KeyedObjectPoolFactory stmtPoolFactory,
+													 String validationQuery,
+													 boolean defaultReadOnly,
+													 boolean defaultAutoCommit)
 		throws Exception {
 
-		super(arg0, arg1, arg2, arg3, arg4, arg5);
+		super(factory, pool, stmtPoolFactory, validationQuery,
+			  defaultReadOnly, defaultAutoCommit);
 	}
 
    
 	/**
-	 * Get a fancy new connection.
+	 * Creates a new connection using the connFactory, then sets its
+	 * autoCommit and readOnly values to the settings on this
+	 * factory.
 	 */
 	synchronized public Object makeObject() throws Exception {
         Connection con = _connFactory.createConnection();
         try {
             con.setAutoCommit(_defaultAutoCommit);
             con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
-        } catch(SQLException e) {
-            ; // ignored for now
+        } catch (SQLException e) {
+            logger.error("Couldn't set autoCommit to "+_defaultAutoCommit+"!", e);
+			// continue anyway
         }
 
         try {
             con.setReadOnly(_defaultReadOnly);
-        } catch(SQLException e) {
-            ; // ignored for now
+        } catch (SQLException e) {
+            logger.error("Couldn't set readOnly to "+_defaultReadOnly+"!", e);
+			// continue anyway
         }
 
-        if(null != _stmtPoolFactory) {
+        if (_stmtPoolFactory != null) {
             KeyedObjectPool stmtpool = _stmtPoolFactory.createPool();
             con = new PoolingConnection(con,stmtpool);
             stmtpool.setFactory((PoolingConnection)con);
@@ -88,8 +87,8 @@ public class StatementClosingPoolableConnectionFactory
 			}
 		}
 
-        return new PoolableStatementClosingConnection(con,_pool);
-    } // end makeObject
-} // end class
+        return new PoolableStatementClosingConnection(con, _pool);
+    }
+}
 
 
