@@ -1,5 +1,6 @@
 package ca.sqlpower.security;
 
+import ca.sqlpower.dashboard.UnknownFreqCodeException;
 import ca.sqlpower.sql.DBConnection;
 import ca.sqlpower.sql.DatabaseObject;
 import java.sql.*;
@@ -38,7 +39,7 @@ public class PLSecurityManager implements java.io.Serializable {
 	 * credentials are not valid for the given database connection.
 	 */
 	public PLSecurityManager(Connection con, String username, String password)
-		throws SQLException, PLSecurityException {
+		throws SQLException, PLSecurityException, UnknownFreqCodeException {
 		if (password == null) {
 			throw new NullPointerException("null password not allowed");
 		}

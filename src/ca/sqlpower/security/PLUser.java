@@ -22,7 +22,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 	protected String password;
     protected String userName;
 	protected String emailAddress;
-	protected ca.sqlpower.dashboard.Frequency defaultKpiFrequency;
+	protected ca.sqlpower.util.Frequency defaultKpiFrequency;
 	protected boolean redVisible;
 	protected boolean yellowVisible;
 	protected boolean greenVisible;
@@ -356,7 +356,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 				String freqCode = rs.getString("default_kpi_frequency");
 				if (freqCode != null) {
 					newBean.defaultKpiFrequency =
-						new ca.sqlpower.dashboard.Frequency(ca.sqlpower.dashboard.Frequency.freqCodeToFreq(freqCode));
+						new ca.sqlpower.util.Frequency(ca.sqlpower.util.Frequency.freqCodeToFreq(freqCode));
 				}
 				newBean.redVisible = SQL.decodeInd(rs.getString("show_red_ind"));
 				newBean.yellowVisible = SQL.decodeInd(rs.getString("show_yellow_ind"));
@@ -446,11 +446,11 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
         emailAddress=v;
     }
 
-    public ca.sqlpower.dashboard.Frequency getDefaultKpiFrequency() {
+    public ca.sqlpower.util.Frequency getDefaultKpiFrequency() {
         return defaultKpiFrequency;
     }
 
-    public void setDefaultKpiFrequency(ca.sqlpower.dashboard.Frequency v) {
+    public void setDefaultKpiFrequency(ca.sqlpower.util.Frequency v) {
         defaultKpiFrequency=v;
     }
 
