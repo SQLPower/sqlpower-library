@@ -78,10 +78,9 @@ public class EmailNotification implements java.io.Serializable {
 								  String emailYellow,
 								  String emailGreen)
 		throws SQLException {
-		// XXX: may need to check if notifyUser already has a
-		// notification preference on notifyAbout, and switch to update.
 
         Statement stmt = null;
+		boolean bFirst=true;
 		try {
 			stmt = con.createStatement();
 			StringBuffer sql=new StringBuffer();
@@ -113,10 +112,34 @@ public class EmailNotification implements java.io.Serializable {
 					} else {
 						sql.append("UPDATE pl_group_notification");
 					}
-					sql.append(" SET view_kpi_ind=").append(SQL.quote(viewKpi)).append(",");
-					sql.append(" email_red_ind=").append(SQL.quote(emailRed)).append(",");
-					sql.append(" email_yellow_ind=").append(SQL.quote(emailYellow)).append(",");
-					sql.append(" email_green_ind=").append(SQL.quote(emailGreen));
+					sql.append(" SET");
+
+					if(!viewKpi.equals("")){
+						sql.append(" view_kpi_ind=").append(SQL.quote(viewKpi));
+						bFirst=false;
+					}
+					if(!emailRed.equals("")){
+						if(!bFirst){
+							sql.append(",");
+						}
+						sql.append(" email_red_ind=").append(SQL.quote(emailRed));
+						bFirst=false;
+					}
+					if(!emailYellow.equals("")){
+						if(!bFirst){
+							sql.append(",");
+						}
+						sql.append(" email_yellow_ind=").append(SQL.quote(emailYellow));
+						bFirst=false;
+					}
+					if(!emailGreen.equals("")){
+						if(!bFirst){
+							sql.append(",");
+						}
+						sql.append(" email_green_ind=").append(SQL.quote(emailGreen));
+						bFirst=false;
+					}
+
 					if (nameIsUser) {
 						sql.append(" WHERE user_id=");
 					} else {
