@@ -1,9 +1,10 @@
 package ca.sqlpower.sql;
 
+import java.io.Serializable;
 import java.sql.*;
 import java.util.*;
 
-public class SchemaVersion implements Comparable {
+public class SchemaVersion implements Comparable, Serializable {
 	int major;
 	int minor;
 	int tiny;
