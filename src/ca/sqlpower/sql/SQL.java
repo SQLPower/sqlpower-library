@@ -309,7 +309,7 @@ public class SQL {
 			ResultSet rs=stmt.executeQuery(sql.toString());
 			
 			while(rs.next()) {
-				list.add(rs.getString("COLUMN_NAME"));
+				list.add(rs.getString("COLUMN_NAME").toUpperCase());
 			}
 			
 		} finally {
