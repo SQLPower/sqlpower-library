@@ -130,18 +130,4 @@ public class User implements java.io.Serializable {
 	//dbug.log(getNumStatements()+" open statements");
 	return con.createStatement();
     }
-
-    /*
-      public synchronized void incrementStatements() {
-      numStatements++;
-      }
-      
-      public synchronized void decrementStatements() {
-      numStatements--;
-      }
-      
-      public synchronized int getNumStatements() {
-      return numStatements;
-      }
-    */
 }

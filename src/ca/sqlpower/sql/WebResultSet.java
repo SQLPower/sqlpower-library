@@ -11,6 +11,7 @@ public class WebResultSet {
     protected List[] columnMutexList;
     protected String[] columnChoicesName;
     protected String[] columnDefaultChoice;
+    protected String[] columnDefaultValue;
     protected boolean[] columnHasAny;
     protected boolean[] columnHasAll;
     protected int[] columnType;
@@ -26,6 +27,7 @@ public class WebResultSet {
 	columnMutexList=new List[cols];
 	columnChoicesName=new String[cols];
 	columnDefaultChoice=new String[cols];
+	columnDefaultValue=new String[cols];
 	columnHasAny=new boolean[cols];
 	columnHasAll=new boolean[cols];
 	columnType=new int[cols];
@@ -104,10 +106,18 @@ public class WebResultSet {
 	}
     }
 
+    /**
+     * Sets the default choice for the USER INPUT ELEMENT associated
+     * with this column.
+     */
     public void setColumnDefaultChoice(int colNo, String defaultChoice) {
 	columnDefaultChoice[colNo-1]=defaultChoice;
     }
 
+    /**
+     * Gets the default choice for the USER INPUT ELEMENT associated
+     * with this column.
+     */
     public String getColumnDefaultChoice(int colNo)
 	throws ColumnNotDisplayableException {
 	if(colNo == rowidColNo) {
@@ -115,6 +125,23 @@ public class WebResultSet {
 	} else {
 	    return columnDefaultChoice[colNo-1];
 	}
+    }
+
+    /**
+     * Sets the default value EXPECTED FROM THE DATABASE in this
+     * column.  Mismatching values will be highlighted in red. A value
+     * of null disables this comparison.
+     */
+    public void setColumnDefaultValue(int colNo, String defaultValue) {
+	columnDefaultValue[colNo-1]=defaultValue;
+    }
+
+    /**
+     * Gets the default value EXPECTED FROM THE DATABASE in this
+     * column.
+     */
+    public String getColumnDefaultValue(int colNo) {
+	return columnDefaultValue[colNo-1];
     }
 
     /**

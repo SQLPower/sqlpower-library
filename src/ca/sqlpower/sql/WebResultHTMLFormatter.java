@@ -20,6 +20,8 @@ import java.awt.Color;
  */
 public class WebResultHTMLFormatter extends WebResultFormatter {
 
+    private Logger dbug = new Logger(System.err, "WebResultHTMLFormatter: ");
+
     private boolean dropdownsInline;
     private boolean dropdownsAbove;
     private int dropdownsPerRow;
@@ -290,13 +292,27 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 			throw new IllegalStateException("Unexpected ColumnNotDisplayableException caught on MUTEX_CHECKBOX");
 		    }
 		} else try {
+		    boolean valueIsDefault = true;
+		    String colDefault = wrs.getColumnDefaultValue(i);
+		    String rawContents = wrs.getString(i);
 		    align.setLength(0);
 		    contents.setLength(0);
+
 		    getColumnFormatted(wrs, i, contents, align);
+		    if(colDefault != null) {
+			valueIsDefault = rawContents.equals(colDefault);
+		    }
 		    sb.append("  <td align=\"");
 		    sb.append(align);
 		    sb.append("\">");
+		    if(!valueIsDefault) {
+			dbug.log("'"+rawContents+"' differs from '"+colDefault+"'");
+			sb.append("<font color=\"red\">");
+		    }
 		    sb.append(contents);
+		    if(!valueIsDefault) {
+			sb.append("</font>");
+		    }
 		    sb.append("</td>");
 		    out.println(sb);
 		} catch(ColumnNotDisplayableException e) {
