@@ -162,32 +162,6 @@ public abstract class WebResultFormatter {
 	    }
 	    break;
 	    
-	case FieldTypes.RADIO:
-	    align.append("center");
-	    contents.append("<input type=\"radio\" name=\"")
-		.append(wrs.getColumnLabel(i))
-		.append("\" value=\"")
-		.append(wrs.getRowid())
-		.append("\" onClick=\"highlightRow(this, ")
-		.append("'00ff00',").append("'ff00ff'")
-		.append("); this.form.submit()\" />");
-	    break;
-
-	case FieldTypes.CHECKBOX:
-	    align.append("center");
-	    if(wrs.getString(i) != null) {
-		contents.append("<input type=\"checkbox\" name=\"")
-		    .append(wrs.getColumnLabel(i))
-		    .append("\" value=\"")
-		    .append(wrs.getRowid())
-		    .append("\"");
-		if(wrs.getString(i).equals(checkboxYesValue)) {
-		    contents.append(" checked");
-		}
-		contents.append(" />");
-	    }
-	    break;
-
 	case FieldTypes.PERCENT:
 	    align.append("right");
 	    try {
@@ -220,7 +194,11 @@ public abstract class WebResultFormatter {
 	    throw new ColumnNotDisplayableException();
 	    //no break because throw makes it unnecessary
 
+	case FieldTypes.RADIO:
+	case FieldTypes.CHECKBOX:
 	case FieldTypes.MUTEX_CHECKBOX:
+	    //There is no generic way to return a field of this type..
+	    // So it's left up to the concrete subclasses
 	    throw new UnsupportedOperationException();
 	}
     }

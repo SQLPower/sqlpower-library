@@ -24,7 +24,13 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
     private boolean dropdownsAbove;
     private int dropdownsPerRow;
     private boolean rowHighlightingOn;
+    private String[] extraJavaScript;
 
+    /**
+     * A javascript function that gets included in the output code if
+     * rowHighlightingOn is true at the time the format() method is
+     * called.
+     */
     private static final String JS_HIGHLIGHT_CODE = 
 	"<script language=\"JavaScript\">\n"
 	+"// Derived from code found at javascript.faqts.com\n"
@@ -42,12 +48,23 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	+"</script>\n";
 
 
+    /**
+     * Public constructor.  Sets up defaults as follows:
+     * <pre>
+     * Dropdowns Inline    = false;
+     * Dropdowns Above     = true;
+     * Dropdowns Per Row   = 3;
+     * Row Highlighting On = true;
+     * Extra JavaScript    = null for all FieldTypes.
+     * </pre>
+     */
     public WebResultHTMLFormatter() {
 	super();
 	dropdownsInline=false;
 	dropdownsAbove=true;
 	dropdownsPerRow=3;
 	rowHighlightingOn=true;
+	extraJavaScript=new String[FieldTypes.LAST_TYPE];
     }
     
     /**
@@ -117,6 +134,37 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
      */
     public void setRowHighlightingOn(boolean  v) {this.rowHighlightingOn = v;}
         
+
+    /**
+     * Gets the user-supplied extra javascript code that will be
+     * included in the resulting element's "onClick" event handler.
+     * This doesn't really apply to most element types.
+     *
+     * @param type The FieldTypes type that you wish to inquire on.
+     * @throws IndexOutOfBoundsException if the specified type is not
+     * in the range [0..FieldTypes.MAX_TYPE].
+     */
+    public String getExtraJavaScript(int type) {
+	return extraJavaScript[type];
+    }
+
+    /**
+     * Sets the extra javascript code that will be included in the
+     * resulting element's "onClick" event handler.  This doesn't
+     * really apply to most element types, and the existence of code
+     * in this property doesn't guarantee that this code will appear
+     * in the resulting HTML.  For instance, extra javascript code
+     * associated with FieldTypes.TEXT has no effect.
+     *
+     * @param type The FieldTypes type that you wish to associate the
+     * javascript statements with.
+     * @throws IndexOutOfBoundsException if the specified type is not
+     * in the range [0..FieldTypes.MAX_TYPE].
+     */
+    public void setExtraJavaScript(int type, String js) {
+	extraJavaScript[type]=js;
+    }
+
     public void formatToStream(WebResultSet wrs, PrintWriter out) 
 	throws SQLException, NoRowidException, IllegalStateException {
 	int numCols=wrs.getColumnCount();
@@ -297,5 +345,54 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 		.append(mutexRowNum).append("].checked=false; ");
 	}
 	return sb;
+    }
+
+    protected void getColumnFormatted(WebResultSet wrs,
+				      int i,
+				      StringBuffer contents,
+				      StringBuffer align) 
+	throws SQLException, NoRowidException, ColumnNotDisplayableException {
+	int type=wrs.getColumnType(i);
+	
+	switch(type) {
+	case FieldTypes.RADIO:
+	    align.append("center");
+	    contents.append("<input type=\"radio\" name=\"")
+		.append(wrs.getColumnLabel(i))
+		.append("\" value=\"")
+		.append(wrs.getRowid())
+		.append("\" onClick=\"");
+	    if(extraJavaScript[FieldTypes.RADIO] != null) {
+		contents.append(extraJavaScript[FieldTypes.RADIO]);
+	    }
+	    contents.append("; highlightRow(this, ")
+		.append("'00ff00',").append("'ff00ff'")
+		.append("); this.form.submit()\" />");
+	    break;
+
+	case FieldTypes.CHECKBOX:
+	    align.append("center");
+	    if(wrs.getString(i) != null) {
+		contents.append("<input type=\"checkbox\" name=\"")
+		    .append(wrs.getColumnLabel(i))
+		    .append("\" value=\"")
+		    .append(wrs.getRowid())
+		    .append("\"");
+		if(extraJavaScript[FieldTypes.CHECKBOX] != null) {
+		    contents.append(" onClick=\"")
+			.append(extraJavaScript[FieldTypes.RADIO])
+			.append("\"");
+		}
+		if(wrs.getString(i).equals(checkboxYesValue)) {
+		    contents.append(" checked");
+		}
+		contents.append(" />");
+	    }
+	    break;
+
+	default:
+	    super.getColumnFormatted(wrs, i, contents, align);
+	    break;
+	}
     }
 }
