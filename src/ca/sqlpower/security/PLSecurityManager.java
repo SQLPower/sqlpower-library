@@ -909,7 +909,7 @@ public class PLSecurityManager implements java.io.Serializable {
 
 			// If this is a Kpi, give the user "view kpi" privileges
 			if(obj.getObjectType().equals("KPI")){
-				EmailNotification.setPref(con, sm, sm.principal, obj, "Y","","","");
+				EmailNotification.setPref(con, sm, sm.principal, obj, "Y","","","",new Double(-1));
 			}
 		} catch (SQLException e) {
 			System.out.println
