@@ -166,7 +166,13 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 				if (r1 == null && r2 == null) diff = 0;
 				else if (r1 == null) diff = -1;
 				else if (r2 == null) diff = 1;
-				else diff = ((Comparable) r1[sc.columnIndex - 1]).compareTo(r2[sc.columnIndex - 1]);
+				else if (r1[sc.columnIndex - 1] instanceof Number && r2[sc.columnIndex - 1] instanceof Number) {
+					double d1 = ((Number) r1[sc.columnIndex - 1]).doubleValue();
+					double d2 = ((Number) r2[sc.columnIndex - 1]).doubleValue();  // see threepio
+					if (d1 < d2) diff = -1;
+					else if (d1 > d2) diff = 1;
+					else diff = 0;
+				} else diff = ((Comparable) r1[sc.columnIndex - 1]).compareTo(r2[sc.columnIndex - 1]);
 
 				if (diff != 0) {
 					if (sc.ascending) break;
