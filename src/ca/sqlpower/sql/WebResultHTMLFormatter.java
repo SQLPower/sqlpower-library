@@ -1,6 +1,7 @@
 package ca.sqlpower.sql;
 
 import ca.sqlpower.util.*;
+import java.text.*;
 import java.util.*;
 import java.sql.*;
 import java.io.*;
@@ -20,11 +21,15 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 
     private boolean dropdownsInline;
     private boolean dropdownsAbove;
+    private NumberFormat numberFormatter;
+    private NumberFormat moneyFormatter;
 
     public WebResultHTMLFormatter() {
 	super();
 	dropdownsInline=false;
 	dropdownsAbove=true;
+	numberFormatter=new DecimalFormat("#,##0.#");
+	moneyFormatter=new DecimalFormat("$#,##0.00");
     }
     
     /**
@@ -60,7 +65,14 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
      * @param v  Value to assign to dropdownsAbove.
      */
     public void setDropdownsAbove(boolean  v) {this.dropdownsAbove = v;}
-    
+
+    public void setNumberFormatter(NumberFormat v) {
+	numberFormatter=v;
+    }
+
+    public void setMoneyFormatter(NumberFormat v) {
+	moneyFormatter=v;
+    }
 
     public void formatToStream(WebResultSet wrs, PrintWriter out) 
 	throws SQLException {
@@ -76,7 +88,7 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	    while(i<=numCols) {
 		choices=wrs.getColumnChoicesList(i);
 		if(choices != null) {
-		    out.println("  <td align=\"center\">");
+		    out.print("  <td align=\"center\">");
 		    out.print(wrs.getColumnLabel(i));
 		    out.println("<br />");
 		    out.println(Web.makeSelectionList(wrs.getColumnChoicesName(i),
@@ -93,51 +105,95 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 
 	out.println("<table class=\"resultTable\">");
 
-	out.print("<tr class=\"resultTableHeading\">");
+	out.print(" <tr class=\"resultTableHeading\">");
 	for(int i=1; i<=numCols; i++) {
-	    out.println("<th valign=\"bottom\">");
+	    out.print("  <th valign=\"bottom\">");
 	    if(fcRowid && i==1) {
-		out.println("&nbsp;");
+		out.print("&nbsp;");
 	    } else {
-		out.println(beautifyHeading(wrs.getColumnLabel(i)));
+		out.print(beautifyHeading(wrs.getColumnLabel(i)));
 	    }
-	    out.println("</th>");
+	    out.println("  </th>");
 	}
-	out.println("</tr>");
+	out.println(" </tr>");
 
 	if(dropdownsInline) {
-	    out.println("<tr class=\"resultTableHeading\">");
+	    out.println(" <tr class=\"resultTableHeading\">");
 	    for(int i=1; i<=numCols; i++) {
 		List choices=wrs.getColumnChoicesList(i);
 		
-		out.println("<td>");
+		out.print("  <td>");
 		if(choices != null) {
 		    out.print(Web.makeSelectionList(wrs.getColumnChoicesName(i),
 						    choices,
 						    wrs.getColumnDefaultChoice(i),
 						    wrs.getColumnHasAnyAll(i)));
 		}
-		out.println("</td>");
+		out.println("  </td>");
 	    }
-	    out.println("</tr>");
+	    out.println(" </tr>");
 	}
 
 	while(wrs.next()) {
-	    out.println("<tr class=\"resultTableData\">");
+	    out.println(" <tr class=\"resultTableData\">");
 	    for(int i=1; i<=numCols; i++) {
-		out.println("<td>");
-		if(fcRowid && i==1) {
-		    out.print("<input type=\"radio\" name=\"");
-		    out.print(rowidParameterName);
-		    out.print("\" value=\"");
-		    out.print(wrs.getString(i));
-		    out.print("\" onClick=\"this.form.submit()\" />");
-		} else {
-		    out.println(wrs.getString(i));
+		int type=wrs.getColumnType(i);
+		String contents;
+		String tAlign;
+
+		switch(type) {
+		case FieldTypes.NUMBER:
+		    tAlign="right";
+		    contents=numberFormatter.format(wrs.getFloat(i));
+		    break;
+
+		default:
+		case FieldTypes.NAME:
+		    tAlign="left";
+		    contents=wrs.getString(i);
+		    break;
+
+		case FieldTypes.MONEY:
+		    tAlign="right";
+		    contents=moneyFormatter.format(wrs.getFloat(i));
+		    break;
+
+		case FieldTypes.BOOLEAN:
+		    tAlign="center";
+		    contents=wrs.getString(i);
+		    if(contents != null) {
+			contents="True";
+		    } else {
+			contents="False";
+		    }
+		    break;
+		    
+		case FieldTypes.RADIO:
+		    tAlign="center";
+		    contents="<input type=\"radio\" name=\""
+			+rowidParameterName
+			+"\" value=\""
+			+wrs.getString(i)
+			+"\" onClick=\"this.form.submit()\" />";
+		    break;
+
+		case FieldTypes.CHECKBOX:
+		    tAlign="center";
+		    contents="<input type=\"checkbox\" name=\""
+			+rowidParameterName
+			+"\" value=\""
+			+wrs.getString(i)
+			+"\" />";
+		    break;		    
 		}
+
+		out.print("  <td align=\"");
+		out.print(tAlign);
+		out.print("\">");
+		out.print(contents);
 		out.println("</td>");
 	    }
-	    out.println("</tr>");
+	    out.println(" </tr>");
 	}
 	out.println("</table>");
 	out.flush();

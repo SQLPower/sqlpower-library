@@ -3,14 +3,16 @@ import java.sql.*;
 import java.util.*;
 
 public class WebResultSet {
-    ResultSet rs;
-    ResultSetMetaData rsmd;
-    String sqlQuery;
-    boolean firstColumnIsRowid;
-    List[] columnChoices;
-    String[] columnChoicesName;
-    String[] columnDefaultChoice;
-    boolean[] columnHasAnyAll;
+
+    protected ResultSet rs;
+    protected ResultSetMetaData rsmd;
+    protected String sqlQuery;
+    protected boolean firstColumnIsRowid;
+    protected List[] columnChoices;
+    protected String[] columnChoicesName;
+    protected String[] columnDefaultChoice;
+    protected boolean[] columnHasAnyAll;
+    protected int[] columnType;
 
     public WebResultSet(ResultSet results, String query) throws SQLException {
 	rs=results;
@@ -23,6 +25,7 @@ public class WebResultSet {
 	columnChoicesName=new String[cols];
 	columnDefaultChoice=new String[cols];
 	columnHasAnyAll=new boolean[cols];
+	columnType=new int[cols];
     }
 
     public void setColumnHasAnyAll(int colNo, boolean has) {
@@ -59,12 +62,39 @@ public class WebResultSet {
 
     public void setFirstColumnIsRowid(boolean flag) {
 	firstColumnIsRowid=flag;
+	if(firstColumnIsRowid) {
+	    setColumnType(1, FieldTypes.RADIO);
+	}
     }
 
     public boolean getFirstColumnIsRowid() {
 	return firstColumnIsRowid;
     }
-
+    
+    /**
+     * Get the value of columnType[].  See 
+     * {@link ca.sqlpower.sql.FieldTypes} for valid types.
+     * i is 1-based.
+     *
+     * @param colNo The (1-based) column number to get the type of.
+     * @return value of the ith column's type.
+     */
+    public int getColumnType(int colNo) {
+	return columnType[colNo-1];
+    }
+    
+    /**
+     * Set the value of the ith column's columnType.  See
+     * {@link ca.sqlpower.sql.FieldTypes} for valid types.
+     * i is 1-based.
+     *
+     * @param colNo The (1-based) column number to set the type of.
+     * @param v Value to assign to the ith column's type.
+     */
+    public void setColumnType(int colNo, int  v) {
+	this.columnType[colNo-1] = v;
+    }
+    
     public String getSqlQuery() {
 	return sqlQuery;
     }
@@ -77,6 +107,7 @@ public class WebResultSet {
 	return rsmd.getColumnLabel(colNum);
     }
 
+    // EXPOSED RESULTSET METHODS ARE BELOW HERE
     public boolean next() throws SQLException {
 	return rs.next();
     }
@@ -89,11 +120,11 @@ public class WebResultSet {
 	return rs.getString(colNum);
     }
 
-    public java.sql.Date getDate(String colName) throws SQLException {
-	return rs.getDate(colName);
+    public java.sql.Date getDate(String colNum) throws SQLException {
+	return rs.getDate(colNum);
     }
 
-    public float getFloat(String colName) throws SQLException {
-	return rs.getFloat(colName);
+    public float getFloat(int colNum) throws SQLException {
+	return rs.getFloat(colNum);
     }
 }
