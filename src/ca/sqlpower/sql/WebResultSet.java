@@ -36,11 +36,11 @@ public class WebResultSet {
 	protected WebResultSet() {}
 
 	/**
-	 * Applies the given resultset to the current WebResultSet.  This
-	 * can only be done once per instance of WebResultSet.  The {@link
-	 * #WebResultSet(ResultSet,String)} constructor calls this method
-	 * with its ResultSet argument, but the DelayedWebResultSet class
-	 * doesn't call this method until its execute() method is called.
+	 * Applies the given resultset to the current WebResultSet.  The
+	 * {@link #WebResultSet(ResultSet,String)} constructor calls this
+	 * method with its ResultSet argument, but the DelayedWebResultSet
+	 * class doesn't call this method until its execute() method is
+	 * called.
 	 *
 	 * @throws SQLException if a database error occurs.
 	 */
