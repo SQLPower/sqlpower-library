@@ -145,8 +145,7 @@ public class DBConnectionSpec {
 	 * @return a DBConnectionSpec object populated from the given xml
 	 * stream, or null if no such connection spec exists in the xml.
 	 */
-	public static DBConnectionSpec getDBSpecFromInputStream(InputStream xmlStream,
-															String dbname)
+	public static DBConnectionSpec getDBSpecFromInputStream(InputStream xmlStream, String dbname)
 		throws DatabaseListReadException {
 		Collection dbs=getDBSpecsFromInputStream(xmlStream);
 		DBConnectionSpec dbcs=null;
@@ -192,6 +191,10 @@ public class DBConnectionSpec {
 		}
 	}
 
+	/**
+	 * this could in theory write out the list of dbconnectionspecs to a stream as an
+	 * xml file if it was to be finished and tested.
+	 */
 	public static void writeDBSpecsToOutputStream(List dbspecs, OutputStream xmlStream) 
 		throws DatabaseListWriteException {
 			DocumentBuilder db=DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -232,7 +235,6 @@ public class DBConnectionSpec {
 			XMLSerializer serializer = new XMLSerializer(of, xmlStream);
 			serializer.serialize(d);
 	}
-			
 
 	/**
 	 * Reads the values from the children of the given DOM element,
@@ -251,8 +253,7 @@ public class DBConnectionSpec {
 	 */
 	protected static DBConnectionSpec makeSpecFromDBNode(Element dbElem) {
  		if(!dbElem.getNodeName().equals("database")) {
- 			throw new IllegalArgumentException(
-											   "This method only supports nodes of type 'database'.");
+ 			throw new IllegalArgumentException("This method only supports nodes of type 'database'.");
  		}
 		DBConnectionSpec spec=new DBConnectionSpec();
 		spec.setName(dbElem.getAttributes().getNamedItem("name").getNodeValue());
