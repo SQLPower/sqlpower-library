@@ -85,7 +85,8 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 					  wrs.getColumnChoicesName(i),
 					  choices,
 					  wrs.getColumnDefaultChoice(i),
-					  wrs.getColumnHasAnyAll(i)));
+					  wrs.getColumnHasAny(i),
+					  wrs.getColumnHasAll(i)));
 			sb.append("\n  </td>");
 		    }
 		    out.println(sb);
@@ -126,7 +127,8 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 					  wrs.getColumnChoicesName(i),
 					  choices,
 					  wrs.getColumnDefaultChoice(i),
-					  wrs.getColumnHasAnyAll(i)));
+					  wrs.getColumnHasAny(i),
+					  wrs.getColumnHasAll(i)));
 		    }
 		    sb.append("\n  </td>");
 		    out.println(sb);

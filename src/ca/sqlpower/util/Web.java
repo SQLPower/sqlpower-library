@@ -93,7 +93,9 @@ public class Web {
 					   boolean hasAll) {
 	StringBuffer out=new StringBuffer();
 	String thisOption;
-
+	if(defaultSelection == null) {
+	    defaultSelection="!@#$%^&*() NO DEFAULT ()*&^%$#@!";
+	}
 	out.append("<select size=\"1\" name=\"");
 	out.append(name);
 	out.append("\">");
