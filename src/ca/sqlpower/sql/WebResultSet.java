@@ -20,6 +20,8 @@ public class WebResultSet {
     protected int[] columnType;
 	protected List[] columnHyperlinks;
     protected int rowidColNo;
+	public String tableTitle;
+	public String emptyMessage; // the message to show when the result set is empty
 
     public WebResultSet(ResultSet results, String query) throws SQLException {
         rs=results;
@@ -39,6 +41,8 @@ public class WebResultSet {
         columnType=new int[cols];
 		columnHyperlinks=new List[cols];
         rowidColNo=0;
+		tableTitle="";
+		emptyMessage="";
     }
 
     /**
@@ -372,6 +376,21 @@ public class WebResultSet {
         return rs.getInt(colNo);
     }
 
+    public String getTableTitle(){
+		return tableTitle;
+	}
+
+	public void setTableTitle(String title){
+		tableTitle=title;
+	}
+
+    public String getEmptyMessage(){
+		return emptyMessage;
+	}
+
+	public void setEmptyMessage(String message){
+		emptyMessage=message;
+	}
 
     /**
      * Closes the JDBC ResultSet's Statement object, thereby freeing
