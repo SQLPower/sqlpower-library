@@ -171,4 +171,36 @@ public class FieldTypes {
      */
     protected FieldTypes() {
     }
+
+	/**
+	 * Translates an integer type code into its name.  Only use this
+	 * for debugging; the format of these strings is subject to
+	 * change!
+	 */
+	public static String nameOf(int fieldType) {
+		if (fieldType == UNKNOWN) return "UNKNOWN ("+UNKNOWN+")";
+		else if (fieldType == NUMBER) return "NUMBER ("+NUMBER+")";
+		else if (fieldType == NAME) return "NAME ("+NAME+")";
+		else if (fieldType == MONEY) return "MONEY ("+MONEY+")";
+		else if (fieldType == BOOLEAN) return "BOOLEAN ("+BOOLEAN+")";
+		else if (fieldType == RADIO) return "RADIO ("+RADIO+")";
+		else if (fieldType == CHECKBOX) return "CHECKBOX ("+CHECKBOX+")";
+		else if (fieldType == PERCENT) return "PERCENT ("+PERCENT+")";
+		else if (fieldType == DATE) return "DATE ("+DATE+")";
+		else if (fieldType == ALPHANUM_CODE) return "ALPHANUM_CODE ("+ALPHANUM_CODE+")";
+		else if (fieldType == ROWID) return "ROWID ("+ROWID+")";
+		else if (fieldType == TEXT) return "TEXT ("+TEXT+")";
+		else if (fieldType == DUMMY) return "DUMMY ("+DUMMY+")";
+		else if (fieldType == MUTEX_CHECKBOX) return "MUTEX_CHECKBOX ("+MUTEX_CHECKBOX+")";
+		else if (fieldType == PASSWORD) return "PASSWORD ("+PASSWORD+")";
+		else if (fieldType == HYPERLINK) return "HYPERLINK ("+HYPERLINK+")";
+		else if (fieldType == RANGEHYPERLINK) return "RANGEHYPERLINK ("+RANGEHYPERLINK+")";
+		else if (fieldType == YESNO_DEFAULT_NO) return "YESNO_DEFAULT_NO ("+YESNO_DEFAULT_NO+")";
+		else if (fieldType == YESNO_DEFAULT_YES) return "YESNO_DEFAULT_YES ("+YESNO_DEFAULT_YES+")";
+		else if (fieldType == TEXT_DEFAULT_NA) return "TEXT_DEFAULT_NA ("+TEXT_DEFAULT_NA+")";
+		else if (fieldType == TEXT_DEFAULT_UNKNOWN) return "TEXT_DEFAULT_UNKNOWN ("+TEXT_DEFAULT_UNKNOWN+")";
+		else if (fieldType == TEXT_DEFAULT_NONE) return "TEXT_DEFAULT_NONE ("+TEXT_DEFAULT_NONE+")";
+		else if (fieldType == LAST_TYPE) return "LAST_TYPE ("+LAST_TYPE+")";
+		else return "*** Unknown Type ("+fieldType+") ***";
+	}
 }
