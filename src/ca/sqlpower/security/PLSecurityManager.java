@@ -629,7 +629,17 @@ public class PLSecurityManager implements java.io.Serializable {
 				sql.append(", ").append(SQL.quote(principal.getUserName()));
 				sql.append(", 'Power*Dashboard Web Facility')");
 				
-				updateCount = stmt.executeUpdate(sql.toString());
+				try {
+					updateCount = stmt.executeUpdate(sql.toString());
+				} catch (SQLException e) {
+					System.out.println("Caught "+e.getMessage());
+					System.out.println("Query: "+sql);
+					throw e;
+				} catch (NoSuchElementException e) {
+					System.out.println("Caught "+e.getMessage());
+					System.out.println("Query: "+sql);
+					throw e;
+				}
 				if (updateCount > 1) {
 					throw new IllegalStateException("Updated "+updateCount
 													+" rows (should have been 1 or 0)");
