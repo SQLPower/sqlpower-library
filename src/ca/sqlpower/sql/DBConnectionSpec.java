@@ -1,4 +1,4 @@
-package ca.sqlpower.dashboard;
+package ca.sqlpower.sql;
 
 import javax.xml.parsers.*;
 import org.w3c.dom.*;
@@ -19,6 +19,8 @@ public class DBConnectionSpec {
 	String displayName;
 	String driverClass;
 	String url;
+	String user;
+	String pass;
 
 	public String toString() {
 		return "DBConnectionSpec: "+name+", "+displayName+", "+driverClass+", "+url;
@@ -97,6 +99,68 @@ public class DBConnectionSpec {
 	}
 
 	/**
+	 * Gets the value of user
+	 *
+	 * @return the value of user
+	 */
+	public String getUser() {
+		return this.user;
+	}
+
+	/**
+	 * Sets the value of user
+	 *
+	 * @param argUser Value to assign to this.user
+	 */
+	public void setUser(String argUser){
+		this.user = argUser;
+	}
+
+	/**
+	 * Gets the value of pass
+	 *
+	 * @return the value of pass
+	 */
+	public String getPass() {
+		return this.pass;
+	}
+
+	/**
+	 * Sets the value of pass
+	 *
+	 * @param argPass Value to assign to this.pass
+	 */
+	public void setPass(String argPass){
+		this.pass = argPass;
+	}
+
+	/**
+	 * Looks up a database connection spec by name in the given xml file.
+	 *
+	 * @param xmlStream an input stream of database specs open for
+	 * reading.
+	 * @param dbname the name of the database connection you want to
+	 * retrieve.
+	 * @return a DBConnectionSpec object populated from the given xml
+	 * stream, or null if no such connection spec exists in the xml.
+	 */
+	public static DBConnectionSpec getDBSpecFromInputStream(InputStream xmlStream,
+															String dbname)
+		throws DatabaseListReadException {
+		Collection dbs=getDBSpecsFromInputStream(xmlStream);
+		DBConnectionSpec dbcs=null;
+		Iterator it=dbs.iterator();
+		while(it.hasNext()) {
+			DBConnectionSpec temp=(DBConnectionSpec)it.next();
+			if(temp.getName().equals(dbname)) {
+				dbcs=temp;
+				break;
+			}
+		}
+		return dbcs;
+	}
+
+	/**
 	 * Uses a list of available databases (set up by a sysadmin) to
 	 * generate a Collection of DBConnectionSpec objects.
 	 *
@@ -144,14 +208,14 @@ public class DBConnectionSpec {
 	protected static DBConnectionSpec makeSpecFromDBNode(Element dbElem) {
  		if(!dbElem.getNodeName().equals("database")) {
  			throw new IllegalArgumentException(
-                  "This method only supports nodes of type 'database'.");
+											   "This method only supports nodes of type 'database'.");
  		}
 		DBConnectionSpec spec=new DBConnectionSpec();
 		spec.setName(dbElem.getAttributes().getNamedItem("name").getNodeValue());
 		NodeList databaseProperties=dbElem.getChildNodes();
 		for(int j=0; j<databaseProperties.getLength(); j++) {
 			Node databaseProperty=databaseProperties.item(j);
-		  if(databaseProperty.getNodeType() != Node.ELEMENT_NODE) continue;
+			if(databaseProperty.getNodeType() != Node.ELEMENT_NODE) continue;
 			databaseProperty.normalize();
 			if(databaseProperty.getNodeName().equals("display-name")) {
 				spec.setDisplayName(databaseProperty.getFirstChild().getNodeValue());
@@ -159,6 +223,10 @@ public class DBConnectionSpec {
 				spec.setDriverClass(databaseProperty.getFirstChild().getNodeValue());
 			} else if(databaseProperty.getNodeName().equals("url")) {
 				spec.setUrl(databaseProperty.getFirstChild().getNodeValue());
+			} else if(databaseProperty.getNodeName().equals("user")) {
+				spec.setUser(databaseProperty.getFirstChild().getNodeValue());
+			} else if(databaseProperty.getNodeName().equals("pass")) {
+				spec.setPass(databaseProperty.getFirstChild().getNodeValue());
 			}
 		}
 		return spec;
