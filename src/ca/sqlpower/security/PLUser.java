@@ -82,32 +82,41 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 		StringBuffer sql = new StringBuffer();
 		if(_alreadyInDatabase) {
 			sql.append("UPDATE pl_user");
-			sql.append(" SET user_name=").append(SQL.quote(getUserName())).append(",");
-			sql.append("   email_address=").append(SQL.quote(getEmailAddress())).append(",");
-			sql.append("   default_kpi_frequency=").append(SQL.quote(getDefaultKpiFrequency().toString())).append(",");
-			sql.append("   show_red_ind=").append(SQL.quote(isRedVisible()?"Y":"N")).append(",");
-			sql.append("   show_yellow_ind=").append(SQL.quote(isYellowVisible()?"Y":"N")).append(",");
-			sql.append("   show_green_ind=").append(SQL.quote(isGreenVisible()?"Y":"N")).append(",");
-			sql.append("   show_grey_ind=").append(SQL.quote(isGreyVisible()?"Y":"N")).append(",");
-			sql.append("   last_update_date=").append(DBConnection.getSystemDate(con)).append(",");
-			sql.append("   last_update_user=").append(SQL.quote(DBConnection.getUser(con).toUpperCase())).append(",");
-			sql.append("   last_update_os_user=").append(SQL.quote("DASHBOARD_FRONTEND")).append(",");
-			sql.append("   use_loader_ind='").append(loaderUser ? 'Y' : 'N').append("',");
-			sql.append("   use_matchmaker_ind='").append(matchmakerUser ? 'Y' : 'N').append("',");
-			sql.append("   use_summarizer_ind='").append(summarizerUser ? 'Y' : 'N').append("',");
-			sql.append("   use_dashboard_ind='").append(dashboardUser ? 'Y' : 'N').append("'");
+			sql.append(" SET user_name=").append(SQL.quote(getUserName()));
+			if (password != null) {
+				sql.append(", password=").append(SQL.quote(encryptPassword(password)));
+			}
+			sql.append(", email_address=").append(SQL.quote(getEmailAddress()));
+			sql.append(", default_kpi_frequency=").append(SQL.quote(getDefaultKpiFrequency().toString()));
+			sql.append(", show_red_ind=").append(SQL.quote(isRedVisible()?"Y":"N"));
+			sql.append(", show_yellow_ind=").append(SQL.quote(isYellowVisible()?"Y":"N"));
+			sql.append(", show_green_ind=").append(SQL.quote(isGreenVisible()?"Y":"N"));
+			sql.append(", show_grey_ind=").append(SQL.quote(isGreyVisible()?"Y":"N"));
+			sql.append(", last_update_date=").append(DBConnection.getSystemDate(con));
+			sql.append(", last_update_user=").append(SQL.quote(DBConnection.getUser(con).toUpperCase()));
+			sql.append(", last_update_os_user=").append(SQL.quote("DASHBOARD_FRONTEND"));
+			sql.append(", use_loader_ind='").append(loaderUser ? 'Y':'N').append("'");
+			sql.append(", use_matchmaker_ind='").append(matchmakerUser ? 'Y':'N').append("'");
+			sql.append(", use_summarizer_ind='").append(summarizerUser ? 'Y':'N').append("'");
+			sql.append(", use_dashboard_ind='").append(dashboardUser ? 'Y':'N').append("'");
 			sql.append(" WHERE user_id = ").append(SQL.quote(getUserId()));
 			System.out.println("store query:" +sql);
 			stmt.executeUpdate(sql.toString());
 		} else {
 			sql.append("INSERT INTO pl_user(");
-			sql.append(" user_id, user_name,");
-			sql.append(" email_address, default_kpi_frequency,");
+			sql.append(" user_id,");
+			if (password != null) {
+				sql.append(" password,");
+			}
+			sql.append(" user_name, email_address, default_kpi_frequency,");
 			sql.append(" show_red_ind, show_yellow_ind, show_green_ind, show_grey_ind,");
 			sql.append(" last_update_date, last_update_user, last_update_os_user,");
 			sql.append(" use_loader_ind, use_matchmaker_ind, use_summarizer_ind, use_dashboard_ind)");
 			sql.append(" VALUES( ");
 			sql.append(SQL.quote(userId.toUpperCase())).append(",");
+			if (password != null) {
+				sql.append(SQL.quote(encryptPassword(password))).append(", ");
+			}
 			sql.append(SQL.quote(userName)).append(",");
 			sql.append(SQL.quote(emailAddress)).append(",");
 			sql.append(SQL.quote(defaultKpiFrequency.toString())).append(",");
@@ -305,21 +314,9 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			throw new IllegalArgumentException("You can't look up a user by password");
 		}
 		
-		MessageDigest md5 = null;
-		StringBuffer cryptedPassword = null;
+		String cryptedPassword = null;
 		if (password != null) {
-			try {
-				md5 = MessageDigest.getInstance("MD5");
-			} catch (NoSuchAlgorithmException e) {
-				throw new PLSecurityException(PLSecurityManager.LOGIN_PERMISSION,
-											  PLSecurityManager.INVALID_MANAGER,
-											  null);
-			}
-			byte[] hashBytes = md5.digest(password.getBytes());
-			ByteColonFormat bcf = new ByteColonFormat();
-			bcf.setUsingColons(false);
-			cryptedPassword = new StringBuffer(32);
-			bcf.format(hashBytes, cryptedPassword, null);
+			cryptedPassword = encryptPassword(password);
 		}
 
 		List results = new LinkedList();
@@ -340,7 +337,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 					sql.append(" WHERE user_id = ").append(SQL.quote(userId));
 				}
 				if (password != null) {
-					sql.append(" AND (password = ").append(SQL.quote(cryptedPassword.toString()));
+					sql.append(" AND (password = ").append(SQL.quote(cryptedPassword));
 					sql.append(" OR password IS NULL)");
 				}
 			}
@@ -459,6 +456,23 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 		this.summarizerUser = fresh.summarizerUser;
 		this.matchmakerUser = fresh.matchmakerUser;
 		this.dashboardUser = fresh.dashboardUser;
+	}
+
+	protected static String encryptPassword(String plainPassword) {
+		MessageDigest md5 = null;
+		try {
+			md5 = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+			throw new PLSecurityException(PLSecurityManager.LOGIN_PERMISSION,
+										  PLSecurityManager.INVALID_MANAGER,
+										  null);
+		}
+		byte[] hashBytes = md5.digest(plainPassword.getBytes());
+		ByteColonFormat bcf = new ByteColonFormat();
+		bcf.setUsingColons(false);
+		StringBuffer cryptedPassword = new StringBuffer(32);
+		bcf.format(hashBytes, cryptedPassword, null);
+		return cryptedPassword.toString();
 	}
 
 	// GET and SET methods go below this line
@@ -694,6 +708,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 		meString.append("[PLUser: ");
 		meString.append("userId=").append(userId);
 		meString.append(", userName=").append(userName);
+		meString.append(", password=<").append(password != null ? "not " : "").append("null>");
 		meString.append(", emailAddress=").append(emailAddress);
 		meString.append(", defaultKpiFrequency=").append(defaultKpiFrequency);
 		meString.append(", redVisible=").append(redVisible);
