@@ -132,6 +132,7 @@ public class Recurrence {
 		default:
 			throw new IllegalStateException("Unsupported recurrence frequency "+frequency);
 		}
+		sb.append(" at ").append(DateFormat.getTimeInstance().format(startDate));
 		sb.append(" starting ").append(DateFormat.getDateInstance()
 									   .format(startDate));
 		if (endDate != null) {
@@ -140,6 +141,21 @@ public class Recurrence {
 		}
 		sb.append("]");
 		return sb.toString();
+	}
+
+	/**
+	 * Returns an array of <code>n</code> elements which are the exact
+	 * dates of the next <code>n</code> occurrences of this
+	 * recurrence.  If the recurrence will expire before n more
+	 * occurrences, those array slots will contain <code>null</code>.
+	 */
+	public Date[] nextOccurrences(Date baseDate, int n) {
+		Date[] retval = new Date[n];
+		for (int i = 0; i < n && baseDate != null; i++) {
+			baseDate = nextOccurrence(baseDate);
+			retval[i] = baseDate;
+		}
+		return retval;
 	}
 
 	/**
