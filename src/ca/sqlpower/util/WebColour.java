@@ -44,7 +44,7 @@ public class WebColour extends java.awt.Color {
     }
 
     public String toString() {
-	return "#"+Integer.toHexString(getRGB());
+	return "#"+Integer.toHexString((getRGB() << 8) >> 8);
     }
 
     /**
