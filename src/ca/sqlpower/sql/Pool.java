@@ -10,12 +10,15 @@ import java.util.*;
 import java.sql.*;
 
 /**
- * @author dfraser
- *
- * To change this generated comment edit the template variable "typecomment":
- * Window>Preferences>Java>Templates.
- * To enable and disable the creation of type comments go to
- * Window>Preferences>Java>Code Generation.
+ * Connection pool wrapper class, providing a simple connection pool interface
+ * to SQL Power applications without exposing the underlying pool's interface.
+ * 
+ * In this case, it is implemented using Apache Commons DBCP, plus some
+ * customized classes such as the ca.sqlpower.sql.PoolableStatementClosingConnection
+ * and the ca.sqlpower.sql.StatementClosingPoolableConnectionFactory.
+ * 
+ * @author Dan Fraser
+ * @version $Id$
  */
 public class Pool {
 
@@ -27,7 +30,10 @@ public class Pool {
 	ObjectPool connectionPool;
 	
 	/** 
-	 * Prepares a connection pool for the specified DBConnectionSpec.
+	 * Prepares a connection pool for the specified DBConnectionSpec. Adds
+	 * the pool to a cache of pools for re-use whenever the DBConnectionSpec,
+	 * username, and password are re-used. This essentially creates one pool
+	 * per unique database/user combination.
 	 */
 	public Pool(LoginSession ls, DBConnectionSpec dbcs) throws Exception {
 		this.dbcs = dbcs;
@@ -39,6 +45,7 @@ public class Pool {
         	GenericObjectPool.Config poolConfig = new GenericObjectPool.Config();
         	System.out.println("Pool creating new pool for "+poolName);
   
+			// XXX: this should come from a properties file.
         	poolConfig.maxActive = 25;
         	poolConfig.maxIdle = 2;
         	poolConfig.maxWait = 10000;
@@ -50,7 +57,7 @@ public class Pool {
 			System.out.println("dbUrl = "+dbcs.getUrl());
 
 		    ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(dbcs.getUrl(),ls.getUsername(),ls.getPassword());
-        	PoolableConnectionFactory poolableConnectionFactory = new PoolableConnectionFactory(connectionFactory,connectionPool,null,null,false,true);
+        	PoolableConnectionFactory poolableConnectionFactory = new StatementClosingPoolableConnectionFactory(connectionFactory,connectionPool,null,null,false,true);
 	        this.dataSource = new PoolingDataSource(connectionPool);
 	        pools.put(poolName, dataSource);	
 	        objPools.put(poolName, connectionPool);   // for debugging      
@@ -60,7 +67,8 @@ public class Pool {
 	}
 		
 	/**
-	 * Returns a connection from a pool.
+	 * Returns a Connection from the pool.  Be sure to close it when you're done 
+	 * with it!
 	 */
 	public Connection getConnection() throws SQLException {
 		Connection con;
@@ -69,6 +77,5 @@ public class Pool {
 		con = dataSource.getConnection();		
 		System.out.println("after: "+connectionPool.numActive()+" active, "+connectionPool.numIdle()+" idle.");
 		return con;
-	}	
-	
+	}		
 }
