@@ -304,25 +304,25 @@ public abstract class WebResultFormatter {
 
  		case FieldTypes.HYPERLINK:
 			align.append("center");
- 			List hyperlinks=wrs.getColumnHyperlinks(i);
-			String style=wrs.getColumnHyperlinkStyle(i);
- 			if(hyperlinks == null) {
+ 			List hyperlinks = wrs.getColumnHyperlinks(i);
+			String style = wrs.getColumnHyperlinkStyle(i);
+ 			if (hyperlinks == null) {
  				throw new IllegalStateException
  					("You must supply hyperlink specs in the WebResultSet.");
  			}
- 			Iterator hlIter=hyperlinks.iterator();
- 			while(hlIter.hasNext()) {
- 				Hyperlink link=(Hyperlink)hlIter.next();
- 				LongMessageFormat textFormat=new LongMessageFormat(link.getText());
- 				LongMessageFormat hrefFormat=new LongMessageFormat(link.getHref());
- 				int colCount=wrs.getColumnCount();
- 				String[] rowValues=new String[colCount+1];
- 				for(int col=1; col<=colCount; col++) {
- 					rowValues[col]=wrs.getString(col);
+ 			Iterator hlIter = hyperlinks.iterator();
+ 			while (hlIter.hasNext()) {
+ 				Hyperlink link = (Hyperlink)hlIter.next();
+ 				LongMessageFormat textFormat = new LongMessageFormat(link.getText());
+ 				LongMessageFormat hrefFormat = new LongMessageFormat(link.getHref());
+ 				int colCount = wrs.getColumnCount();
+ 				String[] rowValues = new String[colCount+1];
+ 				for (int col = 1; col <= colCount; col++) {
+ 					rowValues[col] = wrs.getString(col);
  				}
  				contents.append("<a href=\"");
  				hrefFormat.format(rowValues, contents, null);
-				if(style!=null) {
+				if (style!=null) {
 					contents.append("\" class=\"").append(style);
 				}
  				contents.append("\">");
