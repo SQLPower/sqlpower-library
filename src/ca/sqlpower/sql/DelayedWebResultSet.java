@@ -91,8 +91,12 @@ public class DelayedWebResultSet extends WebResultSet {
 			"DelayedResultSet.execute: Finding results in cache of "
 				+ resultCache.size()
 				+ " items: ");
-
-		CachedRowSet results = (CachedRowSet) resultCache.get(sqlQuery);
+				
+		String cacheKey = sqlQuery 
+				+"&"+con.getMetaData().getURL() 
+				+"&"+con.getMetaData().getUserName();
+	
+		CachedRowSet results = (CachedRowSet) resultCache.get(cacheKey);
 		if (results != null) {
 			results = (CachedRowSet) results.createShared();
 
@@ -114,7 +118,7 @@ public class DelayedWebResultSet extends WebResultSet {
 					stmt.close();
 				}
 			}
-			resultCache.put(sqlQuery, results);
+			resultCache.put(cacheKey, results);
 			System.out.println("MISS ("+results.size()+" rows)");
 		}
 		applyResultSet(results, closeOldRS);
