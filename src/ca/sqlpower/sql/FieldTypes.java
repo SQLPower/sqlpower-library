@@ -127,6 +127,8 @@ public class FieldTypes {
  	 */
  	public static final int HYPERLINK = 15;
 
+	public static final int RANGEHYPERLINK = 21;
+
 
     /**
      * Indicates a data field representing a yes/no value.
@@ -162,7 +164,7 @@ public class FieldTypes {
     /**
      * It is guaranteed that no type code's value exceeds LAST_TYPE.
      */
-    public static final int LAST_TYPE=20;
+    public static final int LAST_TYPE=21;
 
     /**
      * This class is just a container for the type values; it cannot

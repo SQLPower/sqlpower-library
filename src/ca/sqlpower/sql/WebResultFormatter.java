@@ -303,6 +303,7 @@ public abstract class WebResultFormatter {
             break;
 
  		case FieldTypes.HYPERLINK:
+ 		case FieldTypes.RANGEHYPERLINK:
 			align.append("center");
  			List hyperlinks = wrs.getColumnHyperlinks(i);
 			String style = wrs.getColumnHyperlinkStyle(i);
@@ -326,7 +327,19 @@ public abstract class WebResultFormatter {
 					contents.append("\" class=\"").append(style);
 				}
  				contents.append("\">");
- 				textFormat.format(rowValues, contents, null);
+ 				StringBuffer nullCheck = new StringBuffer();
+ 				String checked;
+ 				textFormat.format(rowValues, nullCheck, null);
+ 				if (type == FieldTypes.RANGEHYPERLINK) {
+ 					if (nullCheck.toString().equals("&nbsp;1&nbsp;-&nbsp;null")) {
+ 						checked = "-";
+ 					} else {
+	 					checked = nullCheck.toString();
+ 					}
+ 				} else {
+ 					checked = nullCheck.toString();
+ 				}
+ 				contents.append(checked);
  				contents.append("</a>");
  				if (hlIter.hasNext()) {
  					contents.append("<br>");

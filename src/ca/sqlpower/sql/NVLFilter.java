@@ -7,6 +7,7 @@ package ca.sqlpower.sql;
  * @version $Id$
  */
 public class NVLFilter implements ColumnFilter {
+
 	String nullValue;
 	
 	/**
