@@ -10,7 +10,8 @@ import java.util.*;
  * looked into overriding MessageFormat, but it makes private
  * assumptions about the number of {} substitutions not exceeding 10.
  * The extended format syntax like {3,date} is <em>not</em> currently
- * supported.</p>
+ * supported (except for {x,number} which is a special case for the Dashboard
+ * application).</p>
  *
  * <p>See java.text.MessageFormat in the J2SE API docs for details.
  *
@@ -104,7 +105,18 @@ public class LongMessageFormat extends Format {
 				Object insertMe=objArray[formatNumber[chunkNum]];
 				Format thisFieldFormat=formats[chunkNum];
 				if(thisFieldFormat!=null) {
-					thisFieldFormat.format(insertMe, toAppendTo, null);
+					Object parsedObject = null;
+					if (insertMe instanceof String) {
+						try {
+							parsedObject = thisFieldFormat.parseObject((String)insertMe);
+						} catch (ParseException e) {
+							parsedObject = insertMe;
+						}
+					} else {
+						parsedObject = insertMe;
+					}
+					String myString = thisFieldFormat.format(parsedObject);
+					toAppendTo.append(myString);
 				} else {
 					toAppendTo.append(insertMe);
 				}
@@ -240,14 +252,28 @@ public class LongMessageFormat extends Format {
 		while(nextPos >= 0) {
 			stringChunks.add(pattern.substring(pos, nextPos));
 			int formatNumStart=nextPos+1;
-			int formatNumEnd=pattern.indexOf('}', formatNumStart);
+			int formatNumEnd = 0;
+			formatNumEnd=pattern.indexOf('}', formatNumStart);
 			String formatNumStr=pattern.substring(formatNumStart, formatNumEnd);
+			String formatType = null;
+			int commaPos = formatNumStr.indexOf(',');
+			if (commaPos != -1) {
+				formatType = formatNumStr.substring(commaPos+1);
+				formatNumStr = formatNumStr.substring(0,commaPos);
+			}							
 			int parsedFormatNum=0;
 			try {
 				parsedFormatNum=Integer.parseInt(formatNumStr);
 			} catch(NumberFormatException e) {
 				throw new IllegalArgumentException
 				   ("The format argument '"+formatNumStr+"' is not a number.");
+			}
+			if (formatType != null) {
+				if (formatType.equals("number")) {
+					setFormat(parsedFormatNum,new DecimalFormat("#,##0.##"));
+				} else {
+					throw new IllegalArgumentException("The format argument '"+formatType+"' is unknown.");
+				}
 			}
 			formatNumber[blockNum]=parsedFormatNum;
 			blockNum++;
@@ -261,9 +287,9 @@ public class LongMessageFormat extends Format {
 	 * Just a quick demonstration of usage.
 	 */
 	public static void main(String args[]) {
-		String pattern="0: {0}, 1: {1}, 2: {2}, 5: {5}, 6: {6}, 7: {7}, 8: {8}, 9: {9}, 10: {10}, 4: {4}, 11: {11}, 3: {3}, 12: {12}.";
+		String pattern="0: {0,number}, 1: {1}, 2: {2}, 5: {5}, 6: {6}, 7: {7}, 8: {8}, 9: {9}, 10: {10}, 4: {4}, 11: {11}, 3: {3}, 12: {12}.";
 		String[] numbersEN = {
-			"zero",
+			"234972349587.23947523947",
 			"one",
 			"two",
 			"three",
@@ -277,8 +303,8 @@ public class LongMessageFormat extends Format {
 			"eleven",
 			"twelve",
 		};
-		String[] numbersES = {
-			"cero",
+		Object[] numbersES = {
+			"234972349587.23947523947",
 			"uno",
 			"dos",
 			"tres",
