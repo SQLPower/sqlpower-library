@@ -131,6 +131,33 @@ public abstract class WebResultFormatter {
         return newHeading.toString();
     }
 
+    public static String beautifyColumnName(String colName) {
+        StringBuffer newColName=new StringBuffer(colName);
+		final int CAP_NEXT=1;
+		final int LOWER_NEXT=2;
+		int state=CAP_NEXT;
+        for(int i=0; i<colName.length(); i++) {
+			if(newColName.charAt(i) == '_') {
+				newColName.setCharAt(i, ' ');
+				state=CAP_NEXT;
+				continue;
+			}
+
+			switch(state) {
+			case CAP_NEXT:
+				newColName.setCharAt(i, Character.toUpperCase(colName.charAt(i)));
+				state=LOWER_NEXT;
+				break;
+				
+			case LOWER_NEXT:
+				newColName.setCharAt(i, Character.toLowerCase(colName.charAt(i)));
+				break;
+
+			}
+        }
+        return newColName.toString();
+    }
+
     protected void getColumnFormatted(WebResultSet wrs,
                                       int i,
                                       StringBuffer contents,

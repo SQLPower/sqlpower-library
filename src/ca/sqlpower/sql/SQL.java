@@ -14,7 +14,7 @@ public class SQL {
     }
 	
     /**
-     * A convent way of using escapeStatement.  This method does the
+     * A convenient way of using escapeStatement.  This method does the
      * same thing as escapeStatement, but also encloses the returned
      * string in single-quotes.  If the argument is null, the unquoted
      * string "NULL" is returned.
@@ -29,6 +29,11 @@ public class SQL {
 		} else {
 			return "'"+escapeStatement(string)+"'";
 		}
+    }
+
+    public static String quote(char myChar) {
+		String string=String.valueOf(myChar);
+		return "'"+escapeStatement(string)+"'";
     }
 
 	/**
