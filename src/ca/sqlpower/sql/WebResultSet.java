@@ -18,7 +18,7 @@ public class WebResultSet {
     protected boolean[] columnHasAny;
     protected boolean[] columnHasAll;
     protected int[] columnType;
-	protected String[] columnHrefText;
+	protected List[] columnHyperlinks;
     protected int rowidColNo;
 
     public WebResultSet(ResultSet results, String query) throws SQLException {
@@ -37,7 +37,7 @@ public class WebResultSet {
         columnHasAny=new boolean[cols];
         columnHasAll=new boolean[cols];
         columnType=new int[cols];
-		columnHrefText=new String[cols];
+		columnHyperlinks=new List[cols];
         rowidColNo=0;
     }
 
@@ -222,29 +222,42 @@ public class WebResultSet {
     }
 
 	/**
-	 * Returns the href text for the given column.
+	 * Returns the list of hyperlinks for the given column.  Elements
+	 * of this list should be of type ca.sqlpower.util.Hyperlink.
 	 *
 	 * @param colNo The column number in question.
-	 * @return The href text for this column (<code>null</code> if no
-	 * text has been specified).
+	 * @return The hyperlink list for this column (<code>null</code>
+	 * if no text has been specified).
 	 */
-	public String getColumnHrefText(int colNo) {
-		return this.columnHrefText[colNo-1];
+	public List getColumnHyperlinks(int colNo) {
+		return this.columnHyperlinks[colNo-1];
 	}
 
 	/**
-	 * Sets the text which should be used for making a hyperlink for
-	 * each entry in this column.  The character "!" is special:
-	 * Format classes will replace it with the column's textual value
-	 * before rendering the link to the screen.<p>
+	 * Sets the list of hyperlinks for each entry in this column.  The
+	 * entries of the list must all be of type
+	 * <code>ca.sqlpower.util.Hyperlink</code>, although no type-checking is done
+	 * here.<p>
+	 *
+	 * The WebResultFormatter will output one HTML hyperlink per list
+	 * entry for each row in the resultset. The hyperlink's
+	 * <code>text</code> and <code>href</code> values are both used as
+	 * a pattern in a <code>LongMessageFormat</code>.  The escape
+	 * sequences (for example, <code>{3} {4}</code> in the strings
+	 * correspond with values in the current row of the resultset.
+	 * <code>{1}</code> corresponds with the first column in the
+	 * resultset, <code>{2}</code> with the second, and so on.
+	 * <code>{0}</code> is a placeholder, and is always
+	 * <code>null</code>.
 	 *
 	 * @param colNo The column number to which the href text applies.
-	 * @param v The href text string, with the special "!" character
-	 * indicating where to substitute the column value.  There is
-	 * currently no way to include a literal "!" in the href.
+	 * @param links The list of hyperlinks to render in this column.
+	 *
+	 * @see ca.sqlpower.util.Hyperlink
+	 * @see ca.sqlpower.util.LongMessageFormat
 	 */
-	public void setColumnHrefText(int colNo, String v) {
-		this.columnHrefText[colNo-1]=v;
+	public void setColumnHyperlinks(int colNo, List links) {
+		this.columnHyperlinks[colNo-1]=links;
 	}
     
     public String getSqlQuery() {
@@ -322,7 +335,7 @@ public class WebResultSet {
     /**
      * @deprecated In general, the names of columns are expected to
      * change frequently.  Use the getString(int) method instead of
-     * this one.
+     * this one.  Also, it does not support the columnFilter feature.
      */
     public String getString(String colName) throws SQLException {
         return rs.getString(colName);
@@ -334,6 +347,18 @@ public class WebResultSet {
         }
         return rs.getString(colNo);
     }
+
+	/**
+	 * Returns a Java object (object type mapping is the default)
+	 * which represents the value of the current record's given
+	 * column.
+	 *
+	 * @param colNo The column number.  The first column is number 1,
+	 * not 0. 0 is invalid.
+	 */
+	public Object getObject(int colNo) throws SQLException {
+		return rs.getObject(colNo);
+	}
 
     public java.sql.Date getDate(int colNo) throws SQLException {
         return rs.getDate(colNo);

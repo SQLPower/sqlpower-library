@@ -20,7 +20,7 @@ public class WebResultCSVFormatter extends WebResultFormatter {
 	boolean thisIsTheFirstColumn=true;
 	for(int i=1; i<=numCols; i++) {
 
-	    if(columnTypeNotAppropriate(wrs.getColumnType(i))) {
+	    if(columnNotAppropriate(wrs, i)) {
 		continue;
 	    }
 
@@ -44,7 +44,7 @@ public class WebResultCSVFormatter extends WebResultFormatter {
 	    thisIsTheFirstColumn=true;
 	    for(int i=1; i<=numCols; i++) {
 
-		if(columnTypeNotAppropriate(wrs.getColumnType(i))) {
+		if(columnNotAppropriate(wrs, i)) {
 		    continue;
 		}
 
@@ -136,17 +136,21 @@ public class WebResultCSVFormatter extends WebResultFormatter {
 	return (escapedDiffersFromOriginal ? escaped.toString() : original);
     }
 
-    protected boolean columnTypeNotAppropriate(int ctype) {
-	switch(ctype) {
-	case FieldTypes.RADIO:
-	case FieldTypes.CHECKBOX:
-	case FieldTypes.ROWID:
-	case FieldTypes.DUMMY:
-	case FieldTypes.MUTEX_CHECKBOX:
-	    return true;
+    protected boolean columnNotAppropriate(WebResultSet wrs, int colNo) {
+		if(wrs.getColumnHrefText(colNo) != null) {
+			return true;
+		}
+		int ctype=wrs.getColumnType(colNo);
+		switch(ctype) {
+		case FieldTypes.RADIO:
+		case FieldTypes.CHECKBOX:
+		case FieldTypes.ROWID:
+		case FieldTypes.DUMMY:
+		case FieldTypes.MUTEX_CHECKBOX:
+			return true;
 
-	default:
-	    return false;
-	}
+		default:
+			return false;
+		}
     }
 }
