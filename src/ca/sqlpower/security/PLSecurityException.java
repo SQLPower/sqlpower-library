@@ -51,6 +51,10 @@ public class PLSecurityException extends RuntimeException {
 	}
 
 	public String getMessage() {
-		return "Denied "+perm+" on "+obj.getObjectName()+" because "+reason;
+		if (obj == null) {
+			return "Denied "+perm+" because "+reason;
+		} else {
+			return "Denied "+perm+" on "+obj.getObjectName()+" because "+reason;			
+		}
 	}
 }
