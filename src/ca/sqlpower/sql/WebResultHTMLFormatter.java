@@ -79,7 +79,7 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
     public void setDropdownsPerRow(int  v) {this.dropdownsPerRow = v;}
     
     public void formatToStream(WebResultSet wrs, PrintWriter out) 
-	throws SQLException, NoRowidException {
+	throws SQLException, NoRowidException, IllegalStateException {
 	int numCols=wrs.getColumnCount();
 	StringBuffer sb=new StringBuffer(256);
 
@@ -194,6 +194,7 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 			out.println(sb);			
 		    } catch(ColumnNotDisplayableException e) {
 			// Never happens
+			throw new IllegalStateException("Unexpected ColumnNotDisplayableException caught on MUTEX_CHECKBOX");
 		    }
 		} else try {
 		    align.setLength(0);
@@ -218,6 +219,25 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
 	    mutexOnThisRow=false;
 	}
 	out.println("</table>");
+
+	// Output dummy form-elements to make mutex checkboxes work
+	// if there was only one row.
+	if(mutexRowNum==1) {
+	    for(int i=1; i<numCols; i++) {
+		try {
+		    if(wrs.getColumnType(i) == FieldTypes.MUTEX_CHECKBOX) {
+			out.print("<input type=\"hidden\" name=\"");
+			out.print(wrs.getColumnLabel(i));
+			out.print("\" value=\"");
+			out.println("\" />");
+		    }
+		} catch(ColumnNotDisplayableException e) {
+		    // Never happens for MUTEX_CHECKBOX
+		    throw new IllegalStateException("Unexpected ColumnNotDisplayableException on MUTEX_CHECKBOX");
+		}
+	    }
+	}
+
 	out.flush();
     }
 
