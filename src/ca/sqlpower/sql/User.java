@@ -16,10 +16,12 @@ import java.io.*;
  * class's methods and fields.
  *
  * @author Jonathan Fuerth
- * @version $CVS$
+ * @version $Id$
  * @see java.sql.Connection
+ * @deprecated This whole thing needs to be re-thought.  There is not
+ * currently a suitable replacement.
  */
-public class User implements java.io.Serializable {
+public abstract class User implements java.io.Serializable {
 
     /**
      * for debugging only
@@ -47,7 +49,7 @@ public class User implements java.io.Serializable {
      * @throws SQLExcpetion if there is a database error during connection
      * @throws NotSerializableException if the Connection object returned by <code>DriverManager.getConnection()</code> is not serializable
      */
-    public User(String dburl, String userid, String password) throws SQLException {
+    protected User(String dburl, String userid, String password) throws SQLException {
 	this();
 	this.dburl=dburl;
 	ID=userid;
