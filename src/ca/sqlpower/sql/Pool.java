@@ -45,13 +45,14 @@ public class Pool {
         	GenericObjectPool.Config poolConfig = new GenericObjectPool.Config();
   
 			// XXX: this should come from a properties file.
-        	poolConfig.maxActive = 25;
-        	poolConfig.maxIdle = 25;
+        	poolConfig.maxActive = 100;
+        	poolConfig.maxIdle = 50;
         	poolConfig.maxWait = 10000;
         	poolConfig.minEvictableIdleTimeMillis = 1000*60*5;
         	poolConfig.timeBetweenEvictionRunsMillis = 10000;
-        	poolConfig.numTestsPerEvictionRun = 100;
+        	poolConfig.numTestsPerEvictionRun = 5;
 			poolConfig.testOnBorrow = true;
+
 
 		    connectionPool = new GenericObjectPool(null,poolConfig);
 
