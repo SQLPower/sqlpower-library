@@ -93,8 +93,9 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			sql.append("   use_loader_ind='").append(loaderUser ? 'Y' : 'N').append("',");
 			sql.append("   use_matchmaker_ind='").append(matchmakerUser ? 'Y' : 'N').append("',");
 			sql.append("   use_summarizer_ind='").append(summarizerUser ? 'Y' : 'N').append("',");
-			sql.append("   use_dashboard_ind='").append(dashboardUser ? 'Y' : 'N');
+			sql.append("   use_dashboard_ind='").append(dashboardUser ? 'Y' : 'N').append("'");
 			sql.append(" WHERE user_id = ").append(SQL.quote(getUserId()));
+			System.out.println("store query:" +sql);
 			stmt.executeUpdate(sql.toString());
 		} else {
 			sql.append("INSERT INTO pl_user(");
