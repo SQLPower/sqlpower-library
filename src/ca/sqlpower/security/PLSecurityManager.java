@@ -813,15 +813,9 @@ public class PLSecurityManager implements java.io.Serializable {
 
 			// If this is a kpi, and we are setting execute=y, and it didn't use to be y, 
 			// also set the view_kpi_ind to y.
-			System.out.println("~~~~checking condition");
-			System.out.println("~~~~kpi="+obj.getObjectName());
-			System.out.println("~~~~exe="+execute);
-			System.out.println("~~~~prev exe="+prevExecute);
 			if(obj.getObjectType().equals("KPI") && 
 			   execute.equals("'Y'") &&
 			   !prevExecute.equals("'Y'")){
-
-				System.out.println("~~~~passed condition");
 
 				// First, try to insert records into pl_user_notification for
 				// the object, in case there aren't any yet.
@@ -844,7 +838,6 @@ public class PLSecurityManager implements java.io.Serializable {
 				}
 
 				try {
-					System.out.println("~~~~insert="+sql.toString());
 					updateCount = stmt.executeUpdate(sql.toString());
 				} catch(SQLException e) {
 					// don't fail if the insert collides with an existing record
@@ -868,7 +861,6 @@ public class PLSecurityManager implements java.io.Serializable {
 					sql.append("   WHERE group_name=").append(SQL.quote(granteeName)).append(")");
 				}
 
-				System.out.println("~~~~update="+sql.toString());
 				updateCount = stmt.executeUpdate(sql.toString());
 
 			} // end if (check if we need to update view_kpi_ind)
@@ -914,6 +906,11 @@ public class PLSecurityManager implements java.io.Serializable {
 		try {
 			stmt = con.createStatement();
 			stmt.executeUpdate(sql.toString());
+
+			// If this is a Kpi, give the user "view kpi" privileges
+			if(obj.getObjectType().equals("KPI")){
+				EmailNotification.setPref(con, sm, sm.principal, obj, "Y","","","");
+			}
 		} catch (SQLException e) {
 			System.out.println
 				("PLSecurityManager.createDatabaseObject: Error in SQL Statement: "
@@ -923,7 +920,7 @@ public class PLSecurityManager implements java.io.Serializable {
 		} finally {
 			if (stmt != null) stmt.close();
 		}
-	}
+	} // end createDatabaseObject
 
 	/**
 	 * Call this method to remove everything security-ish about a
