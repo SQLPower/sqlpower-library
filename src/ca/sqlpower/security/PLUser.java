@@ -8,6 +8,8 @@ import java.security.NoSuchAlgorithmException;
 import ca.sqlpower.sql.*;
 import ca.sqlpower.util.ByteColonFormat;
 
+import org.apache.log4j.Logger;
+
 /**
  * The User class represents a people who can log in to an application
  * which uses the PL schema.
@@ -17,6 +19,9 @@ import ca.sqlpower.util.ByteColonFormat;
  * @version $Id$
  */
 public class PLUser implements DatabaseObject, java.io.Serializable {
+
+	private static final Logger logger = Logger.getLogger(PLUser.class);
+
     protected boolean _alreadyInDatabase;
     protected String userId;
 	protected String password;
@@ -597,9 +602,11 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			ResultSet rs = null;
 			try {
 				stmt = con.createStatement();
-				rs = stmt.executeQuery("SELECT 1 FROM user_group WHERE user_id="
-									   +SQL.quote(getUserId())+" AND group_name="
-									   +SQL.quote(PLGroup.ADMIN_GROUP));
+				String sql = "SELECT 1 FROM user_group WHERE user_id="
+					+SQL.quote(getUserId())+" AND group_name="
+					+SQL.quote(PLGroup.ADMIN_GROUP);
+				logger.debug("isSuperuser query "+sql);
+				rs = stmt.executeQuery(sql);
 				if (rs.next()) {
 					superuser = new Boolean(true);
 				} else {
@@ -610,6 +617,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 				if (stmt != null) stmt.close();
 			}
 		}
+		logger.debug("isSuperuser returns "+superuser.booleanValue());
 		return superuser.booleanValue();
 	}
 
