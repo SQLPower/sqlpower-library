@@ -1,9 +1,13 @@
 package ca.sqlpower.sql;
 
+import java.util.List;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Collections;
 import java.sql.*;
 import java.math.BigDecimal;
-import java.util.Calendar;
 
 /**
  * The CachedRowSet is a serializable container for holding the
@@ -15,7 +19,7 @@ import java.util.Calendar;
  * interface.  Methods marked as "Not supported" will generally throw
  * an UnsupportedOperationException or SQLException when you call
  * them.  This is preferable to just ignoring the call or returning a
- * dummy value so that you will notice that you used an unimplemented
+ * dummy value because you will notice that you used an unimplemented
  * call, and can implement functionality that you need piece-by-piece.
  *
  * @author Jonathan Fuerth
@@ -39,7 +43,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * row's first column; data.get(0)[1] would be the first row's second
 	 * column, and so on.
 	 */
-	private ArrayList data;
+	protected List data;
 
 	/**
 	 * The current row.  This gets updated by next().
@@ -56,7 +60,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	/**
 	 * Our cached copy of the original ResultSetMetaData.
 	 */
-	private ResultSetMetaData rsmd;
+	protected ResultSetMetaData rsmd;
 
 	/**
 	 * Makes an empty cached rowset.
@@ -89,18 +93,124 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * sets for re-use.
 	 */
 	public CachedRowSet createShared() throws SQLException {
+		return createSharedSorted(null);
+	}
+
+	/**
+	 * Creates a new instance of CachedRowSet that shares the same
+	 * underlying data as this instance, but that data will be
+	 * returned in the order determined by the given sort qualifier.
+	 */
+	public CachedRowSet createSharedSorted(RowComparator c) throws SQLException {
 		CachedRowSet newRowSet = new CachedRowSet();
-		newRowSet.data = data;
 		newRowSet.rsmd = rsmd;
+		if (c != null) {
+			newRowSet.data = new ArrayList(data);
+			Collections.sort(newRowSet.data, c);
+		} else {
+			newRowSet.data = data;
+		}
 
 		return newRowSet;
 	}
-	
+
+	public static class RowComparator implements Comparator, java.io.Serializable {
+
+		private ArrayList sortCols;
+
+		/**
+		 * Creates a RowComparator which returns rows in their natural
+		 * order.
+		 */
+		public RowComparator() {
+			sortCols = new ArrayList();
+		}
+
+		/**
+		 * Adds a column to sort by (in ascending or descending
+		 * order).  If you call this method multiple times, the order
+		 * that columns are given in is sigificant: the first column
+		 * given is the primary sort column, the second is the
+		 * secondary, and so on.
+		 */
+		public void addSortColumn(int columnIndex, boolean ascending) {
+			sortCols.add(new SortCol(columnIndex, ascending));
+		}
+
+		public int compare(Object row1, Object row2) {
+			Object[] r1 = (Object[]) row1;
+			Object[] r2 = (Object[]) row2;
+
+			int diff = 0;
+
+			Iterator it = sortCols.iterator();
+			while (it.hasNext()) {
+				SortCol sc = (SortCol) it.next();
+				
+				if (r1 == null && r2 == null) diff = 0;
+				else if (r1 == null) diff = -1;
+				else if (r2 == null) diff = 1;
+				else diff = ((Comparable) r1[sc.columnIndex - 1]).compareTo(r2[sc.columnIndex - 1]);
+
+				if (diff != 0) {
+					if (sc.ascending) break;
+					else { diff = 0 - diff; break; }
+				}
+			}
+
+			return diff;
+		}
+
+		/**
+		 * Returns true iff there are no sort columns specified in this comparator.
+		 */
+		public boolean isEmpty() {
+			return sortCols.isEmpty();
+		}
+
+		private static class SortCol implements java.io.Serializable {
+			public int columnIndex;
+			public boolean ascending;
+
+			public SortCol(int columnIndex, boolean ascending) {
+				this.columnIndex = columnIndex;
+				this.ascending = ascending;
+			}
+		}
+	}
+
 	/**
 	 * Tells how many rows are in this row set.
 	 */
 	public int size() {
 		return data.size();
+	}
+
+	/**
+	 * Returns the list of rows in this result set.
+	 */
+	public List getData() {
+		return data;
+	}
+
+	/**
+	 * Returns the index of the column having the given name or -1 if
+	 * there is no such column.  The comparison is case insensitive.
+	 *
+	 * <p>The findColumn in the ResultSet interface throws an
+	 * exception if the column does not exist.
+	 *
+	 * @throws SQLException if the ResultSetMetaData operations result
+	 * in a SQLException.  No exception will be thrown if the named
+	 * column simply doesn't exist in the result set.
+	 */
+	public int findColumnNoException(String columnName) throws SQLException {
+		for (int i = 0; i < rsmd.getColumnCount(); i++) {
+			if (rsmd.getColumnName(i + 1).equalsIgnoreCase(columnName)) {
+				return i + 1;
+			}
+		}
+		return -1;
 	}
 
 	// =============================================
@@ -606,12 +716,12 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * @throws SQLException if there is no such column.
 	 */
     public int findColumn(String columnName) throws SQLException {
-		for (int i = 0; i < rsmd.getColumnCount(); i++) {
-			if (rsmd.getColumnName(i + 1).equalsIgnoreCase(columnName)) {
-				return i + 1;
-			}
+		int index = findColumnNoException(columnName);
+		if (index == -1) {
+			throw new SQLException("No such column '"+columnName+"' in this result set.");
+		} else {
+			return index;
 		}
-		throw new SQLException("No such column '"+columnName+"' in this result set.");
 	}
 
     // ====================================
@@ -661,7 +771,6 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * calling absolute(0).
 	 */ 
     public void beforeFirst() throws SQLException {
-		if (data == null) throw new SQLException("This CachedRowSet is not populated yet");
 		absolute(0);
 	}
 
@@ -670,7 +779,6 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * calling absolute(size()).
 	 */ 
     public void afterLast() throws SQLException {
-		if (data == null) throw new SQLException("This CachedRowSet is not populated yet");
 		absolute(data.size());
 	}
 

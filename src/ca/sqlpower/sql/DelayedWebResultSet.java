@@ -158,13 +158,8 @@ public class DelayedWebResultSet extends WebResultSet {
 				+"&"+con.getMetaData().getURL() 
 				+"&"+con.getMetaData().getUserName();
 			
-			CachedRowSet results = (CachedRowSet) getResultCache().get(cacheKey);
+			CachedRowSet results = (CachedRowSet) getCachedResult(cacheKey);
 			if (results != null) {
-				results = (CachedRowSet) results.createShared();
-				
-				// reset cursor, which is likely afterLast right now
-				results.beforeFirst();
-				
 				// we don't want to close cached resultset
 				closeOldRS=false;
 				queryExecuteTime = 0;
@@ -256,7 +251,7 @@ public class DelayedWebResultSet extends WebResultSet {
 	public void setCacheEnabled(boolean v) {
 		cacheEnabled=v;
 	}
-
+	
 	/**
 	 * Returns the cache that the DelayedWebResultSets in this JVM are
 	 * using.  You should always use this method for getting the
@@ -293,9 +288,36 @@ public class DelayedWebResultSet extends WebResultSet {
 	 * key.  It exists primarily as a hook for subclasses to use
 	 * fancier caches: if you override this, you can use custom put()
 	 * methods on your cache.
+	 *
+	 * @param key The value that will be given to getCachedResult when
+	 * and if this row set needs to be retrieved again.
+	 * @param results The CachedRowSet to add to the cache.
 	 */
-	protected void addResultsToCache(String key, CachedRowSet results) {
+	protected void addResultsToCache(String key, CachedRowSet results) throws SQLException  {
 		getResultCache().put(key, results);
+	}
+
+	/**
+	 * Retrieves a result from the result cache.  Override this if you
+	 * need to do anything special to the result set after it's
+	 * retrieved (reset the cursor, make a copy, sort it, filter it,
+	 * etc).
+	 *
+	 * @param key The cache key.  For a given result set, this will be
+	 * the same key that was passed to
+	 * {@link #addResultsToCache(String,CachedRowSet)}.
+	 * @return A copy of the CachedRowSet that was previously stored
+	 * under the same key, or null if there was nothing stored in the
+	 * cache under that key.
+	 */
+	protected CachedRowSet getCachedResult(String key) throws SQLException {
+		CachedRowSet results = (CachedRowSet) getResultCache().get(key);
+		if (results != null) {
+			results = results.createShared();
+			// reset cursor, which is likely afterLast right now
+			results.beforeFirst();
+		}
+		return results;
 	}
 
 	/**
