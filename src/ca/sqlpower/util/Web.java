@@ -139,5 +139,60 @@ public class Web {
 		} // end for (loop through testMe)
 		return false;
 	}
+
+	/**
+	 * Escapes an HTML attribute value (dobule quotes and ampersands
+	 * are converted to their character reference equivalents).
+	 */
+	public static String escapeAttribute(String attval) {
+		if (attval == null) return null;
+		StringBuffer escaped = new StringBuffer();
+		for (int i = 0, n = attval.length(); i < n; i++) {
+			switch (attval.charAt(i)) {
+			case '\"':
+				escaped.append("&quot;");
+				break;
+				
+			case '&':
+				escaped.append("&amp;");
+				break;
+				
+			default:
+				escaped.append(attval.charAt(i));
+				break;
+			}
+		}
+		return escaped.toString();
+	}
+
+	/**
+	 * Escapes HTML body CDATA (ampersands, greater-than, and
+	 * less-than symbols are converted to their character reference
+	 * equivalents).
+	 */
+	public static String escapeHtml(String cdata) {
+		if (cdata == null) return null;
+		StringBuffer escaped = new StringBuffer();
+		for (int i = 0, n = cdata.length(); i < n; i++) {
+			switch (cdata.charAt(i)) {
+			case '<':
+				escaped.append("&lt;");
+				break;
+				
+			case '>':
+				escaped.append("&gt;");
+				break;
+				
+			case '&':
+				escaped.append("&amp;");
+				break;
+				
+			default:
+				escaped.append(cdata.charAt(i));
+				break;
+			}
+		}
+		return escaped.toString();
+	}
+
 } // end class
- 

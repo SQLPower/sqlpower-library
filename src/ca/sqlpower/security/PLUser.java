@@ -27,11 +27,6 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 	protected String password;
     protected String userName;
 	protected String emailAddress;
-	protected ca.sqlpower.util.Frequency defaultKpiFrequency;
-	protected boolean redVisible;
-	protected boolean yellowVisible;
-	protected boolean greenVisible;
-	protected boolean greyVisible;
     protected java.sql.Date lastUpdateDate;
     protected String lastUpdateUser;
     protected String lastUpdateOsUser;
@@ -51,11 +46,6 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
         userId=null;
         userName=null;
 		emailAddress=null;
-		defaultKpiFrequency=null;
-		redVisible=false;
-		yellowVisible=false;
-		greenVisible=false;
-        greyVisible=false;
         lastUpdateDate=null;
         lastUpdateUser=null;
 		lastUpdateOsUser=null;
@@ -92,11 +82,6 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 				sql.append(", password=").append(SQL.quote(encryptPassword(password)));
 			}
 			sql.append(", email_address=").append(SQL.quote(getEmailAddress()));
-			sql.append(", default_kpi_frequency=").append(SQL.quote(getDefaultKpiFrequency().toString()));
-			sql.append(", show_red_ind=").append(SQL.quote(isRedVisible()?"Y":"N"));
-			sql.append(", show_yellow_ind=").append(SQL.quote(isYellowVisible()?"Y":"N"));
-			sql.append(", show_green_ind=").append(SQL.quote(isGreenVisible()?"Y":"N"));
-			sql.append(", show_grey_ind=").append(SQL.quote(isGreyVisible()?"Y":"N"));
 			sql.append(", last_update_date=").append(DBConnection.getSystemDate(con));
 			sql.append(", last_update_user=").append(SQL.quote(DBConnection.getUser(con).toUpperCase()));
 			sql.append(", last_update_os_user=").append(SQL.quote("DASHBOARD_FRONTEND"));
@@ -113,8 +98,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			if (password != null) {
 				sql.append(" password,");
 			}
-			sql.append(" user_name, email_address, default_kpi_frequency,");
-			sql.append(" show_red_ind, show_yellow_ind, show_green_ind, show_grey_ind,");
+			sql.append(" user_name, email_address,");
 			sql.append(" last_update_date, last_update_user, last_update_os_user,");
 			sql.append(" use_loader_ind, use_matchmaker_ind, use_summarizer_ind, use_dashboard_ind)");
 			sql.append(" VALUES( ");
@@ -124,11 +108,6 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			}
 			sql.append(SQL.quote(userName)).append(",");
 			sql.append(SQL.quote(emailAddress)).append(",");
-			sql.append(SQL.quote(defaultKpiFrequency.toString())).append(",");
-			sql.append(SQL.quote(isRedVisible()?"Y":"N")).append(",");
-			sql.append(SQL.quote(isYellowVisible()?"Y":"N")).append(",");
-			sql.append(SQL.quote(isGreenVisible()?"Y":"N")).append(",");
-			sql.append(SQL.quote(isGreyVisible()?"Y":"N")).append(",");
 			sql.append(DBConnection.getSystemDate(con)).append(",");
 			sql.append(SQL.quote(DBConnection.getUser(con).toUpperCase())).append(",");
 			sql.append(SQL.quote("DASHBOARD_FRONTEND")).append(",");
@@ -368,15 +347,6 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 				newBean.password = password;
 				newBean.userName = rs.getString("user_name");
 				newBean.emailAddress = rs.getString("email_address");
-				String freqCode = rs.getString("default_kpi_frequency");
-				if (freqCode != null) {
-					newBean.defaultKpiFrequency =
-						new ca.sqlpower.util.Frequency(ca.sqlpower.util.Frequency.freqCodeToFreq(freqCode));
-				}
-				newBean.redVisible = SQL.decodeInd(rs.getString("show_red_ind"));
-				newBean.yellowVisible = SQL.decodeInd(rs.getString("show_yellow_ind"));
-				newBean.greenVisible = SQL.decodeInd(rs.getString("show_green_ind"));
-				newBean.greyVisible = SQL.decodeInd(rs.getString("show_grey_ind"));
 				newBean.lastUpdateDate = rs.getDate("last_update_date");
 				newBean.lastUpdateUser = rs.getString("last_update_user");
 				newBean.lastUpdateOsUser = rs.getString("last_update_os_user");
@@ -447,11 +417,6 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 		PLUser fresh = (PLUser) singleUser.get(0);
 		this.userName = fresh.userName;
 		this.emailAddress = fresh.emailAddress;
-		this.defaultKpiFrequency = fresh.defaultKpiFrequency;
-		this.redVisible = fresh.redVisible;
-		this.yellowVisible = fresh.yellowVisible;
-		this.greenVisible = fresh.greenVisible;
-		this.greyVisible = fresh.greyVisible;
 		this.lastUpdateDate = fresh.lastUpdateDate;
 		this.lastUpdateUser = fresh.lastUpdateUser;
 		this.lastUpdateOsUser = fresh.lastUpdateOsUser;
@@ -509,46 +474,6 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
     public void setEmailAddress(String v) {
         emailAddress=v;
     }
-
-    public ca.sqlpower.util.Frequency getDefaultKpiFrequency() {
-        return defaultKpiFrequency;
-    }
-
-    public void setDefaultKpiFrequency(ca.sqlpower.util.Frequency v) {
-        defaultKpiFrequency=v;
-    }
-
-	public boolean isRedVisible() {
-		return this.redVisible;
-	}
-
-	public void setRedVisible(boolean argRedVisible){
-	    this.redVisible=argRedVisible;
-	}
-
-	public boolean isYellowVisible() {
-		return this.yellowVisible;
-	}
-
-    public void setYellowVisible(boolean argYellowVisible){
-	    this.yellowVisible=argYellowVisible;
-	}
-
-	public boolean isGreenVisible() {
-		return this.greenVisible;
-	}
-
-	public void setGreenVisible(boolean argGreenVisible){
-	    this.greenVisible=argGreenVisible;
-	}
-
-	public boolean isGreyVisible() {
-		return this.greyVisible;
-	}
-
-    public void setGreyVisible(boolean argGreyVisible){
-	    this.greyVisible=argGreyVisible;
-	}
 
     public java.sql.Date getLastUpdateDate() {
         return lastUpdateDate;
@@ -718,11 +643,6 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 		meString.append(", userName=").append(userName);
 		meString.append(", password=<").append(password != null ? "not " : "").append("null>");
 		meString.append(", emailAddress=").append(emailAddress);
-		meString.append(", defaultKpiFrequency=").append(defaultKpiFrequency);
-		meString.append(", redVisible=").append(redVisible);
-		meString.append(", yellowVisible=").append(yellowVisible);
-		meString.append(", greenVisible=").append(greenVisible);
-		meString.append(", greyVisible=").append(greyVisible);
 		meString.append(", loaderUser=").append(loaderUser);
 		meString.append(", summarizerUser=").append(summarizerUser);
 		meString.append(", matchmakerUser=").append(matchmakerUser);
