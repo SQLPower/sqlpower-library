@@ -79,9 +79,23 @@ public class SQL {
     }
 
 	/**
-     * convert number string to NULL if null
+     * Returns the string <code>"NULL"</code> if the argument is
+     * either null or the empty string.  Otherwise returns the
+     * argument unchanged.
+	 *
+	 * <p>This method was presumably designed for use only with
+	 * strings which represent numeric values.  It has no value when
+	 * used with strings you want to store in a VARCHAR database
+	 * column, because it doesn't quote non-null strings.  Use
+	 * <code>SQL.quote()</code> for that.
+	 *
+	 * <p>Having said that, you should also keep in mind that this
+	 * method does not ensure the argument can be converted to a
+	 * number.  You'll still get an SQLException if the string is an
+	 * invalid number and you use it in a query after filtering it
+	 * through this method.
      *
-     * @param string The string that you want to translate 
+     * @param string The string that you want to translate.
      */
     public static String nvl(String string) {
 		if(string==null || string.equals("")) {
@@ -93,7 +107,7 @@ public class SQL {
 
 
 	/** 
-	 * Return a string with the first letter capitalized, and the rest lower case
+	 * Returns a string with the first letter capitalized, and the rest lower case
 	 *
 	 * @param string The string you want to change the case of
 	 */
