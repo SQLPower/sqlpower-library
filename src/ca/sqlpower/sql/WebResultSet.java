@@ -3,7 +3,7 @@ import ca.sqlpower.util.*;
 import java.sql.*;
 import java.util.*;
 
-public class WebResultSet {
+public class WebResultSet implements Cloneable {
 
     protected ResultSet rs;
     protected ResultSetMetaData rsmd;
@@ -40,12 +40,33 @@ public class WebResultSet {
 	 * {@link #WebResultSet(ResultSet,String)} constructor calls this
 	 * method with its ResultSet argument, but the DelayedWebResultSet
 	 * class doesn't call this method until its execute() method is
-	 * called.
+	 * called.  If there was a previously-applied ResultSet, its
+	 * close() method is called.
 	 *
+	 * @param results An open JDBC ResultSet to wrap in this
+	 * WebResultSet.
 	 * @throws SQLException if a database error occurs.
 	 */
 	protected void applyResultSet(ResultSet results) throws SQLException {
-		if(rs!=null) {
+		applyResultSet(results, true);
+	}
+
+	/**
+	 * Applies the given resultset to the current WebResultSet.  The
+	 * {@link #WebResultSet(ResultSet,String)} constructor calls this
+	 * method with its ResultSet argument, but the DelayedWebResultSet
+	 * class doesn't call this method until its execute() method is
+	 * called.
+	 *
+	 * @param results An open JDBC ResultSet to wrap in this
+	 * WebResultSet.
+	 * @param closeOldRS If there was a previously-applied ResultSet
+	 * and the <code>closeOldRS</code> argument is <code>true</code>,
+	 * the old ResultSet will be closed before applying the new one.
+	 * @throws SQLException if a database error occurs.
+	 */
+	protected void applyResultSet(ResultSet results, boolean closeOldRS) throws SQLException {
+		if(closeOldRS && rs!=null) {
 			rs.close();
 		}
         rs=results;
