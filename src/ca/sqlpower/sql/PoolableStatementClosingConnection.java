@@ -22,13 +22,21 @@ public class PoolableStatementClosingConnection extends PoolableConnection {
 	List openStatements = java.util.Collections.synchronizedList(new LinkedList());
 
 	/**
+	 * Useful storage place for single-database-user connection
+	 * pooling products, because the DatabaseMetaData will give back
+	 * the master user's name rather than the current user's name.  If
+	 * your product uses this, you have to set it up yourself.
+	 */
+	protected String plUsername;
+
+	/**
 	 * Just call the superclass constructor
 	 * @param arg0
 	 * @param arg1
 	 */
 	public PoolableStatementClosingConnection(
-		Connection arg0,
-		ObjectPool arg1) {
+											  Connection arg0,
+											  ObjectPool arg1) {
 		super(arg0, arg1);
 	}
 
@@ -63,4 +71,23 @@ public class PoolableStatementClosingConnection extends PoolableConnection {
 		openStatements.clear();
 		super.close();
 	}
+
+	/**
+	 * Gets the value of plUsername
+	 *
+	 * @return the value of plUsername
+	 */
+	public String getPlUsername()  {
+		return this.plUsername;
+	}
+
+	/**
+	 * Sets the value of plUsername
+	 *
+	 * @param argPlUsername Value to assign to this.plUsername
+	 */
+	public void setPlUsername(String argPlUsername) {
+		this.plUsername = argPlUsername;
+	}
+
 }
