@@ -1,7 +1,10 @@
 package ca.sqlpower.sql;
 
+import ca.sqlpower.util.*;
+
 import java.io.*;
 import java.text.*;
+import java.util.*;
 import java.sql.SQLException;
 import java.awt.Color;
 import javax.servlet.jsp.JspWriter;
@@ -13,7 +16,7 @@ import javax.servlet.jsp.JspWriter;
  * provide an alternate HTML view as well as an applet-based graph
  * view.
  *
- * @author Jonathan Fuerth
+ * @author Jonathan Fuerth and Gillian Mereweather
  * @version $Id$
  */
 public abstract class WebResultFormatter {
@@ -158,35 +161,44 @@ public abstract class WebResultFormatter {
         return newColName.toString();
     }
 
-	/**
-	 * Replaces the first occurence of "!" in <code>format</code> with
-	 * the contents of <code>subst</code> and appends the result to
-	 * <code>toAppendTo</code>.
-	 *
-	 * @param format The format string.
-	 * @param subst The string to substitute into the format string.
-	 * @param toAppendTo The buffer which recieves the formatted text.
-	 */
-	public static void replaceAndAppend(String format,
-										String subst,
-										StringBuffer toAppendTo) {
-		int upTo=format.indexOf('!');
-		if(upTo>0) {
-			toAppendTo.append(format.substring(0, upTo));
-		}
-		if(upTo != -1) {
-			toAppendTo.append(subst);
-		}
-		if(upTo<format.length()) {
-			toAppendTo.append(format.substring(upTo+1));
-		}
-	}
-
+  	/**
+ 	 * Examines the <code>i</code>th column of with Web Result Set,
+ 	 * and fills the <code>contents</code> and <code>align</code>
+ 	 * buffers with the appropriate string values. The type of
+ 	 * formatting done depends on the web result set's idea of the
+ 	 * <code>i</code>th column's type.
+  	 *
+ 	 * @param wrs The web result set whose current row's ith column
+ 	 * should be rendered.
+ 	 * @param i The column number to render.
+ 	 * @param contents The textual contents that should be displayed
+ 	 * to the user are appended to this StringBuffer.
+ 	 * @param align The alignment information ("left", "center",
+ 	 * "right") for this column is appended to this StringBuffer.  It
+ 	 * is not a coincidence that they are the same as HTML 3.2 align
+ 	 * attributes, but you could/should use them for other output
+ 	 * formats.
+ 	 * @throws SQLException if a database error occurrs while
+ 	 * retrieving the contents of the WebResultSet record.
+ 	 * @throws NoRowidException if the field type needs rowid
+ 	 * information to render, and no column in <code>wrs</code> was
+ 	 * defined as supplying a rowid.  <code>contents</code> and
+ 	 * <code>align</code> may have already been modified if this
+ 	 * exception is thrown.
+ 	 * @throws ColumnNotDisplayableException if the type of this field
+ 	 * is such that it can't (or shouldn't) be displayed.  If this
+ 	 * exception is thrown, <code>contents</code> and
+ 	 * <code>align</code> are guaranteed to be unmodified.
+ 	 * @throws IllegalStateException if this is a HYPERLINK field and
+ 	 * <code>wrs.getColumnHyperlinks(i)</code> returns null.
+ 	 * @see FieldTypes
+  	 */
     protected void getColumnFormatted(WebResultSet wrs,
                                       int i,
                                       StringBuffer contents,
                                       StringBuffer align) 
-        throws SQLException, NoRowidException, ColumnNotDisplayableException {
+        throws SQLException, NoRowidException, ColumnNotDisplayableException,
+		IllegalStateException {
         int type=wrs.getColumnType(i);
         
         switch(type) {
@@ -288,6 +300,31 @@ public abstract class WebResultFormatter {
             align.append("center");
             contents.append(wrs.getString(i));
             break;
+
+ 		case FieldTypes.HYPERLINK:
+			align.append("center");
+ 			List hyperlinks=wrs.getColumnHyperlinks(i);
+ 			if(hyperlinks == null) {
+ 				throw new IllegalStateException
+ 					("You must supply hyperlink specs in the WebResultSet.");
+ 			}
+ 			Iterator hlIter=hyperlinks.iterator();
+ 			while(hlIter.hasNext()) {
+ 				Hyperlink link=(Hyperlink)hlIter.next();
+ 				LongMessageFormat textFormat=new LongMessageFormat(link.getText());
+ 				LongMessageFormat hrefFormat=new LongMessageFormat(link.getHref());
+ 				int colCount=wrs.getColumnCount();
+ 				String[] rowValues=new String[colCount+1];
+ 				for(int col=1; col<=colCount; col++) {
+ 					rowValues[col]=wrs.getString(col);
+ 				}
+ 				contents.append("<a href=\"");
+ 				hrefFormat.format(rowValues, contents, null);
+ 				contents.append("\">");
+ 				textFormat.format(rowValues, contents, null);
+ 				contents.append("</a><br>");
+ 			}
+			break;
 
         case FieldTypes.ROWID:
         case FieldTypes.DUMMY:
