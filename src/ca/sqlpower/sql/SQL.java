@@ -192,12 +192,21 @@ public class SQL {
     }
 	
 	/**
-	 * Uses the Oracle data dictionary to determine the primary key of
-	 * the given table.  Only works on Oracle databases.
+	 * Identical to <code>findPrimaryKey(con, "", tableName)</code>.
+	 */
+	public static List findPrimaryKey(Connection con, String tableName) throws SQLException {
+		return findPrimaryKey(con, "", tableName);
+	}
+	
+	/**
+	 * Looks up the primary key of the given table using JDBC
+	 * DatabaseMetaData.
 	 *
 	 * @param con A connection to an Oracle database.
+	 * @param schemaName The name of the schema that the desired table
+	 * belongs to, or "" to ignore schemas. CASE SENSITIVE!
 	 * @param tableName The name of the table for which you want to
-	 * know the primary key.
+	 * know the primary key. CASE SENSITIVE!
 	 * @return A List of the column names that make up the primary key
 	 * of the table.  All elements in the list are guaranteed to be of
 	 * type String.
@@ -205,26 +214,22 @@ public class SQL {
 	 * almost certainly happen if you run this method on a non-Oracle
 	 * database.
 	 */
-	public static List findPrimaryKey(Connection con, String tableName) 
+	public static List findPrimaryKey(Connection con, String schemaName, String tableName) 
 		throws SQLException {
-		Statement stmt=null;
+		ResultSet rs = null;
 		try {
-			stmt=con.createStatement();
-			ResultSet rs=stmt.executeQuery("SELECT cc.column_name"
-										   +" FROM user_cons_columns cc, user_constraints c"
-										   +" WHERE c.table_name = '"+tableName+"'"
-										   +" AND c.constraint_type='P'"
-										   +" AND cc.owner = c.owner"
-										   +" AND cc.constraint_name = c.constraint_name"
-										   +" ORDER BY cc.position");
+			System.out.println("Looking for primary key in table "+schemaName+"."+tableName);
+			
+			rs = con.getMetaData().getPrimaryKeys("", schemaName, tableName);
 			List prikey=new LinkedList();
 			while(rs.next()) {
-				prikey.add(rs.getString(1));
+				System.out.println("Adding to prikey list: "+rs.getString("COLUMN_NAME"));
+				prikey.add(rs.getString("COLUMN_NAME"));
 			}
 			return prikey;
 		} finally {
-			if(stmt != null) {
-				stmt.close();
+			if(rs != null) {
+				rs.close();
 			}
 		}
 	}
