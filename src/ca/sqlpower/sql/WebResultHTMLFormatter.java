@@ -194,18 +194,14 @@ public class WebResultHTMLFormatter extends WebResultFormatter {
     public String format(WebResultSet wrs)
 	throws SQLException, NoRowidException, IllegalStateException {
 	StringWriter out=new StringWriter();
-	formatToStream(wrs, out);
+	PrintWriter pwout=new PrintWriter(out);
+	formatToStream(wrs, pwout);
 	return out.toString();
     }
 
     public void formatToStream(WebResultSet wrs, PrintWriter out)
 	throws SQLException, NoRowidException, IllegalStateException {
-	formatToStream(wrs, out);
-    }
-
-    public void formatToStream(WebResultSet wrs, Writer writer)
-	throws SQLException, NoRowidException, IllegalStateException {
-	PrintWriter out=new PrintWriter(writer);
+	//PrintWriter out=new PrintWriter(writer);
 	int numCols=wrs.getColumnCount();
 	StringBuffer sb=new StringBuffer(256);
 	int countdownToNextHeader=repeatHeaderRow;
