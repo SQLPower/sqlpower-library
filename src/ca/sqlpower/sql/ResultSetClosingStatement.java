@@ -1,12 +1,18 @@
 package ca.sqlpower.sql;
 
 import java.sql.*;
+import org.apache.log4j.Logger;
 
 /**
  * The ResultSetClosingStatement class helps enforce the documented
  * JDBC behaviour of "when a statement closes, so does its resultset."
  */
 public class ResultSetClosingStatement implements Statement {
+
+	/**
+	 * Just a log4j logger named after this class.
+	 */
+	static Logger logger = Logger.getLogger(ResultSetClosingStatement.class);
 
 	/**
 	 * The actual statement that performs all the operations.
@@ -29,15 +35,27 @@ public class ResultSetClosingStatement implements Statement {
 		this.results=null;
 	}
  
+	/**
+	 * Closes the current resultset (if there is one) then executes
+	 * the given query.  Also logs the given sql statement at DEBUG
+	 * level before executing it.
+	 */
     public ResultSet executeQuery(String sql) throws SQLException {
 		if(results != null) {
 			results.close();
 		}
+		logger.debug(sql);
 		results=actualStatement.executeQuery(sql);
 		return results;
 	}
-	    
+
+	/**
+	 * Executes the given statement without touching the existing
+	 * resultset.  Also logs the given sql statement at DEBUG level
+	 * before executing it.
+	 */
     public int executeUpdate(String sql) throws SQLException {
+		logger.debug(sql);
 		return actualStatement.executeUpdate(sql);
 	}
 	    
@@ -157,7 +175,8 @@ public class ResultSetClosingStatement implements Statement {
 	}
 
 	/**
-	 * Closes the result set.
+	 * Closes the result set.  If a SQLException results, it is logged
+	 * at WARN level.
 	 */
 	public void finalize() {
 		try {
@@ -165,7 +184,7 @@ public class ResultSetClosingStatement implements Statement {
 				results.close();
 			}
 		} catch (SQLException e) {
-			// haha. we lose.
+			logger.warn("Couldn't close result set in finalizer: "+e);
 		}
 	}
 	/**
