@@ -55,7 +55,7 @@ public class PoolableStatementClosingConnection extends PoolableConnection {
 	 * Iterates over the list of open statements and calls close() on each one, 
 	 * ignoring any resulting SQLExceptions.
 	 */
-	public void close() throws SQLException {
+	public synchronized void close() throws SQLException {
 		Iterator stmtIt = openStatements.iterator();
 		while (stmtIt.hasNext()) {
 			Statement stmt = (Statement) stmtIt.next();
