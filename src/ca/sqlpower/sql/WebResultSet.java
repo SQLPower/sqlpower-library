@@ -292,6 +292,11 @@ public class WebResultSet {
         return rsmd.getColumnCount();
     }
 
+	/**
+	 * Returns the label which was set for this column using {@link
+	 * setColumnLabel(int,String)}, or the default column label from
+	 * the SQL query if no user-defined label was previously set.
+	 */
     public String getColumnLabel(int colNo)
         throws SQLException, ColumnNotDisplayableException {
         if(colNo == rowidColNo) {
@@ -304,6 +309,17 @@ public class WebResultSet {
             }
         }
     }
+
+	/**
+	 * Always gives back the original column name from the SQL query,
+	 * not the user-supplied label.
+	 *
+	 * @return The column label as defined in the underlying
+	 * <code>ResultSetMetaData</code>.
+	 */
+	public String getColumnName(int colNo) throws SQLException {
+		return rsmd.getColumnLabel(colNo);
+	}
 
     /**
      * retrieves the current row's unique identifier (the one having
