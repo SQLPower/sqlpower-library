@@ -73,11 +73,14 @@ public class StatementClosingPoolableConnectionFactory
 			if(!rs.next()) {
 				throw new SQLException("def_param table has no rows");
 			}
+			
+			// the schema version check used to be here.
+			// it's moved to a static attribute of the Dashboard class.
+			// it should be right near the top of the Dashboard.java file.
+			// thank you for your interest!  have a nice day.
+			//             -- Dan
+			
 
-			String schemaVersion = rs.getString(1);
-			if(schemaVersion.compareTo("4.1.2") < 0) {
-				throw new PLSchemaException("You have Power*Loader Schema version "+rs.getString(1)+" but you need a version of 4.1.2");
-			}
 		} finally {
 			if(stmt != null) {
 				stmt.close();
