@@ -1,0 +1,196 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>Power*Loader Suite Security Classes</title>
+  </head>
+
+  <body>
+
+
+    <h1>PL Security Overview</h1>
+
+	<p>This document explains the security model that applies to all
+	products in the Power*Loader suite.  The intended audience for
+	this document includes product designers, programmers who work
+	with the Power*Loader Suite, and power users and site
+	administrators of the Power*Loader Suite who are interested in all
+	the details of its security model.</p>
+
+	<a name="objects"></a>
+	<h2>Objects</h2>
+	
+	<p>An <i>object</i> in the Power*Loader security model is an
+	entity which is stored in the PL Dictionary tables.  Users may
+	interact with these objects subject to their privileges on them.</p>
+
+	<p>Examples of objects include users, groups, Power*Loader ETL
+	transactions, Power*Loader jobs, and Power*Dashboard KPIs.
+	Another section in this document outlines the full set of object
+	types, their official names, and which privileges apply to
+	them.</p>
+
+	  
+	<a name="users"></a>
+	<h2>Users</h2>
+	
+	<p>A <i>user</i> in the Power*Loader security model is an entity
+	with a login name (also called the <i>user id</i>), an optional
+	password, real name, email address, and various other
+	product-specific flags.  A user is a type of object, so the same
+	privilege and permission requirements apply to modifying user
+	objects as to other types of objects (see below for specific
+	permission explanations).</p>
+
+	<p>In the database, a user is represented by one row in the
+	PL_USER table.  The user id (login name) is stored in the USER_ID
+	column, and the MD5 hash of the password is stored in the PASSWORD
+	column (encoded as an ASCII string of the hexadecimal
+	representation of the hash).  If a user's password in the PL_USER
+	table is null, then application programs must accept any password
+	(including blank) for that user.  This is useful for working in
+	non-connection pooled mode.</p>
+
+	<h3>Connection Pooling and Single Login</h3>
+
+	<p>The web-based front ends work fastest and scale best when
+	database connection pooling is employed.  For connection pooling
+	to work effectively, all users must interact with the database
+	through a single database user account which has full permissions,
+	and therefore all privilege limits have to be enforced by the
+	application (as opposed to being enforced by the database server's
+	own security).</p>
+
+	<p>When working in pooled (aka single login) mode in the web
+	applications, it is important that each user in the PL_USER table
+	has a non-null password (although this is not enforced).  However,
+	when working in non-pooled mode, it is easiest for the system
+	administrator if all user passwords are set to null: The user will
+	supply their database user id and password, and the secondary
+	password check will pass regardless of whether the database
+	password has changed.</p>
+
+	<p>Since the client/server applications never work in connection
+	pooling mode, they always rely on the database authentication, and
+	disregard the password column during login.</p>
+
+	<a name="user_system_privs"></a>
+	<h3>User System Privileges</h3>
+
+	<p>System administrators and regular users with the necessary
+	permissions (discussed below) can grant specific permissions on
+	all objects of a certain type to specific users.  A user with
+	these so-called <i>system privileges</i> is allowed to perform all
+	specified operations on all objects of the given type.</p>
+
+
+	<a name="user_object_privs"></a>
+	<h3>User Object Privileges</h3>
+	
+	<p>System administrators and regular users with the necessary
+	permissions (discussed below) can grant specific permissions on a
+	specific object to a specific user.  Such a set of privileges is
+	represented by a row in the USER_OBJECT_PRIVS table in the
+	database.  These <i>object privileges</i> augment any system
+	privileges which the user may also have on the object.  See the <a
+	href="#determining_privs">Determining the Privilege Set</a>
+	section for details.</p>
+
+
+	<a name="groups"></a>
+	<h2>Groups</h2>
+
+	<p>A <i>group</i> is an entity which can have permissions on
+	objects much like a user can have permissions on objects.  Zero or
+	more users can belong to a group, and such users are referred to
+	as the group's <i>members</i>.  All members of a group inherit all
+	of the permissions which apply to that group.</p>
+
+	<p>In the database, a group is represented by a row in the
+	PL_GROUP table.  Group membership is expressed through rows in the
+	USER_GROUP table, which associates user IDs to group names.</p>
+
+	<p>There are two special group names: PL_ADMIN and PL_SUPERUSER.
+	Membership in the PL_ADMIN group gives a user all permissions on
+	all objects, and such a user is referred to as a system
+	administrator.  Members of the PL_SUPERUSER group are allowed to
+	bypass data restriction filters in the Power*Dashboard, and these
+	users are referred to as omniscient users.</p>
+	
+
+	<a name="group_system_privs"></a>
+	<h3>Group System Privileges</h3>
+
+	<p>Group system privileges work much like user system privileges.
+	System administrators and users with the necessary permissions can
+	grant a permission set on a whole class of objects to a specific
+	group.  Such a permission set is referred to as a <i>group system
+	privilege</i>.</p>
+
+
+	<a name="group_object_privs"></a>
+	<h3>Group Object Privileges</h3>
+
+	<p>A group object privilege works much like a user object
+	privilege: It grants permission for a single group to perform a
+	certain set of operations on a certain object.  These priveleges
+	augment any system priveleges granted to the same group on all
+	objects of a certain type.</p>
+
+
+
+	<a name="determining_privs"></a>
+	<h2>Determining the Effective Privilege Set</h2>
+
+    <p>This section describes how to combine permissions of the various types 
+    (<a href="user_system_privs">user system privileges</a>,
+    <a href="user_object_privs">user object privileges</a>,
+    <a href="group_system_privs">group system privileges</a>, and
+    <a href="group_object_privs">group object privileges</a>; called the
+    <i>specific permissions</i>) into the one privilege set that
+    determines which actions a user can perform on a given object.
+    This permission set is called the <i>effective privileges</i> on
+    the given object.</p>
+
+	<p>To determine the effective privilege set for a given object,
+	applications take the logical OR of all applicable specific
+	permission sets.  For instance, say user <code>FRED</code> belongs
+	to groups <code>ETL_DEVELOPMENT</code> and
+	<code>ETL_REPORTING</code>, and the following permissions are in place:</p>
+
+	<table>
+	  <tr><th colspan=8>Group System Privileges</th></tr>
+
+	  <tr><th>Group Name</th><th>Object Type</th><th>Create Any</th><th>Modify Any</th><th>Delete Any</th><th>Execute Any</th><th>Grant Any</th><th>Notify Any</th></tr>
+
+	  <tr><td>ETL_DEVELOPMENT</td> <td>TRANS</td> <td>Y</td>         <td>Y</td>         <td>N</td>         <td>Y</td>          <td>N</td>        <td>N</td></tr>
+	  
+	  <tr><td>ETL_REPORTING</td>   <td>TRANS</td> <td>N</td>         <td>N</td>         <td>N</td>         <td>Y</td>          <td>N</td>        <td>N</td></tr>
+	</table>
+
+	<table>
+	  <tr><th colspan=8>Group Object Privileges</th></tr>
+
+	  <tr><th>Group Name</th><th>Object Type</th><th>Object Name</th><th>Modify</th><th>Delete</th><th>Execute</th><th>Grant</th><th>Notify</th></tr>
+
+	  <tr><td>ETL_DEVELOPMENT</td> <td>TRANS</td> <td>LOAD_POP</td>  <td>Y</td>      <td>Y</td>    <td>Y</td>      <td>N</td>    <td>N</td></tr>
+	  
+	</table>
+
+	<a name=""></a>
+	<h2>Required Privilege Sets for Different Operations</h2>
+
+	<a name=""></a>
+	<h3>Logging into an application</h3>
+	
+	<p></p>
+	
+	<h3>Manipulating Objects</h3>
+
+    <hr>
+    <address><a href="mailto:fuerth@sqlpower.ca">Jonathan Fuerth</a></address>
+<!-- Created: Mon Dec 20 11:24:31 EST 2004 -->
+<!-- hhmts start -->
+Last modified: Mon Dec 20 18:23:23 EST 2004
+<!-- hhmts end -->
+  </body>
+</html>
