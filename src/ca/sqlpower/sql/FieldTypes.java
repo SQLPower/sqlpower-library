@@ -61,9 +61,8 @@ public class FieldTypes {
     public static final int PERCENT = 7;
 
     /**
-     * Indicates a data field representing a date, stored as a
-     * java.util.Date object (or apropriate to the
-     * java.sql.ResultSet.getDate() method).
+     * Indicates a data field representing a date or timestamp
+     * (date+time).
      */
     public static final int DATE = 8;
 

@@ -590,6 +590,15 @@ public class WebResultSet implements Cloneable {
         return new java.sql.Date(date.getTime());
     }
 
+	/**
+	 * Just returns <code>rs.getTimestamp(colNo)</code>.  Does not do
+	 * the funny string-date conversion stuff like {@link #getDate}
+	 * does.
+	 */
+	public Timestamp getTimestamp(int colNo) throws SQLException {
+		return rs.getTimestamp(colNo);
+	}
+
     public float getFloat(int colNo) throws SQLException {
         return rs.getFloat(colNo);
     }
