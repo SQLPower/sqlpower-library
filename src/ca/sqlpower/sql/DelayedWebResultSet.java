@@ -10,10 +10,14 @@ public class DelayedWebResultSet extends WebResultSet {
 
 	/**
 	 * Holds the set of cached resultset objects (keyed on SQL query
-	 * string).  The maximum number of members for this cache is
-	 * specified as 100.
+	 * string).  Never reference this directly; use getResultCache(),
+	 * which can be overridden by subclasses.  Also, never call
+	 * put(key,value) directly on the cache; use
+	 * addResultsToCache(key,value) because that can also be
+	 * overridden.
 	 */
-	protected static Cache resultCache = new SynchronizedCache(new LeastRecentlyUsedCache(100));
+	private static Cache resultCache = null;
+	private static Object resultCacheMutex = new Object();
 
 	protected int givenColCount;
 
@@ -120,23 +124,18 @@ public class DelayedWebResultSet extends WebResultSet {
 		ResultSet newRS=null;
 
 		if(cacheEnabled) {
-			System.out.print
-				("DelayedResultSet.execute: Finding results in cache of "
-				 + resultCache.size()
-				 + " items: ");
 				
 			String cacheKey = sqlQuery 
 				+"&"+con.getMetaData().getURL() 
 				+"&"+con.getMetaData().getUserName();
 			
-			CachedRowSet results = (CachedRowSet) resultCache.get(cacheKey);
+			CachedRowSet results = (CachedRowSet) getResultCache().get(cacheKey);
 			if (results != null) {
 				results = (CachedRowSet) results.createShared();
 				
 				// reset cursor, which is likely afterLast right now
 				results.beforeFirst();
 				
-				System.out.println("HIT ("+results.size()+" rows)");
 				// we don't want to close cached resultset
 				closeOldRS=false;
 			} else {
@@ -151,8 +150,7 @@ public class DelayedWebResultSet extends WebResultSet {
 						stmt.close();
 					}
 				}
-				resultCache.put(cacheKey, results);
-				System.out.println("MISS ("+results.size()+" rows)");
+				addResultsToCache(cacheKey, results);
 			}
 			newRS=results;
 		} else {
@@ -221,12 +219,43 @@ public class DelayedWebResultSet extends WebResultSet {
 
 	/**
 	 * Returns the cache that the DelayedWebResultSets in this JVM are
-	 * using.  You should not use this method for normal programming;
-	 * it is a backdoor for the statistics-reporting
-	 * CacheStatsServlet.
+	 * using.  You should always use this method for getting the
+	 * cache; it can be overridden by subclasses so it might not
+	 * reference the private static resultCache variable.
 	 */
-	public static Cache getResultCache() {
+	public Cache getResultCache() {
+		if (resultCache == null) {
+			synchronized (resultCacheMutex) {
+				if (resultCache == null) {
+					resultCache = new SynchronizedCache(new LeastRecentlyUsedCache(100));
+				}
+			}
+		}
 		return resultCache;
+	}
+	
+	/**
+	 * Exists mainly as a backdoor for the CacheStatsServlet.
+	 */
+	public static Cache staticGetResultCache() {
+		if (resultCache == null) {
+			synchronized (resultCacheMutex) {
+				if (resultCache == null) {
+					resultCache = new SynchronizedCache(new LeastRecentlyUsedCache(100));
+				}
+			}
+		}
+		return resultCache;
+	}
+
+	/**
+	 * This method adds the given results to the cache under the given
+	 * key.  It exists primarily as a hook for subclasses to use
+	 * fancier caches: if you override this, you can use custom put()
+	 * methods on your cache.
+	 */
+	protected void addResultsToCache(String key, CachedRowSet results) {
+		getResultCache().put(key, results);
 	}
 
 	/**
