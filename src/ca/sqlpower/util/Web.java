@@ -8,7 +8,7 @@ import java.util.*;
  * Some static methods that help with generating web applications.
  *
  * @author Jonathan Fuerth
- * @version $CVS$
+ * @version $Id$
  */
 public class Web {
     /**
