@@ -39,7 +39,7 @@ public class Pool {
         	GenericObjectPool.Config poolConfig = new GenericObjectPool.Config();
         	System.out.println("Pool creating new pool for "+poolName);
   
-        	poolConfig.maxActive = 5;
+        	poolConfig.maxActive = 25;
         	poolConfig.maxIdle = 2;
         	poolConfig.maxWait = 10000;
         	poolConfig.minEvictableIdleTimeMillis = 5000;
