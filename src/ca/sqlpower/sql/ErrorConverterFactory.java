@@ -29,7 +29,8 @@ public class ErrorConverterFactory {
 		} else if (message.startsWith("ORA")
 				   || message.indexOf("THIN") >= 0
 				   || message.indexOf("Io exception: The Network Adapter") >= 0
-				   || message.indexOf("Invalid column name") >= 0) {
+				   || message.indexOf("invalid arguments in call") >= 0
+				   || message.indexOf("Invalid column name") >= 0) {			
 			return oracleErrorConverter;
 		}
 		throw new IllegalArgumentException("unrecognized database type for message: "+message);
