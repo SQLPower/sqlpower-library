@@ -16,16 +16,12 @@ public interface Cache extends Map {
 	/**
 	 * Sets the maximum member count, which influences the behaviour
 	 * of <code>itemsInserted</code>.
-	 *
-	 * @see #maxMembers
 	 */
 	public void setMaxMembers(int argMaxMembers);
 
 	/**
 	 * Gets the maximum member count, which influences the behaviour
 	 * of <code>itemsInserted</code>.
-	 *
-	 * @see #maxMembers
 	 */
 	public int getMaxMembers();
 
