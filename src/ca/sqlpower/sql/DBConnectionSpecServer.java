@@ -19,10 +19,20 @@ public interface DBConnectionSpecServer extends Remote {
 	 */
 	public Collection getAvailableDatabases() throws RemoteException;
 
+	/** 
+	 * Returns true if the password in the argument matches the administrative
+	 * password on the RMI server.  Returns false otherwise.
+	 */
 	public boolean checkPassword(String password) throws RemoteException;
 	
-
-		
+	/**
+	 * This sets the list of available databases on the RMI server.
+	 * 
+	 * @param dbList a Collection of DBConnectionSpec objects.
+	 * @param oldPass the current administrative password (required)
+	 * @param newPass if non-null and non-empty, the password will
+	 * be changed to this password.
+	 */
 	public void setAvailableDatabases(Collection dbList, String oldPass, String newPass) 
 		throws RemoteException;
 

@@ -33,7 +33,7 @@ public class DBConnectionSpecServerImpl
 	}
 
 	/**
-	 * @see ca.sqlpower.sql.DBConnectionSpecServer#getList()
+	 * @see ca.sqlpower.sql.DBConnectionSpecServer
 	 */
 	public Collection getAvailableDatabases() throws RemoteException {
 		Collection databases = null;
@@ -86,6 +86,9 @@ public class DBConnectionSpecServerImpl
 	}
 
 
+	/**
+	 * @see ca.sqlpower.sql.DBConnectionSpecServer
+	 */
 	public void setAvailableDatabases(Collection dbList, String oldPass, String newPass)
 		throws RemoteException {
 		try {
@@ -96,6 +99,9 @@ public class DBConnectionSpecServerImpl
 		}
 	}
 
+	/**
+	 * @see ca.sqlpower.sql.DBConnectionSpecServer
+	 */
 	public boolean checkPassword(String argPassword) throws RemoteException {
 		try {
 			InputStream xmlStream = new FileInputStream(xmlFileName);
@@ -112,6 +118,14 @@ public class DBConnectionSpecServerImpl
 		}
 	}
 
+	/**
+	 * This uses Apache Xalan's xml-to-stream converter to build an xml
+	 * document from the list of DBConnectionSpecs in the standard
+	 * SQLPower format, and saves it to a file on the disk.
+	 * 
+	 * Note, this uses xml functionality beyond what JAXP offers, so Xalan
+	 * is required, not just any JAXP parser.
+	 */
 	protected synchronized void writeDBSpecsToOutputStream(
 		Collection dbspecs, String oldPassword, String newPassword)
 		throws ParserConfigurationException, IOException {
