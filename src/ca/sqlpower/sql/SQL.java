@@ -29,4 +29,11 @@ public class SQL {
 	    } 
 	return(escaped.toString()); 
     } 
+
+    public static boolean decodeInd(String indicator) {
+	if(indicator.charAt(0) == 'Y') {
+	    return true;
+	}
+	return false;
+    }
 }

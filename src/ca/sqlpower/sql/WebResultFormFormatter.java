@@ -73,6 +73,16 @@ public class WebResultFormFormatter extends WebResultFormatter {
 		out.print("\" />");
 		break;
 
+	    case FieldTypes.BOOLEAN:
+		out.print("   <input type=\"checkbox\" name=\"");
+		out.print(label);
+		out.print("\" ");
+		if(contents.toString().equals("True")) {
+		    out.print("checked=\"checked\"");
+		}
+		out.print(" />");
+		break;
+
 	    default:
 		out.print("   <input type=\"text\" length=\"30\" name=\"");
 		out.print(label);

@@ -155,7 +155,7 @@ public abstract class WebResultFormatter {
 	case FieldTypes.BOOLEAN:
 	    align.append("center");
 	    String tmp=wrs.getString(i);
-	    if(tmp != null) {
+	    if(tmp != null && SQL.decodeInd(tmp)) {
 		contents.append("True");
 	    } else {
 		contents.append("False");
