@@ -157,7 +157,8 @@ public class DBConnectionSpec implements Serializable {
 	
 	/**
 	 * Looks up a database connection spec by hostname, connection
-	 * port number, and instance (database) name.
+	 * port number, and instance (database) name.  The search is
+	 * case-insensitive.
 	 *
 	 * @param dbcsList a java.util.Collection of DBConnectionSpec objects.
 	 * @param dbHostName The DNS name or IP address of the database
@@ -179,11 +180,13 @@ public class DBConnectionSpec implements Serializable {
 													   String dbHostName,
 													   int dbPort,
 													   String dbInstanceName) {
+		dbHostName=dbHostName.toUpperCase();
+		dbInstanceName=dbInstanceName.toUpperCase();
 		DBConnectionSpec dbcs=null;
 		Iterator it=dbcsList.iterator();
 		while(it.hasNext()) {
 			DBConnectionSpec temp=(DBConnectionSpec)it.next();
-			String url=temp.getUrl();
+			String url=temp.getUrl().toUpperCase();
 			if(url.indexOf(dbHostName) >= 0 
 			   && url.indexOf(String.valueOf(dbPort)) >= 0 
 			   && url.indexOf(dbInstanceName) >= 0) {
