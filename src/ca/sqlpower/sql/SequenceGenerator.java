@@ -43,4 +43,13 @@ public abstract class SequenceGenerator {
         throw new IllegalArgumentException(
                "The driver class "+dbClass+" is not recognised.");
     }
+
+	/**
+	 * Tells a SequenceGenerator instance that you no longer need it.
+	 * This version does nothing, but the Oracle subclass (for
+	 * instance) closes the database connection.
+	 */
+	public void close() throws SQLException {
+		return;
+	}
 }
