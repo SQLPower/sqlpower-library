@@ -38,4 +38,11 @@ public interface Cache extends Map {
 	 * as the last flush date.
 	 */
 	public void flush();
+	
+	/**
+	 * Returns the instance of CacheStats which contains useful
+	 * statistics for tuning this cache.
+	 */
+	public CacheStats getStats();
+
 }

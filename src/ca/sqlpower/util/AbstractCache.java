@@ -17,8 +17,9 @@ public abstract class AbstractCache extends HashMap implements Cache, java.io.Se
 	
 	public AbstractCache(int initialMaxMembers) {
 		super();
-		maxMembers=initialMaxMembers;
-		lastFlushDate=new Date();
+		maxMembers = initialMaxMembers;
+		lastFlushDate = new Date();
+		stats = new CacheStats();
 	}
 
 	/**
@@ -35,6 +36,13 @@ public abstract class AbstractCache extends HashMap implements Cache, java.io.Se
 	 * #flush()} method is called.
 	 */
 	protected Date lastFlushDate;
+
+	/**
+	 * This object gets notified when things happen, so that
+	 * statistics can be gathered to help administrators tune the
+	 * cache parameters.
+	 */
+	protected CacheStats stats;
 
 	/**
 	 * Whenever an item is inserted (using <code>put</code> or
@@ -94,7 +102,7 @@ public abstract class AbstractCache extends HashMap implements Cache, java.io.Se
 		
 		Object[] theKey=new Object[1];
 		theKey[0]=key;
-		itemsInserted(theKey);
+		internalItemsInserted(theKey);
 
 		return retval;
 	}
@@ -109,7 +117,7 @@ public abstract class AbstractCache extends HashMap implements Cache, java.io.Se
 	 */
 	public void putAll(Map t) {
 		super.putAll(t);
-		itemsInserted(t.keySet().toArray());
+		internalItemsInserted(t.keySet().toArray());
 	}
 
 	/**
@@ -119,7 +127,7 @@ public abstract class AbstractCache extends HashMap implements Cache, java.io.Se
 	 */
 	public Object get(Object key) {
 		Object retval=super.get(key);
-		itemRequested(key, retval!=null);
+		internalItemRequested(key, retval!=null);
 		return retval;
 	}
 
@@ -136,6 +144,38 @@ public abstract class AbstractCache extends HashMap implements Cache, java.io.Se
 	 */
 	public void flush() {
 		super.clear();
+		stats.cacheFlush();
 		lastFlushDate = new Date();
+	}
+
+	/**
+	 * Returns the statistics-tracking instance for this cache.
+	 */
+	public CacheStats getStats() {
+		return stats;
+	}
+
+	/**
+	 * Handles statistics gathering and calls the abstract
+	 * itemsInserted hook.
+	 */
+	private void internalItemsInserted(Object[] keys) {
+		stats.totalInserted += keys.length;
+		itemsInserted(keys);
+	}
+
+	/**
+	 * Handles statistics gathering and calls the abstract
+	 * itemsInserted hook.
+	 */
+	private void internalItemRequested(Object key, boolean wasPresent) {
+		stats.totalRequested++;
+		if (wasPresent) {
+			stats.totalHits++;
+		} else {
+			stats.totalMisses++;
+		}
+
+		itemRequested(key, wasPresent);
 	}
 }

@@ -15,6 +15,7 @@ public class SynchronizedCache implements Cache, java.io.Serializable {
 	public synchronized int getMaxMembers() { return cache.getMaxMembers(); }
 	public synchronized Date getLastFlushDate() { return cache.getLastFlushDate(); }
 	public synchronized void flush() { cache.flush(); }
+	public synchronized CacheStats getStats() { return cache.getStats(); }
 
 	// MAP METHODS (copied from j2sdk 1.3.1 source code Collections.java)
 	private Object mutex = this;

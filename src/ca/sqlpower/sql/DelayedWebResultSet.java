@@ -220,6 +220,16 @@ public class DelayedWebResultSet extends WebResultSet {
 	}
 
 	/**
+	 * Returns the cache that the DelayedWebResultSets in this JVM are
+	 * using.  You should not use this method for normal programming;
+	 * it is a backdoor for the statistics-reporting
+	 * CacheStatsServlet.
+	 */
+	public static Cache getResultCache() {
+		return resultCache;
+	}
+
+	/**
 	 * Behaves like close() in WebResultSet unless the
 	 * DelayedWebResultSet result cache is turned on.  In that case,
 	 * does nothing because the database resources are already released.
