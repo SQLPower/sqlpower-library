@@ -172,6 +172,10 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 					if (d1 < d2) diff = -1;
 					else if (d1 > d2) diff = 1;
 					else diff = 0;
+				} else if (r1[sc.columnIndex - 1] instanceof String && r2[sc.columnIndex - 1] instanceof String) {
+					String s1 = ((String) r1[sc.columnIndex - 1]);
+					String s2 = ((String) r2[sc.columnIndex - 1]);
+					diff = s1.compareToIgnoreCase(s2);
 				} else diff = ((Comparable) r1[sc.columnIndex - 1]).compareTo(r2[sc.columnIndex - 1]);
 
 				if (diff != 0) {
