@@ -24,11 +24,31 @@ public class WebResultSet {
 	public String emptyMessage; // the message to show when the result set is empty
 
     public WebResultSet(ResultSet results, String query) throws SQLException {
+        sqlQuery=query;
+		applyResultSet(results);
+		initMembers(rsmd.getColumnCount());
+	}
+
+	/**
+	 * A do-nothing constructor.
+	 */
+	protected WebResultSet() {}
+
+	/**
+	 * Applies the given resultset to the current WebResultSet.  This
+	 * can only be done once per instance of WebResultSet.  The {@link
+	 * WebResultSet(ResultSet,String)} constructor calls this method
+	 * with its ResultSet argument, but the DelayedWebResultSet class
+	 * doesn't call this method until its execute() method is called.
+	 *
+	 * @throws SQLException if a database error occurs.
+	 */
+	protected void applyResultSet(ResultSet results) throws SQLException {
         rs=results;
         rsmd=rs.getMetaData();
-        sqlQuery=query;
+	}
 
-        int cols=rsmd.getColumnCount();
+	protected void initMembers(int cols) {
         columnFilter=new ColumnFilter[cols];
         columnChoices=new List[cols];
         columnMutexList=new List[cols];
