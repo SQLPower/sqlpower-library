@@ -4,8 +4,6 @@ import org.apache.commons.dbcp.*;
 import org.apache.commons.pool.*;
 import org.apache.commons.pool.impl.*;
 
-import ca.sqlpower.dashboard.*;
-
 import java.util.*;
 import java.sql.*;
 
@@ -35,9 +33,9 @@ public class Pool {
 	 * username, and password are re-used. This essentially creates one pool
 	 * per unique database/user combination.
 	 */
-	public Pool(LoginSession ls, DBConnectionSpec dbcs) throws Exception {
+	public Pool(DBConnectionSpec dbcs) throws Exception {
 		this.dbcs = dbcs;
-        poolName =  ls.getUsername()+"-"+ls.getPassword()+"-"+dbcs.getName();
+        poolName =  dbcs.getUser()+"-"+dbcs.getName();
         dataSource = (PoolingDataSource) pools.get(poolName);
         connectionPool = (ObjectPool) objPools.get(poolName); // for debugging
         
@@ -56,7 +54,7 @@ public class Pool {
 
 		    connectionPool = new GenericObjectPool(null,poolConfig);
 
-		    ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(dbcs.getUrl(),ls.getUsername(),ls.getPassword());
+		    ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(dbcs.getUrl(),dbcs.getUser(),dbcs.getPass());
         	PoolableConnectionFactory poolableConnectionFactory = new StatementClosingPoolableConnectionFactory(connectionFactory,connectionPool,null,null,false,true);
 			poolableConnectionFactory.setValidationQuery("select 1 from def_param");
 	        this.dataSource = new PoolingDataSource(connectionPool);
