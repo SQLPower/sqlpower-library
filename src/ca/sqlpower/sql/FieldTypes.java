@@ -108,9 +108,17 @@ public class FieldTypes {
     public static final int MUTEX_CHECKBOX = 13;
 
     /**
+     * Indicates a data field representing a password.  Its exact
+     * value should not be displayed to the user, but it's ok to
+     * indicate the presence or absence of a value ("*****" vs
+     * "none").
+     */
+    public static final int PASSWORD = 14;
+
+    /**
      * It is guaranteed that no type code's value exceeds LAST_TYPE.
      */
-    public static final int LAST_TYPE=13;
+    public static final int LAST_TYPE=14;
 
     /**
      * This class is just a container for the type values; it cannot

@@ -66,11 +66,21 @@ public class WebResultFormFormatter extends WebResultFormatter {
 	    out.println(beautifyHeading(label.toString()));
 	    out.println("  </td>");
 	    out.println("  <td>");
-	    out.print("   <input type=\"text\" length=\"30\" name=\"");
-	    out.print(label);
-	    out.print("\" value=\"");
-	    out.print(contents.toString());
-	    out.println("\" />");
+	    switch(wrs.getColumnType(cell+1)) {
+	    case FieldTypes.PASSWORD:
+		out.print("   <input type=\"password\" length=\"30\" name=\"");
+		out.print(label);
+		out.print("\" />");
+		break;
+
+	    default:
+		out.print("   <input type=\"text\" length=\"30\" name=\"");
+		out.print(label);
+		out.print("\" value=\"");
+		out.print(contents.toString());
+		out.println("\" />");
+		break;
+	    }
 	    out.println("  </td>");
 	    if(col==numHTMLCols-1) {
 		col=0;
