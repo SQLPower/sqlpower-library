@@ -56,9 +56,20 @@ public class ResultSetClosingStatement implements Statement {
 		if (results != null) {
 			results.close();
 		}
-		logger.debug(sql);
+		long startTime = 0L;
+		long queryTime = 0L;
 		lastQuery = sql;
+		// 
+		if (logger.isDebugEnabled()) {
+			logger.debug(sql.hashCode() + ", " + sql);
+			startTime = System.currentTimeMillis();
+		}
 		results = actualStatement.executeQuery(sql);
+		//
+		if (logger.isDebugEnabled()) {
+			queryTime = System.currentTimeMillis() - startTime;
+			logger.debug("low level query time for " + sql.hashCode() + " (ms): " + queryTime);
+		}
 		return results;
 	}
 
