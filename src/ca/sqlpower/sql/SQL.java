@@ -276,6 +276,25 @@ public class SQL {
 		}
 	}
 
+	/**
+	 * Supplies a SQL expression that evaulates to a date (to the nearest
+     * second).
+	 */
+	public static String escapeDateTime(Connection con, java.util.Date date) throws SQLException {
+		if (date == null) {
+			return "null";
+		} else {
+			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			if (DBConnection.isOracle(con)) {
+				return "TO_DATE('"+df.format(date)+"','YYYY-MM-DD HH24:MI:SS')";
+			} else {
+				// most JDBC drivers support {d 'yyyy-MM-dd hh:mm:ss'} style escape
+				return "{d '"+df.format(date)+"'}";
+			}
+		}
+	}
+
+
     /**
      * Converts the character representation of a YES/NO value into
      * boolean.
