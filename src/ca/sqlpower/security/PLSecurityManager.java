@@ -6,9 +6,12 @@ import java.sql.*;
 import java.util.*;
 import ca.sqlpower.sql.*;
 import ca.sqlpower.util.UnknownFreqCodeException;
+import org.apache.log4j.Logger;
 
 
 public class PLSecurityManager implements java.io.Serializable {
+
+	private static final Logger logger = Logger.getLogger(PLSecurityManager.class);
 
 	public static final String MODIFY_PERMISSION = "permission.modify";
 	public static final String DELETE_PERMISSION = "permission.delete";
@@ -40,11 +43,28 @@ public class PLSecurityManager implements java.io.Serializable {
 	 */
 	public PLSecurityManager(Connection con, String username, String password)
 		throws SQLException, PLSecurityException, UnknownFreqCodeException {
+			// password is required
+			this(con,username,password,true);	
+	}
+
+	/**
+	 * Authenticates the given username/pasword combination against
+	 * the PL_USER table.
+	 *
+	 * @throws PLSecurityException if the username and password
+	 * credentials are not valid for the given database connection.
+	 */
+	public PLSecurityManager(Connection con, String username, String password, boolean passwordRequired)
+		throws SQLException, PLSecurityException, UnknownFreqCodeException {
 		if (password == null) {
 			throw new NullPointerException("null password not allowed");
 		}
-		principal = PLUser.findByPrimaryKey(con, username, password);
+		if (!passwordRequired) {
+			logger.error("WARNING: YOU ARE USING THE PL SECURITY MANAGER IN INSECURE MODE!!!");
+		}
+		principal = PLUser.findByPrimaryKeyDoNotUse(con, username, password, passwordRequired);
 	}
+
 
 	/**
 	 * Returns true if and only if the given user has access to

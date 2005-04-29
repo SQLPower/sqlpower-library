@@ -249,6 +249,61 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 		return (PLUser) oneUser.get(0);
 	}
 
+
+
+    /**
+	 * Loads the named user from the database referenced by
+	 * <code>con</code>.
+	 *
+	 * @param con An open Connection to a database conforming to the
+	 * latest PL schema.
+	 * @param userId The name of the user which should be retrieved.
+	 * @param password If non-null, the user will only be loaded if
+	 * the password matches the password in the database.  If null,
+	 * the user will be loaded regardless of password.
+     * @param passwordRequired if this is false, then don't match on
+     * password.  This may seem to defeat the whole purpose of the 
+     * the security model, but this is exactly how all of the other 
+     * client tools work.  A stern logger.error statement will
+     * be issued in the event that this security mode is being used.
+     * It should never be used like this in a webapp.
+	 *
+	 * @return A new, populated PLUser object which corresponds to the
+	 * named database record, or <code>null</code> if no such record
+	 * exists.
+	 * @exception SQLException if a database error occurs
+	 * @exception PLSecurityException if the user id and/or password
+	 * are invalid for the given connection.
+     */
+	public static PLUser findByPrimaryKeyDoNotUse(Connection con,
+										  String userId,
+										  String password, 
+                                          boolean passwordRequired)
+
+		throws SQLException, ca.sqlpower.util.UnknownFreqCodeException,
+			   PLSecurityException {
+		
+		if (userId == null) {
+			throw new NullPointerException("You must specify a userId");
+		}
+		
+		List oneUser = null;
+		if (passwordRequired) {
+			// pass through to the ordinary call
+			oneUser = find(con, userId, password, false);
+		} else {
+			// use the special call which does not check passwords
+			oneUser = find(con, userId, password, false, false);
+		}
+
+		if (oneUser != null) {
+			return (PLUser) oneUser.get(0);		
+		} else {
+			throw new IllegalStateException("find() user did not return anything!");
+		}	
+	}
+
+
 	/**
 	 * Returns a List of PLUsers comprising all users defined in the
 	 * given database.
@@ -264,6 +319,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			   PLSecurityException {
 		return find(con, searchPrefix, null, true);
 	}
+
 
 	/**
 	 * Does the database grovelling for findByPrimaryKey and findAll.
@@ -295,6 +351,49 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 							   boolean searchByPrefix)
 		throws SQLException, ca.sqlpower.util.UnknownFreqCodeException,
 			   PLSecurityException {
+			return find(con,userId,password,searchByPrefix,true);
+	}
+
+	/**
+	 * Does the database grovelling for findByPrimaryKey and findAll.
+	 *
+	 * @param con An open connection
+	 * @param userId The user to loop up, or null for all users
+	 * @param password The password for this user (if this is for
+	 * logging in a specific user), or null to retrieve users
+	 * regardless of password.  Also note that a NULL password in the
+	 * database is considered a match for anything passed to the
+	 * find() method (including but not limited to null).
+     * @param passwordRequired if this is false, then don't match on
+     * password.  This may seem to defeat the whole purpose of the 
+     * the security model, but this is exactly how all of the other 
+     * client tools work.  A stern logger.error statement will
+     * be issued in the event that this security mode is being used.
+     * It should never be used like this in a webapp.
+	 * @return A List of PLUser objects with:
+	 * <ul>
+	 * <li>0 PLUser objects if userId is non-null and there is no such 
+	 * username/password combination
+	 * <li>1 PLUser object if userId is non-null, password is null,
+	 * and userId is a valid ID of a user in the database
+	 * <li>1 PLUser object if userId is a valid userid and password is
+	 * that user's password
+	 * <li>0 or more PLUser objects if userId is null
+	 * </ul>
+	 * @throws IllegalArgumentException if userId is null and password
+	 * is non-null.
+	 * @throws PLSecurityException if a userId was specified but no
+	 * such user exists (also if userid and password are specified and
+	 * there is no such userid/password combination).
+	 */
+	protected static List find(Connection con, String userId, String password,
+							   boolean searchByPrefix, boolean passwordRequired)
+		throws SQLException, ca.sqlpower.util.UnknownFreqCodeException,
+			   PLSecurityException {
+
+		if (!passwordRequired) {
+			logger.error("WARNING: YOU ARE USING THE PL USER IN INSECURE MODE!!!");
+		}			
 
 		if (userId == null && password != null) {
 			throw new IllegalArgumentException("You can't look up a user by password");
@@ -322,9 +421,12 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 				} else {
 					sql.append(" WHERE user_id = ").append(SQL.quote(userId));
 				}
-				if (password != null) {
-					sql.append(" AND (password = ").append(SQL.quote(cryptedPassword));
-					sql.append(" OR password IS NULL)");
+				// don't check the password unless we're told to (yes, I know this is weird)
+				if (passwordRequired) {					
+					if (password != null) {
+						sql.append(" AND (password = ").append(SQL.quote(cryptedPassword));
+						sql.append(" OR password IS NULL)");
+					}
 				}
 			}
 			sql.append(" ORDER BY user_id");
