@@ -3,6 +3,7 @@ package ca.sqlpower.sql;
 import java.io.Serializable;
 import java.util.*;
 import java.beans.*;
+import ca.sqlpower.utils.SQLPowerUtils;
 
 /**
  * The DBConnectionSpec class is a simple bean whose instances
@@ -141,6 +142,30 @@ public class DBConnectionSpec implements Serializable, Comparable {
 	public int compareTo(Object other) {
 		return new Integer(this.getSeqNo()).compareTo(new Integer(((DBConnectionSpec) other).getSeqNo()));
 	}
+
+	public boolean equals(Object other) {
+		// identical object reference
+		if (this == other) {
+			return true;
+		}
+		// correct type
+		if (!(other instanceof DBConnectionSpec)) {
+			return false;
+		}
+		
+		DBConnectionSpec otherDbcs = (DBConnectionSpec) other;
+	
+		// protect from null pointer exceptions by wrapping equality calls
+		if (getSeqNo() == otherDbcs.getSeqNo() &&
+			SQLPowerUtils.areEqual(getDriverClass(),otherDbcs.getDriverClass()) &&
+			SQLPowerUtils.areEqual(getUrl(),otherDbcs.getUrl()) &&
+			SQLPowerUtils.areEqual(getUser(),otherDbcs.getUser()) &&
+            SQLPowerUtils.areEqual(getPass(),otherDbcs.getPass())) {
+				return true;
+		} else {
+				return false;
+		}
+	}				    		                  	
 
 	/**
 	 * Prints some info from this DBCS.  For use in debugging.
