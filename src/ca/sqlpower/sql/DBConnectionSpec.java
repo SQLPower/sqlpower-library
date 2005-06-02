@@ -3,7 +3,7 @@ package ca.sqlpower.sql;
 import java.io.Serializable;
 import java.util.*;
 import java.beans.*;
-import ca.sqlpower.utils.SQLPowerUtils;
+import ca.sqlpower.util.SQLPowerUtils;
 
 /**
  * The DBConnectionSpec class is a simple bean whose instances
