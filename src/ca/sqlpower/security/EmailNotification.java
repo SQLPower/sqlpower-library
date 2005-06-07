@@ -83,6 +83,7 @@ public class EmailNotification implements java.io.Serializable {
 		throws SQLException {
 
         Statement stmt = null;
+		ResultSet rs = null;
 		boolean bFirst=true;
 		try {
 			stmt = con.createStatement();
@@ -100,7 +101,7 @@ public class EmailNotification implements java.io.Serializable {
 			sql.append(" AND object_type=").append(SQL.quote(notifyAbout.getObjectType()));
 			sql.append(" AND object_name=").append(SQL.quote(notifyAbout.getObjectName()));
 			
-			ResultSet rs = stmt.executeQuery(sql.toString());
+			rs = stmt.executeQuery(sql.toString());
 
 			sql.setLength(0);
 
@@ -180,9 +181,11 @@ public class EmailNotification implements java.io.Serializable {
 				} // end if (the record exists)
 			} // end if (the rs has a value)
 
-			stmt = con.createStatement();
 			stmt.executeUpdate(sql.toString());
 		} finally {
+			if (rs != null) {
+				rs.close();
+			}
 			if(stmt != null) {
 				stmt.close();
 			}
