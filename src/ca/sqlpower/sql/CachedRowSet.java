@@ -76,7 +76,14 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * After populating this row set, you can safely call rs.close().
 	 */
 	public void populate(ResultSet rs) throws SQLException {
-		rsmd = new CachedResultSetMetaData(rs.getMetaData());
+		/*
+		 * XXX: this upcases all the column names in the metadata for
+		 * the Dashboard's benefit.  We should add a switch for this
+		 * behaviour to the CachedRowSet API and then use it from the
+		 * Dashboard
+		 */
+		rsmd = new CachedResultSetMetaData(rs.getMetaData(), true);
+
 		ArrayList newData = new ArrayList();
 		int colCount = rsmd.getColumnCount();
 		while (rs.next()) {

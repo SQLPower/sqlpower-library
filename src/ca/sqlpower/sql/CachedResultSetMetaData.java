@@ -16,6 +16,13 @@ public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Seria
 
 	private static final Logger logger = Logger.getLogger(CachedResultSetMetaData.class);
 
+	/**
+	 * A user preference: If set true, this class will convert column
+	 * names upper case for you.  It doesn't affect any of the other
+	 * strings.
+	 */
+	private boolean upcaseColumnNames;
+
 	private int columnCount;
 	private boolean autoIncrement[];
 	private boolean caseSensitive[];
@@ -39,12 +46,22 @@ public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Seria
 	private String columnClassName[];
 
 	/**
+	 * Works like the two-argument constructor with upcaseColumnNames set to false.
+	 */
+	public CachedResultSetMetaData(ResultSetMetaData source) throws SQLException {
+		this(source, false);
+	}
+
+	/**
 	 * Creates a copy of the given ResultSetMetaData so that you can
 	 * use it without a live reference to the source result set or
 	 * database.
 	 */
-	public CachedResultSetMetaData(ResultSetMetaData source) throws SQLException {
+	public CachedResultSetMetaData(ResultSetMetaData source, boolean upcaseColumnNames)
+		throws SQLException {
+
 		logger.info("[34mCreating new CachedResultSetMetaData[0m");
+		this.upcaseColumnNames = upcaseColumnNames;
 		this.columnCount = source.getColumnCount();
 		createArrays(columnCount);
 		populate(source);
@@ -83,7 +100,11 @@ public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Seria
 			this.signed[i] = source.isSigned(i+1);
 			this.columnDisplaySize[i] = source.getColumnDisplaySize(i+1);
 			this.columnLabel[i] = source.getColumnLabel(i+1);
-			this.columnName[i] = source.getColumnName(i+1);
+			if (upcaseColumnNames && source.getColumnName(i+1) != null) {
+				this.columnName[i] = source.getColumnName(i+1).toUpperCase();
+			} else {
+				this.columnName[i] = source.getColumnName(i+1);
+			}
 			this.schemaName[i] = source.getSchemaName(i+1);
 			this.precision[i] = source.getPrecision(i+1);
 			this.scale[i] = source.getScale(i+1);
@@ -145,7 +166,11 @@ public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Seria
 		this.signed[columnCount] = signedArg;
 		this.columnDisplaySize[columnCount] = columnDisplaySizeArg;
 		this.columnLabel[columnCount] = columnLabelArg;
-		this.columnName[columnCount] = columnNameArg;
+		if (upcaseColumnNames && columnNameArg != null) {
+			this.columnName[columnCount] = columnNameArg.toUpperCase();
+		} else {
+			this.columnName[columnCount] = columnNameArg;
+		}
 		this.schemaName[columnCount] = schemaNameArg;
 		this.precision[columnCount] = precisionArg;
 		this.scale[columnCount] = scaleArg;

@@ -200,7 +200,7 @@ public class SQL {
 		if (DBConnection.isOracle(con)) {
 			return "NVL("+sqlExpr+","+valueWhenNull+")";
 		} else if (DBConnection.isPostgres(con)) {
-			return "COALSECE("+sqlExpr+","+valueWhenNull+")";
+			return "COALESCE("+sqlExpr+","+valueWhenNull+")";
 		} else {
 			// no special case; assume JDBC compliance for fn ifnull
 			return "{fn IFNULL("+sqlExpr+","+valueWhenNull+")}";
