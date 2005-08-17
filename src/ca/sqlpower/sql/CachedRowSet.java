@@ -97,7 +97,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 							 o = new Double(bd.doubleValue()); 
 						}
 						else {
-							 o = new Integer(bd.intValue());
+							 o = new Long(bd.longValue());
 						}
 					}
 				}				
