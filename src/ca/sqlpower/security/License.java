@@ -8,7 +8,8 @@ import java.io.*;
 import java.text.*;
 import java.util.*;
 import java.security.MessageDigest;
-import org.apache.xml.serialize.*;
+
+import org.apache.log4j.Logger;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 
@@ -25,6 +26,8 @@ import org.xml.sax.InputSource;
  */
 public final class License implements java.io.Serializable {
 
+    private static final Logger logger = Logger.getLogger(License.class);
+    
 	protected String licenseeName;
 	protected String productName;
 	protected Version minVersion;
@@ -42,17 +45,19 @@ public final class License implements java.io.Serializable {
 	 * null.
 	 */
 	public License(InputStream xmlStream, InputStream licenseStream)
-		throws LicenseReadException {
-
-		parseFile(xmlStream, licenseStream);
-
-		System.out.println("Loaded SQLPower product license.");
-		System.out.println("For "+productName+" versions "+minVersion+" to "+maxVersion);
-		System.out.println("Licensed exclusively to "+licenseeName);
-		System.out.println("Issued "+issueDate);
-		System.out.println(expiryDate == null ? "Never Expires" : "Expires "+expiryDate);
-		System.out.println("License terms:");
-		limits.list(System.out);
+	throws LicenseReadException {
+	    
+	    parseFile(xmlStream, licenseStream);
+	    
+	    if (logger.isInfoEnabled()) {
+	        logger.info("Loaded SQLPower product license.");
+	        logger.info("For "+productName+" versions "+minVersion+" to "+maxVersion);
+	        logger.info("Licensed exclusively to "+licenseeName);
+	        logger.info("Issued "+issueDate);
+	        logger.info(expiryDate == null ? "Never Expires" : "Expires "+expiryDate);
+	        logger.info("License terms:");
+	        limits.list(System.out);
+	    }
 	}
 	
 	protected void parseFile(InputStream xmlStream, InputStream licenseStream)
