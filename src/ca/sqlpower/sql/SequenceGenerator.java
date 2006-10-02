@@ -36,14 +36,14 @@ public abstract class SequenceGenerator {
 	 * from a supported database.
      */
     public static SequenceGenerator getInstance(Connection con) {
-        String dbClass=con.getClass().getName();
-
-        if(dbClass.indexOf("Oracle") != 0) {
+        if (DBConnection.isOracle(con)) {
             return new OracleSequenceGenerator(con);
+        } else if (DBConnection.isPostgres(con)) {
+            return new PostgreSQLSequenceGenerator(con);
+        } else {
+            throw new IllegalArgumentException(
+                    "The JDBC driver "+con.getClass().getName()+" is not recognised.");
         }
-        
-        throw new IllegalArgumentException(
-               "The driver class "+dbClass+" is not recognised.");
     }
 
 	/**
