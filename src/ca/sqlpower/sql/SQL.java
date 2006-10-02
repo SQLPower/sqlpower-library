@@ -1,9 +1,19 @@
 package ca.sqlpower.sql;
 
-import java.sql.*;
-import java.util.*;
-import ca.sqlpower.util.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+import ca.sqlpower.util.Cache;
+import ca.sqlpower.util.LabelValueBean;
+import ca.sqlpower.util.LeastRecentlyUsedCache;
 
 public class SQL {
 
@@ -16,8 +26,8 @@ public class SQL {
     /**
      * This class cannot be instantiated
      */
-    private SQL()
-    {
+    private SQL() {
+        // no-op
     }
 	
 	/**
@@ -277,8 +287,8 @@ public class SQL {
 	}
 
 	/**
-	 * Supplies a SQL expression that evaulates to a date (to the nearest
-     * second).
+	 * Supplies a SQL expression that evaulates to a date with time to the nearest
+     * second.
 	 */
 	public static String escapeDateTime(Connection con, java.util.Date date) throws SQLException {
 		if (date == null) {
@@ -288,8 +298,8 @@ public class SQL {
 			if (DBConnection.isOracle(con)) {
 				return "TO_DATE('"+df.format(date)+"','YYYY-MM-DD HH24:MI:SS')";
 			} else {
-				// most JDBC drivers support {d 'yyyy-MM-dd hh:mm:ss'} style escape
-				return "{d '"+df.format(date)+"'}";
+				// most JDBC drivers support {ts 'yyyy-MM-dd hh:mm:ss'} style escape
+				return "{ts '"+df.format(date)+"'}";
 			}
 		}
 	}
