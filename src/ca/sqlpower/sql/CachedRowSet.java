@@ -69,6 +69,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * Makes an empty cached rowset.
 	 */
 	public CachedRowSet() throws SQLException {
+        // Nothing to do
 	}
 
 	/**
@@ -84,13 +85,18 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		 */
 		rsmd = new CachedResultSetMetaData(rs.getMetaData(), true);
 
+		int rowNum = 0;
 		ArrayList newData = new ArrayList();
 		int colCount = rsmd.getColumnCount();
 		while (rs.next()) {
+		    if (logger.isDebugEnabled()) logger.debug("Populating Row "+rowNum);
 			Object[] row = new Object[colCount];
 			for (int i = 0; i < colCount; i++) {
 				Object o = rs.getObject(i+1);
-				if (o != null) {
+				if (o == null) {
+				    if (logger.isDebugEnabled()) logger.debug("   Col "+i+": null");
+				} else {
+				    if (logger.isDebugEnabled()) logger.debug("   Col "+i+": "+o+" ("+o.getClass()+")");
 					if (o instanceof BigDecimal) {	
 						BigDecimal bd = (BigDecimal) o;
 						if (bd.scale() > 0) {
@@ -103,7 +109,10 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 				}				
 				row[i] = o;
 			}
+            
 			newData.add(row);
+            
+			rowNum++;
 		}
 		data = newData;
 	}
@@ -262,7 +271,6 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * it will be garbage collected like any other normal object.
 	 */
     public void close() throws SQLException {
-		// XXX: any point in setting data = null?
 		return;
 	}
 
@@ -1066,123 +1074,151 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
     // ====================================
 
 	/**
-	 * Returns false (updates are not supported).
+	 * Returns false, even if the row has been modified.
 	 */
     public boolean rowUpdated() throws SQLException {
 		return false;
 	}
 
 	/**
-	 * Returns false (updates are not supported).
+	 * Returns false (inserts and deletes are not supported).
 	 */
     public boolean rowInserted() throws SQLException {
 		return false;
 	}
    
 	/**
-	 * Returns false (updates are not supported).
+     * Returns false (inserts and deletes are not supported).
 	 */
     public boolean rowDeleted() throws SQLException {
 		return false;
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to null.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateNull(int columnIndex) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = null;
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given object.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateBoolean(int columnIndex, boolean x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = (x ? Boolean.TRUE : Boolean.FALSE);
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given value.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateByte(int columnIndex, byte x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = new Byte(x);
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given value.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateShort(int columnIndex, short x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = new Short(x);
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given value.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateInt(int columnIndex, int x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+		curRow[columnIndex - 1] = new Integer(x);
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given value.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateLong(int columnIndex, long x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = new Long(x);
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given value.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateFloat(int columnIndex, float x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = new Float(x);
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given value.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateDouble(int columnIndex, double x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = new Double(x);
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given object.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateBigDecimal(int columnIndex, BigDecimal x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = x;
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given object.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateString(int columnIndex, String x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = x;
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given object.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateBytes(int columnIndex, byte x[]) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = x;
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given object.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateDate(int columnIndex, java.sql.Date x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = x;
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given object.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateTime(int columnIndex, java.sql.Time x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = x;
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given object.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateTimestamp(int columnIndex, java.sql.Timestamp x)
 		throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = x;
 	}
 
 	/**
@@ -1190,15 +1226,15 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 */
     public void updateAsciiStream(int columnIndex, java.io.InputStream x, int length)
 		throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+		throw new UnsupportedOperationException("Not supported!");
 	}
 
 	/**
 	 * Not supported.
 	 */
-    public void updateBinaryStream(int columnIndex, java.io.InputStream x,	int length)
+    public void updateBinaryStream(int columnIndex, java.io.InputStream x, int length)
 		throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+		throw new UnsupportedOperationException("Not supported!");
 	}
 
 	/**
@@ -1206,49 +1242,62 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 */
     public void updateCharacterStream(int columnIndex, java.io.Reader x, int length)
 		throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+		throw new UnsupportedOperationException("Not supported!");
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given object.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateObject(int columnIndex, Object x, int scale) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = x;
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given object.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateObject(int columnIndex, Object x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = x;
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given object.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateArray(int columnIndex, java.sql.Array x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = x;
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given object.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
 	public void updateClob(int columnIndex, java.sql.Clob x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = x;
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given object.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
 	public void updateBlob(int columnIndex, java.sql.Blob x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        curRow[columnIndex - 1] = x;
 	}
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * Assigns the columnIndex'th item in the current row to the given object.
+     * There is no automatic way to propogate this change to the database, but
+     * the change will remain in memory for the life of this CachedRowSet.
+     */
     public void updateRef(int columnIndex, java.sql.Ref x) throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
+        if (curRow == null) throw new SQLException("Not on a valid row");
+        curRow[columnIndex - 1] = x;
 	}
 	
     // ====================================
@@ -1256,161 +1305,207 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
     // ====================================
 
 	/**
-	 * Not supported.
+	 * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateNull(String columnName) throws SQLException {
 		updateNull(findColumn(columnName));
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateBoolean(String columnName, boolean x) throws SQLException {
 		updateBoolean(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateByte(String columnName, byte x) throws SQLException {
 		updateByte(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateShort(String columnName, short x) throws SQLException {
 		updateShort(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateInt(String columnName, int x) throws SQLException {
 		updateInt(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateLong(String columnName, long x) throws SQLException {
 		updateLong(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateFloat(String columnName, float x) throws SQLException {
 		updateFloat(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateDouble(String columnName, double x) throws SQLException {
 		updateDouble(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateBigDecimal(String columnName, BigDecimal x) throws SQLException {
 		updateBigDecimal(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateString(String columnName, String x) throws SQLException {
 		updateString(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateBytes(String columnName, byte x[]) throws SQLException {
 		updateBytes(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateDate(String columnName, java.sql.Date x) throws SQLException {
 		updateDate(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateTime(String columnName, java.sql.Time x) throws SQLException {
 		updateTime(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateTimestamp(String columnName, java.sql.Timestamp x) throws SQLException {
 		updateTimestamp(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateAsciiStream(String columnName, java.io.InputStream x, int length) throws SQLException {
 		updateAsciiStream(findColumn(columnName), x, length);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateBinaryStream(String columnName, java.io.InputStream x, int length) throws SQLException {
 		updateBinaryStream(findColumn(columnName), x, length);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateCharacterStream(String columnName, java.io.Reader reader, int length) throws SQLException {
 		updateCharacterStream(findColumn(columnName), reader, length);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateObject(String columnName, Object x, int scale) throws SQLException {
 		updateObject(findColumn(columnName), x, scale);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateObject(String columnName, Object x) throws SQLException {
 		updateObject(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateRef(String columnName, java.sql.Ref x) throws SQLException {
 		updateRef(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateBlob(String columnName, java.sql.Blob x) throws SQLException {
 		updateBlob(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateClob(String columnName, java.sql.Clob x) throws SQLException {
 		updateClob(findColumn(columnName), x);
 	}
 
 	/**
-	 * Not supported.
+     * Forwards to the corresponding method that takes a column index.
+     * 
+     * @throws SQLException if there is no column with the given name.
 	 */
     public void updateArray(String columnName, java.sql.Array x) throws SQLException {
 		updateArray(findColumn(columnName), x);
