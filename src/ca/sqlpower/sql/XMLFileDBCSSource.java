@@ -57,7 +57,7 @@ public class XMLFileDBCSSource implements DBCSSource, Serializable {
 	            throw new DatabaseListReadException(e);
 	        } finally {
 	            try {
-	                dbXMLFile.close();
+	                if (dbXMLFile != null) dbXMLFile.close();
 	            } catch(IOException e) {
 	                throw new DatabaseListReadException(e);
 	            }
