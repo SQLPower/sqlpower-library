@@ -116,8 +116,8 @@ public class DataMover {
 			while (srcRS.next()) {
 				if (debug) System.out.println("Row "+numRows);
 				for (int col = 1; col <= numberOfColumns; col++) {
-					dstStmt.setObject(col, srcRS.getObject(col));
-					if (debug) System.out.println(srcRS.getObject(col));
+				    if (debug) System.out.println(srcRS.getObject(col)+ "(type="+srcRSMD.getColumnType(col)+")");
+					dstStmt.setObject(col, srcRS.getObject(col), srcRSMD.getColumnType(col));
 				}
 				dstStmt.executeUpdate();
 				numRows++;
