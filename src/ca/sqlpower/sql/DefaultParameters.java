@@ -54,4 +54,13 @@ public class DefaultParameters {
 		}
 		return (String) params.get(paramName.toLowerCase());
 	}
+	
+	public String getEmailReturnAddress() {
+		return get("email_notification_return_adrs");
+	}
+	
+	public String getEmailServerName() {
+		return get("mail_server_name");
+	}
+	
 }
