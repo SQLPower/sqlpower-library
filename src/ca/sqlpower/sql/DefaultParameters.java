@@ -13,7 +13,7 @@ import ca.sqlpower.util.VersionFormatException;
  */
 public class DefaultParameters {
 
-	Map params;
+	private Map params;
 
     /**
      * Creates a DefaultParameters instance based on the values stored in
