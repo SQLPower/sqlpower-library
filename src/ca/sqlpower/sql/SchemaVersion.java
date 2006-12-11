@@ -3,6 +3,9 @@ package ca.sqlpower.sql;
 import java.sql.*;
 import ca.sqlpower.util.VersionFormatException;
 
+/**
+ * @deprecated Use {@link DefaultParameters#getPLSchemaVersion()} instead.
+ */
 public class SchemaVersion extends ca.sqlpower.util.Version {
 
 	/**
