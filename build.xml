@@ -1,0 +1,41 @@
+<project name="sqlpower_library" default="deploy" basedir=".">
+
+	<!-- $Id$ -->
+
+
+	<property name="deploy.dir" value="deploy"/>
+	<property name="src" value="src"/>
+	<property name="build" value="build"/>
+	<property name="build.compiler" value="modern"/>
+	<property name="deploy.jar" value="sqlpower_library.jar"/>
+
+	<path id="compile.classpath">
+			<fileset dir="lib">
+				<include name="*.jar"/>
+			</fileset>
+	</path>
+
+	<target name="init">
+		<tstamp/>
+		<mkdir dir="${build}"/>
+	</target>
+
+	<target name="compile" depends="init">
+		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath"  debug="true" deprecation="true"/>
+	</target>
+
+	<target name="jar" depends="compile">
+		<jar jarfile="${build}/${deploy.jar}" basedir="${build}" 
+			includes="META-INF/*,ca/**">
+		</jar>
+	</target>
+
+	<target name="deploy" depends="jar">
+		<copy file="${build}/${deploy.jar}" todir="${deploy.dir}"/>
+	</target>
+
+	<target name="clean">
+		<delete dir="${build}"/>
+	</target>
+
+</project>
