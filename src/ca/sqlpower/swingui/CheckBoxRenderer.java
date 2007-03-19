@@ -14,7 +14,7 @@ import javax.swing.table.TableCellRenderer;
  */
 public class CheckBoxRenderer extends JCheckBox implements TableCellRenderer {
 
-    CheckBoxRenderer() {
+    public CheckBoxRenderer() {
         setHorizontalAlignment(JLabel.CENTER);
     }
 
