@@ -1,4 +1,4 @@
-package ca.sqlpower.util.table;
+package ca.sqlpower.swingui.table;
 
 /**
  * A JTable table model with an additional method for cleaning up

@@ -1,4 +1,4 @@
-package ca.sqlpower.util.table;
+package ca.sqlpower.swingui.table;
 
 /**
  * The TableTextConverter interface is a way for users of a table

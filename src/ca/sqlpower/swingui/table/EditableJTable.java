@@ -1,4 +1,4 @@
-package ca.sqlpower.util.table;
+package ca.sqlpower.swingui.table;
 
 import java.awt.Component;
 import java.awt.Dimension;
