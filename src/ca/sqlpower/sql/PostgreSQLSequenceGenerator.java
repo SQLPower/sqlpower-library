@@ -35,6 +35,7 @@ public class PostgreSQLSequenceGenerator extends SequenceGenerator {
                 throw new SQLException("The sequence returned nothing!");
             }
             nextval = rs.getLong(1);
+            rs.close();
         } finally {
             if (stmt != null)
                 stmt.close();
