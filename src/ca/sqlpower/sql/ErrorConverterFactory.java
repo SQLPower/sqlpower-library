@@ -17,7 +17,7 @@ public class ErrorConverterFactory {
 	/**
 	 * Returns a reference to a error converter object based on the
 	 * databaseProductName attribute of the connection specified.
-	 * 
+	 *
 	 * @throws IllegalArgumentException if the database type is unrecognized.
 	 */
 	public static AbstractErrorConverter getInstance(SQLException e) {
@@ -28,14 +28,15 @@ public class ErrorConverterFactory {
 		} else if (message.indexOf("icrosoft") >= 0) {
 			return sqlServerErrorConverter;
 		} else if (message.indexOf("Backend") >= 0
-				   || message.indexOf("ERROR: ") >= 0) {
+				   || message.indexOf("ERROR: ") >= 0
+				   || message.indexOf("FATAL:") >= 0) {
 			return pgErrorConverter;
 		} else if (message.startsWith("ORA")
 				   || message.indexOf("THIN") >= 0
 				   || message.indexOf("Io exception: The Network Adapter") >= 0
 				   || message.indexOf("invalid arguments in call") >= 0
 				   || message.indexOf("Invalid column name") >= 0
-				   || message.indexOf("(ERROR=(") >= 0) {			
+				   || message.indexOf("(ERROR=(") >= 0) {
 			return oracleErrorConverter;
 		}
 		throw new IllegalArgumentException("unrecognized database type for message: "+message);
