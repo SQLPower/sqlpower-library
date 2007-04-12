@@ -1,7 +1,13 @@
 package ca.sqlpower.sql;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
 
 /**
  * The DataMover class is used to move data and structure from one
@@ -127,8 +133,11 @@ public class DataMover {
 			System.out.println("Committed transaction");
 			
 		} catch (SQLException e) {
-			dstCon.rollback();
-			throw e;
+			try { 
+				dstCon.rollback();
+			} catch (Exception e2) {
+				throw new RuntimeException("Could not roll back on error ",e);
+			}
 		} finally {
 			if (srcRS != null) srcRS.close();
 			if (srcStmt != null) srcStmt.close();
