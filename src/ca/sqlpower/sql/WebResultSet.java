@@ -1,12 +1,33 @@
 package ca.sqlpower.sql;
 
-import ca.sqlpower.util.*;
-import java.sql.*;
-import java.util.*;
-import java.text.*;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.List;
+
 import org.apache.log4j.Logger;
 
-public class WebResultSet implements Cloneable {
+/**
+ * The WebResultSet is the top level of a rather deep hierarchy of classes
+ * that represent (by containment, not by inheritance) a java.sql.ResulSet
+ * (or, in some subclasses, multiple ResultSet objects concatenated).
+ * These classes provide some of the functionality of the javax.sql.RowSet
+ * (which they pre-date!), but also additional flexibility and also
+ * some corrections for defects in various Drivers (mostly M$).
+ * <p>
+ * This class provides a no-argument constructor; if you use this, you
+ * must call applyResultSet() and initMembers() yourself before calling 
+ * any get/set methods (even toString()!); it is a fatal error to disobey this rule.
+ * <p>
+ * Some of these classes' functionality is intimately related to the
+ * WebResultHTMLFormatter class.
+ * 
+ * @version $Id$
+ */
+public class WebResultSet {
 
 	private static final Logger logger = Logger.getLogger(WebResultSet.class);
 
@@ -45,7 +66,9 @@ public class WebResultSet implements Cloneable {
 	/**
 	 * A do-nothing constructor.
 	 */
-	protected WebResultSet() {}
+	protected WebResultSet() {
+     super();   
+    }
 
 	/**
 	 * Applies the given resultset to the current WebResultSet.  The
@@ -276,8 +299,8 @@ public class WebResultSet implements Cloneable {
      */
     public void setColumnType(int colNo, int  v) {
 		if (logger.isDebugEnabled()) logger.debug("Setting column "+colNo+" to type "+v);
-        if(v==FieldTypes.ROWID) {
-            if(rowidColNo > 0) {
+        if (v==FieldTypes.ROWID) {
+            if (rowidColNo > 0) {
                 throw new IllegalStateException("A resultset can have only one ROWID column");
             }
             rowidColNo=colNo;
