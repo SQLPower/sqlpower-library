@@ -2,15 +2,15 @@ package ca.sqlpower.sql;
 
 /**
  * FieldTypes is a container class for all the types of data the
- * WebResultFormatter classes know about. <p>
- *
- * WARNING: Because of the way the Java compiler works, it is a bad
- * idea to change any of these values.  If you must change a value
- * (say, you want NUMBER = 5 instead of NUMBER = 1), you must also
- * recompile everything that depends on FieldTypes.NUMBER.  If you
- * don't do this, all the classes you failed to recompile will
- * continue to use the value NUMBER = 1.
- *
+ * WebResultFormatter classes know about.
+ * <p>
+ * 
+ * WARNING: Because of the way dependencies in the Java compiler work, it is a
+ * bad idea to change any of these values. If you must change a value (say, you
+ * want NUMBER = 5 instead of NUMBER = 1), you must also recompile everything
+ * that depends on FieldTypes.NUMBER. If you don't do this, all the classes you
+ * failed to recompile will continue to use the value NUMBER = 1.
+ * 
  * @author Jonathan Fuerth
  * @version $Id$
  */
@@ -123,9 +123,18 @@ public class FieldTypes {
  	 * <code>WebResultSet</code> column.  The hyperlinks are currently
  	 * always rendered as HTML, but this may change in the future.
  	 * PDF supports hyperlinks, for instance.
+     * 
+     * @deprecated The classes that consume result sets (formatters) should
+     * handle hyperlinks on their own. Hyperlinks are a view idea, and it's
+     * too complex to try and model the notion of a generic hyperlink here.
  	 */
  	public static final int HYPERLINK = 15;
 
+    /**
+     * @deprecated The classes that consume result sets (formatters) should
+     * handle hyperlinks on their own. Hyperlinks are a view idea, and it's
+     * too complex to try and model the notion of a generic hyperlink here.
+     */
 	public static final int RANGEHYPERLINK = 21;
 
 
