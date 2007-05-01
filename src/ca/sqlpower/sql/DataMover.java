@@ -1,5 +1,6 @@
 package ca.sqlpower.sql;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -122,8 +123,12 @@ public class DataMover {
 			while (srcRS.next()) {
 				if (debug) System.out.println("Row "+numRows);
 				for (int col = 1; col <= numberOfColumns; col++) {
-				    if (debug) System.out.println(srcRS.getObject(col)+ "(type="+srcRSMD.getColumnType(col)+")");
-					dstStmt.setObject(col, srcRS.getObject(col), srcRSMD.getColumnType(col));
+				    if (debug) System.out.println(srcRS.getMetaData().getColumnName(col)+":"+srcRS.getObject(col)+ "(type="+srcRSMD.getColumnType(col)+")"+srcRS.getObject(col));
+					Object object = null; 
+					if (srcRS.getObject(col) != null){
+						object = (srcRS.getObject(col).getClass() == BigDecimal.class)? ((BigDecimal) srcRS.getObject(col)).doubleValue():srcRS.getObject(col);
+					}
+					dstStmt.setObject(col,object , srcRSMD.getColumnType(col));
 				}
 				dstStmt.executeUpdate();
 				numRows++;
