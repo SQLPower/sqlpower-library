@@ -31,13 +31,12 @@ public class EmailNotification implements java.io.Serializable {
 							   String viewKpi,
 							   String emailRed,
 							   String emailYellow,
-							   String emailGreen,
-							   Double kpiWeight)
+							   String emailGreen)
 		throws SQLException, PLSecurityException {
 
 		sm.checkModify(con, notifyUser);
 		setPref(con, notifyUser.getUserId(), true, notifyAbout, 
-				viewKpi, emailRed, emailYellow, emailGreen, kpiWeight);
+				viewKpi, emailRed, emailYellow, emailGreen);
 	}
 
 	/**
@@ -55,13 +54,12 @@ public class EmailNotification implements java.io.Serializable {
 							   String viewKpi,
 							   String emailRed,
 							   String emailYellow,
-							   String emailGreen,
-							   Double kpiWeight)
+							   String emailGreen)
 		throws SQLException, PLSecurityException {
 
 		sm.checkModify(con, notifyGroup);
 		setPref(con, notifyGroup.getGroupName(), false, notifyAbout, 
-				viewKpi, emailRed, emailYellow, emailGreen, kpiWeight);
+				viewKpi, emailRed, emailYellow, emailGreen);
 	}
 
 	/**
@@ -78,8 +76,7 @@ public class EmailNotification implements java.io.Serializable {
 								  String viewKpi,
 								  String emailRed,
 								  String emailYellow,
-								  String emailGreen,
-								  Double kpiWeight)
+								  String emailGreen)
 		throws SQLException {
 
         Statement stmt = null;
@@ -143,13 +140,6 @@ public class EmailNotification implements java.io.Serializable {
 						sql.append(" email_green_ind=").append(SQL.quote(emailGreen));
 						bFirst=false;
 					}
-					if(kpiWeight.doubleValue()>0){
-						if(!bFirst){
-							sql.append(",");
-						}
-						sql.append(" kpi_weight=").append(kpiWeight);
-						bFirst=false;
-					}
 
 					if (nameIsUser) {
 						sql.append(" WHERE user_id=");
@@ -167,14 +157,13 @@ public class EmailNotification implements java.io.Serializable {
 					} else {
 						sql.append("INSERT INTO pl_group_notification(group_name,");
 					}
-					sql.append(" object_type, object_name, view_kpi_ind, kpi_weight,");
+					sql.append(" object_type, object_name, view_kpi_ind,");
 					sql.append(" email_red_ind, email_yellow_ind, email_green_ind)");
 					sql.append(" VALUES( ");
 					sql.append(SQL.quote(notifyName)).append(",");
 					sql.append(SQL.quote(notifyAbout.getObjectType())).append(",");
 					sql.append(SQL.quote(notifyAbout.getObjectName())).append(",");
 					sql.append(SQL.quote(viewKpi)).append(",");
-					sql.append(kpiWeight).append(",");
 					sql.append(SQL.quote(emailRed)).append(",");
 					sql.append(SQL.quote(emailYellow)).append(",");
 					sql.append(SQL.quote(emailGreen)).append(")");
