@@ -141,8 +141,10 @@ public class DataMover {
 			try { 
 				dstCon.rollback();
 			} catch (Exception e2) {
-				throw new RuntimeException("Could not roll back on error ",e);
+				System.err.println("Warning: roll back on error failed");
+				e2.printStackTrace();
 			}
+			throw e;
 		} finally {
 			if (srcRS != null) srcRS.close();
 			if (srcStmt != null) srcStmt.close();
