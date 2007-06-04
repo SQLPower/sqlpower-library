@@ -40,6 +40,8 @@ public abstract class SequenceGenerator {
             return new OracleSequenceGenerator(con);
         } else if (DBConnection.isPostgres(con)) {
             return new PostgreSQLSequenceGenerator(con);
+        } else if (DBConnection.isSQLServer(con)) {
+        	return new SQLServerSequenceGenerator(con);
         } else {
             throw new IllegalArgumentException(
                     "The JDBC driver "+con.getClass().getName()+" is not recognised.");
