@@ -51,8 +51,12 @@ public abstract class SequenceGenerator {
 	/**
 	 * Tells a SequenceGenerator instance that you no longer need it.
 	 * This version does nothing, but the Oracle subclass (for
-	 * instance) closes the database connection.
+	 * instance) <b><i><blink><marquee>CLOSES THE DATABASE CONNECTION</marquee></blink></i></b>.
+	 * <p>
+	 * @deprecated Never use this method. Close the connection youself, then stop
+	 * using the sequence generators that hold a reference to the closed connection.
 	 */
+    @Deprecated
 	public void close() throws SQLException {
 		return;
 	}
