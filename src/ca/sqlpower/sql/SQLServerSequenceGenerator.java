@@ -7,8 +7,6 @@ import java.sql.Statement;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.dashboard.Scorecard;
-
 public class SQLServerSequenceGenerator extends SequenceGenerator {
 
 	private static final Logger logger = Logger.getLogger(SQLServerSequenceGenerator.class);
