@@ -33,12 +33,12 @@ package ca.sqlpower.validation.swingui;
 
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.border.Border;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.architect.swingui.StatusIcon;
 import ca.sqlpower.validation.ValidateResult;
 
 /**
@@ -60,6 +60,26 @@ public class StatusComponent extends JLabel {
     private ValidateResult result = null;
 
     /**
+     * The icon to show with the message when the status is null or unknown.
+     */
+    private Icon nullIcon;
+    
+    /**
+     * The icon to show with the message when everything is OK.
+     */
+    private Icon okIcon;
+    
+    /**
+     * The icon to show with the message when the validation has a warning.
+     */
+    private Icon warnIcon;
+    
+    /**
+     * The icon to show with the message when the validation has failed.
+     */
+    private Icon failIcon;
+    
+    /**
      * Creates a new StatusComponent with no visible display, but
      * which takes up the same amount of space as it would if it
      * was displaying an icon and message.
@@ -68,6 +88,11 @@ public class StatusComponent extends JLabel {
         setOpaque(true);
         setBorder(DEFAULT_BORDER);
         setResult(null);
+        
+        setNullIcon(new ImageIcon(ClassLoader.getSystemResource("ca/sqlpower/validation/swingui/stat_null_16.png")));
+        setOkIcon(getNullIcon());
+        setWarnIcon(new ImageIcon(ClassLoader.getSystemResource("ca/sqlpower/validation/swingui/stat_warn_16.png")));
+        setFailIcon(new ImageIcon(ClassLoader.getSystemResource("ca/sqlpower/validation/swingui/stat_fail_16.png")));
     }
 
     public void setResult(ValidateResult error) {
@@ -77,21 +102,21 @@ public class StatusComponent extends JLabel {
         Icon icon;
         if (result == null) {
             text = null;
-            icon = StatusIcon.getNullIcon();
+            icon = getNullIcon();
         } else {
             text = result.getMessage();
             switch(result.getStatus()) {
             case OK:
-                icon = StatusIcon.getNullIcon();
+                icon = getOkIcon();
                 break;
             case WARN:
-                icon = StatusIcon.getWarnIcon();
+                icon = getWarnIcon();
                 break;
             case FAIL:
-                icon = StatusIcon.getFailIcon();
+                icon = getFailIcon();
                 break;
             default:
-                icon = StatusIcon.getNullIcon();
+                icon = getNullIcon();
             }
         }
         setText(text);
@@ -115,4 +140,38 @@ public class StatusComponent extends JLabel {
     public ValidateResult getResult() {
         return result;
     }
+
+	public Icon getFailIcon() {
+		return failIcon;
+	}
+
+	public void setFailIcon(Icon failIcon) {
+		this.failIcon = failIcon;
+	}
+
+	public Icon getNullIcon() {
+		return nullIcon;
+	}
+
+	public void setNullIcon(Icon nullIcon) {
+		this.nullIcon = nullIcon;
+	}
+
+	public Icon getOkIcon() {
+		return okIcon;
+	}
+
+	public void setOkIcon(Icon okIcon) {
+		this.okIcon = okIcon;
+	}
+
+	public Icon getWarnIcon() {
+		return warnIcon;
+	}
+
+	public void setWarnIcon(Icon warnIcon) {
+		this.warnIcon = warnIcon;
+	}
+    
+    
 }
