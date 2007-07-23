@@ -288,12 +288,13 @@ public class SPDataSource {
 
     /**
      * Copy constructor. Creates a semi-independent copy of the given data source.
-     * 
-     * This is for testing only!
+     * <p>
+     * This is for testing only!  The ramifications of using this constructor
+     * in production have not been thought through!
      *
      * @param copyMe the SPDataSource to make a copy of.
      */
-    SPDataSource(SPDataSource copyMe) {
+    public SPDataSource(SPDataSource copyMe) {
         properties = new LinkedHashMap<String, String>(copyMe.properties);
         setParentType(copyMe.parentType);
     }
