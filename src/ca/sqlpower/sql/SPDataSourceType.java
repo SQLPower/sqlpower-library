@@ -354,6 +354,7 @@ public class SPDataSourceType {
             searchFrom = openBrace + 1;
             int colon = template.indexOf(':', searchFrom);
             int closeBrace = template.indexOf('>', searchFrom);
+            if (closeBrace == -1) break;
             if (colon >= 0 && colon < closeBrace) {
                 map.put(template.substring(openBrace+1, colon), template.substring(colon+1, closeBrace));
             } else if (closeBrace >=0) {

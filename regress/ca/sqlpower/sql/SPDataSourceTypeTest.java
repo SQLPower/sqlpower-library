@@ -193,7 +193,14 @@ public class SPDataSourceTypeTest extends TestCase {
         assertEquals("1234", map.get("Port"));
         assertEquals("", map.get("Hostname") );
     }
-    
+
+    public void testRetrieveURLParsingWithUnclosedVariable() {
+        SPDataSourceType dsType = new SPDataSourceType();
+        dsType.setJdbcUrl("<Database");
+        Map<String, String> map = dsType.retrieveURLParsing("data");
+        assertTrue(map.isEmpty());
+    }
+
     public void testRetrieveURLParsingWithDefaults() {
         SPDataSourceType dsType = new SPDataSourceType();
         dsType.setJdbcUrl("<Database:db>:<Port:2222>:<Hostname:home>");
@@ -225,7 +232,19 @@ public class SPDataSourceTypeTest extends TestCase {
         assertEquals("1234", map.get("Port"));
         assertEquals("home", map.get("Hostname"));
     }
-    
+
+    /**
+     * Tests for regression: the retrieveURLDefaults method used to
+     * get into an infinite loop when there's an unterminated variable
+     * name (&lt; without a matching &gt;).
+     */
+    public void testRetrieveURLDefaultsWithUnclosedVariable(){
+        SPDataSourceType dsType = new SPDataSourceType();
+        dsType.setJdbcUrl("<Database");
+        Map<String, String> map = dsType.retrieveURLDefaults();
+        assertTrue(map.isEmpty());
+    }
+
     public void testRetrieveURLDefaultsNoTemplate(){
         SPDataSourceType dsType = new SPDataSourceType();
         dsType.setJdbcUrl(null);
