@@ -10,9 +10,11 @@ import java.awt.Rectangle;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,8 +30,10 @@ import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -37,6 +41,7 @@ import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileFilter;
+import javax.swing.text.AbstractDocument;
 
 import org.apache.log4j.Logger;
 
@@ -602,4 +607,79 @@ public class SPSUtils {
             return name;
         return name.substring(lastDot + 1);
     }
+    
+    /**
+     * Shows a file chooser and saves the given Document in the user-selected location.
+     * If the user chooses to overwrite an existing file, they will be prompted to
+     * confirm the overwrite.
+     * 
+     * @param owner The component that will own the file chooser dialog
+     * @param doc the document to save
+     * @param filter The filename extension filter
+     */
+    public static boolean saveDocument(Component owner, AbstractDocument doc, FileExtensionFilter filter) {
+        JFileChooser fc = new JFileChooser();
+        fc.setFileFilter(filter);
+        int returnVal = fc.showSaveDialog(owner);
+
+        while (true) {
+            if (returnVal == JFileChooser.CANCEL_OPTION) {
+                return false;
+            } else if (returnVal == JFileChooser.APPROVE_OPTION) {
+
+                File file = fc.getSelectedFile();
+                String fileName = file.getPath();
+                String fileExt = SPSUtils.FileExtensionFilter.getExtension(file);
+                if (fileExt.length() == 0) {
+                    file = new File(fileName + "."
+                            + filter.getFilterExtension(new Integer(0)));
+                }
+                if (file.exists()) {
+                    int choice = JOptionPane.showOptionDialog(
+                                        owner,
+                                        "Are your sure you want to overwrite this file?",
+                                        "Confirm Overwrite",
+                                        JOptionPane.YES_NO_OPTION,
+                                        JOptionPane.QUESTION_MESSAGE, null,
+                                        null, null);
+                    boolean wantToOverwrite = (choice == JOptionPane.YES_OPTION);
+                    if (!wantToOverwrite) {
+                        returnVal = fc.showSaveDialog(owner);
+                        continue;
+                    }
+                }
+                return writeDocument(doc, file);
+            }
+        }
+    }
+    
+    /**
+     * Writes the text of the given document to the given file.  Reports any
+     * exceptions encountered via the {@link #showExceptionDialogNoReport(String, Throwable)}
+     * dialog.
+     * 
+     * @param doc The document to save
+     * @param file The file to save to
+     * @return True if the save was successful; false otherwise.
+     */
+    public static boolean writeDocument(AbstractDocument doc, File file) {
+        PrintWriter out = null;
+        try {
+            StringReader sr = new StringReader(doc.getText(0, doc.getLength()));
+            BufferedReader br = new BufferedReader(sr);
+            out = new PrintWriter(file);
+            String s;
+            while ((s = br.readLine()) != null) {
+                out.println(s);
+            }
+            out.flush();
+            return true;
+        } catch (Exception e) {
+            SPSUtils.showExceptionDialogNoReport("Could not save file", e);
+            return false;
+        } finally {
+            if (out != null) out.close();
+        }
+    }
+
 }
