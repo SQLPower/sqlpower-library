@@ -240,7 +240,7 @@ public class PLDotIniTest extends TestCase {
         assertNotNull(ds.getParentType());
     }
     
-    /*
+    /**
      * Tests that any items coming before the first section get written out
      * when we re-save the file.
      */
@@ -256,4 +256,26 @@ public class PLDotIniTest extends TestCase {
         assertEquals(PlDotIni.Section.class, sect.getClass());
         assertNull(((PlDotIni.Section) sect).getName());
     }
+    
+    public void testAddDsType() {
+        int oldCount = target.getDataSourceTypes().size();
+        target.addDataSourceType(new SPDataSourceType());
+        assertEquals(oldCount + 1, target.getDataSourceTypes().size());
+    }
+    
+    public void testRemoveDsType() {
+        final SPDataSourceType newType = new SPDataSourceType();
+        target.addDataSourceType(newType);
+        int oldCount = target.getDataSourceTypes().size();
+        
+        assertFalse(target.removeDataSourceType(null));
+        assertEquals(oldCount, target.getDataSourceTypes().size());
+
+        assertFalse(target.removeDataSourceType(new SPDataSourceType()));
+        assertEquals(oldCount, target.getDataSourceTypes().size());
+
+        assertTrue(target.removeDataSourceType(newType));
+        assertEquals(oldCount - 1, target.getDataSourceTypes().size());
+    }
+
 }

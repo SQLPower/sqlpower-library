@@ -774,9 +774,15 @@ public class PlDotIni implements DataSourceCollection {
 	}
 
     public void addDataSourceType(SPDataSourceType dataSourceType) {
+        // TODO fire an event for adding the dstype
         fileSections.add(dataSourceType);
     }
-    
+
+    public boolean removeDataSourceType(SPDataSourceType dataSourceType) {
+        // TODO fire an event for removing the dstype
+        return fileSections.remove(dataSourceType);
+    }
+
     private void fireAddEvent(SPDataSource dbcs) {
 		int index = fileSections.size()-1;
 		DatabaseListChangeEvent e = new DatabaseListChangeEvent(this, index, dbcs);

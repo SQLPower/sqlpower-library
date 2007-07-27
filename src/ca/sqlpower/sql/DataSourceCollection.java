@@ -119,7 +119,16 @@ public interface DataSourceCollection {
      * for a method that can update an existing entry.
      */
     void addDataSourceType(SPDataSourceType dataSourceType);
-    
+
+    /**
+     * Removes the given data source type from this collection.
+     * If the given type is not in this collection, does nothing.
+     * 
+     * @return True if the item was present in the list (and hence
+     * it was removed).  False otherwise.
+     */
+    boolean removeDataSourceType(SPDataSourceType dataSourceType);
+
     /**
      * Adds or updates the given data source type properties in this data source collection.
      * Matching is performed by name and is case insensitive.
