@@ -41,13 +41,22 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import ca.sqlpower.sql.CachedRowSet;
 
 /**
- * The PostgresDatabaseMetaDataDecorator suppresses the list of databases which the Postgres driver
- * reports existing, but does not allow access to.
- *
+ * The PostgresDatabaseMetaDataDecorator makes the following changes to driver
+ * behaviour:
+ * 
+ * <ul>
+ *  <li>suppresses the list of databases which the Postgres driver
+ *      reports existing, but does not allow access to.
+ *  <li>removes quotation marks around index column names that happen
+ *      to be keywords.
+ * </ul>
+ * 
  * @version $Id$
  */
 public class PostgresDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
@@ -112,6 +121,28 @@ public class PostgresDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
                 crs.updateInt(7, DIGITS_IN_FLOAT4);
             } else if ("float8".equalsIgnoreCase(crs.getString(6))) {
                 crs.updateInt(7, DIGITS_IN_FLOAT8);
+            }
+        }
+        crs.beforeFirst();
+        return crs;
+    }
+    
+    /**
+     * Strips off double quotes surrounding column names. (The driver quotes column
+     * names that are SQL keywords).
+     */
+    @Override
+    public ResultSet getIndexInfo(String catalog, String schema, String table, boolean unique, boolean approximate) throws SQLException {
+        ResultSet rs = super.getIndexInfo(catalog, schema, table, unique, approximate);
+        CachedRowSet crs = new CachedRowSet();
+        crs.populate(rs);
+        
+        Pattern p = Pattern.compile("^\"(.*)\"$");
+        while (crs.next()) {
+            String colName = crs.getString(9);
+            Matcher m = p.matcher(colName);
+            if (colName != null && m.matches()) {
+                crs.updateString(9, m.group(1));
             }
         }
         crs.beforeFirst();
