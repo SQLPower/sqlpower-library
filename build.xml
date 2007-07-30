@@ -8,6 +8,7 @@
 	<property name="build" value="build"/>
 	<property name="build.compiler" value="modern"/>
 	<property name="deploy.jar" value="sqlpower_library.jar"/>
+	<property name="tests" value="regress"/>
 
 	<path id="compile.classpath">
 			<fileset dir="lib">
@@ -15,6 +16,13 @@
 			</fileset>
 	</path>
 
+	<path id="test.classpath">
+		<pathelement location="${build}"/>
+		<fileset dir="lib">
+			<include name="*.jar"/>
+		</fileset>
+	</path>
+	
 	<target name="init">
 		<tstamp/>
 		<mkdir dir="${build}"/>
@@ -24,6 +32,11 @@
 		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath"  debug="true" deprecation="true"/>
 	</target>
 
+	<target name="compile-tests" depends="compile">
+		<mkdir dir="${build}/tests"/>
+		<javac srcdir="${tests}" destdir="${build}/tests" classpathref="test.classpath"  debug="true" deprecation="true"/>
+	</target>
+	
 	<target name="jar" depends="compile">
 		<jar jarfile="${build}/${deploy.jar}" basedir="${build}" 
 			includes="META-INF/*,ca/**">
