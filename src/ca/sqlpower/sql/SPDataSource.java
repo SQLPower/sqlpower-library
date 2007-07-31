@@ -239,6 +239,11 @@ public class SPDataSource {
      * check to determine if a parent is set. This flag is set to true when setParent is called.
      */
     private boolean parentSet = false;
+    
+    /**
+     * The collection of data sources that this data source belongs to.
+     */
+    private final DataSourceCollection parentCollection;
 	
     /*
 	 * constants used as keys to get into the properties
@@ -278,12 +283,13 @@ public class SPDataSource {
 	}
 
     /**
-     * Creates a new SPDataSource with all properties set to null.
+     * Creates a new SPDataSource with a blank parent type and all other properties set to null.
      */
-	public SPDataSource() {
+	public SPDataSource(DataSourceCollection parentCollection) {
 		properties = new LinkedHashMap<String,String>();
 		setParentType(new SPDataSourceType());
 		parentSet = false;
+        this.parentCollection = parentCollection;
 	}
 
     /**
@@ -297,6 +303,7 @@ public class SPDataSource {
     public SPDataSource(SPDataSource copyMe) {
         properties = new LinkedHashMap<String, String>(copyMe.properties);
         setParentType(copyMe.parentType);
+        parentCollection = copyMe.parentCollection;
     }
 
 	/**
@@ -636,5 +643,12 @@ public class SPDataSource {
         }
         
         setParentType(dbcs.getParentType());
+    }
+
+    /**
+     * Returns the data source collection that this data source belongs to.
+     */
+    public DataSourceCollection getParentCollection() {
+        return parentCollection;
     }
 }

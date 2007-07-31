@@ -40,7 +40,7 @@ import junit.framework.TestCase;
 
 public class PlDotIniListenersTest extends TestCase {
 	DataSourceCollection pld = new PlDotIni();
-	SPDataSource dbcs = new SPDataSource();
+	SPDataSource dbcs = new SPDataSource(pld);
 	
 	@Override
 	protected void setUp() throws Exception {

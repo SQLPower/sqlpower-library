@@ -59,7 +59,7 @@ public class PLDotIniTest extends TestCase {
 	 */
 	public void testRead() throws IOException {
 		target.read(makeInputStream(makePlIniString()));
-		System.out.println("PLDotIniTest::testRead(): Getting here counts as success");
+        assertTrue(target.getConnections().size() > 0);
 	}
 	
 	/**
@@ -139,7 +139,7 @@ public class PLDotIniTest extends TestCase {
 
     /* simple test of getDataSource() which assumes addDataSource() works. */
     public void testGetDataSource() {
-        SPDataSource dbcs = new SPDataSource();
+        SPDataSource dbcs = new SPDataSource(target);
         dbcs.setName("cows");
         target.addDataSource(dbcs);
         
@@ -276,6 +276,17 @@ public class PLDotIniTest extends TestCase {
 
         assertTrue(target.removeDataSourceType(newType));
         assertEquals(oldCount - 1, target.getDataSourceTypes().size());
+    }
+    
+    /**
+     * Ensures every data source child of this pl.ini has the
+     * right parent pointer.
+     */
+    public void testParentOfDataSources() throws Exception{
+        testRead();
+        for (SPDataSource ds : target.getConnections()) {
+            assertSame(target, ds.getParentCollection());
+        }
     }
 
 }

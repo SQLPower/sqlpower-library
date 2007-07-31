@@ -278,7 +278,7 @@ public class PlDotIni implements DataSourceCollection {
                 }
                 if (line.startsWith("[Databases_")) {
                     logger.debug("It's a new database connection spec!" +fileSections);
-                    currentDS =  new SPDataSource();
+                    currentDS =  new SPDataSource(this);
                     mode = ReadState.READ_DS;
                 } else if (line.startsWith("[Database Types_")) {
                     logger.debug("It's a new database type!" + fileSections);
