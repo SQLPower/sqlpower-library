@@ -53,7 +53,7 @@ import com.jgoodies.forms.factories.ButtonBarFactory;
 /**
  * Test the ASUtils.createArchitectPanelDialog() method.
  */
-public class TestDataEntryPanelBuilder {
+public class DataEntryPanelBuilderDemo {
 	
 	/** For testing the ArchitectPanelBuilder with the default Actions
 	 */
