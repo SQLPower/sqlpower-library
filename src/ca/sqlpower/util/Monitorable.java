@@ -51,7 +51,6 @@ public interface Monitorable {
 	 * Tells how much work has been done.
 	 *
 	 * @return The amount of work that has been done so far (between 0 and the job size).
-	 * @throws ArchitectException
 	 */
 	public int getProgress();
 
@@ -61,7 +60,6 @@ public interface Monitorable {
 	 *
 	 * @return An Integer saying how much work must be done; null if this amount is not
 	 * yet known.
-	 * @throws ArchitectException
 	 */
 	public Integer getJobSize();
 
@@ -74,7 +72,6 @@ public interface Monitorable {
 	 * be finished even though we have not progressed to the end of the job.
 	 *
 	 * @return True if and only if the process is finished.
-	 * @throws ArchitectException
 	 */
 	public boolean isFinished();
 
