@@ -37,20 +37,21 @@
  */
 package ca.sqlpower.swingui.event;
 
-import ca.sqlpower.swingui.ProgressWatcher;
+import ca.sqlpower.swingui.SPSwingWorker;
+
 
 /**
  * @author jack
  *
  */
 public class TaskTerminationEvent {
-	private ProgressWatcher source;
+	private SPSwingWorker source;
 
-	public TaskTerminationEvent(ProgressWatcher source) {
+	public TaskTerminationEvent(SPSwingWorker source) {
 		this.source = source;
 	}
 	
-	public ProgressWatcher getSource() {
+	public SPSwingWorker getSource() {
 		return source; 
 	}
 }

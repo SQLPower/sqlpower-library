@@ -55,14 +55,10 @@ public class ProgressWatcher implements ActionListener {
     private JLabel label = null;
     private Timer timer;
 
-    private List taskTerminationListeners;
-
     private static final Logger logger = Logger.getLogger(ProgressWatcher.class);
 
     public ProgressWatcher() {
-        taskTerminationListeners = new ArrayList();
     }
-
 
     public ProgressWatcher(JProgressBar bar, Monitorable monitorable) {
         this (bar,monitorable,null);
@@ -83,23 +79,6 @@ public class ProgressWatcher implements ActionListener {
         this.monitorable = monitorable;
         timer = new Timer(50, this);
         timer.start();
-    }
-
-    public void addTaskTerminationListener(TaskTerminationListener ttl) {
-        taskTerminationListeners.add(ttl);
-    }
-
-    public void removeTaskTerminationListener(TaskTerminationListener ttl) {
-        taskTerminationListeners.remove(ttl);
-    }
-
-    private void fireTaskFinished () {
-        TaskTerminationEvent tte = new TaskTerminationEvent(this);
-        Iterator it = taskTerminationListeners.iterator();
-        while (it.hasNext()) {
-            TaskTerminationListener ttl= (TaskTerminationListener) it.next();
-            ttl.taskFinished(tte);
-        }
     }
 
     public void actionPerformed(ActionEvent evt) {
@@ -148,9 +127,6 @@ public class ProgressWatcher implements ActionListener {
                 logger.debug("pm done, max was: " + pm.getMaximum());
                 pm.close();
             }
-
-            // fire a taskTerminationEvent
-            fireTaskFinished();
 
             logger.debug("trying to stop timer thread...");
             timer.stop();
