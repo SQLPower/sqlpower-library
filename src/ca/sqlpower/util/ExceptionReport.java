@@ -47,8 +47,6 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.util.SQLPowerUtils;
-
 /**
  * Implements a "call home, we're broken" functionality - does not report
  * anything secret. The data are posted to a URL on our web site to keep track
@@ -80,6 +78,15 @@ public class ExceptionReport {
     private static int numReportsThisRun = 0;
 
     /**
+     * Causes this class to remember the current time as application startup time.
+     * You should call this when your app starts if you plan to use this excption
+     * reporting facility.
+     */
+    public static void init() {
+    	logger.debug("Remembering app startup time = " + applicationStartupTime);
+    }
+    
+    /**
      * The version of the application that this report came from.
      * The format of the string is not important.
      */
@@ -88,7 +95,7 @@ public class ExceptionReport {
     /**
      * The time since the application launched in milliseconds.
      */
-    private long applicationUptime;
+    private static final long applicationStartupTime = System.currentTimeMillis();
     
     /**
      * The name of the application that this report came from.
@@ -184,11 +191,10 @@ public class ExceptionReport {
      * @param appName
      *            The name of the application that is creating this report.
      */
-    public ExceptionReport(Throwable exception, String reportURL, String applicationVersion, long applicationUptime, String appName) {
+    public ExceptionReport(Throwable exception, String reportURL, String applicationVersion, String appName) {
         this.exception = exception;
         this.reportUrl = reportURL;
         this.applicationVersion = applicationVersion;
-        this.applicationUptime = applicationUptime;
         this.applicationName = appName;
         totalMem = Runtime.getRuntime().totalMemory();
         freeMem = Runtime.getRuntime().freeMemory();
@@ -211,7 +217,7 @@ public class ExceptionReport {
         appendNestedExceptions(xml,exception);
         xml.append("\n <application-name>").append(SQLPowerUtils.escapeXML(applicationName)).append("</application-name>");
         xml.append("\n <application-version>").append(SQLPowerUtils.escapeXML(applicationVersion)).append("</application-version>");
-        xml.append("\n <application-uptime>").append(applicationUptime).append("</application-uptime>");
+        xml.append("\n <application-uptime>").append(getApplicationUptime()).append("</application-uptime>");
         xml.append("\n <total-mem>").append(totalMem).append("</total-mem>");
         xml.append("\n <free-mem>").append(freeMem).append("</free-mem>");
         xml.append("\n <max-mem>").append(maxMem).append("</max-mem>");
@@ -330,5 +336,12 @@ public class ExceptionReport {
 
     public void setRemarks(String remarks) {
         this.remarks = remarks;
+    }
+    
+    /**
+     * Returns the number of milliseconds since the static init() method was called.
+     */
+    public static long getApplicationUptime() {
+    	return System.currentTimeMillis() - applicationStartupTime;
     }
 }
