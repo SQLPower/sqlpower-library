@@ -34,9 +34,11 @@ package ca.sqlpower.swingui;
 import java.awt.Dimension;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
@@ -57,10 +59,15 @@ public class SPDataSourcePanel implements DataEntryPanel {
 
 	private static final Logger logger = Logger.getLogger(SPDataSourcePanel.class);
 
+	protected static final String EXTRA_FIELD_LABEL_PROP = "ca.sqlpower.swingui.LABEL";
+	
     /**
-     * The panel that holds the GUI.
+     * The panel that holds the GUI.  This panel is built only once,
+     * on the first call to getPanel().  It is not initialized in the
+     * constructor, because subclasses need a chance to call {@link #addExtraField(JComponent)}
+     * before the panel is built.
      */
-    private final JPanel panel;
+    private JPanel panel;
     
     /**
      * The data source we're editing.
@@ -74,11 +81,40 @@ public class SPDataSourcePanel implements DataEntryPanel {
 	private JTextField dbUserField;
 	private JPasswordField dbPassField;
 
+	/**
+	 * Extra data entry fields provided by subclasses. These fields will be
+	 * added to the layout, but not used in any other way. It's up to subclasses
+	 * to set up the component in the constructor, and also override the
+	 * applyChanges method to ensure the new field values are captured. The
+	 * label given to these fields will be the EXTRA_FIELD_LABEL_PROP
+	 * client property. See {@link JComponent#putClientProperty(Object, Object)}.
+	 */
+	private List<JComponent> extraFields = new ArrayList<JComponent>();
+	
+	/**
+	 * Remembers the given data source, but does not build the GUI.  That
+	 * gets done the first time getPanel() is called.
+	 * 
+	 * @param ds The data source to edit.  It is the only data source this instance
+	 * will ever be able to edit.
+	 */
 	public SPDataSourcePanel(SPDataSource ds) {
 	    this.dbcs = ds;
-	    panel = buildGeneralPanel(ds);
+	}
+
+    /**
+     * Builds and returns a Swing component that has all the general database
+     * settings (the ones that are always required no matter what you want to
+     * use this connection for).
+     */
+    private JPanel buildGeneralPanel(SPDataSource dbcs) {
+        DataSourceCollection dsCollection = dbcs.getParentCollection();
+        List<SPDataSourceType> dataSourceTypes = dsCollection.getDataSourceTypes();
+        dataSourceTypes.add(0, new SPDataSourceType());
+        dataSourceTypeBox = new JComboBox(dataSourceTypes.toArray());
+        dataSourceTypeBox.setRenderer(new SPDataSourceTypeListCellRenderer());
+        dataSourceTypeBox.setSelectedIndex(0);
         
-        dbNameField.setText(dbcs.getName());
         // if this data source has no parent, it is a root data source
         if (dbcs.isParentSet()) {
             System.out.println("A PARENT! setting selected item to: \"" + dbcs.getParentType() + "\"");
@@ -87,28 +123,10 @@ public class SPDataSourcePanel implements DataEntryPanel {
             System.out.println("NO PARENT! setting selected item to: \"" + dbcs + "\"");
             dataSourceTypeBox.setSelectedItem(dbcs);
         }
-        dbUrlField.setText(dbcs.getUrl());
-        dbUserField.setText(dbcs.getUser());
-        dbPassField.setText(dbcs.getPass());
         
-	}
-
-    /**
-     * Builds and returns a Swing component that has all the general database
-     * settings (the ones that are always required no matter what you want to
-     * use this connection for).
-     */
-    private JPanel buildGeneralPanel(SPDataSource ds) {
-        DataSourceCollection dsCollection = ds.getParentCollection();
-        List<SPDataSourceType> dataSourceTypes = dsCollection.getDataSourceTypes();
-        dataSourceTypes.add(0, new SPDataSourceType());
-        dataSourceTypeBox = new JComboBox(dataSourceTypes.toArray());
-        dataSourceTypeBox.setRenderer(new SPDataSourceTypeListCellRenderer());
-        dataSourceTypeBox.setSelectedIndex(0);
-        
-        dbNameField = new JTextField();
+        dbNameField = new JTextField(dbcs.getName());
         dbNameField.setName("dbNameField");
-        platformSpecificOptions = new PlatformSpecificConnectionOptionPanel(dbUrlField = new JTextField());
+        platformSpecificOptions = new PlatformSpecificConnectionOptionPanel(dbUrlField = new JTextField(dbcs.getUrl()));
 
         //we know this should be set to pref but one of the components seems to be updating the
         //preferred size
@@ -117,8 +135,13 @@ public class SPDataSourcePanel implements DataEntryPanel {
         builder.append("&Database Type", dataSourceTypeBox);
         builder.append("Connect &Options", platformSpecificOptions.getPanel());
         builder.append("JDBC &URL", dbUrlField);
-        builder.append("Use&rname", dbUserField = new JTextField());
-        builder.append("&Password", dbPassField = new JPasswordField());
+        builder.append("Use&rname", dbUserField = new JTextField(dbcs.getUser()));
+        builder.append("&Password", dbPassField = new JPasswordField(dbcs.getPass()));
+        
+        // extra fields supplied by subclasses
+        for (JComponent extraField : extraFields) {
+        	builder.append((String) extraField.getClientProperty(EXTRA_FIELD_LABEL_PROP), extraField);
+        }
         
         dataSourceTypeBox.addItemListener(new ItemListener() {
             public void itemStateChanged(ItemEvent e) {
@@ -154,6 +177,22 @@ public class SPDataSourcePanel implements DataEntryPanel {
         return dbcs;
     }
 
+    /**
+     * Adds an extra data entry field which will be laid out after the
+     * rest of the components in this panel.  The component must have
+     * its EXTRA_FIELD_LABEL_PROP client property set to the label
+     * you want the field to have.
+     * <p>
+     * You can call this method as many times as you want, but only before
+     * the first call to {@link #getPanel()}.  After that, it is an error
+     * to call this method.
+     * 
+     * @param component The component to add.
+     */
+    protected void addExtraField(JComponent component) {
+    	if (panel != null) throw new IllegalStateException("You can't do this after calling getPanel()");
+    	extraFields.add(component);
+    }
     
     // -------------------- DATE ENTRY PANEL INTERFACE -----------------------
 
@@ -204,6 +243,9 @@ public class SPDataSourcePanel implements DataEntryPanel {
      * connection settings.
      */
     public JPanel getPanel() {
+    	if (panel == null) {
+    		panel = buildGeneralPanel(dbcs);
+    	}
         return panel;
     }
 }
