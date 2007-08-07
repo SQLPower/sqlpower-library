@@ -502,12 +502,15 @@ public class SPDataSource {
 	}
 
 	/**
-	 * Sets the value of name
+	 * Sets the value of name. Also set the value of the ODBC DSN
+	 * as they should be the same value. (The ODBC drivers should go
+	 * away when the Match Maker engines are in Java.)
 	 *
 	 * @param argName Value to assign to this.name
 	 */
 	public void setName(String argName){
 		putImpl(PL_LOGICAL, argName, "name");
+		putImpl(PL_DSN, argName, "odbcDsn");
 	}
 
 	/**
