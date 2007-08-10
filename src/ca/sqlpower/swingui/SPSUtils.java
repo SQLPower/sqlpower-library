@@ -369,13 +369,13 @@ public class SPSUtils {
      * Displays a dialog box with the given message and exception,
      * allowing the user to examine the stack trace, but do NOT generate
      * a report back to SQLPower web site.  The dialog's
-     * parent component will be the ArchitectFrame's main instance.
+     * parent component will be set to null.
      * 
      * @deprecated This method will display a dialog box that is not properly
      * parented. Use {@link #showExceptionDialogNoReport(Component, String, Throwable)} instead.
      */
-	public static void showExceptionDialogNoReport(String string, Throwable ex) {
-        displayExceptionDialog(null, string, null, ex);
+	public static JDialog showExceptionDialogNoReport(String string, Throwable ex) {
+        return displayExceptionDialog(null, string, null, ex);
 	}
 	
 	/** Displays a dialog box with the given message and exception,
@@ -386,8 +386,8 @@ public class SPSUtils {
 	 * @param message
 	 * @param throwable
 	 */
-	public static void showExceptionDialogNoReport(Component parent, String string, Throwable ex) {
-		displayExceptionDialog(parent, string, null, ex);
+	public static JDialog showExceptionDialogNoReport(Component parent, String string, Throwable ex) {
+		return displayExceptionDialog(parent, string, null, ex);
 	}
 	
     /**
@@ -400,8 +400,8 @@ public class SPSUtils {
      * @param subMessage A second string to give finer-grained detail to the user
      * @param throwable The exception that caused the problem
      */
-    public static void showExceptionDialogNoReport(Component parent, String message, String subMessage, Throwable throwable) {
-        displayExceptionDialog(parent, message, subMessage, throwable);
+    public static JDialog showExceptionDialogNoReport(Component parent, String message, String subMessage, Throwable throwable) {
+        return displayExceptionDialog(parent, message, subMessage, throwable);
     }
 
     /**
@@ -420,8 +420,10 @@ public class SPSUtils {
      * @param message A user visible string that should explain the problem
      * @param subMessage A second string to give finer-grained detail to the user
      * @param throwable The exception that caused the problem
+     * 
+     * @return The JDialog to be displayed with the exception.
      */
-    private static void displayExceptionDialog(
+    private static JDialog displayExceptionDialog(
             final Component parent,
             final String message,
             final String subMessage,
@@ -560,6 +562,7 @@ public class SPSUtils {
         dialog.setLocationRelativeTo(parent);
 
         dialog.setVisible(true);
+        return dialog;
     }
     
     /**
