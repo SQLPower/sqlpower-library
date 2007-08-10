@@ -72,12 +72,24 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
         // Nothing to do
 	}
 
-	/**
-	 * Fills this row set with all the data of the given result set.
-	 * After populating this row set, you can safely call rs.close().
-	 */
-	public void populate(ResultSet rs) throws SQLException {
-		/*
+    /**
+     * Fills this row set with all the data of the given result set.
+     * After populating this row set, you can safely call rs.close().
+     */
+    public void populate(ResultSet rs) throws SQLException {
+        populate(rs, null);
+    }
+    
+    /**
+     * Fills this row set with all the data of the given result set
+     * which is accepted by the given row filter.
+     * After populating this row set, you can safely call rs.close().
+     * 
+     * @param rs The result set to read all data from
+     * @param filter the filter to consult about which rows to keep
+     */
+    public void populate(ResultSet rs, RowFilter filter) throws SQLException {
+        /*
 		 * XXX: this upcases all the column names in the metadata for
 		 * the Dashboard's benefit.  We should add a switch for this
 		 * behaviour to the CachedRowSet API and then use it from the
@@ -86,7 +98,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		rsmd = new CachedResultSetMetaData(rs.getMetaData(), true);
 
 		int rowNum = 0;
-		ArrayList newData = new ArrayList();
+		ArrayList<Object[]> newData = new ArrayList<Object[]>();
 		int colCount = rsmd.getColumnCount();
 		while (rs.next()) {
 		    if (logger.isDebugEnabled()) logger.debug("Populating Row "+rowNum);
@@ -110,9 +122,12 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 				row[i] = o;
 			}
             
-			newData.add(row);
-            
-			rowNum++;
+            if (filter == null || filter.acceptsRow(row)) {
+                newData.add(row);
+                rowNum++;
+            } else {
+                logger.debug("Skipped this row (rejected by filter)");
+            }
 		}
 		data = newData;
 	}

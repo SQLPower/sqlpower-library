@@ -35,12 +35,25 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import ca.sqlpower.sql.CachedRowSet;
+import ca.sqlpower.sql.RowFilter;
+
 /**
  * Decorate an Oracle Connection to handle the evil error "ORA-1722" on getTypeMap() when
  * the user is using an Oracle 10 driver on Oracle 8i. 
  */
 public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 
+    /**
+     * If true, this decorator's getTables method will omit tables in the
+     * recycle bin. The "recycle bin" concept was introduced in Oracle 10. It
+     * boils down to the DROP TABLE command just renaming the table to a long
+     * randomly-generated name that starts with BIN$.  The table is only dropped
+     * for real when a user purges the recycle bin, or the tablespace fills up
+     * (in which case the oldest recycle bin table is dropped).
+     */
+    private boolean hidingRecycleBinTables = true;
+    
 	public OracleDatabaseMetaDataDecorator(DatabaseMetaData delegate) {
 		super(delegate);
 	}
@@ -86,5 +99,25 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
                 throw e;
             }
         }
+    }
+    
+    @Override
+    public ResultSet getTables(String catalog, String schemaPattern, String tableNamePattern, String[] types) throws SQLException {
+        ResultSet rs = super.getTables(catalog, schemaPattern, tableNamePattern, types);
+        CachedRowSet crs = new CachedRowSet();
+
+        RowFilter noRecycledTablesFilter = null;
+        
+        if (hidingRecycleBinTables) {
+            noRecycledTablesFilter = new RowFilter() {
+                public boolean acceptsRow(Object[] row) {
+                    String tableName = (String) row[2];
+                    return !tableName.startsWith("BIN$");
+                }
+            };
+        }
+        
+        crs.populate(rs, noRecycledTablesFilter);
+        return crs;
     }
 }
