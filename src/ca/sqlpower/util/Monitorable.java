@@ -55,7 +55,7 @@ public interface Monitorable {
 	public int getProgress();
 
 	/**
-	 * Tells the size of the job being preformed.  If the size is not yet known (because
+	 * Tells the size of the job being performed.  If the size is not yet known (because
 	 * work needs to be done to calculate the job size), returns null.
 	 *
 	 * @return An Integer saying how much work must be done; null if this amount is not
@@ -63,6 +63,14 @@ public interface Monitorable {
 	 */
 	public Integer getJobSize();
 
+	/**
+	 * Returns true once the process being monitored has begun.  This will remain true
+	 * after {@link #isFinished} becomes true.  The value will only go back to false if
+	 * the process being monitored is preparing for a restart (it may go back to false
+	 * in this case, but it's not required to, if for instance the process restarts immediately).
+	 * 
+	 * @return
+	 */
 	public boolean hasStarted();
 
 	/**
