@@ -41,7 +41,7 @@ import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileFilter;
-import javax.swing.text.AbstractDocument;
+import javax.swing.text.Document;
 
 import org.apache.log4j.Logger;
 
@@ -602,8 +602,17 @@ public class SPSUtils {
         traceWriter.flush();
     }
 	
+	/**
+	 * Returns the unqualified name (no package name) of the given object's class.
+	 * 
+	 * @param o The object whose class name to extract and return.  This argument
+	 * must not be null.
+	 * @return The part of the full class name that follows the last "." character,
+	 * or the whole name if there are no dots (because o's class is in the default
+	 * package).
+	 */
 	public static String niceClassName(Object o) {
-        Class c = o.getClass();
+        Class<?> c = o.getClass();
         String name = c.getName();
         int lastDot = name.lastIndexOf('.');
         if (lastDot == -1)
@@ -620,7 +629,7 @@ public class SPSUtils {
      * @param doc the document to save
      * @param filter The filename extension filter
      */
-    public static boolean saveDocument(Component owner, AbstractDocument doc, FileExtensionFilter filter) {
+    public static boolean saveDocument(Component owner, Document doc, FileExtensionFilter filter) {
         JFileChooser fc = new JFileChooser();
         fc.setFileFilter(filter);
         int returnVal = fc.showSaveDialog(owner);
@@ -665,7 +674,7 @@ public class SPSUtils {
      * @param file The file to save to
      * @return True if the save was successful; false otherwise.
      */
-    public static boolean writeDocument(AbstractDocument doc, File file) {
+    public static boolean writeDocument(Document doc, File file) {
         PrintWriter out = null;
         try {
             StringReader sr = new StringReader(doc.getText(0, doc.getLength()));
