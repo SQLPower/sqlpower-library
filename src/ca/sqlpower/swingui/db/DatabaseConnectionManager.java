@@ -204,7 +204,8 @@ public class DatabaseConnectionManager {
      */
     public void showDialog(Window owner) {
         if (d != null && d.isVisible() && currentOwner == owner) {
-            d.requestFocus();
+        	d.setVisible(true);  // even if the dialog is already visible, this brings it to the front and gives it focus
+            d.requestFocus();    // this will rob focus from the previous focus owner
             return;
         }
 
