@@ -38,7 +38,9 @@ package ca.sqlpower.sql.jdbcwrapper;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * The PostgresConnectionDecorator makes sure that the special PostgresDatabaseMetaDataDecorator
@@ -61,4 +63,15 @@ public class PostgresConnectionDecorator extends ConnectionDecorator {
     public DatabaseMetaData getMetaData() throws SQLException {
         return new PostgresDatabaseMetaDataDecorator(super.getMetaData());
     }
+
+	@Override
+	protected PreparedStatement makePreparedStatementDecorator(
+			PreparedStatement pstmt) {
+		return new GenericPreparedStatementDecorator(this, pstmt);
+	}
+
+	@Override
+	protected Statement makeStatementDecorator(Statement stmt) {
+		return new GenericStatementDecorator(this, stmt);
+	}
 }

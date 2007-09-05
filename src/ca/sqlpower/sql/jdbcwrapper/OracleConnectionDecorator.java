@@ -33,7 +33,9 @@ package ca.sqlpower.sql.jdbcwrapper;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * Allow for workarounds for dealing with Oracle Driver issues.
@@ -46,6 +48,17 @@ public class OracleConnectionDecorator extends ConnectionDecorator {
 
 	public OracleConnectionDecorator(Connection conn) {
 		super(conn);
+	}
+
+	@Override
+	protected PreparedStatement makePreparedStatementDecorator(
+			PreparedStatement pstmt) {
+		return new OraclePreparedStatementDecorator(this, pstmt);
+	}
+
+	@Override
+	protected Statement makeStatementDecorator(Statement stmt) {
+		return new OracleStatementDecorator(this, stmt);
 	}
 
 }
