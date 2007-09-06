@@ -25,6 +25,7 @@ import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -63,6 +64,14 @@ public class DatabaseConnectionManager {
 
 	private static Logger logger = Logger.getLogger(DatabaseConnectionManager.class);
 
+	/**
+	 * A property key that can be set with a value for any additional actions passed into the
+	 * DatabaseConnectionManager constructor. If you set the Action to have a value of Boolean.TRUE
+	 * with this key, then the DatabaseConnectionManager will disable the corresponding button
+	 * it creates in the GUI for that action.
+	 */
+	public static final String DISABLE_IF_NO_CONNECTION_SELECTED = "disableIfNoConnectionSelected";
+	
     /**
      * The GUI panel.  Lives inside the dialog {@link #d}.
      */
@@ -174,6 +183,8 @@ public class DatabaseConnectionManager {
      */
 	private final DataSourceCollection dsCollection;
 
+	private List<JButton> additionalActionButtons = new ArrayList<JButton>();
+	
 	/**
 	 * Creates a new database connection manager with the default set of action buttons, plus
 	 * those supplied in the given list.
@@ -289,7 +300,13 @@ public class DatabaseConnectionManager {
 
 		for (Action a : additionalActions) {
 			bsb.addUnrelatedGap();
-			bsb.addGridded(new JButton(a));
+			JButton b = new JButton(a);
+			Object disableValue = a.getValue(DISABLE_IF_NO_CONNECTION_SELECTED);
+			if (disableValue instanceof Boolean && disableValue.equals(Boolean.TRUE)) {
+				b.setEnabled(false);
+			}
+			additionalActionButtons.add(b);
+			bsb.addGridded(b);
 		}
 
         bsb.addUnrelatedGap();
@@ -353,7 +370,19 @@ public class DatabaseConnectionManager {
 	private class DSTableMouseListener implements MouseListener {
 
 		public void mouseClicked(MouseEvent evt) {
-            if (evt.getClickCount() == 2) {
+			
+			for (JButton b : additionalActionButtons) {
+				Object disableValue = b.getAction().getValue(DISABLE_IF_NO_CONNECTION_SELECTED);
+				if (disableValue instanceof Boolean && disableValue.equals(Boolean.TRUE)) {
+					if (getSelectedConnection() == null) {
+						b.setEnabled(false);
+					} else {
+						b.setEnabled(true);
+					}
+				}
+			}
+				
+			if (evt.getClickCount() == 2) {
             	editDatabaseConnectionAction.actionPerformed(null);
             }
         }
