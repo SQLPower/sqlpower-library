@@ -80,12 +80,12 @@ public class DatabaseConnectionManager {
 
     private final DataSourceDialogFactory dsDialogFactory;
     
+    private final DataSourceTypeDialogFactory dsTypeDialogFactory; 
+    
 	private final Action jdbcDriversAction = new AbstractAction("JDBC Drivers"){
 
 		public void actionPerformed(ActionEvent e) {
-			// TODO Auto-generated method stub
-            JOptionPane.showMessageDialog(d,
-            		"This action is not implemented yet.");
+			dsTypeDialogFactory.showDialog(DatabaseConnectionManager.this.currentOwner);
 		}
 	};
 
@@ -178,10 +178,12 @@ public class DatabaseConnectionManager {
 	 * Creates a new database connection manager with the default set of action buttons, plus
 	 * those supplied in the given list.
 	 */
-	public DatabaseConnectionManager(DataSourceCollection dsCollection, DataSourceDialogFactory dsDialogFactory, List<Action> additionalActions) {
+	public DatabaseConnectionManager(DataSourceCollection dsCollection, DataSourceDialogFactory dsDialogFactory,
+			DataSourceTypeDialogFactory dsTypeDialogFactory, List<Action> additionalActions) {
         this.dsCollection = dsCollection;
         this.dsDialogFactory = dsDialogFactory;
-		panel = createPanel(additionalActions);
+		this.dsTypeDialogFactory = dsTypeDialogFactory;
+        panel = createPanel(additionalActions);
 	}
 
 	/**
@@ -191,8 +193,9 @@ public class DatabaseConnectionManager {
 	 * @param dsDialogFactory The factory that this manager will use to create all DataSource editor dialogs.
 	 */
 	@SuppressWarnings("unchecked")
-	public DatabaseConnectionManager(DataSourceCollection dsCollection, DataSourceDialogFactory dsDialogFactory) {
-		this(dsCollection, dsDialogFactory, Collections.EMPTY_LIST);
+	public DatabaseConnectionManager(DataSourceCollection dsCollection, DataSourceDialogFactory dsDialogFactory,
+			DataSourceTypeDialogFactory dsTypeDialogFactory) {
+		this(dsCollection, dsDialogFactory, dsTypeDialogFactory, Collections.EMPTY_LIST);
 	}
 
     /**
