@@ -34,6 +34,7 @@ package ca.sqlpower.swingui.db;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -52,6 +53,7 @@ import ca.sqlpower.sql.SPDataSourceType;
 import ca.sqlpower.swingui.AddRemoveIcon;
 import ca.sqlpower.swingui.DataEntryPanel;
 import ca.sqlpower.swingui.SPDataSourceTypeListCellRenderer;
+import ca.sqlpower.swingui.SPSUtils;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 import com.jgoodies.forms.layout.FormLayout;
@@ -194,6 +196,11 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         for (int i = 0; i < lm.getSize(); i++) {
             SPDataSourceType dst = (SPDataSourceType) lm.getElementAt(i);
             dataSourceCollection.mergeDataSourceType(dst);
+        }
+        try {
+        	dataSourceCollection.write();
+        } catch (IOException ex) {
+        	SPSUtils.showExceptionDialogNoReport(panel, "Error while saving to pl.ini", ex);
         }
         return true;
     }
