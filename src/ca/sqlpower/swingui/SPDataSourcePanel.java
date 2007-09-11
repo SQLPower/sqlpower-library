@@ -126,8 +126,12 @@ public class SPDataSourcePanel implements DataEntryPanel {
         
         dbNameField = new JTextField(dbcs.getName());
         dbNameField.setName("dbNameField");
+        
         platformSpecificOptions = new PlatformSpecificConnectionOptionPanel(dbUrlField = new JTextField(dbcs.getUrl()));
-
+        if (dbcs.isParentSet()) {
+        	platformSpecificOptions.setTemplate(dbcs.getParentType());
+        }
+        
         //we know this should be set to pref but one of the components seems to be updating the
         //preferred size
         DefaultFormBuilder builder = new DefaultFormBuilder(new FormLayout("pref, 4dlu, 0:grow")); 

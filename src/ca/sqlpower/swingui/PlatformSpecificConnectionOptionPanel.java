@@ -239,6 +239,7 @@ public class PlatformSpecificConnectionOptionPanel {
      */
     private void updateFieldsFromUrl() {
         if (updatingUrlFromFields) return;
+        if (template == null || template.getJdbcUrl() == null) return;
         try {
             updatingFieldsFromUrl = true;
 
@@ -246,6 +247,8 @@ public class PlatformSpecificConnectionOptionPanel {
                 platformSpecificOptionPanel.getComponent(i).setEnabled(true);
             }
 
+            logger.debug("template is " + template);
+            logger.debug("dbUrlField is " + dbUrlField);
             Map<String, String> map = template.retrieveURLParsing(dbUrlField.getText());
             if (!map.isEmpty()) {
                 platformSpecificOptionPanel.setEnabled(true);
