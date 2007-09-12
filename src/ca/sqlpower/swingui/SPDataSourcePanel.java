@@ -127,7 +127,10 @@ public class SPDataSourcePanel implements DataEntryPanel {
         dbNameField = new JTextField(dbcs.getName());
         dbNameField.setName("dbNameField");
         
-        platformSpecificOptions = new PlatformSpecificConnectionOptionPanel(dbUrlField = new JTextField(dbcs.getUrl()));
+        logger.debug("dbcs.getUrl() returns " + dbcs.getUrl());
+        dbUrlField = new JTextField(dbcs.getUrl());
+        
+        platformSpecificOptions = new PlatformSpecificConnectionOptionPanel(dbUrlField);
         if (dbcs.isParentSet()) {
         	platformSpecificOptions.setTemplate(dbcs.getParentType());
         }

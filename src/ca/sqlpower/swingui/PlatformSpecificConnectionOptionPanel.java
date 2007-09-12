@@ -283,7 +283,11 @@ public class PlatformSpecificConnectionOptionPanel {
         platformSpecificOptionPanel.removeAll();
 
         if (template != null) {
-            Map<String, String> map = template.retrieveURLDefaults();
+        	
+            Map<String, String> map = template.retrieveURLParsing(dbUrlField.getText());
+            if (map.size() == 0) {
+            	map = template.retrieveURLDefaults();
+            }
 
             for(String key : map.keySet()) {
                 String var = key;
@@ -293,7 +297,7 @@ public class PlatformSpecificConnectionOptionPanel {
                 JTextField field = new JTextField(def);
                 platformSpecificOptionPanel.add(field);
                 field.getDocument().addDocumentListener(urlUpdater);
-                logger.debug("The default value is: " + def);
+                logger.debug("The default value for key " + key + " is: " + def);
             }
 
 
