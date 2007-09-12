@@ -246,6 +246,7 @@ public class FormValidationHandler implements ValidationHandler {
             throw new IllegalArgumentException("Unsupported JComponent type:"+
                     component.getClass());
         }
+        performFormValidation();
     }
 
     private void performFormValidation() {
