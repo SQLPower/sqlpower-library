@@ -13,7 +13,6 @@
 	<classpathentry kind="lib" path="lib/commons-logging.jar"/>
 	<classpathentry kind="lib" path="lib/commons-lang.jar"/>
 	<classpathentry kind="lib" path="lib/commons-fileupload.jar"/>
-	<classpathentry kind="lib" path="lib/commons-digester.jar"/>
 	<classpathentry kind="lib" path="lib/commons-dbcp.jar"/>
 	<classpathentry kind="lib" path="lib/commons-collections.jar"/>
 	<classpathentry kind="lib" path="lib/commons-beanutils.jar"/>
