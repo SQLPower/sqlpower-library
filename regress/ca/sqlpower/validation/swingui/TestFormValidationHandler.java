@@ -45,6 +45,10 @@ public class TestFormValidationHandler extends TestCase {
 
     private FormValidationHandler handler;
 
+    /**
+     * Some test methods count events. They do so using this variable.
+     */
+    private int eventCount = 0;
 
     @Override
     protected void setUp() throws Exception {
@@ -52,52 +56,59 @@ public class TestFormValidationHandler extends TestCase {
         handler = new FormValidationHandler(new StatusComponent());
     }
 
-    protected class Counter {
-        int count = 0;
-
-        public int getCount() {
-            return count;
-        }
-
-        public void setCount(int count) {
-            this.count = count;
-        }
-    }
+    /**
+     * This test actually verifies our understanding of how JTextField document
+     * events work, not so much how the validation handler responds to them.
+     */
     public void testEventSupport() throws BadLocationException {
-        Integer count = new Integer(0);
         RegExValidator val = new RegExValidator("\\d+");
         final JTextField textField = new JTextField();
-        final Counter counter = new Counter();
 
         final PropertyChangeListener listener = new PropertyChangeListener(){
             public void propertyChange(PropertyChangeEvent evt) {
-                counter.setCount(counter.getCount()+1);
+                System.out.println("Property change!");
+                new Exception().printStackTrace();
+                eventCount++;
             }};
         handler.addPropertyChangeListener(listener);
         handler.addValidateObject(textField,val);
 
-        // TextField firs 2 events for setText: clearing then inserting,
-        // when the file needs clear or insert new string
-        assertEquals("There should be no events", 0, counter.getCount());
+        // Note: TextField can fire 1 or 2 events for setText.
+        // First it clears the old string, then it inserts the new one.
+        
+        // Originally, the validation handler would not revalidate the form after every
+        // addValidateObject() call.  This was changed recently to work around a bug
+        // in MatchMaker.  However, we have concerns about how this might impact performance
+        // when adding a large number of validate objects.  The longer we wait before
+        // changing the policy back, the more likely we will have additional code that
+        // relies on the new policy.
+        //
+        // When and if we change back, the following test should expect eventCount == 0
+        assertEquals("Expected one event from initial validation", 1, eventCount);
 
         // no need for clear
+        eventCount = 0;
         textField.setText("10");
-        assertEquals("event counter should be 1", 1, counter.getCount());
+        assertEquals(1, eventCount);
 
         // clear and insert
+        eventCount = 0;
         textField.setText("20");
-        assertEquals("event counter should be 3", 3, counter.getCount());
+        assertEquals(2, eventCount);
 
         // just clear
+        eventCount = 0;
         textField.setText("");
-        assertEquals("event counter should be 4", 4, counter.getCount());
+        assertEquals(1, eventCount);
 
         // just insert
+        eventCount = 0;
         textField.setText("a");
-        assertEquals("event counter should be 5", 5, counter.getCount());
+        assertEquals(1, eventCount);
 
+        eventCount = 0;
         handler.removePropertyChangeListener(listener);
         textField.getDocument().insertString(textField.getDocument().getLength(),"aa",null);
-        assertEquals("event counter should be remain 5", 5, counter.getCount());
+        assertEquals("event counter should be unaffected after listener is detached", 0, eventCount);
     }
 }
