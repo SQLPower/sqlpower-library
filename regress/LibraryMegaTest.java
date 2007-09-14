@@ -13,6 +13,7 @@ public class LibraryMegaTest {
         TestSuite suite = new TestSuite("Test for default package");
         //$JUnit-BEGIN$
         suite.addTest(ca.sqlpower.sql.AllTests.suite());
+        suite.addTest(ca.sqlpower.swingui.AllTests.suite());
         suite.addTest(ca.sqlpower.swingui.table.AllTests.suite());
         suite.addTest(ca.sqlpower.util.AllTests.suite());
         suite.addTest(ca.sqlpower.validation.AllTests.suite());

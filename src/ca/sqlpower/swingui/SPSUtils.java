@@ -6,6 +6,7 @@ import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.GridLayout;
+import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
@@ -692,6 +693,90 @@ public class SPSUtils {
         } finally {
             if (out != null) out.close();
         }
+    }
+
+    /**
+     * This method creates an arrowhead for a line. The formula used is derived
+     * from solving the system of equations (x2 - x1)^2 + (y2 -y1)^2 = c^2 and
+     * y1 = m * x1 + n. After solving the equation we get:
+     * (m^2 + 1) * x1^2 + (-2 * x2 - 2 * y2 * m + 2 * m * n) * x1 +
+     * (x2 ^ 2 + y2^2 - 2 * y2 * n + n^2 - c^2) = 0.
+     * We can use this to find roots using the equation:
+     * -b +/- root(b^2 -4ac) / 2a
+     *
+     * @param xHead
+     *            The x position of the head of the line.
+     * @param yHead
+     *            The y position of the head of the line.
+     * @param xTail
+     *            The x position of the tail of the line.
+     * @param yTail
+     *            The y position of the tail of the line.
+     * @param height
+     *            The height of the arrowhead.
+     * @param width
+     *            The width of the base of the arrowhead.
+     * @return A polygon containing the three points for the arrowhead.
+     */
+    public static Polygon createArrowhead(int xHead, int yHead, int xTail, int yTail, int height,
+            int width) {
+        Polygon polygon = new Polygon();
+        polygon.addPoint(xHead, yHead);
+        if (yHead == yTail) {
+            if (xHead > xTail) {
+       
+                polygon.addPoint(xHead - height, yHead - width / 2);
+                polygon.addPoint(xHead - height, yHead + width / 2);
+            } else {
+                polygon.addPoint(xHead + height, yHead - width / 2);
+                polygon.addPoint(xHead + height, yHead + width / 2);
+            }
+            return polygon;
+        }
+       
+        if (xHead == xTail) {
+            if (yHead > yTail) {
+                polygon.addPoint(xHead - width / 2, yHead - height);
+                polygon.addPoint(xHead + width / 2, yHead - height);
+            } else {
+                polygon.addPoint(xHead - width / 2, yHead + height);
+                polygon.addPoint(xHead + width / 2, yHead + height);
+            }
+            return polygon;
+        }
+       
+        double m = (yHead - yTail) / (xHead - xTail);
+        double n = yHead - m * xHead;
+       
+        double a = m * m + 1;
+        double b = -2 * xHead - 2 * yHead * m + 2 * m * n;
+        double c = xHead * xHead + yHead * yHead - 2 * yHead * n + n * n - height * height;
+       
+        //Get the root between the head and tail
+        double xBase = (- b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
+        if (!((xBase < xHead && xBase > xTail) || (xBase > xHead && xBase < xTail))) {
+            xBase = (- b - Math.sqrt(b * b - 4 * a * c)) / (2 * a);
+        }
+        double yBase = m * xBase + n;
+        logger.debug("The base point is (" + xBase + ", " + yBase + ")");
+
+        double mInv = -1 / m;
+        double nInv = yBase - mInv * xBase;
+       
+        a = mInv * mInv + 1;
+        b = -2 * xBase - 2 * yBase * mInv + 2 * mInv * nInv;
+        c = xBase * xBase + yBase * yBase - 2 * yBase * nInv + nInv * nInv - (width / 2) * (width /2);
+       
+        int xPoint = (int)((- b + Math.sqrt(b * b - 4 * a * c)) / (2 * a));
+        int yPoint = (int)(mInv * xPoint + nInv);
+        logger.debug(" x is " + xPoint + " y is " + yPoint);
+        polygon.addPoint(xPoint, yPoint);
+       
+        xPoint = (int)((- b - Math.sqrt(b * b - 4 * a * c)) / (2 * a));
+        yPoint = (int)(mInv * xPoint + nInv);
+        polygon.addPoint(xPoint, yPoint);
+
+        return polygon;
     }
 
 }
