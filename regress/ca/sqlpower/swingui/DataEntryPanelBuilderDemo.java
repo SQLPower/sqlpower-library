@@ -34,6 +34,7 @@ package ca.sqlpower.swingui;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.concurrent.Callable;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -43,9 +44,6 @@ import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-
-import ca.sqlpower.swingui.DataEntryPanel;
-import ca.sqlpower.swingui.DataEntryPanelBuilder;
 
 import com.jgoodies.forms.factories.Borders;
 import com.jgoodies.forms.factories.ButtonBarFactory;
@@ -86,15 +84,17 @@ public class DataEntryPanelBuilderDemo {
 			DataEntryPanelBuilder.createDataEntryPanelDialog(
 					new TestPanel(), frame, "Test", "OK Dudes");
 		
-		Action okAction = new AbstractAction() {
-			public void actionPerformed(ActionEvent e) {
+		Callable<Boolean> okCall = new Callable<Boolean>() {
+			public Boolean call() {
 				System.out.println("OK action actionPerformed called");
+				return new Boolean(true);
 			}
 		};
 		
-		Action cancelAction = new AbstractAction() {
-			public void actionPerformed(ActionEvent e) {
+		Callable<Boolean> cancelCall = new Callable<Boolean>() {
+			public Boolean call() {
 				System.out.println("cancel action actionPerformed called");
+				return new Boolean(true);
 			}
 		};
 		
@@ -103,8 +103,8 @@ public class DataEntryPanelBuilderDemo {
 					new TestPanel(), frame,
 					"Test with actions passed in",
 					"OK Dudes",
-					okAction,
-					cancelAction);
+					okCall,
+					cancelCall);
 		
 		frame.add(
 			new JLabel("This is the test program's main window",

@@ -37,6 +37,7 @@ import java.awt.Dialog;
 import java.awt.Frame;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
+import java.util.concurrent.Callable;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -99,10 +100,10 @@ public class DataEntryPanelBuilder {
 	 * @param actionButtonTitle
 	 *            The label text for the OK button
 	 * @return The new JDialog, which has the panel in it along with OK and Cancel buttons
-	 * @param okAction Action to be invoked when the OK/action button is
-	 * 	pressed; does NOT need to dismiss the dialog (we do that if applyChanges() returns true).
-	 * @param cancelAction Action to be invoked when the cancel button is
-	 * 	pressed; does NOT need to dismiss the dialog.
+	 * @param okCall<Boolean> Call to be invoked when the OK/action button is
+	 * 	pressed; does NOT need to dismiss the dialog we will do this if the call returns false
+	 * @param cancelCall<Boolean> Call to be invoked when the cancel button is
+	 * 	pressed; We will dismiss the dialog if the call returns true
 	 * @return
 	 */
 	public static JDialog createDataEntryPanelDialog(
@@ -110,29 +111,45 @@ public class DataEntryPanelBuilder {
 			final Window dialogParent,
 			final String dialogTitle,
 			final String actionButtonTitle,
-			final Action okAction,
-			final Action cancelAction) {
+			final Callable<Boolean> okCall,
+			final Callable<Boolean> cancelCall) {
 
 		final JDialog d = createDialog(dialogParent, dialogTitle);
 		JComponent panel = dataEntry.getPanel();
 
 
+		Action okAction = new AbstractAction() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					boolean close = okCall.call().booleanValue();
+					if (close) {
+						d.dispose();
+					}
+				} catch (Exception ex) {
+					throw new RuntimeException(ex);
+				}
+			}
+		};
+			
 		JButton okButton = new JDefaultButton(okAction);
 		okButton.setText(actionButtonTitle);
-		// In all cases we have to close the dialog.
-		Action closeAction = new CommonCloseAction(d);
+		
+		Action closeAction = new AbstractAction() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					boolean close = cancelCall.call().booleanValue();
+					if (close) {
+						d.dispose();
+					}
+				} catch (Exception ex) {
+					throw new RuntimeException(ex);
+				}
+			}
+		};
 
-        //If the user passes in a non-null cancelAction, we have that as the closeAction
-        if (cancelAction != null){
-			closeAction = cancelAction;
-		} else {
-			logger.debug("WARNING using a null cancel action.  You probably want to use action so you can cleanup");
-		}
-
-		okButton.addActionListener(closeAction);
 		SPSUtils.makeJDialogCancellable(d, closeAction);
-		okButton.addActionListener(new CommonCloseAction(d));
-		JButton cancelButton = new JDefaultButton(cancelAction);
+
+		JButton cancelButton = new JButton(closeAction);
 		cancelButton.setText(CANCEL_BUTTON_LABEL);
 		cancelButton.addActionListener(closeAction);
 		cancelButton.addActionListener(new CommonCloseAction(d));
@@ -239,18 +256,21 @@ public class DataEntryPanelBuilder {
 			final String dialogTitle,
 			final String actionButtonTitle) {
 
-		Action okAction = new AbstractAction() {
-			public void actionPerformed(ActionEvent e) {
-				dataEntry.applyChanges();
+		Callable<Boolean> okCall = new Callable<Boolean>() {
+			public Boolean call() {
+				return new Boolean(dataEntry.applyChanges());
 			}
 		};
-		Action cancelAction = new AbstractAction() {
-			public void actionPerformed(ActionEvent e) {
+		
+		Callable<Boolean> cancelCall = new Callable<Boolean>() {
+			public Boolean call() {
 				dataEntry.discardChanges();
+				return new Boolean(true);
 			}
 		};
+		
 		return createDataEntryPanelDialog(dataEntry, dialogParent, dialogTitle,
-				actionButtonTitle, okAction, cancelAction);
+				actionButtonTitle, okCall, cancelCall);
 	}
 
 
