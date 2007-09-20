@@ -485,6 +485,12 @@ public class SPSUtils {
         String excDetailMessage = throwable.getMessage();
         if (excDetailMessage != null) {
             top.add(new JLabel("<html><b>Detail string</b>: " + nlToBR(excDetailMessage)));
+            if (throwable.getCause() != null) {
+                Throwable root;
+                for (root = throwable.getCause(); root.getCause() != null; root = root.getCause());
+            	top.add(new JLabel("<html><b>Root Cause</b>: " + nlToBR(root.getMessage())));
+            }
+
         }
 
         final JButton detailsButton = new JButton("Show Details");
