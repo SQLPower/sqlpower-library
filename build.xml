@@ -29,12 +29,12 @@
 	</target>
 
 	<target name="compile" depends="init">
-		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath"  debug="true" deprecation="true"/>
+		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
 	</target>
 
 	<target name="compile-tests" depends="compile">
 		<mkdir dir="${build}/tests"/>
-		<javac srcdir="${tests}" destdir="${build}/tests" classpathref="test.classpath"  debug="true" deprecation="true"/>
+		<javac srcdir="${tests}" destdir="${build}/tests" classpathref="test.classpath" debug="true"/>
 	</target>
 	
 	<target name="jar" depends="compile">
