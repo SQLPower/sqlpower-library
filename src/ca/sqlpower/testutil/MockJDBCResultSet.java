@@ -55,13 +55,26 @@ import java.util.Map;
 
 public class MockJDBCResultSet implements ResultSet {
 
-	private MockJDBCStatement statement;
+    /**
+     * The statement that owns this result set.  This "parent pointer" may change
+     * over the life of this result set, since results registered with the connection
+     * as the response to certain queries will be reused.
+     */
+	MockJDBCStatement statement;
+    
 	private int columnCount;
 	private String[] columnNames;
 	private List<Object[]> rows;
 	private int currentRow;
 	private boolean wasNull;
 	
+    /**
+     * Constructor for use within the package, when generating metadata
+     * results.
+     * 
+     * @param statement The statement this result set belongs to.
+     * @param columnCount The number of columns this result set will have.
+     */
 	MockJDBCResultSet(MockJDBCStatement statement, int columnCount) {
 		this.statement = statement;
 		this.columnCount = columnCount;
@@ -69,6 +82,17 @@ public class MockJDBCResultSet implements ResultSet {
 		this.rows = new ArrayList<Object[]>();
 	}
 
+    /**
+     * Constructor for use by outsiders who want to provide a result set that will
+     * be the response to a particular query.
+     * <p>
+     * See {@link MockJDBCConnection#registerResultSet(String,ResultSet)} for a way
+     * of registering this result set to become the results of a query.
+     */
+    public MockJDBCResultSet(int columnCount) {
+        this(null, columnCount);
+    }
+    
 	/**
 	 * Gets the value in the current row at columnIndex.  Checks that currentRow and columnIndex
 	 * are valid, and throws SQLException if they are not.  Also sets wasNull as a side effect.
@@ -193,7 +217,12 @@ public class MockJDBCResultSet implements ResultSet {
 	}
 
 	public Timestamp getTimestamp(int columnIndex) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+        Object val = getRowCol(columnIndex);
+        if (val == null) {
+            return null;
+        } else {
+            return new Timestamp( ((java.util.Date) val).getTime() );
+        }
 	}
 
 	public InputStream getAsciiStream(int columnIndex) throws SQLException {
@@ -233,11 +262,16 @@ public class MockJDBCResultSet implements ResultSet {
 	}
 
 	public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+        String strVal = getString(columnIndex);
+        if (strVal == null) {
+            return null;
+        } else {
+            return new BigDecimal(strVal);
+        }
 	}
 
 	public BigDecimal getBigDecimal(String columnName) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+        return getBigDecimal(findColumn(columnName));
 	}
 
 	public boolean isBeforeFirst() {
@@ -697,7 +731,7 @@ public class MockJDBCResultSet implements ResultSet {
 	}
 
 	public Timestamp getTimestamp(String columnName) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+        return getTimestamp(findColumn(columnName));
 	}
 
 	public InputStream getAsciiStream(String columnName) throws SQLException {

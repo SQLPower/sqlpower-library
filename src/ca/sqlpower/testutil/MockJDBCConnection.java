@@ -41,6 +41,8 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.Properties;
+import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 /**
  * A fake connection object that we can use for unit testing.
@@ -58,6 +60,8 @@ public class MockJDBCConnection implements Connection {
 	private Properties properties;
 	private MockJDBCDatabaseMetaData metaData;
 	
+    private Map<String, MockJDBCResultSet> resultSets = new TreeMap<String, MockJDBCResultSet>();
+    
 	public MockJDBCConnection(String url, Properties properties) {
 		this.url = url;
 		this.properties = properties;
@@ -72,6 +76,36 @@ public class MockJDBCConnection implements Connection {
 		return properties;
 	}
 	
+    /**
+     * Registers the given result set with this connection.  Any statement created
+     * by this connection will return the given result set when an executeQuery()
+     * call is made with a SQL string matching the regular expression given here.
+     * 
+     * @param regex
+     * @param rs
+     */
+    public void registerResultSet(String regex, MockJDBCResultSet rs) {
+        resultSets.put(regex, rs);
+    }
+    
+    /**
+     * Returns a result set whose registered regex matches the given SQL string.
+     * 
+     * @param sql The SQL query string to match against registered result sets
+     * @return One of the registered result sets whose regex matches the SQL string,
+     * or null if none of the registered result sets match.
+     */
+    MockJDBCResultSet resultsForQuery(String sql) {
+        for (Map.Entry<String, MockJDBCResultSet> entry : resultSets.entrySet()) {
+            System.out.println("Comparing \""+sql+"\" against \""+entry.getKey()+"\"");
+            Pattern p = Pattern.compile(entry.getKey(), Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+            if (p.matcher(sql).matches()) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+    
 	// ========= java.sql.Connection interface is below this line ========
 	
 	public Statement createStatement() throws SQLException {

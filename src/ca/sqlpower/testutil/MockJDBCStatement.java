@@ -39,17 +39,38 @@ import java.sql.Statement;
 
 public class MockJDBCStatement implements Statement {
 	
+    /**
+     * The connection that owns this statement.
+     */
 	private MockJDBCConnection connection;
+    
 	private int maxFieldSize;
 	private int maxRows;
 	private int queryTimeout;
 
+    /**
+     * Creates a new statement belonging to the given connection.
+     */
 	MockJDBCStatement(MockJDBCConnection connection) {
 		this.connection = connection;
 	}
 	
+    /**
+     * Looks for a result set whose regular expression matches the given query.
+     * The connection that owns this statement may have one or more result sets
+     * registered with it. Each registered result set is keyed by a regular expression.
+     * See {@link MockJDBCConnection#registerResultSet(String, MockJDBCResultSet)} for
+     * details.
+     */
 	public ResultSet executeQuery(String sql) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+        MockJDBCResultSet rs = connection.resultsForQuery(sql);
+        if (rs == null) {
+            throw new SQLException("No result set is registered for the query \""+sql+"\"");
+        } else {
+            rs.statement = this;
+            rs.beforeFirst();
+            return rs;
+        }
 	}
 
 	public int executeUpdate(String sql) throws SQLException {
