@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.AbstractButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JTable;
@@ -248,7 +249,49 @@ public class FormValidationHandler implements ValidationHandler {
         }
         performFormValidation();
     }
-
+    
+    /**
+     * Add a JtextComponent and JCheckBox and the validator to the List.
+     * Only validates the JtextComponent when JCheckBox is selected
+     */
+    public void addValidateObject(final JTextComponent textComponent, final JCheckBox checkBox, final Validator validator) {
+        final ValidateObject validateObject = new ValidateObject(textComponent,validator);
+        objects.add(validateObject);
+        validateObject.setObject(textComponent.getText());
+        textComponent.getDocument().addDocumentListener(new DocumentListener(){
+        	public void insertUpdate(DocumentEvent e) {
+        		doStuff();
+        	}
+        	public void removeUpdate(DocumentEvent e) {
+        		doStuff();
+        	}
+        	public void changedUpdate(DocumentEvent e) {
+        		doStuff();
+        	}
+        	private void doStuff() {
+        		if (checkBox.isSelected()) {
+        			validateObject.setObject(((JTextComponent)textComponent).getText());
+        		} else {
+        			validateObject.setObject("");
+        		}
+        		performFormValidation();
+        	}
+        });
+        checkBox.addActionListener(new ActionListener() {
+		
+			public void actionPerformed(ActionEvent e) {
+				if (checkBox.isSelected()) {
+					validateObject.setObject(((JTextComponent)textComponent).getText());
+				} else {
+        			validateObject.setObject("");
+        		}
+				performFormValidation();
+			}
+		
+		});
+        performFormValidation();
+    }
+    
     private void performFormValidation() {
 
         ValidateResult worst = null;
