@@ -161,7 +161,7 @@ public class DepthFirstSearch<V, E> {
         }
     }
     
-    public DepthFirstSearch(GraphModel<V, E> model) {
+    public DepthFirstSearch() {
     	vertexInfo = new HashMap<V, VertexInfo>();
     	finishOrder = new LinkedList<V>();
     }
