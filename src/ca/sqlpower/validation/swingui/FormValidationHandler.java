@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.AbstractButton;
+import javax.swing.Action;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -91,6 +92,11 @@ public class FormValidationHandler implements ValidationHandler {
      */
     private StatusComponent display;
 
+    /**
+     * a list of actions to be disabled if the validation fails
+     */
+    private List<Action> actions;
+    
     private PropertyChangeSupport pcs = new PropertyChangeSupport(this);
 
     /**
@@ -179,7 +185,12 @@ public class FormValidationHandler implements ValidationHandler {
         this.display = display;
         objects = new ArrayList<ValidateObject>();
     }
-
+    
+    public FormValidationHandler(StatusComponent display, List<Action> actions) {
+        this.display = display;
+        objects = new ArrayList<ValidateObject>();
+        this.actions = actions;
+    }
 
     /**
      * Add one Jcomponent and its validator to the List
@@ -312,6 +323,11 @@ public class FormValidationHandler implements ValidationHandler {
 
         setWorstValidationStatus(worst);
         display.setResult(worst);
+        if (actions != null){
+        	for (Action a : actions) {
+        		a.setEnabled(worst.getStatus() != Status.FAIL);
+        	}
+        }
     }
 
     public ValidateResult getWorstValidationStatus() {
