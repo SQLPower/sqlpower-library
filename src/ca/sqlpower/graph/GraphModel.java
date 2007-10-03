@@ -17,7 +17,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-
 package ca.sqlpower.graph;
 
 import java.util.Collection;
