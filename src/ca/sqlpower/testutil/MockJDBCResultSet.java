@@ -111,6 +111,16 @@ public class MockJDBCResultSet implements ResultSet {
 		wasNull = val == null;
 		return val;
 	}
+	
+	private void setRowCol(int columnIndex, Object val) throws SQLException {
+		if (currentRow < 1 || currentRow > rows.size()) {
+			throw new SQLException("Not on a valid row (current="+currentRow+", rows="+rows.size()+")");
+		}
+		if (columnIndex < 1 || columnIndex > columnCount) {
+			throw new SQLException("Column index "+columnIndex+" out of range (columnCount="+columnCount+")");
+		}
+		rows.get(currentRow-1)[columnIndex-1] = val;
+	}
 
 	/**
 	 * Adds a new row at the end of this result set, and makes it the current row.
@@ -399,7 +409,7 @@ public class MockJDBCResultSet implements ResultSet {
 	}
 
 	public void updateBoolean(int columnIndex, boolean x) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+		setRowCol(columnIndex, x);
 	}
 
 	public void updateByte(int columnIndex, byte x) throws SQLException {
@@ -407,7 +417,7 @@ public class MockJDBCResultSet implements ResultSet {
 	}
 
 	public void updateShort(int columnIndex, short x) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+		setRowCol(columnIndex, x);
 	}
 
 	public void updateInt(int columnIndex, int x) throws SQLException {
@@ -415,24 +425,24 @@ public class MockJDBCResultSet implements ResultSet {
 	}
 
 	public void updateLong(int columnIndex, long x) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+		setRowCol(columnIndex, x);
 	}
 
 	public void updateFloat(int columnIndex, float x) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+		setRowCol(columnIndex, x);
 	}
 
 	public void updateDouble(int columnIndex, double x) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+		setRowCol(columnIndex, x);
 	}
 
 	public void updateBigDecimal(int columnIndex, BigDecimal x)
 			throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+		setRowCol(columnIndex, x);
 	}
 
 	public void updateString(int columnIndex, String x) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+		setRowCol(columnIndex, x);
 	}
 
 	public void updateBytes(int columnIndex, byte[] x) throws SQLException {
@@ -440,16 +450,16 @@ public class MockJDBCResultSet implements ResultSet {
 	}
 
 	public void updateDate(int columnIndex, Date x) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+		setRowCol(columnIndex, x);
 	}
 
 	public void updateTime(int columnIndex, Time x) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+		setRowCol(columnIndex, x);
 	}
 
 	public void updateTimestamp(int columnIndex, Timestamp x)
 			throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+		setRowCol(columnIndex, x);
 	}
 
 	public void updateAsciiStream(int columnIndex, InputStream x, int length)
@@ -563,7 +573,6 @@ public class MockJDBCResultSet implements ResultSet {
 	}
 
 	public void updateRow() throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	public void deleteRow() throws SQLException {
