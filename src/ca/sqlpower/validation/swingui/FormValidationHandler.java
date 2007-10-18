@@ -303,7 +303,7 @@ public class FormValidationHandler implements ValidationHandler {
         performFormValidation();
     }
     
-    private void performFormValidation() {
+    public void performFormValidation() {
 
         ValidateResult worst = null;
 
