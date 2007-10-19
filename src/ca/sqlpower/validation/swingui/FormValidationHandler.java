@@ -47,7 +47,10 @@ import javax.swing.Action;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JSpinner;
 import javax.swing.JTable;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.TableModelEvent;
@@ -253,7 +256,26 @@ public class FormValidationHandler implements ValidationHandler {
                 }
 
             });
+        } else if (component instanceof JSpinner) {
+        	final JSpinner jsp = (JSpinner)component;
+        	
+        	jsp.addChangeListener(new ChangeListener(){
+				public void stateChanged(ChangeEvent e) {
+					validateObject.setObject(jsp.getValue().toString());
+					performFormValidation();
+				}
+        	});
+        	
+        	jsp.addPropertyChangeListener(new PropertyChangeListener(){
 
+				public void propertyChange(PropertyChangeEvent evt) {
+					validateObject.setObject(jsp.getValue().toString());
+					performFormValidation();
+				}
+        		
+        	});
+        	
+        
         } else {
             throw new IllegalArgumentException("Unsupported JComponent type:"+
                     component.getClass());
