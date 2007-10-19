@@ -468,9 +468,7 @@ public class SPSUtils {
 
         StringBuilder labelText = new StringBuilder();
         labelText.append("<html><font color='red' size='+1'>");
-        labelText.append(message == null ?
-                "Unexpected error" :
-                nlToBR(message));
+        labelText.append(message == null ? "Unexpected error" : nlToBR(message));
         labelText.append("</font>");
         if (subMessage != null) {
             labelText.append("<p>");
@@ -487,8 +485,11 @@ public class SPSUtils {
             top.add(new JLabel("<html><b>Detail string</b>: " + nlToBR(excDetailMessage)));
             if (throwable.getCause() != null) {
                 Throwable root;
-                for (root = throwable.getCause(); root.getCause() != null; root = root.getCause());
-            	top.add(new JLabel("<html><b>Root Cause</b>: " + nlToBR(root.getMessage())));
+                for (root = throwable.getCause(); root.getCause() != null; root = root.getCause()) {
+                	if (root.getMessage() != null) {
+                		top.add(new JLabel("<html><b>Root Cause</b>: " + nlToBR(root.getMessage())));
+                	}
+                }
             }
 
         }
@@ -579,6 +580,7 @@ public class SPSUtils {
      */
     static String nlToBR(String s) {
         // Do NOT xml-ify the BR tag until Swing's HTML supports this.
+    	logger.debug("String s is " + s);
         return s.replaceAll("\n", "<br>");
     }
 
