@@ -8,21 +8,19 @@ import junit.framework.TestCase;
  * Tests the Recurrence class.
  */
 public class RecurrenceTest extends TestCase {
+    
 	public Recurrence r;
 	private Calendar calendar;
 	private Calendar calendar2;
 
-	public RecurrenceTest() {
-	}
-
-	public RecurrenceTest(String name) {
-		super(name);
-		calendar = Calendar.getInstance();
-		calendar2 = Calendar.getInstance();
-	}
-
 	public void setUp() {
 		r = new Recurrence();
+
+        calendar = Calendar.getInstance();
+        calendar.set(Calendar.MILLISECOND, 0);
+
+        calendar2 = Calendar.getInstance();
+        calendar2.set(Calendar.MILLISECOND, 0);
 		
 		calendar.set(2004, 0, 25, 11, 30, 30); // 2004/01/25 11:30:30
 		r.setStartDate(calendar.getTime());
@@ -37,8 +35,7 @@ public class RecurrenceTest extends TestCase {
 		r.setFrequency(new Frequency(Frequency.DAILY));
 		calendar.set(2004, 0, 26, 11, 00); // 2004/01/26 11:00
 		calendar2.set(2004, 0, 26, 11, 30, 30); // 2004/01/26 11:30:30
-		assertEquals(r.nextOccurrence(calendar.getTime()),
-					calendar2.getTime());
+		assertEquals(r.nextOccurrence(calendar.getTime()), calendar2.getTime());
 	}
 
 	/**
@@ -49,8 +46,7 @@ public class RecurrenceTest extends TestCase {
 		r.setFrequency(new Frequency(Frequency.DAILY));
 		calendar.set(2004, 0, 26, 12, 00); // 2004/01/26 12:00
 		calendar2.set(2004, 0, 27, 11, 30, 30); // 2004/01/27 11:30:30
-		assertEquals(r.nextOccurrence(calendar.getTime()),     
-				calendar2.getTime());                   
+		assertEquals(r.nextOccurrence(calendar.getTime()), calendar2.getTime());                   
 	}
 	
 	/**
@@ -62,8 +58,7 @@ public class RecurrenceTest extends TestCase {
 		r.setFrequency(new Frequency(Frequency.DAILY));
 		calendar.set(2004, 0, 27, 11, 30, 30); // 2004/01/27 11:30:30
 		calendar2.set(2004, 0, 28, 11, 30, 30); // 2004/01/28 11:30:30
-		assertEquals(r.nextOccurrence(calendar.getTime()),
-					calendar2.getTime());
+		assertEquals(r.nextOccurrence(calendar.getTime()), calendar2.getTime());
 	}
 
 	/**
@@ -74,8 +69,7 @@ public class RecurrenceTest extends TestCase {
 		r.setFrequency(new Frequency(Frequency.WEEKLY));
 		calendar.set(2004, 0, 24, 12, 00); // 2004/01/24 12:00
 		calendar2.set(2004, 0, 25, 11, 30, 30); // 2004/01/25 11:30:30
-		assertEquals(r.nextOccurrence(calendar.getTime()),     
-				calendar2.getTime());                   
+		assertEquals(r.nextOccurrence(calendar.getTime()), calendar2.getTime());                   
 	}
 	
 	/**
@@ -86,8 +80,7 @@ public class RecurrenceTest extends TestCase {
 		r.setFrequency(new Frequency(Frequency.MONTHLY));
 		calendar.set(2004, 0, 24, 12, 00); // 2004/01/24 12:00
 		calendar2.set(2004, 0, 25, 11, 30, 30); // 2004/01/25 11:30:30
-		assertEquals(r.nextOccurrence(calendar.getTime()),     
-				calendar2.getTime());                   
+		assertEquals(r.nextOccurrence(calendar.getTime()), calendar2.getTime());                   
 	}
 
 	/**
@@ -98,8 +91,7 @@ public class RecurrenceTest extends TestCase {
 		r.setFrequency(new Frequency(Frequency.YEARLY));
 		calendar.set(2004, 0, 24, 12, 00); // 2004/01/24 12:00
 		calendar2.set(2004, 0, 25, 11, 30, 30); // 2004/01/25 11:30:30
-		assertEquals(r.nextOccurrence(calendar.getTime()),     
-				calendar2.getTime());                   
+		assertEquals(r.nextOccurrence(calendar.getTime()), calendar2.getTime());                  
 	}
 
 }
