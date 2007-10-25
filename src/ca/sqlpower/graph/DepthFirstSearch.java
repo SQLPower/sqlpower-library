@@ -76,6 +76,11 @@ public class DepthFirstSearch<V, E> {
     private LinkedList<V> finishOrder;
 
     /**
+     * Keeps track if the graph is cyclic
+     */
+	private boolean cyclic = false;
+
+    /**
      * The VertexInfo class contains visit information related to the DFS
      * algorithm's discovery of a vertex in the graph.  It is capable of
      * classifying a vertex as "white," "grey," and "black" depending on
@@ -202,7 +207,8 @@ public class DepthFirstSearch<V, E> {
      * @param u
      * @param model
      */
-    private void visit(V u, GraphModel<V, E> model) {
+    private boolean visit(V u, GraphModel<V, E> model) {
+    	boolean ret = true;
         VertexInfo vi = vertexInfo.get(u);
         vi.setDiscoveryTime(++visitTime);
         for (V v : model.getAdjacentNodes(u)) {
@@ -213,14 +219,23 @@ public class DepthFirstSearch<V, E> {
                 if (vi2.isWhite()) {
                     vi2.setPredecessor(u);
                     visit(v, model);
+                } else if (vi2.isGrey()) {
+                	cyclic = true;
                 }
             }
         }
         vi.setFinishTime(++visitTime);
         finishOrder.addFirst(u);
+        return ret;
     }
-
     
+    /**
+     * Returns true iff the graph is cyclic.
+     */
+    public boolean isCyclic() {
+    	return cyclic ;
+    }
+   
     
     /**
      * Gives back the order in which the vertices of these graphs were finished 
