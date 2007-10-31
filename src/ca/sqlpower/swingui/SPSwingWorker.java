@@ -48,6 +48,7 @@ public abstract class SPSwingWorker implements Runnable {
 	private SPSwingWorker nextProcess;
 	private boolean cancelled; 
     private SwingWorkerRegistry registry;
+    private Thread thread;
 	
     private final List<TaskTerminationListener> taskTerminationListeners
     = new ArrayList<TaskTerminationListener>();
@@ -67,6 +68,7 @@ public abstract class SPSwingWorker implements Runnable {
 	public final void run() {
 		try {
             registry.registerSwingWorker(this);
+            thread = Thread.currentThread();
             try {
             	doStuff();
             } catch (Exception e) {
@@ -91,6 +93,7 @@ public abstract class SPSwingWorker implements Runnable {
             });
         } finally {
             registry.removeSwingWorker(this);
+            thread = null;
         }
     
 	}
@@ -160,5 +163,14 @@ public abstract class SPSwingWorker implements Runnable {
 	    for (int i = taskTerminationListeners.size() - 1; i >= 0; i--) {
 	        taskTerminationListeners.get(i).taskFinished(tte);
 	    }
+	}
+	
+	/**
+	 * Sets cancelled to true and interrupts the thread running this SPSwingWorker if it is not null
+	 */
+	public void kill() {
+		if (thread != null) {
+			thread.interrupt();
+		}
 	}
 }
