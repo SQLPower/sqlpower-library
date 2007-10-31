@@ -402,7 +402,7 @@ public class EmailNotification implements java.io.Serializable {
         Statement stmt = null;
         try {
 			StringBuffer sql = new StringBuffer();
-			sql.append("SELECT user_name, email_address FROM pl_user in (");
+			sql.append("SELECT user_name, email_address FROM pl_user WHERE user_id in (");
 			sql.append("SELECT user_id");
 			sql.append(" FROM pl_user_notification");
 			

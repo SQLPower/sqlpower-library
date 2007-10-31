@@ -1,6 +1,7 @@
 package ca.sqlpower.util;
 
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -35,7 +36,7 @@ public class Email {
     /**
      * The Internet addresses of the addressees.
      */
-    private List<Address> toAddresses;
+    private List<Address> toAddresses = new ArrayList<Address>();
     
     /**
      * The human-readable name of the sender.
