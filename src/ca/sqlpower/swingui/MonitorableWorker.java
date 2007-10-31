@@ -35,7 +35,7 @@ import ca.sqlpower.util.Monitorable;
 
 
 /**
- * The MonitorableWorker is an ArchitectSwingWorker that also
+ * The MonitorableWorker is an SPSwingWorker that also
  * implements the Monitorable interface.
  */
 public abstract class MonitorableWorker extends SPSwingWorker implements Monitorable {
