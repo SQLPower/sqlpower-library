@@ -21,5 +21,6 @@
 	<classpathentry kind="lib" path="lib/junit.jar"/>
 	<classpathentry kind="lib" path="lib/struts.jar"/>
 	<classpathentry kind="lib" path="lib/forms-1.1.0.jar"/>
+	<classpathentry kind="lib" path="C:/Documents and Settings/Kevin/My Documents/workspace/sqlpower_library/lib/mailapi.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
