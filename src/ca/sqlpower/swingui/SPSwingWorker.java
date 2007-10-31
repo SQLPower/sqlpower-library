@@ -172,5 +172,6 @@ public abstract class SPSwingWorker implements Runnable {
 		if (thread != null) {
 			thread.interrupt();
 		}
+		setCancelled(true);
 	}
 }
