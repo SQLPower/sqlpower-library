@@ -59,19 +59,19 @@ public class EmailNotification implements java.io.Serializable {
 	 * The name of the column indicating whether to send emails at red status
 	 * on either pl_user_notification or pl_group_notification.
 	 */
-	private static final String RED_STATUS = "EMAIL_RED_IND";
+	public static final String RED_STATUS = "EMAIL_RED_IND";
 	
 	/**
 	 * The name of the column indicating whether to send emails at yellow status
 	 * on either pl_user_notification or pl_group_notification.
 	 */
-	private static final String YELLOW_STATUS = "EMAIL_YELLOW_IND";
+	public static final String YELLOW_STATUS = "EMAIL_YELLOW_IND";
 	
 	/**
 	 * The name of the column indicating whether to send emails at green status
 	 * on either pl_user_notification or pl_group_notification.
 	 */
-	private static final String GREEN_STATUS = "EMAIL_GREEN_IND";
+	public static final String GREEN_STATUS = "EMAIL_GREEN_IND";
 
 	/**
 	 * Stores a pl_user_notification record in the database.  
@@ -239,148 +239,106 @@ public class EmailNotification implements java.io.Serializable {
 	}
 
 	/**
-	 * Returns the email notification preference of green status for
-	 * the given user on the given object.  Does nothing about groups
-	 * that this user may belong to.
+	 * This checks the email setting of a given status for a user,
+	 * with associating groups in addition. The class constants
+	 * should be used to identify status. 
 	 */
-	public static boolean checkUserGreenStatus(Connection con, 
-			PLUser user, DatabaseObject dbObj) throws SQLException {
-		return checkStatus(con, user.getUserId(), true, dbObj, GREEN_STATUS);
-	}
-
-	/**
-	 * Returns the email notification preference of yellow status for
-	 * the given user on the given object.  Does nothing about groups
-	 * that this user may belong to.
-	 */
-	public static boolean checkUserYellowStatus(Connection con, 
-			PLUser user, DatabaseObject dbObj) throws SQLException {
-		return checkStatus(con, user.getUserId(), true, dbObj, YELLOW_STATUS);
-	}
-
-	/**
-	 * Returns the email notification preference of red status for
-	 * the given user on the given object.  Does nothing about groups
-	 * that this user may belong to.
-	 */
-	public static boolean checkUserRedStatus(Connection con, 
-			PLUser user, DatabaseObject dbObj) throws SQLException {
-		return checkStatus(con, user.getUserId(), true, dbObj, RED_STATUS);
-	}
-
-	/**
-	 * Returns the email notification preferences for the 
-	 * given user on the given object, including the
-	 * additional checks for the groups the user belongs to.
-	 */
-	private static boolean checkUserAndGroupStatus(Connection con, 
+	public static boolean checkUserWithGroupEmailSetting(Connection con, 
 			PLUser user, DatabaseObject dbObj, String statusType) throws SQLException {
-		if (checkStatus(con, user.getUserId(), true, dbObj, statusType)) {
+		if (checkEmailSetting(con, user.getUserId(), true, dbObj, statusType)) {
 			return true;
 		}
-		Iterator groups = user.getGroups(con).iterator();
-		while (groups.hasNext()) {
-			PLGroup g = (PLGroup) groups.next();
-			if (checkStatus(con, g.getGroupName(), false, dbObj, statusType)) {
+		for (Object g : user.getGroups(con)) {
+			PLGroup group = (PLGroup) g;
+			if (checkEmailSetting(con, group.getGroupName(), false, dbObj, statusType)) {
 				return true;
 			}
 		}
 		return false;
 	}
-
+	
 	/**
-	 * Returns the email notification preferences of green status 
-	 * for the given user on the given object, including the
-	 * additional checks for the groups the user belongs to.
+	 * This checks the email setting of a given status for a user,
+	 * without associating groups. The class constants should be
+	 * used to identify status. 
 	 */
-	public static boolean checkUserAndGroupGreenStatus(Connection con, 
-			PLUser user, DatabaseObject dbObj) throws SQLException {
-		return checkUserAndGroupStatus(con, user, dbObj, GREEN_STATUS);
+	public static boolean checkUserEmailSetting(Connection con,
+			PLUser user, DatabaseObject dbObj,
+			String statusType) throws SQLException {
+		return checkEmailSetting(con, user.getUserId(), true, dbObj, statusType);
 	}
-
+	
 	/**
-	 * Returns the email notification preferences of yellow status 
-	 * for the given user on the given object, including the
-	 * additional checks for the groups the user belongs to.
+	 * This checks the email setting of a given status for a group.
+	 * The class constants should be used to identify status. 
 	 */
-	public static boolean checkUserAndGroupYellowStatus(Connection con, 
-			PLUser user, DatabaseObject dbObj) throws SQLException {
-		return checkUserAndGroupStatus(con, user, dbObj, YELLOW_STATUS);
+	public static boolean checkGroupEmailSetting(Connection con,
+			PLGroup group, DatabaseObject dbObj,
+			String statusType) throws SQLException {
+		return checkEmailSetting(con, group.getGroupName(), false, dbObj, statusType);
 	}
-
+	
 	/**
-	 * Returns the email notification preferences of red status 
-	 * for the given user on the given object, including the
-	 * additional checks for the groups the user belongs to.
+	 * Internally called class that checks the email setting of
+	 * a given status for the given user or group. 
 	 */
-	public static boolean checkUserAndGroupRedStatus(Connection con, 
-			PLUser user, DatabaseObject dbObj) throws SQLException {
-		return checkUserAndGroupStatus(con, user, dbObj, RED_STATUS);
-	}
-
-
-	/**
-	 * Returns the email notification preferences of green status 
-	 * for the given group on the given object.
-	 */
-	public static boolean checkGroupGreenStatus(Connection con, 
-			PLGroup group, DatabaseObject dbObj) throws SQLException {
-		return checkStatus(con, group.getGroupName(), false, dbObj, GREEN_STATUS);
-	}
-
-	/**
-	 * Returns the email notification preferences of green status 
-	 * for the given group on the given object.
-	 */
-	public static boolean checkGroupYellowStatus(Connection con, 
-			PLGroup group, DatabaseObject dbObj) throws SQLException {
-		return checkStatus(con, group.getGroupName(), false, dbObj, YELLOW_STATUS);
-	}
-
-	/**
-	 * Returns the email notification preferences of green status 
-	 * for the given group on the given object.
-	 */
-	public static boolean checkGroupRedStatus(Connection con, 
-			PLGroup group, DatabaseObject dbObj) throws SQLException {
-		return checkStatus(con, group.getGroupName(), false, dbObj, RED_STATUS);
-	}
-
-	/**
-	 * Used internally by the user and group versions of checkStatus.
-	 */
-	private static boolean checkStatus(Connection con,
-			String name,
-			boolean nameIsUser,
-			DatabaseObject dbObj,
+	private static boolean checkEmailSetting(Connection con,
+			String name, boolean isUser, DatabaseObject dbObj,
 			String statusType) throws SQLException {
 		Statement stmt = null;
 		try {
 			StringBuffer sql = new StringBuffer();
-
-			sql.append("SELECT " + statusType);
-
-			if(nameIsUser){
-				sql.append(" FROM pl_user_notification");
-				sql.append(" WHERE user_id=").append(SQL.quote(name));
+			
+			sql.append("SELECT " + statusType + " FROM");
+			
+			if (isUser) {
+				sql.append(" pl_user_notification WHERE user_id = " + SQL.quote(name));
 			} else {
-				sql.append(" FROM pl_group_notification");
-				sql.append(" WHERE group_name=").append(SQL.quote(name));
+				sql.append(" pl_group_notification WHERE group_name = " + SQL.quote(name));
 			}
-			sql.append(" AND object_type=").append(SQL.quote(dbObj.getObjectType()));
-			sql.append(" AND object_name=").append(SQL.quote(dbObj.getObjectName()));
+			
+			sql.append(" object_type = " + SQL.quote(dbObj.getObjectType()));
+			sql.append(" AND object_name = " + SQL.quote(dbObj.getObjectName()));
+			
+			stmt = con.createStatement();
+			ResultSet rs = stmt.executeQuery(sql.toString());
+			while(rs.next()) {
+				return (rs.getString(1).equals("Y"));
+			}
+			return false;
+		} finally {
+			if(stmt != null) {
+				stmt.close();
+			}
+		}
+	}
+
+	/**
+	 * Checks the latest run_status of a given {@link DatabaseObject}
+	 * from the pl_stats table.   
+	 */
+	public static String checkDBObjStatus(Connection con,
+			DatabaseObject dbObj) throws SQLException {
+		Statement stmt = null;
+		try {
+			StringBuffer sql = new StringBuffer();
+
+			sql.append("SELECT run_status FROM pl_status WHERE");
+			sql.append(" object_type = " + SQL.quote(dbObj.getObjectType()));
+			sql.append(" AND object_name = " + SQL.quote(dbObj.getObjectName()));
+			sql.append("  ORDER BY start_date_time DESC");
 
 			stmt = con.createStatement();
 			ResultSet rs = stmt.executeQuery(sql.toString());
 			while(rs.next()) {
 				String prefStatus = rs.getString(1);
-				if (prefStatus != null && prefStatus.equals("Y")) {
-					return true;
+				if (prefStatus != null) {
+					return prefStatus;
 				}
 			}
 
 			// There wasn't a matching entry in the table
-			return false;
+			return null;
 
 		} finally {
 			if(stmt != null) {
@@ -390,34 +348,46 @@ public class EmailNotification implements java.io.Serializable {
 	}
 	
 	/**
-	 * Internal method that returns a list of EmailRecipients containing
-	 * the email and name of users who are indicated for receiving emails
-	 * of given status of given DatabaseObject. This currently does not
-	 * check for groups that users could belong to. 
+	 * Returns a list of EmailRecipients containing the email and 
+	 * name of users who are indicated for receiving emails of given
+	 * status of given DatabaseObject. The class constants should be
+	 * used for status. 
 	 */
-	private static List<EmailRecipient> findEmailRecipients(Connection con, DatabaseObject dbObj,
+	public static List<EmailRecipient> findEmailRecipients(Connection con, DatabaseObject dbObj,
 			String statusType) throws SQLException {
 		List<EmailRecipient> emailRecipients = new ArrayList<EmailRecipient>();
 		
         Statement stmt = null;
         try {
 			StringBuffer sql = new StringBuffer();
-			sql.append("SELECT user_name, email_address FROM pl_user WHERE user_id in (");
-			sql.append("SELECT user_id");
-			sql.append(" FROM pl_user_notification");
-			
-			sql.append(" WHERE " + statusType + " = " + SQL.quote("Y"));
-			sql.append(" AND object_type = " + SQL.quote(dbObj.getObjectType()));
-			sql.append(" AND object_name = " + SQL.quote(dbObj.getObjectName()) + ")");
+			sql.append("SELECT user_name, email_address FROM pl_user WHERE user_id in");
+			sql.append(" (SELECT user_id FROM pl_user_notification WHERE");
+			sql.append(" " + statusType + " = " + SQL.quote("Y"));
+			sql.append("  AND object_type = " + SQL.quote(dbObj.getObjectType()));
+			sql.append("  AND object_name = " + SQL.quote(dbObj.getObjectName()) + ")");
 
             stmt = con.createStatement();
             ResultSet rs = stmt.executeQuery(sql.toString());
-			
-			while(rs.next()) {
+			while (rs.next()) {
 				EmailRecipient er = new EmailRecipient(rs.getString(1), rs.getString(2));
 				emailRecipients.add(er);
-			};
-
+			}
+			
+			sql.setLength(0);
+			sql.append("SELECT user_name, email_address FROM pl_user WHERE user_id in");
+			sql.append(" (SELECT user_id FROM user_group WHERE group_name in");
+			sql.append("  (SELECT group_name FROM pl_group_notification WHERE");
+			sql.append("   " + statusType + " = " + SQL.quote("Y"));
+			sql.append("   AND object_type = " + SQL.quote(dbObj.getObjectType()));
+			sql.append("   AND object_name = " + SQL.quote(dbObj.getObjectName()) + "))");
+			
+			rs = stmt.executeQuery(sql.toString());
+			while (rs.next()) {
+				EmailRecipient er = new EmailRecipient(rs.getString(1), rs.getString(2));
+				if (!emailRecipients.contains(er)) {
+					emailRecipients.add(er);
+				}
+			}
         } finally {
             if(stmt != null) {
                 stmt.close();
@@ -425,36 +395,6 @@ public class EmailNotification implements java.io.Serializable {
         }
 		
 		return emailRecipients;
-	}
-
-	/**
-	 * Returns a list of EmailRecipients to whom emails of green status
-	 * of given DatabaseObject should be sent to. This does not check for
-	 * groups that users could belong to.
-	 */
-	public static List<EmailRecipient> findGreenEmailRecipients(Connection con, DatabaseObject dbObj) 
-			throws UnknownFreqCodeException, PLSecurityException, SQLException {
-		return findEmailRecipients(con, dbObj, GREEN_STATUS) ;
-	}
-	
-	/**
-	 * Returns a list of EmailRecipients to whom emails of yellow status
-	 * of given DatabaseObject should be sent to. This does not check for
-	 * groups that users could belong to.
-	 */
-	public static List<EmailRecipient> findYellowEmailRecipients(Connection con, DatabaseObject dbObj) 
-			throws UnknownFreqCodeException, PLSecurityException, SQLException {
-		return findEmailRecipients(con, dbObj, YELLOW_STATUS) ;
-	}
-
-	/**
-	 * Returns a list of EmailRecipients to whom emails of red status
-	 * of given DatabaseObject should be sent to. This does not check for
-	 * groups that users could belong to.
-	 */
-	public static List<EmailRecipient> findRedEmailRecipients(Connection con, DatabaseObject dbObj) 
-			throws UnknownFreqCodeException, PLSecurityException, SQLException {
-		return findEmailRecipients(con, dbObj, RED_STATUS) ;
 	}
 
 	/**
@@ -607,6 +547,15 @@ public class EmailNotification implements java.io.Serializable {
 			this.email = email;
 		}
 		
+		@Override
+		public boolean equals(Object obj) {
+			if (obj instanceof EmailRecipient) {
+				EmailRecipient other = (EmailRecipient) obj;
+				return this.name.equals(other.name) && this.email.equals(other.email);
+			} else {
+				return false;
+			}
+		}
 	}
 }
 
