@@ -79,8 +79,11 @@ public abstract class SPSwingWorker implements Runnable {
             SwingUtilities.invokeLater(new Runnable() {
             	public void run() {
             		try {
-            			cleanup();
-            			fireTaskFinished();
+            			try {
+            				cleanup();
+            			} finally {
+            				fireTaskFinished();
+            			}
             			
             			if (nextProcess != null) {
             				nextProcess.setCancelled(cancelled);
