@@ -41,8 +41,9 @@ import ca.sqlpower.swingui.SPSwingWorker;
 
 
 /**
+ * An event fired when swing worker is finished. This is fired to {@link TaskTerminationListener}. 
+ * 
  * @author jack
- *
  */
 public class TaskTerminationEvent {
 	private SPSwingWorker source;

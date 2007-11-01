@@ -39,9 +39,16 @@ package ca.sqlpower.swingui.event;
 
 
 /**
+ * A simple listener that is informed when a swing worker is finished.
+ * 
  * @author jack
  *
  */
 public interface TaskTerminationListener {
+	/**
+	 * One of the SwingWorkers has finished.
+	 * 
+	 * @param e The event
+	 */
 	public void taskFinished (TaskTerminationEvent e);
 }
