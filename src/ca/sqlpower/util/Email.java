@@ -57,7 +57,7 @@ public class Email {
     /**
      * The body of the email.
      */
-    private String emailBody;
+    private StringBuffer emailBody = new StringBuffer();
 
     /**
      * Sends this email using the current settings.  All settings are required,
@@ -82,18 +82,23 @@ public class Email {
             throw new AssertionError(e); // this should never ever happen
         }
         message.setSubject(emailSubject);
-        message.setText(emailBody);
+        message.setText(emailBody.toString());
         Transport.send(message);
     }
 
     public String getEmailBody() {
-        return emailBody;
+        return emailBody.toString();
     }
 
     public void setEmailBody(String emailBody) {
-        this.emailBody = emailBody;
+        this.emailBody.setLength(0);
+        this.emailBody.append(emailBody);
     }
 
+    public void appendToEmailBody(String msg) {
+    	this.emailBody.append(msg);
+    }
+    
     public String getEmailSubject() {
         return emailSubject;
     }
@@ -159,7 +164,7 @@ public class Email {
     public String toString() {
         return
             "From: <"+getFromName()+"> "+getFromEmail()+"\r\n"+
-            "To: <"+getToAddresses()+"\r\n"+
+            "To: "+getToAddresses()+"\r\n"+
             "Subject: "+getEmailSubject()+"\r\n"+
             "\r\n"+
             getEmailBody()+"\r\n";
