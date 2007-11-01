@@ -549,12 +549,25 @@ public class EmailNotification implements java.io.Serializable {
 		
 		@Override
 		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
 			if (obj instanceof EmailRecipient) {
 				EmailRecipient other = (EmailRecipient) obj;
-				return this.name.equals(other.name) && this.email.equals(other.email);
+				boolean nameEquals = (name == null? other.name == null : name.equals(other.name));
+				if (!nameEquals) {
+					return false;
+				} else {
+					return (email == null? other.email == null : email.equals(other.email));
+				}
 			} else {
 				return false;
 			}
+		}
+		
+		@Override
+		public String toString() {
+			return "<" + this.name + "> " + this.email;
 		}
 	}
 }

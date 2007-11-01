@@ -13,6 +13,8 @@ import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
+import ca.sqlpower.security.EmailNotification.EmailRecipient;
+
 /**
  * This class is used as a convenient wrapper for the JavaMail stuff.
  * The API is simpler because a lot of the default boilerplate setup
@@ -24,19 +26,11 @@ public class Email {
 
 	private String smtpHost;
 	private String smtpLocalhost;
-	
-    /**
-     * Creates a new email object with all the default settings.
-     */
-    public Email(String smtpHost, String smtpLocalhost) {
-    	this.smtpHost = smtpHost;
-    	this.smtpLocalhost = smtpLocalhost;
-    }
     
-    /**
-     * The Internet addresses of the addressees.
-     */
-    private List<Address> toAddresses = new ArrayList<Address>();
+	/**
+	 * The list of recipients for this email.
+	 */
+    private List<EmailRecipient> recipients = new ArrayList<EmailRecipient>();
     
     /**
      * The human-readable name of the sender.
@@ -57,8 +51,16 @@ public class Email {
     /**
      * The body of the email.
      */
-    private StringBuffer emailBody = new StringBuffer();
+    private String emailBody = "";
 
+    /**
+     * Creates a new email object with all the default settings.
+     */
+    public Email(String smtpHost, String smtpLocalhost) {
+    	this.smtpHost = smtpHost;
+    	this.smtpLocalhost = smtpLocalhost;
+    }
+    
     /**
      * Sends this email using the current settings.  All settings are required,
      * so don't go skimping on setXXX() calls before calling this!
@@ -74,37 +76,59 @@ public class Email {
         props.put("mail.smtp.localhost", smtpLocalhost);
         Session mailSession = Session.getInstance(props, null);
         MimeMessage message = new MimeMessage(mailSession);
-        Address[] tempAddresses = new Address[toAddresses.size()];
+
         try {
-            message.setFrom(new InternetAddress(fromEmail, fromName));
-            message.addRecipients(Message.RecipientType.TO, toAddresses.toArray(tempAddresses));
-        } catch (java.io.UnsupportedEncodingException e) {
+        	message.setFrom(new InternetAddress(fromEmail, fromName));
+        	for (EmailRecipient er : recipients) {
+        		message.addRecipient(Message.RecipientType.TO,
+        			new InternetAddress(er.getEmail(), er.getName()));
+        	}
+        } catch (UnsupportedEncodingException e) {
             throw new AssertionError(e); // this should never ever happen
         }
+        
         message.setSubject(emailSubject);
-        message.setText(emailBody.toString());
+        message.setText(emailBody);
         Transport.send(message);
     }
 
     public String getEmailBody() {
-        return emailBody.toString();
+        return emailBody;
     }
 
+    /**
+     * Sets the email's body, defaults to empty string when given null. 
+     */
     public void setEmailBody(String emailBody) {
-        this.emailBody.setLength(0);
-        this.emailBody.append(emailBody);
+    	if (emailBody == null) {
+    		this.emailBody = "";
+    	} else {
+    		this.emailBody = emailBody;
+    	}
     }
 
-    public void appendToEmailBody(String msg) {
-    	this.emailBody.append(msg);
+    /**
+     * Appends the given to the email's body. 
+     */
+    public void appendToEmailBody(String emailBody) {
+    	StringBuilder body = new StringBuilder(this.emailBody);
+    	body.append(emailBody);
+    	this.emailBody = body.toString();
     }
     
     public String getEmailSubject() {
         return emailSubject;
     }
 
+    /**
+     * Sets the email's subject, defaults to empty string when given null. 
+     */
     public void setEmailSubject(String emailSubject) {
-        this.emailSubject = emailSubject;
+    	if (emailSubject == null) {
+    		this.emailSubject = "";
+    	} else {
+    		this.emailSubject = emailSubject;
+    	}
     }
 
     public String getFromEmail() {
@@ -124,37 +148,57 @@ public class Email {
     }
 
     /** 
-     * Returns a String representation of all the
-     * recipients' email addresses. 
+     * Returns a String representation of all the recipients.
      */
-    public String getToAddresses() {
+    public String getRecipients() {
     	StringBuilder result = new StringBuilder();
-    	boolean first = true;
-    	for (Address addr : toAddresses) {
-    		if (!first) {
+    	for (EmailRecipient er : recipients) {
+    		if (result.length() > 0) {
     			result.append(", ");
     		}
-    		result.append("<" + ((InternetAddress) addr).getPersonal() + "> ");
-    		result.append(((InternetAddress) addr).getAddress());
+    		result.append(er);
     	}
     	return result.toString();
-    }
-    
-    public void setToAddresses(List<Address> toAddresses) {
-    	this.toAddresses = toAddresses;
     }
     
     /**
      * Adds a recipient to the email. 
      */
-    public void addToAddress(String toEmail, String toName) 
-    		throws UnsupportedEncodingException {
-    	toAddresses.add(new InternetAddress(toEmail, toName));
+    public void addRecipient(EmailRecipient er) {
+    	if (er != null && !recipients.contains(er)) {
+    		recipients.add(er);
+    	}
     }
     
-    public void removeToAddress(String toEmail, String toName) 
-    		throws UnsupportedEncodingException {
-    	toAddresses.remove(new InternetAddress(toEmail, toName));
+    /**
+     * Clears the list of recipients and replace with the given.
+     */
+    public void setRecipients(List<EmailRecipient> recipients) {
+    	if (recipients == null) {
+    		this.recipients.clear();
+    	} else {
+    		this.recipients = recipients;
+    	}
+    }
+    
+    /**
+     * Adds the given list of recipients. 
+     */
+    public void addRecipients(List<EmailRecipient> recipients) {
+    	if (recipients != null) {
+	    	for (EmailRecipient er : recipients) {
+	    		addRecipient(er);
+	    	}
+    	}
+     }
+    
+    /**
+     * Remove the given recipient from the email.
+     */
+    public void removeRecipient(EmailRecipient er) { 
+    	if (er != null) {
+    		recipients.remove(er);
+    	}
     }
     
     /**
@@ -164,7 +208,7 @@ public class Email {
     public String toString() {
         return
             "From: <"+getFromName()+"> "+getFromEmail()+"\r\n"+
-            "To: "+getToAddresses()+"\r\n"+
+            "To: "+getRecipients()+"\r\n"+
             "Subject: "+getEmailSubject()+"\r\n"+
             "\r\n"+
             getEmailBody()+"\r\n";

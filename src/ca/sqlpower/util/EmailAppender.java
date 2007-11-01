@@ -32,71 +32,111 @@
 
 package ca.sqlpower.util;
 
-import java.io.UnsupportedEncodingException;
+import java.util.Date;
 import java.util.List;
 
 import javax.mail.MessagingException;
 
 import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.Level;
 import org.apache.log4j.spi.LoggingEvent;
 
 import ca.sqlpower.security.EmailNotification.EmailRecipient;
 
 public class EmailAppender extends AppenderSkeleton {
 
+	/**
+	 * The email this appender is responsible for.
+	 */
 	private final Email email;
+	
+	/**
+	 * The three lists of recipients for each status.
+	 */
 	private final List<EmailRecipient> greenRecipients;
 	private final List<EmailRecipient> yellowRecipients;
 	private final List<EmailRecipient> redRecipients;
 	
-	public EmailAppender(Email email, List<EmailRecipient> greenRecipients,
+	/**
+	 * The constants for possible statuses.
+	 */
+	private static final String GREEN_STATUS = "green";
+	private static final String YELLOW_STATUS = "yellow";
+	private static final String RED_STATUS = "red";
+	
+	/**
+	 * Keeps track of the current status from the logger.
+	 */
+	private String status = GREEN_STATUS;
+	
+	/**
+	 * The original email subject containing the project name and engine type.
+	 */
+	private final String emailSubject;
+	
+	/**
+	 * Creates a new EmailAppender that will fill an email with logger messages
+	 * and send to the appropriate users according to the status. Call {@link #close()}
+	 * to send the email.
+	 */
+	public EmailAppender(Email email, String emailSubject, List<EmailRecipient> greenRecipients,
 			List<EmailRecipient> yellowRecipients, List<EmailRecipient> redRecipients) {
 		this.email = email;
 		this.greenRecipients = greenRecipients;
 		this.yellowRecipients = yellowRecipients;
 		this.redRecipients = redRecipients;
+		this.emailSubject = emailSubject;
 	}
 	
+	/**
+	 * The method called by logger every time a message is added. Adds
+	 * the message to the email and updates the status.
+	 */
 	@Override
 	protected void append(LoggingEvent e) {
 		if (email.getEmailBody().length() > 0) {
 			email.appendToEmailBody("\n");
 		}
-		email.appendToEmailBody(e.getRenderedMessage());
-	}
-	
-	public void sendGreenEmail() throws MessagingException, UnsupportedEncodingException {
-		if (greenRecipients.size() > 0) {
-			email.setEmailSubject("Success!");
-			for (EmailRecipient recipient: greenRecipients) {
-				email.addToAddress(recipient.getEmail(), recipient.getName());
-			}
-			email.sendMessage();
+		email.appendToEmailBody(new Date(e.timeStamp).toString() +
+			" " + e.getLevel() + " " + e.getRenderedMessage());
+		
+		if (e.getLevel().equals(Level.WARN) && status.equals(GREEN_STATUS)) {
+			status = YELLOW_STATUS;
+		} else if (e.getLevel().equals(Level.ERROR)) {
+			status = RED_STATUS;
 		}
 	}
 	
-	public void sendYellowEmail() throws MessagingException, UnsupportedEncodingException {
-		if (yellowRecipients.size() > 0) {
-			email.setEmailSubject("Warning!");
-			for (EmailRecipient recipient: yellowRecipients) {
-				email.addToAddress(recipient.getEmail(), recipient.getName());
-			}
-			email.sendMessage();
+	/**
+	 * Internal method that does the work to send the email
+	 *  to the appropriate users according to the status.
+	 */
+	private void sendEmail() throws MessagingException {
+		if (status.equals(GREEN_STATUS)) {
+			email.setEmailSubject(emailSubject + " Success!");
+			email.addRecipients(greenRecipients);
+		} else if (status.equals(YELLOW_STATUS)) {
+			email.setEmailSubject(emailSubject + " Warning!");
+			email.addRecipients(greenRecipients);
+			email.addRecipients(yellowRecipients);
+		} else {
+			email.setEmailSubject(emailSubject + " Failed!");
+			email.addRecipients(greenRecipients);
+			email.addRecipients(yellowRecipients);
+			email.addRecipients(redRecipients);
 		}
+		email.sendMessage();
 	}
 	
-	public void sendRedEmail() throws MessagingException, UnsupportedEncodingException {
-		if (redRecipients.size() > 0) {
-			email.setEmailSubject("Error!");
-			for (EmailRecipient recipient: redRecipients) {
-				email.addToAddress(recipient.getEmail(), recipient.getName());
-			}
-			email.sendMessage();
-		}
-	}
-	
+	/**
+	 * Call this method to send the email when finished.
+	 */
 	public void close() {
-		// do nothing!
+		try {
+			sendEmail();
+		} catch (MessagingException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public boolean requiresLayout() {
