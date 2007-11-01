@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -456,10 +457,14 @@ public class SPSUtils {
         StringWriter stringWriter = new StringWriter();
         final PrintWriter traceWriter = new PrintWriter(stringWriter);
         do {
-             printStackTrace(t, traceWriter);
-            t = t.getCause();
-            if (t != null) {
-                traceWriter.println("Caused by:");
+            t.printStackTrace(traceWriter);
+            if (rootCause(t) instanceof SQLException) {
+                t = ((SQLException) rootCause(t)).getNextException();
+                if (t != null) {
+                    traceWriter.println("Next Exception:");
+                }
+            } else {
+                t = null;
             }
         } while (t != null);
         traceWriter.close();
@@ -574,6 +579,19 @@ public class SPSUtils {
     }
     
     /**
+     * Follows the chain of exceptions (using the getCause() method) to find the
+     * root cause, which is the exception whose getCause() method returns null.
+     * 
+     * @param t The Throwable for which you want to know the root cause.  Must not
+     * be null.
+     * @return The ultimate cause of t.  This may be t itself.
+     */
+    private static Throwable rootCause(Throwable t) {
+        while (t.getCause() != null) t = t.getCause();
+        return t;
+    }
+
+    /**
      * Simple convenience routine to replace all \n's with <br>
      * @param s
      * @return
@@ -582,33 +600,6 @@ public class SPSUtils {
         // Do NOT xml-ify the BR tag until Swing's HTML supports this.
     	logger.debug("String s is " + s);
         return s.replaceAll("\n", "<br>");
-    }
-
-    public static final int MAX_JRE_ELEMENTS = 10;
-    
-    public static final int THRESHOLD = 5;
-    
-	public static void printStackTrace(Throwable throwable, PrintWriter traceWriter) {
-        traceWriter.println(throwable);
-        StackTraceElement[] stackTrace = throwable.getStackTrace();
-        for (int i = 0, jreElements = 0; i < stackTrace.length; i++) {
-            StackTraceElement e = stackTrace[i];
-            traceWriter.print("\t");
-            traceWriter.println(e);
-            String clazzName = e.getClassName();
-            if (clazzName.startsWith("java.") ||
-                clazzName.startsWith("javax.") ||
-                clazzName.startsWith("sun.") ||
-                clazzName.startsWith("org.")) {
-                final int remainingLength = stackTrace.length - i;
-                if (++jreElements >= MAX_JRE_ELEMENTS &&
-                        remainingLength > THRESHOLD) {
-                    traceWriter.printf("\t... %d more...%n", remainingLength);
-                    break;
-                }
-            }
-        }
-        traceWriter.flush();
     }
 	
 	/**
