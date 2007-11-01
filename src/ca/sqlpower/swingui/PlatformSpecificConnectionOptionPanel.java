@@ -206,6 +206,7 @@ public class PlatformSpecificConnectionOptionPanel {
                     varName = varName.substring(0, varName.indexOf(':'));
                 }
                 String varValue = getPlatformSpecificFieldValue(varName);
+                varValue = escapeDollarBackslash(varValue);
                 m.appendReplacement(newUrl, varValue);
             }
             m.appendTail(newUrl);
@@ -216,6 +217,27 @@ public class PlatformSpecificConnectionOptionPanel {
     }
     
     /**
+     * Escapes all instances of backslash and dollar-sign in the given input
+     * string by preceding them with a backslash character.  This is necessary
+     * before passing user input into {@link Matcher#appendReplacement(StringBuffer, String)}.
+     * 
+     * @param varValue The string to escape metacharacters in.  Null is allowable.
+     * @return The escaped string, or null if the input string is null.
+     */
+    private String escapeDollarBackslash(String varValue) {
+    	if (varValue == null) return null;
+    	StringBuilder sb = new StringBuilder();
+    	for (int i = 0; i < varValue.length(); i++) {
+    		char ch = varValue.charAt(i);
+    		if (ch == '\\' || ch == '$') {
+    			sb.append('\\');
+    		}
+    		sb.append(ch);
+    	}
+    	return sb.toString();
+	}
+
+	/**
      * Retrieves the named platform-specific option by looking it up in the
      * platformSpecificOptionPanel component.
      */
