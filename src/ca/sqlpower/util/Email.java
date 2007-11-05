@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import javax.mail.Address;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -25,7 +24,6 @@ import ca.sqlpower.security.EmailNotification.EmailRecipient;
 public class Email {
 
 	private String smtpHost;
-	private String smtpLocalhost;
     
 	/**
 	 * The list of recipients for this email.
@@ -56,9 +54,8 @@ public class Email {
     /**
      * Creates a new email object with all the default settings.
      */
-    public Email(String smtpHost, String smtpLocalhost) {
+    public Email(String smtpHost) {
     	this.smtpHost = smtpHost;
-    	this.smtpLocalhost = smtpLocalhost;
     }
     
     /**
@@ -73,7 +70,6 @@ public class Email {
     public void sendMessage() throws MessagingException {
         Properties props = new Properties();
         props.put("mail.smtp.host", smtpHost);
-        props.put("mail.smtp.localhost", smtpLocalhost);
         Session mailSession = Session.getInstance(props, null);
         MimeMessage message = new MimeMessage(mailSession);
 
