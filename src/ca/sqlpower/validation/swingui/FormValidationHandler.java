@@ -32,6 +32,7 @@
 package ca.sqlpower.validation.swingui;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -90,6 +91,11 @@ public class FormValidationHandler implements ValidationHandler {
     /** The color to use in the JComponent in the event of warnings */
     protected final static Color COLOR_WARNING = Color.YELLOW;
 
+    /**
+     * A variable to store if the validator should ignore disabled fields 
+     */
+    private boolean skipDisabled;
+    
     /**
      * a JComponent to display result
      */
@@ -155,7 +161,11 @@ public class FormValidationHandler implements ValidationHandler {
          * may be null, and handled by the validator
          */
         protected void doValidate() {
-            result = validator.validate(object);
+        	if (skipDisabled &&  !component.isEnabled()) {
+        		result = ValidateResult.createValidateResult(Status.OK, ""); 
+        	} else {
+        		result = validator.validate(object);
+        	}
             havePerformedValidation = true;
             switch(result.getStatus()) {
             case OK:
@@ -185,15 +195,24 @@ public class FormValidationHandler implements ValidationHandler {
     }
 
     public FormValidationHandler(StatusComponent display) {
-        this.display = display;
-        objects = new ArrayList<ValidateObject>();
+    	this(display,null,false);
     }
     
-    public FormValidationHandler(StatusComponent display, List<Action> actions) {
+    public FormValidationHandler(StatusComponent display, List<Action> actions, boolean skipDisabled) {
         this.display = display;
         objects = new ArrayList<ValidateObject>();
         this.actions = actions;
+        this.skipDisabled = skipDisabled;
     }
+    
+    public FormValidationHandler(StatusComponent display, List<Action> actions) {
+    	this(display,actions,false);
+    }
+    
+    public FormValidationHandler(StatusComponent display, boolean skipDisabled) {
+    	this(display,null,skipDisabled);
+    }
+    
 
     /**
      * Add one Jcomponent and its validator to the List
