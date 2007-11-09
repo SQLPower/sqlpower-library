@@ -30,8 +30,8 @@
 
 	<target name="compile" depends="init">
 		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
-		<copy tofile="${build}/default_database_types.ini"
-							file="src/ca/sqlpower/sql/default_database_types.ini"/>
+		<copy tofile="${build}/ca/sqlpower/sql/default_database_types.ini"
+				     file="src/ca/sqlpower/sql/default_database_types.ini"/>
 	</target>
 
 	<target name="compile-tests" depends="compile">
