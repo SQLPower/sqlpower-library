@@ -121,6 +121,8 @@ public class PostgresDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
                 crs.updateInt(7, DIGITS_IN_FLOAT4);
             } else if ("float8".equalsIgnoreCase(crs.getString(6))) {
                 crs.updateInt(7, DIGITS_IN_FLOAT8);
+            } else if ("bool".equalsIgnoreCase(crs.getString(6))) {
+                crs.updateInt(5, Types.BOOLEAN);
             }
         }
         crs.beforeFirst();
