@@ -33,6 +33,9 @@
 package ca.sqlpower.graph;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -81,6 +84,11 @@ public class BreadthFirstSearch<V, E> {
     private final List<BreadthFirstSearchListener<V>> searchListeners =
         new ArrayList<BreadthFirstSearchListener<V>>();
     
+    /**
+     * A comparator used to order the adjacent nodes, ignored if null.
+     */
+    private Comparator<V> comparator;
+    
     public BreadthFirstSearch() {
     }
     
@@ -116,7 +124,12 @@ public class BreadthFirstSearch<V, E> {
         queue.add(startingNode);
         while (!queue.isEmpty()) {
             V u = queue.element();
-            for (V v : model.getAdjacentNodes(u)) {
+            Collection<V> adjacentNodes = model.getAdjacentNodes(u);
+            if (comparator != null) {
+            	adjacentNodes = new ArrayList<V>(adjacentNodes);
+            	Collections.sort((List<V>) adjacentNodes, comparator);
+            }
+			for (V v : adjacentNodes) {
                 if (colour.get(v) == Colour.WHITE) {
                     colour.put(v, Colour.GRAY);
                     depth.put(v, depth.get(u) + 1);
@@ -163,4 +176,19 @@ public class BreadthFirstSearch<V, E> {
     public void removeBreadthFirstSearchListener(BreadthFirstSearchListener<V> l) {
         searchListeners.remove(l);
     }
+
+    /**
+     * Returns the comparator used to order the adjacent nodes.
+     */
+	public Comparator<V> getComparator() {
+		return comparator;
+	}
+
+	/**
+	 * Sets a custom comparator to order the adjacent nodes. Setting a null
+	 * comparator makes it not use one. 
+	 */
+	public void setComparator(Comparator<V> comparator) {
+		this.comparator = comparator;
+	}
 }
