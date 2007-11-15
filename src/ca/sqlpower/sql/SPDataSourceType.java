@@ -46,11 +46,16 @@ import java.security.Permissions;
 import java.security.Policy;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
+import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -201,6 +206,7 @@ public class SPDataSourceType {
     public static final String PL_DB_TYPE = "PL Type";
     public static final String COMMENT = "Comment";
     public static final String DDL_GENERATOR = "DDL Generator";
+    public static final String KETTLE_DB_TYPES = "ca.sqlpower.architect.etl.kettle.connectionType";
     
     /**
      * This type's parent type.  This value will be null if this type has no
@@ -445,6 +451,16 @@ public class SPDataSourceType {
 
     public ClassLoader getJdbcClassLoader() {
         return classLoader;
+    }
+    
+    public List<String> getKettleNames() {
+    	List<String> ret = new LinkedList<String>();
+    	Scanner s = new Scanner(getProperty(KETTLE_DB_TYPES));
+    	s.useDelimiter(":");
+    	while (s.hasNext()) {
+    		ret.add(s.next());
+    	}
+    	return ret;
     }
     
     /**
