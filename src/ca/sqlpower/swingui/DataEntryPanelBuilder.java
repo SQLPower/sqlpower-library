@@ -160,8 +160,6 @@ public class DataEntryPanelBuilder {
 
 		JButton cancelButton = new JButton(closeAction);
 		cancelButton.setText(CANCEL_BUTTON_LABEL);
-		cancelButton.addActionListener(closeAction);
-		cancelButton.addActionListener(new CommonCloseAction(d));
 
 		// Handle if the user presses Enter in the dialog - do OK action
 		d.getRootPane().setDefaultButton(okButton);
@@ -267,17 +265,25 @@ public class DataEntryPanelBuilder {
 
 		Callable<Boolean> okCall = new Callable<Boolean>() {
 			public Boolean call() {
-				return new Boolean(dataEntry.applyChanges());
+				if (dataEntry.hasUnsavedChanges()) {
+					return new Boolean(dataEntry.applyChanges());
+				}
+				return new Boolean(true);
 			}
 		};
 		
 		Callable<Boolean> cancelCall = new Callable<Boolean>() {
 			public Boolean call() {
-				dataEntry.discardChanges();
+				if (dataEntry.hasUnsavedChanges()) {
+					//used to give a dialog asking whether you want to discard, but
+					//it was weird because you'd expect to discard changes when you
+					//pressed cancel on the current dialog to cause this to happen.
+					dataEntry.discardChanges();
+				}
+				//doesn't really make sense for cancel to fail
 				return new Boolean(true);
 			}
 		};
-		
 		return createDataEntryPanelDialog(dataEntry, dialogParent, dialogTitle,
 				actionButtonTitle, okCall, cancelCall);
 	}
