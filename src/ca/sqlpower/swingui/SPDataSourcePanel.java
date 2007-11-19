@@ -46,8 +46,6 @@ import javax.swing.JTextField;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.swingui.SPDataSourceTypeListCellRenderer;
-import ca.sqlpower.swingui.PlatformSpecificConnectionOptionPanel;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.SPDataSourceType;
@@ -255,4 +253,9 @@ public class SPDataSourcePanel implements DataEntryPanel {
     	}
         return panel;
     }
+
+	public boolean hasUnsavedChanges() {
+		// Does not have changes
+		return false;
+	}
 }

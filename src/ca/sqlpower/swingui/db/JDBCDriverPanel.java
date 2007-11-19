@@ -509,4 +509,9 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 	public JPanel getPanel() {
 		return this;
 	}
+
+	public boolean hasUnsavedChanges() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

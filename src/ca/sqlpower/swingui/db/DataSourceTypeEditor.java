@@ -232,4 +232,9 @@ public class DataSourceTypeEditor implements DataEntryPanel {
     public void addTab(String title, DataSourceTypeEditorTabPanel dataEntryPanel) {
         dsTypePanel.addTab(title, dataEntryPanel);
     }
+
+	public boolean hasUnsavedChanges() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

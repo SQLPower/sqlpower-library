@@ -196,4 +196,9 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
         tabPanels.add(tabPanel);
         tabbedPane.addTab(title, tabPanel.getPanel());
     }
+
+	public boolean hasUnsavedChanges() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

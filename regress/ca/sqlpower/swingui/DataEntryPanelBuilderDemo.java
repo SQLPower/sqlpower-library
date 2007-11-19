@@ -36,8 +36,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.concurrent.Callable;
 
-import javax.swing.AbstractAction;
-import javax.swing.Action;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
@@ -72,6 +70,11 @@ public class DataEntryPanelBuilderDemo {
 
 		public JComponent getPanel() {
 			return this;
+		}
+
+		public boolean hasUnsavedChanges() {
+			// TODO Auto-generated method stub
+			return false;
 		}
 	}
 
