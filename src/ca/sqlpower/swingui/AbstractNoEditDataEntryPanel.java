@@ -29,71 +29,47 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package ca.sqlpower.xml;
 
-import org.xml.sax.Attributes;
+package ca.sqlpower.swingui;
 
-/**
- * A stub implementation of the Attributes class for unit testing purposes.
- *
- */
-public class StubAttributes implements Attributes {
-    
-    public int getIndex(String qName) {
-        return 0;
-    }
+import javax.swing.JComponent;
+import javax.swing.JPanel;
 
-    public int getIndex(String uri, String localName) {
-        return 0;
-    }
+import org.apache.log4j.Logger;
 
-    public int getLength() {
-        return 0;
-    }
 
-    public String getLocalName(int index) {
-        return null;
-    }
+public abstract class AbstractNoEditDataEntryPanel extends JPanel implements DataEntryPanel {
 
-    public String getQName(int index) {
-        return null;
-    }
+	private static final Logger logger = Logger.getLogger(AbstractNoEditDataEntryPanel.class);
+	
+	/**
+	 * doSave() is supposed to return the succesfull-ness of a save operation.
+	 * Since nothing changes, nothing needs to be saved, so we just say that
+	 * saving worked.
+	 */
+	public boolean applyChanges() {
+		logger.error("Cannot apply changes because this pane is not editable.");
+		return false;
+	}
 
-    public String getType(int index) {
-        return null;
-    }
+	/**
+	 * Since nothing changes, no changes are discarded.
+	 */
+	public void discardChanges() {
+		logger.error("Cannot discard changes because this pane is not editable.");
+	}
+	
+	/**
+	 * Always returns false because, since nothing is being edited, there are
+	 * never changes, nevermind changes that haven't been saved.
+	 */
+	public boolean hasUnsavedChanges() {
+		return false;
+	}
 
-    public String getType(String qName) {
-        return null;
-    }
+	public JComponent getPanel() {
+		return this;
+	}
 
-    public String getType(String uri, String localName) {
-        return null;
-    }
-
-    public String getURI(int index) {
-        return null;
-    }
-
-    /**
-     * Always returns a null character, regardless of the argument value.
-     */
-    public String getValue(int index) {
-        return "abc\\u0000123";
-    }
-
-    /**
-     * Always returns a null character, regardless of the argument value.
-     */
-    public String getValue(String qName) {
-        return "abc\\u0000123";
-    }
-
-    /**
-     * Always returns a null character, regardless of the argument value.
-     */
-    public String getValue(String uri, String localName) {
-        return "abc\\u0000123";
-    }
 
 }

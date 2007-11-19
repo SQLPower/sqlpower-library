@@ -62,38 +62,29 @@ public class StubReader implements XMLReader {
     }
 
     public DTDHandler getDTDHandler() {
-        // TODO Auto-generated method stub
         return null;
     }
 
     public EntityResolver getEntityResolver() {
-        // TODO Auto-generated method stub
         return null;
     }
 
     public ErrorHandler getErrorHandler() {
-        // TODO Auto-generated method stub
         return null;
     }
 
     public boolean getFeature(String name) throws SAXNotRecognizedException, SAXNotSupportedException {
-        // TODO Auto-generated method stub
         return false;
     }
 
     public Object getProperty(String name) throws SAXNotRecognizedException, SAXNotSupportedException {
-        // TODO Auto-generated method stub
         return null;
     }
 
     public void parse(InputSource input) throws IOException, SAXException {
-        // TODO Auto-generated method stub
-
     }
 
     public void parse(String systemId) throws IOException, SAXException {
-        // TODO Auto-generated method stub
-
     }
 
     public void setContentHandler(ContentHandler handler) {
@@ -101,27 +92,17 @@ public class StubReader implements XMLReader {
     }
 
     public void setDTDHandler(DTDHandler handler) {
-        // TODO Auto-generated method stub
-
     }
 
     public void setEntityResolver(EntityResolver resolver) {
-        // TODO Auto-generated method stub
-
     }
 
     public void setErrorHandler(ErrorHandler handler) {
-        // TODO Auto-generated method stub
-
     }
 
     public void setFeature(String name, boolean value) throws SAXNotRecognizedException, SAXNotSupportedException {
-        // TODO Auto-generated method stub
-
     }
 
     public void setProperty(String name, Object value) throws SAXNotRecognizedException, SAXNotSupportedException {
-        // TODO Auto-generated method stub
-
     }
 }

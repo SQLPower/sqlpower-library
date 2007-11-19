@@ -25,7 +25,6 @@ public class GenericConnectionDecorator extends ConnectionDecorator {
 
 	@Override
 	protected Statement makeStatementDecorator(Statement stmt) {
-		// TODO Auto-generated method stub
 		return new GenericStatementDecorator(this, stmt);
 	}
 
