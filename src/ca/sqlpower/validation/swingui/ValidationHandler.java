@@ -31,6 +31,9 @@
  */
 package ca.sqlpower.validation.swingui;
 
+import java.util.ArrayList;
+
+import javax.swing.Action;
 import javax.swing.JComponent;
 
 import ca.sqlpower.validation.Validator;
@@ -46,5 +49,12 @@ import ca.sqlpower.validation.Validator;
  * @see ca.sqlpower.validation.FormValidationHandler
  */
 public interface ValidationHandler {
+	
     public void addValidateObject(JComponent component, Validator validator);
+    
+    /**
+     * Sets the action to disable if the status is fail
+     */
+    public void setValidatedAction(Action action);
+    
 }

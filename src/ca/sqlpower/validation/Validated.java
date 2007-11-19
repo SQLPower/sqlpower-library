@@ -29,9 +29,9 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package ca.sqlpower.swingui;
+package ca.sqlpower.validation;
 
-import ca.sqlpower.validation.swingui.FormValidationHandler;
+import ca.sqlpower.validation.swingui.ValidationHandler;
 
 /**
  * This is a interface use for creating dialogs. Since the 
@@ -40,10 +40,10 @@ import ca.sqlpower.validation.swingui.FormValidationHandler;
  * disabling those actions. Thus, the DataEntryPanel will
  * be responsible for linking the actions to the handler. 
  */
-public interface ValidatedObject {
+public interface Validated {
 
 	/** 
      * @return the handler that validates the current form.
 	 */ 
-	public FormValidationHandler getHandler();
+	public ValidationHandler getHandler();
 }

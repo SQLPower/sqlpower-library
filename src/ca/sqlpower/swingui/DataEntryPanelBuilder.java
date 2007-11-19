@@ -51,7 +51,8 @@ import javax.swing.SwingUtilities;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.validation.swingui.FormValidationHandler;
+import ca.sqlpower.validation.Validated;
+import ca.sqlpower.validation.swingui.ValidationHandler;
 
 import com.jgoodies.forms.factories.Borders;
 import com.jgoodies.forms.factories.ButtonBarFactory;
@@ -150,9 +151,9 @@ public class DataEntryPanelBuilder {
 		};
 		
 		//checks if it is a panel that needs to be validated before save.
-		if (dataEntry instanceof ValidatedObject) {
+		if (dataEntry instanceof Validated) {
 			//links the saveAction to the handler
-			FormValidationHandler handler = ((ValidatedObject)dataEntry).getHandler();
+			ValidationHandler handler = ((Validated)dataEntry).getHandler();
 			handler.setValidatedAction(okAction);
 		}
 		
