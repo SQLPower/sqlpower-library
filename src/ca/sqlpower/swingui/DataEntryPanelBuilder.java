@@ -51,6 +51,8 @@ import javax.swing.SwingUtilities;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.validation.swingui.FormValidationHandler;
+
 import com.jgoodies.forms.factories.Borders;
 import com.jgoodies.forms.factories.ButtonBarFactory;
 
@@ -146,7 +148,14 @@ public class DataEntryPanelBuilder {
 				}
 			}
 		};
-
+		
+		//checks if it is a panel that needs to be validated before save.
+		if (dataEntry instanceof ValidatedObject) {
+			//links the saveAction to the handler
+			FormValidationHandler handler = ((ValidatedObject)dataEntry).getHandler();
+			handler.setValidatedAction(okAction);
+		}
+		
 		SPSUtils.makeJDialogCancellable(d, closeAction);
 
 		JButton cancelButton = new JButton(closeAction);

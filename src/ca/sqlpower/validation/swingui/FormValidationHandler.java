@@ -213,6 +213,10 @@ public class FormValidationHandler implements ValidationHandler {
     	this(display,null,skipDisabled);
     }
     
+    public void setValidatedAction(Action action) {
+    	actions = new ArrayList<Action>();
+    	actions.add(action);
+    }
 
     /**
      * Add one Jcomponent and its validator to the List
