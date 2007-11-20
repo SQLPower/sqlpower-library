@@ -46,16 +46,13 @@ import java.security.Permissions;
 import java.security.Policy;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -207,6 +204,7 @@ public class SPDataSourceType {
     public static final String COMMENT = "Comment";
     public static final String DDL_GENERATOR = "DDL Generator";
     public static final String KETTLE_DB_TYPES = "ca.sqlpower.architect.etl.kettle.connectionType";
+    public static final String SUPPORTS_UPDATEABLE_RESULT_SETS = "Supports Updatable Result Sets";
     
     /**
      * This type's parent type.  This value will be null if this type has no
@@ -428,6 +426,24 @@ public class SPDataSourceType {
     public void setParentType(SPDataSourceType parentType) {
         this.parentType = parentType;
     }
+    
+    /**
+     * Returns true iff and only if the platform supports updatable result sets.
+     */
+	public boolean getSupportsUpdateableResultSets() {
+		String ret = getProperty(SUPPORTS_UPDATEABLE_RESULT_SETS);
+		if (ret == null || !Boolean.parseBoolean(ret)) {
+			return false;
+		}
+		return true;
+	}
+	
+	/**
+	 * Sets if the DataBaseType will support an updatable result set.
+	 */
+	public void setSupportsUpdatableResultSet(boolean supports) {
+		properties.put(SUPPORTS_UPDATEABLE_RESULT_SETS,String.valueOf(supports));
+	}
     
     /**
      * Returns all the properties of this data source type.  This will not

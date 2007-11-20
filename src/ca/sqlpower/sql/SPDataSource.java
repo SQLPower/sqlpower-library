@@ -255,7 +255,6 @@ public class SPDataSource {
 	public static final String DBCS_URL = "JDBC URL";
 	public static final String DBCS_JAR = "JAR File";
     public static final String DBCS_CONNECTION_TYPE = "Connection Type";
-    public static final String SUPPORTS_UPDATEABLE_RESULT_SETS = "Supports Updatable Result Sets";
     
 	public static final String PL_LOGICAL = "Logical";
 	public static final String PL_TYPE = "Type";
@@ -317,9 +316,6 @@ public class SPDataSource {
 	 * @return The old value of the property.
 	 */
 	private String putImpl(String key, String value, String propertyName) {
-		if (key.equals(SUPPORTS_UPDATEABLE_RESULT_SETS)) {
-			System.out.println("Added key");
-		}
 		String oldValue = get(key);
 		properties.put(key, value);
 		getPcs().firePropertyChange(propertyName, oldValue, value);
@@ -654,15 +650,4 @@ public class SPDataSource {
     public DataSourceCollection getParentCollection() {
         return parentCollection;
     }
-
-    /**
-     * Returns true iff and only if the platform supports updatable result sets.
-     */
-	public boolean acceptsUpdateableResultSets() {
-		String ret = getParentType().getProperty(SUPPORTS_UPDATEABLE_RESULT_SETS);
-		if (ret == null || !Boolean.parseBoolean(ret)) {
-			return false;
-		}
-		return true;
-	}
 }
