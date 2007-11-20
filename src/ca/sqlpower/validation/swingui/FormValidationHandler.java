@@ -41,6 +41,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.swing.AbstractButton;
@@ -419,6 +420,26 @@ public class FormValidationHandler implements ValidationHandler {
         }
         throw new IllegalArgumentException("Object:" +
                 (object==null?"null":object) + " not found!");
+    }
+    
+    /**
+     * Stops the validator from looking at this object.
+     * This is nice when the item have been removed 
+     * (eg a mungeComponent).
+     * 
+     * @param com The component to remove.
+     */
+    public void removeValidateObject(JComponent com) {
+    	List<ValidateObject> removed = new LinkedList<ValidateObject>();
+    	for (ValidateObject vo : objects) {
+    		if (vo.component == com) {
+    			removed.add(vo);
+    		}
+    	}
+    	for (ValidateObject vo: removed) {
+    		objects.remove(vo);
+    	}
+    	performFormValidation();
     }
 
     // listener stuff
