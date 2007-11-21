@@ -34,6 +34,11 @@ package ca.sqlpower.swingui;
 
 import java.awt.Polygon;
 
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+
 import junit.framework.TestCase;
 
 public class SPSUtilsTest extends TestCase {
@@ -73,5 +78,23 @@ public class SPSUtilsTest extends TestCase {
         assertTrue(p.contains(21, 21));
         assertTrue(p.contains(29, 24));
         assertTrue(p.contains(23, 30));
+    }
+    
+    /**
+     * Tests to make sure that makeOwnedDialog checks the given component
+     * to see if it is a Window. This was a previous bug where the method
+     * only checked for the ancestors of the given component and not the
+     * component itself.
+     */
+    public void testMakeOwnedDialog() {
+    	JDialog dialog = null;
+    	JFrame frame = new JFrame();
+    	JPanel panel = new JPanel();
+    	frame.add(panel);
+    	
+    	dialog = SPSUtils.makeOwnedDialog(panel, "test");
+    	assertEquals("Dialog should be owned!", frame, dialog.getParent());
+    	dialog = SPSUtils.makeOwnedDialog(frame, "title");
+    	assertEquals("Dialog should be owned!", frame, dialog.getParent());
     }
 }

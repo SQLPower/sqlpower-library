@@ -354,7 +354,7 @@ public class SPSUtils {
 	 * owningComponent, or not owned but set to be alwaysOnTop.
 	 */
 	public static JDialog makeOwnedDialog(Component owningComponent, String title) {
-	    Window owner = SwingUtilities.getWindowAncestor(owningComponent);
+	    Window owner = getWindowInHierarchy(owningComponent);
 	    if (owner instanceof Frame) {
 	        return new JDialog((Frame) owner, title);
 	    } else if (owner instanceof Dialog) {
@@ -366,7 +366,22 @@ public class SPSUtils {
 	        return d;
 	    }
 	}
-    
+	
+	 /**
+     * Returns the first Window in the hierarchy above or at c,
+     * or null if c is not contained inside a Window. Different from 
+     * {@link SwingUtilities#getWindowAncestor(Component)} in that
+     * it checks first if c is a Window. Use this if c could be
+     * a Window.
+     */
+    public static Window getWindowInHierarchy(Component c) {
+        if (c instanceof Window) {
+        	return (Window) c;
+        } else {
+        	return SwingUtilities.getWindowAncestor(c);
+        }
+    }
+	
     /**
      * Displays a dialog box with the given message and exception,
      * allowing the user to examine the stack trace, but do NOT generate
