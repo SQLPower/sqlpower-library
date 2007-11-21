@@ -501,6 +501,9 @@ public class SPSUtils {
             new JLabel("<html><b>Exception type</b>: " + nlToBR(throwable.getClass().getName()));
         top.add(errClassLabel);
         String excDetailMessage = throwable.getMessage();
+        if (excDetailMessage.length() > 100) {
+        	excDetailMessage = excDetailMessage.substring(0, 100) + "...";
+        }
         if (excDetailMessage != null) {
             top.add(new JLabel("<html><b>Detail string</b>: " + nlToBR(excDetailMessage)));
             if (throwable.getCause() != null) {
