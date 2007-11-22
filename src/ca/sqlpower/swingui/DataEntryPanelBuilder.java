@@ -36,6 +36,8 @@ import java.awt.Dialog;
 import java.awt.Frame;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.util.concurrent.Callable;
 
 import javax.swing.AbstractAction;
@@ -91,7 +93,6 @@ public class DataEntryPanelBuilder {
 		final JDialog d = createDialog(dialogParent, dialogTitle);
 		JComponent panel = dataEntry.getPanel();
 
-
 		Action okAction = new AbstractAction() {
 			public void actionPerformed(ActionEvent e) {
 				try {
@@ -128,6 +129,19 @@ public class DataEntryPanelBuilder {
 			handler.setValidatedAction(okAction);
 		}
 		
+        if (dataEntry instanceof Resizable) {
+        	//resizes to the correct dimensions
+        	ComponentListener cl = new ComponentListener(){
+				public void componentHidden(ComponentEvent e) {}
+				public void componentMoved(ComponentEvent e) {}
+				public void componentResized(ComponentEvent e) {
+					d.setSize(d.getPreferredSize());
+				}
+				public void componentShown(ComponentEvent e) {}
+			};
+			((Resizable)dataEntry).addResizeListener(cl);
+        }
+        
 		SPSUtils.makeJDialogCancellable(d, closeAction);
 
 		JButton cancelButton = new JButton(closeAction);
@@ -289,6 +303,7 @@ public class DataEntryPanelBuilder {
         JComponent panel = dataEntry.getPanel();
 
 
+        
         JButton okButton = new JDefaultButton(okAction);
         okButton.setText(actionButtonTitle);
         // In all cases we have to close the dialog.

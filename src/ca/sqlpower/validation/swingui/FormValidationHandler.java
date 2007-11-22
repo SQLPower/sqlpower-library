@@ -217,6 +217,7 @@ public class FormValidationHandler implements ValidationHandler {
     public void setValidatedAction(Action action) {
     	actions = new ArrayList<Action>();
     	actions.add(action);
+    	performFormValidation();
     }
 
     /**
@@ -371,7 +372,7 @@ public class FormValidationHandler implements ValidationHandler {
         display.setResult(worst);
         if (actions != null){
         	for (Action a : actions) {
-        		a.setEnabled(worst.getStatus() != Status.FAIL);
+        		a.setEnabled(worst == null || worst.getStatus() != Status.FAIL);
         	}
         }
     }
