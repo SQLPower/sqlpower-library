@@ -80,6 +80,11 @@ public class SPSUtilsTest extends TestCase {
         assertTrue(p.contains(23, 30));
     }
     
+	public void testClassNameStuff() {
+        assertEquals("String", SPSUtils.niceClassName(""));
+        assertEquals("Object", SPSUtils.niceClassName(new Object()));
+    }
+    
     /**
      * Tests to make sure that makeOwnedDialog checks the given component
      * to see if it is a Window. This was a previous bug where the method

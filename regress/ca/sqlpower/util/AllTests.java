@@ -14,7 +14,6 @@ public class AllTests {
         TestSuite suite = new TestSuite("Test for ca.sqlpower.util");
         //$JUnit-BEGIN$
         suite.addTestSuite(LeastRecentlyUsedCacheTest.class);
-        suite.addTestSuite(SPSUtilsTest.class);
         suite.addTestSuite(RecurrenceTest.class);
         //$JUnit-END$
         return suite;
