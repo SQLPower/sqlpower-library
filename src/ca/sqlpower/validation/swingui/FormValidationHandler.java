@@ -32,7 +32,6 @@
 package ca.sqlpower.validation.swingui;
 
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -286,7 +285,7 @@ public class FormValidationHandler implements ValidationHandler {
         	
         	jsp.addChangeListener(new ChangeListener(){
 				public void stateChanged(ChangeEvent e) {
-					validateObject.setObject(jsp.getValue().toString());
+					validateObject.setObject(jsp.getValue());
 					performFormValidation();
 				}
         	});
@@ -300,7 +299,6 @@ public class FormValidationHandler implements ValidationHandler {
         		
         	});
         	
-        
         } else {
             throw new IllegalArgumentException("Unsupported JComponent type:"+
                     component.getClass());
