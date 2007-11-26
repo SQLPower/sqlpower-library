@@ -92,19 +92,35 @@ public class DataEntryPanelBuilder {
 
 		final JDialog d = createDialog(dialogParent, dialogTitle);
 		JComponent panel = dataEntry.getPanel();
-
-		Action okAction = new AbstractAction() {
-			public void actionPerformed(ActionEvent e) {
-				try {
-					boolean close = okCall.call().booleanValue();
-					if (close) {
-						d.dispose();
+		
+		final Action okAction;
+		if (dataEntry instanceof MonitorableDataEntryPanel) {
+			MonitorableDataEntryPanel mdep = (MonitorableDataEntryPanel)dataEntry;
+			mdep.setDialog(d);
+			okAction = new AbstractAction() {
+				public void actionPerformed(ActionEvent e) {
+					try {
+						this.setEnabled(false);
+						okCall.call();
+					} catch (Exception ex) {
+						throw new RuntimeException(ex);
 					}
-				} catch (Exception ex) {
-					throw new RuntimeException(ex);
 				}
-			}
-		};
+			};
+		} else {
+			okAction = new AbstractAction() {
+				public void actionPerformed(ActionEvent e) {
+					try {
+						boolean close = okCall.call().booleanValue();
+						if (close) {
+							d.dispose();
+						}
+					} catch (Exception ex) {
+						throw new RuntimeException(ex);
+					}
+				}
+			};
+		}
 			
 		JButton okButton = new JDefaultButton(okAction);
 		okButton.setText(actionButtonTitle);
