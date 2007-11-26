@@ -255,7 +255,7 @@ public class SPDataSourcePanel implements DataEntryPanel {
     }
 
 	public boolean hasUnsavedChanges() {
-		// Does not have changes
-		return false;
+		//TODO: tell the truth
+		return true;
 	}
 }
