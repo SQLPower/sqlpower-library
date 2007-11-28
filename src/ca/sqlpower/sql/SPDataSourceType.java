@@ -158,12 +158,15 @@ public class SPDataSourceType {
                     jf.close();
                     return defineClass(name, buf, 0, buf.length);
                 } catch (IOException ex) {
-                    throw new ClassNotFoundException("IO Exception reading class from jar file", ex);
+                    String errorMsg = "IO Exception reading class from jar file";
+                    logger.error(errorMsg, ex);
+					throw new ClassNotFoundException(errorMsg, ex);
                 }
             }
-            throw new ClassNotFoundException
-                ("Could not locate class "+name
-                 +" in any of the JDBC Driver JAR files "+getJdbcJarList());
+            String errorMsg = "Could not locate class "+name
+			 +" in any of the JDBC Driver JAR files "+getJdbcJarList();
+            logger.error(errorMsg);
+			throw new ClassNotFoundException(errorMsg);
         }
 
         /**
@@ -174,7 +177,7 @@ public class SPDataSourceType {
         protected URL findResource(String name) {
             logger.debug("Looking for resource "+name);
             for (String jarName : getJdbcJarList()) {
-                File listedFile = new File(jarName);
+                File listedFile = SPDataSource.jarSpecToFile(jarName, getParent());
                 try {
                     if (!listedFile.exists()) {
                         logger.debug("Skipping non-existant JAR file "+listedFile.getPath());
