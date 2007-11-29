@@ -595,10 +595,28 @@ public class SPSUtils {
     }
     
     /**
-     *	Trims the given message if it's longer than the given limit
-     *	by finding the closest new line within the given offset. 
+     * Trims the given message if it's longer than the given limit by finding
+     * the closest new line within the given offset.
+     * 
+     * @param msg
+     *            The message to trim. Null is allowed, but obviously no
+     *            trimming will be performed.
+     * @param msgLimit
+     *            The threshold length for msg. If msg.length() > msgLimit,
+     *            trimming will be performed. Otherwise, no trimming will be
+     *            performed.
+     * @param offset
+     *            The number of characters beyond msgLimit which can be
+     *            tolerated in the trimmed string. This allows the message to be
+     *            trimmed at the next newline, as long as that newline falls
+     *            within a reasonable distance from the threshold limit.
+     * @return If msg was shorter than msgLimit, msg is returned. Otherwise, if
+     *         msg was longer than msgLimit, a trimmed version of msg with "..."
+     *         appended will be returned. Finally, if msg was null, null will be
+     *         returned.
      */
     private static String trimToClosestNL(String msg, int msgLimit, int offset) {
+        if (msg == null) return null;
     	if (msg.length() > msgLimit) {
         	int lastNL = msg.indexOf("\n", msgLimit - offset);
         	int nextNL = msg.indexOf("\n", msgLimit);
@@ -615,7 +633,7 @@ public class SPSUtils {
         	}
         	msg = msg.substring(0, endIndex) + " ...";
         }
-    	return  msg;
+    	return msg;
     }
     
     /**
