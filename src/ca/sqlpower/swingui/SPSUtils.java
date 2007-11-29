@@ -446,8 +446,9 @@ public class SPSUtils {
             final String subMessage,
             final Throwable throwable) {
         JDialog dialog;
-        if (parent instanceof JFrame) {
-            JFrame frame = (JFrame) parent;
+        Window owner = parent == null? null: getWindowInHierarchy(parent);
+        if (owner instanceof JFrame) {
+            JFrame frame = (JFrame) owner;
             dialog = new JDialog(frame, "Error Report");
             if (masterIcon != null) {
                 // Ugly temporary workaround for the fact that MM uses
@@ -455,11 +456,11 @@ public class SPSUtils {
                 // JFrame with the Architect icon on it...
                 frame.setIconImage(masterIcon.getImage());
             }
-        } else if (parent instanceof Dialog) {
-            dialog = new JDialog((Dialog)parent, "Error Report");
+        } else if (owner instanceof Dialog) {
+            dialog = new JDialog((Dialog)owner, "Error Report");
         } else {
             logger.error(
-                    String.format("dialog parent component %s is neither JFrame nor JDialog", parent));
+                    String.format("dialog parent component %s is neither JFrame nor JDialog", owner));
             dialog = new JDialog((Frame)null, "Error report");
         }
         logger.debug("displayExceptionDialog: showing exception dialog for:", throwable);
@@ -588,7 +589,7 @@ public class SPSUtils {
         bottom.add(okButton);
         dialog.add(bottom, BorderLayout.SOUTH);
         dialog.pack();
-        dialog.setLocationRelativeTo(parent);
+        dialog.setLocationRelativeTo(owner);
 
         dialog.setVisible(true);
         return dialog;
