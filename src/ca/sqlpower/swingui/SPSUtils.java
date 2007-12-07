@@ -426,7 +426,17 @@ public class SPSUtils {
      * the Session should handle all errors, and have
      * all these methods require an Icon as an argument.
      */
-    static ImageIcon masterIcon;
+    private static ImageIcon masterIcon;
+
+    /**
+     * Sets the default icon on the exception dialogs. This is
+     * mostly used for when the exception dialogs are handled by
+     * SPSUtils instead of ASUtils or MMSUtils. The session context
+     * should set this at creation.
+     */
+	public static void setMasterIcon(ImageIcon masterIcon) {
+		SPSUtils.masterIcon = masterIcon;
+	}
     
     /**
      * Displays a dialog box with the given message and submessage and exception,
@@ -450,18 +460,19 @@ public class SPSUtils {
         if (owner instanceof JFrame) {
             JFrame frame = (JFrame) owner;
             dialog = new JDialog(frame, "Error Report");
-            if (masterIcon != null) {
-                // Ugly temporary workaround for the fact that MM uses
-                // some Architect code, which we think is creating a
-                // JFrame with the Architect icon on it...
-                frame.setIconImage(masterIcon.getImage());
-            }
         } else if (owner instanceof Dialog) {
             dialog = new JDialog((Dialog)owner, "Error Report");
         } else {
             logger.error(
                     String.format("dialog parent component %s is neither JFrame nor JDialog", owner));
-            dialog = new JDialog((Frame)null, "Error report");
+            
+            // last desperate attempt to set the icon for the dialog
+            JFrame frame = new JFrame();
+            if (masterIcon != null) {
+            	frame.setIconImage(masterIcon.getImage());
+            }
+            dialog = new JDialog(frame, "Error report");
+            
         }
         logger.debug("displayExceptionDialog: showing exception dialog for:", throwable);
 
@@ -836,5 +847,4 @@ public class SPSUtils {
 
         return polygon;
     }
-
 }
