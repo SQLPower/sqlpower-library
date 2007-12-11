@@ -140,6 +140,10 @@ public abstract class SPSwingWorker implements Runnable {
 	public synchronized void setCancelled(boolean cancelled) {
 		this.cancelled = cancelled;
 	}
+    
+    public synchronized boolean isCancelled() {
+        return cancelled;
+    }
 
 	public SPSwingWorker getNextProcess() {
 		return nextProcess;

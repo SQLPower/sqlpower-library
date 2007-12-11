@@ -98,4 +98,12 @@ public interface Monitorable {
 	 */
 	public void setCancelled(boolean cancelled);
 
+    /**
+     * Tells whether or not this monitorable process has received a cancellation
+     * request.  If the cancellation request has not yet been honoured, {@link #isFinished()}
+     * will be false.  If the cancellation has completed, or the process has completed
+     * normally, {@link #isFinished()} will be true. 
+     */
+    public boolean isCancelled();
+    
 }

@@ -337,9 +337,20 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 			return finished;
 		}
 
-		public void setCancelled (boolean cancelled) {
-			// job not cancellable, do nothing
-		}
+        /**
+         * The driver scan cannot be cancelled.  This method has no effect.
+         */
+        public void setCancelled(boolean cancelled) {
+            // job not cancellable, do nothing
+        }
+
+        /**
+         * The driver scan cannot be cancelled.  This method always returns
+         * false.
+         */
+        public boolean isCancelled() {
+            return false;
+        }
 
 		public boolean hasStarted() {
 			return hasStarted;
