@@ -306,6 +306,9 @@ public class DatabaseConnectionManager {
 		bsb.addGridded(new JButton(editDatabaseConnectionAction));
 		bsb.addRelatedGap();
 		bsb.addGridded(new JButton(removeDatabaseConnectionAction));
+		
+		removeDatabaseConnectionAction.setEnabled(false);
+		editDatabaseConnectionAction.setEnabled(false);
 
 		bsb.addUnrelatedGap();
 		JButton jdbcDriversButton = new JButton(jdbcDriversAction);
@@ -393,6 +396,14 @@ public class DatabaseConnectionManager {
 						b.setEnabled(true);
 					}
 				}
+			}
+			
+			if (getSelectedConnection() == null) {
+				removeDatabaseConnectionAction.setEnabled(false);
+				editDatabaseConnectionAction.setEnabled(false);
+			} else {
+				removeDatabaseConnectionAction.setEnabled(true);
+				editDatabaseConnectionAction.setEnabled(true);
 			}
 				
 			if (evt.getClickCount() == 2) {
