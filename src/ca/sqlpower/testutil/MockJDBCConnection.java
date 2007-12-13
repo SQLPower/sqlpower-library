@@ -80,6 +80,10 @@ public class MockJDBCConnection implements Connection {
      * Registers the given result set with this connection.  Any statement created
      * by this connection will return the given result set when an executeQuery()
      * call is made with a SQL string matching the regular expression given here.
+     * <p>
+     * When building the result set, remember that you can manipulate its metadata
+     * as well as its rows of actual data.  See {@link MockJDBCResultSet#MockJDBCResultSet(int)}
+     * and {@link MockJDBCResultSetMetaData} for details.
      * 
      * @param regex
      * @param rs

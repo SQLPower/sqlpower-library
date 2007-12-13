@@ -49,6 +49,12 @@ public class MockJDBCStatement implements Statement {
 	private int queryTimeout;
 
     /**
+     * The fetch size property used by the related getters and setters.  The
+     * value of this property does not otherwise affect this instance's behaviour.
+     */
+    private int fetchSize;
+
+    /**
      * Creates a new statement belonging to the given connection.
      */
 	MockJDBCStatement(MockJDBCConnection connection) {
@@ -152,12 +158,20 @@ public class MockJDBCStatement implements Statement {
 		throw new UnsupportedOperationException("Not implemented");
 	}
 
+    /**
+     * Stores the given fetch size value.  This value is not used internally,
+     * but it will be returned by {@link #getFetchSize()}.
+     */
 	public void setFetchSize(int rows) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+        fetchSize = rows;
 	}
 
+    /**
+     * Returns the value most recently set using {@link #setFetchSize(int)}.
+     * If the value has not been set yet, returns 0.
+     */
 	public int getFetchSize() throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+        return fetchSize;
 	}
 
 	public int getResultSetConcurrency() throws SQLException {

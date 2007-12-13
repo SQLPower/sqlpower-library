@@ -41,7 +41,6 @@ import java.sql.Clob;
 import java.sql.Date;
 import java.sql.Ref;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
@@ -62,6 +61,13 @@ public class MockJDBCResultSet implements ResultSet {
      */
 	MockJDBCStatement statement;
     
+    /**
+     * The meta data associated with this result set.  The object itself is mutable,
+     * so clients can use the getter to obtain a reference to this object, then set
+     * it up as fully or sparsely as required for their particular test.
+     */
+    private final MockJDBCResultSetMetaData metaData;
+    
 	private int columnCount;
 	private String[] columnNames;
 	private List<Object[]> rows;
@@ -80,6 +86,7 @@ public class MockJDBCResultSet implements ResultSet {
 		this.columnCount = columnCount;
 		this.columnNames = new String[columnCount];
 		this.rows = new ArrayList<Object[]>();
+        this.metaData = new MockJDBCResultSetMetaData(columnCount);
 	}
 
     /**
@@ -88,6 +95,11 @@ public class MockJDBCResultSet implements ResultSet {
      * <p>
      * See {@link MockJDBCConnection#registerResultSet(String,ResultSet)} for a way
      * of registering this result set to become the results of a query.
+     * <p>
+     * If you want this result set to have useful metadata, you can call {@link #getMetaData()}
+     * on the newly created instance, then manipulate that object using its setters.
+     * It is guaranteed to be of type {@link MockJDBCResultSetMetaData}, which exposes
+     * public setters for all of its properties except <tt>columnCount</tt>.
      */
     public MockJDBCResultSet(int columnCount) {
         this(null, columnCount);
@@ -767,8 +779,8 @@ public class MockJDBCResultSet implements ResultSet {
 		throw new UnsupportedOperationException("Not implemented");
 	}
 
-	public ResultSetMetaData getMetaData() throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+	public MockJDBCResultSetMetaData getMetaData() throws SQLException {
+        return metaData;
 	}
 
 	public Object getObject(int columnIndex) throws SQLException {
