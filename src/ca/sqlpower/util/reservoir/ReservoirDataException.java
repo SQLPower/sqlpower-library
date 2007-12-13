@@ -45,14 +45,14 @@ public class ReservoirDataException extends Exception {
     /**
      * Creates a new exception with the given message and no root cause.
      */
-    ReservoirDataException(String message) {
+    public ReservoirDataException(String message) {
         super(message);
     }
     
     /**
      * Creates a new exception that was caused by the given exception.
      */
-    ReservoirDataException(Throwable cause) {
+    public ReservoirDataException(Throwable cause) {
         super(cause);
     }
 }
