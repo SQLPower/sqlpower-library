@@ -472,9 +472,15 @@ public class SPDataSourceType {
         return classLoader;
     }
     
+    /**
+     * Returns a list of the kettle database type names, empty 
+     * list if the database types property is null.
+     */
     public List<String> getKettleNames() {
     	List<String> ret = new LinkedList<String>();
-    	Scanner s = new Scanner(getProperty(KETTLE_DB_TYPES));
+    	String dbTypes = getProperty(KETTLE_DB_TYPES);
+    	if (dbTypes == null) return Collections.emptyList();
+    	Scanner s = new Scanner(dbTypes);
     	s.useDelimiter(":");
     	while (s.hasNext()) {
     		ret.add(s.next());
