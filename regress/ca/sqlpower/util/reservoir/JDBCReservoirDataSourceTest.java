@@ -32,7 +32,7 @@
 
 package ca.sqlpower.util.reservoir;
 
-import java.sql.Connection;
+import java.sql.ResultSet;
 import java.util.Properties;
 
 import junit.framework.TestCase;
@@ -71,6 +71,17 @@ public class JDBCReservoirDataSourceTest extends TestCase {
         assertTrue(ds.hasNext());
         assertNotNull(ds.readNextRecord());
     }
+
+    public void testReadAllRows() throws Exception {
+        JDBCReserviorDataSource ds = new JDBCReserviorDataSource(con, "select * from seven_rows");
+        int rowNum = 0;
+        while (ds.hasNext()) {
+            rowNum++;
+            Object[] row = ds.readNextRecord();
+            assertEquals(rowNum, row[0]);
+        }
+        assertEquals(7, rowNum);
+    }
     
     /**
      * For result streaming to work with the PostgreSQL driver, the following preconditions
@@ -84,5 +95,25 @@ public class JDBCReservoirDataSourceTest extends TestCase {
         JDBCReserviorDataSource ds = new JDBCReserviorDataSource(con, "select * from seven_rows");
         assertFalse(con.getAutoCommit());
         assertEquals(1, ds.getStatement().getFetchSize());
+        assertEquals(ResultSet.TYPE_SCROLL_INSENSITIVE, ds.getStatement().getFetchDirection());
+    }
+    
+    public void testRowCountMixReadAndSkip() throws Exception {
+        JDBCReserviorDataSource ds = new JDBCReserviorDataSource(con, "select * from seven_rows");
+        assertEquals(0, ds.getRowCount());
+        ds.readNextRecord();
+        assertEquals(1, ds.getRowCount());
+        ds.skipRecords(3);
+        assertEquals(4, ds.getRowCount());
+        while (ds.hasNext()) {
+            ds.readNextRecord();
+        }
+        assertEquals(7, ds.getRowCount());
+    }
+    
+    public void testRowCountSkipTooMany() throws Exception {
+        JDBCReserviorDataSource ds = new JDBCReserviorDataSource(con, "select * from seven_rows");
+        ds.skipRecords(10);
+        assertEquals(7, ds.getRowCount());
     }
 }

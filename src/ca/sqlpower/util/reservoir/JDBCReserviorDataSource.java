@@ -54,6 +54,13 @@ public class JDBCReserviorDataSource implements ReservoirDataSource<Object[]> {
     private final int colCount;
     
     /**
+     * Returns the number of rows read or skipped so far. Once
+     * {@link #hasNext()} has returned false, this will be the total number of
+     * rows that were returned by the query.
+     */
+    private int rowCount;
+    
+    /**
      * 
      * @param con The connection to use. WARNING: auto-commit will be turned off
      * for this connection!  If you want auto-commit on, turn it back on when you're
@@ -63,9 +70,9 @@ public class JDBCReserviorDataSource implements ReservoirDataSource<Object[]> {
      * This will most likely be caused by an invalid select statement, but anything
      * is possible!
      */
-    JDBCReserviorDataSource(Connection con, String query) throws SQLException {
+    public JDBCReserviorDataSource(Connection con, String query) throws SQLException {
         con.setAutoCommit(false);
-        stmt = con.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+        stmt = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
         stmt.setFetchSize(1);
         rs = stmt.executeQuery(query);
         rsmd = rs.getMetaData();
@@ -81,7 +88,7 @@ public class JDBCReserviorDataSource implements ReservoirDataSource<Object[]> {
 
     public boolean hasNext() throws ReservoirDataException {
         try {
-            return !rs.isAfterLast();
+            return !rs.isLast();
         } catch (SQLException e) {
             throw new ReservoirDataException(e);
         }
@@ -91,6 +98,7 @@ public class JDBCReserviorDataSource implements ReservoirDataSource<Object[]> {
         try {
             boolean hasNext = rs.next();
             if (!hasNext) throw new ReservoirDataException("Attempted to read past last record");
+            rowCount++;
             Object[] rowValues = new Object[colCount];
             for (int i = 0; i < colCount; i++) {
                 rowValues[i] = rs.getObject(i + 1);
@@ -103,7 +111,12 @@ public class JDBCReserviorDataSource implements ReservoirDataSource<Object[]> {
 
     public void skipRecords(int count) throws ReservoirDataException {
         try {
-            rs.relative(count);
+            boolean onValidRow = rs.relative(count);
+            if (onValidRow) {
+                rowCount = rs.getRow();
+            } else {
+                rowCount = rs.getRow() - 1;
+            }
         } catch (SQLException e) {
             throw new ReservoirDataException(e);
         }
@@ -117,4 +130,12 @@ public class JDBCReserviorDataSource implements ReservoirDataSource<Object[]> {
         return stmt;
     }
     
+    /**
+     * Returns the number of rows read or skipped so far. Once
+     * {@link #hasNext()} has returned false, this will be the total number of
+     * rows that were returned by the query.
+     */
+    public int getRowCount() {
+        return rowCount;
+    }
 }
