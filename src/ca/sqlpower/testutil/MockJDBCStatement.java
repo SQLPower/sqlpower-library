@@ -55,6 +55,12 @@ public class MockJDBCStatement implements Statement {
     private int fetchSize;
 
     /**
+     * The fetchDirection used by the related getters and setters.  The
+     * value of this property does not otherwise affect this instance's behaviour.
+     */
+    private int fetchDirection;
+
+    /**
      * Creates a new statement belonging to the given connection.
      */
 	MockJDBCStatement(MockJDBCConnection connection) {
@@ -155,7 +161,7 @@ public class MockJDBCStatement implements Statement {
 	}
 
 	public int getFetchDirection() throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+        return fetchDirection;
 	}
 
     /**
