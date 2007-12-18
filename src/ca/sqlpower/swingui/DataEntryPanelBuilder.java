@@ -38,6 +38,8 @@ import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.util.concurrent.Callable;
 
 import javax.swing.AbstractAction;
@@ -137,6 +139,35 @@ public class DataEntryPanelBuilder {
 				}
 			}
 		};
+		
+		//attempts to call the cancel action when the user clicks
+		//the windows "x" button.
+		d.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+		d.addWindowListener(new WindowListener() {
+
+			public void windowActivated(WindowEvent e) {}
+
+			public void windowClosed(WindowEvent e) {}
+
+			public void windowClosing(WindowEvent e) {
+				try {
+					boolean close = cancelCall.call().booleanValue();
+					if (close) {
+						d.dispose();
+					}
+				} catch (Exception ex) {
+					throw new RuntimeException(ex);
+				}
+			}
+
+			public void windowDeactivated(WindowEvent e) {}
+
+			public void windowDeiconified(WindowEvent e) {}
+
+			public void windowIconified(WindowEvent e) {}
+
+			public void windowOpened(WindowEvent e) {}
+		});
 		
 		//checks if it is a panel that needs to be validated before save.
 		if (dataEntry instanceof Validated) {
