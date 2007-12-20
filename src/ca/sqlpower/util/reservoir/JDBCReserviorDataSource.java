@@ -88,7 +88,7 @@ public class JDBCReserviorDataSource implements ReservoirDataSource<Object[]> {
 
     public boolean hasNext() throws ReservoirDataException {
         try {
-            return !rs.isLast();
+            return !rs.isLast() && !(rs.getRow() == 0 && !rs.isBeforeFirst());
         } catch (SQLException e) {
             throw new ReservoirDataException(e);
         }
