@@ -47,6 +47,7 @@ import java.security.Policy;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -170,12 +171,27 @@ public class SPDataSourceType {
         }
 
         /**
-         * Attempts to locate the named file in the same JAR files that
-         * classes are loaded from.
+         * Returns the first result that would be obtained from {@link #findResources(String)},
+         * or null if findResources would return an empty result.
          */
         @Override
         protected URL findResource(String name) {
-            logger.debug("Looking for resource "+name);
+            Enumeration<URL> resources = findResources(name);
+            if (resources.hasMoreElements()) {
+                return resources.nextElement();
+            } else {
+                return null;
+            }
+        }
+        
+        /**
+         * Creates URL objects for each instance of the named file within the
+         * same set of JAR files that classes are loaded from.
+         */
+        @Override
+        protected Enumeration<URL> findResources(String name) {
+            logger.debug("Looking for all resources with path "+name);
+            List<URL> results = new ArrayList<URL>();
             for (String jarName : getJdbcJarList()) {
                 File listedFile = SPDataSource.jarSpecToFile(jarName, getParent());
                 try {
@@ -186,14 +202,14 @@ public class SPDataSourceType {
                     JarFile jf = new JarFile(listedFile);
                     if (jf.getEntry(name) != null) {
                         URI jarUri = listedFile.toURI();
-                        return new URL("jar:"+jarUri.toURL()+"!/"+name);
+                        results.add(new URL("jar:"+jarUri.toURL()+"!/"+name));
                     }
                 } catch (IOException ex) {
                     logger.warn("IO Exception while searching "+listedFile.getPath()
                                 +" for resource "+name+". Continuing...", ex);
                 }
             }
-            return null;
+            return Collections.enumeration(results);
         }
     }
     
