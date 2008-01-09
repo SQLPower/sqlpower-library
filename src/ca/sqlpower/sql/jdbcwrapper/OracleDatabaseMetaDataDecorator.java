@@ -61,14 +61,14 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	private static final int DREADED_ORACLE_ERROR_CODE_1722 = 1722;
 	
 	private static final String ORACLE_1722_MESSAGE =
-		"That caught ORA-1722; in this context it normally means that you are using the " +
-		"Oracle 10 driver with Oracle 8. Please check your driver settings";
+		"Encountered Oracle error ORA-1722. This normally means that you are using the " +
+		"Oracle 10 driver with Oracle 8. Please check your driver settings.";
 
     private static final int DREADED_ORACLE_ERROR_CODE_1031 = 1031;
     
     private static final String ORACLE_1031_MESSAGE =
-        "That caught ORA-1031; in this context it normally means that you are accessing " +
-        "Indices without having the 'analyze any' permission";
+        "Encountered Oracle error ORA-1031. This normally means that you are accessing " +
+        "Indices without having the 'analyze any' permission.";
     
     
 	@Override
