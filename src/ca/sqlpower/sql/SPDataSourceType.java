@@ -193,20 +193,25 @@ public class SPDataSourceType {
             logger.debug("Looking for all resources with path "+name);
             List<URL> results = new ArrayList<URL>();
             for (String jarName : getJdbcJarList()) {
+                logger.debug("Converting JAR name: " + jarName);
                 File listedFile = SPDataSource.jarSpecToFile(jarName, getParent());
+                logger.debug("  File is "+listedFile);
                 try {
-                    if (!listedFile.exists()) {
-                        logger.debug("Skipping non-existant JAR file "+listedFile.getPath());
+                    if (listedFile == null || !listedFile.exists()) {
+                        logger.debug("  Skipping non-existant JAR file " + (listedFile == null ? "" : listedFile.getPath()) );
                         continue;
+                    } else {
+                        logger.debug("  Searching JAR "+listedFile.getPath());
                     }
                     JarFile jf = new JarFile(listedFile);
                     if (jf.getEntry(name) != null) {
                         URI jarUri = listedFile.toURI();
                         results.add(new URL("jar:"+jarUri.toURL()+"!/"+name));
+                        logger.debug("    Found entry " + name);
                     }
                 } catch (IOException ex) {
-                    logger.warn("IO Exception while searching "+listedFile.getPath()
-                                +" for resource "+name+". Continuing...", ex);
+                    logger.warn("  IO Exception while searching "+ (listedFile == null ? "" : listedFile.getPath())
+                                + " for resource " + name + ". Continuing...", ex);
                 }
             }
             return Collections.enumeration(results);
@@ -306,8 +311,12 @@ public class SPDataSourceType {
         for (int i = 0; i < count; i++) {
             String key = JDBC_JAR_BASE+"_"+i;
             String value = getProperty(key);
-            logger.debug("Found jar \""+value+"\" under key \""+key+"\"");
-            list.add(value);
+            if (value != null) {
+                logger.debug("Found jar \""+value+"\" under key \""+key+"\"");
+                list.add(value);
+            } else {
+                logger.debug("Skipping null jar entry under key \""+key+"\"");
+            }
         }
         return list;
     }
