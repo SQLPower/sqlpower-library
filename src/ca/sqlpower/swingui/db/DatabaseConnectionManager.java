@@ -229,11 +229,11 @@ public class DatabaseConnectionManager {
      * @param owner the Frame or Dialog that should own the
      *              DatabaseConnectionManager dialog.
      */
-    public void showDialog(Window owner) {
+    public JDialog showDialog(Window owner) {
         if (d != null && d.isVisible() && currentOwner == owner) {
         	d.setVisible(true);  // even if the dialog is already visible, this brings it to the front and gives it focus
             d.requestFocus();    // this will rob focus from the previous focus owner
-            return;
+            return d;
         }
 
         if (d != null) {
@@ -260,6 +260,7 @@ public class DatabaseConnectionManager {
         SPSUtils.makeJDialogCancellable(d, closeAction);
         d.setVisible(true);
         d.requestFocus();
+        return d;
     }
 
     /**
