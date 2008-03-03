@@ -974,7 +974,26 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
 
 	public ResultSet getTypeInfo() throws SQLException {
 	
-		throw new UnsupportedOperationException("Not implemented");
+		MockJDBCResultSet rs = new MockJDBCResultSet(null, 18);
+        rs.setColumnName(1, "TYPE_NAME");
+        rs.setColumnName(2, "DATA_TYPE");
+        rs.setColumnName(3, "PRECISION");
+        rs.setColumnName(4, "LITERAL_PREFIX");
+        rs.setColumnName(5, "LITERAL_SUFFIX");
+        rs.setColumnName(6, "CREATE_PARAMS");
+        rs.setColumnName(7, "NULLABLE");
+        rs.setColumnName(8, "CASE_SENSITIVE");
+        rs.setColumnName(9, "SEARCHABLE");
+        rs.setColumnName(10, "UNSIGNED_ATTRIBUTE");
+        rs.setColumnName(11, "FIXED_PREC_SCALE");
+        rs.setColumnName(12, "AUTO_INCREMENT");
+        rs.setColumnName(13, "LOCAL_TYPE_NAME");
+        rs.setColumnName(14, "MINIMUM_SCALE");
+        rs.setColumnName(15, "MAXIMUM_SCALE");
+        rs.setColumnName(16, "SQL_DATA_TYPE");
+        rs.setColumnName(17, "SQL_DATETIME_SUB");
+        rs.setColumnName(18, "NUM_PREC_RADIX");        
+        return rs;
 	}
 
 	public ResultSet getIndexInfo(String catalog, String schema, String table,
