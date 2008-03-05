@@ -92,6 +92,8 @@ public abstract class ConnectionDecorator implements Connection {
             return new OracleConnectionDecorator(delegate);
         } else if (delegate.getMetaData().getDriverName().equals("SQLServer")) {
             return new SQLServerConnectionDecorator(delegate);
+        } else if (delegate.getMetaData().getDriverName().equals("MySQL-AB JDBC Driver")) {
+            return new MySQLConnectionDecorator(delegate);
 		} else if (delegate.getMetaData().getDriverName().equals("SQL Power Mock JDBC Database Driver")) {
 			// we don't want to decorate these at all
 			return delegate;
