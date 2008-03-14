@@ -102,14 +102,31 @@ public class PostgresDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
 	}
     
     /** Compensates for unlimited length varchar (which is otherwise reported as VARCHAR(0)
-     * by returning a large limit for column_length
+     * by returning a large limit for column_length.
+     * This will also make sure that serial columns are set to auto_increment
      */
     @Override
     public ResultSet getColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) throws SQLException {
         ResultSet rs = super.getColumns(catalog, schemaPattern, tableNamePattern, columnNamePattern);
         CachedRowSet crs = new CachedRowSet();
-        crs.populate(rs);
+        
+        boolean fudgeAutoInc;
+        if (rs.getMetaData().getColumnCount() <= 22) {
+        	crs.populate(rs, null, "IS_AUTOINCREMENT");
+        	fudgeAutoInc = true;
+        } else {
+        	// must be JDBC 4 or newer
+        	crs.populate(rs);
+        	fudgeAutoInc = false;
+        }
+        
+        // This will throw SQLException if someone uses a driver that returns
+        // a >22-column result set which does not include an IS_AUTOINCREMENT column.
+        // If that ever happens, we should update the above assumption to compensate.
+        int autoIncColNum = crs.findColumn("IS_AUTOINCREMENT");
+        
         rs.close();
+        
         while (crs.next()) {
             if (crs.getInt(5) == Types.VARCHAR && crs.getInt(7) <= 0) {
                 crs.updateInt(7, UGLY_DEFAULT_VARCHAR_SIZE);
@@ -123,6 +140,13 @@ public class PostgresDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
                 crs.updateInt(7, DIGITS_IN_FLOAT8);
             } else if ("bool".equalsIgnoreCase(crs.getString(6))) {
                 crs.updateInt(5, Types.BOOLEAN);
+            }
+            if (fudgeAutoInc) {
+            	if ("serial".equalsIgnoreCase(crs.getString(6))) {
+            		crs.updateString(autoIncColNum, "YES");
+            	} else {
+            		crs.updateString(autoIncColNum, "NO");
+            	}
             }
         }
         crs.beforeFirst();

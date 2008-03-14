@@ -90,7 +90,8 @@ public abstract class ConnectionDecorator implements Connection {
 			return new PostgresConnectionDecorator(delegate);
         } else if (delegate.getMetaData().getDriverName().equals("Oracle JDBC driver")) {
             return new OracleConnectionDecorator(delegate);
-        } else if (delegate.getMetaData().getDriverName().equals("SQLServer")) {
+        } else if (delegate.getMetaData().getDriverName().equals("SQLServer")
+        		|| delegate.getMetaData().getDriverName().equals("Microsoft SQL Server 2005 JDBC Driver")) {
             return new SQLServerConnectionDecorator(delegate);
         } else if (delegate.getMetaData().getDriverName().equals("MySQL-AB JDBC Driver")) {
             return new MySQLConnectionDecorator(delegate);
