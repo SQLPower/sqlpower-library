@@ -38,8 +38,10 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
@@ -800,7 +802,7 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
         logger.debug("      table '"+tableNamePattern+"' (pattern )");
         logger.debug("     column '"+columnNamePattern+"' (pattern )");
         
-		MockJDBCResultSet rs = new MockJDBCResultSet(null, 22);
+		MockJDBCResultSet rs = new MockJDBCResultSet(null, 23);
 		rs.setColumnName(1, "TABLE_CAT");
 		rs.setColumnName(2, "TABLE_SCHEM");
 		rs.setColumnName(3, "TABLE_NAME");
@@ -823,26 +825,27 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
 		rs.setColumnName(20, "SCOPE_SCHEMA");
 		rs.setColumnName(21, "SCOPE_TABLE");
 		rs.setColumnName(22, "SOURCE_DATA_TYPE");
+		rs.setColumnName(23, "IS_AUTOINCREMENT");
 
         // FIXME: doesn't support null catalog, schema, or table patterns yet!
         
-        StringBuffer colListPropName = new StringBuffer();
-        colListPropName.append("columns.");
+		StringBuilder qualifier = new StringBuilder();
         if (getCatalogTerm() != null) {
             if (catalog == null) {
                 // FIXME: this should be made optional, but it's a lot of work
                 throw new SQLException("Catalog name is mandatory for this JDBC Driver.");
             }
-            colListPropName.append(catalog).append(".");
+            qualifier.append(catalog).append(".");
         }
         if (getSchemaTerm() != null) {
             if (schemaPattern == null) {
                 // FIXME: this should be made optional, but it's a lot of work
                 throw new SQLException("Schema name is mandatory for this JDBC Driver.");
             }
-            colListPropName.append(schemaPattern).append(".");
+            qualifier.append(schemaPattern).append(".");
         }
-        colListPropName.append(tableNamePattern);
+        String fqTableName = qualifier + tableNamePattern;
+        String colListPropName = "columns." + qualifier + tableNamePattern;
         
         logger.debug("getColumns: property name for column list is '"+colListPropName+"'");
         String columnList = connection.getProperties().getProperty(colListPropName.toString());
@@ -853,6 +856,14 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
                         +tableNamePattern+"_col_3,"
                         +tableNamePattern+"_col_4";
         }
+        
+        Set<String> autoIncCols = new HashSet<String>();
+        if (connection.getProperties().getProperty("autoincrement_cols") != null) {
+        	String[] colList = connection.getProperties()
+        		.getProperty("autoincrement_cols").split(",");
+        	autoIncCols.addAll(Arrays.asList(colList));
+        }
+        System.err.println("autoincCols=" + autoIncCols);
         int colNo = 1;
         for (String colName : Arrays.asList(columnList.split(","))) {
             rs.addRow();
@@ -878,6 +889,14 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
             rs.updateObject(20, null);
             rs.updateObject(21, null);
             rs.updateObject(22, null);
+            System.err.println(" checking " + fqTableName + "." + colName);
+            if (autoIncCols.contains(fqTableName + "." + colName)) {
+            	System.err.println("  FOUND");
+            	rs.updateObject(23, "YES");
+            } else {
+            	System.err.println("  NOT FOUND");
+            	rs.updateObject(23, "NO");
+            }
             colNo++;
         }
 

@@ -11,12 +11,16 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 import ca.sqlpower.util.Cache;
 import ca.sqlpower.util.LabelValueBean;
 import ca.sqlpower.util.LeastRecentlyUsedCache;
 
 public class SQL {
 
+	private static final Logger logger = Logger.getLogger(SQL.class);
+	
 	/**
 	 * A cache of the last 20 column types we looked up in the
 	 * database.  See {@link #columnType(Connection,String,String,String)}.
@@ -481,5 +485,35 @@ public class SQL {
 			}
 		}
 		return list;
+	}
+	
+	/**
+	 * Searches the given Result Set for a column of the given name (case
+	 * insensitive). Returns true if the given result set has the named column.
+	 * This method is similar to {@link ResultSet#findColumn(String)}, but it
+	 * returns -1 instead of throwing an exception when the requested column
+	 * does not exist.
+	 * 
+	 * @param rs
+	 *            The Result Set to consult. Must not be null.
+	 * @param colName
+	 *            The name of the column to look for. Must not be null.
+	 * @return The column number of the column having the given name, or -1 if
+	 *         there is no such column. This number is in the JDBC 1-based
+	 *         numbering system (the first column number is 1), so the value 0
+	 *         will never be returned.
+	 * @throws SQLException
+	 *             if a database error occurs.
+	 */
+	public static int findColumnIndex(ResultSet rs, String colName) throws SQLException {
+		ResultSetMetaData rsmd = rs.getMetaData();
+		for (int i = 1, n = rsmd.getColumnCount(); i <= n; i++) {
+			String columnName = rsmd.getColumnName(i);
+			logger.debug("Column " + i + ": " + columnName);
+			if (colName.equalsIgnoreCase(columnName)) {
+				return i;
+			}
+		}
+		return -1;
 	}
 }

@@ -158,6 +158,7 @@ public class MockJDBCResultSet implements ResultSet {
 	 */
 	public void setColumnName(int columnIndex, String name) {
 		columnNames[columnIndex-1] = name.toLowerCase();
+		metaData.setColumnName(columnIndex, name);
 	}
 	
     public void setColumnCount(int columns) {

@@ -63,6 +63,9 @@ import org.apache.log4j.Logger;
  *  <dd>tables[.catalog][.schema]={list}</dd>
  *    <dt>A comma-separated list of tables in the named schema.catalog.  Leave out the ".catalog"
  *        or ".schema" part if you've configured this database to be schemaless or catalogless.</dt>
+ *  <dd>autoincrement_cols={list}</dd>
+ *    <dt>A comma-separated list of fully-qualified column names (catalog.schema.table.column)
+ *        which will be reported by DatabaseMetaData.getColumns as being auto-increment.
  * </dl>
  * 
  * @author fuerth
