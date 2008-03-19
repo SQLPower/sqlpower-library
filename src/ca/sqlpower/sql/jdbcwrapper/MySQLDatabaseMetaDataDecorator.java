@@ -87,7 +87,7 @@ public class MySQLDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		ResultSet rs = super.getIndexInfo(catalog, schema, table, unique,
 				approximate);
 		CachedRowSet crs = new CachedRowSet();
-		crs.populate(rs, null, "INDEX_TYPE");
+		crs.populate(rs, null, "SPG_INDEX_TYPE");
 		rs.close();
 		Map<String, String> indexTypes = getIndexType(table);
 		while (crs.next()) {
@@ -97,12 +97,12 @@ public class MySQLDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 				crs.updateBoolean(4, false);
 			}
 			crs.updateShort(7, Short.valueOf(crs.getString(7)));
-			crs.updateString("INDEX_TYPE", indexTypes.get(crs.getString(6)));
+			crs.updateString("SPG_INDEX_TYPE", indexTypes.get(crs.getString(6)));
 
 			logger.debug("Name: " + crs.getString(6));
 			logger.debug("JDBC Type?: " + crs.getShort(7));
 			logger.debug("Unique?: " + crs.getBoolean(4));
-			logger.debug("Index Type?: " + crs.getString("INDEX_TYPE"));
+			logger.debug("Index Type?: " + crs.getString("SPG_INDEX_TYPE"));
 		}
 		crs.beforeFirst();
 		return crs;
@@ -117,7 +117,7 @@ public class MySQLDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		Map<String, String> indexTypes = new HashMap<String, String>();
 		Statement stmt = null;
 		ResultSet rs = null;
-		String type = "OTHER";
+		String type = "";
 		String name = "";
 		try {
 			stmt = getConnection().createStatement();

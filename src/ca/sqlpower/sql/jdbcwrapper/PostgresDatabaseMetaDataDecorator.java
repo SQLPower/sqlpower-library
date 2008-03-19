@@ -176,7 +176,7 @@ public class PostgresDatabaseMetaDataDecorator extends
 		ResultSet rs = super.getIndexInfo(catalog, schema, table, unique,
 				approximate);
 		CachedRowSet crs = new CachedRowSet();
-		crs.populate(rs, null, "INDEX_TYPE");
+		crs.populate(rs, null, "SPG_INDEX_TYPE");
 		rs.close();
 		Map<String, String> indexTypes = new HashMap<String, String>();
 		indexTypes = getIndexType(table);
@@ -191,7 +191,7 @@ public class PostgresDatabaseMetaDataDecorator extends
 			logger.debug("crs.getString(6) is returning " + crs.getString(6));
 			logger.debug("Setting index type to " + indexTypes.get(crs.getString(6)));
 			logger.debug("JDBC Type?: " + crs.getShort(7));
-			crs.updateString("INDEX_TYPE", indexTypes.get(crs.getString(6)).toUpperCase());
+			crs.updateString("SPG_INDEX_TYPE", indexTypes.get(crs.getString(6)).toUpperCase());
 		}
 		crs.beforeFirst();
 		return crs;
