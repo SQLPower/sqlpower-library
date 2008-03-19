@@ -34,15 +34,27 @@ package ca.sqlpower.sql.jdbcwrapper;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.log4j.Logger;
 
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sql.RowFilter;
+import ca.sqlpower.sql.SQL;
 
 /**
  * Decorate an Oracle Connection to handle the evil error "ORA-1722" on getTypeMap() when
  * the user is using an Oracle 10 driver on Oracle 8i. 
  */
 public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
+	
+	private static final Logger logger = Logger
+	.getLogger(OracleDatabaseMetaDataDecorator.class);
+
 
     /**
      * If true, this decorator's getTables method will omit tables in the
@@ -85,20 +97,53 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 			}
 		}
 	}
-    
-    @Override
-    public ResultSet getIndexInfo(String catalog, String schema, String table, boolean unique, boolean approximate) throws SQLException {
-        try {
-            return super.getIndexInfo(catalog, schema, table, unique, approximate);
-        } catch (SQLException e){
-            if (e.getErrorCode() == DREADED_ORACLE_ERROR_CODE_1031){
-                SQLException newE = new SQLException(ORACLE_1031_MESSAGE);
-                newE.setNextException(e);
-                throw newE;
-            } else {
-                throw e;
-            }
-        }
+	
+	/**
+	 * This is used to properly reverse engineer index types from the database.
+	 */
+	@Override
+	public ResultSet getIndexInfo(String catalog, String schema, String table,
+			boolean unique, boolean approximate) throws SQLException {
+		try {
+			ResultSet rs = super.getIndexInfo(catalog, schema, table, unique,
+					approximate);
+			CachedRowSet crs = new CachedRowSet();
+			crs.populate(rs, null, "SPG_INDEX_TYPE");
+			rs.close();
+			Map<String, String> indexTypes = new HashMap<String, String>();
+			indexTypes = getIndexType(table);
+			while (crs.next()) {
+				crs.updateShort(7, Short.valueOf(crs.getString(7)));
+				//Oracle is stupid...never represent a boolean as a 0 or 1 of type Long
+				if (crs.getLong(4) == 0) {
+					crs.updateBoolean(4, false);
+				} else if (crs.getLong(4) == 1) {
+					crs.updateBoolean(4, true);
+				}
+				if(crs.getString(6) == null) continue; 	
+				logger.debug("crs.getString(6) is returning "+ crs.getString(6));
+				logger.debug("Setting index type to "+ indexTypes.get(crs.getString(6)));
+				logger.debug("JDBC Type?: " + crs.getShort(7));
+				if(indexTypes.get(crs.getString(6)).toUpperCase().equals("FUNCTION-BASED NORMAL")){
+					crs.updateString("SPG_INDEX_TYPE", "FUNCTION-BASED");
+				} else if (indexTypes.get(crs.getString(6)).toUpperCase().equals("NORMAL")) {
+					crs.updateString("SPG_INDEX_TYPE", "BTREE");
+				} else {
+					crs.updateString("SPG_INDEX_TYPE", indexTypes.get(
+							crs.getString(6)).toUpperCase());					
+				}
+			}
+			crs.beforeFirst();
+			return crs;
+		} catch (SQLException e) {
+			if (e.getErrorCode() == DREADED_ORACLE_ERROR_CODE_1031) {
+				SQLException newE = new SQLException(ORACLE_1031_MESSAGE);
+				newE.setNextException(e);
+				throw newE;
+			} else {
+				throw e;
+			}
+		}
     }
     
     @Override
@@ -120,4 +165,36 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
         crs.populate(rs, noRecycledTablesFilter);
         return crs;
     }
+    
+    /**
+	 * This uses an index name and a table name to find out the index type. The
+	 * index type is returned as a map of Index name and index types
+	 */
+	private Map<String, String> getIndexType(String tableName)
+			throws SQLException {
+		Map<String, String> indexTypes = new HashMap<String, String>();
+		Statement stmt = null;
+		ResultSet rs = null;
+		String type = "";
+		String name = "";
+		try {
+			stmt = getConnection().createStatement();
+			String sql = "SELECT INDEX_NAME, INDEX_TYPE FROM user_indexes WHERE TABLE_NAME=" +SQL.quote(tableName);
+
+			logger.debug("SQL statement was " + sql);
+			rs = stmt.executeQuery(sql);
+			while (rs.next()) {
+				name = rs.getString("INDEX_NAME");
+				type = rs.getString("INDEX_TYPE");
+				indexTypes.put(name, type);
+			}
+			return indexTypes;
+
+		} finally {
+			if (rs != null)
+				rs.close();
+			if (stmt != null)
+				stmt.close();
+		}
+	}
 }
