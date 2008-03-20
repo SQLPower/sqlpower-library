@@ -120,13 +120,19 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 				} else if (crs.getLong(4) == 1) {
 					crs.updateBoolean(4, true);
 				}
-				if(crs.getString(6) == null) continue; 	
-				logger.debug("crs.getString(6) is returning "+ crs.getString(6));
-				logger.debug("Setting index type to "+ indexTypes.get(crs.getString(6)));
+				if (crs.getString(6) == null
+						|| indexTypes.get(crs.getString(6)) == null)
+					continue;
+				logger.debug("crs.getString(6) is returning "
+						+ crs.getString(6));
+				logger.debug("Setting index type to "
+						+ indexTypes.get(crs.getString(6)));
 				logger.debug("JDBC Type?: " + crs.getShort(7));
-				if(indexTypes.get(crs.getString(6)).toUpperCase().equals("FUNCTION-BASED NORMAL")){
+				if (indexTypes.get(crs.getString(6)).toUpperCase().equals(
+						"FUNCTION-BASED NORMAL")) {
 					crs.updateString("SPG_INDEX_TYPE", "FUNCTION-BASED");
-				} else if (indexTypes.get(crs.getString(6)).toUpperCase().equals("NORMAL")) {
+				} else if (indexTypes.get(crs.getString(6)).toUpperCase()
+						.equals("NORMAL")) {
 					crs.updateString("SPG_INDEX_TYPE", "BTREE");
 				} else {
 					crs.updateString("SPG_INDEX_TYPE", indexTypes.get(
