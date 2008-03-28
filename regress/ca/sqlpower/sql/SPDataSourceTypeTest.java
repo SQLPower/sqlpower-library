@@ -35,8 +35,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import ca.sqlpower.sql.SPDataSourceType;
+
 import junit.framework.TestCase;
-import ca.sqlpower.sql.SPDataSourceType.JDBCClassLoader;
 
 public class SPDataSourceTypeTest extends TestCase {
 
@@ -249,19 +250,5 @@ public class SPDataSourceTypeTest extends TestCase {
         dsType.setJdbcUrl(null);
         Map<String, String> map = dsType.retrieveURLDefaults();
         assertEquals(0, map.size());
-    }
-    
-    /**
-     * Regression test: when there's a classpath entry for a built-in resource
-     * that doesn't exist, you get NPE when loading a resource (not a class,
-     * just a resource)
-     */
-    public void testLoadResourceFromMissingJar() throws Exception {
-        SPDataSourceType dsType = new SPDataSourceType();
-        dsType.addJdbcJar("builtin:does/not/exist.jar");
-        
-        JDBCClassLoader jdbcClassLoader = (JDBCClassLoader) dsType.getJdbcClassLoader();
-        jdbcClassLoader.findResources("my_resource");
-        // test passes if previous statement doesn't throw NPE
     }
 }

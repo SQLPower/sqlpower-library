@@ -38,10 +38,8 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
@@ -802,7 +800,7 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
         logger.debug("      table '"+tableNamePattern+"' (pattern )");
         logger.debug("     column '"+columnNamePattern+"' (pattern )");
         
-		MockJDBCResultSet rs = new MockJDBCResultSet(null, 23);
+		MockJDBCResultSet rs = new MockJDBCResultSet(null, 22);
 		rs.setColumnName(1, "TABLE_CAT");
 		rs.setColumnName(2, "TABLE_SCHEM");
 		rs.setColumnName(3, "TABLE_NAME");
@@ -825,27 +823,26 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
 		rs.setColumnName(20, "SCOPE_SCHEMA");
 		rs.setColumnName(21, "SCOPE_TABLE");
 		rs.setColumnName(22, "SOURCE_DATA_TYPE");
-		rs.setColumnName(23, "IS_AUTOINCREMENT");
 
         // FIXME: doesn't support null catalog, schema, or table patterns yet!
         
-		StringBuilder qualifier = new StringBuilder();
+        StringBuffer colListPropName = new StringBuffer();
+        colListPropName.append("columns.");
         if (getCatalogTerm() != null) {
             if (catalog == null) {
                 // FIXME: this should be made optional, but it's a lot of work
                 throw new SQLException("Catalog name is mandatory for this JDBC Driver.");
             }
-            qualifier.append(catalog).append(".");
+            colListPropName.append(catalog).append(".");
         }
         if (getSchemaTerm() != null) {
             if (schemaPattern == null) {
                 // FIXME: this should be made optional, but it's a lot of work
                 throw new SQLException("Schema name is mandatory for this JDBC Driver.");
             }
-            qualifier.append(schemaPattern).append(".");
+            colListPropName.append(schemaPattern).append(".");
         }
-        String fqTableName = qualifier + tableNamePattern;
-        String colListPropName = "columns." + qualifier + tableNamePattern;
+        colListPropName.append(tableNamePattern);
         
         logger.debug("getColumns: property name for column list is '"+colListPropName+"'");
         String columnList = connection.getProperties().getProperty(colListPropName.toString());
@@ -856,14 +853,6 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
                         +tableNamePattern+"_col_3,"
                         +tableNamePattern+"_col_4";
         }
-        
-        Set<String> autoIncCols = new HashSet<String>();
-        if (connection.getProperties().getProperty("autoincrement_cols") != null) {
-        	String[] colList = connection.getProperties()
-        		.getProperty("autoincrement_cols").split(",");
-        	autoIncCols.addAll(Arrays.asList(colList));
-        }
-        System.err.println("autoincCols=" + autoIncCols);
         int colNo = 1;
         for (String colName : Arrays.asList(columnList.split(","))) {
             rs.addRow();
@@ -889,14 +878,6 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
             rs.updateObject(20, null);
             rs.updateObject(21, null);
             rs.updateObject(22, null);
-            System.err.println(" checking " + fqTableName + "." + colName);
-            if (autoIncCols.contains(fqTableName + "." + colName)) {
-            	System.err.println("  FOUND");
-            	rs.updateObject(23, "YES");
-            } else {
-            	System.err.println("  NOT FOUND");
-            	rs.updateObject(23, "NO");
-            }
             colNo++;
         }
 
@@ -993,26 +974,7 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
 
 	public ResultSet getTypeInfo() throws SQLException {
 	
-		MockJDBCResultSet rs = new MockJDBCResultSet(null, 18);
-        rs.setColumnName(1, "TYPE_NAME");
-        rs.setColumnName(2, "DATA_TYPE");
-        rs.setColumnName(3, "PRECISION");
-        rs.setColumnName(4, "LITERAL_PREFIX");
-        rs.setColumnName(5, "LITERAL_SUFFIX");
-        rs.setColumnName(6, "CREATE_PARAMS");
-        rs.setColumnName(7, "NULLABLE");
-        rs.setColumnName(8, "CASE_SENSITIVE");
-        rs.setColumnName(9, "SEARCHABLE");
-        rs.setColumnName(10, "UNSIGNED_ATTRIBUTE");
-        rs.setColumnName(11, "FIXED_PREC_SCALE");
-        rs.setColumnName(12, "AUTO_INCREMENT");
-        rs.setColumnName(13, "LOCAL_TYPE_NAME");
-        rs.setColumnName(14, "MINIMUM_SCALE");
-        rs.setColumnName(15, "MAXIMUM_SCALE");
-        rs.setColumnName(16, "SQL_DATA_TYPE");
-        rs.setColumnName(17, "SQL_DATETIME_SUB");
-        rs.setColumnName(18, "NUM_PREC_RADIX");        
-        return rs;
+		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	public ResultSet getIndexInfo(String catalog, String schema, String table,

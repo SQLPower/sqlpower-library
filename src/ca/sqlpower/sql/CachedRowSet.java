@@ -89,48 +89,21 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
      * @param filter the filter to consult about which rows to keep
      */
     public void populate(ResultSet rs, RowFilter filter) throws SQLException {
-    	populate(rs, filter, new String[0]);
-    }
-    
-    /**
-     * Fills this row set with all the data of the given result set
-     * which is accepted by the given row filter.
-     * After populating this row set, you can safely call rs.close().
-     * 
-     * @param rs The result set to read all data from
-     * @param filter the filter to consult about which rows to keep
-     * @param extraColNames The names of any extra placeholder columns
-     * you want to add to the copy of the given result set. The result set
-     * metadata for those columns will claim they are all VARCHAR columns,
-     * but you can put any type of data in them. After populate() has returned,
-     * all rows will contain null values for the extra columns.
-     */
-    public void populate(ResultSet rs, RowFilter filter, String ... extraColNames) throws SQLException {
-
-    	/*
+        /*
 		 * XXX: this upcases all the column names in the metadata for
 		 * the Dashboard's benefit.  We should add a switch for this
 		 * behaviour to the CachedRowSet API and then use it from the
 		 * Dashboard
 		 */
 		rsmd = new CachedResultSetMetaData(rs.getMetaData(), true);
-    	int rsColCount = rsmd.getColumnCount();
-    	int colCount = rsColCount + extraColNames.length;
-		for (String extraColName : extraColNames) {
-			/* bleh */
-			rsmd.addColumn(
-					false, false, false, false, DatabaseMetaData.columnNullable,
-					true, 10, extraColName,	extraColName, null, 10, 0, null,
-					null, Types.VARCHAR, "VARCHAR", false, true, true,
-					String.class.getName());
-		}
 
 		int rowNum = 0;
 		ArrayList<Object[]> newData = new ArrayList<Object[]>();
+		int colCount = rsmd.getColumnCount();
 		while (rs.next()) {
 		    if (logger.isDebugEnabled()) logger.debug("Populating Row "+rowNum);
 			Object[] row = new Object[colCount];
-			for (int i = 0; i < rsColCount; i++) {
+			for (int i = 0; i < colCount; i++) {
 				Object o = rs.getObject(i+1);
 				if (o == null) {
 				    if (logger.isDebugEnabled()) logger.debug("   Col "+i+": null");

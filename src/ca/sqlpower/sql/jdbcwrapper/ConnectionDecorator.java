@@ -88,13 +88,8 @@ public abstract class ConnectionDecorator implements Connection {
 		logger.debug("static createFacade, driver name is: " + delegate.getMetaData().getDriverName());
 		if (delegate.getMetaData().getDriverName().equals("PostgreSQL Native Driver")) {
 			return new PostgresConnectionDecorator(delegate);
-        } else if (delegate.getMetaData().getDriverName().equals("Oracle JDBC driver")) {
-            return new OracleConnectionDecorator(delegate);
-        } else if (delegate.getMetaData().getDriverName().equals("SQLServer")
-        		|| delegate.getMetaData().getDriverName().equals("Microsoft SQL Server 2005 JDBC Driver")) {
-            return new SQLServerConnectionDecorator(delegate);
-        } else if (delegate.getMetaData().getDriverName().equals("MySQL-AB JDBC Driver")) {
-            return new MySQLConnectionDecorator(delegate);
+		} else if (delegate.getMetaData().getDriverName().equals("Oracle JDBC driver")) {
+			return new OracleConnectionDecorator(delegate);
 		} else if (delegate.getMetaData().getDriverName().equals("SQL Power Mock JDBC Database Driver")) {
 			// we don't want to decorate these at all
 			return delegate;

@@ -43,7 +43,7 @@ import ca.sqlpower.swingui.event.TaskTerminationListener;
 
 public abstract class SPSwingWorker implements Runnable {
 	private static final Logger logger = Logger.getLogger(SPSwingWorker.class);
-	private Throwable doStuffException;
+	private Exception doStuffException;
 	
 	private SPSwingWorker nextProcess;
 	private boolean cancelled; 
@@ -71,7 +71,7 @@ public abstract class SPSwingWorker implements Runnable {
             thread = Thread.currentThread();
             try {
             	doStuff();
-            } catch (Throwable e) {
+            } catch (Exception e) {
             	doStuffException = e;
             	logger.debug(e.getStackTrace());
             }
@@ -112,11 +112,11 @@ public abstract class SPSwingWorker implements Runnable {
 	 */
 	public abstract void doStuff() throws Exception;
 	
-	public Throwable getDoStuffException() {
+	public Exception getDoStuffException() {
 		return doStuffException;
 	}
     
-    public void setDoStuffException(Throwable e) {
+    public void setDoStuffException(Exception e) {
         doStuffException = e;
     }
 

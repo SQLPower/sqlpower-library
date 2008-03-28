@@ -47,7 +47,6 @@ import java.security.Policy;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -171,50 +170,30 @@ public class SPDataSourceType {
         }
 
         /**
-         * Returns the first result that would be obtained from {@link #findResources(String)},
-         * or null if findResources would return an empty result.
+         * Attempts to locate the named file in the same JAR files that
+         * classes are loaded from.
          */
         @Override
         protected URL findResource(String name) {
-            Enumeration<URL> resources = findResources(name);
-            if (resources.hasMoreElements()) {
-                return resources.nextElement();
-            } else {
-                return null;
-            }
-        }
-        
-        /**
-         * Creates URL objects for each instance of the named file within the
-         * same set of JAR files that classes are loaded from.
-         */
-        @Override
-        protected Enumeration<URL> findResources(String name) {
-            logger.debug("Looking for all resources with path "+name);
-            List<URL> results = new ArrayList<URL>();
+            logger.debug("Looking for resource "+name);
             for (String jarName : getJdbcJarList()) {
-                logger.debug("Converting JAR name: " + jarName);
                 File listedFile = SPDataSource.jarSpecToFile(jarName, getParent());
-                logger.debug("  File is "+listedFile);
                 try {
-                    if (listedFile == null || !listedFile.exists()) {
-                        logger.debug("  Skipping non-existant JAR file " + (listedFile == null ? "" : listedFile.getPath()) );
+                    if (!listedFile.exists()) {
+                        logger.debug("Skipping non-existant JAR file "+listedFile.getPath());
                         continue;
-                    } else {
-                        logger.debug("  Searching JAR "+listedFile.getPath());
                     }
                     JarFile jf = new JarFile(listedFile);
                     if (jf.getEntry(name) != null) {
                         URI jarUri = listedFile.toURI();
-                        results.add(new URL("jar:"+jarUri.toURL()+"!/"+name));
-                        logger.debug("    Found entry " + name);
+                        return new URL("jar:"+jarUri.toURL()+"!/"+name);
                     }
                 } catch (IOException ex) {
-                    logger.warn("  IO Exception while searching "+ (listedFile == null ? "" : listedFile.getPath())
-                                + " for resource " + name + ". Continuing...", ex);
+                    logger.warn("IO Exception while searching "+listedFile.getPath()
+                                +" for resource "+name+". Continuing...", ex);
                 }
             }
-            return Collections.enumeration(results);
+            return null;
         }
     }
     
@@ -311,12 +290,8 @@ public class SPDataSourceType {
         for (int i = 0; i < count; i++) {
             String key = JDBC_JAR_BASE+"_"+i;
             String value = getProperty(key);
-            if (value != null) {
-                logger.debug("Found jar \""+value+"\" under key \""+key+"\"");
-                list.add(value);
-            } else {
-                logger.debug("Skipping null jar entry under key \""+key+"\"");
-            }
+            logger.debug("Found jar \""+value+"\" under key \""+key+"\"");
+            list.add(value);
         }
         return list;
     }
