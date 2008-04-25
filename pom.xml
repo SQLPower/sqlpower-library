@@ -28,7 +28,7 @@
 		<sourceDirectory>src</sourceDirectory>
 		<testSourceDirectory>regress</testSourceDirectory>
 		<outputDirectory>build</outputDirectory>
-		<testOutputDirectory>build/tests</testOutputDirectory>
+		<testOutputDirectory>build-tests</testOutputDirectory>
 
 		<resources>
 			<resource>
@@ -71,7 +71,6 @@
 		          </systemProperties>
 				</configuration>
 			</plugin>
-
 		</plugins>
 	</build>
 
