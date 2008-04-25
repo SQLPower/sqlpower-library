@@ -24,11 +24,11 @@
 	</licenses>
 
 	<build>
-		<directory>build</directory>
+		<directory>dist</directory>
 		<sourceDirectory>src</sourceDirectory>
 		<testSourceDirectory>regress</testSourceDirectory>
 		<outputDirectory>build</outputDirectory>
-		<testOutputDirectory>buildtests</testOutputDirectory>
+		<testOutputDirectory>build/tests</testOutputDirectory>
 
 		<resources>
 			<resource>
@@ -62,33 +62,31 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
-					<reportsDirectory>reports</reportsDirectory>
-					<excludes>
-						<exclude>**/ZealousURLEncoderTest.java</exclude>
-						<exclude>
-							**/TestFormValidationHandler$1.java
-						</exclude>
-					</excludes>
+				  <reportsDirectory>dist/reports</reportsDirectory>
+		          <systemProperties>
+		            <property>
+		              <name>java.util.prefs.PreferencesFactory</name>
+		              <value>prefs.PreferencesFactory</value>
+		            </property>
+		          </systemProperties>
 				</configuration>
 			</plugin>
 
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-report-plugin</artifactId>
-				<configuration>
-					<outputDirectory>reports</outputDirectory>
-				</configuration>
-				<executions>
-					<execution>
-						<phase>test</phase>
-						<goals>
-							<goal>report</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
 		</plugins>
 	</build>
+
+	<reporting>
+	  <plugins>
+	    <plugin>
+	      <groupId>org.apache.maven.plugins</groupId>
+	      <artifactId>maven-surefire-report-plugin</artifactId>
+	      <configuration>
+	      	<outputDirectory>dist/reports</outputDirectory>
+	      	<reportsDirectory>dist/reports</reportsDirectory>
+	      </configuration>
+	    </plugin>
+	  </plugins>
+	</reporting>
 
 	<dependencies>
 		<dependency>
@@ -98,9 +96,15 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>jgoodies</groupId>
-			<artifactId>form</artifactId>
+			<groupId>com.jgoodies</groupId>
+			<artifactId>forms</artifactId>
 			<version>1.1.0</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>commons-dbcp</groupId>
+			<artifactId>commons-dbcp</artifactId>
+			<version>1.1-RC2</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
@@ -110,94 +114,39 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
+		    <groupId>commons-pool</groupId>
+		    <artifactId>commons-pool</artifactId>
+		    <version>1.0.1</version>
+		    <scope>compile</scope>
+		</dependency>
+		<dependency>
 			<groupId>javax.servlet.jsp</groupId>
 			<artifactId>jsp-api</artifactId>
 			<version>2.1</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
+		    <groupId>javax.mail</groupId>
+		    <artifactId>mail</artifactId>
+		    <version>1.4</version>
+		    <scope>compile</scope>
+		</dependency>
+		<dependency>
 			<groupId>struts</groupId>
 			<artifactId>struts</artifactId>
-			<version>1.1</version>
+			<version>1.1-rc2</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>commons-pool</groupId>
-			<artifactId>commons-pool</artifactId>
-			<version>1.0.1</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>javamail</groupId>
-			<artifactId>mail</artifactId>
-			<version>1.2</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>commons-dbcp</groupId>
-			<artifactId>commons-dbcp</artifactId>
-			<version>1.1</version>
+			<groupId>xerces</groupId>
+			<artifactId>xerces</artifactId>
+			<version>1.4.4</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>3.8.1</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>commons-validator</groupId>
-			<artifactId>commons-validator</artifactId>
-			<version>1.1.0</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>commons-services</groupId>
-			<artifactId>commons-services</artifactId>
-			<version>1.0-dev</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>commons-resources</groupId>
-			<artifactId>commons-resources</artifactId>
-			<version>0.1-dev</version>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>commons-logging</groupId>
-			<artifactId>commons-logging</artifactId>
-			<version>1.0</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>commons-lang</groupId>
-			<artifactId>commons-lang</artifactId>
-			<version>2.0</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>commons-fileupload</groupId>
-			<artifactId>commons-fileupload</artifactId>
-			<version>1.0</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>commons-collections</groupId>
-			<artifactId>commons-collections</artifactId>
-			<version>2.1</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>commons-beanutils</groupId>
-			<artifactId>commons-beanutils</artifactId>
-			<version>1.6</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>javax.sql</groupId>
-			<artifactId>jdbc-stdext</artifactId>
-			<version>2.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
