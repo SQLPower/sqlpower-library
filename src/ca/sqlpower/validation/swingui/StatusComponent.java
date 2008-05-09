@@ -89,10 +89,10 @@ public class StatusComponent extends JLabel {
         setBorder(DEFAULT_BORDER);
         setResult(null);
         
-        setNullIcon(new ImageIcon(ClassLoader.getSystemResource("ca/sqlpower/validation/swingui/stat_null_16.png")));
+        setNullIcon(new ImageIcon(StatusComponent.class.getClassLoader().getResource("ca/sqlpower/validation/swingui/stat_null_16.png")));
         setOkIcon(getNullIcon());
-        setWarnIcon(new ImageIcon(ClassLoader.getSystemResource("ca/sqlpower/validation/swingui/stat_warn_16.png")));
-        setFailIcon(new ImageIcon(ClassLoader.getSystemResource("ca/sqlpower/validation/swingui/stat_fail_16.png")));
+        setWarnIcon(new ImageIcon(StatusComponent.class.getClassLoader().getResource("ca/sqlpower/validation/swingui/stat_warn_16.png")));
+        setFailIcon(new ImageIcon(StatusComponent.class.getClassLoader().getResource("ca/sqlpower/validation/swingui/stat_fail_16.png")));
     }
 
     public void setResult(ValidateResult error) {
