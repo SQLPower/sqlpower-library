@@ -194,7 +194,9 @@ public class MockJDBCConnection implements Connection {
 
 	public Statement createStatement(int resultSetType, int resultSetConcurrency)
 			throws SQLException {
-		return new MockJDBCStatement(this);
+		Statement stmt = new MockJDBCStatement(this);
+		stmt.setFetchDirection(resultSetType);
+		return stmt;
 	}
 
 	public PreparedStatement prepareStatement(String sql, int resultSetType,

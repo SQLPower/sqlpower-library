@@ -157,7 +157,7 @@ public class MockJDBCStatement implements Statement {
 	}
 
 	public void setFetchDirection(int direction) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+		fetchDirection = direction;
 	}
 
 	public int getFetchDirection() throws SQLException {
