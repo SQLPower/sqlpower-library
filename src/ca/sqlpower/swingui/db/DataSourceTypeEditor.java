@@ -108,7 +108,9 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         addDsTypeButton = new JButton(new AddRemoveIcon(AddRemoveIcon.Type.ADD));
         addDsTypeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                addDsType(new SPDataSourceType());
+                SPDataSourceType dsType = new SPDataSourceType();
+                dsType.setName("New Data Source");
+				addDsType(dsType);
             }
         });
         
