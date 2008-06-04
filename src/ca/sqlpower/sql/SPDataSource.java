@@ -417,6 +417,14 @@ public class SPDataSource {
             Properties connectionProps = new Properties();
             connectionProps.setProperty("user", getUser());
             connectionProps.setProperty("password", getPass());
+            
+            // XXX this platform-specific fix should be moved into the config file
+            //     once we switch from pl.ini to an XML format and allow arbitrary
+            //     user-specified connection properties.
+            if (getDriverClass().endsWith("OracleDriver")) {
+                connectionProps.setProperty("remarksReporting", "true");
+            }
+            
             Connection realConnection = driver.connect(getUrl(), connectionProps);
             if (realConnection == null) {
                 throw new SQLException("JDBC Driver returned a null connection!");
