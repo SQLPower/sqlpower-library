@@ -140,6 +140,7 @@ public class DatabaseConnectionManager {
                             if (dsTable.getValueAt(i, 0) == ds) {
                                 dsTable.setRowSelectionInterval(i, i);
                                 dsTable.scrollRectToVisible(dsTable.getCellRect(i, 0, true));
+                                dsTable.repaint();
                                 break;
                             }
                         }
