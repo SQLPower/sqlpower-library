@@ -1,19 +1,17 @@
-<project name="sqlpower_library" default="deploy" basedir=".">
+<project name="sqlpower_library" default="dist" basedir=".">
 
 	<!-- $Id$ -->
-
-
-	<property name="deploy.dir" value="deploy"/>
+	<property name="dist.dir" value="dist"/>
 	<property name="src" value="src"/>
 	<property name="build" value="build"/>
 	<property name="build.compiler" value="modern"/>
-	<property name="deploy.jar" value="sqlpower_library.jar"/>
+	<property name="dist.jar" value="sqlpower_library.jar"/>
 	<property name="tests" value="regress"/>
 
 	<path id="compile.classpath">
-			<fileset dir="lib">
-				<include name="*.jar"/>
-			</fileset>
+		<fileset dir="lib">
+			<include name="*.jar"/>
+		</fileset>
 	</path>
 
 	<path id="test.classpath">
@@ -35,22 +33,49 @@
 	</target>
 
 	<target name="compile-tests" depends="compile">
-		<mkdir dir="${build}/tests"/>
-		<javac srcdir="${tests}" destdir="${build}/tests" classpathref="test.classpath" debug="true"/>
+		<property name="build.tests" value="${build}/tests"/>
+		<mkdir dir="${build.tests}"/>
+		<javac srcdir="${tests}" destdir="${build.tests}" classpathref="test.classpath" debug="true"/>
 	</target>
 	
-	<target name="jar" depends="compile">
-		<jar jarfile="${build}/${deploy.jar}" basedir="${build}" 
+	<target name="test" depends="compile-tests">
+		<property name="reports.junit" value="${dist.dir}/reports/junit"/>
+		<mkdir dir="${reports.junit}"/>
+		<!-- Output all System.out and System.err messages -->
+	   <junit printsummary="on" showoutput="no">
+	   	   <sysproperty key="ca.sqlpower.architect.test.dir" value="${build.tests}"/>
+	       <classpath>
+	       		<path refid="test.classpath"/>
+	       		<path path="${build.tests}"/>
+	       </classpath>
+	       <test name="LibraryMegaTest" todir="${reports.junit}"/>
+	   	   <formatter type="xml"/>
+	   </junit>
+		<!-- Generate HTML report -->
+		<junitreport todir="${reports.junit}">
+		  <fileset dir="${reports.junit}">
+		    <include name="TEST-*.xml" />
+		  </fileset>
+		  <report todir="${reports.junit}" />
+		</junitreport>
+	</target>
+	
+	
+	<target name="jar" depends="compile, test">
+		<jar jarfile="${build}/${dist.jar}" basedir="${build}" 
 			includes="META-INF/*,ca/**">
 		</jar>
 	</target>
 
-	<target name="deploy" depends="jar">
-		<copy file="${build}/${deploy.jar}" todir="${deploy.dir}"/>
+	<target name="dist" depends="jar">
+		<copy file="${build}/${dist.jar}" todir="${dist.dir}"/>
 	</target>
 
 	<target name="clean">
 		<delete dir="${build}"/>
 	</target>
 
+	<target name="dist-clean" depends="clean">
+		<delete dir="${dist.dir}"/>
+	</target>
 </project>
