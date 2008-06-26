@@ -37,8 +37,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
@@ -99,17 +97,67 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	}
 	
 	/**
-	 * This is used to properly reverse engineer index types from the database.
+	 * Performs the query directly instead of delegating to the Oracle implementation.
+	 * This is in order to avoid the ANALYZE TABLE that the Oracle driver performs as
+	 * part of this call.
+	 * <p>
+	 * Additionally, this method augments the standard JDBC result set with an extra
+	 * column, SPG_INDEX_TYPE, which contains the Oracle index type for each entry.
+	 * <p>
+	 * The result set returned by this method will not contain the extra 
+	 * "indexTypeStatistic" row which the Oracle driver does produce.
 	 */
 	@Override
 	public ResultSet getIndexInfo(String catalog, String schema, String table,
 			boolean unique, boolean approximate) throws SQLException {
-		try {
-			ResultSet rs = super.getIndexInfo(catalog, schema, table, unique,
-					approximate);
+	    Statement stmt = null;
+	    ResultSet rs = null;
+	    try {
+	        stmt = getConnection().createStatement();
+	        StringBuilder sql = new StringBuilder();
+
+	        /*
+	         * Oracle's JDBC drivers have, for many years, issued an ANALYZE TABLE .. ESTIMATE STATISTICS
+	         * against the table in question. See http://www.sqlpower.ca/forum/posts/list/1908.page for
+	         * an example of an angry German who thinks this is a bad idea.
+	         * 
+	         * Oracle's driver does this in order to provide better current table statistics in the special
+	         * "tableIndexStatistic" row. The only information produced by the whole exercise is an
+	         * approximate row count and the number of disk blocks the table occupies, which we just ignore
+	         * anyway.
+	         * 
+	         * The following query is based on the query Oracle's driver would issue if we called
+	         * super.getIndexInfo(), minus the parts that make it slow and dangerous (the table stats part).
+	         */
+	        sql.append("SELECT NULL AS table_cat,\n");
+	        sql.append("       i.owner AS table_schem,\n");
+	        sql.append("       i.table_name,\n");
+	        sql.append("       DECODE(i.uniqueness, 'UNIQUE', 0, 1) AS non_unique,\n");
+	        sql.append("       NULL AS index_qualifier,\n");
+	        sql.append("       i.index_name,\n");
+	        sql.append("       1 AS type,\n");
+	        sql.append("       c.column_position AS ordinal_position,\n");
+	        sql.append("       c.column_name,\n");
+	        sql.append("       NULL AS asc_or_desc,\n");
+	        sql.append("       i.distinct_keys AS cardinality,\n");
+	        sql.append("       i.leaf_blocks AS pages,\n");
+	        sql.append("       NULL AS filter_condition\n");
+	        sql.append("FROM all_indexes i, all_ind_columns c\n");
+	        sql.append("WHERE i.table_name = ").append(SQL.quote(table)).append("\n");
+	        sql.append("  AND i.owner = ").append(SQL.quote(schema)).append("\n");
+	        sql.append("  AND i.index_name = c.index_name\n");
+	        sql.append("  AND i.table_owner = c.table_owner\n");
+	        sql.append("  AND i.table_name = c.table_name\n");
+	        sql.append("  AND i.owner = c.index_owner\n");
+	        sql.append("ORDER BY non_unique, type, index_name, ordinal_position");
+
+	        rs = stmt.executeQuery(sql.toString());
 			CachedRowSet crs = new CachedRowSet();
 			crs.populate(rs, null, "SPG_INDEX_TYPE");
 			rs.close();
+			rs = null;
+			stmt.close();
+			stmt = null;
 			Map<String, String> indexTypes = new HashMap<String, String>();
 			indexTypes = getIndexType(table);
 			while (crs.next()) {
@@ -142,6 +190,20 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 			crs.beforeFirst();
 			return crs;
 		} catch (SQLException e) {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException ex) {
+                    logger.error("Failed to close result set! Squishing this exception: ", ex);
+                }
+            }
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException ex) {
+                    logger.error("Failed to close statement! Squishing this exception: ", ex);
+                }
+            }
 			if (e.getErrorCode() == DREADED_ORACLE_ERROR_CODE_1031) {
 				SQLException newE = new SQLException(ORACLE_1031_MESSAGE);
 				newE.setNextException(e);
@@ -185,6 +247,8 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		String name = "";
 		try {
 			stmt = getConnection().createStatement();
+			
+			// FIXME have to query all_indexes and specify owner in where clause (and take owner as method param)
 			String sql = "SELECT INDEX_NAME, INDEX_TYPE FROM user_indexes WHERE TABLE_NAME=" +SQL.quote(tableName);
 
 			logger.debug("SQL statement was " + sql);
