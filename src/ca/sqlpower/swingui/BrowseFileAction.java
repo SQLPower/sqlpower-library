@@ -27,8 +27,8 @@ public class BrowseFileAction extends AbstractAction {
 	private final JTextField field;
 
 	public BrowseFileAction(Component parentComponent, JTextField field) {
-		super("...");
-		if (field == null) throw new NullPointerException("You have to specify a field");
+		super("..."); //$NON-NLS-1$
+		if (field == null) throw new NullPointerException("You have to specify a field"); //$NON-NLS-1$
 		this.parentComponent = parentComponent;
 		this.field = field;
 	}

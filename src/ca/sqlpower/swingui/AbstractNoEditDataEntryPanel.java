@@ -48,7 +48,7 @@ public abstract class AbstractNoEditDataEntryPanel extends JPanel implements Dat
 	 * saving worked.
 	 */
 	public boolean applyChanges() {
-		logger.error("Cannot apply changes because this pane is not editable.");
+		logger.error("Cannot apply changes because this pane is not editable."); //$NON-NLS-1$
 		return false;
 	}
 
@@ -56,7 +56,7 @@ public abstract class AbstractNoEditDataEntryPanel extends JPanel implements Dat
 	 * Since nothing changes, no changes are discarded.
 	 */
 	public void discardChanges() {
-		logger.error("Cannot discard changes because this pane is not editable.");
+		logger.error("Cannot discard changes because this pane is not editable."); //$NON-NLS-1$
 	}
 	
 	/**

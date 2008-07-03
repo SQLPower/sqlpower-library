@@ -44,8 +44,8 @@ public class CommonCloseAction extends AbstractAction {
 	private JDialog d;
 
 	public CommonCloseAction(JDialog d) {
-        super("Cancel");
-		this.d = d;
+        super(Messages.getString("CommonCloseAction.cancelButton")); //$NON-NLS-1$
+		this.d = d;						
 	}
 
 	public void actionPerformed(ActionEvent e) {

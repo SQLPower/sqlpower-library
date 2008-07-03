@@ -73,6 +73,7 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.SPDataSourceType;
 import ca.sqlpower.swingui.DataEntryPanel;
+import ca.sqlpower.swingui.Messages;
 import ca.sqlpower.swingui.ProgressWatcher;
 import ca.sqlpower.swingui.SPSUtils;
 import ca.sqlpower.util.Monitorable;
@@ -82,13 +83,13 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 	private static class DriverTreeCellRenderer extends DefaultTreeCellRenderer implements TreeCellRenderer {
         
         private Icon jarFileIcon =
-            new ImageIcon(ClassLoader.getSystemResource("icons/famfamfam/folder_wrench.png"));
+            new ImageIcon(ClassLoader.getSystemResource("icons/famfamfam/folder_wrench.png")); //$NON-NLS-1$
         private Icon driverIcon =
-            new ImageIcon(ClassLoader.getSystemResource("icons/famfamfam/wrench.png"));
+            new ImageIcon(ClassLoader.getSystemResource("icons/famfamfam/wrench.png")); //$NON-NLS-1$
         private Icon jarFileErrorIcon =
-            new ImageIcon(ClassLoader.getSystemResource("icons/famfamfam/folder_error.png"));
+            new ImageIcon(ClassLoader.getSystemResource("icons/famfamfam/folder_error.png")); //$NON-NLS-1$
         private Icon driverErrorIcon =
-            new ImageIcon(ClassLoader.getSystemResource("icons/famfamfam/error.png"));
+            new ImageIcon(ClassLoader.getSystemResource("icons/famfamfam/error.png")); //$NON-NLS-1$
         
 	    @Override
 	    public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
@@ -113,7 +114,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
                     setIcon(driverIcon);
                 }
             } else {
-                throw new IllegalStateException("This renderer doesn't know how to handle node depth "+level);
+                throw new IllegalStateException("This renderer doesn't know how to handle node depth "+level); //$NON-NLS-1$
             }
             return this;
 	    }
@@ -159,7 +160,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 		fileChooser = new JFileChooser();
 
 		setLayout(new BorderLayout());
-		rootNode = new DefaultMutableTreeNode("The Root");
+		rootNode = new DefaultMutableTreeNode("The Root"); //$NON-NLS-1$
 		dtm = new DefaultTreeModel(rootNode);
 		driverTree = new JTree(dtm);
 		driverTree.setRootVisible(false);
@@ -186,7 +187,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 		progressBar.setStringPainted(true); //get space for the string
 		progressBar.setVisible(false);
 		progressPanel.add(progressBar);
-		progressLabel = new JLabel("Scanning for JDBC Drivers...");
+		progressLabel = new JLabel(Messages.getString("JDBCDriverPanel.scanningForJdbcDrivers")); //$NON-NLS-1$
 		progressLabel.setVisible(false);
 		progressPanel.add(progressLabel);
         progressPanel.setPreferredSize(new Dimension(300, progressBar.getPreferredSize().height + 20));
@@ -200,7 +201,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 	 * ArchitectSession.addDriverJar().
 	 */
 	public boolean applyChanges() {
-		logger.debug("applyChanges");
+		logger.debug("applyChanges"); //$NON-NLS-1$
         
         List<String> driverList = new ArrayList<String>();
 		
@@ -230,7 +231,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
     
 	protected class AddAction extends AbstractAction {
 		public AddAction() {
-			super("Add JAR...");
+			super(Messages.getString("JDBCDriverPanel.addJarActionName")); //$NON-NLS-1$
 		}
 
 		public void actionPerformed(ActionEvent e) {
@@ -262,7 +263,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
      * it will add them to the tree.
 	 */
 	private void doLoad(List<String> list) {
-        logger.debug("about to start a worker", new Exception());
+        logger.debug("about to start a worker", new Exception()); //$NON-NLS-1$
 		LoadJDBCDrivers ljd = new LoadJDBCDrivers(list);
 		LoadJDBCDriversWorker worker = new LoadJDBCDriversWorker(ljd);
 		
@@ -276,14 +277,14 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 
 	private class DelAction extends AbstractAction {
 		public DelAction() {
-			super("Remove JAR");
+			super(Messages.getString("JDBCDriverPanel.removeJarActionName")); //$NON-NLS-1$
 		}
 
 		public void actionPerformed(ActionEvent e) {
             for (TreePath p : driverTree.getSelectionPaths()) {
-                logger.debug(String.format("DelAction: p=%s, pathCount=%d", p, p.getPathCount()));
+                logger.debug(String.format("DelAction: p=%s, pathCount=%d", p, p.getPathCount())); //$NON-NLS-1$
                 if (p != null && p.getPathCount() >= 2) {
-                    logger.debug("Removing: " + p.getPathComponent(1));
+                    logger.debug("Removing: " + p.getPathComponent(1)); //$NON-NLS-1$
                     dtm.removeNodeFromParent((MutableTreeNode) p.getPathComponent(1));
                     dataSourceType.removeJdbcJar(p.getPathComponent(1).toString());
                 }
@@ -315,7 +316,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 
 		public LoadJDBCDrivers (List driverJarList) {
 			this.driverJarList = driverJarList;
-			logger.debug("in constructor, setting finished to false...");
+			logger.debug("in constructor, setting finished to false..."); //$NON-NLS-1$
 			finished = false;
 		}
 
@@ -329,7 +330,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 				fraction = cl.getFraction();
 			}
 		    int progress = (jarCount - 1) * 1000 + (int) (fraction * 1000.0);
-			if (logger.isDebugEnabled()) logger.debug("******************* progress is: " + progress + " of " + getJobSize());
+			if (logger.isDebugEnabled()) logger.debug("******************* progress is: " + progress + " of " + getJobSize()); //$NON-NLS-1$ //$NON-NLS-2$
 			return progress;
 		}
 
@@ -367,7 +368,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 				while (it.hasNext()) {
 					// initialize counters
 					jarCount++;
-					logger.debug("**************** processing file #" + jarCount + " of " + driverJarList.size());
+					logger.debug("**************** processing file #" + jarCount + " of " + driverJarList.size()); //$NON-NLS-1$ //$NON-NLS-2$
 					String path = (String) it.next();
                     File file = SPDataSource.jarSpecToFile(path, getClass().getClassLoader());
 					if (file != null) {
@@ -375,13 +376,13 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
                     }
 				}
 				finished = true;
-				logger.debug("done loading (normal operation), setting finished to true.");
+				logger.debug("done loading (normal operation), setting finished to true."); //$NON-NLS-1$
 			} catch ( Exception exp ) {
-				logger.error("something went wrong in LoadJDBCDrivers worker thread!",exp);
+				logger.error("something went wrong in LoadJDBCDrivers worker thread!",exp); //$NON-NLS-1$
 			} finally {
 				finished = true;
 				hasStarted = false;
-				logger.debug("done loading (error condition), setting finished to true.");
+				logger.debug("done loading (error condition), setting finished to true."); //$NON-NLS-1$
 			}
 		}
 
@@ -393,14 +394,14 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 				jf = new JarFile(file);
 				cl = new JDBCScanClassLoader(jf);
 				List driverClasses = cl.scanForDrivers();
-				logger.info("Found drivers: "+driverClasses);
+				logger.info("Found drivers: "+driverClasses); //$NON-NLS-1$
 				Iterator it = driverClasses.iterator();
 				while (it.hasNext()) {
 					DefaultMutableTreeNode child = new DefaultMutableTreeNode(it.next());
 					dtm.insertNodeInto(child, node, node.getChildCount());
 				}
 			} catch (IOException ex) {
-				logger.warn("I/O Error reading JAR file",ex);
+				logger.warn("I/O Error reading JAR file",ex); //$NON-NLS-1$
                 DefaultMutableTreeNode child = new DefaultMutableTreeNode(ex);
                 dtm.insertNodeInto(child, node, node.getChildCount());
 			}
@@ -444,22 +445,22 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 		 */
 		public List scanForDrivers() {
 			drivers = new LinkedList();
-			logger.debug("********* " + jf.getName() + " has " + jf.size() + " files.");
+			logger.debug("********* " + jf.getName() + " has " + jf.size() + " files."); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			for (Enumeration entries = jf.entries(); entries.hasMoreElements(); ) {
 				count++;
 				ZipEntry ent = (ZipEntry) entries.nextElement();
-				if (ent.getName().endsWith(".class")) {
+				if (ent.getName().endsWith(".class")) { //$NON-NLS-1$
 					try {
 						// drop the .class from the name
-						String [] s = ent.getName().split("\\.");
+						String [] s = ent.getName().split("\\."); //$NON-NLS-1$
 						// look for the class using dots instead of slashes
 						findClass(s[0].replace('/','.'));
 					} catch (ClassFormatError ex) {
-						logger.warn("JAR entry "+ent.getName()+" ends in .class but is not a class", ex);
+						logger.warn("JAR entry "+ent.getName()+" ends in .class but is not a class", ex); //$NON-NLS-1$ //$NON-NLS-2$
 					} catch (NoClassDefFoundError ex) {
-						logger.warn("JAR does not contain dependency needed by: " + ent.getName());
+						logger.warn("JAR does not contain dependency needed by: " + ent.getName()); //$NON-NLS-1$
 					} catch (Throwable ex) {
-						logger.warn("Unexpected exception while scanning JAR file "+jf.getName(), ex);
+						logger.warn("Unexpected exception while scanning JAR file "+jf.getName(), ex); //$NON-NLS-1$
 					}
 				}
 			}
@@ -477,9 +478,9 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 			throws ClassNotFoundException {
 			//logger.debug("Looking for class "+name);
 			try {
-				ZipEntry ent = jf.getEntry(name.replace('.', '/')+".class");
+				ZipEntry ent = jf.getEntry(name.replace('.', '/')+".class"); //$NON-NLS-1$
 				if (ent == null) {
-					throw new ClassNotFoundException("No class file "+name+" is in my jar file");
+					throw new ClassNotFoundException("No class file "+name+" is in my jar file"); //$NON-NLS-1$ //$NON-NLS-2$
 				}
 				// can we find out here if it was already loaded???
 				Class clazz = findLoadedClass(name);
@@ -490,7 +491,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 				InputStream is = jf.getInputStream(ent);
 				return readAndCheckClass(is, (int) ent.getSize(), name);
 			} catch (IOException ex) {
-				throw new ClassNotFoundException("IO Exception reading class from jar file", ex);
+				throw new ClassNotFoundException("IO Exception reading class from jar file", ex); //$NON-NLS-1$
 			}
 		}
 
@@ -504,12 +505,12 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 			}
             final int total = offs;
 			if (total != size) {
-				logger.warn("Only read "+total+" bytes of class "
-							+expectedName+" from JAR file; exptected "+size);
+				logger.warn("Only read "+total+" bytes of class " //$NON-NLS-1$ //$NON-NLS-2$
+							+expectedName+" from JAR file; exptected "+size); //$NON-NLS-1$
 			}
 			Class clazz = defineClass(expectedName, buf, 0, total);
 			if (java.sql.Driver.class.isAssignableFrom(clazz)) {
-				logger.info("Found jdbc driver "+clazz.getName());
+				logger.info("Found jdbc driver "+clazz.getName()); //$NON-NLS-1$
 				drivers.add(clazz.getName());
 			}
 			return clazz;

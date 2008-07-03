@@ -61,8 +61,8 @@ import com.jgoodies.forms.factories.ButtonBarFactory;
 
 public class DataEntryPanelBuilder {
 	static Logger logger = Logger.getLogger(DataEntryPanelBuilder.class);
-	public static final String OK_BUTTON_LABEL = "OK";
-	public static final String CANCEL_BUTTON_LABEL = "Cancel";
+	public static final String OK_BUTTON_LABEL = Messages.getString("DataEntryPanelBuilder.okButton"); //$NON-NLS-1$
+	public static final String CANCEL_BUTTON_LABEL = Messages.getString("DataEntryPanelBuilder.cancelButton"); //$NON-NLS-1$
     
 	/**
 	 * Build a JDialog around an object that implements DataEntryPanel, to
@@ -228,7 +228,7 @@ public class DataEntryPanelBuilder {
             dialog = new JDialog();
             if (logger.isDebugEnabled()) {
             	JOptionPane.showMessageDialog(null,
-            	"This action called createDataEntryPanelDialog with DialogParent == null!");
+            	"This action called createDataEntryPanelDialog with DialogParent == null!"); //$NON-NLS-1$
             }
         } else if (dialogParent instanceof Frame) {
 			dialog = new JDialog((Frame) dialogParent, dialogTitle);
@@ -236,9 +236,9 @@ public class DataEntryPanelBuilder {
 			dialog = new JDialog((Dialog) dialogParent, dialogTitle);
 		} else {
 			throw new IllegalArgumentException(
-					"The dialogParent you gave me is not a "
-							+ "Frame or Dialog (it is a "
-							+ dialogParent.getClass().getName() + ")");
+					"The dialogParent you gave me is not a " //$NON-NLS-1$
+							+ "Frame or Dialog (it is a " //$NON-NLS-1$
+							+ dialogParent.getClass().getName() + ")"); //$NON-NLS-1$
 		}
 		return dialog;
 	}

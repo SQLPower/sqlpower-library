@@ -188,7 +188,7 @@ public class ProgressWatcher implements ActionListener {
      */
     public void actionPerformed(ActionEvent evt) {
         // update the progress bar
-        logger.debug("updating progress bar...");
+        logger.debug("updating progress bar..."); //$NON-NLS-1$
         Integer jobSize = monitorable.getJobSize();
         if (bar != null) {
             if (monitorable.hasStarted()) {
@@ -216,27 +216,27 @@ public class ProgressWatcher implements ActionListener {
                     pm.setMaximum(jobSize.intValue());					
                 }
                 pm.setProgress(monitorable.getProgress());
-                logger.debug("progress: " + monitorable.getProgress());
+                logger.debug("progress: " + monitorable.getProgress()); //$NON-NLS-1$
                 pm.setNote(monitorable.getMessage());
             }
         }
-        logger.debug("monitorable.isFinished():" + monitorable.isFinished());
+        logger.debug("monitorable.isFinished():" + monitorable.isFinished()); //$NON-NLS-1$
         if (monitorable.isFinished()) {
             if (label != null && hideLabelWhenFinished) {
-                label.setText("");
+                label.setText(""); //$NON-NLS-1$
             }
             if (bar != null) {
                 bar.setValue(0);
                 bar.setIndeterminate(false);
             }
             if (pm != null) {
-                logger.debug("pm done, max was: " + pm.getMaximum());
+                logger.debug("pm done, max was: " + pm.getMaximum()); //$NON-NLS-1$
                 pm.close();
             }
 
-            logger.debug("trying to stop timer thread...");
+            logger.debug("trying to stop timer thread..."); //$NON-NLS-1$
             timer.stop();
-            logger.debug("did the timer thread stop???");
+            logger.debug("did the timer thread stop???"); //$NON-NLS-1$
         }
     }
 

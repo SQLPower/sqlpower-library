@@ -57,7 +57,7 @@ public class SPDataSourcePanel implements DataEntryPanel {
 
 	private static final Logger logger = Logger.getLogger(SPDataSourcePanel.class);
 
-	protected static final String EXTRA_FIELD_LABEL_PROP = "ca.sqlpower.swingui.LABEL";
+	protected static final String EXTRA_FIELD_LABEL_PROP = "ca.sqlpower.swingui.LABEL"; //$NON-NLS-1$
 	
     /**
      * The panel that holds the GUI.  This panel is built only once,
@@ -115,17 +115,17 @@ public class SPDataSourcePanel implements DataEntryPanel {
         
         // if this data source has no parent, it is a root data source
         if (dbcs.isParentSet()) {
-            System.out.println("A PARENT! setting selected item to: \"" + dbcs.getParentType() + "\"");
+            logger.debug("A PARENT! setting selected item to: \"" + dbcs.getParentType() + "\""); //$NON-NLS-1$ //$NON-NLS-2$
             dataSourceTypeBox.setSelectedItem(dbcs.getParentType());
         } else {
-            System.out.println("NO PARENT! setting selected item to: \"" + dbcs + "\"");
+            logger.debug("NO PARENT! setting selected item to: \"" + dbcs + "\""); //$NON-NLS-1$ //$NON-NLS-2$
             dataSourceTypeBox.setSelectedItem(dbcs);
         }
         
         dbNameField = new JTextField(dbcs.getName());
-        dbNameField.setName("dbNameField");
+        dbNameField.setName("dbNameField"); //$NON-NLS-1$
         
-        logger.debug("dbcs.getUrl() returns " + dbcs.getUrl());
+        logger.debug("dbcs.getUrl() returns " + dbcs.getUrl()); //$NON-NLS-1$
         dbUrlField = new JTextField(dbcs.getUrl());
         
         platformSpecificOptions = new PlatformSpecificConnectionOptionPanel(dbUrlField);
@@ -135,13 +135,13 @@ public class SPDataSourcePanel implements DataEntryPanel {
         
         //we know this should be set to pref but one of the components seems to be updating the
         //preferred size
-        DefaultFormBuilder builder = new DefaultFormBuilder(new FormLayout("pref, 4dlu, 0:grow")); 
-        builder.append("Connection &Name", dbNameField);
-        builder.append("&Database Type", dataSourceTypeBox);
-        builder.append("Connect &Options", platformSpecificOptions.getPanel());
-        builder.append("JDBC &URL", dbUrlField);
-        builder.append("Use&rname", dbUserField = new JTextField(dbcs.getUser()));
-        builder.append("&Password", dbPassField = new JPasswordField(dbcs.getPass()));
+        DefaultFormBuilder builder = new DefaultFormBuilder(new FormLayout("pref, 4dlu, 0:grow"));  //$NON-NLS-1$
+        builder.append(Messages.getString("SPDataSourcePanel.connectionNameLabel"), dbNameField); //$NON-NLS-1$
+        builder.append(Messages.getString("SPDataSourcePanel.databaseTypeLabel"), dataSourceTypeBox); //$NON-NLS-1$
+        builder.append(Messages.getString("SPDataSourcePanel.connectionOptionsLabel"), platformSpecificOptions.getPanel()); //$NON-NLS-1$
+        builder.append(Messages.getString("SPDataSourcePanel.jdbcUrlLabel"), dbUrlField); //$NON-NLS-1$
+        builder.append(Messages.getString("SPDataSourcePanel.usernameLabel"), dbUserField = new JTextField(dbcs.getUser())); //$NON-NLS-1$
+        builder.append(Messages.getString("SPDataSourcePanel.passwordLabel"), dbPassField = new JPasswordField(dbcs.getPass())); //$NON-NLS-1$
         
         // extra fields supplied by subclasses
         for (JComponent extraField : extraFields) {
@@ -195,7 +195,7 @@ public class SPDataSourcePanel implements DataEntryPanel {
      * @param component The component to add.
      */
     protected void addExtraField(JComponent component) {
-    	if (panel != null) throw new IllegalStateException("You can't do this after calling getPanel()");
+    	if (panel != null) throw new IllegalStateException("You can't do this after calling getPanel()"); //$NON-NLS-1$
     	extraFields.add(component);
     }
     
@@ -210,20 +210,19 @@ public class SPDataSourcePanel implements DataEntryPanel {
         
         dbNameField.setText(dbNameField.getText().trim());
         
-        if ("".equals(dbNameField.getText())) {
+        if ("".equals(dbNameField.getText())) { //$NON-NLS-1$
             JOptionPane.showMessageDialog(panel,
-                    "A connection name must have at least 1 character that is not whitespace");
+                    Messages.getString("SPDataSourcePanel.blankNameNotAllowed")); //$NON-NLS-1$
             return false;
         }
         
         SPDataSource existingDSWithThisName = dbcs.getParentCollection().getDataSource(dbNameField.getText());
         if (existingDSWithThisName != null && existingDSWithThisName != dbcs) {
-            JOptionPane.showMessageDialog(panel, "A connection with the name \"" +
-                    dbNameField.getText() + "\" already exists");
+            JOptionPane.showMessageDialog(panel, Messages.getString("SPDataSourcePanel.connectionAlreadyExists", dbNameField.getText())); //$NON-NLS-1$
             return false;
         }
         
-        logger.debug("Applying changes...");
+        logger.debug("Applying changes..."); //$NON-NLS-1$
         
 		String name = dbNameField.getText();
 		dbcs.setName(name);

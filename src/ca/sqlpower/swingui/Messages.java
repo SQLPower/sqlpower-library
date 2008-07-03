@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, SQL Power Group Inc.
+ * Copyright (c) 2008, SQL Power Group Inc.
  * 
  * All rights reserved.
  * 
@@ -29,25 +29,38 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package ca.sqlpower.swingui;
 
-import java.awt.Component;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
 
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JList;
+public class Messages {
+	private static final String BUNDLE_NAME = "ca.sqlpower.swingui.messages"; //$NON-NLS-1$
 
-import ca.sqlpower.sql.SPDataSourceType;
+	private static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle
+			.getBundle(BUNDLE_NAME);
 
-public class SPDataSourceTypeListCellRenderer extends DefaultListCellRenderer {
-    
-    @Override
-    public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-        if (value instanceof SPDataSourceType) {
-            return super.getListCellRendererComponent(list, ((SPDataSourceType) value).getName(), index, isSelected,
-                cellHasFocus);
-        } else {
-            throw new IllegalArgumentException("Value should only be of type SPDataSourceType not "+value.getClass()); //$NON-NLS-1$
+	private Messages() {
+	}
+
+	public static String getString(String key) {
+		try {
+			return RESOURCE_BUNDLE.getString(key);
+		} catch (MissingResourceException e) {
+			return '!' + key + '!';
+		}
+	}
+	
+    public static String getString(String key, String ... params) {
+        String message = getString(key);
+        for (int i = 0; i < params.length; i++) {
+            if (params[i] != null) {
+                message = message.replace("{" + i + "}", params[i]); //$NON-NLS-1$ //$NON-NLS-2$
+            } else {
+                message = message.replace("{" + i + "}", "null");    //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            }
         }
+        return message;
     }
-
 }

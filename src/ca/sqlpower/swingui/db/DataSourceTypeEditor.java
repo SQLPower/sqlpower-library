@@ -52,6 +52,7 @@ import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.SPDataSourceType;
 import ca.sqlpower.swingui.AddRemoveIcon;
 import ca.sqlpower.swingui.DataEntryPanel;
+import ca.sqlpower.swingui.Messages;
 import ca.sqlpower.swingui.SPDataSourceTypeListCellRenderer;
 import ca.sqlpower.swingui.SPSUtils;
 
@@ -109,7 +110,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         addDsTypeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 SPDataSourceType dsType = new SPDataSourceType();
-                dsType.setName("New Data Source");
+                dsType.setName(Messages.getString("DataSourceTypeEditor.defaultDataSourceName")); //$NON-NLS-1$
 				addDsType(dsType);
             }
         });
@@ -151,7 +152,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
 
     private void addDsType(SPDataSourceType type) {
         if (type == null) {
-            throw new NullPointerException("Don't add null data source types, silly!");
+            throw new NullPointerException("Don't add null data source types, silly!"); //$NON-NLS-1$
         }
         dataSourceCollection.addDataSourceType(type);
         ((DefaultListModel) dsTypeList.getModel()).addElement(type);
@@ -164,7 +165,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      * {@link #switchToDsType()} for that.
      */
     private JPanel createPanel() {
-        FormLayout layout = new FormLayout("60dlu, 6dlu, pref:grow", "pref, 6dlu, pref:grow, 3dlu, pref");
+        FormLayout layout = new FormLayout("60dlu, 6dlu, pref:grow", "pref, 6dlu, pref:grow, 3dlu, pref"); //$NON-NLS-1$ //$NON-NLS-2$
         DefaultFormBuilder fb = new DefaultFormBuilder(layout);
         fb.setDefaultDialogBorder();
         
@@ -172,10 +173,10 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         addRemoveBar.add(addDsTypeButton);
         addRemoveBar.add(removeDsTypeButton);
         
-        fb.add(new JScrollPane(dsTypeList), "1, 1, 1, 3");
-        fb.add(addRemoveBar,                "1, 5");
-        fb.add(dsTypePanel.getPanel(),      "3, 1");
-        fb.add(jdbcPanel,                   "3, 3, 1, 3");
+        fb.add(new JScrollPane(dsTypeList), "1, 1, 1, 3"); //$NON-NLS-1$
+        fb.add(addRemoveBar,                "1, 5"); //$NON-NLS-1$
+        fb.add(dsTypePanel.getPanel(),      "3, 1"); //$NON-NLS-1$
+        fb.add(jdbcPanel,                   "3, 3, 1, 3"); //$NON-NLS-1$
         
         return fb.getPanel();
     }
@@ -192,7 +193,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      * DataSourceCollection we're editing.
      */
     public boolean applyChanges() {
-        logger.debug("Applying changes to all data source types");
+        logger.debug("Applying changes to all data source types"); //$NON-NLS-1$
         applyCurrentChanges();
         ListModel lm = dsTypeList.getModel();
         for (int i = 0; i < lm.getSize(); i++) {
@@ -202,7 +203,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         try {
         	dataSourceCollection.write();
         } catch (IOException ex) {
-        	SPSUtils.showExceptionDialogNoReport(panel, "Error while saving to pl.ini", ex);
+        	SPSUtils.showExceptionDialogNoReport(panel, Messages.getString("DataSourceTypeEditor.errorSavingToPlDotIni"), ex); //$NON-NLS-1$
         }
         return true;
     }

@@ -45,6 +45,7 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.sql.SPDataSourceType;
 import ca.sqlpower.swingui.DataEntryPanel;
+import ca.sqlpower.swingui.Messages;
 import ca.sqlpower.swingui.PlatformSpecificConnectionOptionPanel;
 
 import com.jgoodies.forms.builder.PanelBuilder;
@@ -106,24 +107,24 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
         tabbedPane = new JTabbedPane();
         
         PanelBuilder pb = new PanelBuilder(new FormLayout(
-                "4dlu,pref,4dlu,pref:grow,4dlu",
-                "4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu"));
+                "4dlu,pref,4dlu,pref:grow,4dlu", //$NON-NLS-1$
+                "4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu")); //$NON-NLS-1$
         
         CellConstraints cc = new CellConstraints();
         CellConstraints cl = new CellConstraints();
         int row = 2;
-        pb.addLabel("Name",cl.xy(2, row), name, cc.xy(4, row));
+        pb.addLabel(Messages.getString("DataSourceTypeEditorPanel.nameLabel"),cl.xy(2, row), name, cc.xy(4, row)); //$NON-NLS-1$
         row += 2;
-        pb.addLabel("Driver Class",cl.xy(2, row), driverClass, cc.xy(4, row));
+        pb.addLabel(Messages.getString("DataSourceTypeEditorPanel.driverClassLabel"),cl.xy(2, row), driverClass, cc.xy(4, row)); //$NON-NLS-1$
         row += 2;
-        pb.addLabel("Connection String Template",cl.xy(2, row), connectionStringTemplate, cc.xy(4, row));
+        pb.addLabel(Messages.getString("DataSourceTypeEditorPanel.connectionStringTemplateLabel"),cl.xy(2, row), connectionStringTemplate, cc.xy(4, row)); //$NON-NLS-1$
         row += 2;
-        connectionStringTemplate.setToolTipText("Variables should be of the form <variable name:default value>");
-        pb.addTitle("Options Editor Preview (based on URL template)",cl.xyw(2, row,3));
+        connectionStringTemplate.setToolTipText(Messages.getString("DataSourceTypeEditorPanel.templateToolTip")); //$NON-NLS-1$
+        pb.addTitle(Messages.getString("DataSourceTypeEditorPanel.optionsEditorPreview"),cl.xyw(2, row,3)); //$NON-NLS-1$
         row += 2;
-        pb.addLabel("Sample Options",cl.xy(2, row), template.getPanel(), cc.xy(4, row));
+        pb.addLabel(Messages.getString("DataSourceTypeEditorPanel.sampleOptions"),cl.xy(2, row), template.getPanel(), cc.xy(4, row)); //$NON-NLS-1$
         
-        tabbedPane.addTab("General", pb.getPanel());
+        tabbedPane.addTab(Messages.getString("DataSourceTypeEditorPanel.generalTab"), pb.getPanel()); //$NON-NLS-1$
         
         
         
@@ -138,13 +139,13 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
     public void editDsType(SPDataSourceType dst) {
         dsType = dst;
         if (dst == null) {
-            name.setText("");
+            name.setText(""); //$NON-NLS-1$
             name.setEnabled(false);
             
-            driverClass.setText("");
+            driverClass.setText(""); //$NON-NLS-1$
             driverClass.setEnabled(false);
             
-            connectionStringTemplate.setText("");
+            connectionStringTemplate.setText(""); //$NON-NLS-1$
 
             // template will get updated by document listener
         } else {
@@ -166,7 +167,7 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
     }
 
     public boolean applyChanges() {
-        logger.debug("Applying changes to data source type "+dsType);
+        logger.debug("Applying changes to data source type "+dsType); //$NON-NLS-1$
         if (dsType != null) {
             dsType.setName(name.getText());
             dsType.setJdbcDriver(driverClass.getText());

@@ -30,6 +30,11 @@
 		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
 		<copy tofile="${build}/ca/sqlpower/sql/default_database_types.ini"
 				     file="src/ca/sqlpower/sql/default_database_types.ini"/>
+		<copy todir="${build}/">
+			<fileset dir="src">
+				<include name="**/messages*.properties"/>
+			</fileset>
+		</copy>
 	</target>
 
 	<target name="compile-tests" depends="compile">

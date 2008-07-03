@@ -91,7 +91,7 @@ public class ConnectionComboBoxModel implements ComboBoxModel, DatabaseListChang
                 return;
             }
         }
-        logger.debug("warning: set selected item:" + anItem);
+        logger.debug("warning: set selected item:" + anItem); //$NON-NLS-1$
     }
 
     public Object getSelectedItem() {

@@ -56,17 +56,17 @@ public class SPSUtils {
     /**
      * The URL for the SQL Power forum where users can get help and ask questions.
      */
-    public static final String FORUM_URL = "http://www.sqlpower.ca/forum/";
+    public static final String FORUM_URL = "http://www.sqlpower.ca/forum/"; //$NON-NLS-1$
 	
-	public static Action forumAction = new AbstractAction("Support on the Web",
+	public static Action forumAction = new AbstractAction(Messages.getString("SPSUtils.webSupportActionName"), //$NON-NLS-1$
             // Alas this is now static so the size can't be gotten from sprefs...
-            SPSUtils.createIcon("world","New Project")) {
+            SPSUtils.createIcon("world","New Project")) { //$NON-NLS-1$ //$NON-NLS-2$
         public void actionPerformed(ActionEvent evt) {
             try {
                 BrowserUtil.launch(FORUM_URL);
             } catch (IOException e) {
                 SPSUtils.showExceptionDialogNoReport(getFrameFromActionEvent(evt),
-                        "Could not launch browser for Forum View", e);
+                        Messages.getString("SPSUtils.couldNotLaunchBrowser"), e); //$NON-NLS-1$
             }
         }
     };
@@ -157,15 +157,15 @@ public class SPSUtils {
             c = (JComponent) ((JDialog) w).getRootPane();
         } else {
             throw new IllegalArgumentException(
-                    "The window argument has to be either a JFrame or JDialog." +
-                    "  You provided a " + (w == null ? null : w.getClass().getName()));
+                    "The window argument has to be either a JFrame or JDialog." + //$NON-NLS-1$
+                    "  You provided a " + (w == null ? null : w.getClass().getName())); //$NON-NLS-1$
         }
 
     	InputMap inputMap = c.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
     	ActionMap actionMap = c.getActionMap();
 
-    	inputMap.put(KeyStroke.getKeyStroke("ESCAPE"), "cancel");
-    	actionMap.put("cancel", new AbstractAction() {
+    	inputMap.put(KeyStroke.getKeyStroke("ESCAPE"), "cancel"); //$NON-NLS-1$ //$NON-NLS-2$
+    	actionMap.put("cancel", new AbstractAction() { //$NON-NLS-1$
     		public void actionPerformed(ActionEvent e) {
                 if ( cancelAction != null ) {
                     cancelAction.actionPerformed(e);
@@ -218,56 +218,56 @@ public class SPSUtils {
      */
     public static ImageIcon createIcon(String name,
                                        String description) {
-        String realPath = "/icons/"+name+".png";
-		logger.debug("Loading resource "+realPath);
+        String realPath = "/icons/"+name+".png"; //$NON-NLS-1$ //$NON-NLS-2$
+		logger.debug("Loading resource "+realPath); //$NON-NLS-1$
 		java.net.URL imgURL = SPSUtils.class.getResource(realPath);
         if (imgURL == null) {
-            realPath = realPath.replace(".png", ".gif");
+            realPath = realPath.replace(".png", ".gif"); //$NON-NLS-1$ //$NON-NLS-2$
             imgURL = SPSUtils.class.getResource(realPath);
         }
 		if (imgURL != null) {
 			return new ImageIcon(imgURL, description);
 		} else {
-			logger.debug("Couldn't find file: " + realPath);
+			logger.debug("Couldn't find file: " + realPath); //$NON-NLS-1$
 			return null;
 		}
 	}
     
 	public static final FileFilter ARCHITECT_FILE_FILTER =
-		new FileExtensionFilter("Architect Project Files", new String[] {"arc", "architect"});
+		new FileExtensionFilter(Messages.getString("SPSUtils.architectFileType"), new String[] {"arc", "architect"}); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	public static final FileFilter TEXT_FILE_FILTER =
-		new FileExtensionFilter("Text Files ", new String[] {"txt"});
+		new FileExtensionFilter(Messages.getString("SPSUtils.textFileType"), new String[] {"txt"}); //$NON-NLS-1$ //$NON-NLS-2$
 
 	public static final FileFilter SQL_FILE_FILTER =
-		new FileExtensionFilter("SQL Script Files", new String[] {"sql","ddl"});
+		new FileExtensionFilter(Messages.getString("SPSUtils.sqlFileType"), new String[] {"sql","ddl"}); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	public static final FileFilter INI_FILE_FILTER =
-		new FileExtensionFilter(".INI Files", new String[] {"ini"});
+		new FileExtensionFilter(Messages.getString("SPSUtils.iniFileType"), new String[] {"ini"}); //$NON-NLS-1$ //$NON-NLS-2$
 
 	public static final FileFilter EXE_FILE_FILTER =
-		new FileExtensionFilter(".EXE Files", new String[] {"exe"});
+		new FileExtensionFilter(Messages.getString("SPSUtils.exeFileType"), new String[] {"exe"}); //$NON-NLS-1$ //$NON-NLS-2$
 
 	public static final FileFilter JAR_ZIP_FILE_FILTER =
-		new FileExtensionFilter("Java JAR Files", new String[] {"jar", "zip"});
+		new FileExtensionFilter(Messages.getString("SPSUtils.jarFileType"), new String[] {"jar", "zip"}); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	public static final FileFilter LOG_FILE_FILTER =
-		new FileExtensionFilter("Log Files", new String[] {"log"});
+		new FileExtensionFilter(Messages.getString("SPSUtils.logFileType"), new String[] {"log"}); //$NON-NLS-1$ //$NON-NLS-2$
 
     public static final FileFilter XML_FILE_FILTER =
-        new FileExtensionFilter("XML Files", new String[] {"xml"});
+        new FileExtensionFilter(Messages.getString("SPSUtils.xmlFileType"), new String[] {"xml"}); //$NON-NLS-1$ //$NON-NLS-2$
 
     public static final FileFilter PDF_FILE_FILTER =
-        new FileExtensionFilter("Portable Document (PDF) Files", new String[] {"pdf"});
+        new FileExtensionFilter(Messages.getString("SPSUtils.pdfFileType"), new String[] {"pdf"}); //$NON-NLS-1$ //$NON-NLS-2$
 
     public static final FileFilter CSV_FILE_FILTER =
-        new FileExtensionFilter("Comma-Separated Value Files", new String[] {"csv"});
+        new FileExtensionFilter(Messages.getString("SPSUtils.csvFileType"), new String[] {"csv"}); //$NON-NLS-1$ //$NON-NLS-2$
 
     public static final FileFilter HTML_FILE_FILTER =
-        new FileExtensionFilter("HTML Files", new String[] {"html"});
+        new FileExtensionFilter(Messages.getString("SPSUtils.htmlFileType"), new String[] {"html"}); //$NON-NLS-1$ //$NON-NLS-2$
 
     public static final FileFilter BATCH_FILE_FILTER =
-        new FileExtensionFilter("Batch Scripts", new String[] {"bat"});
+        new FileExtensionFilter(Messages.getString("SPSUtils.batchFileType"), new String[] {"bat"}); //$NON-NLS-1$ //$NON-NLS-2$
     
     public static class FileExtensionFilter extends FileFilter {
 
@@ -290,7 +290,7 @@ public class SPSUtils {
 		public String toString() {
 			StringBuffer s = new StringBuffer();
 			s.append(name);
-			s.append(":");
+			s.append(":"); //$NON-NLS-1$
 			s.append(extensions.toString());
 			return s.toString();
 		}
@@ -306,7 +306,7 @@ public class SPSUtils {
 		 * Get the extension of a file.
 		 */
 		public static String getExtension(File f) {
-			String ext = "";
+			String ext = ""; //$NON-NLS-1$
 			String s = f.getName();
 			int i = s.lastIndexOf('.');
 
@@ -459,22 +459,22 @@ public class SPSUtils {
         Window owner = parent == null? null: getWindowInHierarchy(parent);
         if (owner instanceof JFrame) {
             JFrame frame = (JFrame) owner;
-            dialog = new JDialog(frame, "Error Report");
+            dialog = new JDialog(frame, Messages.getString("SPSUtils.errorDialogTitle")); //$NON-NLS-1$
         } else if (owner instanceof Dialog) {
-            dialog = new JDialog((Dialog)owner, "Error Report");
+            dialog = new JDialog((Dialog)owner, Messages.getString("SPSUtils.errorDialogTitle")); //$NON-NLS-1$
         } else {
             logger.error(
-                    String.format("dialog parent component %s is neither JFrame nor JDialog", owner));
+                    String.format("dialog parent component %s is neither JFrame nor JDialog", owner)); //$NON-NLS-1$
             
             // last desperate attempt to set the icon for the dialog
             JFrame frame = new JFrame();
             if (masterIcon != null) {
             	frame.setIconImage(masterIcon.getImage());
             }
-            dialog = new JDialog(frame, "Error report");
+            dialog = new JDialog(frame, Messages.getString("SPSUtils.errorDialogTitle")); //$NON-NLS-1$
             
         }
-        logger.debug("displayExceptionDialog: showing exception dialog for:", throwable);
+        logger.debug("displayExceptionDialog: showing exception dialog for:", throwable); //$NON-NLS-1$
 
         ((JComponent)dialog.getContentPane()).setBorder(
                 BorderFactory.createEmptyBorder(10, 10, 5, 5));
@@ -488,7 +488,7 @@ public class SPSUtils {
             if (rootCause(t) instanceof SQLException) {
                 t = ((SQLException) rootCause(t)).getNextException();
                 if (t != null) {
-                    traceWriter.println("Next Exception:");
+                    traceWriter.println("Next Exception:"); //$NON-NLS-1$
                 }
             } else {
                 t = null;
@@ -499,35 +499,35 @@ public class SPSUtils {
         JPanel top = new JPanel(new GridLayout(0, 1, 5, 5));
 
         StringBuilder labelText = new StringBuilder();
-        labelText.append("<html><font color='red' size='+1'>");
-        labelText.append(message == null ? "Unexpected error" : nlToBR(message));
-        labelText.append("</font>");
+        labelText.append("<html><font color='red' size='+1'>"); //$NON-NLS-1$
+        labelText.append(message == null ? "Unexpected error" : nlToBR(message)); //$NON-NLS-1$
+        labelText.append("</font>"); //$NON-NLS-1$
         if (subMessage != null) {
-            labelText.append("<p>");
+            labelText.append("<p>"); //$NON-NLS-1$
             labelText.append(subMessage);
         }
         JLabel messageLabel = new JLabel(labelText.toString());
         top.add(messageLabel);
 
         JLabel errClassLabel =
-            new JLabel("<html><b>Exception type</b>: " + nlToBR(throwable.getClass().getName()));
+            new JLabel("<html><b>Exception type</b>: " + nlToBR(throwable.getClass().getName())); //$NON-NLS-1$
         top.add(errClassLabel);
         String excDetailMessage = throwable.getMessage();
         excDetailMessage = trimToClosestNL(excDetailMessage, 100, 25);
         if (excDetailMessage != null) {
-            top.add(new JLabel("<html><b>Detail string</b>: " + nlToBR(excDetailMessage)));
+            top.add(new JLabel("<html><b>Detail string</b>: " + nlToBR(excDetailMessage))); //$NON-NLS-1$
             if (throwable.getCause() != null) {
                 Throwable root;
                 for (root = throwable.getCause(); root.getCause() != null; root = root.getCause()) {
                 	if (root.getMessage() != null) {
-                		top.add(new JLabel("<html><b>Root Cause</b>: " + nlToBR(root.getMessage())));
+                		top.add(new JLabel("<html><b>Root Cause</b>: " + nlToBR(root.getMessage()))); //$NON-NLS-1$
                 	}
                 }
             }
 
         }
 
-        final JButton detailsButton = new JButton("Show Details");
+        final JButton detailsButton = new JButton(Messages.getString("SPSUtils.showExceptionDetailsButton")); //$NON-NLS-1$
         final JPanel detailsButtonPanel = new JPanel();
         detailsButtonPanel.add(detailsButton);
 
@@ -558,11 +558,11 @@ public class SPSUtils {
                 if (showDetails) {
                     finalDialogReference.remove(fakeMessageComponent);
                     finalDialogReference.add(messageComponent, BorderLayout.CENTER);
-                    detailsButton.setText("Hide Details");
+                    detailsButton.setText(Messages.getString("SPSUtils.hideExceptionDetailsButton")); //$NON-NLS-1$
                 } else /* hide details */ {
                     finalDialogReference.remove(messageComponent);
                     finalDialogReference.add(fakeMessageComponent, BorderLayout.CENTER);
-                    detailsButton.setText("Show Details");
+                    detailsButton.setText(Messages.getString("SPSUtils.showExceptionDetailsButton")); //$NON-NLS-1$
                 }
                 finalDialogReference.pack();
 
@@ -589,7 +589,7 @@ public class SPSUtils {
             }
         };
         detailsButton.addActionListener(detailsAction);
-        JButton okButton = new JButton("OK");
+        JButton okButton = new JButton(Messages.getString("SPSUtils.okButton")); //$NON-NLS-1$
         okButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 finalDialogReference.dispose();
@@ -630,8 +630,8 @@ public class SPSUtils {
     private static String trimToClosestNL(String msg, int msgLimit, int offset) {
         if (msg == null) return null;
     	if (msg.length() > msgLimit) {
-        	int lastNL = msg.indexOf("\n", msgLimit - offset);
-        	int nextNL = msg.indexOf("\n", msgLimit);
+        	int lastNL = msg.indexOf("\n", msgLimit - offset); //$NON-NLS-1$
+        	int nextNL = msg.indexOf("\n", msgLimit); //$NON-NLS-1$
         	int endIndex = lastNL;
         	if (lastNL < 0 || lastNL > msgLimit + offset) {
         		endIndex = msgLimit;
@@ -643,7 +643,7 @@ public class SPSUtils {
         			 endIndex = nextNL;
         		 }
         	}
-        	msg = msg.substring(0, endIndex) + " ...";
+        	msg = msg.substring(0, endIndex) + " ..."; //$NON-NLS-1$
         }
     	return msg;
     }
@@ -668,8 +668,8 @@ public class SPSUtils {
      */
     static String nlToBR(String s) {
         // Do NOT xml-ify the BR tag until Swing's HTML supports this.
-    	logger.debug("String s is " + s);
-        return s.replaceAll("\n", "<br>");
+    	logger.debug("String s is " + s); //$NON-NLS-1$
+        return s.replaceAll("\n", "<br>"); //$NON-NLS-1$ //$NON-NLS-2$
     }
 	
 	/**
@@ -713,14 +713,14 @@ public class SPSUtils {
                 String fileName = file.getPath();
                 String fileExt = SPSUtils.FileExtensionFilter.getExtension(file);
                 if (fileExt.length() == 0) {
-                    file = new File(fileName + "."
+                    file = new File(fileName + "." //$NON-NLS-1$
                             + filter.getFilterExtension(new Integer(0)));
                 }
                 if (file.exists()) {
                     int choice = JOptionPane.showOptionDialog(
                                         owner,
-                                        "Are your sure you want to overwrite this file?",
-                                        "Confirm Overwrite",
+                                        Messages.getString("SPSUtils.fileOverwriteConfirmation"), //$NON-NLS-1$
+                                        Messages.getString("SPSUtils.confirmOverwriteButton"), //$NON-NLS-1$
                                         JOptionPane.YES_NO_OPTION,
                                         JOptionPane.QUESTION_MESSAGE, null,
                                         null, null);
@@ -757,7 +757,7 @@ public class SPSUtils {
             out.flush();
             return true;
         } catch (Exception e) {
-            SPSUtils.showExceptionDialogNoReport("Could not save file", e);
+            SPSUtils.showExceptionDialogNoReport(Messages.getString("SPSUtils.couldNotSaveFileError"), e); //$NON-NLS-1$
             return false;
         } finally {
             if (out != null) out.close();
@@ -827,7 +827,7 @@ public class SPSUtils {
             xBase = (- b - Math.sqrt(b * b - 4 * a * c)) / (2 * a);
         }
         double yBase = m * xBase + n;
-        logger.debug("The base point is (" + xBase + ", " + yBase + ")");
+        logger.debug("The base point is (" + xBase + ", " + yBase + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
         double mInv = -1 / m;
         double nInv = yBase - mInv * xBase;
@@ -838,7 +838,7 @@ public class SPSUtils {
        
         int xPoint = (int)((- b + Math.sqrt(b * b - 4 * a * c)) / (2 * a));
         int yPoint = (int)(mInv * xPoint + nInv);
-        logger.debug(" x is " + xPoint + " y is " + yPoint);
+        logger.debug(" x is " + xPoint + " y is " + yPoint); //$NON-NLS-1$ //$NON-NLS-2$
         polygon.addPoint(xPoint, yPoint);
        
         xPoint = (int)((- b - Math.sqrt(b * b - 4 * a * c)) / (2 * a));

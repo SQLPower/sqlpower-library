@@ -61,6 +61,7 @@ import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.DatabaseListChangeEvent;
 import ca.sqlpower.sql.DatabaseListChangeListener;
 import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.swingui.Messages;
 import ca.sqlpower.swingui.SPSUtils;
 
 import com.jgoodies.forms.builder.ButtonStackBuilder;
@@ -83,7 +84,7 @@ public class DatabaseConnectionManager {
 	 * with this key, then the DatabaseConnectionManager will disable the corresponding button
 	 * it creates in the GUI for that action.
 	 */
-	public static final String DISABLE_IF_NO_CONNECTION_SELECTED = "disableIfNoConnectionSelected";
+	public static final String DISABLE_IF_NO_CONNECTION_SELECTED = "disableIfNoConnectionSelected"; //$NON-NLS-1$
 	
     /**
      * The GUI panel.  Lives inside the dialog {@link #d}.
@@ -104,14 +105,14 @@ public class DatabaseConnectionManager {
     
     private final DataSourceTypeDialogFactory dsTypeDialogFactory; 
     
-	private final Action jdbcDriversAction = new AbstractAction("JDBC Drivers"){
+	private final Action jdbcDriversAction = new AbstractAction(Messages.getString("DatabaseConnectionManager.jdbcDriversActionName")){ //$NON-NLS-1$
 
 		public void actionPerformed(ActionEvent e) {
 			dsTypeDialogFactory.showDialog(DatabaseConnectionManager.this.currentOwner);
 		}
 	};
 
-    private final Action newDatabaseConnectionAction = new AbstractAction("New...") {
+    private final Action newDatabaseConnectionAction = new AbstractAction(Messages.getString("DatabaseConnectionManager.newDbConnectionActionName")) { //$NON-NLS-1$
 
         public void actionPerformed(ActionEvent e) {
             final SPDataSource ds = new SPDataSource(getPlDotIni());
@@ -124,7 +125,7 @@ public class DatabaseConnectionManager {
         }
     };
 
-	private final Action editDatabaseConnectionAction = new AbstractAction("Edit...") {
+	private final Action editDatabaseConnectionAction = new AbstractAction(Messages.getString("DatabaseConnectionManager.editDbConnectionActionName")) { //$NON-NLS-1$
 
 		public void actionPerformed(ActionEvent e) {
 			int selectedRow = dsTable.getSelectedRow();
@@ -147,7 +148,7 @@ public class DatabaseConnectionManager {
                     } catch (Exception ex) {
                         SPSUtils.showExceptionDialogNoReport(
                                 d,
-                                "Unexpected exception while editing a database connection.",
+                                "Unexpected exception while editing a database connection.", //$NON-NLS-1$
                                 ex);
                     }
                 }
@@ -157,7 +158,7 @@ public class DatabaseConnectionManager {
 		}
 	};
 
-	private final Action removeDatabaseConnectionAction = new AbstractAction("Remove") {
+	private final Action removeDatabaseConnectionAction = new AbstractAction(Messages.getString("DatabaseConnectionManager.removeDbConnectionActionName")) { //$NON-NLS-1$
 
 		public void actionPerformed(ActionEvent e) {
 			int selectedRow = dsTable.getSelectedRow();
@@ -167,8 +168,8 @@ public class DatabaseConnectionManager {
 			SPDataSource dbcs = (SPDataSource) dsTable.getValueAt(selectedRow,0);
 			int option = JOptionPane.showConfirmDialog(
 					d,
-					"Do you want to delete this database connection? ["+dbcs.getName()+"]",
-					"Remove",
+					Messages.getString("DatabaseConnectionManager.deleteDbConnectionConfirmation", dbcs.getName()), //$NON-NLS-1$
+					Messages.getString("DatabaseConnectionManager.removeButton"), //$NON-NLS-1$
 					JOptionPane.YES_NO_OPTION);
 			if (option != JOptionPane.YES_OPTION) {
 				return;
@@ -179,7 +180,7 @@ public class DatabaseConnectionManager {
 
 	
 
-	private final Action closeAction = new AbstractAction("Close") {
+	private final Action closeAction = new AbstractAction(Messages.getString("DatabaseConnectionManager.closeActionName")) { //$NON-NLS-1$
 		public void actionPerformed(ActionEvent e) {
 			d.dispose();
 		}
@@ -249,12 +250,12 @@ public class DatabaseConnectionManager {
             d = new JDialog((Frame) owner);
         } else {
             throw new IllegalArgumentException(
-                    "Owner has to be a Frame or Dialog.  You provided a " +
+                    "Owner has to be a Frame or Dialog.  You provided a " + //$NON-NLS-1$
                     (owner == null ? null : owner.getClass().getName()));
         }
 
         currentOwner = owner;
-        d.setTitle("Database Connection Manager");
+        d.setTitle(Messages.getString("DatabaseConnectionManager.dialogTitle")); //$NON-NLS-1$
         d.getContentPane().add(panel);
         d.pack();
         d.setLocationRelativeTo(owner);
@@ -276,8 +277,8 @@ public class DatabaseConnectionManager {
 	private JPanel createPanel(List<Action> additionalActions) {
 
 		FormLayout layout = new FormLayout(
-				"6dlu, fill:min(160dlu;default):grow, 6dlu, pref, 6dlu", // columns
-				" 6dlu,10dlu,6dlu,fill:min(180dlu;default):grow,10dlu"); // rows
+				"6dlu, fill:min(160dlu;default):grow, 6dlu, pref, 6dlu", // columns //$NON-NLS-1$
+				" 6dlu,10dlu,6dlu,fill:min(180dlu;default):grow,10dlu"); // rows //$NON-NLS-1$
 
 		layout.setColumnGroups(new int [][] { {1,3,5}});
 		CellConstraints cc = new CellConstraints();
@@ -287,7 +288,7 @@ public class DatabaseConnectionManager {
 		pb = new PanelBuilder(layout,p);
 		pb.setDefaultDialogBorder();
 
-		pb.add(new JLabel("Available Database Connections:"), cc.xy(2, 2));
+		pb.add(new JLabel(Messages.getString("DatabaseConnectionManager.availableDbConnections")), cc.xy(2, 2)); //$NON-NLS-1$
 
 		TableModel tm = new ConnectionTableModel(dsCollection);
 		dsTable = new JTable(tm);
@@ -361,7 +362,7 @@ public class DatabaseConnectionManager {
 
 		@Override
 		public String getColumnName(int columnIndex) {
-			return "Connection Name";
+			return Messages.getString("DatabaseConnectionManager.connectionName"); //$NON-NLS-1$
 		}
 
 		@Override

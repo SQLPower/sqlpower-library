@@ -166,7 +166,7 @@ public class PlatformSpecificConnectionOptionPanel {
         platformSpecificOptionPanel = new JPanel();
         platformSpecificOptionPanel.setLayout(new PlatformOptionsLayout());
         platformSpecificOptionPanel.setBorder(BorderFactory.createEmptyBorder());
-        platformSpecificOptionPanel.add(new JLabel("(No options for current driver)"));
+        platformSpecificOptionPanel.add(new JLabel(Messages.getString("PlatformSpecificConnectionOptionPanel.noOptionsForDriver"))); //$NON-NLS-1$
 
         this.dbUrlField = dbUrlField;
   
@@ -198,7 +198,7 @@ public class PlatformSpecificConnectionOptionPanel {
         try {
             updatingUrlFromFields = true;
             StringBuffer newUrl = new StringBuffer();
-            Pattern p = Pattern.compile("<(.*?)>");
+            Pattern p = Pattern.compile("<(.*?)>"); //$NON-NLS-1$
             Matcher m = p.matcher(template.getJdbcUrl());
             while (m.find()) {
                 String varName = m.group(1);
@@ -250,7 +250,7 @@ public class PlatformSpecificConnectionOptionPanel {
                 return ((JTextField) platformSpecificOptionPanel.getComponent(i+1)).getText();
             }
         }
-        return "";
+        return ""; //$NON-NLS-1$
     }
     
     
@@ -269,8 +269,8 @@ public class PlatformSpecificConnectionOptionPanel {
                 platformSpecificOptionPanel.getComponent(i).setEnabled(true);
             }
 
-            logger.debug("template is " + template);
-            logger.debug("dbUrlField is " + dbUrlField);
+            logger.debug("template is " + template); //$NON-NLS-1$
+            logger.debug("dbUrlField is " + dbUrlField); //$NON-NLS-1$
             Map<String, String> map = template.retrieveURLParsing(dbUrlField.getText());
             if (!map.isEmpty()) {
                 platformSpecificOptionPanel.setEnabled(true);
@@ -319,12 +319,12 @@ public class PlatformSpecificConnectionOptionPanel {
                 JTextField field = new JTextField(def);
                 platformSpecificOptionPanel.add(field);
                 field.getDocument().addDocumentListener(urlUpdater);
-                logger.debug("The default value for key " + key + " is: " + def);
+                logger.debug("The default value for key " + key + " is: " + def); //$NON-NLS-1$ //$NON-NLS-2$
             }
 
 
         } else {
-            platformSpecificOptionPanel.add(new JLabel("Unknown driver class.  Fill in URL manually."));
+            platformSpecificOptionPanel.add(new JLabel(Messages.getString("PlatformSpecificConnectionOptionPanel.unknownDriverClass"))); //$NON-NLS-1$
 
         }
 

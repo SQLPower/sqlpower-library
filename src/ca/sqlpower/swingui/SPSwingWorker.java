@@ -63,7 +63,7 @@ public abstract class SPSwingWorker implements Runnable {
 	 * cleanup() throws an exception. Should be changed by the
 	 * subclass calling setCleanupExceptionMessage
 	 */
-	private String cleanupExceptionMessage = "A problem occurred.";
+	private String cleanupExceptionMessage = "A problem occurred."; //$NON-NLS-1$
 	
 	public final void run() {
 		try {
@@ -150,7 +150,7 @@ public abstract class SPSwingWorker implements Runnable {
 	}
 
 	public void setNextProcess(SPSwingWorker nextProcess) {
-		logger.debug("Moving to object:" + nextProcess);
+		logger.debug("Moving to object:" + nextProcess); //$NON-NLS-1$
 		this.nextProcess = nextProcess;
 	}
 	
