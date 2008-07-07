@@ -146,6 +146,7 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
             driverClass.setEnabled(false);
             
             connectionStringTemplate.setText(""); //$NON-NLS-1$
+            connectionStringTemplate.setEnabled(false);
 
             // template will get updated by document listener
         } else {

@@ -121,6 +121,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
                 removeSelectedDsType();
             }
         });
+        removeDsTypeButton.setEnabled(false);
         
         dsTypePanel = new DataSourceTypeEditorPanel();
         
@@ -133,6 +134,9 @@ public class DataSourceTypeEditor implements DataEntryPanel {
                         (SPDataSourceType) dsTypeList.getSelectedValue();
                     switchToDsType(dst);
                 }
+                
+                // remove button enabled when a datasource has been selected 
+                removeDsTypeButton.setEnabled(dsTypeList.getSelectedIndex() != -1);
             }
         });
         panel = createPanel();

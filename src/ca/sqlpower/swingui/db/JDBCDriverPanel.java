@@ -152,6 +152,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
     private JLabel progressLabel;
 
     private JButton delButton;
+    private JButton addButton;
     private DefaultMutableTreeNode rootNode;
 
 	public JDBCDriverPanel() {
@@ -169,7 +170,8 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
                 TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
 		driverTree.addTreeSelectionListener(new TreeSelectionListener() {
 			public void valueChanged(TreeSelectionEvent e) {
-				delButton.setEnabled(true);
+				// enabled when a driver has been selected
+				delButton.setEnabled(driverTree.getSelectionPath() != null);
 			}
 		});
         driverTree.setCellRenderer(new DriverTreeCellRenderer());
@@ -177,9 +179,10 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 		add(new JScrollPane(driverTree), BorderLayout.CENTER);
 
 		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-		buttonPanel.add(new JButton(new AddAction()));
+		buttonPanel.add(addButton = new JButton(new AddAction()));
 		buttonPanel.add(delButton = new JButton(new DelAction()));
 		delButton.setEnabled(false);
+		addButton.setEnabled(false);
 		add(buttonPanel, BorderLayout.NORTH);
 
 		JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
@@ -226,7 +229,10 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 	    dtm.setRoot(new DefaultMutableTreeNode());
         if (dst != null) {
             doLoad(dataSourceType.getJdbcJarList());
-        }
+        } 
+        
+        // enabled when a datasource has been selected
+        addButton.setEnabled(dst != null);
     }
     
 	protected class AddAction extends AbstractAction {
