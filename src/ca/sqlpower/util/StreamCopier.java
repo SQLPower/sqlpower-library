@@ -58,22 +58,27 @@ public class StreamCopier extends Thread {
 	 */
 	private boolean eof = false;
 	
+	private final boolean closeOutputStream;
+	
 	/**
 	 * Creates a new StreamCopier that monitors the given input stream and
 	 * collects its data.
 	 * <p>
-	 * Remember to start this copier with the start() method if you want it
-	 * to run in the background.
+	 * Remember to start this copier with the start() method if you want it to
+	 * run in the background.
 	 * 
 	 * @param in
 	 *            The stream to read. It will be read to EOF, but not closed.
 	 * @param out
-	 *            The stream to write to. It will be closed when EOF is
+	 *            The stream to write to.
+	 * @param closeOutputStream
+	 *            Indicates whether the output stream will be closed when EOF is
 	 *            encountered on the input stream.
 	 */
-	public StreamCopier(InputStream in, OutputStream out) {
+	public StreamCopier(InputStream in, OutputStream out, boolean closeOutputStream) {
 		this.in = in;
 		this.out = out;
+		this.closeOutputStream = closeOutputStream;
 	}
 
 	/**
@@ -92,7 +97,9 @@ public class StreamCopier extends Thread {
 			}
 			synchronized (this) {
 				eof = true;
-				out.close();
+				if (closeOutputStream) {
+					out.close();
+				}
 			}
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
