@@ -216,21 +216,31 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
     
     @Override
     public ResultSet getTables(String catalog, String schemaPattern, String tableNamePattern, String[] types) throws SQLException {
-        ResultSet rs = super.getTables(catalog, schemaPattern, tableNamePattern, types);
-        CachedRowSet crs = new CachedRowSet();
 
-        RowFilter noRecycledTablesFilter = null;
+        ResultSet rs = null;
+        CachedRowSet crs = new CachedRowSet();
         
-        if (hidingRecycleBinTables) {
-            noRecycledTablesFilter = new RowFilter() {
-                public boolean acceptsRow(Object[] row) {
-                    String tableName = (String) row[2];
-                    return !tableName.startsWith("BIN$");
-                }
-            };
+        try {
+            rs = super.getTables(catalog, schemaPattern, tableNamePattern, types);
+
+            RowFilter noRecycledTablesFilter = null;
+
+            if (hidingRecycleBinTables) {
+                noRecycledTablesFilter = new RowFilter() {
+                    public boolean acceptsRow(Object[] row) {
+                        String tableName = (String) row[2];
+                        return !tableName.startsWith("BIN$");
+                    }
+                };
+            }
+
+            crs.populate(rs, noRecycledTablesFilter);
+            
+        } finally {
+            if (rs != null) {
+                rs.close();
+            }
         }
-        
-        crs.populate(rs, noRecycledTablesFilter);
         return crs;
     }
     
@@ -261,10 +271,20 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 			return indexTypes;
 
 		} finally {
-			if (rs != null)
-				rs.close();
-			if (stmt != null)
-				stmt.close();
+			if (rs != null) {
+			    try {
+			        rs.close();
+			    } catch (SQLException ex) {
+			        logger.warn("Failed to close result set. Squishing this exception: ", ex);
+			    }
+			}
+			if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException ex) {
+                    logger.warn("Failed to close statement. Squishing this exception: ", ex);
+                }
+			}
 		}
 	}
 }
