@@ -390,11 +390,10 @@ public class MockJDBCResultSet implements ResultSet {
 	}
 
 	public void setFetchSize(int rows) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
 	}
 
 	public int getFetchSize() throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+		return 0;
 	}
 
 	public int getType() throws SQLException {
