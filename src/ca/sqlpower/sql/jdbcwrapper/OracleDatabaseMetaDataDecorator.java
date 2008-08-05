@@ -287,4 +287,146 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 			}
 		}
 	}
+	
+	@Override
+	public ResultSet getImportedKeys(String catalog, String schema, String table)
+			throws SQLException {
+		Statement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = getConnection().createStatement();
+	        StringBuilder sql = new StringBuilder();
+	        
+	        /*
+			 * Oracle's JDBC drivers does not find relationships on alternate
+			 * keys. The following query is based on the query Oracle's driver
+			 * would issue if we called super.getImportedKeys(), adding in the
+			 * part that makes it find alternate key relationships.
+			 */
+	        sql.append("SELECT NULL AS pktable_cat,\n");
+	        sql.append("       p.owner as pktable_schem,\n");
+	        sql.append("       p.table_name as pktable_name,\n");
+	        sql.append("       pc.column_name as pkcolumn_name,\n");
+	        sql.append("       NULL as fktable_cat,\n");
+	        sql.append("       f.owner as fktable_schem,\n");
+	        sql.append("       f.table_name as fktable_name,\n");
+	        sql.append("       fc.column_name as fkcolumn_name,\n");
+	        sql.append("       fc.position as key_seq,\n");
+	        sql.append("       NULL as update_rule,\n");
+	        sql.append("       decode (f.delete_rule, 'CASCADE', 0, 'SET NULL', 2, 1) as delete_rule,\n");
+	        sql.append("       f.constraint_name as fk_name,\n");
+	        sql.append("       p.constraint_name as pk_name,\n");
+	        sql.append("       decode(f.deferrable, 'DEFERRABLE', 5 ,'NOT DEFERRABLE', 7, 'DEFERRED', 6) deferrability\n");
+	        sql.append("FROM all_cons_columns pc, all_constraints p,\n");
+	        sql.append("     all_cons_columns fc, all_constraints f\n");
+	        sql.append("WHERE 1 = 1\n");
+	        sql.append("      AND f.table_name = ").append(SQL.quote(table)).append("\n");
+	        sql.append("      AND f.owner = ").append(SQL.quote(schema)).append("\n");
+	        sql.append("      AND f.constraint_type = 'R'\n");
+	        sql.append("      AND p.owner = f.r_owner\n");
+	        sql.append("      AND p.constraint_name = f.r_constraint_name\n");
+	        sql.append("      AND p.constraint_type in ('P', 'U')\n");
+	        sql.append("      AND pc.owner = p.owner\n");
+	        sql.append("      AND pc.constraint_name = p.constraint_name\n");
+	        sql.append("      AND pc.table_name = p.table_name\n");
+	        sql.append("      AND fc.owner = f.owner\n");
+	        sql.append("      AND fc.constraint_name = f.constraint_name\n");
+	        sql.append("      AND fc.table_name = f.table_name\n");
+	        sql.append("      AND fc.position = pc.position\n");
+	        sql.append("ORDER BY pktable_schem, pktable_name, key_seq");
+	        
+	        logger.debug("getImportedKeys() sql statement was: " + sql.toString());
+	        rs = stmt.executeQuery(sql.toString());
+			CachedRowSet crs = new CachedRowSet();
+			crs.populate(rs);
+			
+			return crs;
+		} finally {
+			if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException ex) {
+                    logger.error("Failed to close result set! Squishing this exception: ", ex);
+                }
+            }
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException ex) {
+                    logger.error("Failed to close statement! Squishing this exception: ", ex);
+                }
+            }
+		}
+	}
+	
+	@Override
+	public ResultSet getExportedKeys(String catalog, String schema, String table)
+			throws SQLException {
+		Statement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = getConnection().createStatement();
+	        StringBuilder sql = new StringBuilder();
+	        
+	        /*
+			 * Oracle's JDBC drivers does not find relationships on alternate
+			 * keys. The following query is based on the query Oracle's driver
+			 * would issue if we called super.getExportedKeys(), adding in the
+			 * part that makes it find alternate key relationships.
+			 */
+	        sql.append("SELECT NULL AS pktable_cat,\n");
+	        sql.append("       p.owner as pktable_schem,\n");
+	        sql.append("       p.table_name as pktable_name,\n");
+	        sql.append("       pc.column_name as pkcolumn_name,\n");
+	        sql.append("       NULL as fktable_cat,\n");
+	        sql.append("       f.owner as fktable_schem,\n");
+	        sql.append("       f.table_name as fktable_name,\n");
+	        sql.append("       fc.column_name as fkcolumn_name,\n");
+	        sql.append("       fc.position as key_seq,\n");
+	        sql.append("       NULL as update_rule,\n");
+	        sql.append("       decode (f.delete_rule, 'CASCADE', 0, 'SET NULL', 2, 1) as delete_rule,\n");
+	        sql.append("       f.constraint_name as fk_name,\n");
+	        sql.append("       p.constraint_name as pk_name,\n");
+	        sql.append("       decode(f.deferrable, 'DEFERRABLE', 5 ,'NOT DEFERRABLE', 7, 'DEFERRED', 6) deferrability\n");
+	        sql.append("FROM all_cons_columns pc, all_constraints p,\n");
+	        sql.append("     all_cons_columns fc, all_constraints f\n");
+	        sql.append("WHERE 1 = 1\n");
+	        sql.append("      AND p.table_name = ").append(SQL.quote(table)).append("\n");
+	        sql.append("      AND p.owner = ").append(SQL.quote(schema)).append("\n");
+	        sql.append("      AND f.constraint_type = 'R'\n");
+	        sql.append("      AND p.owner = f.r_owner\n");
+	        sql.append("      AND p.constraint_name = f.r_constraint_name\n");
+	        sql.append("      AND p.constraint_type in ('P', 'U')\n");
+	        sql.append("      AND pc.owner = p.owner\n");
+	        sql.append("      AND pc.constraint_name = p.constraint_name\n");
+	        sql.append("      AND pc.table_name = p.table_name\n");
+	        sql.append("      AND fc.owner = f.owner\n");
+	        sql.append("      AND fc.constraint_name = f.constraint_name\n");
+	        sql.append("      AND fc.table_name = f.table_name\n");
+	        sql.append("      AND fc.position = pc.position\n");
+	        sql.append("ORDER BY pktable_schem, pktable_name, key_seq");
+	        
+	        logger.debug("getExportedKeys() sql statement was: " + sql.toString());
+	        rs = stmt.executeQuery(sql.toString());
+			CachedRowSet crs = new CachedRowSet();
+			crs.populate(rs);
+			
+			return crs;
+		} finally {
+			if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException ex) {
+                    logger.error("Failed to close result set! Squishing this exception: ", ex);
+                }
+            }
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException ex) {
+                    logger.error("Failed to close statement! Squishing this exception: ", ex);
+                }
+            }
+		}
+	}
 }
