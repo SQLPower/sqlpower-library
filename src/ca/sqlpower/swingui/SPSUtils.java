@@ -446,7 +446,8 @@ public class SPSUtils {
      * @param parent The parent component that will own the dialog
      * @param message A user visible string that should explain the problem
      * @param subMessage A second string to give finer-grained detail to the user
-     * @param throwable The exception that caused the problem
+     * @param throwable The exception that caused the problem. Should not be null, but this
+     * method will handle that case gracefully since this is the last line of defense.
      * 
      * @return The JDialog to be displayed with the exception.
      */
@@ -454,7 +455,18 @@ public class SPSUtils {
             final Component parent,
             final String message,
             final String subMessage,
-            final Throwable throwable) {
+            Throwable givenThrowable) {
+        
+        final Throwable throwable;
+        if (givenThrowable == null) {
+            // this is a strange case, but we should handle everything here without blowing up
+            throwable = new Error("The throwable passed in to the exception handler was null. This is just a placeholder.");
+        } else {
+            throwable = givenThrowable;
+        }
+        
+        throwable.printStackTrace();
+        
         JDialog dialog;
         Window owner = parent == null? null: getWindowInHierarchy(parent);
         if (owner instanceof JFrame) {
