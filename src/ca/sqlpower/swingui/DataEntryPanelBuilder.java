@@ -54,6 +54,7 @@ import javax.swing.JPanel;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.validation.Validated;
+import ca.sqlpower.validation.swingui.ValidatableDataEntryPanel;
 import ca.sqlpower.validation.swingui.ValidationHandler;
 
 import com.jgoodies.forms.factories.Borders;
@@ -123,7 +124,13 @@ public class DataEntryPanelBuilder {
 				}
 			};
 		}
-			
+		
+		if (dataEntry instanceof ValidatableDataEntryPanel) {
+			ValidatableDataEntryPanel vdep = ((ValidatableDataEntryPanel) dataEntry);
+			ValidationHandler handler = vdep.getValidationHandler();
+			handler.setValidatedAction(okAction);
+		}
+		
 		JButton okButton = new JDefaultButton(okAction);
 		okButton.setText(actionButtonTitle);
 		
