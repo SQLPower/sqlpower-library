@@ -37,6 +37,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
@@ -80,6 +82,19 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
         "Encountered Oracle error ORA-1031. This normally means that you are accessing " +
         "Indices without having the 'analyze any' permission.";
     
+    /**
+	 * A cache of the imported and exported key metadata. When querying for
+	 * either, we cache the entire key list for a schema and then query the cache
+	 * in subsequent queries for the lifetime of the decorator object.
+	 */
+    private CachedRowSet importedAndExportedKeysCache;
+    
+    /**
+	 * A cache of column metadata. When queried the first time, we cache the
+	 * entire column list for a schema and then query the cache in subsequent
+	 * queries for the lifetime of the decorator object.
+	 */
+    private CachedRowSet columnsCache;
     
 	@Override
 	public ResultSet getTypeInfo() throws SQLException {
@@ -289,7 +304,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	}
 	
 	@Override
-	public ResultSet getImportedKeys(String catalog, String schema, String table)
+	public ResultSet getImportedKeys(String catalog, String schema, final String table)
 			throws SQLException {
 		Statement stmt = null;
 		ResultSet rs = null;
@@ -297,48 +312,68 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 			stmt = getConnection().createStatement();
 	        StringBuilder sql = new StringBuilder();
 	        
-	        /*
-			 * Oracle's JDBC drivers does not find relationships on alternate
-			 * keys. The following query is based on the query Oracle's driver
-			 * would issue if we called super.getImportedKeys(), adding in the
-			 * part that makes it find alternate key relationships.
-			 */
-	        sql.append("SELECT NULL AS pktable_cat,\n");
-	        sql.append("       p.owner as pktable_schem,\n");
-	        sql.append("       p.table_name as pktable_name,\n");
-	        sql.append("       pc.column_name as pkcolumn_name,\n");
-	        sql.append("       NULL as fktable_cat,\n");
-	        sql.append("       f.owner as fktable_schem,\n");
-	        sql.append("       f.table_name as fktable_name,\n");
-	        sql.append("       fc.column_name as fkcolumn_name,\n");
-	        sql.append("       fc.position as key_seq,\n");
-	        sql.append("       NULL as update_rule,\n");
-	        sql.append("       decode (f.delete_rule, 'CASCADE', 0, 'SET NULL', 2, 1) as delete_rule,\n");
-	        sql.append("       f.constraint_name as fk_name,\n");
-	        sql.append("       p.constraint_name as pk_name,\n");
-	        sql.append("       decode(f.deferrable, 'DEFERRABLE', 5 ,'NOT DEFERRABLE', 7, 'DEFERRED', 6) deferrability\n");
-	        sql.append("FROM all_cons_columns pc, all_constraints p,\n");
-	        sql.append("     all_cons_columns fc, all_constraints f\n");
-	        sql.append("WHERE 1 = 1\n");
-	        sql.append("      AND f.table_name = ").append(SQL.quote(table)).append("\n");
-	        sql.append("      AND f.owner = ").append(SQL.quote(schema)).append("\n");
-	        sql.append("      AND f.constraint_type = 'R'\n");
-	        sql.append("      AND p.owner = f.r_owner\n");
-	        sql.append("      AND p.constraint_name = f.r_constraint_name\n");
-	        sql.append("      AND p.constraint_type in ('P', 'U')\n");
-	        sql.append("      AND pc.owner = p.owner\n");
-	        sql.append("      AND pc.constraint_name = p.constraint_name\n");
-	        sql.append("      AND pc.table_name = p.table_name\n");
-	        sql.append("      AND fc.owner = f.owner\n");
-	        sql.append("      AND fc.constraint_name = f.constraint_name\n");
-	        sql.append("      AND fc.table_name = f.table_name\n");
-	        sql.append("      AND fc.position = pc.position\n");
-	        sql.append("ORDER BY pktable_schem, pktable_name, key_seq");
-	        
-	        logger.debug("getImportedKeys() sql statement was: " + sql.toString());
-	        rs = stmt.executeQuery(sql.toString());
+	        if (importedAndExportedKeysCache == null) {
+		        /*
+				 * Oracle's JDBC drivers does not find relationships on alternate
+				 * keys. The following query is based on the query Oracle's driver
+				 * would issue if we called super.getImportedKeys(), adding in the
+				 * part that makes it find alternate key relationships.
+				 */
+		        sql.append("SELECT NULL AS pktable_cat,\n");
+		        sql.append("       p.owner as pktable_schem,\n");
+		        sql.append("       p.table_name as pktable_name,\n");
+		        sql.append("       pc.column_name as pkcolumn_name,\n");
+		        sql.append("       NULL as fktable_cat,\n");
+		        sql.append("       f.owner as fktable_schem,\n");
+		        sql.append("       f.table_name as fktable_name,\n");
+		        sql.append("       fc.column_name as fkcolumn_name,\n");
+		        sql.append("       fc.position as key_seq,\n");
+		        sql.append("       NULL as update_rule,\n");
+		        sql.append("       decode (f.delete_rule, 'CASCADE', 0, 'SET NULL', 2, 1) as delete_rule,\n");
+		        sql.append("       f.constraint_name as fk_name,\n");
+		        sql.append("       p.constraint_name as pk_name,\n");
+		        sql.append("       decode(f.deferrable, 'DEFERRABLE', 5 ,'NOT DEFERRABLE', 7, 'DEFERRED', 6) deferrability\n");
+		        sql.append("FROM all_cons_columns pc, all_constraints p,\n");
+		        sql.append("     all_cons_columns fc, all_constraints f\n");
+		        sql.append("WHERE 1 = 1\n");
+		        if (cacheType.get() == null || cacheType.get().equals(CacheType.NO_CACHE)) {
+		        	sql.append("	  AND f.table_name = ").append(SQL.quote(table)).append("\n");
+		        }
+		        sql.append("      AND f.owner = ").append(SQL.quote(schema)).append("\n");
+		        sql.append("      AND f.constraint_type = 'R'\n");
+		        sql.append("      AND p.owner = f.r_owner\n");
+		        sql.append("      AND p.constraint_name = f.r_constraint_name\n");
+		        sql.append("      AND p.constraint_type in ('P', 'U')\n");
+		        sql.append("      AND pc.owner = p.owner\n");
+		        sql.append("      AND pc.constraint_name = p.constraint_name\n");
+		        sql.append("      AND pc.table_name = p.table_name\n");
+		        sql.append("      AND fc.owner = f.owner\n");
+		        sql.append("      AND fc.constraint_name = f.constraint_name\n");
+		        sql.append("      AND fc.table_name = f.table_name\n");
+		        sql.append("      AND fc.position = pc.position\n");
+		        sql.append("ORDER BY pktable_schem, pktable_name, key_seq");
+		        
+		        logger.debug("getImportedKeys() sql statement was: " + sql.toString());
+		        rs = stmt.executeQuery(sql.toString());
+		        
+		        CachedRowSet result = new CachedRowSet();
+		        result.populate(rs);
+		        
+		        if (cacheType.get() == null || cacheType.equals(CacheType.NO_CACHE)) {
+		        	return result;
+		        } else {
+		        	importedAndExportedKeysCache = result;
+		        }
+	        }
 			CachedRowSet crs = new CachedRowSet();
-			crs.populate(rs);
+			RowFilter filter = new RowFilter() {
+				public boolean acceptsRow(Object[] row) {
+					// expecting row[6] to be FK_TABLE_NAME
+					return table.equals(row[6]);
+				}
+			};
+			crs.populate(importedAndExportedKeysCache, filter);
+			importedAndExportedKeysCache.beforeFirst();
 			
 			return crs;
 		} finally {
@@ -360,7 +395,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	}
 	
 	@Override
-	public ResultSet getExportedKeys(String catalog, String schema, String table)
+	public ResultSet getExportedKeys(String catalog, String schema, final String table)
 			throws SQLException {
 		Statement stmt = null;
 		ResultSet rs = null;
@@ -368,48 +403,182 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 			stmt = getConnection().createStatement();
 	        StringBuilder sql = new StringBuilder();
 	        
-	        /*
-			 * Oracle's JDBC drivers does not find relationships on alternate
-			 * keys. The following query is based on the query Oracle's driver
-			 * would issue if we called super.getExportedKeys(), adding in the
-			 * part that makes it find alternate key relationships.
-			 */
-	        sql.append("SELECT NULL AS pktable_cat,\n");
-	        sql.append("       p.owner as pktable_schem,\n");
-	        sql.append("       p.table_name as pktable_name,\n");
-	        sql.append("       pc.column_name as pkcolumn_name,\n");
-	        sql.append("       NULL as fktable_cat,\n");
-	        sql.append("       f.owner as fktable_schem,\n");
-	        sql.append("       f.table_name as fktable_name,\n");
-	        sql.append("       fc.column_name as fkcolumn_name,\n");
-	        sql.append("       fc.position as key_seq,\n");
-	        sql.append("       NULL as update_rule,\n");
-	        sql.append("       decode (f.delete_rule, 'CASCADE', 0, 'SET NULL', 2, 1) as delete_rule,\n");
-	        sql.append("       f.constraint_name as fk_name,\n");
-	        sql.append("       p.constraint_name as pk_name,\n");
-	        sql.append("       decode(f.deferrable, 'DEFERRABLE', 5 ,'NOT DEFERRABLE', 7, 'DEFERRED', 6) deferrability\n");
-	        sql.append("FROM all_cons_columns pc, all_constraints p,\n");
-	        sql.append("     all_cons_columns fc, all_constraints f\n");
-	        sql.append("WHERE 1 = 1\n");
-	        sql.append("      AND p.table_name = ").append(SQL.quote(table)).append("\n");
-	        sql.append("      AND p.owner = ").append(SQL.quote(schema)).append("\n");
-	        sql.append("      AND f.constraint_type = 'R'\n");
-	        sql.append("      AND p.owner = f.r_owner\n");
-	        sql.append("      AND p.constraint_name = f.r_constraint_name\n");
-	        sql.append("      AND p.constraint_type in ('P', 'U')\n");
-	        sql.append("      AND pc.owner = p.owner\n");
-	        sql.append("      AND pc.constraint_name = p.constraint_name\n");
-	        sql.append("      AND pc.table_name = p.table_name\n");
-	        sql.append("      AND fc.owner = f.owner\n");
-	        sql.append("      AND fc.constraint_name = f.constraint_name\n");
-	        sql.append("      AND fc.table_name = f.table_name\n");
-	        sql.append("      AND fc.position = pc.position\n");
-	        sql.append("ORDER BY pktable_schem, pktable_name, key_seq");
+	        if (importedAndExportedKeysCache == null) {
+		        /*
+				 * Oracle's JDBC drivers does not find relationships on alternate
+				 * keys. The following query is based on the query Oracle's driver
+				 * would issue if we called super.getExportedKeys(), adding in the
+				 * part that makes it find alternate key relationships.
+				 */
+		        sql.append("SELECT NULL AS pktable_cat,\n");
+		        sql.append("       p.owner as pktable_schem,\n");
+		        sql.append("       p.table_name as pktable_name,\n");
+		        sql.append("       pc.column_name as pkcolumn_name,\n");
+		        sql.append("       NULL as fktable_cat,\n");
+		        sql.append("       f.owner as fktable_schem,\n");
+		        sql.append("       f.table_name as fktable_name,\n");
+		        sql.append("       fc.column_name as fkcolumn_name,\n");
+		        sql.append("       fc.position as key_seq,\n");
+		        sql.append("       NULL as update_rule,\n");
+		        sql.append("       decode (f.delete_rule, 'CASCADE', 0, 'SET NULL', 2, 1) as delete_rule,\n");
+		        sql.append("       f.constraint_name as fk_name,\n");
+		        sql.append("       p.constraint_name as pk_name,\n");
+		        sql.append("       decode(f.deferrable, 'DEFERRABLE', 5 ,'NOT DEFERRABLE', 7, 'DEFERRED', 6) deferrability\n");
+		        sql.append("FROM all_cons_columns pc, all_constraints p,\n");
+		        sql.append("     all_cons_columns fc, all_constraints f\n");
+		        sql.append("WHERE 1 = 1\n");
+		        if (cacheType.get() == null || cacheType.get().equals(CacheType.NO_CACHE)) {
+		        	 sql.append("      AND p.table_name = ").append(SQL.quote(table)).append("\n");
+		        }
+		        sql.append("      AND p.owner = ").append(SQL.quote(schema)).append("\n");
+		        sql.append("      AND f.constraint_type = 'R'\n");
+		        sql.append("      AND p.owner = f.r_owner\n");
+		        sql.append("      AND p.constraint_name = f.r_constraint_name\n");
+		        sql.append("      AND p.constraint_type in ('P', 'U')\n");
+		        sql.append("      AND pc.owner = p.owner\n");
+		        sql.append("      AND pc.constraint_name = p.constraint_name\n");
+		        sql.append("      AND pc.table_name = p.table_name\n");
+		        sql.append("      AND fc.owner = f.owner\n");
+		        sql.append("      AND fc.constraint_name = f.constraint_name\n");
+		        sql.append("      AND fc.table_name = f.table_name\n");
+		        sql.append("      AND fc.position = pc.position\n");
+		        sql.append("ORDER BY pktable_schem, pktable_name, key_seq");
+		        
+		        logger.debug("getExportedKeys() sql statement was: " + sql.toString());
+		        rs = stmt.executeQuery(sql.toString());
+		        
+		        CachedRowSet result = new CachedRowSet();
+		        result.populate(rs);
+		        
+		        if (cacheType.get() == null || cacheType.equals(CacheType.NO_CACHE)) {
+		        	return result;
+		        } else {
+		        	importedAndExportedKeysCache = result;
+		        }
+	        }
 	        
-	        logger.debug("getExportedKeys() sql statement was: " + sql.toString());
-	        rs = stmt.executeQuery(sql.toString());
 			CachedRowSet crs = new CachedRowSet();
-			crs.populate(rs);
+			RowFilter filter = new RowFilter() {
+				public boolean acceptsRow(Object[] row) {
+					// expecting row[2] to be PK_TABLE_NAME
+					return table.equals(row[2]);
+				}
+			};
+			crs.populate(importedAndExportedKeysCache, filter);
+			importedAndExportedKeysCache.beforeFirst();
+			
+			return crs;
+		} finally {
+			if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException ex) {
+                    logger.error("Failed to close result set! Squishing this exception: ", ex);
+                }
+            }
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException ex) {
+                    logger.error("Failed to close statement! Squishing this exception: ", ex);
+                }
+            }
+		}
+	}
+
+	/**
+	 * An alternate implementation of
+	 * {@link DatabaseMetaData#getColumns(String, String, String, String)} that
+	 * caches the results and queries the cache in subsequent requests.
+	 */
+	@Override
+	public ResultSet getColumns(String catalog, final String schemaPattern,
+			final String tableNamePattern, final String columnNamePattern)
+			throws SQLException {
+		
+		Statement stmt = null;
+		ResultSet rs = null;
+		try {
+			if (columnsCache == null) {
+				stmt = getConnection().createStatement();
+				
+				StringBuilder sql = new StringBuilder();
+				
+				sql.append("SELECT "); 
+				sql.append("	NULL AS table_cat,\n");
+				sql.append("	t.owner AS table_schem,\n");
+				sql.append("	t.table_name AS table_name,\n");
+				sql.append("	t.column_name AS column_name,\n");
+				sql.append("	DECODE (t.data_type, 'CHAR', 1, 'VARCHAR2', 12, 'NUMBER', 3, 'LONG', -1, 'DATE', 91, 'RAW', -3, 'LONG RAW', -4, 'BLOB', 2004, 'CLOB', 2005, 'BFILE', -13, 'FLOAT', 6, 'TIMESTAMP(6)', 93, 'TIMESTAMP(6) WITH TIME ZONE', -101, 'TIMESTAMP WITH LOCAL TIME ZONE', -102, 'INTERVAL YEAR(2) TO MONTH', -103, 'INTERVAL DAY(2) TO SECOND(6)', -104, 'BINARY_FLOAT', 100, 'BINARY_DOUBLE', 101, 1111)\n");
+				sql.append("	AS data_type,\n"); 
+				sql.append("	t.data_type AS type_name,\n");
+				sql.append("	DECODE (t.data_precision, null, t.data_length, t.data_precision) AS column_size,\n");
+				sql.append("	0 AS buffer_length,\n");
+				sql.append("	t.data_scale AS decimal_digits,\n");
+				sql.append("	10 AS num_prec_radix,\n");
+				sql.append("	DECODE (t.nullable, 'N', 0, 1) AS nullable,\n");
+				sql.append("	c.comments AS remarks,\n");
+				sql.append("	t.data_default AS column_def,\n");
+				sql.append("	0 AS sql_data_type,\n");
+				sql.append("	0 AS sql_datetime_sub,\n");
+				sql.append("	t.data_length AS char_octet_length,\n");
+				sql.append("	t.column_id AS ordinal_position,\n");
+				sql.append("	DECODE (t.nullable, 'N', 'NO', 'YES') AS is_nullable\n");
+				sql.append("FROM\n");
+				sql.append("	all_tab_columns t,\n");
+				sql.append("	all_col_comments c\n");
+				sql.append("WHERE\n");
+				if (schemaPattern != null) sql.append("	t.owner LIKE ").append(SQL.quote(schemaPattern)).append(" ESCAPE '/'\n");
+				if (hidingRecycleBinTables) sql.append("	AND t.table_name NOT LIKE 'BIN$%' ESCAPE '/'\n");
+				if (cacheType.get() == null || cacheType.get().equals(CacheType.NO_CACHE)) {
+					sql.append("	AND t.table_name LIKE ").append(SQL.quote(tableNamePattern)).append(" ESCAPE '/'\n");
+					sql.append("	AND t.column_name LIKE ").append(SQL.quote(columnNamePattern)).append(" ESCAPE '/'\n");
+				}
+				sql.append("	AND t.owner=c.owner (+)\n");
+				sql.append("	AND t.table_name=c.table_name (+)\n");
+				sql.append("	AND t.column_name = c.column_name (+)\n");
+				sql.append("ORDER BY\n");
+				sql.append("	table_schem, table_name, ordinal_position");
+				
+				logger.debug("getExportedKeys() sql statement was: \n" + sql.toString());
+
+				stmt.setFetchSize(1000);
+				rs = stmt.executeQuery(sql.toString());
+		        
+				CachedRowSet result = new CachedRowSet();
+		        result.populate(rs);
+		        
+		        if (cacheType.get() == null || cacheType.equals(CacheType.NO_CACHE)) {
+		        	return result;
+		        } else {
+		        	columnsCache = result;
+		        }
+			}
+	        
+	        CachedRowSet crs = new CachedRowSet();
+			RowFilter filter = new RowFilter() {
+				public boolean acceptsRow(Object[] row) {
+					// expecting row[2] to be FK_TABLE_NAME
+					
+					// Here, we are simulating the behaviour of
+					// t.table_name LIKE 'tableNamePattern'
+					String tablePattern = tableNamePattern.replaceAll("%", ".*");
+					Pattern p = Pattern.compile(tablePattern);
+					Matcher m = p.matcher(row[2].toString());
+					boolean result = m.matches();
+					
+					// Here, we are simulating the behaviour of
+					// t.column_name LIKE 'columnNamePattern'
+					String columnPattern = columnNamePattern.replace("%", ".*");
+					p = Pattern.compile(columnPattern);
+					m = p.matcher(row[3].toString());
+					result &= m.matches();
+					
+					return result;
+				}
+			};
+			crs.populate(columnsCache, filter);
+			columnsCache.beforeFirst();
 			
 			return crs;
 		} finally {

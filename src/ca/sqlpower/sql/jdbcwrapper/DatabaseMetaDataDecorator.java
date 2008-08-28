@@ -56,6 +56,33 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      */
     protected DatabaseMetaData databaseMetaData;
 
+
+	/**
+	 * An enumeration of caching behaviours for the DatabaseMetaData. For now,
+	 * we just have: 
+	 * <p>
+	 * <li>{@link CacheType#NO_CACHE} - Do not use caching at all.
+	 * Always return metadata straight form the database</li> 
+	 * <p>
+	 * <li>{@link CacheType#EAGER_CACHE} - If the cache is empty, then populate it
+	 * from the database. All subsequent database metadata queries will use the
+	 * cache, and not the database.</li>
+	 */
+    public static enum CacheType { NO_CACHE, EAGER_CACHE };
+
+	/**
+	 * A ThreadLocal variable used to indicate to the DatabaseMetaData
+	 * implementation on whether to use metadata caching or not for performance.
+	 * Client code should use {@link #putHint(String, Object)} to set the value.
+	 */
+    protected static ThreadLocal<CacheType> cacheType = new ThreadLocal<CacheType>();
+
+    /**
+     * The key used to set the {@link CacheType} hint when using
+     * {@link #putHint(String, Object)} 
+     */
+    public static final String CACHE_TYPE = "cacheType";
+    
     /**
      * Creates a DatabaseMetaDataDecorator which delegates operations to the given delegate.
      * 
@@ -1357,5 +1384,16 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      */
     public boolean usesLocalFiles() throws SQLException {
         return databaseMetaData.usesLocalFiles();
+    }
+    
+    
+    public static void putHint(String key, Object value) {
+    	if (key.equals(CACHE_TYPE)) {
+    		if (value instanceof CacheType) {
+    			cacheType.set((CacheType)value);
+    		} else {
+    			cacheType.set(null);
+    		}
+    	}
     }
 }
