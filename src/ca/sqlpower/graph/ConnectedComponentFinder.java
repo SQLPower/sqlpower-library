@@ -32,8 +32,11 @@
 
 package ca.sqlpower.graph;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.log4j.Logger;
 
@@ -45,23 +48,50 @@ public class ConnectedComponentFinder<V, E> {
 
     private static final Logger logger = Logger.getLogger(ConnectedComponentFinder.class);
     
+    /**
+     * The set that stores the vertexes in find Connected Components. These vertexes
+     * will make a graph disconnected graph in the model.
+     */
+    private final Set<V> innerComponentSet;
+    
+    /**
+     * This set stores the inner component sets which then makes up the collection of
+     * all the graphs in the model.
+     */
+    private final Set<Set<V>> componentSet;
+    
+    /**
+     * A comparator for the components in the sets. This is used if we want to sort the
+     * sets as we find the connected components.
+     */
+    private Comparator<V> comparator;
+    
+    public ConnectedComponentFinder() {
+    	innerComponentSet = new HashSet<V>();
+    	componentSet = new HashSet<Set<V>>();
+    	comparator = null;
+    }
+    
+    public ConnectedComponentFinder(Comparator<V> c) {
+    	innerComponentSet = new TreeSet<V>(c);
+    	componentSet = new TreeSet<Set<V>>(new FirstElementSetComparator<V>(c));
+    	comparator = c;
+    }
+    
     public Set<Set<V>> findConnectedComponents(GraphModel<V, E> model) {
         
         // all nodes in the graph that we have not yet assigned to a component
         final Set<V> undiscovered = new HashSet<V>();
         undiscovered.addAll(model.getNodes());
+        
+        innerComponentSet.clear();
+        componentSet.clear();
 
-        // the current component of the graph we're discovering using the BFS
-        final Set<V> thisComponent = new HashSet<V>();
-        
-        // the components we've finished discovering
-        Set<Set<V>> components = new HashSet<Set<V>>();
-        
         BreadthFirstSearch<V, E> bfs = new BreadthFirstSearch<V, E>();
         bfs.addBreadthFirstSearchListener(new BreadthFirstSearchListener<V>() {
             public void nodeDiscovered(V node) {
                 undiscovered.remove(node);
-                thisComponent.add(node);
+                innerComponentSet.add(node);
             }
         });
         
@@ -73,13 +103,27 @@ public class ConnectedComponentFinder<V, E> {
             bfs.performSearch(model, node);
             
             if (logger.isDebugEnabled()) {
-                logger.debug("  Search found "+thisComponent.size()+" nodes");
+                logger.debug("  Search found "+innerComponentSet.size()+" nodes");
             }
             
-            components.add(new HashSet<V>(thisComponent));
-            thisComponent.clear();
+            Set<V> innerSet;
+            if (comparator == null) {
+            	innerSet = new HashSet<V>();
+            } else {
+            	innerSet = new TreeSet<V>(comparator);
+            }
+            innerSet.addAll(innerComponentSet);
+            componentSet.add(innerSet);
+            innerComponentSet.clear();
         }
         
-        return components;
+        Set<Set<V>> outerSet;
+        if (comparator == null) {
+        	outerSet = new HashSet<Set<V>>();
+        } else {
+        	outerSet = new TreeSet<Set<V>>(new FirstElementSetComparator<V>(comparator));
+        }
+        outerSet.addAll(componentSet);
+        return outerSet;
     }
 }
