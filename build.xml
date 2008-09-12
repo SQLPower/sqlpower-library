@@ -65,7 +65,6 @@
 		</junitreport>
 	</target>
 	
-	
 	<target name="jar" depends="compile, test">
 		<jar jarfile="${build}/${dist.jar}" basedir="${build}" 
 			includes="META-INF/*,ca/**">
@@ -82,5 +81,62 @@
 
 	<target name="dist-clean" depends="clean">
 		<delete dir="${dist.dir}"/>
+	</target>
+	
+	<target name="javadoc" 
+		description="Generate the Javadoc documentation for the MatchMaker API"
+		depends="compile">
+		<mkdir dir="${dist.dir}/doc/api"/>
+		<javadoc sourcepath="${src}" destdir="${dist.dir}/doc/api"
+			packagenames="ca.sqlpower.*"
+			maxmemory="100m"
+			windowtitle="ca.sqlpower.* SQL Power Library"
+			Version="true" Author="true" Use="true"
+			Overview="html/overview.html"
+			classpathref="test.classpath"
+			>
+			<packageset dir="${src}" defaultexcludes="yes">
+				<include name="ca/sqlpower/**" />
+				<exclude name="regress/**"/>
+			</packageset>
+			<bottom><![CDATA[<i>Copyright &#169; 2003-2008 SQL Power Group Inc. <a href="http://www.sqlpower.ca/">www.sqlpower.ca</a>]]></bottom>
+		</javadoc>
+	</target>
+	
+	<target name="javadoc.with.umlgraph" 
+		description="Generate the Javadoc documentation for the MatchMaker API along with UML diagrams generated using UMLGraph"
+		depends="compile">
+		<mkdir dir="${dist.dir}/doc/api"/>
+		<javadoc sourcepath="${src}" destdir="${dist.dir}/doc/api"
+			packagenames="ca.sqlpower.*"
+			maxmemory="100m"
+			windowtitle="ca.sqlpower.* SQL Power Library"
+			Version="true" Author="true" Use="true"
+			Overview="html/overview.html"
+			classpathref="test.classpath"
+			>
+			<doclet name="gr.spinellis.umlgraph.doclet.UmlGraphDoc"
+    		  path="buildlib/UmlGraph.jar">
+    	        <param name="-attributes" />
+    	        <param name="-operations" />
+    	        <param name="-qualify" />
+    	        <param name="-types" />
+    	        <param name="-visibility" />
+    	    </doclet>
+			<packageset dir="${src}" defaultexcludes="yes">
+				<include name="ca/sqlpower/**" />
+				<exclude name="regress/**"/>
+			</packageset>
+			<bottom><![CDATA[<i>Copyright &#169; 2003-2008 SQL Power Group Inc. <a href="http://www.sqlpower.ca/">www.sqlpower.ca</a>]]></bottom>
+		</javadoc>
+		
+		<apply executable="dot" dest="${dist.dir}/doc" parallel="false">
+			<arg value="-Tpng"/>
+			<arg value="-o"/>
+			<targetfile/>
+			<srcfile/>
+			<fileset dir="${dist.dir}/doc" includes="*.dot"/>
+			<mapper type="glob" from="*.dot" to="*.png"/>
+		</apply>
 	</target>
 </project>
