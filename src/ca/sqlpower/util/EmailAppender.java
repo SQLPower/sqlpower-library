@@ -32,6 +32,8 @@
 
 package ca.sqlpower.util;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -39,6 +41,7 @@ import javax.mail.MessagingException;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.apache.log4j.spi.LoggingEvent;
 
 import ca.sqlpower.security.EmailNotification.EmailRecipient;
@@ -99,7 +102,13 @@ public class EmailAppender extends AppenderSkeleton {
 		}
 		email.appendToEmailBody(new Date(e.timeStamp).toString() +
 			" " + e.getLevel() + " " + e.getRenderedMessage());
-		
+		String[] throwableStrRep = e.getThrowableStrRep();
+		if (throwableStrRep != null) {
+		    for (String stackTraceLine : throwableStrRep) {
+		        email.appendToEmailBody("\n");
+		        email.appendToEmailBody(stackTraceLine);
+		    }
+		}
 		if (e.getLevel().equals(Level.WARN) && status.equals(GREEN_STATUS)) {
 			status = YELLOW_STATUS;
 		} else if (e.getLevel().equals(Level.ERROR)) {
@@ -143,4 +152,22 @@ public class EmailAppender extends AppenderSkeleton {
 		return false;
 	}
 
+	/**
+	 * Just a demonstration of the email appender. Logs a message and an exception, and
+	 * prints the resulting email to System.out. Doesn't actually send email--this
+	 * only happens when you close the appender.
+	 */
+	public static void main(String[] args) {
+        Logger logger = Logger.getLogger("test");
+        List<EmailRecipient> gRecipients = new ArrayList<EmailRecipient>();
+        gRecipients.add(new EmailRecipient("Jeve Stobs", "steve@apple.com"));
+        EmailAppender emailAppender = new EmailAppender(
+                new Email("mail.mail.mail"), "test "+new Date(),
+                Collections.EMPTY_LIST, Collections.EMPTY_LIST,
+                gRecipients);
+        logger.addAppender(emailAppender);
+        logger.info("Test message");
+        logger.info("test message with exception", new Exception());
+        System.out.println(emailAppender.email);
+    }
 }
