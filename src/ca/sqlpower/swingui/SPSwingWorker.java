@@ -129,7 +129,7 @@ public abstract class SPSwingWorker implements Runnable {
 		this.cleanupExceptionMessage = cleanupExceptionMessage;
 	}
 
-	public synchronized boolean isCanceled() {
+	public synchronized boolean isCancelled() {
 		return cancelled;
 	}
 
@@ -141,10 +141,6 @@ public abstract class SPSwingWorker implements Runnable {
 		this.cancelled = cancelled;
 	}
     
-    public synchronized boolean isCancelled() {
-        return cancelled;
-    }
-
 	public SPSwingWorker getNextProcess() {
 		return nextProcess;
 	}
