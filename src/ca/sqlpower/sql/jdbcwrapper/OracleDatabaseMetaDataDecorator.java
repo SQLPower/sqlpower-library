@@ -304,7 +304,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	}
 	
 	@Override
-	public ResultSet getImportedKeys(String catalog, String schema, final String table)
+	public ResultSet getImportedKeys(String catalog, final String schema, final String table)
 			throws SQLException {
 		Statement stmt = null;
 		ResultSet rs = null;
@@ -338,8 +338,10 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		        sql.append("WHERE 1 = 1\n");
 		        if (cacheType.get() == null || cacheType.get().equals(CacheType.NO_CACHE)) {
 		        	sql.append("	  AND f.table_name = ").append(SQL.quote(table)).append("\n");
+		        	if (schema != null) {
+		        		sql.append("      AND f.owner = ").append(SQL.quote(schema)).append("\n");
+		        	}
 		        }
-		        sql.append("      AND f.owner = ").append(SQL.quote(schema)).append("\n");
 		        sql.append("      AND f.constraint_type = 'R'\n");
 		        sql.append("      AND p.owner = f.r_owner\n");
 		        sql.append("      AND p.constraint_name = f.r_constraint_name\n");
@@ -368,8 +370,15 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 			CachedRowSet crs = new CachedRowSet();
 			RowFilter filter = new RowFilter() {
 				public boolean acceptsRow(Object[] row) {
+					boolean result;
+					// expecting row[5] to be FK_TABLE_SCHEM
 					// expecting row[6] to be FK_TABLE_NAME
-					return table.equals(row[6]);
+					if (schema != null){
+						result = (schema.equals(row[5]) && table.equals(row[6]));
+					} else {
+						result = table.equals(row[6]);
+					}
+					return result;
 				}
 			};
 			crs.populate(importedAndExportedKeysCache, filter);
@@ -395,7 +404,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	}
 	
 	@Override
-	public ResultSet getExportedKeys(String catalog, String schema, final String table)
+	public ResultSet getExportedKeys(String catalog, final String schema, final String table)
 			throws SQLException {
 		Statement stmt = null;
 		ResultSet rs = null;
@@ -428,9 +437,11 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		        sql.append("     all_cons_columns fc, all_constraints f\n");
 		        sql.append("WHERE 1 = 1\n");
 		        if (cacheType.get() == null || cacheType.get().equals(CacheType.NO_CACHE)) {
-		        	 sql.append("      AND p.table_name = ").append(SQL.quote(table)).append("\n");
+					sql.append("      AND p.table_name = ").append(SQL.quote(table)).append("\n");
+					if (schema != null) {
+						sql.append("      AND p.owner = ").append(SQL.quote(schema)).append("\n");
+		        	}
 		        }
-		        sql.append("      AND p.owner = ").append(SQL.quote(schema)).append("\n");
 		        sql.append("      AND f.constraint_type = 'R'\n");
 		        sql.append("      AND p.owner = f.r_owner\n");
 		        sql.append("      AND p.constraint_name = f.r_constraint_name\n");
@@ -460,8 +471,15 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 			CachedRowSet crs = new CachedRowSet();
 			RowFilter filter = new RowFilter() {
 				public boolean acceptsRow(Object[] row) {
+					boolean result;
+					// expecting row[1] to be PK_TABLE_SCHEM
 					// expecting row[2] to be PK_TABLE_NAME
-					return table.equals(row[2]);
+					if (schema != null){
+						result = (schema.equals(row[1]) && table.equals(row[2]));
+					} else {
+						result = table.equals(row[2]);
+					}
+					return result;
 				}
 			};
 			crs.populate(importedAndExportedKeysCache, filter);
