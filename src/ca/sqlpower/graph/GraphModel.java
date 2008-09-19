@@ -43,9 +43,57 @@ import java.util.Collection;
  */
 public interface GraphModel<V, E> {
 
+    /**
+     * Returns an unmodifiable collection of the edges in this graph. Although
+     * client code is unable to modify the returned collection, the collection
+     * may or may not change as the graph structure changes. Thus, it is best
+     * for clients to frequently request new copies of the edge list rather than
+     * rely on the list staying in sync.
+     */
     Collection<E> getEdges();
+    
+    /**
+     * Returns an unmodifiable collection of the nodes in this graph. Although
+     * client code is unable to modify the returned collection, the collection
+     * may or may not change as the graph structure changes. Thus, it is best
+     * for clients to frequently request new copies of the node list rather than
+     * rely on the list staying in sync.
+     */
     Collection<V> getNodes();
+
+    /**
+     * Returns all nodes reachable from the given node by traversing exactly one
+     * outbound edge. The given node will be included in the returned collection
+     * only if the node is self-referencing.
+     * <p>
+     * Note that calling code must not attempt to modify the returned
+     * collection.
+     * 
+     * @param node
+     *            The node to get the adjacency information for.
+     * @return Nodes adjacent to the given node.
+     */
     Collection<V> getAdjacentNodes(V node);
+    
+    /**
+     * Returns all edges that point from nodes the given node is adjacent to.
+     * <p>
+     * Note that calling code must not attempt to modify the returned
+     * collection.
+     * 
+     * @param node The node to get the inbound edge list for.
+     * @return All inbound edges for the given node.
+     */
     Collection<E> getInboundEdges(V node);
+    
+    /**
+     * Returns all edges that lead to the given node's adjacent nodes.
+     * <p>
+     * Note that calling code must not attempt to modify the returned
+     * collection.
+     * 
+     * @param node The node to get the outbound edge list for.
+     * @return All outbound edges for the given node.
+     */
     Collection<E> getOutboundEdges(V node);
 }
