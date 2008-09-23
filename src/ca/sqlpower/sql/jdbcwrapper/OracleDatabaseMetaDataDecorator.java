@@ -35,6 +35,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -68,6 +69,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
     
 	public OracleDatabaseMetaDataDecorator(DatabaseMetaData delegate) {
 		super(delegate);
+		logger.debug("Created new OracleDatabaseMetaDataDecorator");
 	}
 	
 	private static final int DREADED_ORACLE_ERROR_CODE_1722 = 1722;
@@ -87,14 +89,16 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	 * either, we cache the entire key list for a schema and then query the cache
 	 * in subsequent queries for the lifetime of the decorator object.
 	 */
-    private CachedRowSet importedAndExportedKeysCache;
+    private static final Map<CacheKey, CachedRowSet> importedAndExportedKeysCache =
+        Collections.synchronizedMap(new HashMap<CacheKey, CachedRowSet>());
     
     /**
 	 * A cache of column metadata. When queried the first time, we cache the
 	 * entire column list for a schema and then query the cache in subsequent
 	 * queries for the lifetime of the decorator object.
 	 */
-    private CachedRowSet columnsCache;
+    private static final Map<CacheKey, CachedRowSet> columnsCache =
+        Collections.synchronizedMap(new HashMap<CacheKey, CachedRowSet>());
     
 	@Override
 	public ResultSet getTypeInfo() throws SQLException {
@@ -263,8 +267,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	 * This uses an index name and a table name to find out the index type. The
 	 * index type is returned as a map of Index name and index types
 	 */
-	private Map<String, String> getIndexType(String tableName)
-			throws SQLException {
+	private Map<String, String> getIndexType(String tableName) throws SQLException {
 		Map<String, String> indexTypes = new HashMap<String, String>();
 		Statement stmt = null;
 		ResultSet rs = null;
@@ -306,13 +309,14 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	@Override
 	public ResultSet getImportedKeys(String catalog, final String schema, final String table)
 			throws SQLException {
+	    CacheKey cacheKey = new CacheKey(getConnection().getMetaData(), catalog, schema);
 		Statement stmt = null;
 		ResultSet rs = null;
 		try {
 			stmt = getConnection().createStatement();
 	        StringBuilder sql = new StringBuilder();
 	        
-	        if (importedAndExportedKeysCache == null) {
+	        if (importedAndExportedKeysCache.get(cacheKey) == null) {
 		        /*
 				 * Oracle's JDBC drivers does not find relationships on alternate
 				 * keys. The following query is based on the query Oracle's driver
@@ -364,9 +368,10 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		        if (cacheType.get() == null || cacheType.equals(CacheType.NO_CACHE)) {
 		        	return result;
 		        } else {
-		        	importedAndExportedKeysCache = result;
+		        	importedAndExportedKeysCache.put(cacheKey, result);
 		        }
 	        }
+	        
 			CachedRowSet crs = new CachedRowSet();
 			RowFilter filter = new RowFilter() {
 				public boolean acceptsRow(Object[] row) {
@@ -381,8 +386,12 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 					return result;
 				}
 			};
-			crs.populate(importedAndExportedKeysCache, filter);
-			importedAndExportedKeysCache.beforeFirst();
+			
+			CachedRowSet cachedResult = importedAndExportedKeysCache.get(cacheKey);
+			synchronized (cachedResult) {
+			    crs.populate(cachedResult, filter);
+			    cachedResult.beforeFirst();
+            }
 			
 			return crs;
 		} finally {
@@ -406,13 +415,14 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	@Override
 	public ResultSet getExportedKeys(String catalog, final String schema, final String table)
 			throws SQLException {
+        CacheKey cacheKey = new CacheKey(getConnection().getMetaData(), catalog, schema);
 		Statement stmt = null;
 		ResultSet rs = null;
 		try {
 			stmt = getConnection().createStatement();
 	        StringBuilder sql = new StringBuilder();
 	        
-	        if (importedAndExportedKeysCache == null) {
+	        if (importedAndExportedKeysCache.get(cacheKey) == null) {
 		        /*
 				 * Oracle's JDBC drivers does not find relationships on alternate
 				 * keys. The following query is based on the query Oracle's driver
@@ -464,7 +474,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		        if (cacheType.get() == null || cacheType.equals(CacheType.NO_CACHE)) {
 		        	return result;
 		        } else {
-		        	importedAndExportedKeysCache = result;
+		        	importedAndExportedKeysCache.put(cacheKey, result);
 		        }
 	        }
 	        
@@ -482,8 +492,12 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 					return result;
 				}
 			};
-			crs.populate(importedAndExportedKeysCache, filter);
-			importedAndExportedKeysCache.beforeFirst();
+
+			CachedRowSet cachedResult = importedAndExportedKeysCache.get(cacheKey);
+            synchronized (cachedResult) {
+                crs.populate(cachedResult, filter);
+                cachedResult.beforeFirst();
+            }
 			
 			return crs;
 		} finally {
@@ -514,10 +528,15 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 			final String tableNamePattern, final String columnNamePattern)
 			throws SQLException {
 		
+	    logger.debug("getColumns("+catalog+", "+schemaPattern+", "+tableNamePattern+", "+columnNamePattern+") cache mode=" + cacheType.get());
+	    
+	    final CacheKey cacheKey = new CacheKey(getConnection().getMetaData(), catalog, schemaPattern);
+	    
 		Statement stmt = null;
 		ResultSet rs = null;
 		try {
-			if (columnsCache == null) {
+			if (columnsCache.get(cacheKey) == null) {
+			    logger.debug("No cached data found. Querying data dictionary...");
 				stmt = getConnection().createStatement();
 				
 				StringBuilder sql = new StringBuilder();
@@ -558,7 +577,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 				sql.append("ORDER BY\n");
 				sql.append("	table_schem, table_name, ordinal_position");
 				
-				logger.debug("getExportedKeys() sql statement was: \n" + sql.toString());
+				logger.debug("getColumns() sql statement was: \n" + sql.toString());
 
 				stmt.setFetchSize(1000);
 				rs = stmt.executeQuery(sql.toString());
@@ -569,34 +588,36 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		        if (cacheType.get() == null || cacheType.equals(CacheType.NO_CACHE)) {
 		        	return result;
 		        } else {
-		        	columnsCache = result;
+		        	columnsCache.put(cacheKey, result);
 		        }
 			}
 	        
 	        CachedRowSet crs = new CachedRowSet();
 			RowFilter filter = new RowFilter() {
+			    
+			    // Here, we are simulating the behaviour of
+			    // t.table_name LIKE 'tableNamePattern'
+			    final String tablePattern = tableNamePattern.replaceAll("%", ".*");
+			    final Pattern tp = Pattern.compile(tablePattern);
+			    
+			    // Here, we are simulating the behaviour of
+			    // t.column_name LIKE 'columnNamePattern'
+			    String columnPattern = columnNamePattern.replace("%", ".*");
+			    final Pattern cp = Pattern.compile(columnPattern);
+			    
 				public boolean acceptsRow(Object[] row) {
 					// expecting row[2] to be FK_TABLE_NAME
-					
-					// Here, we are simulating the behaviour of
-					// t.table_name LIKE 'tableNamePattern'
-					String tablePattern = tableNamePattern.replaceAll("%", ".*");
-					Pattern p = Pattern.compile(tablePattern);
-					Matcher m = p.matcher(row[2].toString());
-					boolean result = m.matches();
-					
-					// Here, we are simulating the behaviour of
-					// t.column_name LIKE 'columnNamePattern'
-					String columnPattern = columnNamePattern.replace("%", ".*");
-					p = Pattern.compile(columnPattern);
-					m = p.matcher(row[3].toString());
-					result &= m.matches();
-					
-					return result;
+				    return tp.matcher(row[2].toString()).matches() &&
+				            cp.matcher(row[3].toString()).matches();
 				}
 			};
-			crs.populate(columnsCache, filter);
-			columnsCache.beforeFirst();
+			
+			logger.debug("Filtering cache...");
+			CachedRowSet cachedResult = columnsCache.get(cacheKey);
+			synchronized (cachedResult) {
+			    crs.populate(cachedResult, filter);
+			    cachedResult.beforeFirst();
+            }
 			
 			return crs;
 		} finally {
