@@ -190,7 +190,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		CachedRowSet newRowSet = new CachedRowSet();
 		newRowSet.rsmd = rsmd;
 		if (c != null) {
-			logger.info("[34mCREATING NEW ARRAYLIST[0m");
+			logger.info("CREATING NEW ARRAYLIST");
 			newRowSet.data = new ArrayList(data);
 			Collections.sort(newRowSet.data, c);
 		} else {
