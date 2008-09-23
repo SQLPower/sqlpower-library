@@ -38,9 +38,9 @@ import java.sql.Statement;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.collections.SoftRefHashMap;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.sql.CachedRowSet;
@@ -87,20 +87,20 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
     /**
 	 * A cache of the imported and exported key metadata. When querying for
 	 * either, we cache the entire key list for a schema and then query the cache
-	 * in subsequent queries for the lifetime of the decorator object.
+	 * in subsequent queries.
 	 */
     private static final Map<CacheKey, CachedRowSet> importedAndExportedKeysCache =
-        Collections.synchronizedMap(new HashMap<CacheKey, CachedRowSet>());
+        Collections.synchronizedMap(new SoftRefHashMap());
     
     /**
 	 * A cache of column metadata. When queried the first time, we cache the
 	 * entire column list for a schema and then query the cache in subsequent
-	 * queries for the lifetime of the decorator object.
+	 * queries.
 	 */
-    private static final Map<CacheKey, CachedRowSet> columnsCache =
-        Collections.synchronizedMap(new HashMap<CacheKey, CachedRowSet>());
+    private static final Map<CacheKey, IndexedCachedRowSet> columnsCache =
+        Collections.synchronizedMap(new SoftRefHashMap());
     
-	@Override
+    @Override
 	public ResultSet getTypeInfo() throws SQLException {
 		try {
 			return super.getTypeInfo();
@@ -315,8 +315,9 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		try {
 			stmt = getConnection().createStatement();
 	        StringBuilder sql = new StringBuilder();
-	        
-	        if (importedAndExportedKeysCache.get(cacheKey) == null) {
+	        CachedRowSet cachedResult = importedAndExportedKeysCache.get(cacheKey);
+
+	        if (cachedResult == null) {
 		        /*
 				 * Oracle's JDBC drivers does not find relationships on alternate
 				 * keys. The following query is based on the query Oracle's driver
@@ -369,6 +370,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		        	return result;
 		        } else {
 		        	importedAndExportedKeysCache.put(cacheKey, result);
+		        	cachedResult = result;
 		        }
 	        }
 	        
@@ -387,7 +389,6 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 				}
 			};
 			
-			CachedRowSet cachedResult = importedAndExportedKeysCache.get(cacheKey);
 			synchronized (cachedResult) {
 			    crs.populate(cachedResult, filter);
 			    cachedResult.beforeFirst();
@@ -421,8 +422,9 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		try {
 			stmt = getConnection().createStatement();
 	        StringBuilder sql = new StringBuilder();
-	        
-	        if (importedAndExportedKeysCache.get(cacheKey) == null) {
+	        CachedRowSet cachedResult = importedAndExportedKeysCache.get(cacheKey);
+
+	        if (cachedResult == null) {
 		        /*
 				 * Oracle's JDBC drivers does not find relationships on alternate
 				 * keys. The following query is based on the query Oracle's driver
@@ -475,6 +477,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		        	return result;
 		        } else {
 		        	importedAndExportedKeysCache.put(cacheKey, result);
+		        	cachedResult = result;
 		        }
 	        }
 	        
@@ -493,7 +496,6 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 				}
 			};
 
-			CachedRowSet cachedResult = importedAndExportedKeysCache.get(cacheKey);
             synchronized (cachedResult) {
                 crs.populate(cachedResult, filter);
                 cachedResult.beforeFirst();
@@ -535,7 +537,8 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		Statement stmt = null;
 		ResultSet rs = null;
 		try {
-			if (columnsCache.get(cacheKey) == null) {
+		    IndexedCachedRowSet cachedResult = columnsCache.get(cacheKey);
+			if (cachedResult == null) {
 			    logger.debug("No cached data found. Querying data dictionary...");
 				stmt = getConnection().createStatement();
 				
@@ -582,17 +585,17 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 				stmt.setFetchSize(1000);
 				rs = stmt.executeQuery(sql.toString());
 		        
-				CachedRowSet result = new CachedRowSet();
-		        result.populate(rs);
-		        
 		        if (cacheType.get() == null || cacheType.equals(CacheType.NO_CACHE)) {
+		            CachedRowSet result = new CachedRowSet();
+		            result.populate(rs);
 		        	return result;
 		        } else {
+		            IndexedCachedRowSet result = new IndexedCachedRowSet(rs, 3);
 		        	columnsCache.put(cacheKey, result);
+		        	cachedResult = result;
 		        }
 			}
 	        
-	        CachedRowSet crs = new CachedRowSet();
 			RowFilter filter = new RowFilter() {
 			    
 			    // Here, we are simulating the behaviour of
@@ -607,19 +610,28 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 			    
 				public boolean acceptsRow(Object[] row) {
 					// expecting row[2] to be FK_TABLE_NAME
+					
 				    return tp.matcher(row[2].toString()).matches() &&
 				            cp.matcher(row[3].toString()).matches();
 				}
 			};
 			
 			logger.debug("Filtering cache...");
-			CachedRowSet cachedResult = columnsCache.get(cacheKey);
+			CachedRowSet filtered;
 			synchronized (cachedResult) {
-			    crs.populate(cachedResult, filter);
+			    if (!tableNamePattern.contains("%")) {
+			        // exact match requested--we can use the index for table name
+			        // (filter still applies to column name)
+			        filtered = cachedResult.extractSingleTable(tableNamePattern);
+			    } else {
+			        // have to search every row for wildcard match on table name
+			        filtered = new CachedRowSet();
+			        filtered.populate(cachedResult, filter);
+			    }
 			    cachedResult.beforeFirst();
             }
 			
-			return crs;
+			return filtered;
 		} finally {
 			if (rs != null) {
                 try {

@@ -63,7 +63,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	/**
 	 * The current row.  This gets updated by next().
 	 */
-	private Object[] curRow;
+	protected Object[] curRow;
 
 	/**
 	 * The current column.  This gets set to -1 (invalid) in next(),
