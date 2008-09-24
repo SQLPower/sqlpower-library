@@ -40,7 +40,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.apache.commons.collections.SoftRefHashMap;
+import org.apache.commons.collections.map.AbstractReferenceMap;
+import org.apache.commons.collections.map.ReferenceMap;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.sql.CachedRowSet;
@@ -90,7 +91,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	 * in subsequent queries.
 	 */
     private static final Map<CacheKey, CachedRowSet> importedAndExportedKeysCache =
-        Collections.synchronizedMap(new SoftRefHashMap());
+        Collections.synchronizedMap(new ReferenceMap(AbstractReferenceMap.HARD, AbstractReferenceMap.SOFT));
     
     /**
 	 * A cache of column metadata. When queried the first time, we cache the
@@ -98,7 +99,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	 * queries.
 	 */
     private static final Map<CacheKey, IndexedCachedRowSet> columnsCache =
-        Collections.synchronizedMap(new SoftRefHashMap());
+        Collections.synchronizedMap(new ReferenceMap(AbstractReferenceMap.HARD, AbstractReferenceMap.SOFT));
     
     @Override
 	public ResultSet getTypeInfo() throws SQLException {
