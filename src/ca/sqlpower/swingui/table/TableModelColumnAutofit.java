@@ -60,7 +60,8 @@ public class TableModelColumnAutofit extends AbstractTableModel{
         this.tableModel = tableModel;
         this.table = table;
         tableHeader = table.getTableHeader();
-        mouseListener = new MouseListener();        
+        mouseListener = new MouseListener();  
+        tableHeader.addMouseListener(mouseListener);
     }
     
     public int getRowCount() {
