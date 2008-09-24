@@ -15,5 +15,11 @@ public interface TableTextConverter {
      * row and column of a table.
      */
     String getTextForCell(int row, int col);
+    
+    /**
+     * Returns the index in the model that corresponds to the index
+     * that we are looking at in the view. This is for if the rows in
+     * the model are rearranged in the view.
+     */
     int modelIndex(int viewIndex);
 }
