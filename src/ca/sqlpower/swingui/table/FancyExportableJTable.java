@@ -191,5 +191,29 @@ public class FancyExportableJTable extends EditableJTable {
 	public FancyExportableJTable(TableModel model) {
 		this(model, null);
 	}
+	
+	@Override
+	public void setModel(TableModel model) {
+		
+		//Set the inner TableModel wrapped by the search and sort decorators
+		//to keep the search and sort decorators attached to their document 
+		//and header.
+		TableModel innerModel = model;
+		if (getModel() instanceof TableModelSearchDecorator) {
+			innerModel = ((TableModelSearchDecorator) getModel()).getTableModel();
+		}
+		if (innerModel instanceof TableModelSortDecorator) {
+			((TableModelSortDecorator) innerModel).setTableModel(model);
+			super.setModel(getModel());
+		} else {
+			super.setModel(model);
+		}
+	}
+	
+	@Override
+	public void createDefaultColumnsFromModel() {
+		super.createDefaultColumnsFromModel();
+		TableUtils.fitColumnWidths(this, 0);
+	}
 
 }
