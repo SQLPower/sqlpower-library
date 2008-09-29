@@ -60,7 +60,7 @@ public class ResultSetTableModel extends AbstractTableModel {
 		try {
 			int prevRow = rs.getRow();
 			rs.afterLast();
-			rowCount = rs.getRow() - 1;
+			rowCount = rs.getRow();
 			rs.absolute(prevRow);
 		} catch (SQLException e) {
 			throw new RuntimeException("Could not access the result set given to the table model", e);
