@@ -7,7 +7,8 @@
 	<property name="build.compiler" value="modern"/>
 	<property name="dist.jar" value="sqlpower_library.jar"/>
 	<property name="tests" value="regress"/>
-
+	<property name="reports.dir" value="${dist.dir}/reports"/>
+	
 	<path id="compile.classpath">
 		<fileset dir="lib">
 			<include name="*.jar"/>
@@ -49,7 +50,7 @@
 	</target>
 	
 	<target name="test" depends="compile-tests">
-		<property name="reports.junit" value="${dist.dir}/reports/junit"/>
+		<property name="reports.junit" value="${reports.dir}/junit"/>
 		<mkdir dir="${reports.junit}"/>
 		<!-- Output all System.out and System.err messages -->
 	   <junit printsummary="on" showoutput="no">
@@ -76,7 +77,7 @@
 		</jar>
 	</target>
 
-	<target name="dist" depends="jar">
+	<target name="dist" depends="jar, pmd, pmd-cpd, findbugs, javadoc">
 		<copy file="${build}/${dist.jar}" todir="${dist.dir}"/>
 	</target>
 
@@ -143,5 +144,63 @@
 			<fileset dir="${dist.dir}/doc" includes="*.dot"/>
 			<mapper type="glob" from="*.dot" to="*.png"/>
 		</apply>
+	</target>
+	
+	<!-- findbugs code checking tool -->
+	<property name="findbugs.home" value="ext-tools/findbugs"/>
+	<property name="findbugs-ant.jar" value="${findbugs.home}/lib/findbugs-ant.jar"/>
+	
+	<target name="findbugs"
+		description="Runs the FindBugs tool, outputs results to a text file"
+		depends="compile">
+		<mkdir dir="${reports.dir}"/>
+		<taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask"
+			classpath="${findbugs-ant.jar}"/>
+		<findbugs home="${findbugs.home}"
+			output="html"
+			outputFile="${reports.dir}/findbugs.html"
+			reportLevel="low"
+			jvmargs="-Xmx512m">  <!-- FindBugs can use up a lot of memory, so adjust the JVM memory here-->
+			<class location="${build}" />
+			<sourcePath path="${src}" />
+			<!-- Classes needed by our code but that we don't want tested -->
+			<systemProperty name="findbugs.maskedfields.locals" value='true'/>
+		</findbugs>
+	</target>
+	
+	<property name="pmd.home" value="ext-tools/pmd"/>
+	<property name="pmd.jar" value="${pmd.home}/lib/pmd-4.2.3.jar"/>
+	
+	<target name="pmd"
+		description="Runs the PMD code checking tool, saving results to a file."
+		>
+	 	<mkdir dir="${reports.dir}"/>
+		<taskdef name="pmd" classname="net.sourceforge.pmd.ant.PMDTask"
+			classpath="${pmd.jar}"/>
+		<property name="pmd-results" value="${reports.dir}/pmd.html"/>
+		<pmd shortFilenames="true" targetjdk="1.5">
+			<ruleset>basic,imports</ruleset>
+			<formatter type="html" toFile="${pmd-results}"/>
+			<fileset dir="${src}">
+				<include name="ca/sqlpower/**/*.java"/>
+			</fileset>
+		</pmd>
+		<echo message="PMD completed, output is in ${pmd-results}."/>
+	</target>
+	
+	<target name="pmd-cpd"
+		description="Runs the PMD Copy/Paste Detection tool, and saves results to a file">
+	 	<mkdir dir="${reports.dir}"/>
+		<taskdef name="cpd" classname="net.sourceforge.pmd.cpd.CPDTask"
+			classpath="${pmd.jar}"/>
+		<property name="cpd-results" value="${reports.dir}/pmd-cpd.xml"/>
+		<cpd encoding="UTF-8" minimumTokenCount="120" format="xml" outputfile="${cpd-results}">
+			<fileset dir="${src}">
+				<include name="ca/sqlpower/**/*.java"/>
+				<exclude name="generated/**.java"/>
+			</fileset>
+		</cpd>
+		<xslt in="${cpd-results}" style="${pmd.home}/etc/xslt/cpdhtml.xslt" out="${reports.dir}/pmd-cpd.html" />
+		<echo message="CPD completed, output is in ${reports}/cpd-ant-results.html."/>
 	</target>
 </project>
