@@ -49,6 +49,10 @@ public class DatabaseListChangeEvent extends EventObject implements java.io.Seri
 		this.dbcs = dbcs;
 		listIndex = index;
 	}
+	
+	public SPDataSource getDataSource() {
+		return dbcs;
+	}
 
 	public int getListIndex() {
 		return listIndex;
