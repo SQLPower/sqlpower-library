@@ -9,6 +9,24 @@
 	<property name="tests" value="regress"/>
 	<property name="reports.dir" value="${dist.dir}/reports"/>
 	
+	<!--
+		Set the format of the findbugs report to html by default
+	-->
+	<condition property="findbugs.report.format" value="html">
+		<not>
+			<isset property="findbugs.report.format"/>
+		</not>
+	</condition>
+	
+	<!--
+		Set the format of the pmd report to html by default
+	-->
+	<condition property="pmd.report.format" value="html">
+		<not>
+			<isset property="pmd.report.format"/>
+		</not>
+	</condition>
+	
 	<path id="compile.classpath">
 		<fileset dir="lib">
 			<include name="*.jar"/>
@@ -157,8 +175,8 @@
 		<taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask"
 			classpath="${findbugs-ant.jar}"/>
 		<findbugs home="${findbugs.home}"
-			output="html"
-			outputFile="${reports.dir}/findbugs.html"
+			output="${findbugs.report.format}"
+			outputFile="${reports.dir}/findbugs.${findbugs.report.format}"
 			reportLevel="low"
 			jvmargs="-Xmx512m">  <!-- FindBugs can use up a lot of memory, so adjust the JVM memory here-->
 			<class location="${build}" />
@@ -177,10 +195,10 @@
 	 	<mkdir dir="${reports.dir}"/>
 		<taskdef name="pmd" classname="net.sourceforge.pmd.ant.PMDTask"
 			classpath="${pmd.jar}"/>
-		<property name="pmd-results" value="${reports.dir}/pmd.html"/>
+		<property name="pmd-results" value="${reports.dir}/pmd.${pmd.report.format}"/>
 		<pmd shortFilenames="true" targetjdk="1.5">
 			<ruleset>basic,imports</ruleset>
-			<formatter type="html" toFile="${pmd-results}"/>
+			<formatter type="${pmd.report.format}" toFile="${pmd-results}"/>
 			<fileset dir="${src}">
 				<include name="ca/sqlpower/**/*.java"/>
 			</fileset>
