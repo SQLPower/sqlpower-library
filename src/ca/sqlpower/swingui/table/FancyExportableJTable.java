@@ -160,7 +160,12 @@ public class FancyExportableJTable extends EditableJTable {
 	 */
 	private TableTextConverter textConverter = new TableTextConverter() {
 		public String getTextForCell(int row, int col) {
-			return getModel().getValueAt(row, col).toString();
+			Object cellValue = getModel().getValueAt(row, col);
+			if (cellValue != null) {
+				return cellValue.toString();
+			} else {
+				return "";
+			}
 		}
 
 		public int modelIndex(int viewIndex) {
