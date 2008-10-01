@@ -32,13 +32,20 @@
 package ca.sqlpower.swingui;
 
 import java.awt.Dimension;
+import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.AbstractAction;
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
@@ -78,6 +85,8 @@ public class SPDataSourcePanel implements DataEntryPanel {
 	private JTextField dbUrlField;
 	private JTextField dbUserField;
 	private JPasswordField dbPassField;
+	private JButton dbTestConnection;
+	private JLabel dbTestResult;
 
 	/**
 	 * Extra data entry fields provided by subclasses. These fields will be
@@ -133,6 +142,39 @@ public class SPDataSourcePanel implements DataEntryPanel {
         	platformSpecificOptions.setTemplate(dbcs.getParentType());
         }
         
+        dbTestResult = new JLabel();
+        dbTestConnection = new JButton(new AbstractAction(Messages.getString("SPDataSourcePanel.testConnectionActionName")) { //$NON-NLS-1$
+			public void actionPerformed(ActionEvent e) {
+				Connection con = null;
+				try {
+					SPDataSource dbcs = new SPDataSource(SPDataSourcePanel.this.dbcs.getParentCollection());
+					String name = dbNameField.getText();
+					dbcs.setName(name);
+					dbcs.setDisplayName(name);
+					dbcs.setParentType((SPDataSourceType) dataSourceTypeBox.getSelectedItem());
+					dbcs.setUrl(dbUrlField.getText());
+					dbcs.setUser(dbUserField.getText());
+					dbcs.setPass(new String(dbPassField.getPassword()));
+					con = dbcs.createConnection();
+					
+					// No exception thrown, so success!
+					dbTestResult.setText(Messages.getString("SPDataSourcePanel.connectionTestSuccessful")); //$NON-NLS-1$
+					
+				} catch (SQLException ex) {
+					dbTestResult.setText(Messages.getString("SPDataSourcePanel.connectionTestFailed")); //$NON-NLS-1$
+					SPSUtils.showExceptionDialogNoReport(panel, Messages.getString("SPDataSourcePanel.connectionTestException"), ex); //$NON-NLS-1$
+				} finally {
+					if (con != null) {
+						try {
+							con.close();
+						} catch (SQLException ex) {
+							logger.error("Failed to close connection!", ex); //$NON-NLS-1$
+						}
+					}
+				}
+			}
+        });
+        
         //we know this should be set to pref but one of the components seems to be updating the
         //preferred size
         DefaultFormBuilder builder = new DefaultFormBuilder(new FormLayout("pref, 4dlu, 0:grow"));  //$NON-NLS-1$
@@ -142,6 +184,7 @@ public class SPDataSourcePanel implements DataEntryPanel {
         builder.append(Messages.getString("SPDataSourcePanel.jdbcUrlLabel"), dbUrlField); //$NON-NLS-1$
         builder.append(Messages.getString("SPDataSourcePanel.usernameLabel"), dbUserField = new JTextField(dbcs.getUser())); //$NON-NLS-1$
         builder.append(Messages.getString("SPDataSourcePanel.passwordLabel"), dbPassField = new JPasswordField(dbcs.getPass())); //$NON-NLS-1$
+        builder.append(dbTestConnection, dbTestResult);
         
         // extra fields supplied by subclasses
         for (JComponent extraField : extraFields) {
