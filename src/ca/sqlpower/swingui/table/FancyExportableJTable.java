@@ -41,7 +41,10 @@ import java.awt.font.FontRenderContext;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.JFileChooser;
@@ -51,6 +54,7 @@ import javax.swing.JTable;
 import javax.swing.table.TableModel;
 import javax.swing.text.Document;
 
+import au.com.bytecode.opencsv.CSVWriter;
 import ca.sqlpower.sql.WebResultHTMLFormatter;
 import ca.sqlpower.swingui.FontSelector;
 
@@ -125,9 +129,32 @@ public class FancyExportableJTable extends EditableJTable {
 						PrintWriter writer = null;
 						try {
 							writer = new PrintWriter(file);
-							TableModelCSVFormatter.formatToStream(parentTable.getModel(), writer, parentTable.getSelectedRows());
+							CSVWriter csvWriter = new CSVWriter(writer);
+							List<String[]> tableExport = new ArrayList<String[]>();
+							int columnCount = parentTable.getModel().getColumnCount();
+							String[] rowArray = new String[columnCount];
+							for (int i = 0; i < columnCount; i++) {
+								rowArray[i] = parentTable.getModel().getColumnName(i);
+							}
+							tableExport.add(rowArray);
+							for (int row = 0; row < parentTable.getModel().getRowCount(); row++) {
+								rowArray = new String[columnCount];
+								for (int col = 0; col < columnCount; col++) {
+									Object value = parentTable.getModel().getValueAt(row, col);
+									if (value != null) {
+										rowArray[col] = value.toString();
+									} else {
+										rowArray[col] = "";
+									}
+								}
+								tableExport.add(rowArray);
+							}
+							csvWriter.writeAll(tableExport);
+							csvWriter.close();
 						} catch (FileNotFoundException ex) {
 							throw new RuntimeException("Could not open file " + file.getName(), ex);
+						} catch (IOException ex) {
+							throw new RuntimeException("Could not close the CSV Writer", ex);
 						} finally {
 							if (writer != null) {
 								writer.close();

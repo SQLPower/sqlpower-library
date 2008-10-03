@@ -14,7 +14,6 @@
 	<classpathentry kind="lib" path="lib/commons-lang.jar"/>
 	<classpathentry kind="lib" path="lib/commons-fileupload.jar"/>
 	<classpathentry kind="lib" path="lib/commons-dbcp-1.2.1.jar"/>
-	<classpathentry kind="lib" path="lib/commons-collections-3.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-beanutils.jar"/>
 	<classpathentry kind="lib" path="lib/activation.jar"/>
 	<classpathentry kind="lib" path="lib/xerces.jar"/>
@@ -23,5 +22,7 @@
 	<classpathentry kind="lib" path="lib/forms-1.1.0.jar"/>
 	<classpathentry kind="lib" path="lib/mail.jar"/>
 	<classpathentry kind="lib" path="lib/mailapi.jar"/>
+	<classpathentry kind="lib" path="lib/commons-collections-3.1.jar"/>
+	<classpathentry kind="lib" path="lib/opencsv-1.8.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
