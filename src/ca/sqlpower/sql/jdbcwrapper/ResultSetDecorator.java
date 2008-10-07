@@ -30,7 +30,7 @@ public abstract class ResultSetDecorator implements ResultSet {
 	
 	public static void checkInterrupted() throws SQLException {
 		if (Thread.interrupted()) {
-			throw new SQLException("The thread was interrupted.");
+			throw new SQLException("Operation canceled due to interrupt request.");
 		}
 	}
 
