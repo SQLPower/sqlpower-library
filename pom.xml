@@ -125,7 +125,7 @@
 		<dependency>
 			<groupId>com.jgoodies</groupId>
 			<artifactId>forms</artifactId>
-			<version>1.1.0</version>
+			<version>1.2.1</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
@@ -182,5 +182,19 @@
 			<version>3.8.1</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+		    <groupId>net.sf.opencsv</groupId>
+		    <artifactId>opencsv</artifactId>
+		    <version>1.8</version>
+		    <scope>compile</scope>
+		</dependency>
 	</dependencies>
+	
+	<repositories>
+		<repository>
+			<id>java.net</id>
+			<url>http://download.java.net/maven/2</url>
+		 	<layout>default</layout>
+		</repository>
+	</repositories>
 </project>
