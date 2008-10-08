@@ -32,23 +32,26 @@
 
 package ca.sqlpower.swingui.table;
 
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
-import javax.swing.JTable;
 import javax.swing.table.TableModel;
 
-/**
- * This class exports TableModels to a very basic HTML table.
- */
-public class TableModelHTMLFormatter implements ExportFormatter{
-	
-	
-	public TableModelHTMLFormatter() {
+import au.com.bytecode.opencsv.CSVWriter;
 
-	}
+/**
+ * This class exports TableModels to a CSV file.
+ */
+public class TableModelCSVFormatter implements ExportFormatter {
 	
+	
+	public TableModelCSVFormatter(){
+		
+	}
 	/**
-	 * Converts the given model into a HTML file and writes it to the output
+	 * Converts the given model into a CSV file and writes it to the output
 	 * stream.
 	 */	
 	public void formatToStream(TableModel model, PrintWriter writer) {
@@ -57,33 +60,39 @@ public class TableModelHTMLFormatter implements ExportFormatter{
 			allRows[i] = i;
 		}
 		formatToStream(model, writer, allRows);
+
 	}
-	
 	/**
 	 * Outputs a table in HTML that represents the TableModel. Only the rows
 	 * given will be written to the file.
 	 */
 	public void formatToStream(TableModel model, PrintWriter writer, int[] selectedRows) {
-			writer.println("<table>");
-			writer.println(" <tr>");
-			for (int i = 0; i < model.getColumnCount(); i++) {
-				writer.print("  <th>");
-				writer.print(model.getColumnName(i));
-				writer.println("</th>");
+		try {
+			CSVWriter csvWriter = new CSVWriter(writer);
+			List<String[]> tableExport = new ArrayList<String[]>();
+			int columnCount = model.getColumnCount();
+			String[] rowArray = new String[columnCount];
+			for (int i = 0; i < columnCount; i++) {
+				rowArray[i] = model.getColumnName(i);
 			}
-			writer.println(" </tr>");
-			
-			for (int i = 0; i < selectedRows.length; i++) {
-				writer.println(" <tr>");
-				
-				for (int j = 0; j < model.getColumnCount(); j++ ) {
-					writer.print("  <td>");
-					writer.print(model.getValueAt(selectedRows[i], j).toString());
-					writer.println("</td>");
+			tableExport.add(rowArray);
+			for (int row = 0; row < selectedRows.length; row++) {
+				rowArray = new String[columnCount];
+				for (int col = 0; col < columnCount; col++) {
+					Object value = model.getValueAt(selectedRows[row], col);
+					if (value != null) {
+						rowArray[col] = value.toString();
+					} else {
+						rowArray[col] = "";
+					}
 				}
-				writer.println(" </tr>");
+				tableExport.add(rowArray);
 			}
-			writer.println("</table>");
-			writer.close();
-		}	
+			csvWriter.writeAll(tableExport);
+			csvWriter.close();
+
+		} catch (IOException ex) {
+			throw new RuntimeException("Could not close the CSV Writer", ex);
+		}		
+	}	  
 }
