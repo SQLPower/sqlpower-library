@@ -41,12 +41,11 @@ import java.awt.font.FontRenderContext;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
+
 
 import javax.swing.AbstractAction;
+
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPopupMenu;
@@ -55,7 +54,7 @@ import javax.swing.table.TableModel;
 import javax.swing.text.Document;
 
 import au.com.bytecode.opencsv.CSVWriter;
-import ca.sqlpower.sql.WebResultHTMLFormatter;
+
 import ca.sqlpower.swingui.FontSelector;
 
 /**
@@ -99,71 +98,53 @@ public class FancyExportableJTable extends EditableJTable {
 			});
 			menu.add(new AbstractAction("Export Selected to HTML..") {
 				public void actionPerformed(ActionEvent e) {
+					TableModelHTMLFormatter htmlFormatter= new TableModelHTMLFormatter();
 					JFileChooser chooser = new JFileChooser();
 					int chooserResult =  chooser.showSaveDialog(parentTable);
 					if (chooserResult == JFileChooser.APPROVE_OPTION) {
 						File file = chooser.getSelectedFile();
-						WebResultHTMLFormatter htmlFormatter = new WebResultHTMLFormatter();
-						PrintWriter writer = null;
 						try {
-							writer = new PrintWriter(file);
-							TableModelHTMLFormatter.formatToStream(parentTable.getModel(), writer, parentTable.getSelectedRows());
+							PrintWriter writer = new PrintWriter(file);
+							if(parentTable.getSelectedRows().length != 0){
+								htmlFormatter.formatToStream(parentTable.getModel(), writer, parentTable.getSelectedRows());						
+							}
+							else {
+								htmlFormatter.formatToStream(parentTable.getModel(), writer);
+							}
 						} catch (FileNotFoundException ex) {
 							throw new RuntimeException("Could not open file " + file.getName(), ex);
-						} finally {
-							if (writer != null) {
-								writer.close();
-							}
-						}
+						} 
+
 					}
-					
+
 				}
+					
 			});
 			
 			menu.add(new AbstractAction("Export Selected to CSV..") {
 				public void actionPerformed(ActionEvent e) {
+					TableModelCSVFormatter csvFormatter = new TableModelCSVFormatter();
+
 					JFileChooser chooser = new JFileChooser();
 					int chooserResult =  chooser.showSaveDialog(parentTable);
 					if (chooserResult == JFileChooser.APPROVE_OPTION) {
 						File file = chooser.getSelectedFile();
-						PrintWriter writer = null;
 						try {
-							writer = new PrintWriter(file);
-							CSVWriter csvWriter = new CSVWriter(writer);
-							List<String[]> tableExport = new ArrayList<String[]>();
-							int columnCount = parentTable.getModel().getColumnCount();
-							String[] rowArray = new String[columnCount];
-							for (int i = 0; i < columnCount; i++) {
-								rowArray[i] = parentTable.getModel().getColumnName(i);
+							PrintWriter writer = new PrintWriter(file);
+							if(parentTable.getSelectedRows().length != 0){
+								csvFormatter.formatToStream(parentTable.getModel(), writer, parentTable.getSelectedRows());						
 							}
-							tableExport.add(rowArray);
-							for (int row = 0; row < parentTable.getModel().getRowCount(); row++) {
-								rowArray = new String[columnCount];
-								for (int col = 0; col < columnCount; col++) {
-									Object value = parentTable.getModel().getValueAt(row, col);
-									if (value != null) {
-										rowArray[col] = value.toString();
-									} else {
-										rowArray[col] = "";
-									}
-								}
-								tableExport.add(rowArray);
+							else {
+								csvFormatter.formatToStream(parentTable.getModel(), writer);
 							}
-							csvWriter.writeAll(tableExport);
-							csvWriter.close();
+							
 						} catch (FileNotFoundException ex) {
 							throw new RuntimeException("Could not open file " + file.getName(), ex);
-						} catch (IOException ex) {
-							throw new RuntimeException("Could not close the CSV Writer", ex);
-						} finally {
-							if (writer != null) {
-								writer.close();
-							}
-						}
+						} 
+						
 					}
-					
-				}
-			});
+
+			}});
 			menu.pack();
 		}
 		
