@@ -87,7 +87,7 @@ public class AboutPanel extends AbstractNoEditDataEntryPanel {
             properties.load(AboutPanel.class.getClassLoader().getResourceAsStream(versionPropertiesPath));
             version = properties.get("app.version").toString();
         } catch (Exception ex) {
-            logger.error("Exception occured while trying to read version properties file. Falling back to ArchitectVersion.APP_VERSION", ex);
+            logger.error("Exception occured while trying to read version properties file. Falling back to default", ex);
             version = defaultAppVersion;
         }
         
