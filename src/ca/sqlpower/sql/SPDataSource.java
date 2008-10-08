@@ -392,11 +392,8 @@ public class SPDataSource {
                 throw new SQLException("Data Source \""+getName()+"\" has no JDBC URL.");
             }
 
-            if (getUser() == null
-                    || getUser().trim().length() == 0) {
-                throw new SQLException("Data Source \""+getName()+"\" has no JDBC username.");
-            }
-
+            // don't check for missing username -- this is allowed when using SQL Server "integrated security"
+            
             if (logger.isDebugEnabled()) {
                 ClassLoader cl = this.getClass().getClassLoader();
                 StringBuffer loaders = new StringBuffer();
@@ -467,7 +464,7 @@ public class SPDataSource {
 	/**
 	 * Returns an unmodifiable view of the list of property change listeners.
 	 */
-	public List getPropertyChangeListeners() {
+	public List<PropertyChangeListener> getPropertyChangeListeners() {
 		return Collections.unmodifiableList(Arrays.asList(pcs.getPropertyChangeListeners()));
 	}
 
