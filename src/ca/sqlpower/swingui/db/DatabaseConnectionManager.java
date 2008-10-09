@@ -209,7 +209,7 @@ public class DatabaseConnectionManager {
 	public DatabaseConnectionManager(DataSourceCollection dsCollection) {
 	    this(dsCollection,
 	            new DefaultDataSourceDialogFactory(),
-	            new DefaultDataSourceTypeDialogFactory(),
+	            new DefaultDataSourceTypeDialogFactory(dsCollection),
 	            (List<Action>) Collections.EMPTY_LIST);
 	}
 	/**

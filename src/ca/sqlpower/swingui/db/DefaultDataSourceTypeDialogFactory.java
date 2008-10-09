@@ -32,14 +32,76 @@
 
 package ca.sqlpower.swingui.db;
 
+import java.awt.BorderLayout;
 import java.awt.Window;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JPanel;
+
+import com.jgoodies.forms.factories.ButtonBarFactory;
+
+import ca.sqlpower.sql.DataSourceCollection;
+import ca.sqlpower.swingui.DataEntryPanelBuilder;
+import ca.sqlpower.swingui.JDefaultButton;
+import ca.sqlpower.swingui.SPSUtils;
 
 public class DefaultDataSourceTypeDialogFactory implements
         DataSourceTypeDialogFactory {
+	
+	private JDialog d; 
+	private DataSourceTypeEditor editor;
+	private final DataSourceCollection dsCollection;
+	
+	public DefaultDataSourceTypeDialogFactory(DataSourceCollection ds){
+		this.dsCollection = ds;
+	}
 
     public Window showDialog(Window owner) {
-        // TODO Auto-generated method stub
-        return null;
+    	 if (d == null) {
+	    		d = SPSUtils.makeOwnedDialog(owner, "JDBC Drivers");
+	        	editor = new DataSourceTypeEditor(dsCollection);
+	        	
+	        	JPanel cp = new JPanel(new BorderLayout(12,12));
+	            cp.add(editor.getPanel(), BorderLayout.CENTER);
+	            cp.setBorder(BorderFactory.createEmptyBorder(12,12,12,12));
+	        	
+	        	JDefaultButton okButton = new JDefaultButton(DataEntryPanelBuilder.OK_BUTTON_LABEL);
+	            okButton.addActionListener(new ActionListener() {
+	                    public void actionPerformed(ActionEvent evt) {
+	                        editor.applyChanges();
+	                        d.dispose();
+	                    }
+	                });
+	        
+	            Action cancelAction = new AbstractAction() {
+	                    public void actionPerformed(ActionEvent evt) {
+	                        editor.discardChanges();
+	                        d.dispose();
+	                    }
+	            };
+	            cancelAction.putValue(Action.NAME, DataEntryPanelBuilder.CANCEL_BUTTON_LABEL);
+	            JButton cancelButton = new JButton(cancelAction);
+	    
+	            JPanel buttonPanel = ButtonBarFactory.buildOKCancelBar(okButton, cancelButton);
+	    
+	            SPSUtils.makeJDialogCancellable(d, cancelAction);
+	            d.getRootPane().setDefaultButton(okButton);
+	            cp.add(buttonPanel, BorderLayout.SOUTH);
+	        	
+	        	d.setContentPane(cp);
+	        	d.pack();
+	        	d.setLocationRelativeTo(owner);
+     	}
+    	 
+         d.pack();
+         d.setVisible(true);
+         return d;
     }
 
 }
