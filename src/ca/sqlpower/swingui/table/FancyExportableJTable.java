@@ -43,17 +43,13 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 
-
 import javax.swing.AbstractAction;
-
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPopupMenu;
 import javax.swing.JTable;
 import javax.swing.table.TableModel;
 import javax.swing.text.Document;
-
-import au.com.bytecode.opencsv.CSVWriter;
 
 import ca.sqlpower.swingui.FontSelector;
 
