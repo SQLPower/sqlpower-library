@@ -34,11 +34,19 @@ package ca.sqlpower.swingui.query;
 
 import java.awt.Toolkit;
 import java.awt.Window;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetDragEvent;
+import java.awt.dnd.DropTargetDropEvent;
+import java.awt.dnd.DropTargetEvent;
+import java.awt.dnd.DropTargetListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -398,6 +406,80 @@ public class SQLQueryUIComponents {
             }
             
         }};
+    /**
+     * This Listener listens to anything that drops onto the queryTextArea
+     */
+    private class QueryTextAreaDropListener implements DropTargetListener {
+    	
+    	private final JTextArea queryArea;
+    	
+    	public QueryTextAreaDropListener(JTextArea textArea){
+    		queryArea = textArea;
+    	}
+
+		public void dragEnter(DropTargetDragEvent dtde) {
+			System.out.println("we are in drop enter");
+		}
+
+		public void dragExit(DropTargetEvent dte) {
+			System.out.println("we are in dragExit");
+		}
+
+		public void dragOver(DropTargetDragEvent dtde) {
+			System.out.println("We are in dragOver");
+		}
+
+		public void drop(DropTargetDropEvent dtde) {
+			
+			DataFlavor[] flavours = dtde.getTransferable().getTransferDataFlavors();
+
+	        for (int i = 0; i < flavours.length; i++) {
+	            if (flavours[i] != null) {
+	            	            	
+	            	if(flavours[i].getMimeType().equals("application/x-java-serialized-object; class=\"[Ljava.lang.String;\"")){
+							try {
+								String[] list = (String[]) dtde.getTransferable().getTransferData(flavours[i]);
+		            			for (String name : list) {
+		            				queryArea.insert(name , queryArea.getCaretPosition());
+		            				if (name!=list[list.length-1]) {
+		            					queryArea.insert(", ", queryArea.getCaretPosition());
+		            					
+		            				}
+		            			}         	
+		            			
+							} catch (UnsupportedFlavorException e) {
+								logger.error(e);
+					            dtde.rejectDrop();
+							} catch (IOException e) {
+								logger.error(e);
+					            dtde.rejectDrop();
+							}
+							break;
+	            	} else if(flavours[i].getMimeType().equals("application/x-java-serialized-object; class=java.lang.String")){
+						try {
+							dtde.acceptDrop(dtde.getDropAction());
+							String text = (String)dtde.getTransferable().getTransferData(flavours[i]);
+							queryArea.insert(text,queryArea.getCaretPosition());
+						} catch (UnsupportedFlavorException e) {
+							logger.error(e);
+				            dtde.rejectDrop();
+						} catch (IOException e) {
+							logger.error(e);
+				            dtde.rejectDrop();
+						}
+	            		break;
+	            	} else {
+	            		System.out.println("unchecked flavor");
+	            	}
+	            }
+	        }
+      
+        }
+
+		public void dropActionChanged(DropTargetDragEvent dtde) {
+			System.out.println("we are in dropActionChanged");
+		}
+    }
 
     /**
      * This button will execute the sql statements in the text area.
@@ -585,7 +667,7 @@ public class SQLQueryUIComponents {
          
          undoButton= new JButton (undoSQLStatementAction);
          redoButton= new JButton (redoSQLStatementAction);
-         
+         new DropTarget(queryArea, new QueryTextAreaDropListener(queryArea));
     }
     
     /**
