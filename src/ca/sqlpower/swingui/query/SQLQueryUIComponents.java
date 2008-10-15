@@ -418,15 +418,15 @@ public class SQLQueryUIComponents {
     	}
 
 		public void dragEnter(DropTargetDragEvent dtde) {
-			System.out.println("we are in drop enter");
+			logger.debug("We are in drag enter");
 		}
 
 		public void dragExit(DropTargetEvent dte) {
-			System.out.println("we are in dragExit");
+			logger.debug("We are in drag Exit");
 		}
 
 		public void dragOver(DropTargetDragEvent dtde) {
-			System.out.println("We are in dragOver");
+			logger.debug("We are in dragOver");
 		}
 
 		public void drop(DropTargetDropEvent dtde) {
@@ -469,7 +469,7 @@ public class SQLQueryUIComponents {
 						}
 	            		break;
 	            	} else {
-	            		System.out.println("unchecked flavor");
+	            		logger.debug("unidentified flavour");
 	            	}
 	            }
 	        }
@@ -477,7 +477,7 @@ public class SQLQueryUIComponents {
         }
 
 		public void dropActionChanged(DropTargetDragEvent dtde) {
-			System.out.println("we are in dropActionChanged");
+			logger.debug("We are in dropActionChanged");
 		}
     }
 
