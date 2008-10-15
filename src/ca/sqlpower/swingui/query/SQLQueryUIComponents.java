@@ -36,6 +36,7 @@ import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetDragEvent;
 import java.awt.dnd.DropTargetDropEvent;
@@ -426,55 +427,65 @@ public class SQLQueryUIComponents {
 		}
 
 		public void dragOver(DropTargetDragEvent dtde) {
-			logger.debug("We are in dragOver");
+			// this would be better if there was a visible indication on the text area
+			// of the caret position during the drag-over
+			queryArea.setCaretPosition(queryArea.viewToModel(dtde.getLocation()));
 		}
 
 		public void drop(DropTargetDropEvent dtde) {
-			
+
 			DataFlavor[] flavours = dtde.getTransferable().getTransferDataFlavors();
 
-	        for (int i = 0; i < flavours.length; i++) {
-	            if (flavours[i] != null) {
-	            	            	
-	            	if(flavours[i].getMimeType().equals("application/x-java-serialized-object; class=\"[Ljava.lang.String;\"")){
-							try {
-								String[] list = (String[]) dtde.getTransferable().getTransferData(flavours[i]);
-		            			for (String name : list) {
-		            				queryArea.insert(name , queryArea.getCaretPosition());
-		            				if (name!=list[list.length-1]) {
-		            					queryArea.insert(", ", queryArea.getCaretPosition());
-		            					
-		            				}
-		            			}         	
-		            			
-							} catch (UnsupportedFlavorException e) {
-								logger.error(e);
-					            dtde.rejectDrop();
-							} catch (IOException e) {
-								logger.error(e);
-					            dtde.rejectDrop();
-							}
-							break;
-	            	} else if(flavours[i].getMimeType().equals("application/x-java-serialized-object; class=java.lang.String")){
-						try {
-							dtde.acceptDrop(dtde.getDropAction());
-							String text = (String)dtde.getTransferable().getTransferData(flavours[i]);
-							queryArea.insert(text,queryArea.getCaretPosition());
-						} catch (UnsupportedFlavorException e) {
-							logger.error(e);
-				            dtde.rejectDrop();
-						} catch (IOException e) {
-							logger.error(e);
-				            dtde.rejectDrop();
-						}
-	            		break;
-	            	} else {
-	            		logger.debug("unidentified flavour");
-	            	}
-	            }
-	        }
-      
-        }
+			String[] droppedStrings = null;
+
+			// find the first acceptable data flavour
+			try {
+				for (int i = 0; i < flavours.length; i++) {
+					String mimeType = flavours[i].getMimeType();
+					if (mimeType.equals("application/x-java-serialized-object; class=\"[Ljava.lang.String;\"")) {
+						dtde.acceptDrop(DnDConstants.ACTION_COPY);
+						logger.debug("Accepting drop of type: " + mimeType);
+						droppedStrings = (String[]) dtde.getTransferable().getTransferData(flavours[i]);
+						break;
+					} else if (mimeType.equals("application/x-java-serialized-object; class=java.lang.String")) {
+						dtde.acceptDrop(DnDConstants.ACTION_COPY);
+						logger.debug("Accepting drop of type: " + mimeType);
+						String text = (String) dtde.getTransferable().getTransferData(flavours[i]);
+						droppedStrings = new String[] { text };
+						break;
+					} else {
+						logger.debug("Unsupported flavour: " + mimeType + ". continuing...");
+					}
+				}
+			} catch (UnsupportedFlavorException e) {
+				dtde.dropComplete(false);
+				throw new IllegalStateException(
+						"DnD system says it doesn't support a data flavour"
+								+ " it already offered to us!", e);
+			} catch (IOException e) {
+				dtde.dropComplete(false);
+				throw new RuntimeException("Drop failed due to an I/O error", e);
+			}
+
+			if (droppedStrings == null) {
+				logger.debug("No supported data flavours found. Rejecting drop.");
+				dtde.rejectDrop();
+				return;
+			}
+
+			StringBuilder buf = new StringBuilder();
+			boolean first = true;
+			for (String name : droppedStrings) {
+				if (!first) {
+					buf.append(", ");
+				}
+				buf.append(name);
+				first = false;
+			}
+			queryArea.insert(buf.toString(), queryArea.getCaretPosition());
+			dtde.dropComplete(true);
+
+		}
 
 		public void dropActionChanged(DropTargetDragEvent dtde) {
 			logger.debug("We are in dropActionChanged");
