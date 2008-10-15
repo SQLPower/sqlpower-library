@@ -38,12 +38,13 @@ import java.awt.Component;
 import javax.swing.AbstractAction;
 
 /**
- * This is a small extension of {@link AbstractAction} that takes a
- * parent {@link Component} for popping up dialogs.
+ * This is a small extension of {@link AbstractAction} that keeps a
+ * reference to the {@link Component} that should own dialogs popped
+ * up by this action.
  */
 public abstract class AbstractSQLQueryAction extends AbstractAction {
     
-    public final Component parent;
+    protected final Component dialogOwner;
     
     /**
 	 * Stores the given dialog owner.
@@ -54,7 +55,7 @@ public abstract class AbstractSQLQueryAction extends AbstractAction {
      */
     public AbstractSQLQueryAction(Component dialogOwner) {
         super();
-        this.parent = dialogOwner;
+        this.dialogOwner = dialogOwner;
     }
     
     /**
@@ -69,8 +70,7 @@ public abstract class AbstractSQLQueryAction extends AbstractAction {
 	 */
     public AbstractSQLQueryAction(Component dialogOwner, String name) {
         super(name);
-        
-        parent = dialogOwner;
+        this.dialogOwner = dialogOwner;
     }
 
 }

@@ -574,7 +574,7 @@ public class SQLQueryUIComponents {
                         }
                     }
                 } catch (SQLException e1) {
-                    SPSUtils.showExceptionDialogNoReport(parent, Messages.getString("SQLQuery.failedRetrievingConnection", ((SPDataSource)databaseComboBox.getSelectedItem()).getName()), e1);
+                    SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedRetrievingConnection", ((SPDataSource)databaseComboBox.getSelectedItem()).getName()), e1);
                 }
                 sqlExecuteWorker = new ExecuteSQLWorker(swRegistry);
                 new Thread(sqlExecuteWorker).start();
@@ -591,7 +591,7 @@ public class SQLQueryUIComponents {
                 try {
                     boolean isPressed = autoCommitToggleButton.getModel().isSelected();
                     if (isPressed && conMap.get(databaseComboBox.getSelectedItem()).isConnectionUncommitted()) {
-                        int result = JOptionPane.showOptionDialog(parent, Messages.getString("SQLQuery.commitOrRollbackBeforeAutoCommit"),
+                        int result = JOptionPane.showOptionDialog(dialogOwner, Messages.getString("SQLQuery.commitOrRollbackBeforeAutoCommit"),
                                 Messages.getString("SQLQuery.commitOrRollbackTitle"), JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null,
                                 new Object[] {Messages.getString("SQLQuery.commit"), Messages.getString("SQLQuery.cancel"), Messages.getString("SQLQuery.rollback")}, Messages.getString("SQLQuery.commit"));
                         if (result == JOptionPane.OK_OPTION) {
@@ -608,7 +608,7 @@ public class SQLQueryUIComponents {
                     con.setAutoCommit(isPressed);
                     logger.debug("The auto commit button is toggled " + isPressed);
                 } catch (SQLException ex) {
-                    SPSUtils.showExceptionDialogNoReport(parent, Messages.getString("SQLQuery.failedAutoCommit"), ex);
+                    SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedAutoCommit"), ex);
                 }
         
             }
@@ -680,7 +680,7 @@ public class SQLQueryUIComponents {
                                 sqlExecuteWorker.kill();
                             }
                         } catch (SQLException e) {
-                            SPSUtils.showExceptionDialogNoReport(parent, Messages.getString("SQLQuery.stopException", ((SPDataSource)databaseComboBox.getSelectedItem()).getName()), e);
+                            SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.stopException", ((SPDataSource)databaseComboBox.getSelectedItem()).getName()), e);
                         }
                     }
                 }
