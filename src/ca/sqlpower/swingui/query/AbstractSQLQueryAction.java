@@ -45,15 +45,32 @@ public abstract class AbstractSQLQueryAction extends AbstractAction {
     
     public final Component parent;
     
-    public AbstractSQLQueryAction(Component c) {
+    /**
+	 * Stores the given dialog owner.
+	 * 
+	 * @param dialogOwner
+	 *            The component whose nearest Window ancestor will own any
+	 *            dialogs created by this action.
+     */
+    public AbstractSQLQueryAction(Component dialogOwner) {
         super();
-        this.parent = c;
+        this.parent = dialogOwner;
     }
     
-    public AbstractSQLQueryAction(Component c, String name) {
+    /**
+	 * Stores the given dialog owner and action name.
+	 * 
+	 * @param dialogOwner
+	 *            The component whose nearest Window ancestor will own any
+	 *            dialogs created by this action.
+	 * @param name
+	 *            The user-visible name of this action. Will appear on button
+	 *            faces and menu items.
+	 */
+    public AbstractSQLQueryAction(Component dialogOwner, String name) {
         super(name);
         
-        parent = c;
+        parent = dialogOwner;
     }
 
 }

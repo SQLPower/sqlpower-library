@@ -100,7 +100,19 @@ import com.jgoodies.forms.builder.DefaultFormBuilder;
 import com.jgoodies.forms.layout.FormLayout;
 
 /**
- * This JPanel contains a text area to enter SQL script into and execute it.
+ * A "bag of components" that are already wired together to cooperate as a GUI environment
+ * for writing, debugging, and executing a SQL query. There are two approaches to using
+ * this class:
+ * <ol>
+ *  <li>Use the provided factory method, which creates an instance of the class
+ *      and arranges all the components in the usual way and returns a "ready
+ *      to use" Swing component that behaves as an interactive SQL query tool.
+ *      The factory method is {@link #createQueryPanel(SwingWorkerRegistry, DataSourceCollection)}.
+ *  <li>Use the constructor to create an instance of this class, then use
+ *      the public getter methods to retrieve all of the components you want
+ *      in your UI, and arrange them yourself in any layout and combination
+ *      that you require.
+ * </ol>
  */
 public class SQLQueryUIComponents {
     
@@ -133,12 +145,6 @@ public class SQLQueryUIComponents {
      */
     private class DatabaseItemListener implements ItemListener {
         
-        private JPanel parent;
-        
-        public DatabaseItemListener(JPanel parent) {
-            this.parent = parent;
-        }
-        
         public void itemStateChanged(ItemEvent e) {
             if (e.getStateChange() != ItemEvent.SELECTED) {
                 return;
@@ -149,14 +155,14 @@ public class SQLQueryUIComponents {
                     Connection con = ds.createConnection();
                     conMap.put(ds, new ConnectionAndStatementBean(con));
                 } catch (SQLException e1) {
-                    SPSUtils.showExceptionDialogNoReport(parent, Messages.getString("SQLQuery.failedConnectingToDBWithName", ds.getName()), e1);
+                    SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedConnectingToDBWithName", ds.getName()), e1);
                     return;
                 }
             }
             try {
                 autoCommitToggleButton.setSelected(conMap.get(e.getItem()).getConnection().getAutoCommit());
             } catch (SQLException ex) {
-                SPSUtils.showExceptionDialogNoReport(parent, Messages.getString("SQLQuery.failedConnectingToDB"), ex);
+                SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedConnectingToDB"), ex);
             }
             stopButton.setEnabled(conMap.get(e.getItem()).getCurrentStmt() != null);
             executeButton.setEnabled(conMap.get(e.getItem()).getCurrentStmt() == null);
@@ -180,7 +186,7 @@ public class SQLQueryUIComponents {
             Throwable e = getDoStuffException();
             if (e != null) {
                 if (e instanceof SQLException) {
-                    SPSUtils.showExceptionDialogNoReport(queryPanel.getParent(), Messages.getString("SQLQuery.failedConnectingToDB"), e);
+                    SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedConnectingToDB"), e);
                 } else {
                     throw new RuntimeException(e);
                 }
@@ -263,6 +269,11 @@ public class SQLQueryUIComponents {
         
     }
     
+    /**
+     * The component whose nearest Window ancestor will own any dialogs
+     * popped up by the query tool.
+     */
+    private final JComponent dialogOwner;
     
     /**
      * The worker that the execute action runs on to query the database and create the
@@ -391,7 +402,7 @@ public class SQLQueryUIComponents {
                 try {
                     Connection con = entry.getValue().getConnection();
                     if (!con.getAutoCommit() && entry.getValue().isConnectionUncommitted()) {
-                        int result = JOptionPane.showOptionDialog(queryPanel.getParent(), Messages.getString("SQLQuery.commitOrRollback", entry.getKey().getName()),
+                        int result = JOptionPane.showOptionDialog(dialogOwner, Messages.getString("SQLQuery.commitOrRollback", entry.getKey().getName()),
                                 Messages.getString("SQLQuery.commitOrRollbackTitle"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
                                 new Object[] {Messages.getString("SQLQuery.commit"), Messages.getString("SQLQuery.rollback")}, Messages.getString("SQLQuery.commit"));
                         if (result == JOptionPane.OK_OPTION) {
@@ -517,27 +528,42 @@ public class SQLQueryUIComponents {
      * A JButton that opens up the DataBaseConnectionManager
      */
     private JButton dbcsManagerButton;
-    
-    /**
-     * This is the panel that will hold all the JComponents
-     */
-    private JPanel queryPanel;
-    
+ 
     /**
      * Creates a DataBaseConnectionManager so we can edit delete and add connections on the button 
      */
     DatabaseConnectionManager dbConnectionManager;
  
-    public SQLQueryUIComponents(SwingWorkerRegistry s, DataSourceCollection ds, JPanel panel) {
+    /**
+	 * Creates all of the components of a query tool, but does not lay them out
+	 * in any physical configuration. Once you have created one of these
+	 * component collections, you can obtain all of the individual pieces and
+	 * put together a user interface in any way you like.
+	 * <p>
+	 * If you just want an easy way to build a full-featured query UI and don't
+	 * want to customize its internals, see
+	 * {@link #createQueryPanel(SwingWorkerRegistry, DataSourceCollection)}.
+	 * 
+	 * @param swRegistry
+	 *            The registry with which all background tasks will be
+	 *            registered. This argument must not be null.
+	 * @param ds
+	 *            The collection of data sources that will be available for
+	 *            querying from the UI. This argument must not be null.
+	 * @param panel
+	 *            The component whose nearest Window ancestor will own any
+	 *            dialogs generated by the parts of the query tool.
+	 */
+    public SQLQueryUIComponents(SwingWorkerRegistry s, DataSourceCollection ds, JComponent dialogOwner) {
         super();
-        queryPanel = panel;
+        this.dialogOwner = dialogOwner;
         this.swRegistry = s;
         this.dsCollection = ds;
         tableTabPane = new JTabbedPane();
         logTextArea = new JTextArea();
         dbConnectionManager = new DatabaseConnectionManager(ds);
         
-        executeAction = new AbstractSQLQueryAction(queryPanel, Messages.getString("SQLQuery.execute")) {
+        executeAction = new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.execute")) {
 
             public void actionPerformed(ActionEvent e) {
                 ConnectionAndStatementBean conBean = conMap.get(databaseComboBox.getSelectedItem());
@@ -555,7 +581,7 @@ public class SQLQueryUIComponents {
             }
         };
         
-        autoCommitToggleButton = new JToggleButton(new AbstractSQLQueryAction(queryPanel, Messages.getString("SQLQuery.autoCommit")) {
+        autoCommitToggleButton = new JToggleButton(new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.autoCommit")) {
         
             public void actionPerformed(ActionEvent e) {
                 Connection con = conMap.get(databaseComboBox.getSelectedItem()).getConnection();
@@ -601,12 +627,12 @@ public class SQLQueryUIComponents {
             }
         });
         
-        commitButton = new JButton(new AbstractSQLQueryAction(queryPanel, Messages.getString("SQLQuery.commit")) {
+        commitButton = new JButton(new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.commit")) {
             public void actionPerformed(ActionEvent e) {
                 commitCurrentDB();
             }});
         
-        rollbackButton = new JButton(new AbstractSQLQueryAction(queryPanel, Messages.getString("SQLQuery.rollback")){
+        rollbackButton = new JButton(new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.rollback")){
             public void actionPerformed(ActionEvent e) {
                 rollbackCurrentDB();
             }});
@@ -630,18 +656,18 @@ public class SQLQueryUIComponents {
         
         databaseComboBox = new JComboBox(dsCollection.getConnections().toArray());
         databaseComboBox.setSelectedItem(null);
-        databaseComboBox.addItemListener(new DatabaseItemListener(queryPanel));
+        databaseComboBox.addItemListener(new DatabaseItemListener());
         
-        queryPanel.addAncestorListener(closeListener);
+        dialogOwner.addAncestorListener(closeListener);
         
-        queryPanel.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(
+        dialogOwner.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(
                 KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask())
                 , EXECUTE_QUERY_ACTION);
-        queryPanel.getActionMap().put(EXECUTE_QUERY_ACTION, executeAction);
+        dialogOwner.getActionMap().put(EXECUTE_QUERY_ACTION, executeAction);
         
         executeButton = new JButton(executeAction);
         
-        stopButton = new JButton(new AbstractSQLQueryAction(queryPanel, Messages.getString("SQLQuery.stop")) {
+        stopButton = new JButton(new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.stop")) {
             public void actionPerformed(ActionEvent arg0) {
                 ConnectionAndStatementBean conBean = conMap.get(databaseComboBox.getSelectedItem());
                 if (conBean != null) {
@@ -660,7 +686,7 @@ public class SQLQueryUIComponents {
                 }
             }
              });
-         clearButton = new JButton(new AbstractSQLQueryAction(queryPanel, Messages.getString("SQLQuery.clear")){
+         clearButton = new JButton(new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.clear")){
             public void actionPerformed(ActionEvent arg0) {
                 queryArea.setText("");
             }});
@@ -682,9 +708,18 @@ public class SQLQueryUIComponents {
     }
     
     /**
-     * Builds the UI of the {@link SQLQueryUIComponents}.
-     */
-    public static JComponent createQueryPanel(SwingWorkerRegistry swRegistry,DataSourceCollection ds) {
+	 * Builds the UI of the {@link SQLQueryUIComponents}. If you just want an
+	 * easy way to build a full-featured query UI and don't want to customize
+	 * its internals, you have come to the right place.
+	 * 
+	 * @param swRegistry
+	 *            The registry with which all background tasks will be
+	 *            registered. This argument must not be null.
+	 * @param ds
+	 *            The collection of data sources that will be available for
+	 *            querying from the UI. This argument must not be null.
+	 */
+    public static JComponent createQueryPanel(SwingWorkerRegistry swRegistry, DataSourceCollection ds) {
         
         JPanel defaultQueryPanel = new JPanel();
         SQLQueryUIComponents queryParts = new SQLQueryUIComponents(swRegistry, ds, defaultQueryPanel);
@@ -745,7 +780,7 @@ public class SQLQueryUIComponents {
                 conBean.setConnectionUncommitted(false);
             }
         } catch (SQLException ex) {
-            SPSUtils.showExceptionDialogNoReport(queryPanel, Messages.getString("SQlQuery.failedCommit"), ex);
+            SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQlQuery.failedCommit"), ex);
         }
     }
     
@@ -765,7 +800,7 @@ public class SQLQueryUIComponents {
                 conBean.setConnectionUncommitted(false);
             }
         } catch (SQLException ex) {
-            SPSUtils.showExceptionDialogNoReport(queryPanel, Messages.getString("SQLQuery.failedRollback"), ex);
+            SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedRollback"), ex);
         }
     }
     
@@ -837,9 +872,6 @@ public class SQLQueryUIComponents {
        return queryArea;
    }
    
-   public JPanel getQueryPanel(){
-       return queryPanel;
-   }
    public JTabbedPane getTableTabPane(){
        return tableTabPane;
    }
