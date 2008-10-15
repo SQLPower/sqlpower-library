@@ -32,6 +32,13 @@
 
 package ca.sqlpower.swingui.event;
 
+/**
+ * The event type that is delivered to all session lifecycle listeners when a
+ * session fires a lifecycle event.
+ * 
+ * @param <S>
+ *            The type of session that fires this event.
+ */
 public class SessionLifecycleEvent<S> {
 
     private static int nextID = 0;
@@ -45,6 +52,9 @@ public class SessionLifecycleEvent<S> {
     	nextID++;
     }
 
+    /**
+     * Returns the session that fired this lifecycle event.
+     */
     public S getSource() {
         return source;
     }

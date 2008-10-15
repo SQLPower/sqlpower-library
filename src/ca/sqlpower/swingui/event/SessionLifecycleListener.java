@@ -32,7 +32,13 @@
 
 package ca.sqlpower.swingui.event;
 
-
+/**
+ * Interface for any parties interested in being notified of major lifecycle
+ * milestones in an application session object's lifetime. Presently, the only
+ * milestone of interest is that the session is closing.
+ *
+ * @param <S> The session type this listener is attached to.
+ */
 public interface SessionLifecycleListener<S> {
     
     /**
