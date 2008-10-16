@@ -35,6 +35,8 @@ import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -858,5 +860,69 @@ public class SPSUtils {
         polygon.addPoint(xPoint, yPoint);
 
         return polygon;
+    }
+
+    /**
+     * Updates a potentially-long JMenu with the nth-last items replaced by
+     * sub-menus. This is done iteratively, so if the menu has lots of items or
+     * the given height reference is very small, you will end up with an
+     * arbitrarily-long chain of submenus.
+     * <p>
+     * If the menu fits the given window, it will not be modified by this
+     * method.
+     * 
+     * @param heightReference
+     *            The size of this window is used to compute where to break up
+     *            the menu. Eventually, this method will also install a listener
+     *            on this window that will reflow the menu when the window
+     *            changes size, but this is not implemented at present.
+     * @param input
+     *            The JMenu.
+     */
+    public static void breakLongMenu(final Window heightReference, final JMenu input) {
+
+        if ( input.getItemCount() <= 0 )
+            return;
+
+        final int windowHeight = heightReference.getSize().height;
+        final int totalRows = input.getItemCount();
+        final int preferredHeight = input.getItem(0).getPreferredSize().height;
+        final int FUDGE = 3; // XXX find a better way to compute this...
+
+        int rowsPerSubMenu = (windowHeight/ preferredHeight) - FUDGE;
+        if ( rowsPerSubMenu < 3 )
+            rowsPerSubMenu = 3;
+        if (totalRows <= rowsPerSubMenu) {
+            return;
+        }
+
+        JMenu parentMenu = input;
+        JMenu subMenu = new JMenu(Messages.getString("ASUtils.moreSubmenu")); //$NON-NLS-1$
+        parentMenu.add(subMenu);
+
+        while (input.getItemCount() > rowsPerSubMenu + 1) {
+            final JMenuItem item = input.getItem(rowsPerSubMenu);
+            subMenu.add(item);  // Note that this removes it from the original menu!
+
+            if (subMenu.getItemCount() >= rowsPerSubMenu &&
+                input.getItemCount() > rowsPerSubMenu + 1 ) {
+                parentMenu = subMenu;
+                subMenu = new JMenu(Messages.getString("ASUtils.moreSubmenu")); //$NON-NLS-1$
+                parentMenu.add(subMenu);
+            }
+        }
+
+
+        /** TODO: Resizing the main window does not change the height of the menu.
+         * This is left as an exercise for the reader:
+         * frame.addComponentListener(new ComponentAdapter() {
+         * @Override
+         * public void componentResized(ComponentEvent e) {
+         * JMenu oldMenu = fileMenu;
+         * // Loop over oldMenu, if JMenu, replace with its elements, recursively...!
+         * ASUtils.breakLongMenu(fileMenu);
+         * }
+         * });
+         */
     }
 }

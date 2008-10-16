@@ -36,6 +36,9 @@ import java.awt.Polygon;
 
 import javax.swing.JDialog;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
@@ -101,5 +104,32 @@ public class SPSUtilsTest extends TestCase {
     	assertEquals("Dialog should be owned!", frame, dialog.getParent());
     	dialog = SPSUtils.makeOwnedDialog(frame, "title");
     	assertEquals("Dialog should be owned!", frame, dialog.getParent());
+    }
+    
+
+    public void testBreakLongMenu() throws Exception {
+        final JFrame jf = new JFrame();
+        jf.setSize(400, 400);
+        final JMenuBar jb = new JMenuBar();
+        jf.setJMenuBar(jb);
+        final JMenu fileMenu = new JMenu("File");
+        int itemsInMenu = 30;
+        for (int i = 0; i <= itemsInMenu; i++) {
+            fileMenu.add(new JMenuItem(Integer.toString(i)));
+        }
+
+        jb.add(fileMenu);
+        
+        assertTrue("The test didn't put enough items in the menu to make the test effective (prefsize="+fileMenu.getPopupMenu().getPreferredSize()+")",
+                fileMenu.getPopupMenu().getPreferredSize().height > jf.getHeight());
+
+        SPSUtils.breakLongMenu(jf, fileMenu);
+
+        assertTrue("Breaking up the menu didn't reduce the item count!",
+                fileMenu.getItemCount() < itemsInMenu);
+        
+        assertSame("The last item wasn't a submenu!",
+                JMenu.class, fileMenu.getItem(fileMenu.getItemCount() - 1).getClass());
+        
     }
 }
