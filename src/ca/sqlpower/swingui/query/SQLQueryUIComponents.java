@@ -191,11 +191,10 @@ public class SQLQueryUIComponents {
                     throw new RuntimeException(e);
                 }
             }
-
-                tableTabPane.removeAll();
+  
                 for (CachedRowSet rs : resultSets) {
                     ResultSet r = rs.createShared();
-                    tableTabPane.add(Messages.getString("SQLQuery.result"), createResultSetTablePanel(r));
+                    resultTabPane.add(Messages.getString("SQLQuery.result"), createResultSetTablePanel(r));
                 }  
                 logTextArea.setText("");
                 for (Integer i : rowsAffected) {
@@ -330,7 +329,7 @@ public class SQLQueryUIComponents {
     private JButton undoButton; 
     private JButton redoButton; 
 
-    private JTabbedPane tableTabPane;
+    private JTabbedPane resultTabPane;
     private JTextArea logTextArea;
     
     private SwingWorkerRegistry swRegistry;
@@ -559,13 +558,23 @@ public class SQLQueryUIComponents {
         this.dialogOwner = dialogOwner;
         this.swRegistry = s;
         this.dsCollection = ds;
-        tableTabPane = new JTabbedPane();
+        resultTabPane = new JTabbedPane();
         logTextArea = new JTextArea();
+        
+        
+        resultTabPane.add(Messages.getString("SQLQuery.log"), new JScrollPane(logTextArea));
+
         dbConnectionManager = new DatabaseConnectionManager(ds);
         
         executeAction = new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.execute")) {
 
             public void actionPerformed(ActionEvent e) {
+            	
+            	if(resultTabPane.getComponentCount() > 1) {
+	        		for(int i = resultTabPane.getComponentCount()-1; i >= 1; i--){
+	        			resultTabPane.remove(i);
+        		}
+        	}
                 ConnectionAndStatementBean conBean = conMap.get(databaseComboBox.getSelectedItem());
                 try {
                     if(conBean!= null) {
@@ -751,13 +760,11 @@ public class SQLQueryUIComponents {
         
         
         JSplitPane queryPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        JTabbedPane tabPane = new JTabbedPane();
+        
         queryPane.add(defaultQueryPanel, JSplitPane.TOP);
        
-        tabPane.add(Messages.getString("SQLQuery.log"), new JScrollPane(queryParts.getLogTextArea()));
-        
-        tabPane.add(Messages.getString("SQLQuery.result"), queryParts.getTableTabPane());
-        queryPane.add(tabPane, JSplitPane.BOTTOM);
+   
+        queryPane.add(queryParts.getResultTabPane(), JSplitPane.BOTTOM);
         
         return queryPane;
   
@@ -872,12 +879,9 @@ public class SQLQueryUIComponents {
        return queryArea;
    }
    
-   public JTabbedPane getTableTabPane(){
-       return tableTabPane;
-   }
-   public JTextArea getLogTextArea(){
-       return logTextArea;
-   }
+   public JTabbedPane getResultTabPane(){
+       return resultTabPane;
+}
  
 }
 
