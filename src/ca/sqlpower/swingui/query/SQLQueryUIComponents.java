@@ -84,6 +84,8 @@ import javax.swing.event.UndoableEditListener;
 import javax.swing.undo.UndoManager;
 
 import org.apache.log4j.Logger;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rtextarea.RTextScrollPane;
 
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sql.DataSourceCollection;
@@ -297,7 +299,7 @@ public class SQLQueryUIComponents {
     /**
      * The text area users can enter SQL queries to get data from the database.
      */
-    private final JTextArea queryArea;
+    private final RSyntaxTextArea queryArea;
     
     /**
      * A combo box of available connections the user have specified. The selected
@@ -396,7 +398,6 @@ public class SQLQueryUIComponents {
         public void ancestorRemoved(AncestorEvent event) {
             logger.debug("Removing database list change listener");
             dsCollection.removeDatabaseListChangeListener(dbListChangeListener);
-            
             for (Map.Entry<SPDataSource, ConnectionAndStatementBean> entry : conMap.entrySet()) {
                 try {
                     Connection con = entry.getValue().getConnection();
@@ -407,7 +408,7 @@ public class SQLQueryUIComponents {
                         if (result == JOptionPane.OK_OPTION) {
                             con.commit();
                         } else if (result == JOptionPane.CANCEL_OPTION) {
-                            con.rollback();
+                            con.rollback();   
                         }
                     }
                     con.close();
@@ -648,7 +649,12 @@ public class SQLQueryUIComponents {
         
         
         rowLimitSpinner = new JSpinner(new SpinnerNumberModel(1000, 0, Integer.MAX_VALUE, 1));
-        queryArea = new JTextArea();
+        
+        queryArea = new RSyntaxTextArea();
+        queryArea.restoreDefaultSyntaxHighlightingColorScheme();
+        queryArea.setSyntaxEditingStyle(RSyntaxTextArea.SQL_SYNTAX_STYLE);
+        
+        
         undoManager = new UndoManager();
         queryArea.getDocument().addUndoableEditListener(new UndoableEditListener() {
             public void undoableEditHappened(UndoableEditEvent e) {
@@ -756,7 +762,7 @@ public class SQLQueryUIComponents {
         textAreaBuilder.append(Messages.getString("SQLQuery.rowLimit"));
         textAreaBuilder.append(queryParts.getRowLimitSpinner());
         textAreaBuilder.nextLine();
-        textAreaBuilder.append(new JScrollPane(queryParts.getQueryArea()), 7);
+        textAreaBuilder.append(new RTextScrollPane(300,200, queryParts.getQueryArea(), true), 7);
         
         
         JSplitPane queryPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
@@ -875,7 +881,7 @@ public class SQLQueryUIComponents {
        return rowLimitSpinner;
    }
    
-   public JTextArea getQueryArea() {
+   public RSyntaxTextArea getQueryArea() {
        return queryArea;
    }
    

@@ -188,6 +188,13 @@
 		    <version>1.8</version>
 		    <scope>compile</scope>
 		</dependency>
+	    <dependency>
+	      <groupId>org.fife</groupId>
+	      <artifactId>rsyntaxtextarea</artifactId>
+	      <version>1.0</version>
+	      <scope>system</scope>
+	      <systemPath>${basedir}/lib/rsyntaxtextarea.jar</systemPath>
+	    </dependency>
 	</dependencies>
 	
 	<repositories>
