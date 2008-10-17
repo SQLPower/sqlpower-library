@@ -897,7 +897,7 @@ public class SPSUtils {
         }
 
         JMenu parentMenu = input;
-        JMenu subMenu = new JMenu(Messages.getString("ASUtils.moreSubmenu")); //$NON-NLS-1$
+        JMenu subMenu = new JMenu(Messages.getString("SPSUtils.moreSubmenu")); //$NON-NLS-1$
         parentMenu.add(subMenu);
 
         while (input.getItemCount() > rowsPerSubMenu + 1) {
@@ -907,7 +907,7 @@ public class SPSUtils {
             if (subMenu.getItemCount() >= rowsPerSubMenu &&
                 input.getItemCount() > rowsPerSubMenu + 1 ) {
                 parentMenu = subMenu;
-                subMenu = new JMenu(Messages.getString("ASUtils.moreSubmenu")); //$NON-NLS-1$
+                subMenu = new JMenu(Messages.getString("SPSUtils.moreSubmenu")); //$NON-NLS-1$
                 parentMenu.add(subMenu);
             }
         }
