@@ -451,22 +451,27 @@ public class SQLQueryUIComponents {
 			DataFlavor[] flavours = dtde.getTransferable().getTransferDataFlavors();
 
 			String[] droppedStrings = null;
+			boolean isCommaSeperated = false;
 
 			// find the first acceptable data flavour
 			try {
 				for (int i = 0; i < flavours.length; i++) {
 					String mimeType = flavours[i].getMimeType();
+					//if the type is DBTree
 					if (mimeType.equals("application/x-java-serialized-object; class=\"[Ljava.lang.String;\"")) {
 						dtde.acceptDrop(DnDConstants.ACTION_COPY);
 						logger.debug("Accepting drop of type: " + mimeType);
 						droppedStrings = (String[]) dtde.getTransferable().getTransferData(flavours[i]);
+						isCommaSeperated = true;
 						break;
+					//if the type is text
 					} else if (mimeType.equals("application/x-java-serialized-object; class=java.lang.String")) {
 						dtde.acceptDrop(DnDConstants.ACTION_COPY);
 						logger.debug("Accepting drop of type: " + mimeType);
 						String text = (String) dtde.getTransferable().getTransferData(flavours[i]);
 						droppedStrings = new String[] { text };
 						break;
+					//if the type is file
 					} else if (mimeType.equals("application/x-java-file-list; class=java.util.List")) {
 						dtde.acceptDrop(DnDConstants.ACTION_COPY);
 						List fileList = (List)dtde.getTransferable().getTransferData(flavours[i]);
@@ -510,7 +515,7 @@ public class SQLQueryUIComponents {
 			StringBuilder buf = new StringBuilder();
 			boolean first = true;
 			for (String name : droppedStrings) {
-				if (!first) {
+				if (!first && isCommaSeperated) {
 					buf.append(", ");
 				}
 				buf.append(name);
