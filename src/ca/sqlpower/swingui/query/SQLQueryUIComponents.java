@@ -47,6 +47,7 @@ import java.awt.event.InputEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
+import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -463,6 +464,14 @@ public class SQLQueryUIComponents {
 						logger.debug("Accepting drop of type: " + mimeType);
 						String text = (String) dtde.getTransferable().getTransferData(flavours[i]);
 						droppedStrings = new String[] { text };
+						break;
+					} else if (mimeType.equals("application/x-java-file-list; class=java.util.List")) {
+						dtde.acceptDrop(DnDConstants.ACTION_COPY);
+						List fileList = (List)dtde.getTransferable().getTransferData(flavours[i]);
+						droppedStrings = new String[fileList.size()];
+						for(int j = 0; j < droppedStrings.length; j++) {
+							droppedStrings[j] = ((File)fileList.get(j)).getName();
+						}
 						break;
 					} else {
 						logger.debug("Unsupported flavour: " + mimeType + ". continuing...");
