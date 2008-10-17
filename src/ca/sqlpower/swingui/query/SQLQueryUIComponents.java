@@ -47,7 +47,9 @@ import java.awt.event.InputEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -470,7 +472,19 @@ public class SQLQueryUIComponents {
 						List fileList = (List)dtde.getTransferable().getTransferData(flavours[i]);
 						droppedStrings = new String[fileList.size()];
 						for(int j = 0; j < droppedStrings.length; j++) {
-							droppedStrings[j] = ((File)fileList.get(j)).getName();
+							StringBuffer fileContent = new StringBuffer();
+						    try {
+						        BufferedReader in = new BufferedReader(new FileReader(((File)fileList.get(j))));
+						        String str;
+						        while ((str = in.readLine()) != null) {
+						        	fileContent.append(str);
+						        	fileContent.append("\n");
+						        }
+						        droppedStrings[j] = fileContent.toString();
+						        in.close();  
+						    } catch (IOException e) {
+						    	logger.debug(" Can't open file " + ((File)fileList.get(j)).getName());
+						    }
 						}
 						break;
 					} else {
