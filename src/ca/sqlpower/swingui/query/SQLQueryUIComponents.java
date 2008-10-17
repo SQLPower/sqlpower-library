@@ -47,6 +47,9 @@ import java.awt.event.InputEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -78,8 +81,6 @@ import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
-import javax.swing.event.AncestorEvent;
-import javax.swing.event.AncestorListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.UndoableEditEvent;
@@ -384,43 +385,59 @@ public class SQLQueryUIComponents {
         }
         
     };
+    /**
+     * This is the method that will close the dialog and remove any connections in the dialog
+     */
+    public void closingDialogOwner(){
+    	
+    	logger.debug("attempting to close");
+        boolean commitedOrRollBacked = true;
+        for (Map.Entry<SPDataSource, ConnectionAndStatementBean> entry : conMap.entrySet()) {
+            try {	
+                Connection con = entry.getValue().getConnection();
+                if (!con.getAutoCommit() && entry.getValue().isConnectionUncommitted()) {
+                	commitedOrRollBacked = false;
+                    int result = JOptionPane.showOptionDialog(dialogOwner, Messages.getString("SQLQuery.commitOrRollback", entry.getKey().getName()),
+                            Messages.getString("SQLQuery.commitOrRollbackTitle"), JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+                            new Object[] {Messages.getString("SQLQuery.commit"), Messages.getString("SQLQuery.rollback"), "Cancel"}, Messages.getString("SQLQuery.commit"));
+                    if (result == JOptionPane.OK_OPTION) {
+                        con.commit();
+                        commitedOrRollBacked = true;
+                        con.close();
+                    } else if (result == JOptionPane.NO_OPTION) {
+                        con.rollback();
+                        commitedOrRollBacked = true;
+                        con.close();
+                    }else if(result == JOptionPane.CANCEL_OPTION) {
+                    	//Do nothing
+                    }
+                }
+                
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if(commitedOrRollBacked){
+        	dsCollection.removeDatabaseListChangeListener(dbListChangeListener);
+        	Window w = SwingUtilities.getWindowAncestor(dialogOwner);
+        	w.setVisible(false);
+        }
+    }
 
     /**
-     * Listens to when the an ancestor is added or removed. This will clean up open
-     * connections and remove handlers when the ancestor is removed.
+     * Listens to when the an window is added or removed. This will clean up open
+     * connections and remove handlers when the window is removed.
      */
-    private AncestorListener closeListener = new AncestorListener(){
+    private WindowListener windowListener = new WindowAdapter(){
 
-        public void ancestorAdded(AncestorEvent event) {
-            dsCollection.addDatabaseListChangeListener(dbListChangeListener);
-        }
+		public void windowClosing(WindowEvent arg0) {
+			closingDialogOwner();			
+		}
 
-        public void ancestorMoved(AncestorEvent event) {
-        }
+		public void windowOpened(WindowEvent arg0) {
+			dsCollection.addDatabaseListChangeListener(dbListChangeListener);
+		}};
 
-        public void ancestorRemoved(AncestorEvent event) {
-            logger.debug("Removing database list change listener");
-            dsCollection.removeDatabaseListChangeListener(dbListChangeListener);
-            for (Map.Entry<SPDataSource, ConnectionAndStatementBean> entry : conMap.entrySet()) {
-                try {
-                    Connection con = entry.getValue().getConnection();
-                    if (!con.getAutoCommit() && entry.getValue().isConnectionUncommitted()) {
-                        int result = JOptionPane.showOptionDialog(dialogOwner, Messages.getString("SQLQuery.commitOrRollback", entry.getKey().getName()),
-                                Messages.getString("SQLQuery.commitOrRollbackTitle"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
-                                new Object[] {Messages.getString("SQLQuery.commit"), Messages.getString("SQLQuery.rollback")}, Messages.getString("SQLQuery.commit"));
-                        if (result == JOptionPane.OK_OPTION) {
-                            con.commit();
-                        } else if (result == JOptionPane.CANCEL_OPTION) {
-                            con.rollback();   
-                        }
-                    }
-                    con.close();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            
-        }};
     /**
      * This Listener listens to anything that drops onto the queryTextArea
      */
@@ -453,7 +470,7 @@ public class SQLQueryUIComponents {
 			String[] droppedStrings = null;
 			boolean isCommaSeperated = false;
 
-			// find the first acceptable data flavour
+			// find the first acceptable data flavor
 			try {
 				for (int i = 0; i < flavours.length; i++) {
 					String mimeType = flavours[i].getMimeType();
@@ -701,8 +718,6 @@ public class SQLQueryUIComponents {
         databaseComboBox.setSelectedItem(null);
         databaseComboBox.addItemListener(new DatabaseItemListener());
         
-        dialogOwner.addAncestorListener(closeListener);
-        
         dialogOwner.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(
                 KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask())
                 , EXECUTE_QUERY_ACTION);
@@ -762,10 +777,11 @@ public class SQLQueryUIComponents {
 	 *            The collection of data sources that will be available for
 	 *            querying from the UI. This argument must not be null.
 	 */
-    public static JComponent createQueryPanel(SwingWorkerRegistry swRegistry, DataSourceCollection ds) {
+    public static JComponent createQueryPanel(SwingWorkerRegistry swRegistry, DataSourceCollection ds, Window owner) {
         
         JPanel defaultQueryPanel = new JPanel();
         SQLQueryUIComponents queryParts = new SQLQueryUIComponents(swRegistry, ds, defaultQueryPanel);
+        queryParts.addWindowListener(owner);
         JToolBar toolbar = new JToolBar();
         toolbar.add(queryParts.getExecuteButton());
         toolbar.add(queryParts.getStopButton());
@@ -861,6 +877,10 @@ public class SQLQueryUIComponents {
         tableAreaBuilder.append(tableScrollPane, 3);
         
         return tableAreaBuilder.getPanel();
+    }
+    
+    public void addWindowListener(Window container){
+    	container.addWindowListener(windowListener);
     }
 
     
