@@ -639,6 +639,10 @@ public class SQLQueryUIComponents {
         autoCommitToggleButton = new JToggleButton(new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.autoCommit")) {
         
             public void actionPerformed(ActionEvent e) {
+            	
+            	if(databaseComboBox.getSelectedItem() == null){
+            		return;
+            	}
                 Connection con = conMap.get(databaseComboBox.getSelectedItem()).getConnection();
                 if (con == null) {
                     return;
@@ -684,11 +688,17 @@ public class SQLQueryUIComponents {
         
         commitButton = new JButton(new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.commit")) {
             public void actionPerformed(ActionEvent e) {
+            	if(databaseComboBox.getSelectedItem() == null){
+            		return;
+            	}
                 commitCurrentDB();
             }});
         
         rollbackButton = new JButton(new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.rollback")){
             public void actionPerformed(ActionEvent e) {
+            	if(databaseComboBox.getSelectedItem() == null){
+            		return;
+            	}
                 rollbackCurrentDB();
             }});
         
