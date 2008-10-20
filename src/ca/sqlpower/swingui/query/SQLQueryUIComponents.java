@@ -879,7 +879,7 @@ public class SQLQueryUIComponents {
         FormLayout tableAreaLayout = new FormLayout("pref, 10dlu, pref:grow", "pref, 10dlu, fill:min(pref;100dlu):grow");
         DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
         tableAreaBuilder.setDefaultDialogBorder();
-        tableAreaBuilder.append(Messages.getString("SQLQuery.filter"));
+        tableAreaBuilder.append(Messages.getString("SQLQuery.search"));
         tableAreaBuilder.append(new JScrollPane(tableFilterTextArea));
         tableAreaBuilder.nextLine();
         tableAreaBuilder.nextLine();
