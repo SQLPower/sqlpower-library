@@ -703,7 +703,7 @@ public class SQLQueryUIComponents {
             }});
         
         
-        rowLimitSpinner = new JSpinner(new SpinnerNumberModel(1000, 0, Integer.MAX_VALUE, 1));
+        rowLimitSpinner = new JSpinner(new SpinnerNumberModel(Integer.MAX_VALUE, 0, Integer.MAX_VALUE, 1));
         
         queryArea = new RSyntaxTextArea();
         queryArea.restoreDefaultSyntaxHighlightingColorScheme();
@@ -814,7 +814,9 @@ public class SQLQueryUIComponents {
         textAreaBuilder.append(queryParts.getDatabaseComboBox());
         textAreaBuilder.append(queryParts.getDbcsManagerButton());
         textAreaBuilder.append(Messages.getString("SQLQuery.rowLimit"));
-        textAreaBuilder.append(queryParts.getRowLimitSpinner());
+        JSpinner rowlimitSpinner = queryParts.getRowLimitSpinner();
+        rowlimitSpinner.setValue(new Integer(1000));
+        textAreaBuilder.append(rowlimitSpinner);
         textAreaBuilder.nextLine();
         textAreaBuilder.append(new RTextScrollPane(300,200, queryParts.getQueryArea(), true), 7);
         
@@ -945,7 +947,7 @@ public class SQLQueryUIComponents {
    
    public JTabbedPane getResultTabPane(){
        return resultTabPane;
-}
+   }
  
 }
 
