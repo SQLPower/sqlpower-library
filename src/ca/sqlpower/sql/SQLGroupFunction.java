@@ -30,40 +30,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package ca.sqlpower.swingui.table;
-
-import java.sql.ResultSet;
-
-import javax.swing.JTable;
-import javax.swing.text.Document;
+package ca.sqlpower.sql;
 
 /**
- * A factory to create JTables. These tables can be sorted by clicking on their
- * headers and export selected rows to files.
+ * An enumeration of group (aggregate) functions we think SQL
+ * databases will support.
  */
-public class ResultSetTableFactory {
-	
-	/**
-	 * Returns a JTable to display the result set. The table can be sorted and
-	 * selections can be exported.
-	 */
-	public static JTable createResultSetJtable(ResultSet rs) {
-		ResultSetTableModel model = new ResultSetTableModel(rs);
-		return new FancyExportableJTable(model);
-	}
-	
+public enum SQLGroupFunction {
 
-	/**
-	 * Returns a JTable to display the result set. The table can be sorted and
-	 * selections can be exported. The table can also be filtered as you enter
-	 * text into the document provided.
-	 */
-	public static JTable createResultSetJTableWithSearch(ResultSet rs, Document doc) {
-		ResultSetTableModel model = new ResultSetTableModel(rs);
-		JTable t = new FancyExportableJTable(model, doc);
-		t.getTableHeader().setDefaultRenderer(new ComponentCellRenderer(t));
-		
-		return t;
-	}
-
+	SUM,
+	MIN,
+	MAX,
+	AVG,
+	COUNT,
+	FIRST,
+	LAST,
+	MID
 }
