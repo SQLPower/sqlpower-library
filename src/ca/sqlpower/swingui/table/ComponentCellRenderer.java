@@ -35,6 +35,9 @@ package ca.sqlpower.swingui.table;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.TextField;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -67,11 +70,11 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 	private static final Logger logger = Logger.getLogger(ComponentCellRenderer.class);
 	
 	private final TableCellRenderer renderer;
-	private final JTextField havingArea;
 	private int labelHeight;
 	private int comboBoxHeight;
-	private int havingAreaHeight;
+	private int havingFieldHeight;
 	private ArrayList<JComboBox> comboBoxes;
+	private ArrayList<JTextField> textFields;
 	 
 	public ComponentCellRenderer(JTable table){
 		
@@ -87,11 +90,11 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 			comboBoxItems.add(item.toString());
 		}
 		
+		textFields = new ArrayList<JTextField>();
 		for(int i = 0 ; i < table.getColumnCount(); i++){
 			comboBoxes.add(new JComboBox(comboBoxItems));
+			textFields.add(new JTextField());
 		}
-		havingArea = new JTextField();
-		
 		setLayout(new BorderLayout());
 
 	}
@@ -109,11 +112,16 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 			removeAll();
 			add((JLabel)c, BorderLayout.NORTH);
 			add(new JComboBox(new Object[] { comboBoxes.get(column).getSelectedItem() }), BorderLayout.CENTER);
-			System.out.println("component " + column+ " size"+ comboBoxes.get(column).getSize());
-			add(havingArea, BorderLayout.SOUTH);
+			
+			//We need to consistently set the size of the TextField in case they resize while its focused
+			textFields.get(column).setBounds(getXPositionOnColumn(table.getColumnModel(),column), labelHeight + comboBoxHeight, 
+					table.getColumnModel().getColumn(column).getWidth(), 
+					textFields.get(column).getSize().height);
+			
+			add(new JTextField(textFields.get(column).getText()), BorderLayout.SOUTH);
 			labelHeight = c.getPreferredSize().height;
 			comboBoxHeight = comboBoxes.get(column).getPreferredSize().height;
-			havingAreaHeight = havingArea.getPreferredSize().height;
+			havingFieldHeight = textFields.get(column).getPreferredSize().height;
 			
 		}
 		return this;
@@ -127,19 +135,21 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 		public void mouseClicked(MouseEvent e) {
 			int labelY = labelHeight;
 			int comboBoxY = labelHeight + comboBoxHeight;
-			int havingFieldY =   labelHeight + comboBoxHeight + havingAreaHeight;
+			int havingFieldY =   labelHeight + comboBoxHeight + havingFieldHeight;
     		JTableHeader h = (JTableHeader) e.getSource();
     		TableColumnModel columnModel = h.getColumnModel();
+    		int viewColumn = columnModel.getColumnIndexAtX(e.getX());
+    		if ( viewColumn < 0)
+    			return;
 			if(e.getY() > labelHeight && e.getY() < comboBoxY){
 				System.out.println(" its a combobox");
-				int viewColumn = columnModel.getColumnIndexAtX(e.getX());
 				System.out.println(" view column"+ viewColumn);
 		
 				JComboBox tempCB = comboBoxes.get(viewColumn);
 				h.add(tempCB);
 				TableColumn tc = columnModel.getColumn(viewColumn);
 				
-				tempCB.setBounds(getXPositionOnColumn(columnModel, viewColumn), labelHeight, tc.getWidth(), comboBoxHeight);
+				tempCB.setBounds(getXPositionOnColumn(columnModel, viewColumn),labelY, tc.getWidth(), comboBoxHeight);
 				logger.debug("Temporarily placing combo box at " + tempCB.getBounds());
 				tempCB.setPopupVisible(true);
 				
@@ -166,17 +176,31 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 				
 			} else if (e.getY() > comboBoxY && e.getY() < havingFieldY ) {
 				System.out.println("its a field");
+				JTextField tempTextField = textFields.get(viewColumn);
+				h.add(tempTextField);
+				TableColumn tc = columnModel.getColumn(viewColumn);
+				tempTextField.setBounds(getXPositionOnColumn(columnModel, viewColumn), comboBoxY, tc.getWidth(), havingFieldHeight);
+				tempTextField.addFocusListener(new FocusListener(){
+
+					public void focusGained(FocusEvent e){
+						JTextField tf = (JTextField)e.getSource();
+						tf.repaint();
+					}
+
+					public void focusLost(FocusEvent e) {
+						//do nothing	
+					}});	
 			}	
 		}
-		/**
-		 * Returns the x position of the given a column index.
-		 */
-		public int getXPositionOnColumn(TableColumnModel model, int columnIndex){
-			int sum = 0;
-			for(int i = 0; i < columnIndex; i ++){
-				sum += model.getColumn(i).getWidth();
-			}
-			return sum;
+	}
+	/**
+	 * Returns the x position of the given a column index.
+	 */
+	public int getXPositionOnColumn(TableColumnModel model, int columnIndex){
+		int sum = 0;
+		for(int i = 0; i < columnIndex; i ++){
+			sum += model.getColumn(i).getWidth();
 		}
+		return sum;
 	}
 }
