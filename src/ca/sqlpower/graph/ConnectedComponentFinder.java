@@ -32,11 +32,7 @@
 
 package ca.sqlpower.graph;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
@@ -49,43 +45,17 @@ public class ConnectedComponentFinder<V, E> {
 
     private static final Logger logger = Logger.getLogger(ConnectedComponentFinder.class);
     
-    /**
-     * A comparator for the components in the sets. This is used if we want to sort the
-     * sets as we find the connected components.
-     */
-    private Comparator<V> comparator;
-    
-    public ConnectedComponentFinder() {
-    	comparator = null;
-    }
-    
-    public ConnectedComponentFinder(Comparator<V> c) {
-    	comparator = c;
-    }
-    
     public Set<Set<V>> findConnectedComponents(GraphModel<V, E> model) {
         
         // all nodes in the graph that we have not yet assigned to a component
-        final Set<V> undiscovered;
-        if (comparator != null) {
-            ArrayList<V> sortedNodes = new ArrayList<V>(model.getNodes());
-            Collections.sort(sortedNodes, comparator);
-            undiscovered = new LinkedHashSet<V>(sortedNodes);
-        } else {
-            undiscovered = new HashSet<V>();
-            undiscovered.addAll(model.getNodes());
-        }
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("Nodes to process:" + undiscovered);
-                
-        }
+        final Set<V> undiscovered = new HashSet<V>();
+        undiscovered.addAll(model.getNodes());
 
         // the current component of the graph we're discovering using the BFS
         final Set<V> thisComponent = new HashSet<V>();
         
         // the components we've finished discovering
-        Set<Set<V>> components = new LinkedHashSet<Set<V>>();
+        Set<Set<V>> components = new HashSet<Set<V>>();
         
         BreadthFirstSearch<V, E> bfs = new BreadthFirstSearch<V, E>();
         bfs.addBreadthFirstSearchListener(new BreadthFirstSearchListener<V>() {

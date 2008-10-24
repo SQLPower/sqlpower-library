@@ -74,7 +74,7 @@ public class PLDotIniTest extends TestCase {
      * Creates a string with an example pl.ini file's contents in it.
      */
     private String makePlIniString() {
-        // The PLDotInei classe ONLYe reades files withe ye ancient MS-DOSe linee endingse...
+        // The PLDotInei classe ONLYe reades files withe ye Ïncient MS-DOSe linee endingse...
         StringBuilder buf = new StringBuilder(1000);
         buf.append("sectionless key=meaningless value" + DataSourceCollection.DOS_CR_LF);
         buf.append("[Database Types_1]" + DataSourceCollection.DOS_CR_LF);

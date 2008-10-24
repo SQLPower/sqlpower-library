@@ -33,7 +33,6 @@ package ca.sqlpower.swingui.table;
 
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -47,9 +46,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.swing.Icon;
-import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
@@ -139,7 +136,6 @@ public class TableModelSortDecorator extends AbstractTableModel {
     private TableModelListener tableModelListener;
     private Map columnComparators = new HashMap();
     private List sortingColumns = new ArrayList();
-    protected int labelSize;
 
     public TableModelSortDecorator() {
         this.mouseListener = new MouseHandler();
@@ -428,25 +424,23 @@ public class TableModelSortDecorator extends AbstractTableModel {
     }
 
     private class MouseHandler extends MouseAdapter {
-    	public void mouseClicked(MouseEvent e) {
-    		JTableHeader h = (JTableHeader) e.getSource();
-    		TableColumnModel columnModel = h.getColumnModel();
-    		if (e.getY() < labelSize){
-    			int viewColumn = columnModel.getColumnIndexAtX(e.getX());
-    			int column = columnModel.getColumn(viewColumn).getModelIndex();
-    			if (column != -1) {
-    				int status = getSortingStatus(column);
-    				if (!e.isControlDown()) {
-    					cancelSorting();
-    				}
-    				// Cycle the sorting states through {NOT_SORTED, ASCENDING, DESCENDING} or
-    				// {NOT_SORTED, DESCENDING, ASCENDING} depending on whether shift is pressed.
-    				status = status + (e.isShiftDown() ? -1 : 1);
-    				status = (status + 4) % 3 - 1; // signed mod, returning {-1, 0, 1}
-    				setSortingStatus(column, status);
-    			}
-    		}
-    	}
+        public void mouseClicked(MouseEvent e) {
+            JTableHeader h = (JTableHeader) e.getSource();
+            TableColumnModel columnModel = h.getColumnModel();
+            int viewColumn = columnModel.getColumnIndexAtX(e.getX());
+            int column = columnModel.getColumn(viewColumn).getModelIndex();
+            if (column != -1) {
+                int status = getSortingStatus(column);
+                if (!e.isControlDown()) {
+                    cancelSorting();
+                }
+                // Cycle the sorting states through {NOT_SORTED, ASCENDING, DESCENDING} or
+                // {NOT_SORTED, DESCENDING, ASCENDING} depending on whether shift is pressed.
+                status = status + (e.isShiftDown() ? -1 : 1);
+                status = (status + 4) % 3 - 1; // signed mod, returning {-1, 0, 1}
+                setSortingStatus(column, status);
+            }
+        }
     }
 
     private static class Arrow implements Icon {
@@ -501,14 +495,14 @@ public class TableModelSortDecorator extends AbstractTableModel {
             return size;
         }
     }
-    
+
     private class SortableHeaderRenderer implements TableCellRenderer {
         private TableCellRenderer tableCellRenderer;
 
         public SortableHeaderRenderer(TableCellRenderer tableCellRenderer) {
             this.tableCellRenderer = tableCellRenderer;
         }
-        
+
         public Component getTableCellRendererComponent(JTable table,
                                                        Object value,
                                                        boolean isSelected,
@@ -519,7 +513,6 @@ public class TableModelSortDecorator extends AbstractTableModel {
                     value, isSelected, hasFocus, row, column);
             if (c instanceof JLabel) {
                 JLabel l = (JLabel) c;
-                labelSize = l.getSize().height;
                 l.setHorizontalTextPosition(JLabel.LEFT);
                 int modelColumn = table.convertColumnIndexToModel(column);
                 l.setIcon(getHeaderRendererIcon(modelColumn, l.getFont().getSize()));

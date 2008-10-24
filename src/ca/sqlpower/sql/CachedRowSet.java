@@ -1,25 +1,13 @@
 package ca.sqlpower.sql;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.DatabaseMetaData;
-import java.sql.Ref;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.SQLWarning;
-import java.sql.Statement;
-import java.sql.Types;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
-
+import java.util.Collections;
+import java.sql.*;
+import java.math.BigDecimal;
 import org.apache.log4j.Logger;
 
 /**
@@ -63,7 +51,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	/**
 	 * The current row.  This gets updated by next().
 	 */
-	protected Object[] curRow;
+	private Object[] curRow;
 
 	/**
 	 * The current column.  This gets set to -1 (invalid) in next(),
@@ -190,7 +178,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		CachedRowSet newRowSet = new CachedRowSet();
 		newRowSet.rsmd = rsmd;
 		if (c != null) {
-			logger.info("CREATING NEW ARRAYLIST");
+			logger.info("[34mCREATING NEW ARRAYLIST[0m");
 			newRowSet.data = new ArrayList(data);
 			Collections.sort(newRowSet.data, c);
 		} else {
@@ -1073,37 +1061,10 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	}
 
 	/**
-	 * Returns the value in the current row at the given column index
-	 * (the first column number is 1, not 0). If the value retrieved at
-	 * the index is not a BigDecimal but can be converted to one it will
-	 * be converted and returned in a BigDecimal.
+	 * Not supported.
 	 */
     public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
-		curCol = columnIndex - 1;
-		if (curRow[columnIndex - 1] == null) {
-			return new BigDecimal(0);
-		} else {
-			Number value = (Number) curRow[columnIndex - 1];
-			if (value instanceof BigDecimal) {
-				return (BigDecimal) curRow[columnIndex - 1];
-			} else if (value instanceof BigInteger) {
-				return new BigDecimal((BigInteger) value);
-			} else if (value instanceof Byte) {
-				return new BigDecimal(((Byte) value).byteValue());
-			} else if (value instanceof Double) {
-				return new BigDecimal(((Double) value).doubleValue());
-			} else if (value instanceof Float) {
-				return new BigDecimal(((Float) value).floatValue());
-			} else if (value instanceof Integer) {
-				return new BigDecimal(((Integer) value).intValue());
-			} else if (value instanceof Long) {
-				return new BigDecimal(((Long) value).longValue());
-			} else if (value instanceof Short) {
-				return new BigDecimal(((Short) value).shortValue());
-			} else {
-				throw new UnsupportedOperationException("This method is not supported by CachedRowSet");
-			}
-		}
+		throw new UnsupportedOperationException("This method is not supported by CachedRowSet");
 	}
 
 	/**

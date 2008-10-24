@@ -97,7 +97,8 @@ public class ProgressWatcher implements ActionListener {
 
     /**
      * Create a ProgressWatcher with the given ProgressMonitor and Monitorable.
-     * It will leave the progress bar label blank. 
+     * It will leave the progress bar label blank. The label and progress bar will 
+     * remain visible after the monitorable is finished by default. 
      * <p>
      * The progress bar will not start up at this point. You should either use the static method
      * {@link #watchProgress(JProgressBar, Monitorable)} or call the {@link #start()}
@@ -207,12 +208,10 @@ public class ProgressWatcher implements ActionListener {
 
         if (label != null) {
             label.setVisible(true);
-            label.setText(monitorable.getMessage());
         }
 
         if (pm != null) { // using ProgressMonitor
             if (monitorable.hasStarted()) {					
-            	monitorable.setCancelled(pm.isCanceled());
                 if (jobSize != null) {
                     pm.setMaximum(jobSize.intValue());					
                 }

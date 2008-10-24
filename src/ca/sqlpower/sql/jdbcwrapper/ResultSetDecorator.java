@@ -27,13 +27,6 @@ import java.util.Map;
  * tweak return values.
  */
 public abstract class ResultSetDecorator implements ResultSet {
-	
-	public static void checkInterrupted() throws SQLException {
-		if (Thread.interrupted()) {
-			throw new SQLException("Operation canceled due to interrupt request.");
-		}
-	}
-
 
 	/**
 	 * The statement that created this result set.
@@ -59,17 +52,14 @@ public abstract class ResultSetDecorator implements ResultSet {
 	
 	// ------------ ResultSet interface is below this line ------------------
 	public boolean absolute(int row) throws SQLException {
-		ResultSetDecorator.checkInterrupted();
 		return resultSet.absolute(row);
 	}
 
 	public void afterLast() throws SQLException {
-		ResultSetDecorator.checkInterrupted();
 		resultSet.afterLast();
 	}
 
 	public void beforeFirst() throws SQLException {
-		ResultSetDecorator.checkInterrupted();
 		resultSet.beforeFirst();
 	}
 
@@ -90,12 +80,10 @@ public abstract class ResultSetDecorator implements ResultSet {
 	}
 
 	public int findColumn(String columnName) throws SQLException {
-		ResultSetDecorator.checkInterrupted();
 		return resultSet.findColumn(columnName);
 	}
 
 	public boolean first() throws SQLException {
-		ResultSetDecorator.checkInterrupted();
 		return resultSet.first();
 	}
 
@@ -370,7 +358,6 @@ public abstract class ResultSetDecorator implements ResultSet {
 	}
 
 	public void insertRow() throws SQLException {
-		ResultSetDecorator.checkInterrupted();
 		resultSet.insertRow();
 	}
 
@@ -391,27 +378,22 @@ public abstract class ResultSetDecorator implements ResultSet {
 	}
 
 	public boolean last() throws SQLException {
-		ResultSetDecorator.checkInterrupted();
 		return resultSet.last();
 	}
 
 	public void moveToCurrentRow() throws SQLException {
-		ResultSetDecorator.checkInterrupted();
 		resultSet.moveToCurrentRow();
 	}
 
 	public void moveToInsertRow() throws SQLException {
-		ResultSetDecorator.checkInterrupted();
 		resultSet.moveToInsertRow();
 	}
 
 	public boolean next() throws SQLException {
-		ResultSetDecorator.checkInterrupted();
 		return resultSet.next();
 	}
 
 	public boolean previous() throws SQLException {
-		ResultSetDecorator.checkInterrupted();
 		return resultSet.previous();
 	}
 
@@ -420,7 +402,6 @@ public abstract class ResultSetDecorator implements ResultSet {
 	}
 
 	public boolean relative(int rows) throws SQLException {
-		ResultSetDecorator.checkInterrupted();
 		return resultSet.relative(rows);
 	}
 
@@ -647,5 +628,6 @@ public abstract class ResultSetDecorator implements ResultSet {
 	public boolean wasNull() throws SQLException {
 		return resultSet.wasNull();
 	}
-
+	
+	
 }

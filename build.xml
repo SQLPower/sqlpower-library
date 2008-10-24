@@ -7,26 +7,7 @@
 	<property name="build.compiler" value="modern"/>
 	<property name="dist.jar" value="sqlpower_library.jar"/>
 	<property name="tests" value="regress"/>
-	<property name="reports.dir" value="${dist.dir}/reports"/>
-	
-	<!--
-		Set the format of the findbugs report to html by default
-	-->
-	<condition property="findbugs.report.format" value="html">
-		<not>
-			<isset property="findbugs.report.format"/>
-		</not>
-	</condition>
-	
-	<!--
-		Set the format of the pmd report to html by default
-	-->
-	<condition property="pmd.report.format" value="html">
-		<not>
-			<isset property="pmd.report.format"/>
-		</not>
-	</condition>
-	
+
 	<path id="compile.classpath">
 		<fileset dir="lib">
 			<include name="*.jar"/>
@@ -49,11 +30,6 @@
 		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
 		<copy tofile="${build}/ca/sqlpower/sql/default_database_types.ini"
 				     file="src/ca/sqlpower/sql/default_database_types.ini"/>
-		<copy todir="${build}/ca/sqlpower/validation/swingui">
-			<fileset dir="${src}/ca/sqlpower/validation/swingui/">
-				<include name="**/*.png"/>
-			</fileset>
-		</copy>
 		<copy todir="${build}/">
 			<fileset dir="src">
 				<include name="**/messages*.properties"/>
@@ -68,7 +44,7 @@
 	</target>
 	
 	<target name="test" depends="compile-tests">
-		<property name="reports.junit" value="${reports.dir}/junit"/>
+		<property name="reports.junit" value="${dist.dir}/reports/junit"/>
 		<mkdir dir="${reports.junit}"/>
 		<!-- Output all System.out and System.err messages -->
 	   <junit printsummary="on" showoutput="no">
@@ -89,13 +65,14 @@
 		</junitreport>
 	</target>
 	
+	
 	<target name="jar" depends="compile, test">
 		<jar jarfile="${build}/${dist.jar}" basedir="${build}" 
 			includes="META-INF/*,ca/**">
 		</jar>
 	</target>
 
-	<target name="dist" depends="jar, pmd, pmd-cpd, findbugs, javadoc">
+	<target name="dist" depends="jar">
 		<copy file="${build}/${dist.jar}" todir="${dist.dir}"/>
 	</target>
 
@@ -105,120 +82,5 @@
 
 	<target name="dist-clean" depends="clean">
 		<delete dir="${dist.dir}"/>
-	</target>
-	
-	<target name="javadoc" 
-		description="Generate the Javadoc documentation for the MatchMaker API"
-		depends="compile">
-		<mkdir dir="${dist.dir}/doc/api"/>
-		<javadoc sourcepath="${src}" destdir="${dist.dir}/doc/api"
-			packagenames="ca.sqlpower.*"
-			maxmemory="100m"
-			windowtitle="ca.sqlpower.* SQL Power Library"
-			Version="true" Author="true" Use="true"
-			Overview="html/overview.html"
-			classpathref="test.classpath"
-			>
-			<packageset dir="${src}" defaultexcludes="yes">
-				<include name="ca/sqlpower/**" />
-				<exclude name="regress/**"/>
-			</packageset>
-			<bottom><![CDATA[<i>Copyright &#169; 2003-2008 SQL Power Group Inc. <a href="http://www.sqlpower.ca/">www.sqlpower.ca</a>]]></bottom>
-		</javadoc>
-	</target>
-	
-	<target name="javadoc.with.umlgraph" 
-		description="Generate the Javadoc documentation for the MatchMaker API along with UML diagrams generated using UMLGraph"
-		depends="compile">
-		<mkdir dir="${dist.dir}/doc/api"/>
-		<javadoc sourcepath="${src}" destdir="${dist.dir}/doc/api"
-			packagenames="ca.sqlpower.*"
-			maxmemory="100m"
-			windowtitle="ca.sqlpower.* SQL Power Library"
-			Version="true" Author="true" Use="true"
-			Overview="html/overview.html"
-			classpathref="test.classpath"
-			>
-			<doclet name="gr.spinellis.umlgraph.doclet.UmlGraphDoc"
-    		  path="buildlib/UmlGraph.jar">
-    	        <param name="-attributes" />
-    	        <param name="-operations" />
-    	        <param name="-qualify" />
-    	        <param name="-types" />
-    	        <param name="-visibility" />
-    	    </doclet>
-			<packageset dir="${src}" defaultexcludes="yes">
-				<include name="ca/sqlpower/**" />
-				<exclude name="regress/**"/>
-			</packageset>
-			<bottom><![CDATA[<i>Copyright &#169; 2003-2008 SQL Power Group Inc. <a href="http://www.sqlpower.ca/">www.sqlpower.ca</a>]]></bottom>
-		</javadoc>
-		
-		<apply executable="dot" dest="${dist.dir}/doc" parallel="false">
-			<arg value="-Tpng"/>
-			<arg value="-o"/>
-			<targetfile/>
-			<srcfile/>
-			<fileset dir="${dist.dir}/doc" includes="*.dot"/>
-			<mapper type="glob" from="*.dot" to="*.png"/>
-		</apply>
-	</target>
-	
-	<!-- findbugs code checking tool -->
-	<property name="findbugs.home" value="ext-tools/findbugs"/>
-	<property name="findbugs-ant.jar" value="${findbugs.home}/lib/findbugs-ant.jar"/>
-	
-	<target name="findbugs"
-		description="Runs the FindBugs tool, outputs results to a text file"
-		depends="compile">
-		<mkdir dir="${reports.dir}"/>
-		<taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask"
-			classpath="${findbugs-ant.jar}"/>
-		<findbugs home="${findbugs.home}"
-			output="${findbugs.report.format}"
-			outputFile="${reports.dir}/findbugs.${findbugs.report.format}"
-			reportLevel="low"
-			jvmargs="-Xmx512m">  <!-- FindBugs can use up a lot of memory, so adjust the JVM memory here-->
-			<class location="${build}" />
-			<sourcePath path="${src}" />
-			<!-- Classes needed by our code but that we don't want tested -->
-			<systemProperty name="findbugs.maskedfields.locals" value='true'/>
-		</findbugs>
-	</target>
-	
-	<property name="pmd.home" value="ext-tools/pmd"/>
-	<property name="pmd.jar" value="${pmd.home}/lib/pmd-4.2.3.jar"/>
-	
-	<target name="pmd"
-		description="Runs the PMD code checking tool, saving results to a file."
-		>
-	 	<mkdir dir="${reports.dir}"/>
-		<taskdef name="pmd" classname="net.sourceforge.pmd.ant.PMDTask"
-			classpath="${pmd.jar}"/>
-		<property name="pmd-results" value="${reports.dir}/pmd.${pmd.report.format}"/>
-		<pmd shortFilenames="true" targetjdk="1.5">
-			<ruleset>basic,imports</ruleset>
-			<formatter type="${pmd.report.format}" toFile="${pmd-results}"/>
-			<fileset dir="${src}">
-				<include name="ca/sqlpower/**/*.java"/>
-			</fileset>
-		</pmd>
-		<echo message="PMD completed, output is in ${pmd-results}."/>
-	</target>
-	
-	<target name="pmd-cpd"
-		description="Runs the PMD Copy/Paste Detection tool, and saves results to a file">
-	 	<mkdir dir="${reports.dir}"/>
-		<taskdef name="cpd" classname="net.sourceforge.pmd.cpd.CPDTask"
-			classpath="${pmd.jar}"/>
-		<property name="cpd-results" value="${reports.dir}/pmd-cpd.xml"/>
-		<cpd encoding="UTF-8" minimumTokenCount="120" format="xml" outputfile="${cpd-results}">
-			<fileset dir="${src}">
-				<include name="ca/sqlpower/**/*.java"/>
-				<exclude name="generated/**.java"/>
-			</fileset>
-		</cpd>
-		<xslt in="${cpd-results}" style="${pmd.home}/etc/xslt/cpdhtml.xslt" out="${reports.dir}/pmd-cpd.html" />
-		<echo message="CPD completed, output is in ${reports}/cpd-ant-results.html."/>
 	</target>
 </project>

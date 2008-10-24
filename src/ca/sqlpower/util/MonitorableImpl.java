@@ -31,8 +31,6 @@
  */
 package ca.sqlpower.util;
 
-import java.util.concurrent.CancellationException;
-
 /**
  * The simplest possible Monitorable implementation. It simply starts with
  * reasonable defaults, which you can modify as much as you want. The getter
@@ -61,8 +59,6 @@ import java.util.concurrent.CancellationException;
  */
 public class MonitorableImpl implements Monitorable {
 
-    private static final org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(MonitorableImpl.class);
-    
     private int progress = 0;
     private Integer jobSize = null;
     private String message = null;
@@ -95,7 +91,6 @@ public class MonitorableImpl implements Monitorable {
     }
     
     public synchronized int getProgress() {
-        logger.debug("Returning progress " + progress + "/" + getJobSize() + " message="+getMessage()+" started="+hasStarted()+" finished="+isFinished()+" cancelled="+isCancelled());
         return progress;
     }
     
@@ -136,11 +131,5 @@ public class MonitorableImpl implements Monitorable {
                                  finished, 
                                  cancelled, 
                                  message);
-    }
-    
-    public synchronized void checkCancelled() {
-        if (isCancelled()) {
-            throw new CancellationException();
-        }
     }
 }
