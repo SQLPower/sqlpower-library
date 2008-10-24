@@ -207,7 +207,6 @@ public class ProgressWatcher implements ActionListener {
 
         if (label != null) {
             label.setVisible(true);
-            label.setText(monitorable.getMessage());
         }
 
         if (pm != null) { // using ProgressMonitor

@@ -63,7 +63,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	/**
 	 * The current row.  This gets updated by next().
 	 */
-	protected Object[] curRow;
+	private Object[] curRow;
 
 	/**
 	 * The current column.  This gets set to -1 (invalid) in next(),
@@ -190,7 +190,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		CachedRowSet newRowSet = new CachedRowSet();
 		newRowSet.rsmd = rsmd;
 		if (c != null) {
-			logger.info("CREATING NEW ARRAYLIST");
+			logger.info("[34mCREATING NEW ARRAYLIST[0m");
 			newRowSet.data = new ArrayList(data);
 			Collections.sort(newRowSet.data, c);
 		} else {

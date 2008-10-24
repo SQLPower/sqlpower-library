@@ -201,18 +201,6 @@ public class DatabaseConnectionManager {
 	private List<JButton> additionalActionButtons = new ArrayList<JButton>();
 	
 	/**
-	 * Creates a new database connection manager with the default data source
-	 * and data source type dialog factories.
-	 * 
-	 * @param dsCollection The data source collection to manage
-	 */
-	public DatabaseConnectionManager(DataSourceCollection dsCollection) {
-	    this(dsCollection,
-	            new DefaultDataSourceDialogFactory(),
-	            new DefaultDataSourceTypeDialogFactory(dsCollection),
-	            (List<Action>) Collections.EMPTY_LIST);
-	}
-	/**
 	 * Creates a new database connection manager with the default set of action buttons, plus
 	 * those supplied in the given list.
 	 */
