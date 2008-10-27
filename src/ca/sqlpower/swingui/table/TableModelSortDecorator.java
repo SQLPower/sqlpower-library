@@ -433,6 +433,10 @@ public class TableModelSortDecorator extends AbstractTableModel {
     		TableColumnModel columnModel = h.getColumnModel();
     		if (e.getY() < labelSize){
     			int viewColumn = columnModel.getColumnIndexAtX(e.getX());
+    			
+    			if(viewColumn < 0){
+    				return;
+    			}
     			int column = columnModel.getColumn(viewColumn).getModelIndex();
     			if (column != -1) {
     				int status = getSortingStatus(column);
