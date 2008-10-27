@@ -150,34 +150,34 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 	 * as well as what component is being clicked.
 	 */
 	private class HeaderMouseListener extends MouseAdapter {
-		
+
 		/*
 		 * The JTextField should lose its focus when dragging so i can be set to invisible
 		 */
 		public void mousePressed(MouseEvent e) {
-			
+
 			int labelY = labelHeight;
 			int comboBoxY = labelHeight + comboBoxHeight;
 			int havingFieldY =   labelHeight + comboBoxHeight + havingFieldHeight;
 			JTableHeader h = (JTableHeader) e.getSource();
 			TableColumnModel columnModel = h.getColumnModel();
 			int viewIndex = columnModel.getColumnIndexAtX(e.getX());
-			
+
 			if ( viewIndex < 0) {
 				return;    			
 			}
 
 			int modelIndex = columnModel.getColumn(viewIndex).getModelIndex();
-			
+
 			if( e.getY() < comboBoxY) {
 				//Disable Focus on textField if it presses anywhere else on the header.
 				textFields.get(modelIndex).setFocusable(false);
 			}
 			//when click comboBox
 			if(e.getY() > labelHeight && e.getY() < comboBoxY){
-				
+
 				TableColumn tc = columnModel.getColumn(viewIndex);
-				
+
 				//add a bufferZone So we can resize column and now have the comboBox showing
 				if(e.getX()-getXPositionOnColumn(columnModel, viewIndex) < 3 || 
 						(getXPositionOnColumn(columnModel, viewIndex) + tc.getWidth()) -e.getX() < 3){
@@ -188,13 +188,13 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 				tempCB.setBounds(getXPositionOnColumn(columnModel, viewIndex),labelY, tc.getWidth(), comboBoxHeight);
 				logger.debug("Temporarily placing combo box at " + tempCB.getBounds());
 				tempCB.setPopupVisible(true);
-				
+
 				tempCB.addPopupMenuListener(new PopupMenuListener() {
-					
+
 					public void popupMenuCanceled(PopupMenuEvent e) {
 						// don't care
 					}
-					
+
 					public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
 						JComboBox cb = (JComboBox) e.getSource();
 						cb.removePopupMenuListener(this);
@@ -202,21 +202,21 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 						cbparent.remove(cb);
 						cbparent.repaint();
 					}
-					
+
 					public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
 						JComboBox cb = (JComboBox) e.getSource();
 						cb.repaint();
 					}
-					
+
 				});
-				
+
 			}
 			//when click text Field
 			else if (e.getY() > comboBoxY && e.getY() < havingFieldY ) {
-				
+
 				//reEnable the TextField if they clicked on the TextFieldArea
 				textFields.get(modelIndex).setFocusable(true);
-				
+
 				JTextField tempTextField = textFields.get(modelIndex);
 				logger.debug("viewIndex" + viewIndex);
 				logger.debug("modelIndex" + modelIndex);
@@ -230,7 +230,7 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 				tempTextField.requestFocus();
 				logger.debug("Temporarily placing TextField at " + tempTextField.getBounds());
 				tempTextField.addFocusListener(new FocusListener(){
-					
+
 					public void focusGained(FocusEvent e){
 						JTextField tf = (JTextField)e.getSource();
 						Container tfparent = tf.getParent();
@@ -239,10 +239,10 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 					public void focusLost(FocusEvent e) {
 						JTextField tf = (JTextField)e.getSource();
 						Container tfparent = tf.getParent();
-						
+
 						logger.debug("child is" + tf);
 						logger.debug("parent is"+ tfparent);
-						
+
 						if (tfparent != null) {
 							tfparent.remove(tf);
 							tfparent.repaint();
@@ -251,9 +251,9 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 			}	
 		}
 
-			
-		}
-	
+
+	}
+
 	/**
 	 * Returns the x position of the given a column index.
 	 */
@@ -264,7 +264,7 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 		}
 		return sum;
 	}
- 
+
 	/**
 	 * Just for testing and maybe a quick demo of the way to use this
 	 * thingy.
