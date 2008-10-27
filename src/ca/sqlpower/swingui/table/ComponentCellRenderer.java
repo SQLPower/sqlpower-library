@@ -106,7 +106,7 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 		}
 		
 		textFields = new ArrayList<JTextField>();
-		for(int i = 0 ; i < table.getColumnCount(); i++) {
+		for(int i = 0 ; i < table.getColumnCount(); i++){
 			comboBoxes.add(new JComboBox(comboBoxItems));
 			JTextField textField = new JTextField();
 			textFields.add(textField);
@@ -128,7 +128,14 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 			removeAll();
 			add((JLabel)c, BorderLayout.NORTH);
 			int modelIndex = table.getColumnModel().getColumn(column).getModelIndex();
-			add(new JComboBox(new Object[] { comboBoxes.get(modelIndex).getSelectedItem() }), BorderLayout.CENTER);		
+			add(new JComboBox(new Object[] { comboBoxes.get(modelIndex).getSelectedItem() }), BorderLayout.CENTER);
+			
+			//We need to consistently set the size of the TextField in case they resize while its focused
+			textFields.get(modelIndex).setBounds(getXPositionOnColumn(table.getColumnModel(),column), labelHeight + comboBoxHeight, 
+					table.getColumnModel().getColumn(column).getWidth(), 
+					textFields.get(column).getSize().height);
+			
+			
 			add(new JTextField(textFields.get(modelIndex).getText()), BorderLayout.SOUTH);
 			labelHeight = c.getPreferredSize().height;
 			comboBoxHeight = comboBoxes.get(modelIndex).getPreferredSize().height;
@@ -162,15 +169,18 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 
 			int modelIndex = columnModel.getColumn(viewIndex).getModelIndex();
 			
-			if(e.getY() < labelY){
+			if( e.getY() < comboBoxY) {
+				//Disable Focus on textField if it presses anywhere else on the header.
 				textFields.get(modelIndex).setFocusable(false);
-			} else if(e.getY() > labelY && e.getY() < comboBoxY){
+			}
+			//when click comboBox
+			if(e.getY() > labelHeight && e.getY() < comboBoxY){
 				
-				//Disable focus
-				textFields.get(modelIndex).setFocusable(false);
-				TableColumn tc = columnModel.getColumn(viewIndex);	
-				if(e.getX()-getXPositionOnColumn(columnModel, viewIndex) <= 2 || tc.getWidth()- e.getX() <= 2){
-					System.out.println("returning");
+				TableColumn tc = columnModel.getColumn(viewIndex);
+				
+				//add a bufferZone So we can resize column and now have the comboBox showing
+				if(e.getX()-getXPositionOnColumn(columnModel, viewIndex) < 3 || 
+						(getXPositionOnColumn(columnModel, viewIndex) + tc.getWidth()) -e.getX() < 3){
 					return;
 				}
 				JComboBox tempCB = comboBoxes.get(modelIndex);
@@ -223,7 +233,8 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 					
 					public void focusGained(FocusEvent e){
 						JTextField tf = (JTextField)e.getSource();
-						tf.repaint();
+						Container tfparent = tf.getParent();
+						tfparent.repaint();
 					}
 					public void focusLost(FocusEvent e) {
 						JTextField tf = (JTextField)e.getSource();
@@ -239,6 +250,7 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 					}});	
 			}	
 		}
+
 			
 		}
 	
