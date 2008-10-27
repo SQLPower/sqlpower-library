@@ -35,19 +35,27 @@ package ca.sqlpower.swingui.table;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
-import java.awt.TextField;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.File;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Vector;
 
 import javax.swing.JComboBox;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import javax.swing.table.JTableHeader;
@@ -55,9 +63,16 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.log4j.SimpleLayout;
 
+import ca.sqlpower.sql.DataSourceCollection;
+import ca.sqlpower.sql.PlDotIni;
+import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.SQLGroupFunction;
+import ca.sqlpower.swingui.ColourScheme;
 
 
 /* A renderer that extends JPanel.This renderer will add a JComboBox 
@@ -91,9 +106,10 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 		}
 		
 		textFields = new ArrayList<JTextField>();
-		for(int i = 0 ; i < table.getColumnCount(); i++){
+		for(int i = 0 ; i < table.getColumnCount(); i++) {
 			comboBoxes.add(new JComboBox(comboBoxItems));
-			textFields.add(new JTextField());
+			JTextField textField = new JTextField();
+			textFields.add(textField);
 		}
 		setLayout(new BorderLayout());
 
@@ -111,18 +127,14 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 		if(c instanceof JLabel) {
 			removeAll();
 			add((JLabel)c, BorderLayout.NORTH);
-			add(new JComboBox(new Object[] { comboBoxes.get(column).getSelectedItem() }), BorderLayout.CENTER);
-			
-			//We need to consistently set the size of the TextField in case they resize while its focused
-			textFields.get(column).setBounds(getXPositionOnColumn(table.getColumnModel(),column), labelHeight + comboBoxHeight, 
-					table.getColumnModel().getColumn(column).getWidth(), 
-					textFields.get(column).getSize().height);
-			
-			add(new JTextField(textFields.get(column).getText()), BorderLayout.SOUTH);
+			int modelIndex = table.getColumnModel().getColumn(column).getModelIndex();
+			add(new JComboBox(new Object[] { comboBoxes.get(modelIndex).getSelectedItem() }), BorderLayout.CENTER);		
+			add(new JTextField(textFields.get(modelIndex).getText()), BorderLayout.SOUTH);
 			labelHeight = c.getPreferredSize().height;
-			comboBoxHeight = comboBoxes.get(column).getPreferredSize().height;
-			havingFieldHeight = textFields.get(column).getPreferredSize().height;
+			comboBoxHeight = comboBoxes.get(modelIndex).getPreferredSize().height;
+			havingFieldHeight = textFields.get(modelIndex).getPreferredSize().height;
 			
+			logger.debug("Provided cell renderer for viewIndex="+column+" modelIndex="+modelIndex);
 		}
 		return this;
 	}
@@ -131,34 +143,48 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 	 * as well as what component is being clicked.
 	 */
 	private class HeaderMouseListener extends MouseAdapter {
-
-		public void mouseClicked(MouseEvent e) {
+		
+		/*
+		 * The JTextField should lose its focus when dragging so i can be set to invisible
+		 */
+		public void mousePressed(MouseEvent e) {
+			
 			int labelY = labelHeight;
 			int comboBoxY = labelHeight + comboBoxHeight;
 			int havingFieldY =   labelHeight + comboBoxHeight + havingFieldHeight;
-    		JTableHeader h = (JTableHeader) e.getSource();
-    		TableColumnModel columnModel = h.getColumnModel();
-    		int viewColumn = columnModel.getColumnIndexAtX(e.getX());
-    		if ( viewColumn < 0)
-    			return;
-			if(e.getY() > labelHeight && e.getY() < comboBoxY){
-				System.out.println(" its a combobox");
-				System.out.println(" view column"+ viewColumn);
-		
-				JComboBox tempCB = comboBoxes.get(viewColumn);
-				h.add(tempCB);
-				TableColumn tc = columnModel.getColumn(viewColumn);
+			JTableHeader h = (JTableHeader) e.getSource();
+			TableColumnModel columnModel = h.getColumnModel();
+			int viewIndex = columnModel.getColumnIndexAtX(e.getX());
+			
+			if ( viewIndex < 0) {
+				return;    			
+			}
+
+			int modelIndex = columnModel.getColumn(viewIndex).getModelIndex();
+			
+			if(e.getY() < labelY){
+				textFields.get(modelIndex).setFocusable(false);
+			} else if(e.getY() > labelY && e.getY() < comboBoxY){
 				
-				tempCB.setBounds(getXPositionOnColumn(columnModel, viewColumn),labelY, tc.getWidth(), comboBoxHeight);
+				//Disable focus
+				textFields.get(modelIndex).setFocusable(false);
+				TableColumn tc = columnModel.getColumn(viewIndex);	
+				if(e.getX()-getXPositionOnColumn(columnModel, viewIndex) <= 2 || tc.getWidth()- e.getX() <= 2){
+					System.out.println("returning");
+					return;
+				}
+				JComboBox tempCB = comboBoxes.get(modelIndex);
+				h.add(tempCB);
+				tempCB.setBounds(getXPositionOnColumn(columnModel, viewIndex),labelY, tc.getWidth(), comboBoxHeight);
 				logger.debug("Temporarily placing combo box at " + tempCB.getBounds());
 				tempCB.setPopupVisible(true);
 				
 				tempCB.addPopupMenuListener(new PopupMenuListener() {
-
+					
 					public void popupMenuCanceled(PopupMenuEvent e) {
 						// don't care
 					}
-
+					
 					public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
 						JComboBox cb = (JComboBox) e.getSource();
 						cb.removePopupMenuListener(this);
@@ -166,7 +192,7 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 						cbparent.remove(cb);
 						cbparent.repaint();
 					}
-
+					
 					public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
 						JComboBox cb = (JComboBox) e.getSource();
 						cb.repaint();
@@ -174,25 +200,48 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 					
 				});
 				
-			} else if (e.getY() > comboBoxY && e.getY() < havingFieldY ) {
-				System.out.println("its a field");
-				JTextField tempTextField = textFields.get(viewColumn);
+			}
+			//when click text Field
+			else if (e.getY() > comboBoxY && e.getY() < havingFieldY ) {
+				
+				//reEnable the TextField if they clicked on the TextFieldArea
+				textFields.get(modelIndex).setFocusable(true);
+				
+				JTextField tempTextField = textFields.get(modelIndex);
+				logger.debug("viewIndex" + viewIndex);
+				logger.debug("modelIndex" + modelIndex);
 				h.add(tempTextField);
-				TableColumn tc = columnModel.getColumn(viewColumn);
-				tempTextField.setBounds(getXPositionOnColumn(columnModel, viewColumn), comboBoxY, tc.getWidth(), havingFieldHeight);
+				logger.debug("Children of h: " + Arrays.toString(h.getComponents()));
+				if (!tempTextField.isVisible()) {
+					throw new IllegalStateException("tempTextField was not visible");
+				}
+				TableColumn tc = columnModel.getColumn(viewIndex);
+				tempTextField.setBounds(getXPositionOnColumn(columnModel, viewIndex), comboBoxY, tc.getWidth(), havingFieldHeight);
+				tempTextField.requestFocus();
+				logger.debug("Temporarily placing TextField at " + tempTextField.getBounds());
 				tempTextField.addFocusListener(new FocusListener(){
-
+					
 					public void focusGained(FocusEvent e){
 						JTextField tf = (JTextField)e.getSource();
 						tf.repaint();
 					}
-
 					public void focusLost(FocusEvent e) {
-						//do nothing	
+						JTextField tf = (JTextField)e.getSource();
+						Container tfparent = tf.getParent();
+						
+						logger.debug("child is" + tf);
+						logger.debug("parent is"+ tfparent);
+						
+						if (tfparent != null) {
+							tfparent.remove(tf);
+							tfparent.repaint();
+						}
 					}});	
 			}	
 		}
-	}
+			
+		}
+	
 	/**
 	 * Returns the x position of the given a column index.
 	 */
@@ -202,5 +251,37 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 			sum += model.getColumn(i).getWidth();
 		}
 		return sum;
+	}
+ 
+	/**
+	 * Just for testing and maybe a quick demo of the way to use this
+	 * thingy.
+	 */
+	public static void main(String[] args) {
+		Logger.getRootLogger().addAppender(new ConsoleAppender(new SimpleLayout(), "System.out"));
+		logger.setLevel(Level.DEBUG);
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					DataSourceCollection dscol = new PlDotIni();
+					dscol.read(new File(System.getProperty("user.home"), "pl.ini"));
+					SPDataSource ds = dscol.getDataSource("thomas on random");
+					Connection con = ds.createConnection();
+					Statement stmt = con.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
+					ResultSet rs = stmt.executeQuery("select 'a' as a, 'b' as b, 'c' as c, 'd' as d, 'e' as snuffy");
+					ResultSetTableModel tm = new ResultSetTableModel(rs);
+					JTable t = new JTable(tm);
+					ComponentCellRenderer headerRenderer = new ComponentCellRenderer(t);
+					t.getTableHeader().setDefaultRenderer(headerRenderer);
+					JFrame f = new JFrame("Cows moo");
+					f.setContentPane(new JScrollPane(t));
+					f.pack();
+					f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+					f.setVisible(true);
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+			}
+		});
 	}
 }
