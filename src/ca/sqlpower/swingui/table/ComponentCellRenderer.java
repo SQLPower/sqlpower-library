@@ -85,16 +85,19 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 	private static final Logger logger = Logger.getLogger(ComponentCellRenderer.class);
 	
 	private final TableCellRenderer renderer;
+	private final JTableHeader tableheader;
 	private int labelHeight;
 	private int comboBoxHeight;
 	private int havingFieldHeight;
 	private ArrayList<JComboBox> comboBoxes;
 	private ArrayList<JTextField> textFields;
+	private boolean groupingEnabled;
 	 
 	public ComponentCellRenderer(JTable table){
-		
+		this.tableheader = table.getTableHeader();
 		this.renderer = table.getTableHeader().getDefaultRenderer();
 		table.getTableHeader().addMouseListener(new HeaderMouseListener());
+		groupingEnabled = true;
 		
 		comboBoxes = new ArrayList<JComboBox>();
 		Vector<String> comboBoxItems = new Vector<String>();
@@ -107,8 +110,10 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 		
 		textFields = new ArrayList<JTextField>();
 		for(int i = 0 ; i < table.getColumnCount(); i++){
-			comboBoxes.add(new JComboBox(comboBoxItems));
 			JTextField textField = new JTextField();
+			JComboBox comboBox = new JComboBox(comboBoxItems);
+			
+			comboBoxes.add(comboBox);
 			textFields.add(textField);
 		}
 		setLayout(new BorderLayout());
@@ -121,27 +126,36 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 	 */
 	public Component getTableCellRendererComponent(JTable table, Object value,
 			boolean isSelected, boolean hasFocus, int row, int column) {
-	
+
 		Component c = renderer.getTableCellRendererComponent(table, value, 
 				isSelected, hasFocus, row, column);
 		if(c instanceof JLabel) {
 			removeAll();
-			add((JLabel)c, BorderLayout.NORTH);
-			int modelIndex = table.getColumnModel().getColumn(column).getModelIndex();
-			add(new JComboBox(new Object[] { comboBoxes.get(modelIndex).getSelectedItem() }), BorderLayout.CENTER);
 			
-			//We need to consistently set the size of the TextField in case they resize while its focused
-			textFields.get(modelIndex).setBounds(getXPositionOnColumn(table.getColumnModel(),column), labelHeight + comboBoxHeight, 
-					table.getColumnModel().getColumn(column).getWidth(), 
-					textFields.get(column).getSize().height);
-			
-			
-			add(new JTextField(textFields.get(modelIndex).getText()), BorderLayout.SOUTH);
-			labelHeight = c.getPreferredSize().height;
-			comboBoxHeight = comboBoxes.get(modelIndex).getPreferredSize().height;
-			havingFieldHeight = textFields.get(modelIndex).getPreferredSize().height;
-			
-			logger.debug("Provided cell renderer for viewIndex="+column+" modelIndex="+modelIndex);
+			if(!groupingEnabled) {
+				add((JLabel)c, BorderLayout.CENTER);
+				revalidate();
+				System.out.println("is disabled");
+			} else {
+				System.out.println("is  not disabled");
+				add((JLabel)c, BorderLayout.NORTH);
+				int modelIndex = table.getColumnModel().getColumn(column).getModelIndex();
+				add(new JComboBox(new Object[] { comboBoxes.get(modelIndex).getSelectedItem() }), BorderLayout.CENTER);
+
+				//We need to consistently set the size of the TextField in case they resize while its focused
+				textFields.get(modelIndex).setBounds(getXPositionOnColumn(table.getColumnModel(),column), labelHeight + comboBoxHeight, 
+						table.getColumnModel().getColumn(column).getWidth(), 
+						textFields.get(column).getSize().height);
+
+
+				add(new JTextField(textFields.get(modelIndex).getText()), BorderLayout.SOUTH);
+				labelHeight = c.getPreferredSize().height;
+				comboBoxHeight = comboBoxes.get(modelIndex).getPreferredSize().height;
+				havingFieldHeight = textFields.get(modelIndex).getPreferredSize().height;
+				revalidate();
+				//setSize(c.getPreferredSize().width, labelHeight+ comboBoxHeight+ havingFieldHeight);
+				logger.debug("Provided cell renderer for viewIndex="+column+" modelIndex="+modelIndex);
+			}
 		}
 		return this;
 	}
@@ -184,6 +198,10 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 					return;
 				}
 				JComboBox tempCB = comboBoxes.get(modelIndex);
+				
+				if(!tempCB.isEnabled()) {
+					return;
+				}
 				h.add(tempCB);
 				tempCB.setBounds(getXPositionOnColumn(columnModel, viewIndex),labelY, tc.getWidth(), comboBoxHeight);
 				logger.debug("Temporarily placing combo box at " + tempCB.getBounds());
@@ -214,6 +232,9 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 			//when click text Field
 			else if (e.getY() > comboBoxY && e.getY() < havingFieldY ) {
 
+				if(!textFields.get(modelIndex).isEnabled()) {
+					return;
+				}
 				//reEnable the TextField if they clicked on the TextFieldArea
 				textFields.get(modelIndex).setFocusable(true);
 
@@ -263,6 +284,18 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 			sum += model.getColumn(i).getWidth();
 		}
 		return sum;
+	}
+	
+	public ArrayList<JComboBox> getComboBoxes () {
+		return comboBoxes;
+	}
+	
+	public ArrayList<JTextField> getTextFields () {
+		return textFields;
+	}
+	
+	public void setGroupingEnabled(boolean flag){
+		this.groupingEnabled = flag;
 	}
 
 	/**
