@@ -75,6 +75,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
@@ -337,6 +338,7 @@ public class SQLQueryUIComponents {
 
     private JTabbedPane resultTabPane;
     private JTextArea logTextArea;
+    private ArrayList<JTable> resultJTables;
     
     private SwingWorkerRegistry swRegistry;
     private final DataSourceCollection dsCollection;
@@ -606,8 +608,8 @@ public class SQLQueryUIComponents {
         this.dsCollection = ds;
         resultTabPane = new JTabbedPane();
         logTextArea = new JTextArea();
-        
-        
+        resultJTables = new ArrayList<JTable>();
+
         resultTabPane.add(Messages.getString("SQLQuery.log"), new JScrollPane(logTextArea));
 
         dbConnectionManager = new DatabaseConnectionManager(ds);
@@ -885,7 +887,9 @@ public class SQLQueryUIComponents {
         tableAreaBuilder.append(new JScrollPane(tableFilterTextArea));
         tableAreaBuilder.nextLine();
         tableAreaBuilder.nextLine();
-        JScrollPane tableScrollPane = new JScrollPane(ResultSetTableFactory.createResultSetJTableWithSearch(rs, tableFilterTextArea.getDocument()));
+        JTable tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(rs, tableFilterTextArea.getDocument());
+        resultJTables.add(tempTable);
+        JScrollPane tableScrollPane = new JScrollPane(tempTable);
         tableAreaBuilder.append(tableScrollPane, 3);
         
         return tableAreaBuilder.getPanel();
@@ -947,6 +951,10 @@ public class SQLQueryUIComponents {
    
    public JTabbedPane getResultTabPane(){
        return resultTabPane;
+   }
+   
+   public ArrayList<JTable> getResultTables (){
+	   return resultJTables;
    }
  
 }
