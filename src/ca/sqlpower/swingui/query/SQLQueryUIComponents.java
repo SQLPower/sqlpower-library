@@ -210,6 +210,11 @@ public class SQLQueryUIComponents {
                     throw new RuntimeException(e);
                 }
             }
+            for (JTable table : resultJTables) {
+            	for (TableChangeListener l : tableListeners) {
+            		l.tableRemoved(new TableChangeEvent(SQLQueryUIComponents.this, table));
+            	}
+            }
             	resultJTables.clear();
                 for (CachedRowSet rs : resultSets) {
                     ResultSet r = rs.createShared();
@@ -504,7 +509,7 @@ public class SQLQueryUIComponents {
 					//if the type is file
 					} else if (mimeType.equals("application/x-java-file-list; class=java.util.List")) {
 						dtde.acceptDrop(DnDConstants.ACTION_COPY);
-						List fileList = (List)dtde.getTransferable().getTransferData(flavours[i]);
+						List<?> fileList = (List<?>)dtde.getTransferable().getTransferData(flavours[i]);
 						droppedStrings = new String[fileList.size()];
 						for(int j = 0; j < droppedStrings.length; j++) {
 							StringBuffer fileContent = new StringBuffer();
@@ -591,6 +596,12 @@ public class SQLQueryUIComponents {
      * Creates a DataBaseConnectionManager so we can edit delete and add connections on the button 
      */
     DatabaseConnectionManager dbConnectionManager;
+    
+    /**
+     * A list of listeners that get notified when tables are
+     * added or removed from the components.
+     */
+    private final List<TableChangeListener> tableListeners;
  
     /**
 	 * Creates all of the components of a query tool, but does not lay them out
@@ -620,6 +631,7 @@ public class SQLQueryUIComponents {
         resultTabPane = new JTabbedPane();
         logTextArea = new JTextArea();
         resultJTables = new ArrayList<JTable>();
+        tableListeners = new ArrayList<TableChangeListener>();
 
         resultTabPane.add(Messages.getString("SQLQuery.log"), new JScrollPane(logTextArea));
         resultTabPane.addContainerListener(new ContainerListener() {
@@ -637,7 +649,7 @@ public class SQLQueryUIComponents {
 
             public void actionPerformed(ActionEvent e) {
             	
-            	innerExecuteQuery(queryArea.getText());
+            	executeQuery(queryArea.getText());
             }
 
         };
@@ -785,7 +797,7 @@ public class SQLQueryUIComponents {
      * Executes a given query with the help of a worker. This will also clear
      * the results tabs before execution.
      */
-    private void innerExecuteQuery(String sql) {
+    private void executeQuery(String sql) {
     	if(resultTabPane.getComponentCount() > 1) {
     		for(int i = resultTabPane.getComponentCount()-1; i >= 1; i--){
     			resultTabPane.remove(i);
@@ -804,18 +816,7 @@ public class SQLQueryUIComponents {
     	sqlExecuteWorker = new ExecuteSQLWorker(swRegistry, sql);
     	new Thread(sqlExecuteWorker).start();
     }
-    
-    /**
-     * This will take in a SQL query and execute it in the UI components.
-     * This query may be modified by properties in this UI components
-     * (adding group by, etc). The result will be displayed in the results
-     * tab.
-     */
-    public void executeQuery(String sql) {
-    	//TODO: Add group by, having, and order by.
-    	innerExecuteQuery(sql);
-    }
-    
+
     /**
 	 * Builds the UI of the {@link SQLQueryUIComponents}. If you just want an
 	 * easy way to build a full-featured query UI and don't want to customize
@@ -928,6 +929,9 @@ public class SQLQueryUIComponents {
         tableAreaBuilder.nextLine();
         JTable tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(rs, tableFilterTextArea.getDocument());
         resultJTables.add(tempTable);
+        for (TableChangeListener l : tableListeners) {
+        	l.tableAdded(new TableChangeEvent(this, tempTable));
+        }
         JScrollPane tableScrollPane = new JScrollPane(tempTable);
         tableAreaBuilder.append(tableScrollPane, 3);
         
@@ -994,6 +998,14 @@ public class SQLQueryUIComponents {
    
    public ArrayList<JTable> getResultTables (){
 	   return resultJTables;
+   }
+   
+   public void addTableChangeListener(TableChangeListener l) {
+	   tableListeners.add(l);
+   }
+   
+   public void removeTableChangeListener(TableChangeListener l) {
+	   tableListeners.remove(l);
    }
  
 }

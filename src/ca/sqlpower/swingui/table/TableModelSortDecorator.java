@@ -33,7 +33,6 @@ package ca.sqlpower.swingui.table;
 
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -47,9 +46,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.swing.Icon;
-import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
@@ -139,7 +136,20 @@ public class TableModelSortDecorator extends AbstractTableModel {
     private TableModelListener tableModelListener;
     private Map columnComparators = new HashMap();
     private List sortingColumns = new ArrayList();
-    protected int labelSize;
+
+    /**
+     * The y location of the header wrapped by the sort decorator.
+     * This will change the area allowed to be clicked to sort
+     * a column. This will be null if it has not been set yet.
+     */
+	private Integer headerLabelYLoc = null;
+
+	/**
+     * The height of the header wrapped by the sort decorator.
+     * This will change the area allowed to be clicked to sort
+     * a column. This will be null if it has not been set yet.
+     */
+	private Integer headerLabelHeight = null;
 
     public TableModelSortDecorator() {
         this.mouseListener = new MouseHandler();
@@ -428,11 +438,10 @@ public class TableModelSortDecorator extends AbstractTableModel {
     }
 
     private class MouseHandler extends MouseAdapter {
-    	
     	public void mouseClicked(MouseEvent e) {
     		JTableHeader h = (JTableHeader) e.getSource();
     		TableColumnModel columnModel = h.getColumnModel();
-    		if (e.getY() > (h.getSize().height - labelSize)){
+    		if (e.getY() > headerLabelYLoc && e.getY() < headerLabelYLoc + headerLabelHeight){
     			int viewColumn = columnModel.getColumnIndexAtX(e.getX());
     			
     			if(viewColumn < 0){
@@ -524,7 +533,12 @@ public class TableModelSortDecorator extends AbstractTableModel {
                     value, isSelected, hasFocus, row, column);
             if (c instanceof JLabel) {
                 JLabel l = (JLabel) c;
-                labelSize = l.getSize().height;
+                if (headerLabelYLoc == null) {
+                	headerLabelYLoc = 0;
+                }
+                if (headerLabelHeight == null) {
+                	headerLabelHeight = l.getSize().height;
+                }
                 l.setHorizontalTextPosition(JLabel.LEFT);
                 int modelColumn = table.convertColumnIndexToModel(column);
                 l.setIcon(getHeaderRendererIcon(modelColumn, l.getFont().getSize()));
@@ -541,5 +555,15 @@ public class TableModelSortDecorator extends AbstractTableModel {
             this.column = column;
             this.direction = direction;
         }
+    }
+    
+    /**
+     * This will allow setting the y location and height of the
+     * table header if only part of the table header should be
+     * clickable to sort.
+     */
+    public void setTableHeaderYBounds(int yLoc, int height) {
+    	headerLabelYLoc = yLoc;
+    	headerLabelHeight = height;
     }
 }

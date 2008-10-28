@@ -183,8 +183,14 @@ public class FancyExportableJTable extends EditableJTable {
 	 */
 	private MouseListener popupMenuMouseListener = new PopupMenuMouseListener(this);
 
+	/**
+	 * The sort decorator attached to this table.
+	 */
+	private TableModelSortDecorator sortDecorator;
+
 	public FancyExportableJTable(TableModel model, Document doc) {
-		model = new TableModelSortDecorator(model, getTableHeader());
+		sortDecorator = new TableModelSortDecorator(model, getTableHeader());
+		model = sortDecorator;
 		if (doc != null) {
 			TableModelSearchDecorator newModel = new TableModelSearchDecorator(model);
 			newModel.setDoc(doc);
@@ -223,6 +229,17 @@ public class FancyExportableJTable extends EditableJTable {
 	public void createDefaultColumnsFromModel() {
 		super.createDefaultColumnsFromModel();
 		TableUtils.fitColumnWidths(this, 0);
+	}
+	
+	
+	/**
+	 * This will get the {@link TableModelSortDecorator} attached to this 
+	 * table if it exists. If this table does not have a sort decorator
+	 * null will be returned.
+	 * @return
+	 */
+	public TableModelSortDecorator getTableModelSortDecorator() {
+		return sortDecorator;
 	}
 
 }

@@ -30,38 +30,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package ca.sqlpower.swingui.table;
-
-import java.sql.ResultSet;
-
-import javax.swing.JTable;
-import javax.swing.text.Document;
+package ca.sqlpower.swingui.query;
 
 /**
- * A factory to create JTables. These tables can be sorted by clicking on their
- * headers and export selected rows to files.
+ * Classes implementing this listener will be notified when
+ * tables are added or removed from a list stored in the
+ * UI Components.
  */
-public class ResultSetTableFactory {
+public interface TableChangeListener {
 	
-	/**
-	 * Returns a JTable to display the result set. The table can be sorted and
-	 * selections can be exported.
-	 */
-	public static JTable createResultSetJtable(ResultSet rs) {
-		ResultSetTableModel model = new ResultSetTableModel(rs);
-		return new FancyExportableJTable(model);
-	}
-	
-
-	/**
-	 * Returns a JTable to display the result set. The table can be sorted and
-	 * selections can be exported. The table can also be filtered as you enter
-	 * text into the document provided.
-	 */
-	public static JTable createResultSetJTableWithSearch(ResultSet rs, Document doc) {
-		ResultSetTableModel model = new ResultSetTableModel(rs);
-		JTable t = new FancyExportableJTable(model, doc);
-		return t;
-	}
+	void tableAdded(TableChangeEvent e);
+	void tableRemoved(TableChangeEvent e);
 
 }

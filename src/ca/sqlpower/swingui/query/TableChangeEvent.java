@@ -30,38 +30,32 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package ca.sqlpower.swingui.table;
-
-import java.sql.ResultSet;
+package ca.sqlpower.swingui.query;
 
 import javax.swing.JTable;
-import javax.swing.text.Document;
 
 /**
- * A factory to create JTables. These tables can be sorted by clicking on their
- * headers and export selected rows to files.
+ * An event object for a listener that stores the
+ * table modified in the event and the component
+ * class the table belongs to.
  */
-public class ResultSetTableFactory {
+public class TableChangeEvent {
 	
-	/**
-	 * Returns a JTable to display the result set. The table can be sorted and
-	 * selections can be exported.
-	 */
-	public static JTable createResultSetJtable(ResultSet rs) {
-		ResultSetTableModel model = new ResultSetTableModel(rs);
-		return new FancyExportableJTable(model);
-	}
-	
+	private final SQLQueryUIComponents parent;
+	private final JTable changedTable;
 
-	/**
-	 * Returns a JTable to display the result set. The table can be sorted and
-	 * selections can be exported. The table can also be filtered as you enter
-	 * text into the document provided.
-	 */
-	public static JTable createResultSetJTableWithSearch(ResultSet rs, Document doc) {
-		ResultSetTableModel model = new ResultSetTableModel(rs);
-		JTable t = new FancyExportableJTable(model, doc);
-		return t;
+	public TableChangeEvent(SQLQueryUIComponents parent, JTable changedTable) {
+		this.parent = parent;
+		this.changedTable = changedTable;
+		
+	}
+
+	public SQLQueryUIComponents getParent() {
+		return parent;
+	}
+
+	public JTable getChangedTable() {
+		return changedTable;
 	}
 
 }
