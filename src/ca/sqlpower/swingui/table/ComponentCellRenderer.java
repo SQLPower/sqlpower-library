@@ -140,13 +140,13 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 				add((JLabel)c, BorderLayout.NORTH);
 				labelHeight = c.getPreferredSize().height;			
 			} else {
-				add((JLabel)c, BorderLayout.NORTH);
 				int modelIndex = table.getColumnModel().getColumn(column).getModelIndex();
-				add(new JComboBox(new Object[] { comboBoxes.get(modelIndex).getSelectedItem() }), BorderLayout.CENTER);
-				add(new JTextField(textFields.get(modelIndex).getText()), BorderLayout.SOUTH);
+				add(new JComboBox(new Object[] { comboBoxes.get(modelIndex).getSelectedItem() }), BorderLayout.NORTH);
+				add(new JTextField(textFields.get(modelIndex).getText()), BorderLayout.CENTER);
+				add((JLabel)c, BorderLayout.SOUTH);
 
 				// we need to consistently set the size of the TextField in case they resize while its focused
-				textFields.get(modelIndex).setBounds(getXPositionOnColumn(table.getColumnModel(),column), labelHeight + comboBoxHeight, 
+				textFields.get(modelIndex).setBounds(getXPositionOnColumn(table.getColumnModel(),column), comboBoxHeight, 
 						table.getColumnModel().getColumn(column).getWidth(), 
 						textFields.get(column).getSize().height);
 
@@ -161,15 +161,15 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 	 * as well as what component is being clicked.
 	 */
 	private class HeaderMouseListener extends MouseAdapter {
-
-		/*
-		 * The JTextField should lose its focus when dragging so i can be set to invisible
-		 */
-		public void mousePressed(MouseEvent e) {
-
-			int labelY = labelHeight;
-			int comboBoxY = labelHeight + comboBoxHeight;
-			int havingFieldY =   labelHeight + comboBoxHeight + havingFieldHeight;
+		
+		public void mouseClicked(MouseEvent e) {
+			
+			if(!groupingEnabled) {
+				return;
+			}
+			int labelY = labelHeight + comboBoxHeight+  havingFieldHeight;
+			int comboBoxY = comboBoxHeight;
+			int havingFieldY =  comboBoxHeight+ havingFieldHeight;
 			JTableHeader h = (JTableHeader) e.getSource();
 			TableColumnModel columnModel = h.getColumnModel();
 			int viewIndex = columnModel.getColumnIndexAtX(e.getX());
@@ -183,14 +183,14 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 			int modelIndex = columnModel.getColumn(viewIndex).getModelIndex();
 			logger.debug("modelIndex is:" + modelIndex);
 
-			// when click anything other than TextField
-			if( e.getY() < comboBoxY) {
+			// when press anything other than TextField
+			if ( e.getY() < comboBoxY || e.getY() > havingFieldY ) {
 				//Disable Focus on textField if it presses anywhere else on the header.
 				textFields.get(modelIndex).setFocusable(false);
 			}
-
+			
 			// when click comboBox
-			if(e.getY() > labelHeight && e.getY() < comboBoxY) {
+			if (e.getY() < comboBoxY && groupingEnabled ) {
 
 				TableColumn tc = columnModel.getColumn(viewIndex);
 
@@ -201,7 +201,7 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 				}
 				JComboBox tempCB = comboBoxes.get(modelIndex);
 				h.add(tempCB);
-				tempCB.setBounds(getXPositionOnColumn(columnModel, viewIndex),labelY, tc.getWidth(), comboBoxHeight);
+				tempCB.setBounds(getXPositionOnColumn(columnModel, viewIndex),0, tc.getWidth(), comboBoxHeight);
 				logger.debug("Temporarily placing combo box at " + tempCB.getBounds());
 				tempCB.setPopupVisible(true);
 
@@ -227,8 +227,36 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 				});
 
 			}
-			// when click text Field
-			else if (e.getY() > comboBoxY && e.getY() < havingFieldY ) {
+		}
+
+		public void mousePressed(MouseEvent e) {
+			
+			if(!groupingEnabled) {
+				return;
+			}
+			int labelY = labelHeight + comboBoxHeight+  havingFieldHeight;
+			int comboBoxY = comboBoxHeight;
+			int havingFieldY =  comboBoxHeight+ havingFieldHeight;
+			JTableHeader h = (JTableHeader) e.getSource();
+			TableColumnModel columnModel = h.getColumnModel();
+			int viewIndex = columnModel.getColumnIndexAtX(e.getX());
+
+			logger.debug("viewIndex is:" + viewIndex);
+
+			if ( viewIndex < 0) {
+				return;    			
+			}
+
+			int modelIndex = columnModel.getColumn(viewIndex).getModelIndex();
+			logger.debug("modelIndex is:" + modelIndex);
+
+			// when press anything other than TextField
+			if ( e.getY() < comboBoxY || e.getY() > havingFieldY ) {
+				//Disable Focus on textField if it presses anywhere else on the header.
+				textFields.get(modelIndex).setFocusable(false);
+			}
+			// when press text Field
+			else if (e.getY() > comboBoxY && e.getY() < havingFieldY) {
 
 				if(!textFields.get(modelIndex).isEnabled()) {
 					return;
