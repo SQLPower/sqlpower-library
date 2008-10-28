@@ -43,6 +43,8 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.ContainerEvent;
+import java.awt.event.ContainerListener;
 import java.awt.event.InputEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
@@ -620,6 +622,14 @@ public class SQLQueryUIComponents {
         resultJTables = new ArrayList<JTable>();
 
         resultTabPane.add(Messages.getString("SQLQuery.log"), new JScrollPane(logTextArea));
+        resultTabPane.addContainerListener(new ContainerListener() {
+			public void componentRemoved(ContainerEvent e) {
+				//no-op
+			}
+			public void componentAdded(ContainerEvent e) {
+				resultTabPane.setSelectedComponent(e.getChild());
+			}
+		});
 
         dbConnectionManager = new DatabaseConnectionManager(ds);
         
