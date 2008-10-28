@@ -428,10 +428,11 @@ public class TableModelSortDecorator extends AbstractTableModel {
     }
 
     private class MouseHandler extends MouseAdapter {
+    	
     	public void mouseClicked(MouseEvent e) {
     		JTableHeader h = (JTableHeader) e.getSource();
     		TableColumnModel columnModel = h.getColumnModel();
-    		if (e.getY() < labelSize){
+    		if (e.getY() > (h.getSize().height - labelSize)){
     			int viewColumn = columnModel.getColumnIndexAtX(e.getX());
     			
     			if(viewColumn < 0){
