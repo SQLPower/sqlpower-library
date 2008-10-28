@@ -177,15 +177,25 @@ public class SQLQueryUIComponents {
     }
    
     /**
-     * This will execute the sql statement in the sql text area.
+     * This will execute the sql statement in the sql text area. The
+     * SQL statement used in execution will be stored with this swing
+     * worker. If a different SQL statement is to be executed later
+     * a new worker should be created.
      */
     private class ExecuteSQLWorker extends SPSwingWorker {
         
         List<CachedRowSet> resultSets = new ArrayList<CachedRowSet>();
         List<Integer> rowsAffected = new ArrayList<Integer>(); 
+        private final String sqlString;
         
-        public ExecuteSQLWorker(SwingWorkerRegistry registry) {
-            super(registry);
+        /**
+         * Constructs a new ExecuteSQLWorker that will use the
+         * given SQL statement as the string to execute on.
+         */
+        public ExecuteSQLWorker(SwingWorkerRegistry registry, String sqlStatement) {
+        	super(registry);
+        	sqlString = sqlStatement;
+        	
         }
 
         @Override
@@ -235,9 +245,8 @@ public class SQLQueryUIComponents {
                 logger.debug("Row limit is " + rowLimit);
                 
                 stmt.setMaxRows(rowLimit);
-                String sql = queryArea.getText();
-                logger.debug("Executing statement " + sql);
-                boolean sqlResult = stmt.execute(sql);
+                logger.debug("Executing statement " + sqlString);
+                boolean sqlResult = stmt.execute(sqlString);
                 logger.debug("Finished execution");
                 boolean hasNext = true;
                 
@@ -618,24 +627,9 @@ public class SQLQueryUIComponents {
 
             public void actionPerformed(ActionEvent e) {
             	
-            	if(resultTabPane.getComponentCount() > 1) {
-	        		for(int i = resultTabPane.getComponentCount()-1; i >= 1; i--){
-	        			resultTabPane.remove(i);
-        		}
-        	}
-                ConnectionAndStatementBean conBean = conMap.get(databaseComboBox.getSelectedItem());
-                try {
-                    if(conBean!= null) {
-                        if (!conBean.getConnection().getAutoCommit()) {
-                            conBean.setConnectionUncommitted(true);
-                        }
-                    }
-                } catch (SQLException e1) {
-                    SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedRetrievingConnection", ((SPDataSource)databaseComboBox.getSelectedItem()).getName()), e1);
-                }
-                sqlExecuteWorker = new ExecuteSQLWorker(swRegistry);
-                new Thread(sqlExecuteWorker).start();
+            	innerExecuteQuery(queryArea.getText());
             }
+
         };
         
         autoCommitToggleButton = new JToggleButton(new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.autoCommit")) {
@@ -775,6 +769,41 @@ public class SQLQueryUIComponents {
          undoButton= new JButton (undoSQLStatementAction);
          redoButton= new JButton (redoSQLStatementAction);
          new DropTarget(queryArea, new QueryTextAreaDropListener(queryArea));
+    }
+    
+    /**
+     * Executes a given query with the help of a worker. This will also clear
+     * the results tabs before execution.
+     */
+    private void innerExecuteQuery(String sql) {
+    	if(resultTabPane.getComponentCount() > 1) {
+    		for(int i = resultTabPane.getComponentCount()-1; i >= 1; i--){
+    			resultTabPane.remove(i);
+    		}
+    	}
+    	ConnectionAndStatementBean conBean = conMap.get(databaseComboBox.getSelectedItem());
+    	try {
+    		if(conBean!= null) {
+    			if (!conBean.getConnection().getAutoCommit()) {
+    				conBean.setConnectionUncommitted(true);
+    			}
+    		}
+    	} catch (SQLException e1) {
+    		SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedRetrievingConnection", ((SPDataSource)databaseComboBox.getSelectedItem()).getName()), e1);
+    	}
+    	sqlExecuteWorker = new ExecuteSQLWorker(swRegistry, sql);
+    	new Thread(sqlExecuteWorker).start();
+    }
+    
+    /**
+     * This will take in a SQL query and execute it in the UI components.
+     * This query may be modified by properties in this UI components
+     * (adding group by, etc). The result will be displayed in the results
+     * tab.
+     */
+    public void executeQuery(String sql) {
+    	//TODO: Add group by, having, and order by.
+    	innerExecuteQuery(sql);
     }
     
     /**
