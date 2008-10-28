@@ -35,11 +35,12 @@ package ca.sqlpower.swingui.table;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -48,6 +49,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Vector;
 
+import javax.swing.AbstractAction;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -72,54 +75,56 @@ import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.SQLGroupFunction;
-import ca.sqlpower.swingui.ColourScheme;
 
 
 /* A renderer that extends JPanel.This renderer will add a JComboBox 
  * and a JtextArea to the JHeader of he resultTable for
  * Group By and Having filters.  
  */
- 
+
 public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
-	
+
 	private static final Logger logger = Logger.getLogger(ComponentCellRenderer.class);
-	
+
 	private final TableCellRenderer renderer;
-	private final JTableHeader tableheader;
+	private final JTableHeader tableHeader;
 	private int labelHeight;
 	private int comboBoxHeight;
 	private int havingFieldHeight;
 	private ArrayList<JComboBox> comboBoxes;
 	private ArrayList<JTextField> textFields;
 	private boolean groupingEnabled;
-	 
-	public ComponentCellRenderer(JTable table){
-		this.tableheader = table.getTableHeader();
-		this.renderer = table.getTableHeader().getDefaultRenderer();
-		table.getTableHeader().addMouseListener(new HeaderMouseListener());
-		groupingEnabled = true;
-		
+
+	public ComponentCellRenderer(JTable t) {
+		tableHeader = t.getTableHeader();
+		renderer = t.getTableHeader().getDefaultRenderer();
+		tableHeader.addMouseListener(new HeaderMouseListener());
+		groupingEnabled = false;
 		comboBoxes = new ArrayList<JComboBox>();
 		Vector<String> comboBoxItems = new Vector<String>();
 		Object[] tempGroupItems =SQLGroupFunction.values();
 		comboBoxItems.add("(GROUP BY)");
-		
-		for(Object item : tempGroupItems){
+
+		for(Object item : tempGroupItems) {
 			comboBoxItems.add(item.toString());
 		}
-		
+
 		textFields = new ArrayList<JTextField>();
-		for(int i = 0 ; i < table.getColumnCount(); i++){
+		for(int i = 0 ; i < t.getColumnCount(); i++) {
 			JTextField textField = new JTextField();
 			JComboBox comboBox = new JComboBox(comboBoxItems);
-			
 			comboBoxes.add(comboBox);
 			textFields.add(textField);
+
+			if(i == 0) {
+				// takes the first ComboBoxes and TextField's height
+				comboBoxHeight = comboBoxes.get(0).getPreferredSize().height;
+				havingFieldHeight = textFields.get(0).getPreferredSize().height;
+			}
 		}
 		setLayout(new BorderLayout());
-
 	}
-	
+
 	/*
 	 * Implementing the getComponent method on the renderer, this will take the current header
 	 * and add a JComboBox as well as a JTextField for Group By and having filters.
@@ -131,29 +136,21 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 				isSelected, hasFocus, row, column);
 		if(c instanceof JLabel) {
 			removeAll();
-			
 			if(!groupingEnabled) {
-				add((JLabel)c, BorderLayout.CENTER);
-				revalidate();
-				System.out.println("is disabled");
+				add((JLabel)c, BorderLayout.NORTH);
+				labelHeight = c.getPreferredSize().height;			
 			} else {
-				System.out.println("is  not disabled");
 				add((JLabel)c, BorderLayout.NORTH);
 				int modelIndex = table.getColumnModel().getColumn(column).getModelIndex();
 				add(new JComboBox(new Object[] { comboBoxes.get(modelIndex).getSelectedItem() }), BorderLayout.CENTER);
+				add(new JTextField(textFields.get(modelIndex).getText()), BorderLayout.SOUTH);
 
-				//We need to consistently set the size of the TextField in case they resize while its focused
+				// we need to consistently set the size of the TextField in case they resize while its focused
 				textFields.get(modelIndex).setBounds(getXPositionOnColumn(table.getColumnModel(),column), labelHeight + comboBoxHeight, 
 						table.getColumnModel().getColumn(column).getWidth(), 
 						textFields.get(column).getSize().height);
 
-
-				add(new JTextField(textFields.get(modelIndex).getText()), BorderLayout.SOUTH);
 				labelHeight = c.getPreferredSize().height;
-				comboBoxHeight = comboBoxes.get(modelIndex).getPreferredSize().height;
-				havingFieldHeight = textFields.get(modelIndex).getPreferredSize().height;
-				revalidate();
-				//setSize(c.getPreferredSize().width, labelHeight+ comboBoxHeight+ havingFieldHeight);
 				logger.debug("Provided cell renderer for viewIndex="+column+" modelIndex="+modelIndex);
 			}
 		}
@@ -177,31 +174,32 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 			TableColumnModel columnModel = h.getColumnModel();
 			int viewIndex = columnModel.getColumnIndexAtX(e.getX());
 
+			logger.debug("viewIndex is:" + viewIndex);
+
 			if ( viewIndex < 0) {
 				return;    			
 			}
 
 			int modelIndex = columnModel.getColumn(viewIndex).getModelIndex();
+			logger.debug("modelIndex is:" + modelIndex);
 
+			// when click anything other than TextField
 			if( e.getY() < comboBoxY) {
 				//Disable Focus on textField if it presses anywhere else on the header.
 				textFields.get(modelIndex).setFocusable(false);
 			}
-			//when click comboBox
-			if(e.getY() > labelHeight && e.getY() < comboBoxY){
+
+			// when click comboBox
+			if(e.getY() > labelHeight && e.getY() < comboBoxY) {
 
 				TableColumn tc = columnModel.getColumn(viewIndex);
 
-				//add a bufferZone So we can resize column and now have the comboBox showing
+				// add a bufferZone So we can resize column and now have the comboBox showing
 				if(e.getX()-getXPositionOnColumn(columnModel, viewIndex) < 3 || 
-						(getXPositionOnColumn(columnModel, viewIndex) + tc.getWidth()) -e.getX() < 3){
+						(getXPositionOnColumn(columnModel, viewIndex) + tc.getWidth()) -e.getX() < 3) {
 					return;
 				}
 				JComboBox tempCB = comboBoxes.get(modelIndex);
-				
-				if(!tempCB.isEnabled()) {
-					return;
-				}
 				h.add(tempCB);
 				tempCB.setBounds(getXPositionOnColumn(columnModel, viewIndex),labelY, tc.getWidth(), comboBoxHeight);
 				logger.debug("Temporarily placing combo box at " + tempCB.getBounds());
@@ -229,20 +227,18 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 				});
 
 			}
-			//when click text Field
+			// when click text Field
 			else if (e.getY() > comboBoxY && e.getY() < havingFieldY ) {
 
 				if(!textFields.get(modelIndex).isEnabled()) {
 					return;
 				}
-				//reEnable the TextField if they clicked on the TextFieldArea
+				// reEnable the TextField if they clicked on the TextFieldArea
 				textFields.get(modelIndex).setFocusable(true);
 
 				JTextField tempTextField = textFields.get(modelIndex);
-				logger.debug("viewIndex" + viewIndex);
-				logger.debug("modelIndex" + modelIndex);
 				h.add(tempTextField);
-				logger.debug("Children of h: " + Arrays.toString(h.getComponents()));
+
 				if (!tempTextField.isVisible()) {
 					throw new IllegalStateException("tempTextField was not visible");
 				}
@@ -250,9 +246,9 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 				tempTextField.setBounds(getXPositionOnColumn(columnModel, viewIndex), comboBoxY, tc.getWidth(), havingFieldHeight);
 				tempTextField.requestFocus();
 				logger.debug("Temporarily placing TextField at " + tempTextField.getBounds());
-				tempTextField.addFocusListener(new FocusListener(){
+				tempTextField.addFocusListener(new FocusListener() {
 
-					public void focusGained(FocusEvent e){
+					public void focusGained(FocusEvent e) {
 						JTextField tf = (JTextField)e.getSource();
 						Container tfparent = tf.getParent();
 						tfparent.repaint();
@@ -271,31 +267,40 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 					}});	
 			}	
 		}
-
-
 	}
 
 	/**
 	 * Returns the x position of the given a column index.
 	 */
-	public int getXPositionOnColumn(TableColumnModel model, int columnIndex){
+	public int getXPositionOnColumn(TableColumnModel model, int columnIndex) {
 		int sum = 0;
-		for(int i = 0; i < columnIndex; i ++){
+		for(int i = 0; i < columnIndex; i ++) {
 			sum += model.getColumn(i).getWidth();
 		}
 		return sum;
 	}
-	
+
 	public ArrayList<JComboBox> getComboBoxes () {
 		return comboBoxes;
 	}
-	
+
 	public ArrayList<JTextField> getTextFields () {
 		return textFields;
 	}
-	
-	public void setGroupingEnabled(boolean flag){
-		this.groupingEnabled = flag;
+
+	public void setGroupingEnabled(boolean flag) {
+		
+		groupingEnabled = flag;
+		
+		if (groupingEnabled) {
+			tableHeader.getParent().setPreferredSize(new Dimension(
+					tableHeader.getParent().getPreferredSize().width,
+					labelHeight +comboBoxHeight+ havingFieldHeight));			
+		} else {
+			tableHeader.getParent().setPreferredSize(new Dimension(
+					tableHeader.getParent().getPreferredSize().width, labelHeight));	
+		}
+		tableHeader.revalidate();
 	}
 
 	/**
@@ -315,11 +320,26 @@ public class ComponentCellRenderer extends JPanel implements TableCellRenderer {
 					Statement stmt = con.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
 					ResultSet rs = stmt.executeQuery("select 'a' as a, 'b' as b, 'c' as c, 'd' as d, 'e' as snuffy");
 					ResultSetTableModel tm = new ResultSetTableModel(rs);
-					JTable t = new JTable(tm);
+					final JTable t = new JTable(tm);
 					ComponentCellRenderer headerRenderer = new ComponentCellRenderer(t);
 					t.getTableHeader().setDefaultRenderer(headerRenderer);
 					JFrame f = new JFrame("Cows moo");
-					f.setContentPane(new JScrollPane(t));
+					JPanel panel = new JPanel(new BorderLayout());
+					panel.add(new JScrollPane(t), BorderLayout.CENTER);
+					panel.add(new JCheckBox(new AbstractAction() {
+
+						public void actionPerformed(ActionEvent e) {
+							JCheckBox checkBox = (JCheckBox)e.getSource();
+							if(checkBox.isSelected()){
+								ComponentCellRenderer renderPanel = (ComponentCellRenderer) t.getTableHeader().getDefaultRenderer();
+								renderPanel.setGroupingEnabled(true);
+							} else {
+								ComponentCellRenderer renderPanel = (ComponentCellRenderer) t.getTableHeader().getDefaultRenderer();
+								renderPanel.setGroupingEnabled(false);
+							}
+
+						}}), BorderLayout.NORTH);
+					f.setContentPane(new JScrollPane(panel));
 					f.pack();
 					f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 					f.setVisible(true);
