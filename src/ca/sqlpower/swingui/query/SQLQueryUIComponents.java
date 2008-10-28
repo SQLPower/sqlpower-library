@@ -208,7 +208,7 @@ public class SQLQueryUIComponents {
                     throw new RuntimeException(e);
                 }
             }
-  
+            	resultJTables.clear();
                 for (CachedRowSet rs : resultSets) {
                     ResultSet r = rs.createShared();
                     resultTabPane.add(Messages.getString("SQLQuery.result"), createResultSetTablePanel(r));
