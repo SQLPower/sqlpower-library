@@ -1012,6 +1012,10 @@ public class SQLQueryUIComponents {
    public void removeTableChangeListener(TableChangeListener l) {
 	   tableListeners.remove(l);
    }
+   
+   public JTextArea getLogTextArea () {
+	   return logTextArea;
+   }
  
 }
 
