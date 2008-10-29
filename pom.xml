@@ -39,6 +39,12 @@
 			</resource>
 			<resource>
 				<directory>
+					src/ca/sqlpower/swingui/query
+				</directory>
+				<targetPath>ca/sqlpower/swingui/query</targetPath>
+			</resource>
+			<resource>
+				<directory>
 					src/ca/sqlpower/sql
 				</directory>
 				<targetPath>ca/sqlpower/sql</targetPath>

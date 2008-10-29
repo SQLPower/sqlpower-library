@@ -68,9 +68,11 @@ import java.util.Map;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -104,6 +106,7 @@ import ca.sqlpower.swingui.SPSwingWorker;
 import ca.sqlpower.swingui.SwingWorkerRegistry;
 import ca.sqlpower.swingui.db.DatabaseConnectionManager;
 import ca.sqlpower.swingui.table.ResultSetTableFactory;
+import ca.sqlpower.validation.swingui.StatusComponent;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 import com.jgoodies.forms.layout.FormLayout;
@@ -797,7 +800,7 @@ public class SQLQueryUIComponents {
      * Executes a given query with the help of a worker. This will also clear
      * the results tabs before execution.
      */
-    private void executeQuery(String sql) {
+    public void executeQuery(String sql) {
     	if(resultTabPane.getComponentCount() > 1) {
     		for(int i = resultTabPane.getComponentCount()-1; i >= 1; i--){
     			resultTabPane.remove(i);
@@ -923,7 +926,9 @@ public class SQLQueryUIComponents {
         FormLayout tableAreaLayout = new FormLayout("pref, 10dlu, pref:grow", "pref, 10dlu, fill:min(pref;100dlu):grow");
         DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
         tableAreaBuilder.setDefaultDialogBorder();
-        tableAreaBuilder.append(Messages.getString("SQLQuery.search"));
+    	ImageIcon icon = new ImageIcon(StatusComponent.class.getClassLoader().getResource("ca/sqlpower/swingui/query/zoom_reset16.png"));
+    	JLabel searchLabel = new JLabel(icon);
+        tableAreaBuilder.append(searchLabel);
         tableAreaBuilder.append(new JScrollPane(tableFilterTextArea));
         tableAreaBuilder.nextLine();
         tableAreaBuilder.nextLine();
@@ -1009,4 +1014,5 @@ public class SQLQueryUIComponents {
    }
  
 }
+
 
