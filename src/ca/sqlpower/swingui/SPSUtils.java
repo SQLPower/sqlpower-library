@@ -1,5 +1,6 @@
 package ca.sqlpower.swingui;
 
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dialog;
@@ -925,4 +926,35 @@ public class SPSUtils {
          * });
          */
     }
+
+    /**
+     * Adjusts the given stroke so its line thickness and dash setup do not
+     * appear to change regardless of the scale factor in effect. For example, a
+     * stroke with a line thickness of 1 will take up 1 pixel when drawn at
+     * viewScale.
+     * 
+     * @param original
+     *            The original BasicStroke object
+     * @param viewScale
+     *            The current scale amount for the graphics being drawn in
+     * @return A new BasicStroke object adjusted to appear the same when drawn
+     *         subject to viewScale as the original looks when drawn subject to the
+     *         identity transform.
+     */
+    public static BasicStroke getAdjustedStroke(BasicStroke original, double viewScale) {
+        float[] adjustedDashArray = original.getDashArray();
+        if (adjustedDashArray != null) {
+            for (int i = 0; i < adjustedDashArray.length; i++) {
+                adjustedDashArray[i] /= viewScale;
+            }
+        }
+        return new BasicStroke(
+                (float) (original.getLineWidth() / viewScale),
+                original.getEndCap(),
+                original.getLineJoin(),
+                (float) (original.getMiterLimit() / viewScale),
+                adjustedDashArray,
+                original.getDashPhase());
+    }
+
 }
