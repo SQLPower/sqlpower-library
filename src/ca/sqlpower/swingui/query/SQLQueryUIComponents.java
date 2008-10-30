@@ -82,6 +82,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
@@ -377,7 +378,7 @@ public class SQLQueryUIComponents {
 
     private JTabbedPane resultTabPane;
     private JTextArea logTextArea;
-    private JTextArea tableFilterTextArea;
+    private JTextField tableFilterTextField;
     private JLabel searchLabel;
     private ImageIcon icon;
     private ArrayList<JTable> resultJTables;
@@ -950,17 +951,17 @@ public class SQLQueryUIComponents {
     	searchLabel = new JLabel(icon);
     	
     	if(multipleQueryEnabled) {
-    		JTextArea tempTextArea = new JTextArea();
+    		JTextField tempTextArea = new JTextField();
     		tableAreaBuilder.append(searchLabel);
     		tableAreaBuilder.append(new JScrollPane(tempTextArea));
     		tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(rs, tempTextArea.getDocument());
     		
     	} else {
     		filterAndLogoPanel.removeAll();
-    		tableFilterTextArea = new JTextArea();
+    		tableFilterTextField = new JTextField();
     		filterAndLogoPanel.add(searchLabel, BorderLayout.WEST);
-    		filterAndLogoPanel.add(tableFilterTextArea, BorderLayout.CENTER);
-    		tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(rs, tableFilterTextArea.getDocument());
+    		filterAndLogoPanel.add(tableFilterTextField, BorderLayout.CENTER);
+    		tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(rs, tableFilterTextField.getDocument());
     		
     	}
         
