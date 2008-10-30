@@ -45,6 +45,12 @@
 			</resource>
 			<resource>
 				<directory>
+					src/ca/sqlpower/swingui/querypen
+				</directory>
+				<targetPath>ca/sqlpower/swingui/querypen</targetPath>
+			</resource>
+			<resource>
+				<directory>
 					src/ca/sqlpower/sql
 				</directory>
 				<targetPath>ca/sqlpower/sql</targetPath>
