@@ -952,7 +952,7 @@ public class SPSUtils {
                 (float) (original.getLineWidth() / viewScale),
                 original.getEndCap(),
                 original.getLineJoin(),
-                (float) (original.getMiterLimit() / viewScale),
+                Math.min(1f, (float) (original.getMiterLimit() / viewScale)),
                 adjustedDashArray,
                 original.getDashPhase());
     }
