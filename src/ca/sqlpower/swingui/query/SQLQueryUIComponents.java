@@ -32,6 +32,7 @@
 
 package ca.sqlpower.swingui.query;
 
+import java.awt.BorderLayout;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.datatransfer.DataFlavor;
@@ -221,7 +222,14 @@ public class SQLQueryUIComponents {
             	resultJTables.clear();
                 for (CachedRowSet rs : resultSets) {
                     ResultSet r = rs.createShared();
-                    resultTabPane.add(Messages.getString("SQLQuery.result"), createResultSetTablePanel(r));
+                    JPanel tempResultPanel = createResultSetTablePanel(r);
+                    resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
+                    if(!multipleQueryEnabled) {
+                    	firstResultPanel.removeAll();
+                    	firstResultPanel.add(tempResultPanel, BorderLayout.CENTER);
+                    	firstResultPanel.revalidate();
+                    	break;
+                    }
                 }  
                 logTextArea.setText("");
                 for (Integer i : rowsAffected) {
@@ -295,6 +303,18 @@ public class SQLQueryUIComponents {
     }
     
     /**
+     * A flag to determine if multiple selects are allowed, if false, it will only return the first
+     * query that is on the queryTextArea
+     */
+    private boolean multipleQueryEnabled;
+    
+    /**
+     * This is the Panel that holds the first result JTable, This is normally used when multiple queries
+     * not enabled and you wish to return this panel instead of the tabbedResult panel.
+     */
+    private JPanel firstResultPanel;
+    
+    /**
      * The component whose nearest Window ancestor will own any dialogs
      * popped up by the query tool.
      */
@@ -357,6 +377,9 @@ public class SQLQueryUIComponents {
 
     private JTabbedPane resultTabPane;
     private JTextArea logTextArea;
+    private JTextArea tableFilterTextArea;
+    private JLabel searchLabel;
+    private ImageIcon icon;
     private ArrayList<JTable> resultJTables;
     
     private SwingWorkerRegistry swRegistry;
@@ -568,6 +591,8 @@ public class SQLQueryUIComponents {
 			logger.debug("We are in dropActionChanged");
 		}
     }
+    
+    private JPanel filterAndLogoPanel;
 
     /**
      * This button will execute the sql statements in the text area.
@@ -628,24 +653,19 @@ public class SQLQueryUIComponents {
 	 */
     public SQLQueryUIComponents(SwingWorkerRegistry s, DataSourceCollection ds, JComponent dialogOwner) {
         super();
+        multipleQueryEnabled = true;
         this.dialogOwner = dialogOwner;
         this.swRegistry = s;
         this.dsCollection = ds;
         resultTabPane = new JTabbedPane();
+        firstResultPanel = new JPanel(new BorderLayout());
         logTextArea = new JTextArea();
+        resultTabPane.add(Messages.getString("SQLQuery.log"), new JScrollPane(logTextArea));
+        
+    	icon = new ImageIcon(StatusComponent.class.getClassLoader().getResource("ca/sqlpower/swingui/query/zoom_reset16.png"));
+        filterAndLogoPanel = new JPanel(new BorderLayout());
         resultJTables = new ArrayList<JTable>();
         tableListeners = new ArrayList<TableChangeListener>();
-
-        resultTabPane.add(Messages.getString("SQLQuery.log"), new JScrollPane(logTextArea));
-        resultTabPane.addContainerListener(new ContainerListener() {
-			public void componentRemoved(ContainerEvent e) {
-				//no-op
-			}
-			public void componentAdded(ContainerEvent e) {
-				resultTabPane.setSelectedComponent(e.getChild());
-			}
-		});
-
         dbConnectionManager = new DatabaseConnectionManager(ds);
         
         executeAction = new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.execute")) {
@@ -922,17 +942,30 @@ public class SQLQueryUIComponents {
      * Creates a new JPanel that displays a table of the result set.
      */
     private JPanel createResultSetTablePanel(ResultSet rs) {
-        JTextArea tableFilterTextArea = new JTextArea();
-        FormLayout tableAreaLayout = new FormLayout("pref, 10dlu, pref:grow", "pref, 10dlu, fill:min(pref;100dlu):grow");
-        DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
-        tableAreaBuilder.setDefaultDialogBorder();
-    	ImageIcon icon = new ImageIcon(StatusComponent.class.getClassLoader().getResource("ca/sqlpower/swingui/query/zoom_reset16.png"));
-    	JLabel searchLabel = new JLabel(icon);
-        tableAreaBuilder.append(searchLabel);
-        tableAreaBuilder.append(new JScrollPane(tableFilterTextArea));
-        tableAreaBuilder.nextLine();
-        tableAreaBuilder.nextLine();
-        JTable tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(rs, tableFilterTextArea.getDocument());
+    	
+    	JTable tempTable;
+    	FormLayout tableAreaLayout = new FormLayout("pref, 10dlu, pref:grow", "pref, 10dlu, fill:min(pref;100dlu):grow");
+    	DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
+    	tableAreaBuilder.setDefaultDialogBorder();
+    	searchLabel = new JLabel(icon);
+    	
+    	if(multipleQueryEnabled) {
+    		JTextArea tempTextArea = new JTextArea();
+    		tableAreaBuilder.append(searchLabel);
+    		tableAreaBuilder.append(new JScrollPane(tempTextArea));
+    		tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(rs, tempTextArea.getDocument());
+    		
+    	} else {
+    		filterAndLogoPanel.removeAll();
+    		tableFilterTextArea = new JTextArea();
+    		filterAndLogoPanel.add(searchLabel, BorderLayout.WEST);
+    		filterAndLogoPanel.add(tableFilterTextArea, BorderLayout.CENTER);
+    		tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(rs, tableFilterTextArea.getDocument());
+    		
+    	}
+        
+    	tableAreaBuilder.nextLine();
+    	tableAreaBuilder.nextLine();
         resultJTables.add(tempTable);
         for (TableChangeListener l : tableListeners) {
         	l.tableAdded(new TableChangeEvent(this, tempTable));
@@ -943,80 +976,90 @@ public class SQLQueryUIComponents {
         return tableAreaBuilder.getPanel();
     }
     
+    public void enableMultipleQueries(boolean flag) {
+    	multipleQueryEnabled = flag;
+    }
+
     public void addWindowListener(Window container){
     	container.addWindowListener(windowListener);
     }
 
-    
-    
-   public JButton getExecuteButton() {
-       return executeButton;
-   }
-   
-   public JButton getStopButton() {
-       return stopButton;
-   }
-   
-   public JButton getClearButton() {
-       return clearButton;
-   }
-   
-   public JToggleButton getAutoCommitToggleButton() {
-       return autoCommitToggleButton;
-   }
-   
-   public JButton getCommitButton() {
-       return commitButton;
-   }
-   
-   public JButton getRollbackButton() {
-       return rollbackButton;
-   }
-   
-   public JButton getUndoButton() {
-       return undoButton;
-   }
-   
-   public JButton getRedoButton() {
-       return redoButton;
-   }
-      
-   public JComboBox getDatabaseComboBox() {
-       return databaseComboBox;
-   }
-   
-   public JButton getDbcsManagerButton() {
-       return dbcsManagerButton;
-   }
-   
-   public JSpinner getRowLimitSpinner() {
-       return rowLimitSpinner;
-   }
-   
-   public RSyntaxTextArea getQueryArea() {
-       return queryArea;
-   }
-   
-   public JTabbedPane getResultTabPane(){
-       return resultTabPane;
-   }
-   
-   public ArrayList<JTable> getResultTables (){
-	   return resultJTables;
-   }
-   
-   public void addTableChangeListener(TableChangeListener l) {
-	   tableListeners.add(l);
-   }
-   
-   public void removeTableChangeListener(TableChangeListener l) {
-	   tableListeners.remove(l);
-   }
-   
-   public JTextArea getLogTextArea () {
-	   return logTextArea;
-   }
- 
+
+    public JButton getExecuteButton() {
+    	return executeButton;
+    }
+
+    public JButton getStopButton() {
+    	return stopButton;
+    }
+
+    public JButton getClearButton() {
+    	return clearButton;
+    }
+
+    public JToggleButton getAutoCommitToggleButton() {
+    	return autoCommitToggleButton;
+    }
+
+    public JButton getCommitButton() {
+    	return commitButton;
+    }
+
+    public JButton getRollbackButton() {
+    	return rollbackButton;
+    }
+
+    public JButton getUndoButton() {
+    	return undoButton;
+    }
+
+    public JButton getRedoButton() {
+    	return redoButton;
+    }
+
+    public JComboBox getDatabaseComboBox() {
+    	return databaseComboBox;
+    }
+
+    public JButton getDbcsManagerButton() {
+    	return dbcsManagerButton;
+    }
+
+    public JSpinner getRowLimitSpinner() {
+    	return rowLimitSpinner;
+    }
+
+    public RSyntaxTextArea getQueryArea() {
+    	return queryArea;
+    }
+
+    public JTabbedPane getResultTabPane(){
+    	return resultTabPane;
+    }
+
+    public ArrayList<JTable> getResultTables (){
+    	return resultJTables;
+    }
+
+    public void addTableChangeListener(TableChangeListener l) {
+    	tableListeners.add(l);
+    }
+
+    public void removeTableChangeListener(TableChangeListener l) {
+    	tableListeners.remove(l);
+    }
+
+    public JTextArea getLogTextArea () {
+    	return logTextArea;
+    }
+
+    public JPanel getFilterAndLabelPanel() {
+    	return filterAndLogoPanel;
+    }
+
+    public JPanel getFirstResultPanel() {
+    	return firstResultPanel;
+    }
 }
 
 
