@@ -39,9 +39,11 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -237,14 +239,30 @@ public class TableModelSortDecorator extends AbstractTableModel {
     }
 
     public void setSortingStatus(int column, int status) {
-        Directive directive = getDirective(column);
-        if (directive != EMPTY_DIRECTIVE) {
-            sortingColumns.remove(directive);
-        }
-        if (status != NOT_SORTED) {
-            sortingColumns.add(new Directive(column, status));
-        }
-        sortingStatusChanged();
+    	LinkedHashMap<Integer, Integer> columnMap = new LinkedHashMap<Integer, Integer>();
+    	columnMap.put(column, status);
+        setSortingStatus(columnMap);
+    }
+
+	/**
+	 * This will set the sorting status of multiple rows at once and then fire
+	 * the sorting status changed event. Each entry in columnToStatusMap maps a
+	 * column to a sorting status defined in this class.
+	 * 
+	 * A linked hash map is used here to keep the order of the columns as it is
+	 * important for sorting.
+	 */
+    public void setSortingStatus(LinkedHashMap<Integer, Integer> columnToStatusMap) {
+    	for (Map.Entry<Integer, Integer> entry :columnToStatusMap.entrySet()) {
+    		Directive directive = getDirective(entry.getKey());
+    		if (directive != EMPTY_DIRECTIVE) {
+    			sortingColumns.remove(directive);
+    		}
+    		if (entry.getValue() != NOT_SORTED) {
+    			sortingColumns.add(new Directive(entry.getKey(), entry.getValue()));
+    		}
+    	}
+    	sortingStatusChanged();
     }
 
     protected Icon getHeaderRendererIcon(int column, int size) {
