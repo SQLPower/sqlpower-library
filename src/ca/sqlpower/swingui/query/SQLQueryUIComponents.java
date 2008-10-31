@@ -945,17 +945,17 @@ public class SQLQueryUIComponents {
     private JPanel createResultSetTablePanel(ResultSet rs) {
     	
     	JTable tempTable;
-    	FormLayout tableAreaLayout = new FormLayout("pref, 10dlu, pref:grow", "pref, 10dlu, fill:min(pref;100dlu):grow");
+    	FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "pref, 10dlu, fill:min(pref;100dlu):grow");
     	DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
     	tableAreaBuilder.setDefaultDialogBorder();
     	searchLabel = new JLabel(icon);
     	searchLabel.setToolTipText("Search");
     	
     	if(multipleQueryEnabled) {
-    		JTextField tempTextArea = new JTextField();
+    		JTextField tempTextField = new JTextField();
     		tableAreaBuilder.append(searchLabel);
-    		tableAreaBuilder.append(new JScrollPane(tempTextArea));
-    		tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(rs, tempTextArea.getDocument());
+    		tableAreaBuilder.append(tempTextField);
+    		tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(rs, tempTextField.getDocument());
     		
     	} else {
     		filterAndLogoPanel.removeAll();
