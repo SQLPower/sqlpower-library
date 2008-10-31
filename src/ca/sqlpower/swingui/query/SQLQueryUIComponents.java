@@ -193,6 +193,8 @@ public class SQLQueryUIComponents {
         List<CachedRowSet> resultSets = new ArrayList<CachedRowSet>();
         List<Integer> rowsAffected = new ArrayList<Integer>(); 
         private final String sqlString;
+        private final int rowLimit;
+		private SPDataSource ds;
         
         /**
          * Constructs a new ExecuteSQLWorker that will use the
@@ -202,65 +204,69 @@ public class SQLQueryUIComponents {
         	super(registry);
         	sqlString = sqlStatement;
         	
+        	ds = (SPDataSource)databaseComboBox.getSelectedItem();
+        	
+        	try {
+                rowLimitSpinner.commitEdit();
+            } catch (ParseException e1) {
+                // If the spinner can't parse it's current value set it to it's previous
+                // value to keep it an actual number.
+                rowLimitSpinner.setValue(rowLimitSpinner.getValue());
+            }
+            rowLimit = ((Integer) rowLimitSpinner.getValue()).intValue();
+            logger.debug("Row limit is " + rowLimit);
+            
+            executeButton.setEnabled(false);
+            stopButton.setEnabled(true);
         }
 
         @Override
         public void cleanup() throws Exception {
-            Throwable e = getDoStuffException();
-            if (e != null) {
-                if (e instanceof SQLException) {
-                    SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedConnectingToDB"), e);
-                } else {
-                    throw new RuntimeException(e);
-                }
-            }
-            for (JTable table : resultJTables) {
-            	for (TableChangeListener l : tableListeners) {
-            		l.tableRemoved(new TableChangeEvent(SQLQueryUIComponents.this, table));
-            	}
-            }
-            	resultJTables.clear();
-                for (CachedRowSet rs : resultSets) {
-                    ResultSet r = rs.createShared();
-                    JPanel tempResultPanel = createResultSetTablePanel(r);
-                    resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
-                    if(!multipleQueryEnabled) {
-                    	firstResultPanel.removeAll();
-                    	firstResultPanel.add(tempResultPanel, BorderLayout.CENTER);
-                    	firstResultPanel.revalidate();
-                    	break;
-                    }
-                }  
-                logTextArea.setText("");
-                for (Integer i : rowsAffected) {
-                    logTextArea.append(Messages.getString("SQLQuery.rowsAffected", i.toString()));
-                    logTextArea.append("\n\n");
-                }   
+        	Throwable e = getDoStuffException();
+        	if (e != null) {
+        		if (e instanceof SQLException) {
+        			SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedConnectingToDB"), e);
+        		} else {
+        			throw new RuntimeException(e);
+        		}
+        	}
+        	for (JTable table : resultJTables) {
+        		for (TableChangeListener l : tableListeners) {
+        			l.tableRemoved(new TableChangeEvent(SQLQueryUIComponents.this, table));
+        		}
+        	}
+        	resultJTables.clear();
+        	for (CachedRowSet rs : resultSets) {
+        		ResultSet r = rs.createShared();
+        		JPanel tempResultPanel = createResultSetTablePanel(r);
+        		resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
+        		if(!multipleQueryEnabled) {
+        			firstResultPanel.removeAll();
+        			firstResultPanel.add(tempResultPanel, BorderLayout.CENTER);
+        			firstResultPanel.revalidate();
+        			break;
+        		}
+        	}  
+        	logTextArea.setText("");
+        	for (Integer i : rowsAffected) {
+        		logTextArea.append(Messages.getString("SQLQuery.rowsAffected", i.toString()));
+        		logTextArea.append("\n\n");
+        	}  
+        	executeButton.setEnabled(true);
+        	stopButton.setEnabled(false);
         }
 
         @Override
         public void doStuff() throws Exception {
             logger.debug("Starting execute action.");
-            SPDataSource ds = (SPDataSource)databaseComboBox.getSelectedItem();
             if (ds == null) {
                 return;
             }
             Connection con = conMap.get(ds).getConnection();
             Statement stmt = null;
             try {
-                executeButton.setEnabled(false);
-                stopButton.setEnabled(true);
                 stmt = con.createStatement();
                 conMap.get(ds).setCurrentStmt(stmt);
-                try {
-                    rowLimitSpinner.commitEdit();
-                } catch (ParseException e1) {
-                    // If the spinner can't parse it's current value set it to it's previous
-                    // value to keep it an actual number.
-                    rowLimitSpinner.setValue(rowLimitSpinner.getValue());
-                }
-                int rowLimit = ((Integer) rowLimitSpinner.getValue()).intValue();
-                logger.debug("Row limit is " + rowLimit);
                 
                 stmt.setMaxRows(rowLimit);
                 logger.debug("Executing statement " + sqlString);
@@ -295,8 +301,6 @@ public class SQLQueryUIComponents {
                     }
                     conMap.get(ds).setCurrentStmt(null);
                 }
-                executeButton.setEnabled(true);
-                stopButton.setEnabled(false);
             }
         }
         
