@@ -33,6 +33,7 @@
 package ca.sqlpower.swingui.query;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.datatransfer.DataFlavor;
@@ -44,8 +45,6 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
 import java.awt.event.ActionEvent;
-import java.awt.event.ContainerEvent;
-import java.awt.event.ContainerListener;
 import java.awt.event.InputEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
@@ -663,8 +662,9 @@ public class SQLQueryUIComponents {
         logTextArea = new JTextArea();
         resultTabPane.add(Messages.getString("SQLQuery.log"), new JScrollPane(logTextArea));
         
-    	icon = new ImageIcon(StatusComponent.class.getClassLoader().getResource("ca/sqlpower/swingui/query/zoom_reset16.png"));
+    	icon = new ImageIcon(StatusComponent.class.getClassLoader().getResource("ca/sqlpower/swingui/query/search.png"));
         filterAndLogoPanel = new JPanel(new BorderLayout());
+        
         resultJTables = new ArrayList<JTable>();
         tableListeners = new ArrayList<TableChangeListener>();
         dbConnectionManager = new DatabaseConnectionManager(ds);
@@ -949,6 +949,7 @@ public class SQLQueryUIComponents {
     	DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
     	tableAreaBuilder.setDefaultDialogBorder();
     	searchLabel = new JLabel(icon);
+    	searchLabel.setToolTipText("Search");
     	
     	if(multipleQueryEnabled) {
     		JTextField tempTextArea = new JTextField();
