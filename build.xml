@@ -54,6 +54,11 @@
 				<include name="**/*.png"/>
 			</fileset>
 		</copy>
+		<copy todir="${build}/ca/sqlpower/swingui/query/">
+			<fileset dir="${src}/ca/sqlpower/swingui/query/">
+				<include name="**/*.png"/>
+			</fileset>
+		</copy>
 		<copy todir="${build}/">
 			<fileset dir="src">
 				<include name="**/messages*.properties"/>
@@ -219,6 +224,6 @@
 			</fileset>
 		</cpd>
 		<xslt in="${cpd-results}" style="${pmd.home}/etc/xslt/cpdhtml.xslt" out="${reports.dir}/pmd-cpd.html" />
-		<echo message="CPD completed, output is in ${reports}/cpd-ant-results.html."/>
+		<echo message="CPD completed, output is in ${reports.dir}/cpd-ant-results.html."/>
 	</target>
 </project>
