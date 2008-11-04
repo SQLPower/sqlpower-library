@@ -33,7 +33,6 @@
 package ca.sqlpower.swingui.query;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.datatransfer.DataFlavor;
@@ -102,10 +101,12 @@ import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.DatabaseListChangeEvent;
 import ca.sqlpower.sql.DatabaseListChangeListener;
 import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.swingui.MonitorableWorker;
 import ca.sqlpower.swingui.SPSUtils;
-import ca.sqlpower.swingui.SPSwingWorker;
 import ca.sqlpower.swingui.SwingWorkerRegistry;
 import ca.sqlpower.swingui.db.DatabaseConnectionManager;
+import ca.sqlpower.swingui.event.TaskTerminationEvent;
+import ca.sqlpower.swingui.event.TaskTerminationListener;
 import ca.sqlpower.swingui.table.ResultSetTableFactory;
 import ca.sqlpower.validation.swingui.StatusComponent;
 
@@ -188,13 +189,15 @@ public class SQLQueryUIComponents {
      * worker. If a different SQL statement is to be executed later
      * a new worker should be created.
      */
-    private class ExecuteSQLWorker extends SPSwingWorker {
+    private class ExecuteSQLWorker extends MonitorableWorker {
         
-        List<CachedRowSet> resultSets = new ArrayList<CachedRowSet>();
-        List<Integer> rowsAffected = new ArrayList<Integer>(); 
+        private List<CachedRowSet> resultSets = new ArrayList<CachedRowSet>();
+        private List<Integer> rowsAffected = new ArrayList<Integer>(); 
         private final String sqlString;
         private final int rowLimit;
-		private SPDataSource ds;
+		private final SPDataSource ds;
+		private boolean hasStarted;
+		private boolean isFinished;
         
         /**
          * Constructs a new ExecuteSQLWorker that will use the
@@ -246,7 +249,8 @@ public class SQLQueryUIComponents {
         			firstResultPanel.revalidate();
         			break;
         		}
-        	}  
+        	}
+        	resultSets.clear();
         	logTextArea.setText("");
         	for (Integer i : rowsAffected) {
         		logTextArea.append(Messages.getString("SQLQuery.rowsAffected", i.toString()));
@@ -254,17 +258,20 @@ public class SQLQueryUIComponents {
         	}  
         	executeButton.setEnabled(true);
         	stopButton.setEnabled(false);
+        	isFinished = true;
         }
 
         @Override
         public void doStuff() throws Exception {
+        	hasStarted = true;
             logger.debug("Starting execute action.");
             if (ds == null) {
                 return;
             }
-            Connection con = conMap.get(ds).getConnection();
+            Connection con = null;
             Statement stmt = null;
             try {
+            	con = conMap.get(ds).getConnection();
                 stmt = con.createStatement();
                 conMap.get(ds).setCurrentStmt(stmt);
                 
@@ -303,6 +310,28 @@ public class SQLQueryUIComponents {
                 }
             }
         }
+
+		public Integer getJobSize() {
+			//This is unknown
+			return null;
+		}
+
+		public String getMessage() {
+			return "Executing SQL on " + ds.getName();
+		}
+
+		public int getProgress() {
+			//The job size is always unknown for fetching from the db.
+			return 0;
+		}
+
+		public boolean hasStarted() {
+			return hasStarted;
+		}
+
+		public boolean isFinished() {
+			return isFinished;
+		}
         
     }
     
@@ -323,12 +352,25 @@ public class SQLQueryUIComponents {
      * popped up by the query tool.
      */
     private final JComponent dialogOwner;
+
+	/**
+	 * The worker that the execute action runs on to query the database and
+	 * create the result sets. If this is null there is no currently executing
+	 * worker.
+	 */
+    private ExecuteSQLWorker sqlExecuteWorker;
+    
+    private final TaskTerminationListener sqlExecuteTerminationListener = new TaskTerminationListener() {
+		public void taskFinished(TaskTerminationEvent e) {
+			executeQuery(null);
+		}
+	};
     
     /**
-     * The worker that the execute action runs on to query the database and create the
-     * result sets.
+     * This stores the next SQL statement to be run when the currently executing worker
+     * is running.
      */
-    private ExecuteSQLWorker sqlExecuteWorker;
+    private String queuedSQLStatement;
     
     /**
      * The action for executing and displaying a user's query.
@@ -791,7 +833,9 @@ public class SQLQueryUIComponents {
                             logger.debug("stmt is being cancelled...supposely");
                             stmt.cancel();
                             if (sqlExecuteWorker != null) {
+                            	queuedSQLStatement = null;
                                 sqlExecuteWorker.kill();
+                                sqlExecuteWorker = null;
                             }
                         } catch (SQLException e) {
                             SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.stopException", ((SPDataSource)databaseComboBox.getSelectedItem()).getName()), e);
@@ -824,13 +868,40 @@ public class SQLQueryUIComponents {
     /**
      * Executes a given query with the help of a worker. This will also clear
      * the results tabs before execution.
+     * 
+     * NOTE: If a query is currently executing then the query passed in will
+     * execute after the current query is complete. Additionally, if there is 
+     * a query already waiting to execute it will be REPLACED by the new query.
+     * ie the previous query waiting to execute will not be run.
      */
-    public void executeQuery(String sql) {
+    public synchronized void executeQuery(String sql) {
+    	if (sqlExecuteWorker != null && !sqlExecuteWorker.isFinished()) {
+    		if (sql != null) {
+    			queuedSQLStatement = sql;
+    		}
+    		return;
+    	} else if (sqlExecuteWorker != null && sqlExecuteWorker.isFinished()) {
+    		if (sql != null) {
+    			queuedSQLStatement = null;
+    		} else if (sql == null && queuedSQLStatement != null) {
+    			String tempSQL = sql;
+    			sql = queuedSQLStatement;
+   				queuedSQLStatement = tempSQL;
+    		}
+    		sqlExecuteWorker.removeTaskTerminationListener(sqlExecuteTerminationListener);
+    		sqlExecuteWorker = null;
+    	}
+    	
+    	if (sql == null) {
+    		return;
+    	}
+    	
     	if(resultTabPane.getComponentCount() > 1) {
     		for(int i = resultTabPane.getComponentCount()-1; i >= 1; i--){
     			resultTabPane.remove(i);
     		}
     	}
+    	
     	ConnectionAndStatementBean conBean = conMap.get(databaseComboBox.getSelectedItem());
     	try {
     		if(conBean!= null) {
@@ -841,7 +912,10 @@ public class SQLQueryUIComponents {
     	} catch (SQLException e1) {
     		SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedRetrievingConnection", ((SPDataSource)databaseComboBox.getSelectedItem()).getName()), e1);
     	}
+    	
+    	logger.debug("Executing SQL " + sql);
     	sqlExecuteWorker = new ExecuteSQLWorker(swRegistry, sql);
+    	sqlExecuteWorker.addTaskTerminationListener(sqlExecuteTerminationListener);
     	new Thread(sqlExecuteWorker).start();
     }
 
