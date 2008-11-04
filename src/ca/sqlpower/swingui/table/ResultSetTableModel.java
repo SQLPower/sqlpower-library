@@ -34,6 +34,7 @@ package ca.sqlpower.swingui.table;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 
 import javax.swing.table.AbstractTableModel;
 
@@ -116,6 +117,34 @@ public class ResultSetTableModel extends AbstractTableModel {
 		} catch (SQLException e) {
 			throw new RuntimeException("Could not get the column name.", e);
 		}
+	}
+	
+	@Override
+	public Class<?> getColumnClass(int columnIndex) {
+		try {
+			if (columnIndex < 0 || columnIndex >= rs.getMetaData().getColumnCount()) {
+				return Object.class;
+			}
+		} catch (SQLException e1) {
+			throw new RuntimeException(e1);
+		}
+		int columnType;
+		try {
+			columnType = rs.getMetaData().getColumnType(columnIndex + 1);
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+		if (columnType == Types.VARCHAR) {
+			return String.class;
+		} else if (columnType == Types.BIT || columnType == Types.INTEGER || columnType == Types.SMALLINT || columnType == Types.TINYINT) {
+			return Integer.class;
+		} else if (columnType == Types.DECIMAL || columnType == Types.DOUBLE || columnType == Types.NUMERIC) {
+			return Double.class;
+		} else if (columnType == Types.FLOAT) {
+			return Float.class;
+		}
+		return Object.class;
+		
 	}
 
 }
