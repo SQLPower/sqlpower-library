@@ -1046,12 +1046,13 @@ public class SQLQueryUIComponents {
         
     	tableAreaBuilder.nextLine();
     	tableAreaBuilder.nextLine();
+    	JScrollPane tableScrollPane = new JScrollPane(tempTable);
+    	tableAreaBuilder.append(tableScrollPane, 3);
+    	
         resultJTables.add(tempTable);
         for (TableChangeListener l : tableListeners) {
         	l.tableAdded(new TableChangeEvent(this, tempTable));
         }
-        JScrollPane tableScrollPane = new JScrollPane(tempTable);
-        tableAreaBuilder.append(tableScrollPane, 3);
         
         return tableAreaBuilder.getPanel();
     }
