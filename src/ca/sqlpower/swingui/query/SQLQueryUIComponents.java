@@ -242,12 +242,13 @@ public class SQLQueryUIComponents {
         	for (CachedRowSet rs : resultSets) {
         		ResultSet r = rs.createShared();
         		JPanel tempResultPanel = createResultSetTablePanel(r);
-        		resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
         		if(!multipleQueryEnabled) {
         			firstResultPanel.removeAll();
         			firstResultPanel.add(tempResultPanel, BorderLayout.CENTER);
         			firstResultPanel.revalidate();
         			break;
+        		} else {
+        			resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
         		}
         	}
         	resultSets.clear();
