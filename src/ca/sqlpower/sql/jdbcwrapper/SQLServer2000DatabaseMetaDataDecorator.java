@@ -37,53 +37,46 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import org.apache.log4j.Logger;
-
 import ca.sqlpower.sql.CachedRowSet;
-import ca.sqlpower.sql.SQL;
 
-public class SQLServerDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
+/**
+ * Extends the base SQL Server database meta data decorator by providing a more accurate
+ * method of retrieving schema names on SQL Server 2000.
+ */
+public class SQLServer2000DatabaseMetaDataDecorator extends SQLServerDatabaseMetaDataDecorator {
 
-	private static final Logger logger = Logger.getLogger(SQLServerDatabaseMetaDataDecorator.class);
-	
-    public SQLServerDatabaseMetaDataDecorator(DatabaseMetaData delegate) {
+    public SQLServer2000DatabaseMetaDataDecorator(DatabaseMetaData delegate) {
         super(delegate);
     }
 
     /**
-     * Augments the Microsoft-supplied getColumns() result set with the JDBC4
-     * IS_AUTOINCREMENT column. The value of this extra column is determined by
-     * the presence of the substring <code>" identity"</code> in the column's type name.
+     * Works around a user-reported bug in the Microsoft JDBC drivers for SQL
+     * Server 2000. Note this is a different fix from the one used in SQL Server
+     * 2005. See <a
+     * href="http://www.sqlpower.ca/forum/posts/list/0/1788.page">the post</a>
+     * for details.
      */
     @Override
-    public ResultSet getColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern) throws SQLException {
-        ResultSet rs = super.getColumns(catalog, schemaPattern, tableNamePattern, columnNamePattern);
-        CachedRowSet crs = new CachedRowSet();
-        boolean fudgeAutoInc = SQL.findColumnIndex(rs, "IS_AUTOINCREMENT") == -1;
-        if (fudgeAutoInc) {
-        	crs.populate(rs, null, "IS_AUTOINCREMENT");
-        } else {
-        	crs.populate(rs);
+    public ResultSet getSchemas() throws SQLException {
+        Statement stmt = null;
+        ResultSet rs = null;
+        try {
+            stmt = getConnection().createStatement();
+            String sql = 
+                "SELECT name AS 'TABLE_SCHEM', db_name() AS 'TABLE_CATALOG'\n" +
+                "FROM sysusers\n" +
+                "WHERE issqlrole = 0\n" +
+                "ORDER BY name";
+            rs = stmt.executeQuery(sql);
+            
+            CachedRowSet crs = new CachedRowSet();
+            crs.populate(rs);
+            return crs;
+            
+        } finally {
+            if (rs != null) rs.close();
+            if (stmt != null) stmt.close();
         }
-        rs.close();
-        if (fudgeAutoInc) {
-        	
-        	int autoIncColNum = crs.findColumn("IS_AUTOINCREMENT");
-
-        	while (crs.next()) {
-        		if (logger.isDebugEnabled()) {
-        			logger.debug("Examining col " + crs.getString(4) + " (" + crs.getString(6) + ")");
-        		}
-        		if (crs.getString(6) != null && crs.getString(6).toLowerCase().indexOf(" identity") >= 0) {
-        			crs.updateString(autoIncColNum, "YES");
-        			logger.debug("  AUTO-INC!");
-        		} else {
-        			crs.updateString(autoIncColNum, "NO");
-        			logger.debug("  NOT AUTO-INC!");
-        		}
-        	}
-        	crs.beforeFirst();
-        }
-        return crs;
     }
+    
 }
