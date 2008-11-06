@@ -1048,15 +1048,12 @@ public class SQLQueryUIComponents {
     	// Do something similar with the Panel but the result will have JLabel with error message instead of result
     	// table.
     	if(exceptioned) {
-    		JComponent tempTable;
     		FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "pref, 10dlu, fill:min(pref;100dlu):grow");
     		DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
     		tableAreaBuilder.setDefaultDialogBorder();
-    		tempTable = errorTextArea;
-    		
     		tableAreaBuilder.nextLine();
         	tableAreaBuilder.nextLine();
-        	JScrollPane tableScrollPane = new JScrollPane(tempTable);
+        	JScrollPane tableScrollPane = new JScrollPane(errorTextArea);
         	tableAreaBuilder.append(tableScrollPane, 3);
         	
         	JPanel tempResultPanel = tableAreaBuilder.getPanel();
