@@ -1,10 +1,17 @@
 package ca.sqlpower.sql;
 
-import org.apache.commons.dbcp.*;
-import org.apache.commons.pool.*;
-import org.apache.log4j.Logger;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
-import java.sql.*;
+import org.apache.commons.dbcp.ConnectionFactory;
+import org.apache.commons.dbcp.PoolableConnectionFactory;
+import org.apache.commons.dbcp.PoolingConnection;
+import org.apache.commons.pool.KeyedObjectPool;
+import org.apache.commons.pool.KeyedObjectPoolFactory;
+import org.apache.commons.pool.ObjectPool;
+import org.apache.log4j.Logger;
 
 /**
  * Extends the orginal factory to return fancy new 

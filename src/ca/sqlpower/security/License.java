@@ -32,18 +32,27 @@
 
 package ca.sqlpower.security;
 
-import ca.sqlpower.util.Version;
-import ca.sqlpower.util.ByteColonFormat;
-import javax.xml.parsers.*;
-import org.w3c.dom.*;
-import java.io.*;
-import java.text.*;
-import java.util.*;
+import java.io.InputStream;
 import java.security.MessageDigest;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.Properties;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.log4j.Logger;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
+
+import ca.sqlpower.util.ByteColonFormat;
+import ca.sqlpower.util.Version;
 
 /**
  * Parses the XML license file, verifies the key, and provides

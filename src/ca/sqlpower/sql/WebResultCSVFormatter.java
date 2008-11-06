@@ -1,8 +1,8 @@
 package ca.sqlpower.sql;
 
-import java.io.*;
-import java.text.*;
+import java.io.PrintWriter;
 import java.sql.SQLException;
+import java.text.StringCharacterIterator;
 
 public class WebResultCSVFormatter extends WebResultFormatter {
     public WebResultCSVFormatter() {

@@ -1,7 +1,9 @@
 package ca.sqlpower.util;
 
-import java.io.*;
-import java.util.*;
+import java.io.PrintStream;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.Iterator;
 
 /**
  * Provides some handy methods for working with Java Collections.

@@ -1,7 +1,5 @@
 package ca.sqlpower.util;
 
-import java.awt.*;
-import java.text.*;
 
 /**
  * The WebColour class is a small wrapper around the Java AWT Color

@@ -1,7 +1,10 @@
 package ca.sqlpower.util;
 
-import java.text.*;
-import java.util.*;
+import java.text.FieldPosition;
+import java.text.Format;
+import java.text.ParseException;
+import java.text.ParsePosition;
+import java.util.StringTokenizer;
 
 public class ByteColonFormat extends Format {
 

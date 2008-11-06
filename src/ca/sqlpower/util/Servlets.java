@@ -1,9 +1,11 @@
 package ca.sqlpower.util;
 
-import javax.servlet.*;
-import javax.servlet.http.*;
-import java.util.*;
-import java.io.*;
+import java.io.PrintStream;
+import java.util.Enumeration;
+
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 /**
  * Just a collection of methods for dealing with common servlet tasks.

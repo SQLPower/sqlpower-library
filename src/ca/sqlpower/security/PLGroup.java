@@ -32,10 +32,18 @@
 
 package ca.sqlpower.security;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
-import ca.sqlpower.sql.*;
+import ca.sqlpower.sql.DBConnection;
+import ca.sqlpower.sql.DatabaseObject;
+import ca.sqlpower.sql.SQL;
 
 /**
  * The PLGroup class represents groups that can be granted specific

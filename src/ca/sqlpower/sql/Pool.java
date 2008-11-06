@@ -1,11 +1,16 @@
 package ca.sqlpower.sql;
 
-import org.apache.commons.dbcp.*;
-import org.apache.commons.pool.*;
-import org.apache.commons.pool.impl.*;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
-import java.util.*;
-import java.sql.*;
+import org.apache.commons.dbcp.ConnectionFactory;
+import org.apache.commons.dbcp.DriverManagerConnectionFactory;
+import org.apache.commons.dbcp.PoolableConnectionFactory;
+import org.apache.commons.dbcp.PoolingDataSource;
+import org.apache.commons.pool.ObjectPool;
+import org.apache.commons.pool.impl.GenericObjectPool;
 
 /**
  * Connection pool wrapper class, providing a simple connection pool interface

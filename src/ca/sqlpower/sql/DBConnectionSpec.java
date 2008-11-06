@@ -1,8 +1,11 @@
 package ca.sqlpower.sql;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.io.Serializable;
-import java.util.*;
-import java.beans.*;
+import java.util.Iterator;
+import java.util.List;
+
 import ca.sqlpower.util.SQLPowerUtils;
 
 /**

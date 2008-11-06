@@ -1,7 +1,5 @@
 package ca.sqlpower.sql;
 
-import ca.sqlpower.sql.*;
-import org.apache.struts.util.*;
 
 /**
  * StringTruncateFilter truncates a string to a specific length.

@@ -32,13 +32,19 @@
 
 package ca.sqlpower.security;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
+import org.apache.log4j.Logger;
+
 import ca.sqlpower.sql.DBConnection;
 import ca.sqlpower.sql.DatabaseObject;
-import java.sql.*;
-import java.util.*;
-import ca.sqlpower.sql.*;
+import ca.sqlpower.sql.SQL;
 import ca.sqlpower.util.UnknownFreqCodeException;
-import org.apache.log4j.Logger;
 
 
 public class PLSecurityManager implements java.io.Serializable {

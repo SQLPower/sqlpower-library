@@ -1,6 +1,6 @@
 package ca.sqlpower.sql;
 
-import java.sql.*;
+import java.sql.SQLException;
 
 /**
  * Handles the conversion of database-specific error numbers within 

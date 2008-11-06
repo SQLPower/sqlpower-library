@@ -1,6 +1,8 @@
 package ca.sqlpower.util;
 
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * The AbstractCache class is a generic cache that never disposes of

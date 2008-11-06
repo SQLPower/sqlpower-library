@@ -1,8 +1,11 @@
 package ca.sqlpower.sql;
 
-import java.sql.*;
-import java.util.*;
-import javax.servlet.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import javax.servlet.ServletContext;
 
 public class DBConnection {
 

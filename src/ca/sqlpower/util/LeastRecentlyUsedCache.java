@@ -1,6 +1,7 @@
 package ca.sqlpower.util;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedList;
 
 /**
  * An object cache that employs the Least Recently Used disposal

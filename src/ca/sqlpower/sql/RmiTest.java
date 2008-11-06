@@ -1,8 +1,8 @@
 package ca.sqlpower.sql;
 
 import java.rmi.Naming;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
 /**
  * Test stub to allow basic testing of the RMI server.
  * 

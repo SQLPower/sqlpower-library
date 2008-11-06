@@ -1,7 +1,13 @@
 package ca.sqlpower.util;
 
-import java.text.*;
-import java.util.*;
+import java.text.FieldPosition;
+import java.text.Format;
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.text.ParsePosition;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * The LongMessageFormat class is intended to work identically to the

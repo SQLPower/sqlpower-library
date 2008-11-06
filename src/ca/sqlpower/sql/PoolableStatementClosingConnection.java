@@ -1,9 +1,11 @@
 package ca.sqlpower.sql;
 
 import java.sql.Connection;
-import java.sql.Statement;
 import java.sql.SQLException;
-import java.util.*;
+import java.sql.Statement;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.apache.commons.dbcp.PoolableConnection;
 import org.apache.commons.pool.ObjectPool;

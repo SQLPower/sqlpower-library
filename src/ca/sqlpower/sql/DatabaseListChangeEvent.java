@@ -33,8 +33,6 @@ package ca.sqlpower.sql;
 
 import java.util.EventObject;
 
-import ca.sqlpower.sql.SPDataSource;
-
 public class DatabaseListChangeEvent extends EventObject implements java.io.Serializable {
 	
 	int listIndex;

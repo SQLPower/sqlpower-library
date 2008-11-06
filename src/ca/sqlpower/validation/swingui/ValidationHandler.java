@@ -31,8 +31,6 @@
  */
 package ca.sqlpower.validation.swingui;
 
-import java.util.ArrayList;
-
 import javax.swing.Action;
 import javax.swing.JComponent;
 

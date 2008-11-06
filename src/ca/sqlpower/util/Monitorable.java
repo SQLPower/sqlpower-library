@@ -31,6 +31,8 @@
  */
 package ca.sqlpower.util;
 
+import ca.sqlpower.swingui.ProgressWatcher;
+
 /**
  * The Monitorable interface is a generic way for objects which perform certain
  * tasks to make their progress monitorable.  It is usually appropriate for the

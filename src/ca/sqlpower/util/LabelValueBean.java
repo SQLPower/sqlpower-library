@@ -62,8 +62,9 @@
 
 package ca.sqlpower.util;
 
-import java.util.*;
-import java.text.*;
+import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Simple JavaBean to represent label-value pairs for use in collections

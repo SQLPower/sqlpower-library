@@ -1,10 +1,7 @@
 package ca.sqlpower.sql;
 
-import ca.sqlpower.util.*;
-import java.util.*;
-import java.sql.*;
-import java.io.*;
-import java.text.*;
+import java.io.PrintWriter;
+import java.sql.SQLException;
 
 /**
  * WebResultFormFormatter exists in order to format WebResultSets into

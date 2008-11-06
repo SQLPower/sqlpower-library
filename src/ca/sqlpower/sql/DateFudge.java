@@ -1,6 +1,6 @@
 package ca.sqlpower.sql;
 
-import java.util.*;
+import java.util.Date;
 
 /**
  * The DateFudge class helps to get around a sticky timezone problem

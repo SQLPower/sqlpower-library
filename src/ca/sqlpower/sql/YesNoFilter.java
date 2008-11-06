@@ -1,6 +1,5 @@
 package ca.sqlpower.sql;
 
-import ca.sqlpower.sql.*;
 
 /**
  * YesNoFilter helps with displaying the SQLPower standard 'Y'/'N'

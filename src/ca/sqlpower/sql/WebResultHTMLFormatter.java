@@ -1,11 +1,12 @@
 package ca.sqlpower.sql;
 
-import ca.sqlpower.util.*;
-import java.text.*;
-import java.util.*;
-import java.sql.*;
-import java.io.*;
-import java.awt.Color;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.ListIterator;
+
+import ca.sqlpower.util.Web;
 
 /**
  * WebResultHTMLFormatter exists in order to format WebResultSets into

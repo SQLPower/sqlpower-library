@@ -32,15 +32,23 @@
 
 package ca.sqlpower.security;
 
-import java.sql.*;
-import java.util.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-
-import ca.sqlpower.sql.*;
-import ca.sqlpower.util.ByteColonFormat;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
+
+import ca.sqlpower.sql.DBConnection;
+import ca.sqlpower.sql.DatabaseObject;
+import ca.sqlpower.sql.SQL;
+import ca.sqlpower.util.ByteColonFormat;
 
 /**
  * The User class represents a people who can log in to an application

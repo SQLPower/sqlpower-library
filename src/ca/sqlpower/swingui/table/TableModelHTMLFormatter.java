@@ -34,7 +34,6 @@ package ca.sqlpower.swingui.table;
 
 import java.io.PrintWriter;
 
-import javax.swing.JTable;
 import javax.swing.table.TableModel;
 
 /**

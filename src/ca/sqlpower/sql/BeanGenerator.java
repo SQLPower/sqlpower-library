@@ -1,9 +1,15 @@
 package ca.sqlpower.sql;
 
-import java.sql.*;
-import java.io.*;
-import java.util.*;
-import ca.sqlpower.sql.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
 
 public class BeanGenerator {
 	public static final String VERSION_STRING="SQLPower BeanGenerator v1.0";

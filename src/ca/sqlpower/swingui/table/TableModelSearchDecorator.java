@@ -47,7 +47,6 @@ import javax.swing.text.Document;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.swingui.SPSUtils;
-import ca.sqlpower.swingui.table.TableTextConverter;
 /**
  * Searches through a table model using a table text converter.  It reduces the visible table 
  * rows as rows stop matching.

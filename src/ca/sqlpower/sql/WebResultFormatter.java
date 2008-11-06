@@ -1,15 +1,20 @@
 package ca.sqlpower.sql;
 
-import ca.sqlpower.util.*;
-
-import java.io.*;
-import java.text.*;
-import java.util.*;
+import java.awt.Color;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Types;
-import java.awt.Color;
+import java.text.DateFormat;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
+import java.util.Iterator;
+import java.util.List;
+
 import javax.servlet.jsp.JspWriter;
+
+import ca.sqlpower.util.Hyperlink;
+import ca.sqlpower.util.LongMessageFormat;
 
 /**
  * The base class for utilities that format a {@link WebResultSet}

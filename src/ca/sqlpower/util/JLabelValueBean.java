@@ -62,8 +62,6 @@
 
 package ca.sqlpower.util;
 
-import java.util.*;
-import java.text.*;
 
 /**
  * Override the toString() method to return just the Label.  This is very

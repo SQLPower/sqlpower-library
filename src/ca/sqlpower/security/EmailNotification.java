@@ -37,12 +37,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import ca.sqlpower.sql.DatabaseObject;
 import ca.sqlpower.sql.SQL;
-import ca.sqlpower.util.UnknownFreqCodeException;
 
 /**
  * The EmailNotification class answers questions about email

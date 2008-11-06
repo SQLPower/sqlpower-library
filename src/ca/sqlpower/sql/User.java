@@ -1,9 +1,12 @@
 package ca.sqlpower.sql;
 
 //import ca.sqlpower.util.*;
-import java.beans.*;
-import java.sql.*;
-import java.io.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyVetoException;
+import java.io.NotSerializableException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
 /**
  * represents a user with a connection to a jdbc-accessible database.

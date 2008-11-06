@@ -39,8 +39,6 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
-
-import ca.sqlpower.swingui.table.TableUtils;
 /**
  * This class is used to manipulate the sizing on columns. 
  * By ctrl + selecting the header, the column will automatically resize to fit

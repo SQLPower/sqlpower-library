@@ -1,6 +1,7 @@
 package ca.sqlpower.util;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * The Frequency class describes a time frequency, and has methods to

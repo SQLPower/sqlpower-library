@@ -1,11 +1,15 @@
 package ca.sqlpower.sql;
 
-import java.sql.*;
-import java.util.*;
-import ca.sqlpower.util.*;
-import ca.sqlpower.sql.CachedRowSet;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 import org.apache.log4j.Logger;
+
+import ca.sqlpower.util.Cache;
+import ca.sqlpower.util.LeastRecentlyUsedCache;
+import ca.sqlpower.util.SynchronizedCache;
 
 
 public class DelayedWebResultSet extends WebResultSet {

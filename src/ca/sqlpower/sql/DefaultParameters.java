@@ -1,7 +1,12 @@
 package ca.sqlpower.sql;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Map;
 
 import ca.sqlpower.util.Version;
 import ca.sqlpower.util.VersionFormatException;

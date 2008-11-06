@@ -1,11 +1,17 @@
 package ca.sqlpower.sql;
 
-import javax.xml.parsers.*;
-import org.w3c.dom.*;
-import java.io.*;
-import java.util.*;
-import org.apache.xml.serialize.*;
+import java.io.InputStream;
 import java.rmi.Naming;
+import java.util.Collection;
+import java.util.LinkedList;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /**
  * A collection of support methods for implementing a

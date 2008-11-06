@@ -1,6 +1,7 @@
 package ca.sqlpower.sql;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 public abstract class SequenceGenerator {
 

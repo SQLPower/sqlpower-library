@@ -1,7 +1,8 @@
 package ca.sqlpower.util;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.NoSuchElementException;
+import java.util.StringTokenizer;
 
 /**
  * Represents a dotted-triple version number (major.minor.tiny).

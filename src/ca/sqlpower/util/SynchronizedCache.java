@@ -1,6 +1,9 @@
 package ca.sqlpower.util;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Map;
+import java.util.Set;
 
 public class SynchronizedCache implements Cache, java.io.Serializable {
 

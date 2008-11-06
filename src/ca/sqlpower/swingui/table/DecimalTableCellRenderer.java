@@ -40,8 +40,6 @@ import java.text.ParsePosition;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
 
-import ca.sqlpower.swingui.table.FormatFactory;
-
 public class DecimalTableCellRenderer extends DefaultTableCellRenderer  implements FormatFactory {
 
     DecimalFormat aldf;
