@@ -35,6 +35,8 @@ package ca.sqlpower.sql.jdbcwrapper;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
@@ -68,8 +70,11 @@ public class SQLServerDatabaseMetaDataDecorator extends DatabaseMetaDataDecorato
         if (fudgeAutoInc) {
         	
         	int autoIncColNum = crs.findColumn("IS_AUTOINCREMENT");
-
+        	int defaultColNum = crs.findColumn("COLUMN_DEF");
+        	
         	while (crs.next()) {
+        	    
+        	    // populate auto-increment column
         		if (logger.isDebugEnabled()) {
         			logger.debug("Examining col " + crs.getString(4) + " (" + crs.getString(6) + ")");
         		}
@@ -80,9 +85,41 @@ public class SQLServerDatabaseMetaDataDecorator extends DatabaseMetaDataDecorato
         			crs.updateString(autoIncColNum, "NO");
         			logger.debug("  NOT AUTO-INC!");
         		}
+        		
+        		// strip parentheses from default values (see bug 1693)
+        		crs.updateString(defaultColNum, stripParens(crs.getString(defaultColNum)));
+        		
         	}
         	crs.beforeFirst();
         }
         return crs;
+    }
+
+    /**
+     * SQL Server tends to put parentheses around column default values, and we
+     * have to strip them off in this wrapper to provide forward-engineering
+     * compatibility with other platforms (notably MySQL). This method is used
+     * by the getColumns() wrapper to strip off those parentheses.
+     * <p>
+     * See <a href="http://trillian.sqlpower.ca/bugzilla/show_bug.cgi?id=1693">bug
+     * 1693</a> for details.
+     * 
+     * @param original
+     *            The original default value, which might be surrounded by one
+     *            or more balanced sets of parentheses. This argument may be null,
+     *            in which case null will be returned.
+     * @return The original value with all balanced sets of parentheses that
+     *         completely surrounded the value removed. If the original value
+     *         was null, the return value will be null.
+     */
+    public static String stripParens(String original) {
+        if (original == null) return null;
+        Pattern p = Pattern.compile("\\((.*)\\)");
+        Matcher m = p.matcher(original);
+        while (m.matches()) {
+            original = m.group(1);
+            m = p.matcher(original);
+        }
+        return original;
     }
 }
