@@ -55,6 +55,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -184,6 +186,11 @@ public class SQLQueryUIComponents {
     }
    
     /**
+	 * This TextArea stores an exception Message if it ever Happens
+     */
+    private final JTextArea errorTextArea = new JTextArea();
+   
+    /**
      * This will execute the sql statement in the sql text area. The
      * SQL statement used in execution will be stored with this swing
      * worker. If a different SQL statement is to be executed later
@@ -226,15 +233,19 @@ public class SQLQueryUIComponents {
         @Override
         public void cleanup() throws Exception {
         	Throwable e = getDoStuffException();
+        	boolean exceptionHappend = false;
         	if (e != null) {
         		if (e instanceof SQLException) {
-        			SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedConnectingToDB"), e);
-        		} else {
+        			exceptionHappend = true;
+        			String errorMessage = createErrorStringMessage(e);
+        			errorTextArea.setText(errorMessage);
+        			logger.error(e.getStackTrace());
+        		}
+        		else{
         			throw new RuntimeException(e);
         		}
         	}
-        	
-        	createResultSetTables(resultSets, sqlString);
+        	createResultSetTables(resultSets, sqlString, exceptionHappend);
         	
         	resultSets.clear();
         	logTextArea.setText("");
@@ -317,6 +328,17 @@ public class SQLQueryUIComponents {
 
 		public boolean isFinished() {
 			return isFinished;
+		}
+		
+		/**
+		 * This will create the an error Message String similar to the details in the Exception Dialog.
+		 */
+		public String createErrorStringMessage(Throwable e) {
+			StringWriter stringWriter = new StringWriter();
+			PrintWriter traceWriter = new PrintWriter(stringWriter);
+			stringWriter.write("Your query could not be executed due to the following error: \n\n");
+			e.printStackTrace(traceWriter);
+			return stringWriter.toString();
 		}
         
     }
@@ -691,10 +713,11 @@ public class SQLQueryUIComponents {
 	 */
     public SQLQueryUIComponents(SwingWorkerRegistry s, DataSourceCollection ds, JComponent dialogOwner) {
         super();
-        multipleQueryEnabled = true;
+        this.multipleQueryEnabled = true;
         this.dialogOwner = dialogOwner;
         this.swRegistry = s;
         this.dsCollection = ds;
+        this.errorTextArea.setEditable(false);
         resultTabPane = new JTabbedPane();
         firstResultPanel = new JPanel(new BorderLayout());
         logTextArea = new JTextArea();
@@ -1014,7 +1037,7 @@ public class SQLQueryUIComponents {
      * Creates all of the JTables for the result tab and adds them to the result tab.
      * @throws SQLException 
      */
-    private synchronized void createResultSetTables(List<CachedRowSet> resultSets, String query) throws SQLException {
+    private synchronized void createResultSetTables(List<CachedRowSet> resultSets, String query, boolean exceptioned) throws SQLException {
     	resultJTables.clear();
     	tableToSQLMap.clear();
     	for (JTable table : resultJTables) {
@@ -1022,53 +1045,79 @@ public class SQLQueryUIComponents {
     			l.tableRemoved(new TableChangeEvent(SQLQueryUIComponents.this, table));
     		}
     	}
-    	for (CachedRowSet rs : resultSets) {
-    		ResultSet r = rs.createShared();
-    		JTable tempTable;
-        	FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "pref, 10dlu, fill:min(pref;100dlu):grow");
-        	DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
-        	tableAreaBuilder.setDefaultDialogBorder();
-        	searchLabel = new JLabel(icon);
-        	searchLabel.setToolTipText("Search");
-        	
-        	if(multipleQueryEnabled) {
-        		JTextField tempTextField = new JTextField();
-        		tableAreaBuilder.append(searchLabel);
-        		tableAreaBuilder.append(tempTextField);
-        		tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(r, tempTextField.getDocument());
-        		
-        	} else {
-        		filterAndLogoPanel.removeAll();
-        		tableFilterTextField = new JTextField();
-        		filterAndLogoPanel.add(searchLabel, BorderLayout.WEST);
-        		filterAndLogoPanel.add(tableFilterTextField, BorderLayout.CENTER);
-        		tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(r, tableFilterTextField.getDocument());
-        		
-        	}
-            
-        	tableAreaBuilder.nextLine();
+    	// Do something similar with the Panel but the result will have JLabel with error message instead of result
+    	// table.
+    	if(exceptioned) {
+    		JComponent tempTable;
+    		FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "pref, 10dlu, fill:min(pref;100dlu):grow");
+    		DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
+    		tableAreaBuilder.setDefaultDialogBorder();
+    		tempTable = errorTextArea;
+    		
+    		tableAreaBuilder.nextLine();
         	tableAreaBuilder.nextLine();
         	JScrollPane tableScrollPane = new JScrollPane(tempTable);
         	tableAreaBuilder.append(tableScrollPane, 3);
         	
-            resultJTables.add(tempTable);
-            tableToSQLMap.put(tempTable, query);
-            
-    		JPanel tempResultPanel = tableAreaBuilder.getPanel();
+        	JPanel tempResultPanel = tableAreaBuilder.getPanel();
     		resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
     		if(!multipleQueryEnabled) {
     			firstResultPanel.removeAll();
     			firstResultPanel.add(tempResultPanel, BorderLayout.CENTER);
     			firstResultPanel.revalidate();
-    			break;
     		} else {
     			resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
     		}
-    		
-    	}
-    	for (JTable table : resultJTables) {
-    		for (TableChangeListener l : tableListeners) {
-    			l.tableAdded(new TableChangeEvent(this, table));
+    	} else {
+    		for (CachedRowSet rs : resultSets) {
+    			ResultSet r = rs.createShared();
+    			JComponent tempTable;
+    			FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "pref, 10dlu, fill:min(pref;100dlu):grow");
+    			DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
+    			tableAreaBuilder.setDefaultDialogBorder();
+    			searchLabel = new JLabel(icon);
+    			searchLabel.setToolTipText("Search");
+
+    			if(multipleQueryEnabled) {
+    				JTextField tempTextField = new JTextField();
+    				tableAreaBuilder.append(searchLabel);
+    				tableAreaBuilder.append(tempTextField);
+    				tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(r, tempTextField.getDocument());
+
+    			} else {
+    				filterAndLogoPanel.removeAll();
+    				tableFilterTextField = new JTextField();
+    				filterAndLogoPanel.add(searchLabel, BorderLayout.WEST);
+    				filterAndLogoPanel.add(tableFilterTextField, BorderLayout.CENTER);
+    				tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(r, tableFilterTextField.getDocument());
+
+    			}
+
+    			tableAreaBuilder.nextLine();
+    			tableAreaBuilder.nextLine();
+    			JScrollPane tableScrollPane = new JScrollPane(tempTable);
+    			tableAreaBuilder.append(tableScrollPane, 3);
+
+    			if(!exceptioned) {
+    				resultJTables.add((JTable)tempTable);
+    				tableToSQLMap.put(((JTable)tempTable), query);
+    			}
+    			JPanel tempResultPanel = tableAreaBuilder.getPanel();
+    			resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
+    			if(!multipleQueryEnabled) {
+    				firstResultPanel.removeAll();
+    				firstResultPanel.add(tempResultPanel, BorderLayout.CENTER);
+    				firstResultPanel.revalidate();
+    				break;
+    			} else {
+    				resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
+    			}
+
+    		}
+    		for (JTable table : resultJTables) {
+    			for (TableChangeListener l : tableListeners) {
+    				l.tableAdded(new TableChangeEvent(this, table));
+    			}
     		}
     	}
     }
