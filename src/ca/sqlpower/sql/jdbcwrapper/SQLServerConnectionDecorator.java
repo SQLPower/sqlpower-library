@@ -36,19 +36,32 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
+import org.apache.log4j.Logger;
+
 /**
  * The class exists mainly to wrap instances of DatabaseMetaData returned
  * by {@link #getMetaData()} in the appropriate decorator class.
  */
 public class SQLServerConnectionDecorator extends GenericConnectionDecorator {
 
+    private static final Logger logger = Logger.getLogger(SQLServerConnectionDecorator.class);
+    
     protected SQLServerConnectionDecorator(Connection delegate) {
         super(delegate);
     }
 
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        // TODO Auto-generated method stub
-        return new SQLServerDatabaseMetaDataDecorator(super.getMetaData());
+        DatabaseMetaData rawRSMD = super.getMetaData();
+        if (rawRSMD.getDatabaseProductVersion().charAt(0) == '8') {
+            return new SQLServer2000DatabaseMetaDataDecorator(rawRSMD);
+        } else if (rawRSMD.getDatabaseProductVersion().charAt(0) == '9') {
+            return new SQLServer2005DatabaseMetaDataDecorator(rawRSMD);
+        } else {
+            logger.warn("Unknown database product version: " +
+                    rawRSMD.getDatabaseProductVersion() +
+                    " -- returning generic SQL Server wrapper");
+            return new SQLServerDatabaseMetaDataDecorator(rawRSMD);
+        }
     }
 }
