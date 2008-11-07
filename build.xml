@@ -26,15 +26,17 @@
 		<mkdir dir="${build}"/>
 	</target>
 
-	<target name="compile" depends="init">
+	<target name="compile" depends="init"
+     description="Compiles all java files to the build directory and copies everything else as-is">
+		
 		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
-		<copy tofile="${build}/ca/sqlpower/sql/default_database_types.ini"
-				     file="src/ca/sqlpower/sql/default_database_types.ini"/>
 		<copy todir="${build}/">
 			<fileset dir="src">
-				<include name="**/messages*.properties"/>
+				<include name="**/*"/>
+				<exclude name="**/*.java"/>
 			</fileset>
 		</copy>
+		
 	</target>
 
 	<target name="compile-tests" depends="compile">
