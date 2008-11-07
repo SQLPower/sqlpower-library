@@ -1,4 +1,3 @@
-import ca.sqlpower.util.reservoir.AllTests;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
@@ -15,6 +14,7 @@ public class LibraryMegaTest {
         //$JUnit-BEGIN$
         suite.addTest(ca.sqlpower.graph.AllTests.suite());
         suite.addTest(ca.sqlpower.sql.AllTests.suite());
+        suite.addTest(ca.sqlpower.sql.jdbcwrapper.AllTests.suite());
         suite.addTest(ca.sqlpower.swingui.AllTests.suite());
         suite.addTest(ca.sqlpower.swingui.table.AllTests.suite());
         suite.addTest(ca.sqlpower.util.AllTests.suite());
