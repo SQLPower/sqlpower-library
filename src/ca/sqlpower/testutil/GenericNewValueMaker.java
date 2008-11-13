@@ -32,6 +32,7 @@
 
 package ca.sqlpower.testutil;
 
+import java.awt.Font;
 import java.io.File;
 
 import ca.sqlpower.sql.PlDotIni;
@@ -64,6 +65,11 @@ public class GenericNewValueMaker implements NewValueMaker {
         } else if (valueType == SPDataSource.class) {
             newVal = new SPDataSource(new PlDotIni());
             ((SPDataSource)newVal).setName("Testing data source");
+        } else if (valueType == Font.class) {
+            newVal = Font.decode("Dialog");
+            if (newVal.equals(oldVal)) {
+                newVal = ((Font) newVal).deriveFont(((Font) newVal).getSize2D() + 1f);
+            }
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +
