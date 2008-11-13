@@ -213,6 +213,12 @@ public class SQLQueryUIComponents {
         public ExecuteSQLWorker(SwingWorkerRegistry registry, String sqlStatement) {
         	super(registry);
         	sqlString = sqlStatement;
+        	if(sqlString.equals("")) {
+        		logger.debug("Empty String");
+        		// if the string is empty there will be no execute so we need to reset the Panel from here.
+        		firstResultPanel.removeAll();
+        		firstResultPanel.revalidate();
+        	} 
         	
         	ds = (SPDataSource)databaseComboBox.getSelectedItem();
         	
