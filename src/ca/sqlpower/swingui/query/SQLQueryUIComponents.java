@@ -483,15 +483,19 @@ public class SQLQueryUIComponents {
     private DatabaseListChangeListener dbListChangeListener = new DatabaseListChangeListener() {
 
         public void databaseAdded(DatabaseListChangeEvent e) {
+        	logger.debug("dataBase added");
             databaseComboBox.addItem(e.getDataSource());
+            databaseComboBox.revalidate();
         }
 
         public void databaseRemoved(DatabaseListChangeEvent e) {
+        	logger.debug("dataBase removed");
             if (databaseComboBox.getSelectedItem() != null && databaseComboBox.getSelectedItem().equals(e.getDataSource())) {
                 databaseComboBox.setSelectedItem(null);
             }
             
             databaseComboBox.removeItem(e.getDataSource());
+            databaseComboBox.revalidate();
         }
         
     };
@@ -528,9 +532,12 @@ public class SQLQueryUIComponents {
             }
         }
         if(commitedOrRollBacked){
+        	logger.debug("removing DatabaseListChangeListener and closing window");
         	dsCollection.removeDatabaseListChangeListener(dbListChangeListener);
         	Window w = SwingUtilities.getWindowAncestor(dialogOwner);
-        	w.setVisible(false);
+        	if(w != null) {
+        		w.setVisible(false);
+        	}
         }
     }
 
@@ -543,10 +550,7 @@ public class SQLQueryUIComponents {
 		public void windowClosing(WindowEvent arg0) {
 			closingDialogOwner();			
 		}
-
-		public void windowOpened(WindowEvent arg0) {
-			dsCollection.addDatabaseListChangeListener(dbListChangeListener);
-		}};
+	};
 
     /**
      * This Listener listens to anything that drops onto the queryTextArea
@@ -724,6 +728,7 @@ public class SQLQueryUIComponents {
         this.swRegistry = s;
         this.dsCollection = ds;
         this.errorTextArea.setEditable(false);
+		dsCollection.addDatabaseListChangeListener(dbListChangeListener);
         resultTabPane = new JTabbedPane();
         firstResultPanel = new JPanel(new BorderLayout());
         logTextArea = new JTextArea();
