@@ -244,10 +244,7 @@ public class FontSelector implements DataEntryPanel {
         String name = (String) fontNameList.getSelectedValue();
         FontStyle style = (FontStyle) styleChoice.getSelectedValue();
         int size = ((Integer) fontSizeSpinner.getValue()).intValue();
-        Font oldFont = selectedFont;
-        selectedFont = new Font(name, style.getStyleCode(), size);
-        previewArea.setFont(selectedFont);
-        pcs.firePropertyChange("selectedFont", oldFont, selectedFont);
+        setSelectedFont(new Font(name, style.getStyleCode(), size));
     }
 
     /**
@@ -256,6 +253,13 @@ public class FontSelector implements DataEntryPanel {
      */
     public Font getSelectedFont() {
         return selectedFont;
+    }
+    
+    public void setSelectedFont(Font selectedFont) {
+        Font oldFont = selectedFont;
+        this.selectedFont = selectedFont;
+        pcs.firePropertyChange("selectedFont", oldFont, selectedFont);
+        previewArea.setFont(selectedFont);
     }
     
     public JPanel getPanel() {
@@ -270,7 +274,7 @@ public class FontSelector implements DataEntryPanel {
      * Reverts to the original font.
      */
     public void discardChanges() {
-        selectedFont = originalFont;
+        setSelectedFont(originalFont);
     }
 
     public boolean hasUnsavedChanges() {
