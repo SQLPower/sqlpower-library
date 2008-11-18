@@ -19,221 +19,235 @@
 
 package ca.sqlpower.swingui;
 
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
-import java.awt.GridLayout;
-import java.awt.Panel;
+import java.util.Arrays;
 
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
-import ca.sqlpower.swingui.DataEntryPanel;
+import com.jgoodies.forms.builder.DefaultFormBuilder;
+import com.jgoodies.forms.layout.CellConstraints;
+import com.jgoodies.forms.layout.FormLayout;
 
 /**
  * This class is a {@link DataEntryPanel} that asks the user to pick a font.
  */
 public class FontSelector implements DataEntryPanel {
 
-    /** The font the user has chosen */
-    protected Font resultFont;
+    private static enum FontStyle {
+        PLAIN("Plain", Font.PLAIN),
+        BOLD("Bold", Font.BOLD),
+        ITALIC("Italic", Font.ITALIC),
+        BOLD_ITALIC("Bold Italic", Font.BOLD | Font.ITALIC);
+        
+        private final String humanName;
+        private final int styleCode;
 
-    /** The resulting font name */
-    protected String resultName;
+        FontStyle(String name, int styleCode) {
+            humanName = name;
+            this.styleCode = styleCode;
+        }
 
-    /** The resulting font size */
-    protected int resultSize;
+        /**
+         * Returns a font derived from the given font which has the style
+         * specified by this enum constant.
+         * 
+         * @param f
+         *            The original font
+         * @return A new font with the same size and family as f, but with this
+         *         enum constant's style.
+         */
+        public Font apply(Font f) {
+            return f.deriveFont(styleCode);
+        }
+        
+        @Override
+        public String toString() {
+            return humanName;
+        }
+        
+        public static FontStyle forCode(int styleCode) {
+            for (FontStyle sty : values()) {
+                if (styleCode == sty.styleCode) {
+                    return sty;
+                }
+            }
+            throw new IllegalArgumentException("Unknown font style code: " + styleCode);
+        }
 
-    /** Indicates if resulting font is bold */
-    protected boolean isBold;
-
-    /** Indicates if resulting font is italic */
-    protected boolean isItalic;
-
-    /** Display text */
-    protected String displayText = "Preview Font";
-
-    /** The list of Fonts */
-    protected String fontList[];
-
-    /** The font name chooser */
-    protected JList fontNameChoice;
-
-    /** The font size chooser */
-    protected JList fontSizeChoice;
-
-    /** The bold and italic choosers */
-    private JCheckBox bold, italic;
-
-    /** The list of font sizes */
-    protected String fontSizes[] = { "8", "10", "11", "12", "13", "14","15","16", "18",
-            "20", "24", "30", "36", "40", "48", "60", "72" };
-
-    /** The index of the default size (e.g., 14 point == 4) */
-    protected static final int DEFAULT_SIZE = 4;
+        public int getStyleCode() {
+            return styleCode;
+        }
+    }
     
     /**
-     * The "Apply button"
+     * The font the user has chosen. This is updated whenever any of the
+     * font choosing components fires a change event.
      */
-    protected JButton okButton;
+    private Font resultFont;
 
     /**
-     * The display area. Use a JLabel as the AWT label doesn't always honor
-     * setFont() in a timely fashion :-)
+     * A list populated with all font names available on the local system.
      */
-    protected JLabel previewArea;
+    private final JList fontNameList;
 
-    private JPanel panel;
+    /**
+     * A list populated with a number of common font sizes the user might want
+     * to pick. Choosing an item on this list fills in the value in the font
+     * size text field.
+     */
+    private final JList fontSizeList;
 
+    /**
+     * The field that actually specifies the font size. Can be updated directly
+     * to any positive integer value, or by clicking a preset value in the
+     * {@link #fontSizeList}.
+     */
+    private final JSpinner fontSizeSpinner;
+    
+    /**
+     * The font style chooser (bold, italic, bold italic, plain).
+     */
+    private final JList styleChoice;
+    
+    /** The list of font sizes */
+    private static final Integer[] FONT_SIZES = {
+            4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 18,
+            20, 24, 30, 36, 40, 48, 60, 72, 96, 144 };
+
+    /**
+     * The display area.
+     */
+    private final JTextArea previewArea = new JTextArea("The Quick Wabit Architected the Loaded Matchmaker");
+
+    /**
+     * The panel we return as this data entry panel's GUI.
+     */
+    private final JPanel panel;
+
+    /**
+     * The original font we started with. If this data entry panel is canceled,
+     * the user's current choice will revert to this value.
+     */
     private final Font originalFont;
+    
+    private class SelectionHandler implements ChangeListener, ListSelectionListener {
+
+        boolean updatingListSelection = false;
+        
+        public void stateChanged(ChangeEvent e) {
+            if (updatingListSelection) return;
+            try {
+                updatingListSelection = true;
+                Integer newSize = (Integer) fontSizeSpinner.getValue();
+                int newSizeIndexInList = Arrays.binarySearch(FONT_SIZES, newSize);
+                System.out.println("New selection index: " + newSizeIndexInList);
+                if (newSizeIndexInList >= 0) {
+                    fontSizeList.setSelectedIndex(newSizeIndexInList);
+                    fontSizeList.ensureIndexIsVisible(newSizeIndexInList);
+                } else {
+                    fontSizeList.clearSelection();
+                    System.out.println("Cleared selection");
+                }
+            } finally {
+                updatingListSelection = false;
+            }
+            previewFont();
+        }
+
+        public void valueChanged(ListSelectionEvent e) {
+            previewFont();
+        }
+        
+    }
     
     /**
      * This constructor will create the Font Selector given a parent frame and a
      * previous font.
-     * @param f
-     * @param font
+     * 
+     * @param font The font to start with in the preview dialog. If null, the system
+     * default font will be used.
      */
     public FontSelector(Font font) {
-        panel = new JPanel();
-        
-        //if the font given happened to be null, make a new font from this JDialog
         if(font == null) {
-            font = new Font(panel.getFont().getName(), panel.getFont().getStyle(), panel.getFont().getSize());
+            font = Font.decode(null);
         }
         this.originalFont = font;
-
-        Panel top = new Panel();
-        top.setLayout(new FlowLayout());
-
-        fontNameChoice = new JList();
-        top.add(fontNameChoice);
-
-        fontList = GraphicsEnvironment.getLocalGraphicsEnvironment()
+        
+        SelectionHandler selectionHandler = new SelectionHandler();
+        
+        String[] fontList = GraphicsEnvironment.getLocalGraphicsEnvironment()
                 .getAvailableFontFamilyNames();
-
-        fontNameChoice = new JList(fontList);
-        JScrollPane fontPane;
-        top.add(fontPane = new JScrollPane(fontNameChoice));
-        JScrollPane sizePane;
-        fontSizeChoice = new JList(fontSizes);
-        top.add(sizePane = new JScrollPane(fontSizeChoice));
+        fontNameList = new JList(fontList);
+        fontNameList.setSelectedValue(font.getName(), true);
+        fontNameList.addListSelectionListener(selectionHandler);
         
-        if(findIndexOf(fontList, font.getName()) >=0) {
-            fontNameChoice.setSelectedIndex(findIndexOf(fontList, font.getName()));
-            fontPane.getViewport().scrollRectToVisible(fontNameChoice.getCellBounds(findIndexOf(fontList, font.getName())-1, findIndexOf(fontList, font.getName())-1));
-        }
-        else {
-            fontNameChoice.setSelectedIndex(0);
-        }
-        fontNameChoice.addListSelectionListener(new ListSelectionListener() {
-            public void valueChanged(ListSelectionEvent e) {
-                previewFont();
-            }
-        });
-        if(findIndexOf(fontSizes, String.valueOf(font.getSize())) >=0) {
-            fontSizeChoice.setSelectedIndex(findIndexOf(fontSizes, String.valueOf(font.getSize())));
-            sizePane.getViewport().scrollRectToVisible(fontSizeChoice.getCellBounds(findIndexOf(fontSizes, String.valueOf(font.getSize()))-1,findIndexOf(fontSizes, String.valueOf(font.getSize()))-1));
-        }
-        else {
-            fontSizeChoice.setSelectedIndex(0);
-        }
-        fontSizeChoice.addListSelectionListener(new ListSelectionListener() {
+        fontSizeSpinner = new JSpinner(new SpinnerNumberModel(font.getSize(), 1, 200, 1));
+        fontSizeSpinner.addChangeListener(selectionHandler);
         
+        fontSizeList = new JList(FONT_SIZES);
+        fontSizeList.setSelectedValue(String.valueOf(font.getSize()), true);
+        fontSizeList.addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent e) {
-                previewFont();
+                if (fontSizeList.getSelectedValue() != null) {
+                    fontSizeSpinner.setValue((Integer) fontSizeList.getSelectedValue());
+                }
             }
         });
+        
+        styleChoice = new JList(FontStyle.values());
+        styleChoice.setSelectedValue(FontStyle.forCode(font.getStyle()), true);
+        styleChoice.addListSelectionListener(selectionHandler);
+        
+        FormLayout layout = new FormLayout(
+                "pref:grow, 4dlu, pref, 4dlu, pref",
+                "pref, 4dlu, pref, 4dlu, fill:80px:grow");
+        DefaultFormBuilder builder = new DefaultFormBuilder(layout);
+        CellConstraints cc = new CellConstraints();
+        
+        builder.add(new JScrollPane(fontNameList),  cc.xywh(1, 1, 1, 3));
+        builder.add(fontSizeSpinner,                cc.xywh(3, 1, 1, 1));
+        builder.add(new JScrollPane(fontSizeList),  cc.xywh(3, 3, 1, 1));
+        builder.add(new JScrollPane(styleChoice),   cc.xywh(5, 1, 1, 3));
+        
+        previewArea.setBackground(Color.WHITE);
+        builder.add(previewArea,                    cc.xywh(1, 5, 5, 1));
 
-        panel.add(top, BorderLayout.NORTH);
-
-        Panel attrs = new Panel();
-        top.add(attrs);
-        attrs.setLayout(new GridLayout(0, 1));
-        attrs.add(bold = new JCheckBox("Bold", false));
-        if(font.isBold()){
-            bold.setSelected(true);
-        }
-        bold.addChangeListener(new ChangeListener() {
-            public void stateChanged(ChangeEvent e) {
-                previewFont();
-            }
-        });
-        attrs.add(italic = new JCheckBox("Italic", false));
-        if(font.isItalic()){
-            italic.setSelected(true);
-        }
-        italic.addChangeListener(new ChangeListener() {
-            public void stateChanged(ChangeEvent e) {
-                previewFont();
-            }
-        });
-        previewArea = new JLabel(displayText, JLabel.CENTER);
-        previewArea.setSize(200, 50);
-        panel.add(previewArea, BorderLayout.CENTER);
-
+        panel = builder.getPanel();
+        
         previewFont(); // ensure view is up to date!
     }
 
-    public JButton getApplyButton(){
-        return this.okButton;
-    }
-    
     /**
-     * This method will find the index of a String "s" in a string array "array".
-     * @param array The array we will be doing the search on
-     * @param s The string we are searching for.
-     * @return Return the index of the string in the array if found, otherwise return "-1".
+     * Updates the {@link #resultFont} and the font in the preview area. This
+     * method gets called from the change handlers installed on all the chooser
+     * components.
      */
-    private int findIndexOf(String [] array, String s) {
-        int i=0;
-        for(String str : array){
-            if(str.equals(s)) return i;
-            i++;
-        }
-        return -1;
-    }
- 
-    /**
-     * Called from the action handlers to get the font info, build a font, and
-     * set it.
-     */
-    protected void previewFont() {
-        resultName = (String) fontNameChoice.getSelectedValue();
-        String resultSizeName = (String) fontSizeChoice.getSelectedValue();
-        int resultSize = Integer.parseInt(resultSizeName);
-        isBold = bold.isSelected();
-        isItalic = italic.isSelected();
-        int attrs = Font.PLAIN;
-        if (isBold)
-            attrs = Font.BOLD;
-        if (isItalic)
-            attrs |= Font.ITALIC;
-        resultFont = new Font(resultName, attrs, resultSize);
+    private void previewFont() {
+        String name = (String) fontNameList.getSelectedValue();
+        FontStyle style = (FontStyle) styleChoice.getSelectedValue();
+        int size = ((Integer) fontSizeSpinner.getValue()).intValue();
+        resultFont = new Font(name, style.getStyleCode(), size);
         previewArea.setFont(resultFont);
-        panel.setSize(panel.getPreferredSize());
-        panel.repaint();
     }
 
-    /** Retrieve the selected font name. */
-    public String getSelectedName() {
-        return resultName;
-    }
-
-    /** Retrieve the selected size */
-    public int getSelectedSize() {
-        return resultSize;
-    }
-
-    /** Retrieve the selected font, or null */
+    /**
+     * Returns the font the user has constructed through the choices in this
+     * font selector.
+     */
     public Font getSelectedFont() {
         return resultFont;
     }
@@ -246,11 +260,37 @@ public class FontSelector implements DataEntryPanel {
         return true;
     }
 
+    /**
+     * Reverts to the original font.
+     */
     public void discardChanges() {
         resultFont = originalFont;
     }
 
     public boolean hasUnsavedChanges() {
         return false;
+    }
+    
+    /**
+     * Sets the text that will appear in the preview area. If you do not
+     * call this method, the font selector will show its catchy default
+     * phrase.
+     */
+    public void setPreviewText(String text) {
+        previewArea.setText(text);
+    }
+    
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                FontSelector fs = new FontSelector(null);
+                JDialog d = DataEntryPanelBuilder.createDataEntryPanelDialog(
+                        fs, new JFrame(), "Font Selector Demo!", "Yeehaw");
+                d.setDefaultCloseOperation(JDialog.EXIT_ON_CLOSE);
+                d.setModal(true);
+                d.setVisible(true);
+                System.out.println("Selected font: " + fs.getSelectedFont());
+            }
+        });
     }
 }
