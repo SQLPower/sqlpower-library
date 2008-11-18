@@ -34,7 +34,6 @@ package ca.sqlpower.swingui.table;
 
 import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.font.FontRenderContext;
@@ -42,8 +41,10 @@ import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import java.util.concurrent.Callable;
 
 import javax.swing.AbstractAction;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPopupMenu;
@@ -51,6 +52,7 @@ import javax.swing.JTable;
 import javax.swing.table.TableModel;
 import javax.swing.text.Document;
 
+import ca.sqlpower.swingui.DataEntryPanelBuilder;
 import ca.sqlpower.swingui.FontSelector;
 
 /**
@@ -77,19 +79,32 @@ public class FancyExportableJTable extends EditableJTable {
 			parentTable = c;
 			menu.add(new AbstractAction("Change Font Size..") {
 				public void actionPerformed(ActionEvent arg0) {
-					final FontSelector fontSelector = new FontSelector((JFrame) parentTable.getTopLevelAncestor().getParent(), parentTable.getFont());
-					fontSelector.getApplyButton().addActionListener(new ActionListener() {
-						public void actionPerformed(ActionEvent e) {
+					final FontSelector fontSelector = new FontSelector(parentTable.getFont());
+					Callable<Boolean> okCall = new Callable<Boolean>() {
+					    public Boolean call() {
 							setFont(fontSelector.getSelectedFont());
 							TableUtils.fitColumnWidths(parentTable, 0);
 							
 							FontRenderContext frc = ((Graphics2D) parentTable.getGraphics()).getFontRenderContext();
 							Rectangle2D fontBounds = fontSelector.getSelectedFont().getMaxCharBounds(frc);
 							parentTable.setRowHeight((int) fontBounds.getHeight());
+							
+							return true;
 						}
-					});
-					fontSelector.pack();
-					fontSelector.setVisible(true);
+					};
+					Callable<Boolean> cancelCall = new Callable<Boolean>() {
+					    public Boolean call() throws Exception {
+					        return true;
+					    }
+					};
+					JDialog d = DataEntryPanelBuilder.createDataEntryPanelDialog(
+					        fontSelector,
+					        (JFrame) parentTable.getTopLevelAncestor().getParent(),
+					        "Choose a font",
+					        "OK",
+					        okCall,
+					        cancelCall);
+					d.setVisible(true);
 				}
 			});
 			menu.add(new AbstractAction("Export Selected to HTML..") {
