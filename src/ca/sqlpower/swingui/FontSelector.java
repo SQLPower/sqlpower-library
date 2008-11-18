@@ -22,6 +22,8 @@ package ca.sqlpower.swingui;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.util.Arrays;
 
 import javax.swing.JDialog;
@@ -93,11 +95,13 @@ public class FontSelector implements DataEntryPanel {
         }
     }
     
+    private PropertyChangeSupport pcs = new PropertyChangeSupport(this);
+    
     /**
      * The font the user has chosen. This is updated whenever any of the
      * font choosing components fires a change event.
      */
-    private Font resultFont;
+    private Font selectedFont;
 
     /**
      * A list populated with all font names available on the local system.
@@ -232,7 +236,7 @@ public class FontSelector implements DataEntryPanel {
     }
 
     /**
-     * Updates the {@link #resultFont} and the font in the preview area. This
+     * Updates the {@link #selectedFont} and the font in the preview area. This
      * method gets called from the change handlers installed on all the chooser
      * components.
      */
@@ -240,8 +244,10 @@ public class FontSelector implements DataEntryPanel {
         String name = (String) fontNameList.getSelectedValue();
         FontStyle style = (FontStyle) styleChoice.getSelectedValue();
         int size = ((Integer) fontSizeSpinner.getValue()).intValue();
-        resultFont = new Font(name, style.getStyleCode(), size);
-        previewArea.setFont(resultFont);
+        Font oldFont = selectedFont;
+        selectedFont = new Font(name, style.getStyleCode(), size);
+        previewArea.setFont(selectedFont);
+        pcs.firePropertyChange("selectedFont", oldFont, selectedFont);
     }
 
     /**
@@ -249,7 +255,7 @@ public class FontSelector implements DataEntryPanel {
      * font selector.
      */
     public Font getSelectedFont() {
-        return resultFont;
+        return selectedFont;
     }
     
     public JPanel getPanel() {
@@ -264,7 +270,7 @@ public class FontSelector implements DataEntryPanel {
      * Reverts to the original font.
      */
     public void discardChanges() {
-        resultFont = originalFont;
+        selectedFont = originalFont;
     }
 
     public boolean hasUnsavedChanges() {
@@ -280,6 +286,23 @@ public class FontSelector implements DataEntryPanel {
         previewArea.setText(text);
     }
     
+    /**
+     * Returns the current preview text. Keep in mind the text is in an
+     * editable text area, so the user could have modified the text by the
+     * time you call this method, and the entered text could be multi-line.
+     */
+    public String getPreviewText() {
+        return previewArea.getText();
+    }
+    
+    public void setShowingPreview(boolean show) {
+        previewArea.setVisible(show);
+    }
+
+    public boolean isShowingPreview() {
+        return previewArea.isVisible();
+    }
+    
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -293,4 +316,22 @@ public class FontSelector implements DataEntryPanel {
             }
         });
     }
+
+    /**
+     * Adds a property change listener that will be notified every time
+     * the selected font has changed. The property name is "selectedFont".
+     */
+    public void addPropertyChangeListener(PropertyChangeListener listener) {
+        pcs.addPropertyChangeListener(listener);
+    }
+
+    public PropertyChangeListener[] getPropertyChangeListeners() {
+        return pcs.getPropertyChangeListeners();
+    }
+
+    public void removePropertyChangeListener(PropertyChangeListener listener) {
+        pcs.removePropertyChangeListener(listener);
+    }
+    
+    
 }
