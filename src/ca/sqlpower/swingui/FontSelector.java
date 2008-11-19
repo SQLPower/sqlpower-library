@@ -20,6 +20,7 @@
 package ca.sqlpower.swingui;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
 import java.beans.PropertyChangeEvent;
@@ -41,6 +42,8 @@ import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import org.apache.log4j.Logger;
+
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
@@ -50,6 +53,8 @@ import com.jgoodies.forms.layout.FormLayout;
  */
 public class FontSelector implements DataEntryPanel {
 
+    private static final Logger logger = Logger.getLogger(FontSelector.class);
+    
     private static enum FontStyle {
         PLAIN("Plain", Font.PLAIN),
         BOLD("Bold", Font.BOLD),
@@ -187,8 +192,10 @@ public class FontSelector implements DataEntryPanel {
      * default font will be used.
      */
     public FontSelector(Font font) {
+        logger.debug("Creating new font selector with given font: " + font);
         if(font == null) {
             font = Font.decode(null);
+            logger.debug("Given font was null; defaulting to: " + font);
         }
         this.originalFont = font;
         
@@ -217,7 +224,8 @@ public class FontSelector implements DataEntryPanel {
         
         FormLayout layout = new FormLayout(
                 "pref:grow, 4dlu, pref, 4dlu, pref",
-                "pref, 4dlu, pref, 4dlu, fill:80px:grow");
+                "pref, 4dlu, pref, 4dlu, fill:pref:grow");
+        layout.setHonorsVisibility(true);
         DefaultFormBuilder builder = new DefaultFormBuilder(layout);
         CellConstraints cc = new CellConstraints();
         
@@ -227,12 +235,15 @@ public class FontSelector implements DataEntryPanel {
         builder.add(new JScrollPane(styleChoice),   cc.xywh(5, 1, 1, 3));
         
         previewArea.setBackground(Color.WHITE);
+        previewArea.setPreferredSize(new Dimension(300, 100));
         builder.add(previewArea,                    cc.xywh(1, 5, 5, 1));
 
         // Set defaults after creating layout so the "scroll to visible" works
         fontSizeList.setSelectedValue(Integer.valueOf(font.getSize()), true);
-        fontNameList.setSelectedValue(font.getName(), true);
-
+        fontNameList.setSelectedValue(font.getFamily(), true);
+        logger.debug("Set family list to \"" + font.getFamily() +
+                "\" and size to " + Integer.valueOf(font.getSize()));
+        
         panel = builder.getPanel();
         
         previewFont(); // ensure view is up to date!
