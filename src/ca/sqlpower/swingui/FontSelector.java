@@ -22,6 +22,7 @@ package ca.sqlpower.swingui;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
+import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.Arrays;
@@ -196,14 +197,12 @@ public class FontSelector implements DataEntryPanel {
         String[] fontList = GraphicsEnvironment.getLocalGraphicsEnvironment()
                 .getAvailableFontFamilyNames();
         fontNameList = new JList(fontList);
-        fontNameList.setSelectedValue(font.getName(), true);
         fontNameList.addListSelectionListener(selectionHandler);
         
         fontSizeSpinner = new JSpinner(new SpinnerNumberModel(font.getSize(), 1, 200, 1));
         fontSizeSpinner.addChangeListener(selectionHandler);
         
         fontSizeList = new JList(FONT_SIZES);
-        fontSizeList.setSelectedValue(String.valueOf(font.getSize()), true);
         fontSizeList.addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent e) {
                 if (fontSizeList.getSelectedValue() != null) {
@@ -229,6 +228,10 @@ public class FontSelector implements DataEntryPanel {
         
         previewArea.setBackground(Color.WHITE);
         builder.add(previewArea,                    cc.xywh(1, 5, 5, 1));
+
+        // Set defaults after creating layout so the "scroll to visible" works
+        fontSizeList.setSelectedValue(Integer.valueOf(font.getSize()), true);
+        fontNameList.setSelectedValue(font.getName(), true);
 
         panel = builder.getPanel();
         
@@ -256,7 +259,7 @@ public class FontSelector implements DataEntryPanel {
     }
     
     public void setSelectedFont(Font selectedFont) {
-        Font oldFont = selectedFont;
+        Font oldFont = this.selectedFont;
         this.selectedFont = selectedFont;
         pcs.firePropertyChange("selectedFont", oldFont, selectedFont);
         previewArea.setFont(selectedFont);
@@ -310,13 +313,20 @@ public class FontSelector implements DataEntryPanel {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
-                FontSelector fs = new FontSelector(null);
+                final FontSelector fs = new FontSelector(Font.decode("Courier bold 20"));
+                fs.addPropertyChangeListener(new PropertyChangeListener() {
+                    public void propertyChange(PropertyChangeEvent evt) {
+                        System.out.println("New font selection: " + fs.getSelectedFont());
+                    }
+                });
+                JFrame dummyFrame = new JFrame();
                 JDialog d = DataEntryPanelBuilder.createDataEntryPanelDialog(
-                        fs, new JFrame(), "Font Selector Demo!", "Yeehaw");
-                d.setDefaultCloseOperation(JDialog.EXIT_ON_CLOSE);
+                        fs, dummyFrame, "Font Selector Demo!", "Yeehaw");
                 d.setModal(true);
                 d.setVisible(true);
                 System.out.println("Selected font: " + fs.getSelectedFont());
+                d.dispose();
+                dummyFrame.dispose();
             }
         });
     }
