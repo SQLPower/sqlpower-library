@@ -83,13 +83,13 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 	private static class DriverTreeCellRenderer extends DefaultTreeCellRenderer implements TreeCellRenderer {
         
         private Icon jarFileIcon =
-            new ImageIcon(ClassLoader.getSystemResource("icons/famfamfam/folder_wrench.png")); //$NON-NLS-1$
+            new ImageIcon(JDBCDriverPanel.class.getClassLoader().getResource("ca/sqlpower/swingui/db/folder_wrench.png")); //$NON-NLS-1$
         private Icon driverIcon =
-            new ImageIcon(ClassLoader.getSystemResource("icons/famfamfam/wrench.png")); //$NON-NLS-1$
+            new ImageIcon(JDBCDriverPanel.class.getClassLoader().getResource("ca/sqlpower/swingui/db/wrench.png")); //$NON-NLS-1$
         private Icon jarFileErrorIcon =
-            new ImageIcon(ClassLoader.getSystemResource("icons/famfamfam/folder_error.png")); //$NON-NLS-1$
+            new ImageIcon(JDBCDriverPanel.class.getClassLoader().getResource("ca/sqlpower/swingui/db/folder_error.png")); //$NON-NLS-1$
         private Icon driverErrorIcon =
-            new ImageIcon(ClassLoader.getSystemResource("icons/famfamfam/error.png")); //$NON-NLS-1$
+            new ImageIcon(JDBCDriverPanel.class.getClassLoader().getResource("ca/sqlpower/swingui/db/error.png")); //$NON-NLS-1$
         
 	    @Override
 	    public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {

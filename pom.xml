@@ -50,6 +50,12 @@
 				<targetPath>ca/sqlpower/sql</targetPath>
 			</resource>
 			<resource>
+				<directory>
+					src/ca/sqlpower/swingui/db
+				</directory>
+				<targetPath>ca/sqlpower/swingui/db</targetPath>
+			</resource>
+			<resource>
 				<directory>src</directory>
 				<includes>
 					<include>log4j.properties</include>
