@@ -34,6 +34,10 @@ package ca.sqlpower.testutil;
 
 import java.awt.Font;
 import java.io.File;
+import java.text.DecimalFormat;
+import java.text.Format;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 
 import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
@@ -70,6 +74,18 @@ public class GenericNewValueMaker implements NewValueMaker {
             if (newVal.equals(oldVal)) {
                 newVal = ((Font) newVal).deriveFont(((Font) newVal).getSize2D() + 1f);
             }
+        }  else if (valueType.isAssignableFrom(NumberFormat.class)) {
+        	if(oldVal == NumberFormat.getCurrencyInstance()) {
+        		newVal = NumberFormat.getPercentInstance();
+        	} else {
+        		newVal = NumberFormat.getCurrencyInstance();
+        	}
+        } else if(valueType.isAssignableFrom(SimpleDateFormat.class)) {
+        	if(oldVal == SimpleDateFormat.getDateTimeInstance()) {
+        		newVal = SimpleDateFormat.getDateInstance();
+        	} else {
+        		newVal = SimpleDateFormat.getDateTimeInstance();
+        	}
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +
