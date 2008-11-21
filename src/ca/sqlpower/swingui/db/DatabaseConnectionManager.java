@@ -212,16 +212,29 @@ public class DatabaseConnectionManager {
 	            new DefaultDataSourceTypeDialogFactory(dsCollection),
 	            (List<Action>) Collections.EMPTY_LIST);
 	}
+	
+	/**
+	 * This constructor allows defining a parent window to start and gives the option to hide the
+	 * close button. The main purpose of using this constructor would be to make a db connection
+	 * manager that is to be placed in another panel.
+	 */
+	public DatabaseConnectionManager(DataSourceCollection dsCollection, DataSourceDialogFactory dsDialogFactory,
+			DataSourceTypeDialogFactory dsTypeDialogFactory, List<Action> additionalActions, Window owner, boolean showCloseButton) {
+		this.dsCollection = dsCollection;
+		this.dsDialogFactory = dsDialogFactory;
+		this.dsTypeDialogFactory = dsTypeDialogFactory;
+		logger.debug("Window owner is " + owner);
+		currentOwner = owner;
+		panel = createPanel(additionalActions, showCloseButton);
+		
+	}
 	/**
 	 * Creates a new database connection manager with the default set of action buttons, plus
 	 * those supplied in the given list.
 	 */
 	public DatabaseConnectionManager(DataSourceCollection dsCollection, DataSourceDialogFactory dsDialogFactory,
 			DataSourceTypeDialogFactory dsTypeDialogFactory, List<Action> additionalActions) {
-        this.dsCollection = dsCollection;
-        this.dsDialogFactory = dsDialogFactory;
-		this.dsTypeDialogFactory = dsTypeDialogFactory;
-        panel = createPanel(additionalActions);
+		this(dsCollection, dsDialogFactory, dsTypeDialogFactory, additionalActions, null, true);
 	}
 
 	/**
@@ -286,7 +299,7 @@ public class DatabaseConnectionManager {
 	}
 	
 	
-	private JPanel createPanel(List<Action> additionalActions) {
+	private JPanel createPanel(List<Action> additionalActions, boolean showCloseButton) {
 
 		FormLayout layout = new FormLayout(
 				"6dlu, fill:min(160dlu;default):grow, 6dlu, pref, 6dlu", // columns //$NON-NLS-1$
@@ -339,8 +352,10 @@ public class DatabaseConnectionManager {
 			bsb.addGridded(b);
 		}
 
-        bsb.addUnrelatedGap();
-		bsb.addGridded(new JButton(closeAction));
+		if (showCloseButton) {
+			bsb.addUnrelatedGap();
+			bsb.addGridded(new JButton(closeAction));
+		}
 
 		pb.add(bsb.getPanel(), cc.xy(4,4));
 		return pb.getPanel();
@@ -452,6 +467,15 @@ public class DatabaseConnectionManager {
 			return null;
 		}
 		return (SPDataSource) dsTable.getValueAt(selectedRow,0);
+	}
+	
+	/**
+	 * This will return the database connection manager as a panel 
+	 * so it can be placed in other panels rather than appearing
+	 * in its own window.
+	 */
+	public JPanel getPanel() {
+		return panel;
 	}
 
 

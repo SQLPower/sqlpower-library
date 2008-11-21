@@ -33,6 +33,7 @@
 package ca.sqlpower.swingui.db;
 
 import java.awt.Window;
+import java.util.concurrent.Callable;
 
 import javax.swing.JDialog;
 
@@ -50,10 +51,30 @@ public class DefaultDataSourceDialogFactory implements DataSourceDialogFactory {
      * Creates and shows a non-modal dialog box for editing the properties
      * of the given data source.
      */
-    public JDialog showDialog(Window parentWindow, SPDataSource ds, Runnable onAccept) {
-        SPDataSourcePanel dataSourcePanel = new SPDataSourcePanel(ds);
+    public JDialog showDialog(Window parentWindow, SPDataSource ds, final Runnable onAccept) {
+        final SPDataSourcePanel dataSourcePanel = new SPDataSourcePanel(ds);
+        
+        Callable<Boolean> okCall = new Callable<Boolean>() {
+            public Boolean call() {
+                if (dataSourcePanel.applyChanges()) {
+                    if (onAccept != null) {
+                        onAccept.run();
+                    }
+                    return Boolean.TRUE;
+                }
+                return Boolean.FALSE;
+            }
+        };
+    
+        Callable<Boolean> cancelCall = new Callable<Boolean>() {
+            public Boolean call() {
+            	dataSourcePanel.discardChanges();
+                return Boolean.TRUE;
+            }
+        };
+        
         JDialog d = DataEntryPanelBuilder.createDataEntryPanelDialog(
-                dataSourcePanel, parentWindow, "Data Source Properties", "OK");
+                dataSourcePanel, parentWindow, "Data Source Properties", "OK", okCall, cancelCall);
         d.pack();
         d.setVisible(true);
         return d;
