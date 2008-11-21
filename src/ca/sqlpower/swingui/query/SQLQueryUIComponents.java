@@ -1059,11 +1059,8 @@ public class SQLQueryUIComponents {
     	// Do something similar with the Panel but the result will have JLabel with error message instead of result
     	// table.
     	if(exceptioned) {
-    		FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "pref, 10dlu, fill:min(pref;100dlu):grow");
+    		FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "fill:min(pref;50dlu):grow");
     		DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
-    		tableAreaBuilder.setDefaultDialogBorder();
-    		tableAreaBuilder.nextLine();
-        	tableAreaBuilder.nextLine();
         	JScrollPane tableScrollPane = new JScrollPane(errorTextArea);
         	tableAreaBuilder.append(tableScrollPane, 3);
         	
@@ -1080,9 +1077,8 @@ public class SQLQueryUIComponents {
     		for (CachedRowSet rs : resultSets) {
     			ResultSet r = rs.createShared();
     			JComponent tempTable;
-    			FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "pref, 10dlu, fill:min(pref;100dlu):grow");
+    			FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "pref, fill:min(pref;50dlu):grow");
     			DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
-    			tableAreaBuilder.setDefaultDialogBorder();
     			searchLabel = new JLabel(icon);
     			searchLabel.setToolTipText("Search");
 
@@ -1101,7 +1097,6 @@ public class SQLQueryUIComponents {
 
     			}
 
-    			tableAreaBuilder.nextLine();
     			tableAreaBuilder.nextLine();
     			JScrollPane tableScrollPane = new JScrollPane(tempTable);
     			tableAreaBuilder.append(tableScrollPane, 3);
