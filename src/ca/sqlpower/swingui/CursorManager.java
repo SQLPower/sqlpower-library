@@ -21,6 +21,7 @@ package ca.sqlpower.swingui;
 
 import java.awt.Cursor;
 
+import javax.swing.JComponent;
 import javax.swing.JPanel;
 
 /**
@@ -32,10 +33,10 @@ public class CursorManager {
     private boolean draggingTable = false;
     private boolean dragAllModeActive = false;
     private boolean placeModeActive = false;
-    private JPanel panel;
+    private JComponent component;
     
-    public CursorManager(JPanel panel){
-    	this.panel = panel;
+    public CursorManager(JComponent component){
+    	this.component = component;
     }
     
     public void tableDragStarted() {
@@ -74,11 +75,11 @@ public class CursorManager {
      */
     private void modifyCursorImage() {
         if (dragAllModeActive || draggingTable) {
-            panel.setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+            component.setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
         } else if (placeModeActive) {
-            panel.setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
+            component.setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
         } else {
-            panel.setCursor(null);
+            component.setCursor(null);
         }
     }
 }
