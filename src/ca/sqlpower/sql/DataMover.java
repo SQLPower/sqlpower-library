@@ -174,8 +174,7 @@ public class DataMover {
 			try { 
 				dstCon.rollback();
 			} catch (Exception e2) {
-				System.err.println("Warning: roll back on error failed");
-				e2.printStackTrace();
+				logger.error("Roll back on error failed", e2);
 			}
 			throw e;
 		} finally {
