@@ -1,3 +1,35 @@
+/*
+ * Copyright (c) 2008, SQL Power Group Inc.
+ * 
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in
+ *       the documentation and/or other materials provided with the
+ *       distribution.
+ *     * Neither the name of SQL Power Group Inc. nor the names of its
+ *       contributors may be used to endorse or promote products derived
+ *       from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package ca.sqlpower.sql;
 
 import java.math.BigDecimal;
@@ -10,14 +42,15 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 /**
  * The DataMover class is used to move data and structure from one
  * database to another, even if they are not from the same vendor.
- *
- * @author Jonathan Fuerth
- * @version $Id$
  */
 public class DataMover {
+	
+	private static final Logger logger = Logger.getLogger(DataMover.class);
 	
 	protected boolean debug = false;
 
@@ -55,8 +88,6 @@ public class DataMover {
 	 * dest.  Sets the connections to non-autocommit mode.
 	 */
 	public DataMover(Connection dest, Connection source) throws SQLException {
-		//dest.setAutoCommit(false);
-		//source.setAutoCommit(false);
 		srcCon = source;
 		dstCon = dest;
 	}
@@ -89,8 +120,9 @@ public class DataMover {
 			srcRS = srcStmt.executeQuery(lastSqlString);
 			srcRSMD = srcRS.getMetaData();
 
-			if (debug) System.out.println(summarizeResultSetMetaData(srcRSMD));
+			if (debug) logger.debug(summarizeResultSetMetaData(srcRSMD));
 
+			dstCon.setAutoCommit(false);
 			if (creatingDestinationTable) {
 				try {
 					tmpStmt = dstCon.createStatement();
@@ -100,7 +132,7 @@ public class DataMover {
 					// We assume this means the table needs to be created
 					createDestinationTable(srcRSMD, destTableName);
 					dstCon.commit();
-					System.out.println("Created destination table "+destTableName);
+					logger.debug("Created destination table "+destTableName);
 				} finally {
 					tmpStmt.close();
 					tmpStmt = null;
@@ -111,7 +143,7 @@ public class DataMover {
 				tmpStmt = dstCon.createStatement();
 				lastSqlString = "DELETE FROM "+destTableName;
 				int count = tmpStmt.executeUpdate(lastSqlString);
-				System.out.println("Deleted "+count+" rows from destination table");
+				logger.debug("Deleted "+count+" rows from destination table");
 				tmpStmt.close();
 				tmpStmt = null;
 			}
@@ -121,9 +153,9 @@ public class DataMover {
 
 			int numberOfColumns = srcRSMD.getColumnCount();
 			while (srcRS.next()) {
-				if (debug) System.out.println("Row "+numRows);
+				if (debug) logger.debug("Row "+numRows);
 				for (int col = 1; col <= numberOfColumns; col++) {
-				    if (debug) System.out.println(srcRS.getMetaData().getColumnName(col)+":"+srcRS.getObject(col)+ "(type="+srcRSMD.getColumnType(col)+")"+srcRS.getObject(col));
+				    if (debug) logger.debug(srcRS.getMetaData().getColumnName(col)+":"+srcRS.getObject(col)+ "(type="+srcRSMD.getColumnType(col)+")"+srcRS.getObject(col));
 					Object object = null; 
 					if (srcRS.getObject(col) != null){
 						object = (srcRS.getObject(col).getClass() == BigDecimal.class)? ((BigDecimal) srcRS.getObject(col)).doubleValue():srcRS.getObject(col);
@@ -135,13 +167,13 @@ public class DataMover {
 			}
 			
 			dstCon.commit();
-			System.out.println("Committed transaction");
+			logger.debug("Committed transaction");
 			
 		} catch (SQLException e) {
 			try { 
 				dstCon.rollback();
 			} catch (Exception e2) {
-				System.err.println("Warning: roll back on error failed");
+				logger.error("Warning: roll back on error failed");
 				e2.printStackTrace();
 			}
 			throw e;
@@ -153,7 +185,7 @@ public class DataMover {
 		}
 		long endTime = System.currentTimeMillis();
 		long elapsedTime = endTime-startTime;
-		System.out.println(numRows+" rows copied in "+elapsedTime+" ms. ("+((double) numRows)/((double) elapsedTime)*1000.0+" rows/sec)");
+		logger.debug(numRows+" rows copied in "+elapsedTime+" ms. ("+((double) numRows)/((double) elapsedTime)*1000.0+" rows/sec)");
 		return numRows;
 	}
 	
@@ -335,7 +367,7 @@ public class DataMover {
 		try {
 			String dbxml = "databases.xml";
 			if (args.length != 3) {
-				System.out.println("Usage: java ca.sqlpower.sql.DataMover source-database-name"
+				logger.debug("Usage: java ca.sqlpower.sql.DataMover source-database-name"
 								   +"\n        source-table-name dest-database-name");
 				return;
 			}
@@ -348,13 +380,13 @@ public class DataMover {
 
 			DBConnectionSpec srcDbcs = DBConnectionSpec.searchListForName(dbcsList, srcName);
 			if(srcDbcs == null) {
-				System.err.println("No database definition '"+srcName+"' in "+dbxml+".");
+				logger.error("No database definition '"+srcName+"' in "+dbxml+".");
 				return;
 			}
 
 			DBConnectionSpec dstDbcs = DBConnectionSpec.searchListForName(dbcsList, dstName);
 			if(dstDbcs == null) {
-				System.err.println("No database definition '"+dstName+"' in "+dbxml+".");
+				logger.error("No database definition '"+dstName+"' in "+dbxml+".");
 				return;
 			}
 
@@ -388,11 +420,11 @@ public class DataMover {
 			if (e instanceof SQLException) {
 				e.printStackTrace();
 				if (mover != null) {
-					System.out.println("Offending SQL Statement:\n"+mover.getLastSqlString());
+					logger.debug("Offending SQL Statement:\n"+mover.getLastSqlString());
 				}
 			}
 			if (e instanceof DatabaseListReadException) {
-				System.out.println("Caught DatabaseListReadException. Root cause:");
+				logger.error("Caught DatabaseListReadException. Root cause:");
 				((DatabaseListReadException) e).getRootCause().printStackTrace();
 			} else {
 				e.printStackTrace();
