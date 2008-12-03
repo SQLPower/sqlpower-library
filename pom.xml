@@ -209,7 +209,7 @@
 	      <artifactId>rsyntaxtextarea</artifactId>
 	      <version>1.0</version>
 	      <scope>system</scope>
-	      <systemPath>C:/Documents and Settings/jmo/My Documents/workspace/wabit/lib/rsyntaxtextarea.jar</systemPath>
+	      <systemPath>${basedir}/lib/rsyntaxtextarea.jar</systemPath>
 	    </dependency>
 	</dependencies>
 	
