@@ -123,7 +123,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         });
         removeDsTypeButton.setEnabled(false);
         
-        dsTypePanel = new DataSourceTypeEditorPanel();
+        dsTypePanel = new DataSourceTypeEditorPanel(dataSourceCollection);
         
         jdbcPanel = new JDBCDriverPanel();
         

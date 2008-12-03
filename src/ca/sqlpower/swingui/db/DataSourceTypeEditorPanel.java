@@ -32,9 +32,14 @@
 package ca.sqlpower.swingui.db;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
@@ -43,6 +48,7 @@ import javax.swing.event.DocumentListener;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.SPDataSourceType;
 import ca.sqlpower.swingui.DataEntryPanel;
 import ca.sqlpower.swingui.Messages;
@@ -65,13 +71,27 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
     final private PlatformSpecificConnectionOptionPanel template =
         new PlatformSpecificConnectionOptionPanel(new JTextField());
     
+    final private JComboBox dsTypeDefaultCombo;
+    
     /**
      * A list of DataSourceTypeEditorTabPanels that are used in addition to the main editor panel.
      * Generally, we use this to add application-specific connection properties.
      */
     private List<DataSourceTypeEditorTabPanel> tabPanels = new ArrayList<DataSourceTypeEditorTabPanel>();
     
-    public DataSourceTypeEditorPanel() {
+    public DataSourceTypeEditorPanel(DataSourceCollection collection) {
+    	dsTypeDefaultCombo = new JComboBox(collection.getDataSourceTypes().toArray());
+    	dsTypeDefaultCombo.setRenderer(new DefaultListCellRenderer() {
+		
+			public Component getListCellRendererComponent(JList list, Object value,
+					int index, boolean isSelected, boolean cellHasFocus) {
+				Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+				if (c instanceof JLabel) {
+					((JLabel) c).setText(((SPDataSourceType) value).getName());
+				}
+				return c;
+			}
+		});
         buildPanel();
         editDsType(null);
     }
@@ -99,16 +119,18 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
                 if (dsType != null) {
                     dsType.setJdbcUrl(connectionStringTemplate.getText());
                     template.setTemplate(dsType);
+                    dsTypeDefaultCombo.setSelectedItem(dsType);
                 }
             }
             
         });
         
+        
         tabbedPane = new JTabbedPane();
         
         PanelBuilder pb = new PanelBuilder(new FormLayout(
                 "4dlu,pref,4dlu,pref:grow,4dlu", //$NON-NLS-1$
-                "4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu")); //$NON-NLS-1$
+                "4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu")); //$NON-NLS-1$
         
         CellConstraints cc = new CellConstraints();
         CellConstraints cl = new CellConstraints();
@@ -123,6 +145,8 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
         pb.addTitle(Messages.getString("DataSourceTypeEditorPanel.optionsEditorPreview"),cl.xyw(2, row,3)); //$NON-NLS-1$
         row += 2;
         pb.addLabel(Messages.getString("DataSourceTypeEditorPanel.sampleOptions"),cl.xy(2, row), template.getPanel(), cc.xy(4, row)); //$NON-NLS-1$
+        row += 2;
+        pb.addLabel(Messages.getString("DataSourceTypeEditorPanel.defaultDSTypeProperties"), cl.xy(2, row), dsTypeDefaultCombo, cc.xy(4, row));
         
         tabbedPane.addTab(Messages.getString("DataSourceTypeEditorPanel.generalTab"), pb.getPanel()); //$NON-NLS-1$
         
@@ -170,9 +194,17 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
     public boolean applyChanges() {
         logger.debug("Applying changes to data source type "+dsType); //$NON-NLS-1$
         if (dsType != null) {
+        	SPDataSourceType defaultDSType = (SPDataSourceType) dsTypeDefaultCombo.getSelectedItem();
+        	if (defaultDSType != dsType) {
+        		for (String key : defaultDSType.getPropertyNames()) {
+        			dsType.putProperty(key, defaultDSType.getProperty(key));
+        		}
+        	}
+        	
             dsType.setName(name.getText());
             dsType.setJdbcDriver(driverClass.getText());
             dsType.setJdbcUrl(connectionStringTemplate.getText());
+            
             // Also apply changes for each contained DataEntryPanel
             for (DataSourceTypeEditorTabPanel panel : tabPanels) {
                 panel.applyChanges();

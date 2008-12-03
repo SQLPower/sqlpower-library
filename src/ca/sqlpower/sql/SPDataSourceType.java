@@ -54,6 +54,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -484,6 +485,15 @@ public class SPDataSourceType {
      */
     Map<String, String> getProperties() {
         return Collections.unmodifiableMap(properties);
+    }
+    
+    /**
+     * Returns a set of the properties defined for this data source type.
+     * The set returned is unmodifiable and will throw an exception if any modification
+     * is made to it.
+     */
+    public Set<String> getPropertyNames() {
+    	return Collections.unmodifiableSet(properties.keySet());
     }
     
     /**
