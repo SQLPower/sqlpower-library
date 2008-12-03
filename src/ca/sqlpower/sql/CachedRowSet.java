@@ -139,6 +139,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 
 		int rowNum = 0;
 		ArrayList<Object[]> newData = new ArrayList<Object[]>();
+		boolean containsDouble = false;
 		while (rs.next()) {
 		    if (logger.isDebugEnabled()) logger.debug("Populating Row "+rowNum);
 			Object[] row = new Object[colCount];
@@ -150,11 +151,19 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 				    if (logger.isDebugEnabled()) logger.debug("   Col "+i+": "+o+" ("+o.getClass()+")");
 					if (o instanceof BigDecimal) {	
 						BigDecimal bd = (BigDecimal) o;
-						if (bd.scale() > 0) {
-							 o = new Double(bd.doubleValue()); 
-						}
-						else {
-							 o = new Long(bd.longValue());
+						if (bd.scale() <= 0 && !containsDouble) {
+							o = new Long(bd.longValue());
+						} else {
+							if (!containsDouble) {
+								containsDouble = true;
+								for (Object[] oldRow : newData) {
+									logger.debug("oldRow is "+ oldRow[i]);
+									if (oldRow[i] != null && oldRow[i] instanceof Long) {
+										oldRow[i] = new Double(((Long) oldRow[i]).doubleValue());
+									}
+								}
+							}
+							o = new Double(bd.doubleValue()); 
 						}
 					}
 				}				
