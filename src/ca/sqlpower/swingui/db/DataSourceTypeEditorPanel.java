@@ -86,7 +86,7 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
 			public Component getListCellRendererComponent(JList list, Object value,
 					int index, boolean isSelected, boolean cellHasFocus) {
 				Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-				if (c instanceof JLabel) {
+				if (c instanceof JLabel && value != null) {
 					((JLabel) c).setText(((SPDataSourceType) value).getName());
 				}
 				return c;
@@ -120,6 +120,8 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
                     dsType.setJdbcUrl(connectionStringTemplate.getText());
                     template.setTemplate(dsType);
                     dsTypeDefaultCombo.setSelectedItem(dsType);
+                } else {
+                	dsTypeDefaultCombo.setSelectedIndex(-1);
                 }
             }
             
@@ -171,6 +173,8 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
             
             connectionStringTemplate.setText(""); //$NON-NLS-1$
             connectionStringTemplate.setEnabled(false);
+            
+            dsTypeDefaultCombo.setSelectedIndex(-1);
 
             // template will get updated by document listener
         } else {
@@ -183,6 +187,11 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
             connectionStringTemplate.setText(dst.getJdbcUrl());
             connectionStringTemplate.setEnabled(true);
             
+            dsTypeDefaultCombo.setSelectedItem(dst);
+            if (dsTypeDefaultCombo.getSelectedItem() != dst) {
+            	dsTypeDefaultCombo.setSelectedIndex(-1);
+            }
+            
             // template will get updated by document listener
         }
         // Also update all tab panels
@@ -194,21 +203,22 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
     public boolean applyChanges() {
         logger.debug("Applying changes to data source type "+dsType); //$NON-NLS-1$
         if (dsType != null) {
-        	SPDataSourceType defaultDSType = (SPDataSourceType) dsTypeDefaultCombo.getSelectedItem();
-        	if (defaultDSType != dsType) {
-        		for (String key : defaultDSType.getPropertyNames()) {
-        			dsType.putProperty(key, defaultDSType.getProperty(key));
-        		}
-        	}
         	
-            dsType.setName(name.getText());
-            dsType.setJdbcDriver(driverClass.getText());
-            dsType.setJdbcUrl(connectionStringTemplate.getText());
-            
             // Also apply changes for each contained DataEntryPanel
             for (DataSourceTypeEditorTabPanel panel : tabPanels) {
                 panel.applyChanges();
             }
+            
+            SPDataSourceType defaultDSType = (SPDataSourceType) dsTypeDefaultCombo.getSelectedItem();
+            if (defaultDSType != null && defaultDSType != dsType) {
+            	for (String key : defaultDSType.getPropertyNames()) {
+            		dsType.putProperty(key, defaultDSType.getProperty(key));
+            	}
+            }
+            
+            dsType.setName(name.getText());
+            dsType.setJdbcDriver(driverClass.getText());
+            dsType.setJdbcUrl(connectionStringTemplate.getText());
         }
         return true;
     }
