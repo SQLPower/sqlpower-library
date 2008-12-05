@@ -74,12 +74,20 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
     final private JComboBox dsTypeDefaultCombo;
     
     /**
+     * The panel that maintains the currently-selected data source type's
+     * classpath.
+     */
+    private final JDBCDriverPanel jdbcPanel;
+    
+    /**
      * A list of DataSourceTypeEditorTabPanels that are used in addition to the main editor panel.
      * Generally, we use this to add application-specific connection properties.
      */
     private List<DataSourceTypeEditorTabPanel> tabPanels = new ArrayList<DataSourceTypeEditorTabPanel>();
     
     public DataSourceTypeEditorPanel(DataSourceCollection collection) {
+    	jdbcPanel = new JDBCDriverPanel();
+    	
     	dsTypeDefaultCombo = new JComboBox(collection.getDataSourceTypes().toArray());
     	dsTypeDefaultCombo.setRenderer(new DefaultListCellRenderer() {
 		
@@ -132,7 +140,7 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
         
         PanelBuilder pb = new PanelBuilder(new FormLayout(
                 "4dlu,pref,4dlu,pref:grow,4dlu", //$NON-NLS-1$
-                "4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu")); //$NON-NLS-1$
+                "4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu, pref:grow, 4dlu")); //$NON-NLS-1$
         
         CellConstraints cc = new CellConstraints();
         CellConstraints cl = new CellConstraints();
@@ -149,6 +157,8 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
         pb.addLabel(Messages.getString("DataSourceTypeEditorPanel.sampleOptions"),cl.xy(2, row), template.getPanel(), cc.xy(4, row)); //$NON-NLS-1$
         row += 2;
         pb.addLabel(Messages.getString("DataSourceTypeEditorPanel.defaultDSTypeProperties"), cl.xy(2, row), dsTypeDefaultCombo, cc.xy(4, row));
+        row += 2;
+        pb.add(jdbcPanel, cc.xyw(2, row, 3));
         
         tabbedPane.addTab(Messages.getString("DataSourceTypeEditorPanel.generalTab"), pb.getPanel()); //$NON-NLS-1$
         
@@ -198,6 +208,8 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
         for (DataSourceTypeEditorTabPanel panel: tabPanels) {
             panel.editDsType(dst);
         }
+        
+        jdbcPanel.editDsType(dst);
     }
 
     public boolean applyChanges() {
@@ -220,6 +232,7 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
             dsType.setJdbcDriver(driverClass.getText());
             dsType.setJdbcUrl(connectionStringTemplate.getText());
         }
+        jdbcPanel.applyChanges();
         return true;
     }
 

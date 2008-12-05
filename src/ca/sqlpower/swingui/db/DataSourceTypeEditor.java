@@ -90,12 +90,6 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      */
     private final DataSourceTypeEditorPanel dsTypePanel;
     
-    /**
-     * The panel that maintains the currently-selected data source type's
-     * classpath.
-     */
-    private final JDBCDriverPanel jdbcPanel;
-    
     public DataSourceTypeEditor(DataSourceCollection dataSourceCollection) {
         this.dataSourceCollection = dataSourceCollection;
         
@@ -124,8 +118,6 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         removeDsTypeButton.setEnabled(false);
         
         dsTypePanel = new DataSourceTypeEditorPanel(dataSourceCollection);
-        
-        jdbcPanel = new JDBCDriverPanel();
         
         dsTypeList.addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent e) {
@@ -180,7 +172,6 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         fb.add(new JScrollPane(dsTypeList), "1, 1, 1, 3"); //$NON-NLS-1$
         fb.add(addRemoveBar,                "1, 5"); //$NON-NLS-1$
         fb.add(dsTypePanel.getPanel(),      "3, 1"); //$NON-NLS-1$
-        fb.add(jdbcPanel,                   "3, 3, 1, 3"); //$NON-NLS-1$
         
         return fb.getPanel();
     }
@@ -228,12 +219,10 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         applyCurrentChanges();
         dsTypeList.setSelectedValue(dst, true);
         dsTypePanel.editDsType(dst);
-        jdbcPanel.editDsType(dst);
     }
     
     private void applyCurrentChanges() {
         dsTypePanel.applyChanges();
-        jdbcPanel.applyChanges();
     }
     
     public void addTab(String title, DataSourceTypeEditorTabPanel dataEntryPanel) {
