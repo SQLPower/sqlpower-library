@@ -272,6 +272,9 @@ public class SPSUtils {
     public static final FileFilter BATCH_FILE_FILTER =
         new FileExtensionFilter(Messages.getString("SPSUtils.batchFileType"), new String[] {"bat"}); //$NON-NLS-1$ //$NON-NLS-2$
     
+    public static final FileFilter WABIT_FILE_FILTER = 
+    	new FileExtensionFilter(Messages.getString("SPSUtils.wabitFileType"), new String[] {"wabit"}); //$NON-NLS-1$ //$NON-NLS-2$
+    
     public static class FileExtensionFilter extends FileFilter {
 
 		protected LinkedHashSet<String> extensions;
