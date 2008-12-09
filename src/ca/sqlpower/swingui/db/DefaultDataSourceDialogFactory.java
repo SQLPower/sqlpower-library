@@ -76,6 +76,7 @@ public class DefaultDataSourceDialogFactory implements DataSourceDialogFactory {
         JDialog d = DataEntryPanelBuilder.createDataEntryPanelDialog(
                 dataSourcePanel, parentWindow, "Data Source Properties", "OK", okCall, cancelCall);
         d.pack();
+        d.setLocationRelativeTo(parentWindow);
         d.setVisible(true);
         return d;
     }

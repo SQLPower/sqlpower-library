@@ -121,7 +121,7 @@ public class DatabaseConnectionManager {
                     dsCollection.addDataSource(ds);
                 }
             };
-            dsDialogFactory.showDialog(d, ds, onOk);
+            dsDialogFactory.showDialog((d != null) ? d : DatabaseConnectionManager.this.currentOwner, ds, onOk);
         }
     };
 
@@ -147,14 +147,14 @@ public class DatabaseConnectionManager {
                         }
                     } catch (Exception ex) {
                         SPSUtils.showExceptionDialogNoReport(
-                                d,
+                        		(d != null) ? d : DatabaseConnectionManager.this.currentOwner,
                                 "Unexpected exception while editing a database connection.", //$NON-NLS-1$
                                 ex);
                     }
                 }
             };
 
-            dsDialogFactory.showDialog(d, ds, onOk);
+            dsDialogFactory.showDialog((d != null) ? d : DatabaseConnectionManager.this.currentOwner, ds, onOk);
 		}
 	};
 
@@ -167,7 +167,7 @@ public class DatabaseConnectionManager {
 			}
 			SPDataSource dbcs = (SPDataSource) dsTable.getValueAt(selectedRow,0);
 			int option = JOptionPane.showConfirmDialog(
-					d,
+					(d != null) ? d : DatabaseConnectionManager.this.currentOwner,
 					Messages.getString("DatabaseConnectionManager.deleteDbConnectionConfirmation", dbcs.getName()), //$NON-NLS-1$
 					Messages.getString("DatabaseConnectionManager.removeButton"), //$NON-NLS-1$
 					JOptionPane.YES_NO_OPTION);
