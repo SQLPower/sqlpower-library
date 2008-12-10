@@ -320,7 +320,7 @@ public class SQLQueryUIComponents {
 		}
 
 		public String getMessage() {
-			return "Executing SQL on " + ds.getName();
+			return Messages.getString("SQLQuery.workerMessage", ds.getName());
 		}
 
 		public int getProgress() {
@@ -342,7 +342,7 @@ public class SQLQueryUIComponents {
 		public String createErrorStringMessage(Throwable e) {
 			StringWriter stringWriter = new StringWriter();
 			PrintWriter traceWriter = new PrintWriter(stringWriter);
-			stringWriter.write("Your query could not be executed due to the following error: \n\n");
+			stringWriter.write(Messages.getString("SQLQuery.queryFailed"));
 			e.printStackTrace(traceWriter);
 			return stringWriter.toString();
 		}
@@ -885,7 +885,7 @@ public class SQLQueryUIComponents {
             }
         
         });
-         dbcsManagerButton.setText(Messages.getString("SQLQuery.mangeConnections"));
+         dbcsManagerButton.setText(Messages.getString("SQLQuery.manageConnections"));
          
          undoButton= new JButton (undoSQLStatementAction);
          redoButton= new JButton (redoSQLStatementAction);
