@@ -410,7 +410,7 @@ public class SQL {
 			stmt=con.createStatement();
 			sql.append("SELECT DISTINCT table_name");
 			sql.append(" FROM pl_tables");
-			if(owner != null || owner.length()>0) {
+			if(owner != null && owner.length()>0) {
 				sql.append(" WHERE owner=").append(quote(owner));
 			}
 			sql.append(" ORDER BY table_name");
