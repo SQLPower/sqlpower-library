@@ -56,6 +56,11 @@ public class SPSUtils {
 	
 	private static final Logger logger = Logger.getLogger(SPSUtils.class);
 	
+	/**
+     * The URL for the SQL Power main page.
+     */
+    public static final String SQLP_URL = "http://www.sqlpower.ca/"; //$NON-NLS-1$
+	
     /**
      * The URL for the SQL Power forum where users can get help and ask questions.
      */
