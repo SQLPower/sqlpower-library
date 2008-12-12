@@ -46,6 +46,7 @@ import java.util.List;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -242,13 +243,13 @@ public class DatabaseConnectionManager {
 	 * manager that is to be placed in another panel.
 	 */
 	public DatabaseConnectionManager(DataSourceCollection dsCollection, DataSourceDialogFactory dsDialogFactory,
-			DataSourceTypeDialogFactory dsTypeDialogFactory, List<Action> additionalActions, Window owner, boolean showCloseButton) {
+			DataSourceTypeDialogFactory dsTypeDialogFactory, List<Action> additionalActions, List<JComponent> additionalComponents, Window owner, boolean showCloseButton) {
 		this.dsCollection = dsCollection;
 		this.dsDialogFactory = dsDialogFactory;
 		this.dsTypeDialogFactory = dsTypeDialogFactory;
 		logger.debug("Window owner is " + owner);
 		currentOwner = owner;
-		panel = createPanel(additionalActions, showCloseButton);
+		panel = createPanel(additionalActions, additionalComponents, showCloseButton);
 		
 	}
 	/**
@@ -257,7 +258,7 @@ public class DatabaseConnectionManager {
 	 */
 	public DatabaseConnectionManager(DataSourceCollection dsCollection, DataSourceDialogFactory dsDialogFactory,
 			DataSourceTypeDialogFactory dsTypeDialogFactory, List<Action> additionalActions) {
-		this(dsCollection, dsDialogFactory, dsTypeDialogFactory, additionalActions, null, true);
+		this(dsCollection, dsDialogFactory, dsTypeDialogFactory, additionalActions, new ArrayList<JComponent>(), null, true);
 	}
 
 	/**
@@ -322,7 +323,7 @@ public class DatabaseConnectionManager {
 	}
 	
 	
-	private JPanel createPanel(List<Action> additionalActions, boolean showCloseButton) {
+	private JPanel createPanel(List<Action> additionalActions, List<JComponent> additionalComponents, boolean showCloseButton) {
 
 		FormLayout layout = new FormLayout(
 				"6dlu, fill:min(160dlu;default):grow, 6dlu, pref, 6dlu", // columns //$NON-NLS-1$
@@ -396,6 +397,11 @@ public class DatabaseConnectionManager {
 			
 			additionalActionButtons.add(b);
 			bsb.addFixed(b);
+		}
+		
+		for (JComponent comp : additionalComponents) {
+			bsb.addUnrelatedGap();
+			bsb.addFixed(comp);
 		}
 
 		if (showCloseButton) {
