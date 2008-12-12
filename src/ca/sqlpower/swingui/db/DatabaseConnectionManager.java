@@ -33,6 +33,7 @@
 package ca.sqlpower.swingui.db;
 
 import java.awt.Dialog;
+import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
@@ -52,6 +53,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
 
@@ -85,6 +87,27 @@ public class DatabaseConnectionManager {
 	 * it creates in the GUI for that action.
 	 */
 	public static final String DISABLE_IF_NO_CONNECTION_SELECTED = "disableIfNoConnectionSelected"; //$NON-NLS-1$
+	
+	/**
+	 * A property key that can be set with a value for any additional actions passed into the
+	 * DatabaseConnectionManager constructor. This property can be set to SwingConstants values of
+	 * CENTER, TOP, or BOTTOM to define the text to be placed at the center, top, or bottom of it's button.
+	 */
+	public static final String VERTICAL_TEXT_POSITION = "verticalTextPosition"; //$NON-NLS-1$
+	
+	/**
+	 * A property key that can be set with a value for any additional actions passed into the
+	 * DatabaseConnectionManager constructor. This property can be set to a default height
+	 * for the button.
+	 */
+	public static final String ADDITIONAL_BUTTON_HEIGHT = "additionalButtonHeight"; //$NON-NLS-1$
+
+	/**
+	 * A property key that can be set with a value for any additional actions passed into the
+	 * DatabaseConnectionManager constructor. This property can be set to SwingConstants values of
+	 * LEFT, RIGHT, CENTER, LEADING, or TRAILING.
+	 */
+	public static final String HORIZONTAL_TEXT_POSITION = "horizontalTextPosition";
 	
     /**
      * The GUI panel.  Lives inside the dialog {@link #d}.
@@ -348,8 +371,31 @@ public class DatabaseConnectionManager {
 			if (disableValue instanceof Boolean && disableValue.equals(Boolean.TRUE)) {
 				b.setEnabled(false);
 			}
+			
+			Object heightValue = a.getValue(ADDITIONAL_BUTTON_HEIGHT);
+			if (heightValue instanceof Integer ) {
+				b.setPreferredSize(new Dimension((int) b.getPreferredSize().getWidth(), (Integer) heightValue));
+			}
+			
+			Object verticalTextPos = a.getValue(VERTICAL_TEXT_POSITION);
+			if (verticalTextPos instanceof Integer) {
+				Integer verticalTextInt = (Integer) verticalTextPos;
+				if (verticalTextInt == SwingConstants.TOP || verticalTextInt == SwingConstants.BOTTOM || verticalTextInt == SwingConstants.CENTER) {
+					b.setVerticalTextPosition(verticalTextInt);
+				}
+			}
+			
+			Object horizontalTextPos = a.getValue(HORIZONTAL_TEXT_POSITION);
+			if (horizontalTextPos instanceof Integer) {
+				Integer horizontalTextInt = (Integer) horizontalTextPos;
+				if (horizontalTextInt == SwingConstants.LEFT || horizontalTextInt == SwingConstants.RIGHT || horizontalTextInt == SwingConstants.CENTER 
+						|| horizontalTextInt == SwingConstants.LEADING || horizontalTextInt == SwingConstants.TRAILING) {
+					b.setHorizontalTextPosition(horizontalTextInt);
+				}
+			}
+			
 			additionalActionButtons.add(b);
-			bsb.addGridded(b);
+			bsb.addFixed(b);
 		}
 
 		if (showCloseButton) {
