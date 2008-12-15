@@ -959,9 +959,36 @@ public class SQLQueryUIComponents {
 	 *            querying from the UI. This argument must not be null.
 	 */
     public static JComponent createQueryPanel(SwingWorkerRegistry swRegistry, DataSourceCollection ds, Window owner) {
+    	return createQueryPanel(swRegistry, ds, owner, null, null);
+    }
+
+	/**
+	 * Builds the UI of the {@link SQLQueryUIComponents}. If you just want an
+	 * easy way to build a full-featured query UI and don't want to customize
+	 * its internals, you have come to the right place. This also allows a SQL
+	 * string to initialize the query UI with.
+	 * 
+	 * @param swRegistry
+	 *            The registry with which all background tasks will be
+	 *            registered. This argument must not be null.
+	 * @param dsCollection
+	 *            The collection of data sources that will be available for
+	 *            querying from the UI. This argument must not be null.
+	 * 
+	 * @param ds
+	 *            The data source that the initial query will be executed on.
+	 *            This data source must be contained in the dsCollection and not
+	 *            null for the query to be executed. If the data source is null
+	 *            then the query will not be executed.
+	 * 
+	 * @param initialSQL
+	 *            The string that will be executed immediately when the query
+	 *            tool is shown. If this is null then no query will be executed.
+	 */
+    public static JComponent createQueryPanel(SwingWorkerRegistry swRegistry, DataSourceCollection dsCollection, Window owner, SPDataSource ds, String initialSQL) {
         
         JPanel defaultQueryPanel = new JPanel();
-        SQLQueryUIComponents queryParts = new SQLQueryUIComponents(swRegistry, ds, defaultQueryPanel);
+        SQLQueryUIComponents queryParts = new SQLQueryUIComponents(swRegistry, dsCollection, defaultQueryPanel);
         queryParts.addWindowListener(owner);
         JToolBar toolbar = new JToolBar();
         toolbar.add(queryParts.getExecuteButton());
@@ -998,6 +1025,12 @@ public class SQLQueryUIComponents {
        
    
         queryPane.add(queryParts.getResultTabPane(), JSplitPane.BOTTOM);
+        
+        if (ds != null && initialSQL != null && dsCollection.getConnections().contains(ds)) {
+        	queryParts.getDatabaseComboBox().setSelectedItem(ds);
+        	queryParts.getQueryArea().setText(initialSQL);
+        	queryParts.executeQuery(initialSQL);
+        }
         
         return queryPane;
   
@@ -1106,7 +1139,6 @@ public class SQLQueryUIComponents {
     				tableToSQLMap.put(((JTable)tempTable), query);
     			}
     			JPanel tempResultPanel = tableAreaBuilder.getPanel();
-    			resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
     			if(!multipleQueryEnabled) {
     				firstResultPanel.removeAll();
     				firstResultPanel.add(tempResultPanel, BorderLayout.CENTER);
@@ -1114,6 +1146,7 @@ public class SQLQueryUIComponents {
     				break;
     			} else {
     				resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
+    				resultTabPane.setSelectedIndex(1);
     			}
 
     		}
