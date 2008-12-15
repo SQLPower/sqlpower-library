@@ -1049,13 +1049,13 @@ public class SQLQueryUIComponents {
      * @throws SQLException 
      */
     private synchronized void createResultSetTables(List<CachedRowSet> resultSets, String query, boolean exceptioned) throws SQLException {
-    	resultJTables.clear();
     	tableToSQLMap.clear();
     	for (JTable table : resultJTables) {
-    		for (TableChangeListener l : tableListeners) {
-    			l.tableRemoved(new TableChangeEvent(SQLQueryUIComponents.this, table));
+    		for (int i = tableListeners.size() - 1; i >= 0; i--) {
+    			tableListeners.get(i).tableRemoved(new TableChangeEvent(this, table));
     		}
     	}
+    	resultJTables.clear();
     	// Do something similar with the Panel but the result will have JLabel with error message instead of result
     	// table.
     	if(exceptioned) {
