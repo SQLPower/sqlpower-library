@@ -367,7 +367,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		        CachedRowSet result = new CachedRowSet();
 		        result.populate(rs);
 		        
-		        if (cacheType.get() == null || cacheType.equals(CacheType.NO_CACHE)) {
+		        if (cacheType.get() == null || cacheType.get().equals(CacheType.NO_CACHE)) {
 		        	return result;
 		        } else {
 		        	importedAndExportedKeysCache.put(cacheKey, result);
@@ -474,7 +474,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		        CachedRowSet result = new CachedRowSet();
 		        result.populate(rs);
 		        
-		        if (cacheType.get() == null || cacheType.equals(CacheType.NO_CACHE)) {
+		        if (cacheType.get() == null || cacheType.get().equals(CacheType.NO_CACHE)) {
 		        	return result;
 		        } else {
 		        	importedAndExportedKeysCache.put(cacheKey, result);
@@ -586,7 +586,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 				stmt.setFetchSize(1000);
 				rs = stmt.executeQuery(sql.toString());
 		        
-		        if (cacheType.get() == null || cacheType.equals(CacheType.NO_CACHE)) {
+		        if (cacheType.get() == null || cacheType.get().equals(CacheType.NO_CACHE)) {
 		            CachedRowSet result = new CachedRowSet();
 		            result.populate(rs);
 		        	return result;
