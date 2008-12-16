@@ -45,6 +45,8 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
 
 import org.apache.log4j.Logger;
 
@@ -87,6 +89,14 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
     
     public DataSourceTypeEditorPanel(DataSourceCollection collection) {
     	jdbcPanel = new JDBCDriverPanel();
+    	
+    	jdbcPanel.addDriverTreeSelectionListener(new TreeSelectionListener() {
+			public void valueChanged(TreeSelectionEvent e) {
+				if (e.getNewLeadSelectionPath() != null && e.getNewLeadSelectionPath().getPathCount() > JDBCDriverPanel.DRIVER_LEVEL) {
+					driverClass.setText(e.getNewLeadSelectionPath().getLastPathComponent().toString());
+				}
+			}
+		});
     	
     	dsTypeDefaultCombo = new JComboBox(collection.getDataSourceTypes().toArray());
     	dsTypeDefaultCombo.setRenderer(new DefaultListCellRenderer() {

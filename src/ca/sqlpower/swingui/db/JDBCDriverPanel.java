@@ -79,6 +79,11 @@ import ca.sqlpower.swingui.SPSUtils;
 import ca.sqlpower.util.Monitorable;
 
 public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
+	
+	/**
+	 * The level in the tree that the drivers are located at. 
+	 */
+	public static final int DRIVER_LEVEL = 2;
 
 	private static class DriverTreeCellRenderer extends DefaultTreeCellRenderer implements TreeCellRenderer {
         
@@ -106,7 +111,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
                         break;
                     }
                 }
-            } else if (level == 2) {
+            } else if (level == DRIVER_LEVEL) {
                 if (node.getUserObject() instanceof Throwable) {
                     setForeground(Color.RED);
                     setIcon(driverErrorIcon);
@@ -531,5 +536,13 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 	public boolean hasUnsavedChanges() {
         // TODO return whether this panel has been changed
 		return true;
+	}
+	
+	public void addDriverTreeSelectionListener(TreeSelectionListener tsl) {
+		driverTree.addTreeSelectionListener(tsl);
+	}
+	
+	public void removeDriverTreeSelectionListener(TreeSelectionListener tsl) {
+		driverTree.removeTreeSelectionListener(tsl);
 	}
 }
