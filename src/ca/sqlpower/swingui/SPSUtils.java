@@ -66,7 +66,7 @@ public class SPSUtils {
      */
     public static final String FORUM_URL = "http://www.sqlpower.ca/forum/"; //$NON-NLS-1$
 	
-	public static Action forumAction = new AbstractAction(Messages.getString("SPSUtils.webSupportActionName"), //$NON-NLS-1$
+	public static final Action forumAction = new AbstractAction(Messages.getString("SPSUtils.webSupportActionName"), //$NON-NLS-1$
             // Alas this is now static so the size can't be gotten from sprefs...
             SPSUtils.createIcon("world","New Project")) { //$NON-NLS-1$ //$NON-NLS-2$
         public void actionPerformed(ActionEvent evt) {
