@@ -53,6 +53,14 @@ public class MemoryMonitor {
     private Timer timer;
     private JLabel label = new JLabel();
     
+    private MouseAdapter gcMouseEvent = new MouseAdapter() {
+        @Override
+        @edu.umd.cs.findbugs.annotations.SuppressWarnings(value={"DM_GC"}, justification="Used as a debugging tool")
+        public void mousePressed(MouseEvent e) {
+            System.gc();
+        }
+    };
+
     private ActionListener timerAction = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
             long megabyte = 1024 * 1024;
@@ -65,12 +73,7 @@ public class MemoryMonitor {
     
     public MemoryMonitor() {
         timer = new Timer(1000, timerAction);
-        label.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                System.gc();
-            }
-        });
+        label.addMouseListener(gcMouseEvent);
     }
     
     public void start() {
