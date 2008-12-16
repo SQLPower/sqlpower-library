@@ -4,8 +4,8 @@ public class Passwords {
     private Passwords() {
     }
 
-    public static int QUALITY_LENIENT=1;
-    public static int QUALITY_STRICT=9;
+    public static final int QUALITY_LENIENT=1;
+    public static final int QUALITY_STRICT=9;
 
     /**
      * 

@@ -75,7 +75,7 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
 	 * implementation on whether to use metadata caching or not for performance.
 	 * Client code should use {@link #putHint(String, Object)} to set the value.
 	 */
-    protected static ThreadLocal<CacheType> cacheType = new ThreadLocal<CacheType>();
+    protected static final ThreadLocal<CacheType> cacheType = new ThreadLocal<CacheType>();
 
     /**
      * The key used to set the {@link CacheType} hint when using
