@@ -65,6 +65,7 @@ public class IPNetwork {
 		this.mask = InetAddress.getByName(myMask[0]+"."+myMask[1]+"."+myMask[2]+"."+myMask[3]);
 	}
 
+	@Override
 	public String toString() {
 		return addr+" mask "+mask;
 	}
@@ -86,6 +87,7 @@ public class IPNetwork {
 	 * Checks if the significant portions of this IPNetwork and the
 	 * given IPNetwork are the same.
 	 */
+	@Override
 	public boolean equals(Object other) {
 		IPNetwork otherNet = (IPNetwork) other;
 		byte[] thisAddr = addr.getAddress();
@@ -99,5 +101,18 @@ public class IPNetwork {
 			}
 		}
 		return true;
+	}
+	
+	@Override
+	public int hashCode() {
+		int result = 17;
+		byte[] thisAddr = addr.getAddress();
+		byte[] thisMask = mask.getAddress();
+		
+		for (int i = 0; i < 4; i++) {
+			result = 31 * result + thisAddr[i];
+			result = 31 * result + thisMask[i];
+		}
+		return result;
 	}
 }

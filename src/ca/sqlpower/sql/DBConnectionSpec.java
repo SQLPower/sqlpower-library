@@ -146,6 +146,7 @@ public class DBConnectionSpec implements Serializable, Comparable {
 		return new Integer(this.getSeqNo()).compareTo(new Integer(((DBConnectionSpec) other).getSeqNo()));
 	}
 
+	@Override
 	public boolean equals(Object other) {
 		// identical object reference
 		if (this == other) {
@@ -168,11 +169,23 @@ public class DBConnectionSpec implements Serializable, Comparable {
 		} else {
 				return false;
 		}
-	}				    		                  	
+	}
+	
+	@Override
+	public int hashCode() {
+		int result = 17;
+		result = 31 * result + seqNo;
+		result = 31 * result + getDriverClass().hashCode();
+		result = 31 * result + getUrl().hashCode();
+		result = 31 * result + getUser().hashCode();
+		result = 31 * result + getPass().hashCode();
+		return result;
+	}
 
 	/**
 	 * Prints some info from this DBCS.  For use in debugging.
 	 */
+	@Override
 	public String toString() {
 		return "DBConnectionSpec: singleLogin="+singleLogin+", "+name+", "+displayName+", "+driverClass+", "+url;
 	}

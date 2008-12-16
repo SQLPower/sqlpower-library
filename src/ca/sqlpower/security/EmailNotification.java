@@ -564,6 +564,14 @@ public class EmailNotification implements java.io.Serializable {
 		}
 		
 		@Override
+		public int hashCode() {		
+			int result = 17;
+			result = 31 * result + email.hashCode();
+			result = 31 * result + name.hashCode();
+			return result;			
+		}
+		
+		@Override
 		public String toString() {
 			return "<" + this.name + "> " + this.email;
 		}

@@ -142,6 +142,7 @@ public class Frequency implements Comparable, java.io.Serializable {
 		this.freq = argFreq;
 	}
 
+	@Override
 	public String toString() {
 		if (freq == Frequency.YEARLY) return "YEARLY";
 		if (freq == Frequency.QUARTERLY) return "QUARTERLY";
@@ -158,12 +159,20 @@ public class Frequency implements Comparable, java.io.Serializable {
 	 * @throws ClassCastException if <code>other</code> is not a
 	 * <code>Frequency</code>.
 	 */
+	@Override
 	public boolean equals(Object other) throws ClassCastException {
 		if (((Frequency) other).freq == this.freq) {
 			return true;
 		} else {
 			return false;
 		}
+	}
+	
+	@Override
+	public int hashCode() {
+		int result = 17;
+		result = 31 * 17 + freq;
+		return result;
 	}
 
 	/**

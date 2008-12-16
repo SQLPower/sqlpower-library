@@ -228,6 +228,7 @@ public class Scheduler {
 		 * useful in reality.  Two different scheduled tasks will be
 		 * considered equal if their next occurrences coincide.
 		 */
+		@Override
 		public boolean equals(Object other) {
 			ScheduledTask otherTask = (ScheduledTask) other;
 			Date thisNextOccurrence = this.recurrence.nextOccurrence(baseDate);
@@ -241,6 +242,13 @@ public class Scheduler {
 			} else {
 				return thisNextOccurrence.getTime() == otherNextOccurrence.getTime();
 			}
+		}
+		
+		@Override
+		public int hashCode() {
+			int result = 17;
+			result = 31 * result + this.recurrence.nextOccurrence(baseDate).hashCode();
+			return result;
 		}
 	}
 }
