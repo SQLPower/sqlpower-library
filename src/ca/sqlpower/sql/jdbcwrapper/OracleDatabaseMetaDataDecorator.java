@@ -550,7 +550,12 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 				sql.append("	t.owner AS table_schem,\n");
 				sql.append("	t.table_name AS table_name,\n");
 				sql.append("	t.column_name AS column_name,\n");
-				sql.append("	DECODE (t.data_type, 'CHAR', 1, 'VARCHAR2', 12, 'NUMBER', 3, 'LONG', -1, 'DATE', 91, 'RAW', -3, 'LONG RAW', -4, 'BLOB', 2004, 'CLOB', 2005, 'BFILE', -13, 'FLOAT', 6, 'TIMESTAMP(6)', 93, 'TIMESTAMP(6) WITH TIME ZONE', -101, 'TIMESTAMP WITH LOCAL TIME ZONE', -102, 'INTERVAL YEAR(2) TO MONTH', -103, 'INTERVAL DAY(2) TO SECOND(6)', -104, 'BINARY_FLOAT', 100, 'BINARY_DOUBLE', 101, 1111)\n");
+				sql.append("	DECODE (" +
+						"CASE " +
+						" WHEN SUBSTR(t.data_type, 1, 9) = 'TIMESTAMP' THEN 'TIMESTAMP' " +
+						" ELSE t.data_type " +
+						"END " +
+						", 'CHAR', 1, 'VARCHAR2', 12, 'NUMBER', 3, 'LONG', -1, 'DATE', 91, 'RAW', -3, 'LONG RAW', -4, 'BLOB', 2004, 'CLOB', 2005, 'BFILE', -13, 'FLOAT', 6, 'TIMESTAMP', 93, 'TIMESTAMP WITH TIME ZONE', -101, 'TIMESTAMP WITH LOCAL TIME ZONE', -102, 'INTERVAL YEAR(2) TO MONTH', -103, 'INTERVAL DAY(2) TO SECOND(6)', -104, 'BINARY_FLOAT', 100, 'BINARY_DOUBLE', 101, 1111)\n");
 				sql.append("	AS data_type,\n"); 
 				sql.append("	t.data_type AS type_name,\n");
 				sql.append("	DECODE (t.data_precision, null, t.data_length, t.data_precision) AS column_size,\n");
