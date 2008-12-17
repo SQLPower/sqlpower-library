@@ -21,7 +21,7 @@ public class Scheduler {
 	 * to occur at the same time, their order relative to each other
 	 * is random.
 	 */
-	protected static List schedule;
+	protected static final List schedule;
 	
 	/**
 	 * This is the base date used for sorting the schedule by next
@@ -39,7 +39,7 @@ public class Scheduler {
 	 * notified when a scheduled task is added to or removed from the
 	 * schedule list.
 	 */
-	protected static Thread schedulerThread;
+	protected static final Thread schedulerThread;
 
 	/**
 	 * No-op constructor.  This class is meant to be used statically.
