@@ -93,6 +93,8 @@ public class PostgresDatabaseMetaDataDecorator extends
 	 * connected to.  Use a sqlpower CachedRowSet to ensure resources are freed 
 	 * up once the query has been run.
 	 */
+	@edu.umd.cs.findbugs.annotations.SuppressWarnings(value={"SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE"},
+			justification="A prepared statement is not necessary, as the statement contains no user input, and is called infrequently.")
 	public ResultSet getCatalogs() throws java.sql.SQLException {
 		// if the connection string had a catalog name, it will be set
 		String theCatalog = getConnection().getCatalog();

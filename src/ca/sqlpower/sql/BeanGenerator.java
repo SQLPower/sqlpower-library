@@ -253,7 +253,8 @@ public class BeanGenerator {
 		}
 		return camelCaps.toString();
 	}
-
+	@edu.umd.cs.findbugs.annotations.SuppressWarnings(value={"SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE"},
+			justification="A prepared statement is not necessary, as any user input is quoted, and the statement called infrequently.")
 	public static void main(String args[]) throws Exception {
 
 		try {
@@ -283,7 +284,7 @@ public class BeanGenerator {
 			
 			con=DriverManager.getConnection(dburl, dbuser, dbpass);
 			stmt=con.createStatement();
-			rs=stmt.executeQuery("SELECT * FROM "+tableName);
+			rs=stmt.executeQuery("SELECT * FROM " + SQL.quote(tableName));
 			
 			new BeanGenerator(rs, schemaName, tableName, null, "");
 			
