@@ -45,7 +45,6 @@ public class WebResultCSVFormatter extends WebResultFormatter {
 	public void formatBody(WebResultSet wrs, PrintWriter out)
 		throws SQLException, NoRowidException {
 		int numCols=wrs.getColumnCount();
-		StringBuffer sb=new StringBuffer(256);
 		StringBuffer contents=new StringBuffer(256);
 		StringBuffer align=new StringBuffer(32);
 		while (wrs.next()) {
