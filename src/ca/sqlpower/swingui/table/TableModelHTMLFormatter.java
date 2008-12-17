@@ -42,6 +42,8 @@ import javax.swing.table.TableModel;
 public class TableModelHTMLFormatter implements ExportFormatter{
 	
 	
+	private static final String NULL_STRING = "";
+
 	public TableModelHTMLFormatter() {
 
 	}
@@ -77,7 +79,11 @@ public class TableModelHTMLFormatter implements ExportFormatter{
 				
 				for (int j = 0; j < model.getColumnCount(); j++ ) {
 					writer.print("  <td>");
-					writer.print(model.getValueAt(selectedRows[i], j).toString());
+					if (model.getValueAt(selectedRows[i], j) != null) {
+						writer.print(model.getValueAt(selectedRows[i], j).toString());
+					} else {
+						writer.print(NULL_STRING);
+					}
 					writer.println("</td>");
 				}
 				writer.println(" </tr>");

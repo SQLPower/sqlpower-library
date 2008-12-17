@@ -192,11 +192,6 @@ public class FancyExportableJTable extends EditableJTable {
 		}
 	};
 		
-	/**
-	 * A mouse listener on the JTable to give the user options like exporting
-	 * and changing font.
-	 */
-	private MouseListener popupMenuMouseListener = new PopupMenuMouseListener(this);
 
 	/**
 	 * The sort decorator attached to this table.
@@ -214,7 +209,7 @@ public class FancyExportableJTable extends EditableJTable {
 		}
 		
 		setModel(model);
-		addMouseListener(popupMenuMouseListener);
+		addMouseListener(new PopupMenuMouseListener(this));
 		TableUtils.fitColumnWidths(this, 0);
 	}
 	
