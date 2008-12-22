@@ -72,6 +72,8 @@ public class SPDataSource {
 
     private static final Logger logger = Logger.getLogger(SPDataSource.class);
     
+    public static final String BUILTIN = "builtin:";
+    
 	/**
 	 * Compares this data source to the given data source by comparing
 	 * the respecitive fields in the following order:
@@ -176,9 +178,8 @@ public class SPDataSource {
      */
     public static File jarSpecToFile(String jarFileName, ClassLoader classLoader) {
         File listedFile;
-        String builtIn = "builtin:";
-        if (jarFileName.startsWith(builtIn)) {
-            String jarName = jarFileName.substring(builtIn.length());
+        if (jarFileName.startsWith(BUILTIN)) {
+            String jarName = jarFileName.substring(BUILTIN.length());
             URL resource = classLoader.getResource(jarName);
             if (resource == null) {
                 logger.warn("Couldn't find built-in system resource \""+jarName+"\". Skipping it.");

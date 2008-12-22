@@ -45,6 +45,11 @@ import javax.swing.JScrollPane;
 import javax.swing.ListModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.undo.AbstractUndoableEdit;
+import javax.swing.undo.CannotRedoException;
+import javax.swing.undo.CannotUndoException;
+import javax.swing.undo.UndoManager;
 
 import org.apache.log4j.Logger;
 
@@ -62,6 +67,52 @@ import com.jgoodies.forms.layout.FormLayout;
 public class DataSourceTypeEditor implements DataEntryPanel {
     
     private static final Logger logger = Logger.getLogger(DataSourceTypeEditor.class);
+    
+    private class AddDSTypeUndoableEdit extends AbstractUndoableEdit {
+    	
+    	private final SPDataSourceType type;
+
+		public AddDSTypeUndoableEdit(SPDataSourceType type) {
+			this.type = type;
+    	}
+    	
+    	@Override
+    	public void redo() throws CannotRedoException {
+    		super.redo();
+            dataSourceCollection.addDataSourceType(type);
+            ((DefaultListModel) dsTypeList.getModel()).addElement(type);
+    	}
+    	
+    	@Override
+    	public void undo() throws CannotUndoException {
+    		super.undo();
+            ((DefaultListModel) dsTypeList.getModel()).removeElement(type);
+            dataSourceCollection.removeDataSourceType(type);
+    	}
+    }
+    
+    private class RemoveDSTypeUndoableEdit extends AbstractUndoableEdit {
+    	
+    	private final SPDataSourceType type;
+
+		public RemoveDSTypeUndoableEdit(SPDataSourceType type) {
+			this.type = type;
+    	}
+    	
+    	@Override
+    	public void redo() throws CannotRedoException {
+    		super.redo();
+            ((DefaultListModel) dsTypeList.getModel()).removeElement(type);
+            dataSourceCollection.removeDataSourceType(type);
+    	}
+    	
+    	@Override
+    	public void undo() throws CannotUndoException {
+    		super.undo();
+            dataSourceCollection.addDataSourceType(type);
+            ((DefaultListModel) dsTypeList.getModel()).addElement(type);
+    	}
+    }
     
     /**
      * The panel that this editor's GUI lives in.
@@ -90,12 +141,18 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      */
     private final DataSourceTypeEditorPanel dsTypePanel;
     
+    /**
+     * An undo manager for DS types.
+     */
+    private final UndoManager undoManager = new UndoManager();
+    
     public DataSourceTypeEditor(DataSourceCollection dataSourceCollection) {
         this.dataSourceCollection = dataSourceCollection;
         
         DefaultListModel dsTypeListModel = new DefaultListModel();
         for (SPDataSourceType type : dataSourceCollection.getDataSourceTypes()) {
             dsTypeListModel.addElement(type);
+            type.addUndoableEditListener(undoManager);
         }
         dsTypeList = new JList(dsTypeListModel);
         dsTypeList.setCellRenderer(new SPDataSourceTypeListCellRenderer());
@@ -143,6 +200,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         if (type != null) {
             ((DefaultListModel) dsTypeList.getModel()).removeElement(type);
             dataSourceCollection.removeDataSourceType(type);
+            undoManager.addEdit(new RemoveDSTypeUndoableEdit(type));
         }
     }
 
@@ -153,6 +211,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         dataSourceCollection.addDataSourceType(type);
         ((DefaultListModel) dsTypeList.getModel()).addElement(type);
         dsTypeList.setSelectedValue(type, true);
+        undoManager.addEdit(new AddDSTypeUndoableEdit(type));
     }
 
     /**
@@ -208,7 +267,23 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      * changes is not copy them back to the model.
      */
     public void discardChanges() {
-        // nothing to do
+    	logger.debug("Discarding changes to all data source types.");
+    	int undoCount = 0;
+    	while (undoManager.canUndo()) {
+    		undoCount++;
+    		undoManager.undo();
+    	}
+    	logger.debug("There were " + undoCount + " changes.");
+    	dsTypePanel.discardChanges();
+    }
+    
+    /**
+     * Call this to disconnect the editor from the DS types.
+     */
+    public void cleanup() {
+    	for (SPDataSourceType type : dataSourceCollection.getDataSourceTypes()) {
+    		type.removeUndoableEditListener(undoManager);
+    	}
     }
     
     /**
@@ -230,7 +305,6 @@ public class DataSourceTypeEditor implements DataEntryPanel {
     }
 
 	public boolean hasUnsavedChanges() {
-        // TODO return whether this panel has been changed
-		return true;
+		return undoManager.canUndo();
 	}
 }

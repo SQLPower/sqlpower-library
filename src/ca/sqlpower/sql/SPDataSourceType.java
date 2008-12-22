@@ -60,6 +60,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.event.UndoableEditListener;
+import javax.swing.undo.AbstractUndoableEdit;
+import javax.swing.undo.CannotRedoException;
+import javax.swing.undo.CannotUndoException;
+import javax.swing.undo.UndoableEdit;
+
 import org.apache.log4j.Logger;
 
 /**
@@ -81,6 +88,33 @@ public class SPDataSourceType {
      * have been sharing the same driver classes.
      */
     private static Map<String, Integer> classLoadCounts = new HashMap<String, Integer>();
+    
+    private class UndoablePropertyEdit extends AbstractUndoableEdit {
+    	
+    	private final String changedProperty;
+    	private final String oldValue;
+    	private final String newValue;
+    	private final SPDataSourceType source;
+    	
+    	public UndoablePropertyEdit(String propertyName, String oldValue, String newValue, SPDataSourceType source) {
+			changedProperty = propertyName;
+			this.oldValue = oldValue;
+			this.newValue = newValue;
+			this.source = source;
+    	}
+    	
+    	@Override
+    	public void redo() throws CannotRedoException {
+    		super.redo();
+    		source.properties.put(changedProperty, newValue);
+    	}
+    	
+    	@Override
+    	public void undo() throws CannotUndoException {
+    		super.undo();
+    		source.properties.put(changedProperty, oldValue);
+    	}
+    }
     
     /**
      * A special ClassLoader that searches the classpath associated with this
@@ -256,6 +290,11 @@ public class SPDataSourceType {
      * Deletgate class for supporting the bound properties of this class.
      */
     private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
+
+    /**
+     * Listeners listening for undoable edits.
+     */
+	private final List<UndoableEditListener> undoableEditListeners = new ArrayList<UndoableEditListener>();
     
     /**
      * Creates a new default data source type.
@@ -333,6 +372,7 @@ public class SPDataSourceType {
         setJdbcJarCount(count);
         int i = 0;
         for (String jar : jdbcJarList) {
+        	logger.debug("Setting jar list value " + i + " to path " + jar);
             properties.put(JDBC_JAR_BASE+"_"+i, jar);
             i++;
         }
@@ -345,6 +385,7 @@ public class SPDataSourceType {
      * a future revision hopefully will.
      */
     public void addJdbcJar(String jarPath) {
+    	logger.debug("Adding jar at path " + jarPath);
         int count = getJdbcJarCount();
         properties.put(JDBC_JAR_BASE+"_"+count, jarPath);
         setJdbcJarCount(count + 1);
@@ -500,7 +541,14 @@ public class SPDataSourceType {
      * Adds or replaces a value in the property map.
      */
     public void putProperty(String key, String value) {
+    	String oldValue = properties.get(key);
         properties.put(key, value);
+        if ((oldValue == null && value != null) || (oldValue != null && !oldValue.equals(value))) {
+        	UndoableEdit edit = new UndoablePropertyEdit(key, oldValue, value, this);
+        	for (int i = undoableEditListeners.size() -1; i >= 0; i--) {
+        		undoableEditListeners.get(i).undoableEditHappened(new UndoableEditEvent(this, edit));
+        	}
+        }
     }
 
     public ClassLoader getJdbcClassLoader() {
@@ -548,7 +596,13 @@ public class SPDataSourceType {
      */
     public void removeJdbcJar(String path) {
         List<String> jdbcJars = makeModifiableJdbcJarList();
-        jdbcJars.remove(path);
+        logger.debug("Removing jdbc jar " + path + " at index " + jdbcJars.indexOf(path));
+        if (jdbcJars.contains(path)) {
+        	jdbcJars.remove(path);
+        } else {
+        	File file = new File(path);
+        	jdbcJars.remove(SPDataSource.BUILTIN + file.getName());
+        }
         setJdbcJarList(jdbcJars);
     }
     
@@ -585,6 +639,20 @@ public class SPDataSourceType {
         String oldValue = properties.get(plPropName);
         properties.put(plPropName, propValue);
         firePropertyChange(javaPropName, oldValue, propValue);
+        if ((oldValue == null && propValue != null) || (oldValue != null && !oldValue.equals(propValue))) {
+        	UndoableEdit edit = new UndoablePropertyEdit(plPropName, oldValue, propValue, this);
+        	for (int i = undoableEditListeners.size() -1; i >= 0; i--) {
+        		undoableEditListeners.get(i).undoableEditHappened(new UndoableEditEvent(this, edit));
+        	}
+        }
+    }
+    
+    public void addUndoableEditListener(UndoableEditListener l) {
+    	undoableEditListeners.add(l);
+    }
+    
+    public void removeUndoableEditListener(UndoableEditListener l) {
+    	undoableEditListeners.remove(l);
     }
     
     // ---------------- Methods that delegate to the PropertyChangeSupport -----------------

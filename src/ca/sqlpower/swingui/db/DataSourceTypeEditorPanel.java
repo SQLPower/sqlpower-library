@@ -247,7 +247,21 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
     }
 
     public void discardChanges() {
-        // no action needed
+    	logger.debug("Discarding changes to data source type " + dsType); //$NON-NLS-1$
+        if (dsType != null) {
+        	
+            // Also discard changes for each contained DataEntryPanel
+            for (DataSourceTypeEditorTabPanel panel : tabPanels) {
+                panel.discardChanges();
+            }
+            
+            dsTypeDefaultCombo.setSelectedItem(dsType);
+            
+            name.setText(dsType.getName());
+            driverClass.setText(dsType.getJdbcDriver());
+            connectionStringTemplate.setText(dsType.getJdbcUrl());
+        }
+        jdbcPanel.discardChanges();
     }
 
     public JPanel getPanel() {

@@ -35,6 +35,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.event.UndoableEditListener;
+import javax.swing.undo.UndoableEdit;
+
 import junit.framework.TestCase;
 import ca.sqlpower.sql.SPDataSourceType.JDBCClassLoader;
 
@@ -263,5 +267,62 @@ public class SPDataSourceTypeTest extends TestCase {
         JDBCClassLoader jdbcClassLoader = (JDBCClassLoader) dsType.getJdbcClassLoader();
         jdbcClassLoader.findResources("my_resource");
         // test passes if previous statement doesn't throw NPE
+    }
+    
+    public void testUndoAndRedo() throws Exception {
+    	final SPDataSourceType dsType = new SPDataSourceType();
+    	class TestUndoableEditListener implements UndoableEditListener {
+    		private int editCount = 0;
+    		
+			public void undoableEditHappened(UndoableEditEvent e) {
+				editCount++;
+				UndoableEdit edit = e.getEdit();
+				assertTrue(edit.canUndo());
+				assertEquals("hello", dsType.getProperty("Test"));
+				edit.undo();
+				assertTrue(edit.canRedo());
+				assertNull(dsType.getProperty("Test"));
+				edit.redo();
+				assertTrue(edit.canUndo());
+				assertEquals("hello", dsType.getProperty("Test"));
+			}
+			
+			public int getEditCount() {
+				return editCount;
+			}
+		}
+    	TestUndoableEditListener undoableEditListener = new TestUndoableEditListener();
+    	dsType.addUndoableEditListener(undoableEditListener);
+    	dsType.putProperty("Test", "hello");
+    	
+    	assertEquals(1, undoableEditListener.getEditCount());
+    }
+    
+    /**
+     * The setters on the DSType uses a different method to set properties than the
+     * one used in testUndoAndRedo. This confirms that the setters do create undo and
+     * redo edits.
+     */
+    public void testUndoOnSetters() throws Exception {
+    	final SPDataSourceType dsType = new SPDataSourceType();
+    	
+    	class TestUndoableEditListener implements UndoableEditListener {
+    		private int editCount = 0;
+    		
+			public void undoableEditHappened(UndoableEditEvent e) {
+				editCount++;
+			}
+			
+			public int getEditCount() {
+				return editCount;
+			}
+		}
+    	TestUndoableEditListener undoableEditListener = new TestUndoableEditListener();
+    	dsType.addUndoableEditListener(undoableEditListener);
+    	dsType.setComment("comment");
+    	dsType.setDDLGeneratorClass("class");
+    	dsType.setName("name");
+    	
+    	assertEquals(3, undoableEditListener.getEditCount());
     }
 }
