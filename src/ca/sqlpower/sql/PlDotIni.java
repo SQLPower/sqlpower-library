@@ -52,6 +52,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.DefaultListModel;
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.event.UndoableEditListener;
+import javax.swing.undo.AbstractUndoableEdit;
+import javax.swing.undo.CannotRedoException;
+import javax.swing.undo.CannotUndoException;
+
 import org.apache.log4j.Logger;
 
 /**
@@ -67,6 +74,48 @@ import org.apache.log4j.Logger;
  * @version $Id$
  */
 public class PlDotIni implements DataSourceCollection {
+	
+	private class AddDSTypeUndoableEdit extends AbstractUndoableEdit {
+
+		private final SPDataSourceType type;
+
+		public AddDSTypeUndoableEdit(SPDataSourceType type) {
+			this.type = type;
+		}
+
+		@Override
+		public void redo() throws CannotRedoException {
+			super.redo();
+			fileSections.add(type);
+		}
+
+		@Override
+		public void undo() throws CannotUndoException {
+			super.undo();
+			fileSections.remove(type);
+		}
+	}
+
+	private class RemoveDSTypeUndoableEdit extends AbstractUndoableEdit {
+
+		private final SPDataSourceType type;
+
+		public RemoveDSTypeUndoableEdit(SPDataSourceType type) {
+			this.type = type;
+		}
+
+		@Override
+		public void redo() throws CannotRedoException {
+			super.redo();
+			fileSections.remove(type);
+		}
+
+		@Override
+		public void undo() throws CannotUndoException {
+			super.undo();
+			fileSections.add(type);
+		}
+	}
 
     /**
      * Boolean to control whether we autosave, to prevent calling it while we're already saving.
@@ -77,6 +126,8 @@ public class PlDotIni implements DataSourceCollection {
 	 * The list of Listeners to notify when a datasource is added or removed.
 	 */
 	List<DatabaseListChangeListener> listeners;
+	
+	private final List<UndoableEditListener> undoListeners = new ArrayList<UndoableEditListener>();
 
 	DatabaseListChangeListener saver = new DatabaseListChangeListener() {
 
@@ -776,10 +827,16 @@ public class PlDotIni implements DataSourceCollection {
     public void addDataSourceType(SPDataSourceType dataSourceType) {
         // TODO fire an event for adding the dstype
         fileSections.add(dataSourceType);
+        for (int i = undoListeners.size() - 1; i >= 0; i--) {
+        	undoListeners.get(i).undoableEditHappened(new UndoableEditEvent(this, new AddDSTypeUndoableEdit(dataSourceType)));
+        }
     }
 
     public boolean removeDataSourceType(SPDataSourceType dataSourceType) {
         // TODO fire an event for removing the dstype
+    	for (int i = undoListeners.size() - 1; i >= 0; i--) {
+    		undoListeners.get(i).undoableEditHappened(new UndoableEditEvent(this, new RemoveDSTypeUndoableEdit(dataSourceType)));
+    	}
         return fileSections.remove(dataSourceType);
     }
 
@@ -819,5 +876,13 @@ public class PlDotIni implements DataSourceCollection {
     		listeners.remove(l);
     	}
     }
+
+	public void addUndoableEditListener(UndoableEditListener l) {
+		undoListeners.add(l);
+	}
+
+	public void removeUndoableEditListener(UndoableEditListener l) {
+		undoListeners.remove(l);
+	}
 
 }

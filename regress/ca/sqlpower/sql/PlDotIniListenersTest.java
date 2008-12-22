@@ -31,11 +31,8 @@
  */
 package ca.sqlpower.sql;
 
-import ca.sqlpower.sql.DataSourceCollection;
-import ca.sqlpower.sql.DatabaseListChangeEvent;
-import ca.sqlpower.sql.DatabaseListChangeListener;
-import ca.sqlpower.sql.PlDotIni;
-import ca.sqlpower.sql.SPDataSource;
+import javax.swing.undo.UndoManager;
+
 import junit.framework.TestCase;
 
 public class PlDotIniListenersTest extends TestCase {
@@ -114,6 +111,40 @@ public class PlDotIniListenersTest extends TestCase {
 	 */
 	public void testRemoveListener() {
 
+	}
+	
+	public void testUndoAddDSType() {
+		UndoManager manager = new UndoManager();
+		pld.addUndoableEditListener(manager);
+		SPDataSourceType type = new SPDataSourceType();
+		pld.addDataSourceType(type);
+		
+		assertTrue(manager.canUndo());
+		assertEquals(1, pld.getDataSourceTypes().size());
+		manager.undo();
+		
+		assertTrue(manager.canRedo());
+		assertTrue(pld.getDataSourceTypes().isEmpty());
+	}
+	
+	public void testUndoRemoveDSType() {
+		UndoManager manager = new UndoManager();
+		SPDataSourceType type = new SPDataSourceType();
+		pld.addDataSourceType(type);
+		pld.addUndoableEditListener(manager);
+		
+		assertFalse(manager.canUndo());
+		assertEquals(1, pld.getDataSourceTypes().size());
+		pld.removeDataSourceType(type);
+		
+		assertTrue(manager.canUndo());
+		assertTrue(pld.getDataSourceTypes().isEmpty());
+		manager.undo();
+		
+		assertEquals(1, pld.getDataSourceTypes().size());
+		assertTrue(manager.canRedo());
+		assertEquals(type, pld.getDataSourceTypes().get(0));
+		
 	}
 
 }

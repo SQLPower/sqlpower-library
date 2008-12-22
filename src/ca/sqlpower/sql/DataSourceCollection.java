@@ -36,6 +36,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
+import javax.swing.event.UndoableEditListener;
+
 public interface DataSourceCollection {
 
     public static final String DOS_CR_LF = "\r\n";
@@ -139,6 +141,10 @@ public interface DataSourceCollection {
     public void addDatabaseListChangeListener(DatabaseListChangeListener l);
 
     public void removeDatabaseListChangeListener(DatabaseListChangeListener l);
+    
+    public void addUndoableEditListener(UndoableEditListener l);
+    
+    public void removeUndoableEditListener(UndoableEditListener l);
 
 
 }

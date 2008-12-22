@@ -45,10 +45,6 @@ import javax.swing.JScrollPane;
 import javax.swing.ListModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.event.UndoableEditEvent;
-import javax.swing.undo.AbstractUndoableEdit;
-import javax.swing.undo.CannotRedoException;
-import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
 
 import org.apache.log4j.Logger;
@@ -67,52 +63,6 @@ import com.jgoodies.forms.layout.FormLayout;
 public class DataSourceTypeEditor implements DataEntryPanel {
     
     private static final Logger logger = Logger.getLogger(DataSourceTypeEditor.class);
-    
-    private class AddDSTypeUndoableEdit extends AbstractUndoableEdit {
-    	
-    	private final SPDataSourceType type;
-
-		public AddDSTypeUndoableEdit(SPDataSourceType type) {
-			this.type = type;
-    	}
-    	
-    	@Override
-    	public void redo() throws CannotRedoException {
-    		super.redo();
-            dataSourceCollection.addDataSourceType(type);
-            ((DefaultListModel) dsTypeList.getModel()).addElement(type);
-    	}
-    	
-    	@Override
-    	public void undo() throws CannotUndoException {
-    		super.undo();
-            ((DefaultListModel) dsTypeList.getModel()).removeElement(type);
-            dataSourceCollection.removeDataSourceType(type);
-    	}
-    }
-    
-    private class RemoveDSTypeUndoableEdit extends AbstractUndoableEdit {
-    	
-    	private final SPDataSourceType type;
-
-		public RemoveDSTypeUndoableEdit(SPDataSourceType type) {
-			this.type = type;
-    	}
-    	
-    	@Override
-    	public void redo() throws CannotRedoException {
-    		super.redo();
-            ((DefaultListModel) dsTypeList.getModel()).removeElement(type);
-            dataSourceCollection.removeDataSourceType(type);
-    	}
-    	
-    	@Override
-    	public void undo() throws CannotUndoException {
-    		super.undo();
-            dataSourceCollection.addDataSourceType(type);
-            ((DefaultListModel) dsTypeList.getModel()).addElement(type);
-    	}
-    }
     
     /**
      * The panel that this editor's GUI lives in.
@@ -145,11 +95,17 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      * An undo manager for DS types.
      */
     private final UndoManager undoManager = new UndoManager();
+
+    /**
+     * The model for the list of data source types in this editor.
+     */
+	private DefaultListModel dsTypeListModel;
     
     public DataSourceTypeEditor(DataSourceCollection dataSourceCollection) {
         this.dataSourceCollection = dataSourceCollection;
         
-        DefaultListModel dsTypeListModel = new DefaultListModel();
+        dsTypeListModel = new DefaultListModel();
+        dataSourceCollection.addUndoableEditListener(undoManager);
         for (SPDataSourceType type : dataSourceCollection.getDataSourceTypes()) {
             dsTypeListModel.addElement(type);
             type.addUndoableEditListener(undoManager);
@@ -200,7 +156,6 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         if (type != null) {
             ((DefaultListModel) dsTypeList.getModel()).removeElement(type);
             dataSourceCollection.removeDataSourceType(type);
-            undoManager.addEdit(new RemoveDSTypeUndoableEdit(type));
         }
     }
 
@@ -211,7 +166,6 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         dataSourceCollection.addDataSourceType(type);
         ((DefaultListModel) dsTypeList.getModel()).addElement(type);
         dsTypeList.setSelectedValue(type, true);
-        undoManager.addEdit(new AddDSTypeUndoableEdit(type));
     }
 
     /**
@@ -259,6 +213,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         } catch (IOException ex) {
         	SPSUtils.showExceptionDialogNoReport(panel, Messages.getString("DataSourceTypeEditor.errorSavingToPlDotIni"), ex); //$NON-NLS-1$
         }
+        undoManager.discardAllEdits();
         return true;
     }
 
@@ -274,7 +229,13 @@ public class DataSourceTypeEditor implements DataEntryPanel {
     		undoManager.undo();
     	}
     	logger.debug("There were " + undoCount + " changes.");
+    	
     	dsTypePanel.discardChanges();
+    	
+    	dsTypeListModel.clear();
+    	for (SPDataSourceType type : dataSourceCollection.getDataSourceTypes()) {
+    		dsTypeListModel.addElement(type);
+    	}
     }
     
     /**
@@ -284,6 +245,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
     	for (SPDataSourceType type : dataSourceCollection.getDataSourceTypes()) {
     		type.removeUndoableEditListener(undoManager);
     	}
+    	dataSourceCollection.removeUndoableEditListener(undoManager);
     }
     
     /**
