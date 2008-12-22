@@ -987,7 +987,7 @@ public class SPSUtils {
     	DefaultFormBuilder treeBuilder = new DefaultFormBuilder(new FormLayout("fill:pref:grow", "fill:pref:grow, pref"));
     	treeBuilder.add(tree);
     	treeBuilder.nextLine();
-    	JLabel sqlpLabel = new JLabel(new ImageIcon(SPSUtils.class.getClassLoader().getResource("icons/sqlp-72.png")));
+    	JLabel sqlpLabel = new JLabel(new ImageIcon(SPSUtils.class.getClassLoader().getResource("ca/sqlpower/swingui/sqlp-72.png")));
     	sqlpLabel.setBackground(Color.WHITE);
     	sqlpLabel.setOpaque(true);
     	sqlpLabel.setHorizontalAlignment(SwingConstants.LEFT);

@@ -56,9 +56,9 @@
 			</resource>
 			<resource>
 				<directory>
-					src/icons
+					src/ca/sqlpower/swingui
 				</directory>
-				<targetPath>icons</targetPath>
+				<targetPath>ca/sqlpower/swingui</targetPath>
 			</resource>
 			<resource>
 				<directory>src</directory>

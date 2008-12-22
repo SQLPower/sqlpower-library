@@ -49,18 +49,8 @@
 		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
 		<copy tofile="${build}/ca/sqlpower/sql/default_database_types.ini"
 				     file="src/ca/sqlpower/sql/default_database_types.ini"/>
-		<copy todir="${build}/ca/sqlpower/validation/swingui">
-			<fileset dir="${src}/ca/sqlpower/validation/swingui/">
-				<include name="**/*.png"/>
-			</fileset>
-		</copy>
-		<copy todir="${build}/ca/sqlpower/swingui/query/">
-			<fileset dir="${src}/ca/sqlpower/swingui/query/">
-				<include name="**/*.png"/>
-			</fileset>
-		</copy>
-		<copy todir="${build}/ca/sqlpower/swingui/db/">
-			<fileset dir="${src}/ca/sqlpower/swingui/db/">
+		<copy todir="${build}">
+			<fileset dir="${src}">
 				<include name="**/*.png"/>
 			</fileset>
 		</copy>
