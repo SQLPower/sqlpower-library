@@ -49,6 +49,7 @@ import ca.sqlpower.sql.DBConnection;
 import ca.sqlpower.sql.DatabaseObject;
 import ca.sqlpower.sql.SQL;
 import ca.sqlpower.util.ByteColonFormat;
+import edu.umd.cs.findbugs.annotations.SuppressWarnings;
 
 /**
  * The User class represents a people who can log in to an application
@@ -114,6 +115,10 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 	 * @throws SQLException when a database error occurs.  The caller
 	 * should rollback the current transaction in this case.
 	 */
+	@SuppressWarnings(value={"SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE"}, 
+					  justification="Input values are quoted to prevent SQL injection," +
+								    "and the sql statements in this do not get called repeatedly, so" +
+									"changing it to a prepared statement does not add much benefit")
     public void storeNoCommit(Connection con) throws SQLException {
         Statement stmt = con.createStatement();
 		StringBuffer sql = new StringBuffer();
@@ -132,7 +137,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			sql.append(", use_summarizer_ind='").append(summarizerUser ? 'Y':'N').append("'");
 			sql.append(", use_dashboard_ind='").append(dashboardUser ? 'Y':'N').append("'");
 			sql.append(" WHERE user_id = ").append(SQL.quote(getUserId()));
-			System.out.println("store query:" +sql);
+			logger.debug("store query:" +sql);
 			stmt.executeUpdate(sql.toString());
 		} else {
 			sql.append("INSERT INTO pl_user(");
@@ -204,7 +209,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
 			con.commit();
 
 		} catch(SQLException e) {
-			System.out.println("PLUser: caught "+e);
+			logger.debug("PLUser: caught "+e);
 			e.printStackTrace();
 			con.rollback();
 			throw e;
@@ -247,7 +252,7 @@ public class PLUser implements DatabaseObject, java.io.Serializable {
         try {
 			removeNoCommit(con);
         } catch(SQLException e) {
-			System.out.println("PLUser.remove: caught "+e);
+			logger.debug("PLUser.remove: caught "+e);
 			e.printStackTrace();
 			con.rollback();
 			throw e;
