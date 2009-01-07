@@ -362,12 +362,12 @@ public class DataMover {
 		this.truncatingDestinationTable = argTruncatingDestinationTable;
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		DataMover mover = null;
 		try {
 			String dbxml = "databases.xml";
 			if (args.length != 3) {
-				logger.debug("Usage: java ca.sqlpower.sql.DataMover source-database-name"
+				System.out.println("Usage: java ca.sqlpower.sql.DataMover source-database-name"
 								   +"\n        source-table-name dest-database-name");
 				return;
 			}
@@ -416,19 +416,11 @@ public class DataMover {
 			
 			srcCon.close();
 			dstCon.close();
-		} catch (Exception e) {
-			if (e instanceof SQLException) {
-				e.printStackTrace();
-				if (mover != null) {
-					logger.debug("Offending SQL Statement:\n"+mover.getLastSqlString());
-				}
-			}
-			if (e instanceof DatabaseListReadException) {
-				logger.error("Caught DatabaseListReadException. Root cause:");
-				((DatabaseListReadException) e).getRootCause().printStackTrace();
-			} else {
-				e.printStackTrace();
-			}
+		} catch (SQLException e) {
+		    e.printStackTrace();
+		    if (mover != null) {
+		        System.out.println("Offending SQL Statement:\n"+mover.getLastSqlString());
+		    }
 		}
 	}
 }
