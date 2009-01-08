@@ -57,6 +57,8 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
 
+import org.apache.log4j.Logger;
+
 /**
  * TableSorter is a decorator for TableModels; adding sorting
  * functionality to a supplied TableModel. TableSorter does
@@ -110,6 +112,8 @@ import javax.swing.table.TableModel;
  */
 
 public class TableModelSortDecorator extends AbstractTableModel {
+	private static final Logger logger = Logger.getLogger(TableModelSortDecorator.class);
+	
     protected TableModel tableModel;
 
     public static final int DESCENDING = -1;
@@ -153,6 +157,7 @@ public class TableModelSortDecorator extends AbstractTableModel {
 	private Integer headerLabelHeight = null;
 
     public TableModelSortDecorator() {
+    	logger.debug("Constructing table model sort decorator");
         this.mouseListener = new MouseHandler();
         this.tableModelListener = new TableModelHandler();
     }
@@ -458,7 +463,13 @@ public class TableModelSortDecorator extends AbstractTableModel {
     	public void mouseClicked(MouseEvent e) {
     		JTableHeader h = (JTableHeader) e.getSource();
     		TableColumnModel columnModel = h.getColumnModel();
-    		if (e.getY() > headerLabelYLoc && e.getY() < headerLabelYLoc + headerLabelHeight){
+    		Integer height = headerLabelHeight;
+    		if (height == null) {
+    			height = h.getHeight();
+    		}
+    		logger.debug("Y mouse click at " + e.getY() + " header label y location " + headerLabelYLoc + " header label height " + height);
+    		if (e.getY() > headerLabelYLoc && e.getY() < headerLabelYLoc + height){
+    			logger.debug("Table header was clicked");
     			int viewColumn = columnModel.getColumnIndexAtX(e.getX());
     			
     			if(viewColumn < 0){
@@ -537,9 +548,6 @@ public class TableModelSortDecorator extends AbstractTableModel {
                 JLabel l = (JLabel) c;
                 if (headerLabelYLoc == null) {
                 	headerLabelYLoc = 0;
-                }
-                if (headerLabelHeight == null) {
-                	headerLabelHeight = l.getSize().height;
                 }
                 l.setHorizontalTextPosition(JLabel.LEFT);
                 int modelColumn = table.convertColumnIndexToModel(column);
