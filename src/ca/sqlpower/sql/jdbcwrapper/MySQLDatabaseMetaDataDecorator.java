@@ -89,7 +89,7 @@ public class MySQLDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		CachedRowSet crs = new CachedRowSet();
 		crs.populate(rs, null, "SPG_INDEX_TYPE");
 		rs.close();
-		Map<String, String> indexTypes = getIndexType(table);
+		Map<String, String> indexTypes = getIndexType(catalog, table);
 		while (crs.next()) {
 			if ("true".equals(crs.getString(4))) {
 				crs.updateBoolean(4, true);
@@ -112,7 +112,7 @@ public class MySQLDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	 * This uses an index name and a table name to find out the index type. The
 	 * index type is returned as a map of index names to index types
 	 */
-	private Map<String, String> getIndexType(String tableName)
+	private Map<String, String> getIndexType(String catalog, String tableName)
 			throws SQLException {
 		Map<String, String> indexTypes = new HashMap<String, String>();
 		Statement stmt = null;
@@ -121,7 +121,7 @@ public class MySQLDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		String name = "";
 		try {
 			stmt = getConnection().createStatement();
-			String sql = "SHOW INDEXES FROM " + tableName;
+			String sql = "SHOW INDEXES FROM " + (catalog == null ? "" : catalog + ".") + tableName;
 			logger.debug("SQL statement was " + sql);
 			rs = stmt.executeQuery(sql);
 			while (rs.next()) {
