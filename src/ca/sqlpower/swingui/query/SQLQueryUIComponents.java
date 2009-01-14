@@ -241,15 +241,10 @@ public class SQLQueryUIComponents {
         	Throwable e = getDoStuffException();
         	boolean exceptionHappend = false;
         	if (e != null) {
-        		if (e instanceof SQLException) {
-        			exceptionHappend = true;
-        			String errorMessage = createErrorStringMessage(e);
-        			errorTextArea.setText(errorMessage);
-        			logger.error(e.getStackTrace());
-        		}
-        		else{
-        			throw new RuntimeException(e);
-        		}
+        		exceptionHappend = true;
+        		String errorMessage = createErrorStringMessage(e);
+        		errorTextArea.setText(errorMessage);
+        		logger.error(e.getStackTrace());
         	}
         	createResultSetTables(resultSets, sqlString, exceptionHappend);
         	
