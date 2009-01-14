@@ -65,7 +65,7 @@ public class DefaultDataSourceTypeDialogFactory implements
     public Window showDialog(Window owner) {
     	 if (d == null) {
 	    		d = SPSUtils.makeOwnedDialog(owner, "JDBC Drivers");
-	        	editor = new DataSourceTypeEditor(dsCollection);
+	        	editor = new DataSourceTypeEditor(dsCollection, owner);
 	        	
 	        	JPanel cp = new JPanel(new BorderLayout(12,12));
 	            cp.add(editor.getPanel(), BorderLayout.CENTER);

@@ -32,6 +32,7 @@
 package ca.sqlpower.swingui.db;
 
 import java.awt.FlowLayout;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
@@ -39,6 +40,7 @@ import java.io.IOException;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -53,6 +55,7 @@ import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.SPDataSourceType;
 import ca.sqlpower.swingui.AddRemoveIcon;
 import ca.sqlpower.swingui.DataEntryPanel;
+import ca.sqlpower.swingui.DataEntryPanelBuilder;
 import ca.sqlpower.swingui.Messages;
 import ca.sqlpower.swingui.SPDataSourceTypeListCellRenderer;
 import ca.sqlpower.swingui.SPSUtils;
@@ -101,7 +104,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      */
 	private DefaultListModel dsTypeListModel;
     
-    public DataSourceTypeEditor(DataSourceCollection dataSourceCollection) {
+    public DataSourceTypeEditor(DataSourceCollection dataSourceCollection, final Window owner) {
         this.dataSourceCollection = dataSourceCollection;
         
         dsTypeListModel = new DefaultListModel();
@@ -116,9 +119,16 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         addDsTypeButton = new JButton(new AddRemoveIcon(AddRemoveIcon.Type.ADD));
         addDsTypeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                SPDataSourceType dsType = new SPDataSourceType();
-                dsType.setName(Messages.getString("DataSourceTypeEditor.defaultDataSourceName")); //$NON-NLS-1$
-				addDsType(dsType);
+            	final NewDataSourceTypePanel copyPropertiesPanel = new NewDataSourceTypePanel(DataSourceTypeEditor.this, DataSourceTypeEditor.this.dataSourceCollection);
+				final JDialog d = DataEntryPanelBuilder.createDataEntryPanelDialog(
+						copyPropertiesPanel,
+						owner,
+						"Copy Properties",
+						DataEntryPanelBuilder.OK_BUTTON_LABEL);		
+
+				d.pack();
+				d.setLocationRelativeTo(owner);
+				d.setVisible(true);
             }
         });
         
@@ -130,7 +140,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         });
         removeDsTypeButton.setEnabled(false);
         
-        dsTypePanel = new DataSourceTypeEditorPanel(dataSourceCollection);
+        dsTypePanel = new DataSourceTypeEditorPanel(dataSourceCollection, owner);
         
         dsTypeList.addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent e) {
@@ -159,7 +169,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         }
     }
 
-    private void addDsType(SPDataSourceType type) {
+    public void addDsType(SPDataSourceType type) {
         if (type == null) {
             throw new NullPointerException("Don't add null data source types, silly!"); //$NON-NLS-1$
         }

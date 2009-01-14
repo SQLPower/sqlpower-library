@@ -32,14 +32,16 @@
 package ca.sqlpower.swingui.db;
 
 import java.awt.BorderLayout;
-import java.awt.Component;
+import java.awt.Window;
+import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JList;
+import javax.swing.AbstractAction;
+import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
@@ -53,9 +55,11 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.SPDataSourceType;
 import ca.sqlpower.swingui.DataEntryPanel;
+import ca.sqlpower.swingui.DataEntryPanelBuilder;
 import ca.sqlpower.swingui.Messages;
 import ca.sqlpower.swingui.PlatformSpecificConnectionOptionPanel;
 
+import com.jgoodies.forms.builder.ButtonBarBuilder;
 import com.jgoodies.forms.builder.PanelBuilder;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
@@ -73,7 +77,7 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
     final private PlatformSpecificConnectionOptionPanel template =
         new PlatformSpecificConnectionOptionPanel(new JTextField());
     
-    final private JComboBox dsTypeDefaultCombo;
+    final private JButton copyPropertiesButton;
     
     /**
      * The panel that maintains the currently-selected data source type's
@@ -87,7 +91,7 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
      */
     private List<DataSourceTypeEditorTabPanel> tabPanels = new ArrayList<DataSourceTypeEditorTabPanel>();
     
-    public DataSourceTypeEditorPanel(DataSourceCollection collection) {
+    public DataSourceTypeEditorPanel(final DataSourceCollection collection, final Window owner) {
     	jdbcPanel = new JDBCDriverPanel();
     	
     	jdbcPanel.addDriverTreeSelectionListener(new TreeSelectionListener() {
@@ -98,18 +102,27 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
 			}
 		});
     	
-    	dsTypeDefaultCombo = new JComboBox(collection.getDataSourceTypes().toArray());
-    	dsTypeDefaultCombo.setRenderer(new DefaultListCellRenderer() {
-		
-			public Component getListCellRendererComponent(JList list, Object value,
-					int index, boolean isSelected, boolean cellHasFocus) {
-				Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-				if (c instanceof JLabel && value != null) {
-					((JLabel) c).setText(((SPDataSourceType) value).getName());
-				}
-				return c;
+    	copyPropertiesButton = new JButton(new AbstractAction("Copy Properties...") {
+			public void actionPerformed(ActionEvent e) {
+				final DataSourceTypeCopyPropertiesPanel copyPropertiesPanel = new DataSourceTypeCopyPropertiesPanel(dsType, collection);
+				final JDialog d = DataEntryPanelBuilder.createDataEntryPanelDialog(
+						copyPropertiesPanel,
+						owner,
+						"Copy Properties",
+						DataEntryPanelBuilder.OK_BUTTON_LABEL);		
+
+				d.pack();
+				d.setLocationRelativeTo(owner);
+				d.setVisible(true);
+				d.addWindowListener(new WindowAdapter() {
+					@Override
+					public void windowClosed(WindowEvent e) {
+						editDsType(dsType);
+					}
+				});
 			}
-		});
+    	});
+    	
         buildPanel();
         editDsType(null);
     }
@@ -137,9 +150,6 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
                 if (dsType != null) {
                     dsType.setJdbcUrl(connectionStringTemplate.getText());
                     template.setTemplate(dsType);
-                    dsTypeDefaultCombo.setSelectedItem(dsType);
-                } else {
-                	dsTypeDefaultCombo.setSelectedIndex(-1);
                 }
             }
             
@@ -150,7 +160,7 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
         
         PanelBuilder pb = new PanelBuilder(new FormLayout(
                 "4dlu,pref,4dlu,pref:grow,4dlu", //$NON-NLS-1$
-                "4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu, pref:grow, 4dlu")); //$NON-NLS-1$
+                "4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu,pref,4dlu, pref:grow, 4dlu")); //$NON-NLS-1$
         
         CellConstraints cc = new CellConstraints();
         CellConstraints cl = new CellConstraints();
@@ -166,8 +176,6 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
         row += 2;
         pb.addLabel(Messages.getString("DataSourceTypeEditorPanel.sampleOptions"),cl.xy(2, row), template.getPanel(), cc.xy(4, row)); //$NON-NLS-1$
         row += 2;
-        pb.addLabel(Messages.getString("DataSourceTypeEditorPanel.defaultDSTypeProperties"), cl.xy(2, row), dsTypeDefaultCombo, cc.xy(4, row));
-        row += 2;
         pb.add(jdbcPanel, cc.xyw(2, row, 3));
         
         tabbedPane.addTab(Messages.getString("DataSourceTypeEditorPanel.generalTab"), pb.getPanel()); //$NON-NLS-1$
@@ -176,6 +184,11 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
         
         panel = new JPanel(new BorderLayout());
         panel.add(tabbedPane, BorderLayout.CENTER);
+        
+        ButtonBarBuilder copyBar = new ButtonBarBuilder();
+        copyBar.addGlue();
+        copyBar.addGridded(copyPropertiesButton);
+        panel.add(copyBar.getPanel(), BorderLayout.SOUTH);
     }
     
     /**
@@ -194,8 +207,8 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
             connectionStringTemplate.setText(""); //$NON-NLS-1$
             connectionStringTemplate.setEnabled(false);
             
-            dsTypeDefaultCombo.setSelectedIndex(-1);
-
+            copyPropertiesButton.setEnabled(false);
+            
             // template will get updated by document listener
         } else {
             name.setText(dst.getName());
@@ -207,10 +220,7 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
             connectionStringTemplate.setText(dst.getJdbcUrl());
             connectionStringTemplate.setEnabled(true);
             
-            dsTypeDefaultCombo.setSelectedItem(dst);
-            if (dsTypeDefaultCombo.getSelectedItem() != dst) {
-            	dsTypeDefaultCombo.setSelectedIndex(-1);
-            }
+            copyPropertiesButton.setEnabled(true);
             
             // template will get updated by document listener
         }
@@ -231,13 +241,6 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
                 panel.applyChanges();
             }
             
-            SPDataSourceType defaultDSType = (SPDataSourceType) dsTypeDefaultCombo.getSelectedItem();
-            if (defaultDSType != null && defaultDSType != dsType) {
-            	for (String key : defaultDSType.getPropertyNames()) {
-            		dsType.putProperty(key, defaultDSType.getProperty(key));
-            	}
-            }
-            
             dsType.setName(name.getText());
             dsType.setJdbcDriver(driverClass.getText());
             dsType.setJdbcUrl(connectionStringTemplate.getText());
@@ -254,8 +257,6 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
             for (DataSourceTypeEditorTabPanel panel : tabPanels) {
                 panel.discardChanges();
             }
-            
-            dsTypeDefaultCombo.setSelectedItem(dsType);
             
             name.setText(dsType.getName());
             driverClass.setText(dsType.getJdbcDriver());
