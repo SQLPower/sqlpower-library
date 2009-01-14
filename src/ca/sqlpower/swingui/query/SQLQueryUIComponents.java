@@ -262,9 +262,12 @@ public class SQLQueryUIComponents {
         @Override
         public void doStuff() throws Exception {
         	hasStarted = true;
-            logger.debug("Starting execute action.");
+            logger.debug("Starting execute action of \"" + sqlString + "\".");
             if (ds == null) {
                 return;
+            }
+            if (sqlString.trim().length() == 0) {
+            	return;
             }
             Connection con = null;
             Statement stmt = null;
