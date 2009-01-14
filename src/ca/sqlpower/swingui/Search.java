@@ -41,11 +41,16 @@ import java.util.regex.Pattern;
  * expression.
  */
 public interface Search {
-	
+
 	/**
 	 * This will search the contained objects for the given pattern and do any
 	 * necessary filtering as well.
+	 * 
+	 * @param matchExactly
+	 *            If set to true the search will match the pattern exactly. If
+	 *            false the pattern only needs to be contained in the values
+	 *            being searched to match.
 	 */
-	public void doSearch(Pattern p);
+	public void doSearch(Pattern p, boolean matchExactly);
 
 }

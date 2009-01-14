@@ -36,10 +36,12 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Arrays;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import javax.swing.AbstractAction;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -56,11 +58,16 @@ import javax.swing.event.DocumentListener;
  */
 public class SearchTextField {
 
-	private static final ImageIcon searchIcon = new ImageIcon(SearchTextField.class.getClassLoader().getResource("ca/sqlpower/swingui/search.png"));
+	private static final ImageIcon SEARCH_ICON = new ImageIcon(SearchTextField.class.getClassLoader().getResource("ca/sqlpower/swingui/search.png"));
+	private static final ImageIcon REG_EX_ICON = new ImageIcon(SearchTextField.class.getClassLoader().getResource("ca/sqlpower/swingui/searchField_rx.png"));
+	private static final ImageIcon EXACT_MATCH_ICON = new ImageIcon(SearchTextField.class.getClassLoader().getResource("ca/sqlpower/swingui/searchField_xm.png"));
+	private static final ImageIcon SUBSTRING_ICON = new ImageIcon(SearchTextField.class.getClassLoader().getResource("ca/sqlpower/swingui/searchField_ss.png"));
+	private static final ImageIcon DOWN_ARROW_ICON = new ImageIcon(SearchTextField.class.getClassLoader().getResource("ca/sqlpower/swingui/downarrow.png"));
 	
 	private enum SearchType {
 		SUBSTRING,
-		REG_EX;
+		REG_EX,
+		EXACT_MATCH;
 	}
 	
 	private final JPanel panel;
@@ -84,36 +91,59 @@ public class SearchTextField {
 	 */
 	private final Search search;
 	
+	/**
+	 * This JLabel can be clicked on to display a pop-up to change how the search is
+	 * interpreted. The label also contains the icon corresponding to the current method
+	 * of search.
+	 */
+	private JLabel searchTypeIcon;
+	
 	public SearchTextField(Search s, int columns) {
 		this.search = s;
 		searchTypePopup = new JPopupMenu();
-		searchTypePopup.add(new JMenuItem(new AbstractAction("Regular Exp") {
-			public void actionPerformed(ActionEvent e) {
-				searchType = SearchType.REG_EX;
-			}
-		}));
 		searchTypePopup.add(new JMenuItem(new AbstractAction("Substring") {
 			public void actionPerformed(ActionEvent e) {
 				searchType = SearchType.SUBSTRING;
+				searchTypeIcon.setIcon(composeWithArrow(SUBSTRING_ICON));
+				doSearch();
+			}
+		}));
+		searchTypePopup.add(new JMenuItem(new AbstractAction("Regular Exp") {
+			public void actionPerformed(ActionEvent e) {
+				searchType = SearchType.REG_EX;
+				searchTypeIcon.setIcon(composeWithArrow(REG_EX_ICON));
+				doSearch();
+			}
+		}));
+		searchTypePopup.add(new JMenuItem(new AbstractAction("Exact Match") {
+			public void actionPerformed(ActionEvent e) {
+				searchType = SearchType.EXACT_MATCH;
+				searchTypeIcon.setIcon(composeWithArrow(EXACT_MATCH_ICON));
+				doSearch();
 			}
 		}));
 		
 		panel = new JPanel();
 		searchText = new JTextField(columns);
 		panel.setLayout(new BorderLayout());
-		final JLabel iconLabel = new JLabel(searchIcon);
-		iconLabel.addMouseListener(new MouseAdapter() {
+		final JLabel searchIconLabel = new JLabel(SEARCH_ICON);
+		searchIconLabel.setBackground(searchText.getBackground());
+		
+		searchTypeIcon = new JLabel(composeWithArrow(SUBSTRING_ICON));
+		searchTypeIcon.setBackground(searchText.getBackground());
+		searchTypeIcon.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
-				searchTypePopup.show(panel, iconLabel.getX(), iconLabel.getY() + iconLabel.getHeight());
+				searchTypePopup.show(panel, searchTypeIcon.getX(), searchTypeIcon.getY() + searchTypeIcon.getHeight());
 			}
 		});
-		iconLabel.setBackground(searchText.getBackground());
+		
 		panel.setBorder(searchText.getBorder());
 		panel.setBackground(searchText.getBackground());
 		searchText.setBorder(null);
-		panel.add(iconLabel, BorderLayout.WEST);
+		panel.add(searchIconLabel, BorderLayout.WEST);
 		panel.add(searchText);
+		panel.add(searchTypeIcon, BorderLayout.EAST);
 		searchText.getDocument().addDocumentListener(new DocumentListener() {
 			public void removeUpdate(DocumentEvent e) {
 				doSearch();
@@ -125,26 +155,35 @@ public class SearchTextField {
 				doSearch();
 			}
 			
-			private void doSearch() {
-				Pattern p;
-				try {
-					switch (searchType) { 
-					case REG_EX:
-						p = Pattern.compile(getText());
-						break;
-					case SUBSTRING:
-						p = Pattern.compile(getText(), Pattern.LITERAL | Pattern.CASE_INSENSITIVE);
-						break;
-					default :
-						throw new RuntimeException("Searching on the type " + searchType + " has not been implemented.");
-					}
-				} catch (PatternSyntaxException e) {
-					//If the pattern is malformed then search across the empty string.
-					p = Pattern.compile("");
-				}
-				search.doSearch(p);
-			}
 		});
+	}
+	
+	private void doSearch() {
+		Pattern p;
+		boolean matchExactly;
+		try {
+			switch (searchType) { 
+			case REG_EX:
+				p = Pattern.compile(getText());
+				matchExactly = true;
+				break;
+			case SUBSTRING:
+				p = Pattern.compile(getText(), Pattern.LITERAL | Pattern.CASE_INSENSITIVE);
+				matchExactly = false;
+				break;
+			case EXACT_MATCH:
+				p = Pattern.compile(getText(), Pattern.LITERAL | Pattern.CASE_INSENSITIVE);
+				matchExactly = true;
+				break;
+			default :
+				throw new RuntimeException("Searching on the type " + searchType + " has not been implemented.");
+			}
+		} catch (PatternSyntaxException e) {
+			//If the pattern is malformed then search across the empty string.
+			p = Pattern.compile("");
+			matchExactly = false;
+		}
+		search.doSearch(p, matchExactly);
 	}
 	
 	public JPanel getPanel() {
@@ -165,6 +204,15 @@ public class SearchTextField {
 
 	public void clear() {
 		searchText.setText("");
+	}
+	
+	/**
+	 * This will compose a new icon from the base icon and the 
+	 * down arrow icon for an icon that will be used to gain access
+	 * to a pop-up menu. 
+	 */
+	private Icon composeWithArrow(Icon baseIcon) {
+		return new ComposedIcon(Arrays.asList(new Icon[]{baseIcon, DOWN_ARROW_ICON}));
 	}
 	
 }
