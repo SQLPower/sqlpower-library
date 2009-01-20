@@ -66,6 +66,8 @@ import ca.sqlpower.sql.DatabaseListChangeListener;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.swingui.Messages;
 import ca.sqlpower.swingui.SPSUtils;
+import ca.sqlpower.swingui.table.CleanupTableModel;
+import ca.sqlpower.swingui.table.EditableJTable;
 
 import com.jgoodies.forms.builder.ButtonStackBuilder;
 import com.jgoodies.forms.builder.PanelBuilder;
@@ -339,8 +341,8 @@ public class DatabaseConnectionManager {
 
 		pb.add(new JLabel(Messages.getString("DatabaseConnectionManager.availableDbConnections")), cc.xy(2, 2)); //$NON-NLS-1$
 
-		TableModel tm = new ConnectionTableModel(dsCollection);
-		dsTable = new JTable(tm);
+		TableModel tm = new ConnectionTableModel();
+		dsTable = new EditableJTable(tm);
 		dsTable.setTableHeader(null);
 		dsTable.setShowGrid(false);
 		dsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -414,25 +416,25 @@ public class DatabaseConnectionManager {
 
 	}
 
-	private class ConnectionTableModel extends AbstractTableModel {
+	private class ConnectionTableModel extends AbstractTableModel implements CleanupTableModel {
 
-		public ConnectionTableModel(DataSourceCollection ini) {
-			super();
-			if ( ini != null ) {
-				ini.addDatabaseListChangeListener(new DatabaseListChangeListener(){
-					public void databaseAdded(DatabaseListChangeEvent e) {
-						fireTableDataChanged();
-					}
-
-					public void databaseRemoved(DatabaseListChangeEvent e) {
-						fireTableDataChanged();
-					}
-				});
+		private final DatabaseListChangeListener databaseListChangeListener = new DatabaseListChangeListener(){
+			public void databaseAdded(DatabaseListChangeEvent e) {
+				fireTableDataChanged();
 			}
+			
+			public void databaseRemoved(DatabaseListChangeEvent e) {
+				fireTableDataChanged();
+			}
+		};
+		
+		public ConnectionTableModel() {
+			super();
+			dsCollection.addDatabaseListChangeListener(databaseListChangeListener);
 		}
 
 		public int getRowCount() {
-			return dsCollection == null?0:dsCollection.getConnections().size();
+			return dsCollection.getConnections().size();
 		}
 
 		public int getColumnCount() {
@@ -455,7 +457,11 @@ public class DatabaseConnectionManager {
 		}
 
 		public Object getValueAt(int rowIndex, int columnIndex) {
-			return dsCollection == null?null:dsCollection.getConnections().get(rowIndex);
+			return dsCollection.getConnections().get(rowIndex);
+		}
+
+		public void cleanup() {
+			dsCollection.removeDatabaseListChangeListener(databaseListChangeListener);
 		}
 
 	}
