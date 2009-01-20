@@ -503,8 +503,24 @@ public class SQLQueryUIComponents {
     public void closingDialogOwner(){
     	
     	logger.debug("attempting to close");
-        boolean commitedOrRollBacked = true;
-        for (Map.Entry<SPDataSource, ConnectionAndStatementBean> entry : conMap.entrySet()) {
+        boolean commitedOrRollBacked = closeConMap();
+        if(commitedOrRollBacked){
+        	logger.debug("removing DatabaseListChangeListener and closing window");
+        	disconnectListeners();
+        	Window w = SwingUtilities.getWindowAncestor(dialogOwner);
+        	if(w != null) {
+        		w.setVisible(false);
+        	}
+        }
+    }
+
+    /**
+     * Closes all of the connections in the connection mapping. If the connection being closed is not
+     * in an auto-commit state an option dialog will be displayed to roll back or commit the changes.
+     */
+	public boolean closeConMap() {
+		boolean commitedOrRollBacked = true;
+		for (Map.Entry<SPDataSource, ConnectionAndStatementBean> entry : conMap.entrySet()) {
             try {	
                 Connection con = entry.getValue().getConnection();
                 if (!con.getAutoCommit() && entry.getValue().isConnectionUncommitted()) {
@@ -529,15 +545,9 @@ public class SQLQueryUIComponents {
                 throw new RuntimeException(e);
             }
         }
-        if(commitedOrRollBacked){
-        	logger.debug("removing DatabaseListChangeListener and closing window");
-        	dsCollection.removeDatabaseListChangeListener(dbListChangeListener);
-        	Window w = SwingUtilities.getWindowAncestor(dialogOwner);
-        	if(w != null) {
-        		w.setVisible(false);
-        	}
-        }
-    }
+
+		return commitedOrRollBacked;
+	}
 
     /**
      * Listens to when the an window is added or removed. This will clean up open
@@ -1080,13 +1090,7 @@ public class SQLQueryUIComponents {
      * @throws SQLException 
      */
     private synchronized void createResultSetTables(List<CachedRowSet> resultSets, String query, boolean exceptioned) throws SQLException {
-    	tableToSQLMap.clear();
-    	for (JTable table : resultJTables) {
-    		for (int i = tableListeners.size() - 1; i >= 0; i--) {
-    			tableListeners.get(i).tableRemoved(new TableChangeEvent(this, table));
-    		}
-    	}
-    	resultJTables.clear();
+    	clearResultTables();
     	// Do something similar with the Panel but the result will have JLabel with error message instead of result
     	// table.
     	if(exceptioned) {
@@ -1155,6 +1159,16 @@ public class SQLQueryUIComponents {
     		}
     	}
     }
+
+	private void clearResultTables() {
+		tableToSQLMap.clear();
+    	for (JTable table : resultJTables) {
+    		for (int i = tableListeners.size() - 1; i >= 0; i--) {
+    			tableListeners.get(i).tableRemoved(new TableChangeEvent(this, table));
+    		}
+    	}
+    	resultJTables.clear();
+	}
     
     public void enableMultipleQueries(boolean flag) {
     	multipleQueryEnabled = flag;
@@ -1248,6 +1262,10 @@ public class SQLQueryUIComponents {
      */
     public String getQueryForJTable(JTable table) {
     	return tableToSQLMap.get(table);
+    }
+    
+    public void disconnectListeners() {
+    	dsCollection.removeDatabaseListChangeListener(dbListChangeListener);
     }
 }
 
