@@ -33,6 +33,7 @@
 package ca.sqlpower.swingui.query;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.datatransfer.DataFlavor;
@@ -48,12 +49,15 @@ import java.awt.event.InputEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -61,8 +65,10 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,11 +77,15 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JSplitPane;
@@ -92,9 +102,14 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.UndoableEditEvent;
 import javax.swing.event.UndoableEditListener;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultStyledDocument;
+import javax.swing.text.Document;
 import javax.swing.undo.UndoManager;
 
+import org.apache.log4j.FileAppender;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
@@ -132,7 +147,7 @@ import com.jgoodies.forms.layout.FormLayout;
  */
 public class SQLQueryUIComponents {
     
-    private static Logger logger = Logger.getLogger(SQLQueryUIComponents.class);
+    private static final Logger logger = Logger.getLogger(SQLQueryUIComponents.class);
     
     /**
      * The entry value in the input map that will map a key press to our
@@ -189,7 +204,118 @@ public class SQLQueryUIComponents {
 	 * This TextArea stores an exception Message if it ever Happens
      */
     private final JTextArea errorTextArea = new JTextArea();
+    
+    /**
+     * This action will save the text in a document to a user selected file.
+     * The text will either append to the file or overwrite the file's contents. 
+     */
+    private class SaveDocumentAction extends AbstractAction {
+
+    	private final Document doc;
+		private final Component parent;
+		private final boolean append;
+
+		public SaveDocumentAction(Document doc, Component parent, boolean append) {
+			super("Save As...");
+			this.doc = doc;
+			this.parent = parent;
+			this.append = append;
+    	}
+    	
+		public void actionPerformed(ActionEvent e) {
+			JFileChooser chooser = new JFileChooser();
+			chooser.addChoosableFileFilter(SPSUtils.LOG_FILE_FILTER);
+			chooser.addChoosableFileFilter(SPSUtils.TEXT_FILE_FILTER);
+			chooser.setFileFilter(SPSUtils.LOG_FILE_FILTER);
+			int retval = chooser.showSaveDialog(parent);
+			if (retval == JFileChooser.APPROVE_OPTION) {
+				if (logger.isDebugEnabled()) {
+					try {
+						logger.debug("Log has length " + doc.getLength() + " and text " + doc.getText(0, doc.getLength()) + " when writing to file.");
+					} catch (BadLocationException e1) {
+						throw new RuntimeException(e1);
+					}
+				}
+				logger.debug("Are we appending? " + append);
+				
+				String filePath = chooser.getSelectedFile().getAbsolutePath();
+				if (!chooser.getSelectedFile().getName().contains(".")) {
+					if (chooser.getFileFilter() == SPSUtils.TEXT_FILE_FILTER) {
+						filePath = filePath + ".txt";
+					} else {
+						filePath = filePath + ".log";
+					}
+				}
+				if (append) {
+					FileAppender appender = null;
+					Logger logAppender = null;
+					try {
+						appender = new FileAppender(new PatternLayout("%m\n"), filePath);
+						logAppender = Logger.getLogger("SQLQueryUIComponents Log Appender");
+						logAppender.addAppender(appender);
+						logAppender.info(doc.getText(0, doc.getLength()));
+					} catch (Exception e1) {
+						throw new RuntimeException(e1);
+					} finally {
+						if (logAppender != null && appender != null) {
+							logAppender.removeAppender(appender);
+						}
+					}
+				} else {
+					try {
+						FileWriter writer = new FileWriter(filePath);
+						writer.write(doc.getText(0, doc.getLength()));
+						writer.flush();
+						writer.close();
+					} catch (Exception e1) {
+						throw new RuntimeException(e1);
+					}
+				}
+			}
+		}
+    	
+    }
    
+    /**
+     * This mouse listener will be attached to the log in the results area to give users
+     * an easy way to save the log to a file.
+     */
+    private final MouseListener logPopUpMouseListener = new MouseListener() {
+    	
+    	private JCheckBoxMenuItem checkBoxMenuItem = new JCheckBoxMenuItem("Append", true);
+    	
+		public void mouseReleased(MouseEvent e) {
+			logger.debug("Mouse released on log pop-up");
+			showPopup(e);
+		}
+	
+		public void mousePressed(MouseEvent e) {
+			showPopup(e);	
+		}
+	
+		public void mouseExited(MouseEvent e) {
+			showPopup(e);
+		}
+	
+		public void mouseEntered(MouseEvent e) {
+			showPopup(e);
+		}
+	
+		public void mouseClicked(MouseEvent e) {
+			showPopup(e);
+		}
+		
+		private void showPopup(MouseEvent e) {
+			if (e.isPopupTrigger()) {
+				JPopupMenu logPopupMenu = new JPopupMenu();
+				logPopupMenu.add(new JMenuItem(new SaveDocumentAction(logTextArea.getDocument(), logTextArea, checkBoxMenuItem.isSelected())));
+				logPopupMenu.add(checkBoxMenuItem);
+				logPopupMenu.show(e.getComponent(), e.getX(), e.getY());
+				logPopupMenu.setVisible(true);
+			}
+		}
+	};
+    
     /**
      * This will execute the sql statement in the sql text area. The
      * SQL statement used in execution will be stored with this swing
@@ -205,6 +331,7 @@ public class SQLQueryUIComponents {
 		private final SPDataSource ds;
 		private boolean hasStarted;
 		private boolean isFinished;
+		private long startExecutionTime;
         
         /**
          * Constructs a new ExecuteSQLWorker that will use the
@@ -238,29 +365,35 @@ public class SQLQueryUIComponents {
 
         @Override
         public void cleanup() throws Exception {
-        	Throwable e = getDoStuffException();
-        	boolean exceptionHappend = false;
-        	if (e != null) {
-        		exceptionHappend = true;
-        		String errorMessage = createErrorStringMessage(e);
-        		errorTextArea.setText(errorMessage);
-        		logger.error(e.getStackTrace());
+        	try {
+        		long finishExecutionTime = System.currentTimeMillis();
+        		DateFormat formatter = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.LONG);
+        		logTextArea.append("Executed at " + formatter.format(new Date(startExecutionTime)) + ", took " + (finishExecutionTime - startExecutionTime) + " milliseconds\n");
+        		Throwable e = getDoStuffException();
+        		if (e != null) {
+        			String errorMessage = createErrorStringMessage(e);
+        			logTextArea.append(errorMessage + "\n");
+        			logger.error(e.getStackTrace());
+        			return;
+        		}
+        		createResultSetTables(resultSets, sqlString);
+
+        		resultSets.clear();
+        		for (Integer i : rowsAffected) {
+        			logTextArea.append(Messages.getString("SQLQuery.rowsAffected", i.toString()));
+        			logTextArea.append("\n");
+        		}  
+        	} finally {
+        		logTextArea.append("\n");
+        		executeButton.setEnabled(true);
+        		stopButton.setEnabled(false);
+        		isFinished = true;
         	}
-        	createResultSetTables(resultSets, sqlString, exceptionHappend);
-        	
-        	resultSets.clear();
-        	logTextArea.setText("");
-        	for (Integer i : rowsAffected) {
-        		logTextArea.append(Messages.getString("SQLQuery.rowsAffected", i.toString()));
-        		logTextArea.append("\n\n");
-        	}  
-        	executeButton.setEnabled(true);
-        	stopButton.setEnabled(false);
-        	isFinished = true;
         }
 
         @Override
         public void doStuff() throws Exception {
+        	startExecutionTime = System.currentTimeMillis();
         	hasStarted = true;
             logger.debug("Starting execute action of \"" + sqlString + "\".");
             if (ds == null) {
@@ -348,12 +481,6 @@ public class SQLQueryUIComponents {
     }
     
     /**
-     * A flag to determine if multiple selects are allowed, if false, it will only return the first
-     * query that is on the queryTextArea
-     */
-    private boolean multipleQueryEnabled;
-    
-    /**
      * This is the Panel that holds the first result JTable, This is normally used when multiple queries
      * not enabled and you wish to return this panel instead of the tabbedResult panel.
      */
@@ -435,9 +562,7 @@ public class SQLQueryUIComponents {
 
     private JTabbedPane resultTabPane;
     private JTextArea logTextArea;
-    private JTextField tableFilterTextField;
-    private JLabel searchLabel;
-    private ImageIcon icon;
+    private static final ImageIcon ICON = new ImageIcon(StatusComponent.class.getClassLoader().getResource("ca/sqlpower/swingui/query/search.png"));
     private ArrayList<JTable> resultJTables;
     
     /**
@@ -670,8 +795,6 @@ public class SQLQueryUIComponents {
 		}
     }
     
-    private JPanel filterAndLogoPanel;
-
     /**
      * This button will execute the sql statements in the text area.
      */
@@ -708,6 +831,21 @@ public class SQLQueryUIComponents {
      * added or removed from the components.
      */
     private final List<TableChangeListener> tableListeners;
+
+    /**
+     * This is the document used for searching across the current result sets. This will be
+     * recreated each time new results are created as it is attached to the result set JTables.
+     */
+	private Document searchDocument;
+	
+	/**
+	 * If true the search field will be shown on each result tab directly above the table. If
+	 * this is false then a search field can be created by retrieving the search document
+	 * from the tables.
+	 * <p>
+	 * This is set to true by default.
+	 */
+	private boolean showSearchOnResults = true;
  
     /**
 	 * Creates all of the components of a query tool, but does not lay them out
@@ -731,7 +869,6 @@ public class SQLQueryUIComponents {
 	 */
     public SQLQueryUIComponents(SwingWorkerRegistry s, DataSourceCollection ds, JComponent dialogOwner) {
         super();
-        this.multipleQueryEnabled = true;
         this.dialogOwner = dialogOwner;
         this.swRegistry = s;
         this.dsCollection = ds;
@@ -740,10 +877,9 @@ public class SQLQueryUIComponents {
         resultTabPane = new JTabbedPane();
         firstResultPanel = new JPanel(new BorderLayout());
         logTextArea = new JTextArea();
+        logTextArea.setEditable(false);
+        logTextArea.addMouseListener(logPopUpMouseListener);
         resultTabPane.add(Messages.getString("SQLQuery.log"), new JScrollPane(logTextArea));
-        
-    	icon = new ImageIcon(StatusComponent.class.getClassLoader().getResource("ca/sqlpower/swingui/query/search.png"));
-        filterAndLogoPanel = new JPanel(new BorderLayout());
         
         resultJTables = new ArrayList<JTable>();
         tableToSQLMap = new HashMap<JTable, String>();
@@ -931,12 +1067,6 @@ public class SQLQueryUIComponents {
     		return;
     	}
     	
-    	if(resultTabPane.getComponentCount() > 1) {
-    		for(int i = resultTabPane.getComponentCount()-1; i >= 1; i--){
-    			resultTabPane.remove(i);
-    		}
-    	}
-    	
     	ConnectionAndStatementBean conBean = conMap.get(databaseComboBox.getSelectedItem());
     	try {
     		if(conBean!= null) {
@@ -1089,73 +1219,38 @@ public class SQLQueryUIComponents {
      * Creates all of the JTables for the result tab and adds them to the result tab.
      * @throws SQLException 
      */
-    private synchronized void createResultSetTables(List<CachedRowSet> resultSets, String query, boolean exceptioned) throws SQLException {
+    private synchronized void createResultSetTables(List<CachedRowSet> resultSets, String query) throws SQLException {
     	clearResultTables();
-    	// Do something similar with the Panel but the result will have JLabel with error message instead of result
-    	// table.
-    	if(exceptioned) {
-    		FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "fill:min(pref;50dlu):grow");
+
+    	searchDocument = new DefaultStyledDocument();
+    	for (CachedRowSet rs : resultSets) {
+    		ResultSet r = rs.createShared();
+    		JComponent tempTable;
+    		FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "pref, fill:min(pref;50dlu):grow");
     		DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
-        	JScrollPane tableScrollPane = new JScrollPane(errorTextArea);
-        	tableAreaBuilder.append(tableScrollPane, 3);
-        	
-        	JPanel tempResultPanel = tableAreaBuilder.getPanel();
-    		resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
-    		if(!multipleQueryEnabled) {
-    			firstResultPanel.removeAll();
-    			firstResultPanel.add(tempResultPanel, BorderLayout.CENTER);
-    			firstResultPanel.revalidate();
-    		} else {
-    			resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
-    		}
-    	} else {
-    		for (CachedRowSet rs : resultSets) {
-    			ResultSet r = rs.createShared();
-    			JComponent tempTable;
-    			FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "pref, fill:min(pref;50dlu):grow");
-    			DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
-    			searchLabel = new JLabel(icon);
+
+    		if (showSearchOnResults) {
+    			JLabel searchLabel = new JLabel(ICON);
     			searchLabel.setToolTipText("Search");
-
-    			if(multipleQueryEnabled) {
-    				JTextField tempTextField = new JTextField();
-    				tableAreaBuilder.append(searchLabel);
-    				tableAreaBuilder.append(tempTextField);
-    				tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(r, tempTextField.getDocument());
-
-    			} else {
-    				filterAndLogoPanel.removeAll();
-    				tableFilterTextField = new JTextField();
-    				filterAndLogoPanel.add(searchLabel, BorderLayout.WEST);
-    				filterAndLogoPanel.add(tableFilterTextField, BorderLayout.CENTER);
-    				tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(r, tableFilterTextField.getDocument());
-
-    			}
-
-    			tableAreaBuilder.nextLine();
-    			JScrollPane tableScrollPane = new JScrollPane(tempTable);
-    			tableAreaBuilder.append(tableScrollPane, 3);
-
-    			if(!exceptioned) {
-    				resultJTables.add((JTable)tempTable);
-    				tableToSQLMap.put(((JTable)tempTable), query);
-    			}
-    			JPanel tempResultPanel = tableAreaBuilder.getPanel();
-    			if(!multipleQueryEnabled) {
-    				firstResultPanel.removeAll();
-    				firstResultPanel.add(tempResultPanel, BorderLayout.CENTER);
-    				firstResultPanel.revalidate();
-    				break;
-    			} else {
-    				resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
-    				resultTabPane.setSelectedIndex(1);
-    			}
-
+    			JTextField tableFilterTextField = new JTextField(searchDocument, null, 0);
+    			tableAreaBuilder.append(searchLabel, tableFilterTextField);
     		}
-    		for (JTable table : resultJTables) {
-    			for (TableChangeListener l : tableListeners) {
-    				l.tableAdded(new TableChangeEvent(this, table));
-    			}
+    		tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(r, searchDocument);
+
+    		tableAreaBuilder.nextLine();
+    		JScrollPane tableScrollPane = new JScrollPane(tempTable);
+    		tableAreaBuilder.append(tableScrollPane, 3);
+
+    		resultJTables.add((JTable)tempTable);
+    		tableToSQLMap.put(((JTable)tempTable), query);
+    		JPanel tempResultPanel = tableAreaBuilder.getPanel();
+    		resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
+    		resultTabPane.setSelectedIndex(1);
+
+    	}
+    	for (JTable table : resultJTables) {
+    		for (TableChangeListener l : tableListeners) {
+    			l.tableAdded(new TableChangeEvent(this, table));
     		}
     	}
     }
@@ -1168,12 +1263,14 @@ public class SQLQueryUIComponents {
     		}
     	}
     	resultJTables.clear();
+    	
+    	if(resultTabPane.getComponentCount() > 1) {
+    		for(int i = resultTabPane.getComponentCount()-1; i >= 1; i--){
+    			resultTabPane.remove(i);
+    		}
+    	}
 	}
     
-    public void enableMultipleQueries(boolean flag) {
-    	multipleQueryEnabled = flag;
-    }
-
     public void addWindowListener(Window container){
     	container.addWindowListener(windowListener);
     }
@@ -1247,10 +1344,6 @@ public class SQLQueryUIComponents {
     	return logTextArea;
     }
 
-    public JPanel getFilterAndLabelPanel() {
-    	return filterAndLogoPanel;
-    }
-
     public JPanel getFirstResultPanel() {
     	return firstResultPanel;
     }
@@ -1267,6 +1360,14 @@ public class SQLQueryUIComponents {
     public void disconnectListeners() {
     	dsCollection.removeDatabaseListChangeListener(dbListChangeListener);
     }
+    
+    public Document getSearchDocument() {
+		return searchDocument;
+	}
+    
+    public void setShowSearchOnResults(boolean showSearchOnResults) {
+		this.showSearchOnResults = showSearchOnResults;
+	}
 }
 
 
