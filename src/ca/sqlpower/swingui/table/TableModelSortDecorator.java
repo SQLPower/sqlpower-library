@@ -140,7 +140,7 @@ public class TableModelSortDecorator extends AbstractTableModel {
     private MouseListener mouseListener;
     private TableModelListener tableModelListener;
     private Map columnComparators = new HashMap();
-    private List sortingColumns = new ArrayList();
+    private List<Directive> sortingColumns = new ArrayList<Directive>();
 
     /**
      * The y location of the header wrapped by the sort decorator.
@@ -222,7 +222,7 @@ public class TableModelSortDecorator extends AbstractTableModel {
 
     private Directive getDirective(int column) {
         for (int i = 0; i < sortingColumns.size(); i++) {
-            Directive directive = (Directive)sortingColumns.get(i);
+            Directive directive = sortingColumns.get(i);
             if (directive.column == column) {
                 return directive;
             }
@@ -258,6 +258,7 @@ public class TableModelSortDecorator extends AbstractTableModel {
 	 */
     public void setSortingStatus(LinkedHashMap<Integer, Integer> columnToStatusMap) {
     	for (Map.Entry<Integer, Integer> entry :columnToStatusMap.entrySet()) {
+    		logger.debug("Sorting status changed. Setting column number " + entry.getKey() + " to status " + entry.getValue());
     		Directive directive = getDirective(entry.getKey());
     		if (directive != EMPTY_DIRECTIVE) {
     			sortingColumns.remove(directive);
@@ -478,14 +479,20 @@ public class TableModelSortDecorator extends AbstractTableModel {
     			int column = columnModel.getColumn(viewColumn).getModelIndex();
     			if (column != -1) {
     				int status = getSortingStatus(column);
+    				LinkedHashMap<Integer, Integer> newSortingStatus = new LinkedHashMap<Integer, Integer>();
     				if (!e.isControlDown()) {
-    					cancelSorting();
+    					for (Directive d : sortingColumns) {
+    						if (d.getDirection() != NOT_SORTED) {
+    							newSortingStatus.put(d.getColumn(), NOT_SORTED);
+    						}
+    					}
     				}
     				// Cycle the sorting states through {NOT_SORTED, ASCENDING, DESCENDING} or
     				// {NOT_SORTED, DESCENDING, ASCENDING} depending on whether shift is pressed.
     				status = status + (e.isShiftDown() ? -1 : 1);
     				status = (status + 4) % 3 - 1; // signed mod, returning {-1, 0, 1}
-    				setSortingStatus(column, status);
+    				newSortingStatus.put(column, status);
+    				setSortingStatus(newSortingStatus);
     			}
     		}
     	}
@@ -565,6 +572,14 @@ public class TableModelSortDecorator extends AbstractTableModel {
             this.column = column;
             this.direction = direction;
         }
+        
+        public int getColumn() {
+			return column;
+		}
+        
+        public int getDirection() {
+			return direction;
+		}
     }
     
     /**
