@@ -1129,6 +1129,7 @@ public class SQLQueryUIComponents {
         SQLQueryUIComponents queryParts = new SQLQueryUIComponents(swRegistry, dsCollection, defaultQueryPanel);
         queryParts.addWindowListener(owner);
         JToolBar toolbar = new JToolBar();
+        toolbar.setFloatable(false);
         toolbar.add(queryParts.getExecuteButton());
         toolbar.add(queryParts.getStopButton());
         toolbar.add(queryParts.getClearButton());
