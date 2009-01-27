@@ -374,6 +374,7 @@ public class SQLQueryUIComponents {
         			String errorMessage = createErrorStringMessage(e);
         			logTextArea.append(errorMessage + "\n");
         			logger.error(e.getStackTrace());
+        			clearResultTables();
         			return;
         		}
         		createResultSetTables(resultSets, sqlString);
