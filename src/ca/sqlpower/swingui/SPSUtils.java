@@ -13,6 +13,7 @@ import java.awt.Rectangle;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
@@ -63,6 +64,18 @@ import com.jgoodies.forms.layout.FormLayout;
 public class SPSUtils {
 	
 	private static final Logger logger = Logger.getLogger(SPSUtils.class);
+	
+	/**
+	 * The Key for Multiple select on different Operating System.
+	 */
+	public static final int MULTISELECT_MASK;
+    static{
+        if (System.getProperty("mrj.version") != null) {
+            MULTISELECT_MASK = InputEvent.META_DOWN_MASK;
+        } else {
+            MULTISELECT_MASK = InputEvent.CTRL_DOWN_MASK;
+        }
+    }
 	
 	/**
      * The URL for the SQL Power main page.
