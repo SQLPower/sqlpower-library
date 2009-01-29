@@ -41,6 +41,9 @@ import java.text.SimpleDateFormat;
 
 import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sqlobject.SQLColumn;
+import ca.sqlpower.sqlobject.SQLIndex;
+import ca.sqlpower.sqlobject.SQLObjectException;
 
 /**
  * An implementation of NewValueMaker that recognizes classes in the Java SE
@@ -86,6 +89,14 @@ public class GenericNewValueMaker implements NewValueMaker {
         	} else {
         		newVal = SimpleDateFormat.getDateTimeInstance();
         	}
+        } else if (valueType == SQLColumn.class) {
+        	newVal = new SQLColumn();
+        	((SQLColumn) newVal).setName("testing!");
+        } else if (valueType == SQLIndex.class) {
+        	newVal = new SQLIndex();
+        	((SQLIndex) newVal).setName("a new index");
+        } else if (valueType.isAssignableFrom(Throwable.class)) {
+        	newVal = new SQLObjectException("Test Exception");
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +
