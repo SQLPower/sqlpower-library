@@ -63,6 +63,23 @@ public class ColourScheme {
         new WebColour("#006633")
     };
     
+    public static final WebColour[] RELATIONSHIP_LINE_COLOURS = {
+    	new WebColour("#eeeeee"),
+        new WebColour("#c7d0df"),
+        new WebColour("#bfd6ff"),
+        new WebColour("#b9bbf6"),
+        new WebColour("#c8b7ea"),
+        new WebColour("#e8cfdb"),
+        new WebColour("#f6bcbc"),
+        new WebColour("#fbdabb"),
+        new WebColour("#eec994"),
+        new WebColour("#e6d794"),
+        new WebColour("#e4e4b8"),
+        new WebColour("#dfedce"),
+        new WebColour("#c8dccc"),
+        new WebColour("#000000")
+    };
+    
     /**
      * Brewer Colour Scheme "set19".  A nice collection of colours for colour coding
      * sets of information with up to 9 elements.
