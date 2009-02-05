@@ -365,7 +365,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 			boolean alreadyExists = false;
 			
-			for (SQLRelationship r : pkTable.getExportedKeys(dbmd)) {
+			for (SQLRelationship r : pkTable.getExportedKeysFolder().retrieveChildrenNoPopulate()) {
 			    if (r.getFkTable().equals(fkTable)) {
 			        alreadyExists = true;
 			        break;
@@ -503,11 +503,21 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 * unpopulated) before you call this method; it requires that all
 	 * referenced tables are represented by in-memory SQLTable
 	 * objects.
+	 * 
+	 * @param pkTable the specific table to import relationships from if
+	 * there is only one table to import relationships from. This value
+	 * can be null if all relationships on the importing tables are to 
+	 * be added.
+	 * 
+	 * @return true if all of the relationships have been added and the
+	 * table's relationships are fully populated. False if some of the
+	 * relationships were not added.
 	 *
 	 * @throws SQLObjectException if a database error occurs or if the
 	 * given table's parent database is not marked as populated.
 	 */
-	static void addImportedRelationshipsToTable(SQLTable table, DatabaseMetaData dbmd) throws SQLObjectException {
+	static boolean addImportedRelationshipsToTable(SQLTable pkTable, SQLTable table, DatabaseMetaData dbmd) throws SQLObjectException {
+		boolean allRelationshipsAdded = true;
 		SQLDatabase db = table.getParentDatabase();
 		if (!db.isPopulated()) {
 			throw new SQLObjectException("relationship.unpopulatedTargetDatabase");
@@ -517,6 +527,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		ResultSet tempRS = null; // just a temporary place for the live result set. use crs instead.
 		try {
 			con = db.getConnection();
+			logger.debug("dbmd is " + dbmd);
 			if (dbmd == null) dbmd = con.getMetaData();
 			crs = new CachedRowSet();
 			tempRS = dbmd.getImportedKeys(table.getCatalogName(),
@@ -557,16 +568,36 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				ColumnMapping m = new ColumnMapping();
 				m.parent = r;
 				r.children.add(m);
-				r.pkTable = db.getTableByName(crs.getString(1),  // catalog
-											  crs.getString(2),  // schema
-											  crs.getString(3)); // table
+				String pkCat = crs.getString(1);
+				String pkSchema = crs.getString(2);
+				String pkTableName = crs.getString(3);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Found relationship for pk table " + pkCat + "." + pkSchema + "." + pkTableName);
+					if (pkTable != null) {
+						logger.debug("Looking for relationships on " + pkTable.getCatalogName() + "." + pkTable.getSchemaName() + "." + pkTable.getName());
+					} else {
+						logger.debug("Looking for all relationships.");
+					}
+				}
+				r.pkTable = db.getTableByName(pkCat,  // catalog
+											  pkSchema,  // schema
+											  pkTableName); // table
+				
 				if (r.pkTable == null) {
 				    logger.error("addImportedRelationshipsToTable: Couldn't find exporting table "
-				            +crs.getString(1)+"."+crs.getString(2)+"."+crs.getString(3)
+				            +pkCat+"."+pkSchema+"."+pkTableName
 				            +" in target database!");
 				    continue;
 				}
-
+				
+				if (pkTable != null &&
+						pkTable != r.pkTable) {
+					//PK Table is not the same as the expected PK Table we are loading from
+					allRelationshipsAdded = false;
+					newKeys.remove(r);
+					continue;
+				}
+				
 				logger.debug("Looking for pk column '"+crs.getString(4)+"' in table '"+r.pkTable+"'");
 				m.pkColumn = r.pkTable.getColumnByName(crs.getString(4), dbmd);
 				if (m.pkColumn == null) {
@@ -599,7 +630,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 			// now that all the new SQLRelationship objects are set up, add them to their tables
             for (SQLRelationship addMe : newKeys) {
-                addMe.attachRelationship(addMe.pkTable, addMe.fkTable, false, dbmd);
+            	if (!addMe.pkTable.getExportedKeysFolder().retrieveChildrenNoPopulate().contains(addMe)) {
+            		addMe.attachRelationship(addMe.pkTable, addMe.fkTable, false, dbmd);
+            	}
             }
 
 		} catch (SQLException e) {
@@ -611,6 +644,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				logger.warn("Couldn't close resultset", e);
 			}
 		}
+		return allRelationshipsAdded;
 	}
 
 	public ColumnMapping getMappingByPkCol(SQLColumn pkcol) {
@@ -1275,6 +1309,24 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		public Class<? extends SQLObject> getChildType() {
 			return null;
 		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if (obj instanceof ColumnMapping) {
+				ColumnMapping cmap = (ColumnMapping) obj;
+				return fkColumn == cmap.fkColumn &&
+						pkColumn == cmap.pkColumn;
+			}
+			return false;
+		}
+		
+		@Override
+		public int hashCode() {
+			int result = 17;
+			result = result * 31 + (fkColumn == null? 0 : fkColumn.hashCode());
+			result = result * 31 + (pkColumn == null? 0 :pkColumn.hashCode());
+			return result;
+		}
 
 	}
 
@@ -1341,5 +1393,48 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
         model.setIdentifying(identifying);
         model.attachRelationship(pkTable,fkTable,true);
         return model;
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+    	if (obj instanceof SQLRelationship) {
+    		SQLRelationship rel = (SQLRelationship) obj;
+    		if (deferrability == rel.deferrability &&
+    				deleteRule == rel.deleteRule &&
+    				fkCardinality == rel.fkCardinality &&
+    				fkTable == rel.fkTable &&
+    				identifying == rel.identifying &&
+    				physicalName == rel.physicalName &&
+    				pkCardinality == rel.pkCardinality &&
+    				pkTable == rel.pkTable &&
+    				updateRule == rel.updateRule) {
+    			try {
+    				return getChildren().equals(rel.getChildren());
+    			} catch (SQLObjectException e) {
+    				throw new SQLObjectRuntimeException(e);
+    			}
+    		}
+    	}
+    	return false;
+    }
+    
+    @Override
+    public int hashCode() {
+    	int result = 17;
+    	result = 31 * result + (deferrability == null? 0 : deferrability.hashCode());
+    	result = 31 * result + (deleteRule == null? 0 : deleteRule.hashCode());
+    	result = 31 * result + fkCardinality;
+    	result = 31 * result + (fkTable == null? 0 : fkTable.hashCode());
+    	result = 31 * result + (identifying?1:0);
+    	result = 31 * result + (physicalName == null? 0 : physicalName.hashCode());
+    	result = 31 * result + pkCardinality;
+    	result = 31 * result + (pkTable == null? 0 : pkTable.hashCode());
+    	result = 31 * result + (updateRule == null? 0 : updateRule.hashCode());
+    	try {
+			result = 31 * result + getChildren().hashCode();
+		} catch (SQLObjectException e) {
+			throw new SQLObjectRuntimeException(e);
+		}
+    	return result;
     }
 }

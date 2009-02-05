@@ -25,13 +25,6 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
-import ca.sqlpower.sqlobject.SQLObjectException;
-import ca.sqlpower.sqlobject.SQLColumn;
-import ca.sqlpower.sqlobject.SQLDatabase;
-import ca.sqlpower.sqlobject.SQLIndex;
-import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.sqlobject.SQLRelationship;
-import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLRelationship.ColumnMapping;
 
@@ -1134,5 +1127,259 @@ public class TestSQLRelationship extends SQLTestCase {
         assertEquals(2, parentTable.getPkSize());
         assertNotNull(parentTable.getColumnByName("pkcol_2"));
         assertEquals(5, parentTable.getColumns().size());
+    }
+    
+    /**
+     * Tests that relationships loaded between two tables only loads the relationships
+     * imported into the import table from the parent table. This confirms that other
+     * imported relationships, from dontConnectMe does not get loaded. This is to test
+     * lazy loading.
+     */
+    public void testImportRelationshipsToTable() throws Exception {    	
+    	Connection con = null;
+    	Statement stmt = null;
+    	try {
+    		con = getDb().getConnection();
+    		stmt = con.createStatement();
+    		stmt.execute("create table pkTable (col1 varchar(20), col2 varchar(20), constraint pkTable_key primary key (col1))");
+    		stmt.execute("create table fkTable (col1 varchar(20), col2 varchar(20), constraint fkTable_key primary key (col1))");
+    		stmt.execute("create table dontConnectMe (col1 varchar(20), col2 varchar(20), constraint dontConnectMe_key primary key (col1))");
+    		stmt.execute("ALTER TABLE fkTable ADD CONSTRAINT pk_to_fk_fk " +
+    				"FOREIGN KEY (col2) REFERENCES pkTable (col1)");
+    		stmt.execute("ALTER TABLE pkTable ADD CONSTRAINT fk_to_pk_fk " +
+					"FOREIGN KEY (col2) REFERENCES fkTable (col1)");
+    		stmt.execute("Alter table fkTable add constraint dont_fk_me " +
+    				"foreign key (col2) references dontConnectMe (col1)");
+    	} finally {
+    		if (stmt != null) {
+    			stmt.close();
+    		}
+    		if (con != null) {
+    			con.close();
+    		}
+    	}
+    	
+    	SQLDatabase db = getDb();
+    	SQLTable pkTable = db.getTableByName("pkTable");
+    	pkTable.getColumnsFolder().populate();
+    	assertEquals(2, pkTable.getColumns().size());
+    	
+    	SQLTable fkTable = db.getTableByName("fkTable");
+    	fkTable.getColumnsFolder().populate();
+    	assertEquals(2, fkTable.getColumns().size());
+    	
+    	SQLTable dontConnectMe = db.getTableByName("dontConnectMe");
+    	dontConnectMe.getColumnsFolder().populate();
+    	assertEquals(2, dontConnectMe.getColumns().size());
+    	
+    	assertEquals(0, pkTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, fkTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, dontConnectMe.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	
+    	fkTable.getImportedKeysFolder().setPopulated(true);
+    	SQLRelationship.addImportedRelationshipsToTable(pkTable, fkTable, db.getConnection().getMetaData());
+    	
+    	assertEquals(1, fkTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(1, pkTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, dontConnectMe.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	
+    	try {
+    		con = getDb().getConnection();
+    		stmt = con.createStatement();
+    		stmt.execute("ALTER TABLE fkTable drop CONSTRAINT pk_to_fk_fk");
+    		stmt.execute("ALTER TABLE pkTable drop CONSTRAINT fk_to_pk_fk");
+    		stmt.execute("Alter table fkTable drop constraint dont_fk_me");
+    		stmt.execute("drop table pkTable");
+    		stmt.execute("drop table fkTable");
+    		stmt.execute("drop table dontConnectMe");
+    	} finally {
+    		if (stmt != null) {
+    			stmt.close();
+    		}
+    		if (con != null) {
+    			con.close();
+    		}
+    	}
+    }
+    
+    /**
+     * Tests that all imported relationships on a table can be loaded without
+     * cascading to other tables. The tables connected to the importing 
+     * relationships can have columns and indexes populated but cannot have
+     * relationships outside of connecting to the specified table from being
+     * created.
+     */
+    public void testAgainstCascadingRelationships() throws Exception {    	
+    	Connection con = null;
+    	Statement stmt = null;
+    	try {
+    		con = getDb().getConnection();
+    		stmt = con.createStatement();
+    		stmt.execute("create table pkTable (col1 varchar(20), col2 varchar(20), constraint pkTable_key primary key (col1))");
+    		stmt.execute("create table fkTable (col1 varchar(20), col2 varchar(20), constraint fkTable_key primary key (col1))");
+    		stmt.execute("create table anotherTable (col1 varchar(20), col2 varchar(20), constraint anotherTable_key primary key (col1))");
+    		stmt.execute("create table dontConnectMe (col1 varchar(20), col2 varchar(20), constraint dontConnectMe_key primary key (col1))");
+    		stmt.execute("ALTER TABLE fkTable ADD CONSTRAINT pk_to_fk_fk " +
+    				"FOREIGN KEY (col2) REFERENCES pkTable (col1)");
+    		stmt.execute("ALTER TABLE pkTable ADD CONSTRAINT fk_to_pk_fk " +
+					"FOREIGN KEY (col2) REFERENCES fkTable (col1)");
+    		stmt.execute("Alter table fkTable add constraint dont_fk_me " +
+    				"foreign key (col2) references dontConnectMe (col1)");
+    		stmt.execute("Alter table anotherTable add constraint another_pk_fk " +
+    				"FOREIGN KEY (col2) references pkTable (col1)");
+    		stmt.execute("Alter table pkTable add constraint pk_another_fk " +
+					"FOREIGN KEY (col2) references anotherTable (col1)");
+     	} finally {
+    		if (stmt != null) {
+    			stmt.close();
+    		}
+    		if (con != null) {
+    			con.close();
+    		}
+    	}
+
+    	SQLDatabase db = getDb();
+    	SQLTable pkTable = db.getTableByName("pkTable");
+    	pkTable.getColumnsFolder().populate();
+    	assertEquals(2, pkTable.getColumns().size());
+    	
+    	SQLTable fkTable = db.getTableByName("fkTable");
+    	fkTable.getColumnsFolder().populate();
+    	assertEquals(2, fkTable.getColumns().size());
+     	
+      	SQLTable anotherTable = db.getTableByName("anotherTable");
+      	anotherTable.getColumnsFolder().populate();
+    	assertEquals(2, anotherTable.getColumns().size());
+    	
+    	SQLTable dontConnectMe = db.getTableByName("dontConnectMe");
+    	dontConnectMe.getColumnsFolder().populate();
+    	assertEquals(2, dontConnectMe.getColumns().size());
+    	
+    	assertEquals(0, pkTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, pkTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, fkTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, fkTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, dontConnectMe.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, dontConnectMe.getImportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, anotherTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, anotherTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
+    	
+    	SQLRelationship.addImportedRelationshipsToTable(null, fkTable, db.getConnection().getMetaData());
+     	
+    	System.out.println("Have exported keys " + pkTable.getExportedKeysFolder().retrieveChildrenNoPopulate());
+    	assertEquals(1, pkTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, pkTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, fkTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(2, fkTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(1, dontConnectMe.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, dontConnectMe.getImportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, anotherTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, anotherTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
+    	
+    	try {
+    		con = getDb().getConnection();
+    		stmt = con.createStatement();
+    		stmt.execute("ALTER TABLE fkTable drop CONSTRAINT pk_to_fk_fk");
+    		stmt.execute("ALTER TABLE pkTable drop CONSTRAINT fk_to_pk_fk");
+    		stmt.execute("Alter table fkTable drop constraint dont_fk_me");
+    		stmt.execute("ALTER TABLE anotherTable drop CONSTRAINT another_pk_fk");
+    		stmt.execute("ALTER TABLE pkTable drop CONSTRAINT pk_another_fk");
+
+    		stmt.execute("drop table pkTable");
+    		stmt.execute("drop table fkTable");
+    		stmt.execute("drop table dontConnectMe");
+    		stmt.execute("drop table anotherTable");
+     	} finally {
+    		if (stmt != null) {
+    			stmt.close();
+    		}
+    		if (con != null) {
+    			con.close();
+    		}
+    	}
+    }
+    
+    /**
+     * This test is to make sure relationships do not get imported across different
+     * schemas.
+     */
+    public void testRelNotImportedAcrossSchemas() throws Exception {
+    	SQLDatabase db = getDb();
+    	Connection con = null;
+    	Statement stmt = null;
+    	try {
+    		con = getDb().getConnection();
+    		stmt = con.createStatement();
+    		stmt.execute("create table pkTable (col1 varchar(20), col2 varchar(20), constraint pkTable_key primary key (col1))");
+    		stmt.execute("create table fkTable (col1 varchar(20), col2 varchar(20), constraint fkTable_key primary key (col1))");
+    		stmt.execute("create table dontConnectMe (col1 varchar(20), col2 varchar(20), constraint dontConnectMe_key primary key (col1))");
+    		stmt.execute("ALTER TABLE fkTable ADD CONSTRAINT pk_to_fk_fk " +
+    				"FOREIGN KEY (col2) REFERENCES pkTable (col1)");
+    		stmt.execute("ALTER TABLE pkTable ADD CONSTRAINT fk_to_pk_fk " +
+					"FOREIGN KEY (col2) REFERENCES fkTable (col1)");
+    		stmt.execute("Alter table fkTable add constraint dont_fk_me " +
+    				"foreign key (col2) references dontConnectMe (col1)");
+    	} finally {
+    		if (stmt != null) {
+    			stmt.close();
+    		}
+    		if (con != null) {
+    			con.close();
+    		}
+    	}
+    	
+    	SQLTable pkTable = db.getTableByName("pkTable");
+    	SQLSchema schema = db.getSchemaByName("public");
+    	//Renaming the schema and having the database repopulate will
+    	//create two schemas with different names but the same table structures.
+    	schema.setName("public_copy");
+    	db.setPopulated(false);
+    	
+    	pkTable = db.getTableByName(null, "public", "pkTable");
+    	SQLTable schemaCopyPKTable = db.getTableByName(null, "public_copy", "pkTable");
+    	assertNotSame(pkTable, schemaCopyPKTable);
+    	
+    	pkTable.getColumnsFolder().populate();
+    	assertEquals(2, pkTable.getColumns().size());
+    	
+    	SQLTable fkTable = db.getTableByName(null, "public", "fkTable");
+    	fkTable.getColumnsFolder().populate();
+    	assertEquals(2, fkTable.getColumns().size());
+    	
+    	SQLTable dontConnectMe = db.getTableByName(null, "public", "dontConnectMe");
+    	dontConnectMe.getColumnsFolder().populate();
+    	assertEquals(2, dontConnectMe.getColumns().size());
+    	
+    	assertEquals(0, pkTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, fkTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, dontConnectMe.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	
+    	fkTable.getImportedKeysFolder().setPopulated(true);
+    	SQLRelationship.addImportedRelationshipsToTable(pkTable, fkTable, db.getConnection().getMetaData());
+    	
+    	assertEquals(0, schemaCopyPKTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(1, fkTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(1, pkTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	assertEquals(0, dontConnectMe.getExportedKeysFolder().retrieveChildCountNoPopulate());
+    	
+    	try {
+    		con = getDb().getConnection();
+    		stmt = con.createStatement();
+    		stmt.execute("ALTER TABLE fkTable drop CONSTRAINT pk_to_fk_fk");
+    		stmt.execute("ALTER TABLE pkTable drop CONSTRAINT fk_to_pk_fk");
+    		stmt.execute("Alter table fkTable drop constraint dont_fk_me");
+    		stmt.execute("drop table pkTable");
+    		stmt.execute("drop table fkTable");
+    		stmt.execute("drop table dontConnectMe");
+    	} finally {
+    		if (stmt != null) {
+    			stmt.close();
+    		}
+    		if (con != null) {
+    			con.close();
+    		}
+    	}
+
+    	
     }
 }

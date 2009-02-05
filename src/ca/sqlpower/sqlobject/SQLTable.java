@@ -289,10 +289,20 @@ public class SQLTable extends SQLObject {
 	 * relationships for the exporting tables.
 	 */
     private synchronized void populateRelationships() throws SQLObjectException {
-        populateRelationships(null);
+        populateRelationships(null, null);
     }
-    
-    private synchronized void populateRelationships(DatabaseMetaData dbmd) throws SQLObjectException {
+
+	/**
+	 * Populates all the imported key relationships. This has the side effect of
+	 * populating the exported key side of the relationships for the exporting
+	 * tables.
+	 * 
+	 * @param pkTable
+	 *            if not null only relationships that have this table as the
+	 *            parent will be added. If this is null than all relationships
+	 *            will be added regardless of the parent.
+	 */
+    private synchronized void populateRelationships(SQLTable pkTable, DatabaseMetaData dbmd) throws SQLObjectException {
 		if (!columnsFolder.isPopulated()) throw new IllegalStateException("Table must be populated before relationships are added");
 		if (importedKeysFolder.isPopulated()) return;
 
@@ -307,8 +317,9 @@ public class SQLTable extends SQLObject {
 		 * query the size of the relationships folder.
 		 */
 		importedKeysFolder.populated = true;
+		boolean allRelationshipsAdded = false;
 		try {
-			SQLRelationship.addImportedRelationshipsToTable(this, dbmd);
+			allRelationshipsAdded = SQLRelationship.addImportedRelationshipsToTable(pkTable, this, dbmd);
 		} finally {
 			int newSize = importedKeysFolder.children.size();
 			if (newSize > oldSize) {
@@ -325,6 +336,11 @@ public class SQLTable extends SQLObject {
 								 +getName()+" where oldSize="+oldSize+"; newSize="+newSize
 								 +"; imported keys="+importedKeysFolder.children);
 				}
+			}
+			//The imported keys folder will only be guaranteed to be completely populated if
+			//any table can be the pkTable not a specific table.
+			if (pkTable != null && !allRelationshipsAdded) {
+				importedKeysFolder.populated = false;
 			}
 		}
 
@@ -934,7 +950,7 @@ public class SQLTable extends SQLObject {
 					parent.populateColumns(dbmd);
 				} else if (type == IMPORTED_KEYS) {
 					parent.populateColumns(dbmd);
-					parent.populateRelationships(dbmd);
+					parent.populateRelationships(null, dbmd);
 				} else if (type == EXPORTED_KEYS) {
 					CachedRowSet crs = null;
 					Connection con = null;
@@ -960,8 +976,10 @@ public class SQLTable extends SQLObject {
 						while (crs.next()) {
 							if (crs.getInt(9) != 1) {
 								// just another column mapping in a relationship we've already handled
+								logger.debug("Got exported key with sequence " + crs.getInt(9) + " on " + crs.getString(5) + "." + crs.getString(6) + "." + crs.getString(7) + ", continuing.");
 								continue;
 							}
+							logger.debug("Got exported key with sequence " + crs.getInt(9) + " on " + crs.getString(5) + "." + crs.getString(6) + "." + crs.getString(7) + ", populating.");
 							String cat = crs.getString(5);
 							String sch = crs.getString(6);
 							String tab = crs.getString(7);
@@ -973,7 +991,7 @@ public class SQLTable extends SQLObject {
                                         "\""+cat+"\".\""+sch+"\".\""+tab+"\"");
                             }
 							fkTable.populateColumns(dbmd);
-							fkTable.populateRelationships(dbmd);
+							fkTable.populateRelationships(parent, dbmd);
 						}
 					} catch (SQLException ex) {
 						throw new SQLObjectException("Couldn't locate related tables", ex);
@@ -1075,6 +1093,33 @@ public class SQLTable extends SQLObject {
 		@Override
 		public Class<? extends SQLObject> getChildType() {
 			return SQLColumn.class;
+		}
+
+		/**
+		 * This will get the number of children currently populated. Folders
+		 * with foreign keys can be partially populated when lazy loading but
+		 * calling the SQLObject child access methods will populate all of the
+		 * children.
+		 * 
+		 * <p>This is not the standard way of getting children of a folder.
+		 * Use the getChildCount() method to get children
+		 * unless you specifically don't want the folder to populate.
+		 */
+		public int retrieveChildCountNoPopulate() {
+			return children.size();
+		}
+
+		/**
+		 * This will get the children currently populated. Folders with foreign
+		 * keys can be partially populated when lazy loading but calling the
+		 * SQLObject child access methods will populate all of the children.
+		 * 
+		 * <p>This is not the standard way of getting children of a folder.
+		 * Use the getChildren() method to get children
+		 * unless you specifically don't want the folder to populate.
+		 */
+		public List<T> retrieveChildrenNoPopulate() {
+			return children;
 		}
 	}
 
