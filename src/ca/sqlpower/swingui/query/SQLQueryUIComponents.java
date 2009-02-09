@@ -364,7 +364,10 @@ public class SQLQueryUIComponents {
         			clearResultTables();
         			return;
         		}
-        		createResultSetTables(resultSets, sqlString);
+        		
+        		if (queuedSQLStatement == null) {
+        			createResultSetTables(resultSets, sqlString);
+        		}
 
         		resultSets.clear();
         		for (Integer i : rowsAffected) {
