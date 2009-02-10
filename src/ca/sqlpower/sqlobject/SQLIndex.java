@@ -362,15 +362,32 @@ public class SQLIndex extends SQLObject {
      */
     public SQLIndex(SQLIndex oldIndex) throws SQLObjectException {
         this();
-        setName(oldIndex.getName());
-        unique = oldIndex.unique;
         parent = oldIndex.parent;
-        populated = oldIndex.populated;
-        type = oldIndex.type;
-        filterCondition = oldIndex.filterCondition;
-        qualifier = oldIndex.qualifier;
-        clustered = oldIndex.clustered;
-        for (Object c : oldIndex.getChildren()) {
+        updateToMatch(oldIndex);
+    }
+
+    /**
+     * Updates all properties and child objects of this index to match the given
+     * index, except the parent pointer.
+     * 
+     * @param source
+     *            The index to copy properties and columns from. If it has columns,
+     *            they must already belong to the same table as this index does.
+     */
+    public final void updateToMatch(SQLIndex source) throws SQLObjectException {
+        setName(source.getName());
+        unique = source.unique;
+        populated = source.populated;
+        type = source.type;
+        filterCondition = source.filterCondition;
+        qualifier = source.qualifier;
+        clustered = source.clustered;
+        
+        while (children.size() > 0) {
+            removeChild(0);
+        }
+        
+        for (Object c : source.getChildren()) {
             Column oldCol = (Column) c;
             Column newCol = new Column();
             newCol.setAscendingOrDescending(oldCol.ascendingOrDescending);
@@ -592,25 +609,33 @@ public class SQLIndex extends SQLObject {
     }
 
     /**
-     * Mainly for use by SQLTable's populate method.  Does not cause
-     * SQLObjectEvents to avoid infinite recursion, so you have to
-     * generate them yourself at a safe time.
+     * Creates a list of new SQLIndex objects based on the indexes that exist on the
+     * given table in the given database metadata. The index child objects will have
+     * direct references to the columns of the given SQLTable, but nothing in the table
+     * will be modified. You can add the indexes to the table yourself when the list is
+     * returned.
+     * 
+     * @param dbmd The metadata to read the index descriptions from
+     * @param targetTable The table the indexes are on. 
      */
-    static void addIndicesToTable(SQLTable addTo, String catalog, String schema, String tableName) throws SQLException,
+    static List<SQLIndex> fetchIndicesForTable(DatabaseMetaData dbmd, SQLTable targetTable) throws SQLException,
             SQLObjectException {
-        Connection con = null;
         ResultSet rs = null;
 
+        String catalog = targetTable.getCatalogName();
+        String schema = targetTable.getSchemaName();
+        String tableName = targetTable.getName();
+        
+        List<SQLIndex> indexes = new ArrayList<SQLIndex>();
+        
         try {
-            con = addTo.getParentDatabase().getConnection();
-            DatabaseMetaData dbmd = con.getMetaData();
             String pkName = null;
             rs = dbmd.getPrimaryKeys(catalog, schema, tableName);
             while (rs.next()) {
-                SQLColumn col = addTo.getColumnByName(rs.getString(4), false, true);
+                SQLColumn col = targetTable.getColumnByName(rs.getString(4), false, true);
                 //logger.debug(rs.getString(4));
                 if (col != null) {
-                    col.primaryKeySeq = new Integer(rs.getInt(5));
+                    col.primaryKeySeq = new Integer(rs.getInt(5));   // XXX this is modifying the table too early, and without firing an event
                     String pkNameCheck = rs.getString(6);
                     if (pkName == null) {
                         pkName = pkNameCheck;
@@ -618,7 +643,7 @@ public class SQLIndex extends SQLObject {
                         throw new IllegalStateException("The PK name has changed somehow while adding indices to table");
                     }
                 } else {
-                    throw new SQLException("Column " + rs.getString(4) + " not found in " + addTo);
+                    throw new SQLException("Column " + rs.getString(4) + " not found in " + targetTable);
                 }
             }
             rs.close();
@@ -676,7 +701,7 @@ public class SQLIndex extends SQLObject {
                     logger.debug("Found index " + name);
                     idx = new SQLIndex(name, !nonUnique, qualifier, type, filter);
                     idx.setClustered(isClustered);
-                    addTo.getIndicesFolder().children.add(idx);
+                    indexes.add(idx);
                     if (name.equals(pkName)) {
                         idx.setPrimaryKeyIndex(true);
                     }
@@ -684,30 +709,28 @@ public class SQLIndex extends SQLObject {
 
                 logger.debug("Adding column " + colName + " to index " + idx.getName());
 
-                Column col;
-                if (addTo.getColumnByName(colName, false, true) != null) {
-                    col = idx.new Column(addTo.getColumnByName(colName, false, true), aOrD);
+                
+                SQLColumn tableCol = targetTable.getColumnByName(colName, false, true);
+                Column indexCol;
+                if (tableCol != null) {
+                    indexCol = idx.new Column(tableCol, aOrD);
                 } else {
-                    col = idx.new Column(colName, aOrD); // probably an expression like "col1+col2"
+                    indexCol = idx.new Column(colName, aOrD); // probably an expression like "col1+col2"
                 }
 
-                idx.children.add(col); // direct access avoids possible recursive SQLObjectEvents
+                idx.children.add(indexCol); // direct access avoids possible recursive SQLObjectEvents
             }
             rs.close();
             rs = null;
 
+            return indexes;
+            
         } finally {
             try {
                 if (rs != null)
                     rs.close();
             } catch (SQLException ex) {
                 logger.error("Couldn't close result set", ex);
-            }
-            try {
-                if (con != null)
-                    con.close();
-            } catch (SQLException ex) {
-                logger.error("Couldn't close connection", ex);
             }
         }
     }

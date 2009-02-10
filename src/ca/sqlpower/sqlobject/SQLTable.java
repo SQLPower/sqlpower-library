@@ -253,20 +253,19 @@ public class SQLTable extends SQLObject {
         
         logger.debug("index folder populate starting");
 
+        Connection con = null;
         try {
+            con = getParentDatabase().getConnection();
+            DatabaseMetaData dbmd = con.getMetaData();
             logger.debug("before addIndicesToTable");
             
-            SQLIndex.addIndicesToTable(this,
-                                      getCatalogName(),
-                                      getSchemaName(),
-                                      getName());
+            List<SQLIndex> indexes = SQLIndex.fetchIndicesForTable(dbmd, this);
             
-            logger.debug("found "+indicesFolder.children.size()+" indices.");
-            for (SQLColumn column : getColumns()) {
-                if (column.getPrimaryKeySeq() != null) {
-                    break;
-                }
+            for (SQLIndex i : indexes) {
+                indicesFolder.children.add(i);
+                i.setParent(indicesFolder);
             }
+            logger.debug("found "+indicesFolder.children.size()+" indices.");
           
             indicesFolder.populated = true;
         } catch (SQLException e) {
@@ -274,6 +273,12 @@ public class SQLTable extends SQLObject {
         } finally {
             indicesFolder.populated = true;
 
+            try {
+                if (con != null) con.close();
+            } catch (SQLException e) {
+                logger.error("Closing connection failed. Squishing this exception: ", e);
+            }
+            
             // FIXME this might change the order of columns without firing an event
             Collections.sort(columnsFolder.children, new SQLColumn.CompareByPKSeq());
             
@@ -1533,14 +1538,36 @@ public class SQLTable extends SQLObject {
                 }
             }
             
-            // seek-and-destroy removed columns
+            // get rid of removed columns
             oldColNames.removeAll(newColNames);
             for (String removedColName : oldColNames) {
                 removeColumn(getColumnByName(removedColName));
             }
             
             // TODO relationships
-            // TODO indexes (incl. PK)
+            
+            // indexes (incl. PK)
+            List<SQLIndex> newIndexes = SQLIndex.fetchIndicesForTable(dbmd, this);
+            Set<String> oldIndexNames = indicesFolder.getChildNames();
+            Set<String> newIndexNames = new HashSet<String>(); // will populate in following loop
+            for (SQLIndex newIdx : newIndexes) {
+                newIndexNames.add(newIdx.getName());
+                if (oldIndexNames.contains(newIdx.getName())) {
+                    getIndexByName(newIdx.getName(), false).updateToMatch(newIdx);
+                } else {
+                    addIndex(newIdx);
+                }
+            }
+            
+            // get rid of old indexes
+            oldIndexNames.removeAll(newIndexNames);
+            for (String removedIndexName : oldIndexNames) {
+                SQLIndex removeMe = getIndexByName(removedIndexName, false);
+                getIndicesFolder().removeChild(removeMe);
+            }
+            
+            normalizePrimaryKey();
+            
         } catch (SQLException e) {
             throw new SQLObjectException("Refresh failed", e);
         } finally {

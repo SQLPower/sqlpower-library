@@ -165,12 +165,17 @@ public class RefreshTest extends TestCase {
         moose.getColumnsFolder().populate();
         moose.getExportedKeysFolder().populate();
         moose.getIndicesFolder().populate();
+        
+        // NOTE this should be 1, but there is a bug in HSQLDB that makes us see the PK twice
+        assertEquals("Unexpected indexes: " + moose.getIndicesFolder().getChildNames(),
+                2, moose.getIndicesFolder().getChildCount());
 
         sqlx("CREATE INDEX moose_idx ON moose (name)");
         db.refresh();
         
-        assertEquals(1, moose.getIndicesFolder().getChildCount());
-        SQLIndex mooseIdx = moose.getIndices().get(0);
+        assertEquals("Unexpected indexes: " + moose.getIndicesFolder().getChildNames(),
+                3, moose.getIndicesFolder().getChildCount());
+        SQLIndex mooseIdx = moose.getIndices().get(2);
         assertEquals("MOOSE_IDX", mooseIdx.getName());
         assertEquals(1, mooseIdx.getChildCount());
         assertEquals("NAME", mooseIdx.getChild(0).getName());

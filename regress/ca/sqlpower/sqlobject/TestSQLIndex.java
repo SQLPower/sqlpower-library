@@ -319,7 +319,8 @@ public class TestSQLIndex extends SQLTestCase {
     
     public void testLoadFromDbGetsCorrectPK() throws SQLObjectException{
         assertNotNull("No primary key loaded",dbTable.getPrimaryKeyIndex());
-        assertEquals("Wrong number of indices",1,dbTable.getIndicesFolder().getChildCount());
+        assertEquals("Wrong indices: " + dbTable.getIndicesFolder().getChildNames(),
+                1, dbTable.getIndicesFolder().getChildCount());
         assertEquals("Wrong primary key","SYS_IDX_",dbTable.getPrimaryKeyName().substring(0, 8));
     }
     
