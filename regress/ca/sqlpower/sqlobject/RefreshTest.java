@@ -22,8 +22,7 @@ package ca.sqlpower.sqlobject;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-
-import org.hsqldb.Types;
+import java.sql.Types;
 
 import junit.framework.TestCase;
 import ca.sqlpower.sql.SPDataSource;
