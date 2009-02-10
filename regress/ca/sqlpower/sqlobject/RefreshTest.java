@@ -23,6 +23,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.hsqldb.Types;
+
 import junit.framework.TestCase;
 import ca.sqlpower.sql.SPDataSource;
 
@@ -56,6 +58,7 @@ public class RefreshTest extends TestCase {
     
     @Override
     protected void tearDown() throws Exception {
+        sqlx("SHUTDOWN");
         db.disconnect();
     }
     
@@ -88,16 +91,90 @@ public class RefreshTest extends TestCase {
     public void testAddNonPkCol() throws Exception {
         SQLSchema s = db.getSchemaByName("public");
         SQLTable moose = s.getTableByName("moose");
-        
-        // verify initial column setup
-        assertEquals("MOOSE_PK", moose.getColumns().get(0).getName());
-        assertEquals("NAME", moose.getColumns().get(1).getName());
-        assertEquals("ANTLER_LENGTH", moose.getColumns().get(2).getName());
-        
+        moose.getColumnsFolder().populate();
+        moose.getExportedKeysFolder().populate();
+        moose.getIndicesFolder().populate();
+
         sqlx("ALTER TABLE moose ADD COLUMN tail_length INTEGER");
         db.refresh();
         
-        assertEquals(4, moose.getColumns().size());
+        assertEquals("Wrong number of columns ("+moose.getColumnsFolder().getChildNames()+")",
+                4, moose.getColumns().size());
         assertEquals("TAIL_LENGTH", moose.getColumns().get(3).getName());
     }
+    
+    public void testRemoveNonPkCol() throws Exception {
+        SQLSchema s = db.getSchemaByName("public");
+        SQLTable moose = s.getTableByName("moose");
+        moose.getColumnsFolder().populate();
+        moose.getExportedKeysFolder().populate();
+        moose.getIndicesFolder().populate();
+        
+        sqlx("ALTER TABLE moose DROP COLUMN antler_length");
+        db.refresh();
+        
+        assertEquals("Wrong number of columns ("+moose.getColumnsFolder().getChildNames()+")",
+                2, moose.getColumns().size());
+        assertEquals("MOOSE_PK", moose.getColumns().get(0).getName());
+        assertEquals("NAME", moose.getColumns().get(1).getName());
+    }
+
+    public void testRemoveAllCols() throws Exception {
+        SQLSchema s = db.getSchemaByName("public");
+        SQLTable moose = s.getTableByName("moose");
+        moose.getColumnsFolder().populate();
+        moose.getExportedKeysFolder().populate();
+        moose.getIndicesFolder().populate();
+        
+        sqlx("ALTER TABLE moose DROP COLUMN antler_length");
+        sqlx("ALTER TABLE moose DROP COLUMN name");
+        sqlx("ALTER TABLE moose DROP COLUMN moose_pk");
+        db.refresh();
+        
+        assertEquals("Wrong number of columns ("+moose.getColumnsFolder().getChildNames()+")",
+                0, moose.getColumns().size());
+        assertEquals("PK should have vanished too", 0, moose.getIndices().size());
+    }
+
+    public void testModifyNonPkCol() throws Exception {
+        SQLSchema s = db.getSchemaByName("public");
+        SQLTable moose = s.getTableByName("moose");
+        moose.getColumnsFolder().populate();
+        moose.getExportedKeysFolder().populate();
+        moose.getIndicesFolder().populate();
+        SQLColumn antlerLength = moose.getColumns().get(2);
+
+        assertEquals(Types.INTEGER, antlerLength.getType());
+        assertEquals(10, antlerLength.getPrecision());
+        assertEquals(0, antlerLength.getScale());
+
+        sqlx("ALTER TABLE moose ALTER COLUMN antler_length NUMERIC(10,2)");
+        db.refresh();
+        
+        assertEquals("Wrong number of columns ("+moose.getColumnsFolder().getChildNames()+")",
+                3, moose.getColumns().size());
+        assertSame(antlerLength, moose.getColumns().get(2));
+        assertEquals("ANTLER_LENGTH", antlerLength.getName());
+        assertEquals(Types.NUMERIC, antlerLength.getType());
+        assertEquals(10, antlerLength.getPrecision());
+        assertEquals(2, antlerLength.getScale());
+    }
+    
+    public void testAddIndex() throws Exception {
+        SQLSchema s = db.getSchemaByName("public");
+        SQLTable moose = s.getTableByName("moose");
+        moose.getColumnsFolder().populate();
+        moose.getExportedKeysFolder().populate();
+        moose.getIndicesFolder().populate();
+
+        sqlx("CREATE INDEX moose_idx ON moose (name)");
+        db.refresh();
+        
+        assertEquals(1, moose.getIndicesFolder().getChildCount());
+        SQLIndex mooseIdx = moose.getIndices().get(0);
+        assertEquals("MOOSE_IDX", mooseIdx.getName());
+        assertEquals(1, mooseIdx.getChildCount());
+        assertEquals("NAME", mooseIdx.getChild(0).getName());
+    }
+    
 }

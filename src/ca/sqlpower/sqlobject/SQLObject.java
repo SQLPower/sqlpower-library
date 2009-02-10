@@ -21,6 +21,7 @@ package ca.sqlpower.sqlobject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -282,6 +283,23 @@ public abstract class SQLObject implements java.io.Serializable {
 		populate();
 		return children.size();
 	}
+
+    /**
+     * Returns the names of all children of this SQLObject. Causes this
+     * SQLObject to become populated.
+     * <p>
+     * Originally created for internal use during refresh. There should be no
+     * harm in making this method public if it's needed externally.
+     * 
+     * @throws SQLObjectException if populating this object fails
+     */
+    Set<String> getChildNames() throws SQLObjectException {
+        HashSet<String> names = new HashSet<String>();
+        for (SQLObject child : (List<SQLObject>) getChildren()) {
+            names.add(child.getName());
+        }
+        return names;
+    }
 
 	/**
 	 * All other addChild() methods call this one.  If you want to override the addChild behaviour,

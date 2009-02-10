@@ -249,8 +249,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 
 	/**
 	 * Copies all the interesting properties of source into target.  This is a subroutine of
-	 * the copy constructor, and of getDerivedInstance, which is for importing tables from
-	 * source databases.
+	 * the copy constructor, getDerivedInstance, and updateToMatch.
 	 * 
 	 * @param target The instance to copy properties into.
 	 * @param source The instance to copy properties from.
@@ -270,10 +269,20 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         target.autoIncrementSequenceName = source.autoIncrementSequenceName;
 	}
 
+    /**
+     * Updates all properties on this column (except the parent) to match the
+     * given column's properties.
+     * 
+     * @param source
+     *            The column to copy the properties from
+     */
+    public void updateToMatch(SQLColumn source) {
+        copyProperties(this, source);
+    }
+
 	/**
-	 * Mainly for use by SQLTable's populate method.  Does not cause
-	 * SQLObjectEvents to avoid infinite recursion, so you have to
-	 * generate them yourself at a safe time.
+	 * Creates a list of unparented SQLColumn objects based on the current
+	 * information from the given DatabaseMetaData.
 	 */
 	static List<SQLColumn> fetchColumnsForTable(
 	                                String catalog,

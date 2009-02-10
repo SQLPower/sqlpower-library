@@ -25,10 +25,12 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -1511,4 +1513,45 @@ public class SQLTable extends SQLObject {
     public String toQualifiedName() {
         return SQLObjectUtils.toQualifiedName(this, SQLDatabase.class);
     }
+    
+    @Override
+    void refresh() throws SQLObjectException {
+        if (!isColumnsPopulated()) return;
+        Connection con = null;
+        try {
+            con = getParentDatabase().getConnection();
+            DatabaseMetaData dbmd = con.getMetaData();
+            List<SQLColumn> newCols = SQLColumn.fetchColumnsForTable(getCatalogName(), getSchemaName(), getName(), dbmd);
+            Set<String> oldColNames = columnsFolder.getChildNames();
+            Set<String> newColNames = new HashSet<String>(); // will populate in following loop
+            for (SQLColumn newCol : newCols) {
+                newColNames.add(newCol.getName());
+                if (oldColNames.contains(newCol.getName())) {
+                    getColumnByName(newCol.getName(), false, true).updateToMatch(newCol);
+                } else {
+                    addColumn(newCol);
+                }
+            }
+            
+            // seek-and-destroy removed columns
+            oldColNames.removeAll(newColNames);
+            for (String removedColName : oldColNames) {
+                removeColumn(getColumnByName(removedColName));
+            }
+            
+            // TODO relationships
+            // TODO indexes (incl. PK)
+        } catch (SQLException e) {
+            throw new SQLObjectException("Refresh failed", e);
+        } finally {
+            if (con != null) {
+                try {
+                    con.close();
+                } catch (SQLException e) {
+                    logger.error("Failed to close connection. Squishing this exception: ", e);
+                }
+            }
+        }
+    }
+    
 }
