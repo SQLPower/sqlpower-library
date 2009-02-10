@@ -21,8 +21,6 @@ package ca.sqlpower.testutil;
 
 import java.awt.Font;
 import java.io.File;
-import java.text.DecimalFormat;
-import java.text.Format;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 
@@ -31,6 +29,9 @@ import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLIndex;
 import ca.sqlpower.sqlobject.SQLObjectException;
+import ca.sqlpower.util.DefaultUserPrompter;
+import ca.sqlpower.util.UserPrompter;
+import ca.sqlpower.util.UserPrompter.UserPromptResponse;
 
 /**
  * An implementation of NewValueMaker that recognizes classes in the Java SE
@@ -84,6 +85,8 @@ public class GenericNewValueMaker implements NewValueMaker {
         	((SQLIndex) newVal).setName("a new index");
         } else if (valueType.isAssignableFrom(Throwable.class)) {
         	newVal = new SQLObjectException("Test Exception");
+        } else if (valueType == UserPrompter.class) {
+            newVal = new DefaultUserPrompter(UserPromptResponse.CANCEL, null);
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +
