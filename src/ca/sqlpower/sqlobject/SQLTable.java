@@ -186,21 +186,22 @@ public class SQLTable extends SQLObject {
      * @throws SQLObjectException
      */
     private synchronized void populateColumns() throws SQLObjectException {
-        populateColumns(null);
-    }
-    
-	private synchronized void populateColumns(DatabaseMetaData dbmd) throws SQLObjectException {
+
 		if (columnsFolder.isPopulated()) return;
 		if (columnsFolder.children.size() > 0) throw new IllegalStateException("Can't populate table because it already contains columns");
 
 		logger.debug("column folder populate starting for table " + getName());
 
+		Connection con = null;
 		try {
-			SQLColumn.addColumnsToTable(this,
-										getCatalogName(),
-										getSchemaName(),
-										getName(),
-										dbmd);
+		    con = getParentDatabase().getConnection();
+		    DatabaseMetaData dbmd = con.getMetaData();
+			List<SQLColumn> cols = SQLColumn.fetchColumnsForTable(
+			        getCatalogName(), getSchemaName(), getName(), dbmd);
+			for (SQLColumn col : cols) {
+			    columnsFolder.children.add(col);
+			    col.setParent(columnsFolder);
+			}
 		} catch (SQLException e) {
 			throw new SQLObjectException("Failed to populate columns of table "+getName(), e);
 		} finally {
@@ -211,11 +212,18 @@ public class SQLTable extends SQLObject {
 				changedIndices[i] = i;
 			}
 			columnsFolder.fireDbChildrenInserted(changedIndices, columnsFolder.children);
+			if (con != null) {
+			    try {
+			        con.close();
+			    } catch (SQLException ex) {
+			        logger.error("Couldn't close connection. Squishing this exception: ", ex);
+			    }
+			}
 		}
 
 		logger.debug("column folder populate finished for table " + getName());
 
-        populateIndices(dbmd);
+        populateIndices();
 	}
 
     /**
@@ -230,10 +238,6 @@ public class SQLTable extends SQLObject {
      * index folder is both non-empty and non-populated
      */
 	private synchronized void populateIndices() throws SQLObjectException {
-	    populateIndices(null);
-	}
-	    
-    private synchronized void populateIndices(DatabaseMetaData dbmd) throws SQLObjectException {
         if (indicesFolder.isPopulated()) return;
         if (indicesFolder.children.size() > 0) throw new IllegalStateException("Can't populate indices folder because it already contains children!");
         if (!columnsFolder.isPopulated()) throw new IllegalStateException("Columns folder must be populated");
@@ -253,8 +257,7 @@ public class SQLTable extends SQLObject {
             SQLIndex.addIndicesToTable(this,
                                       getCatalogName(),
                                       getSchemaName(),
-                                      getName(),
-                                      dbmd);
+                                      getName());
             
             logger.debug("found "+indicesFolder.children.size()+" indices.");
             for (SQLColumn column : getColumns()) {
@@ -289,7 +292,7 @@ public class SQLTable extends SQLObject {
 	 * relationships for the exporting tables.
 	 */
     private synchronized void populateRelationships() throws SQLObjectException {
-        populateRelationships(null, null);
+        populateRelationships(null);
     }
 
 	/**
@@ -302,7 +305,7 @@ public class SQLTable extends SQLObject {
 	 *            parent will be added. If this is null than all relationships
 	 *            will be added regardless of the parent.
 	 */
-    private synchronized void populateRelationships(SQLTable pkTable, DatabaseMetaData dbmd) throws SQLObjectException {
+    private synchronized void populateRelationships(SQLTable pkTable) throws SQLObjectException {
 		if (!columnsFolder.isPopulated()) throw new IllegalStateException("Table must be populated before relationships are added");
 		if (importedKeysFolder.isPopulated()) return;
 
@@ -319,7 +322,7 @@ public class SQLTable extends SQLObject {
 		importedKeysFolder.populated = true;
 		boolean allRelationshipsAdded = false;
 		try {
-			allRelationshipsAdded = SQLRelationship.addImportedRelationshipsToTable(pkTable, this, dbmd);
+			allRelationshipsAdded = SQLRelationship.addImportedRelationshipsToTable(pkTable, this);
 		} finally {
 			int newSize = importedKeysFolder.children.size();
 			if (newSize > oldSize) {
@@ -470,13 +473,9 @@ public class SQLTable extends SQLObject {
      * manner.
 	 */
 	public SQLColumn getColumnByName(String colName) throws SQLObjectException {
-		return getColumnByName(colName, true, false, null);
+		return getColumnByName(colName, true, false);
 	}
 	
-	public SQLColumn getColumnByName(String colName, DatabaseMetaData dbmd) throws SQLObjectException {
-        return getColumnByName(colName, true, false, dbmd);
-    }
-
 	/**
 	 * Searches for the named column.
 	 *
@@ -486,12 +485,8 @@ public class SQLTable extends SQLObject {
 	 */
 	public SQLColumn getColumnByName(String colName, boolean populate, boolean caseSensitive) 
 	    throws SQLObjectException {
-	    return getColumnByName(colName, populate, caseSensitive, null);
-	}
-	
-	public SQLColumn getColumnByName(String colName, boolean populate, boolean caseSensitive, DatabaseMetaData dbmd)
-        throws SQLObjectException {
-		if (populate) populateColumns(dbmd);
+
+		if (populate) populateColumns();
 		/* if columnsFolder.children.iterator(); gets changed to getColumns().iterator()
 		 * we get infinite recursion between populateColumns, getColumns,
 		 * getColumnsByName and addColumnsToTable
@@ -928,7 +923,6 @@ public class SQLTable extends SQLObject {
 		}
 
 		public void populateImpl() throws SQLObjectException {
-		    populate(null);
 		    if (logger.isDebugEnabled()) {
 		        List<SQLObject> hierarchy = new ArrayList<SQLObject>();
 		        SQLObject parent = this;
@@ -938,25 +932,24 @@ public class SQLTable extends SQLObject {
 		        }
 		        logger.debug("Populating folder on " + getParent().getName() + " for type " + type + " with ancestor path " + hierarchy);
 		    }
-		}
-		
-		public void populate(DatabaseMetaData dbmd) throws SQLObjectException {
-			if (populated) return;
+
+		    if (populated) return;
 
 			logger.debug("SQLTable.Folder["+getName()+"]: populate starting");
 
+			
 			try {
 				if (type == COLUMNS) {
-					parent.populateColumns(dbmd);
+					parent.populateColumns();
 				} else if (type == IMPORTED_KEYS) {
-					parent.populateColumns(dbmd);
-					parent.populateRelationships(null, dbmd);
+					parent.populateColumns();
+					parent.populateRelationships(null);
 				} else if (type == EXPORTED_KEYS) {
 					CachedRowSet crs = null;
 					Connection con = null;
 					try {
 						con = parent.getParentDatabase().getConnection();
-						if (dbmd == null) dbmd = con.getMetaData();
+						DatabaseMetaData dbmd = con.getMetaData();
 						crs = new CachedRowSet();
 						ResultSet exportedKeysRS = dbmd.getExportedKeys(parent.getCatalogName(), parent.getSchemaName(), parent.getName());
                         crs.populate(exportedKeysRS);
@@ -990,8 +983,8 @@ public class SQLTable extends SQLObject {
                                         ", I failed to find child table " +
                                         "\""+cat+"\".\""+sch+"\".\""+tab+"\"");
                             }
-							fkTable.populateColumns(dbmd);
-							fkTable.populateRelationships(parent, dbmd);
+							fkTable.populateColumns();
+							fkTable.populateRelationships(parent);
 						}
 					} catch (SQLException ex) {
 						throw new SQLObjectException("Couldn't locate related tables", ex);
@@ -1086,7 +1079,7 @@ public class SQLTable extends SQLObject {
 	    public List getChildren(DatabaseMetaData dbmd) throws SQLObjectException {
 	        if (!allowsChildren()) //never return null;
 	            return children;
-	        populate(dbmd);
+	        populate();
 	        return Collections.unmodifiableList(children);
 	    }
 		
@@ -1289,11 +1282,7 @@ public class SQLTable extends SQLObject {
 	 * @return the value of exportedKeys
 	 */
 	public List<SQLRelationship> getExportedKeys() throws SQLObjectException {
-        return getExportedKeys(null);
-    }
-	
-	public List<SQLRelationship> getExportedKeys(DatabaseMetaData dbmd) throws SQLObjectException {
-		return this.exportedKeysFolder.getChildren(dbmd);
+		return this.exportedKeysFolder.getChildren();
 	}
 
     /**

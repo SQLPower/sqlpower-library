@@ -1177,7 +1177,7 @@ public class TestSQLRelationship extends SQLTestCase {
     	assertEquals(0, dontConnectMe.getExportedKeysFolder().retrieveChildCountNoPopulate());
     	
     	fkTable.getImportedKeysFolder().setPopulated(true);
-    	SQLRelationship.addImportedRelationshipsToTable(pkTable, fkTable, db.getConnection().getMetaData());
+    	SQLRelationship.addImportedRelationshipsToTable(pkTable, fkTable);
     	
     	assertEquals(1, fkTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
     	assertEquals(1, pkTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
@@ -1264,7 +1264,7 @@ public class TestSQLRelationship extends SQLTestCase {
     	assertEquals(0, anotherTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
     	assertEquals(0, anotherTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
     	
-    	SQLRelationship.addImportedRelationshipsToTable(null, fkTable, db.getConnection().getMetaData());
+    	SQLRelationship.addImportedRelationshipsToTable(null, fkTable);
      	
     	System.out.println("Have exported keys " + pkTable.getExportedKeysFolder().retrieveChildrenNoPopulate());
     	assertEquals(1, pkTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
@@ -1355,7 +1355,7 @@ public class TestSQLRelationship extends SQLTestCase {
     	assertEquals(0, dontConnectMe.getExportedKeysFolder().retrieveChildCountNoPopulate());
     	
     	fkTable.getImportedKeysFolder().setPopulated(true);
-    	SQLRelationship.addImportedRelationshipsToTable(pkTable, fkTable, db.getConnection().getMetaData());
+    	SQLRelationship.addImportedRelationshipsToTable(pkTable, fkTable);
     	
     	assertEquals(0, schemaCopyPKTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
     	assertEquals(1, fkTable.getImportedKeysFolder().retrieveChildCountNoPopulate());

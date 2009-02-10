@@ -29,8 +29,9 @@ import junit.framework.TestSuite;
 public class AllTests {
 
     public static Test suite() {
-        TestSuite suite = new TestSuite("Test for ca.sqlpower.graph");
+        TestSuite suite = new TestSuite("Test for ca.sqlpower.sqlobject");
         //$JUnit-BEGIN$
+        suite.addTestSuite(RefreshTest.class);
         suite.addTestSuite(SQLObjectExceptionTest.class);
         suite.addTestSuite(SQLObjectMagicTest.class);
         suite.addTestSuite(SQLObjectTest.class);

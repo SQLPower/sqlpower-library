@@ -23,6 +23,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -274,20 +275,17 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * SQLObjectEvents to avoid infinite recursion, so you have to
 	 * generate them yourself at a safe time.
 	 */
-	static void addColumnsToTable(SQLTable addTo,
-										 String catalog,
-										 String schema,
-										 String tableName,
-										 DatabaseMetaData dbmd) 
+	static List<SQLColumn> fetchColumnsForTable(
+	                                String catalog,
+	                                String schema,
+	                                String tableName,
+	                                DatabaseMetaData dbmd) 
 		throws SQLException, DuplicateColumnException, SQLObjectException {
-		Connection con = null;
 		ResultSet rs = null;
 		ResultSet typeRs = null;
-
+		List<SQLColumn> cols = new ArrayList<SQLColumn>();
 		try {
-		    con = addTo.getParentDatabase().getConnection();
-		    if (dbmd == null) dbmd = con.getMetaData();
-		    typeRs = con.getMetaData().getTypeInfo();
+		    typeRs = dbmd.getTypeInfo();
 		    Map<Double, Double> typeToMaxPrecisionMap = new HashMap<Double, Double>();
             while (typeRs.next()) {
                 typeToMaxPrecisionMap.put(new Double(typeRs.getDouble(2)), new Double(typeRs.getDouble(3)));
@@ -319,7 +317,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
                     autoIncrement = false;
                 }
 				
-				SQLColumn col = new SQLColumn(addTo,
+				SQLColumn col = new SQLColumn(null,
 											  rs.getString(4),  // col name
 											  rs.getInt(5), // data type (from java.sql.Types)
 											  rs.getString(6), // native type name
@@ -335,6 +333,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 
 				// work around oracle 8i bug: when table names are long and similar,
 				// getColumns() sometimes returns columns from multiple tables!
+				// XXX: should be moved to the JDBC Wrapper for Oracle
 				String dbTableName = rs.getString(3);
 				if (dbTableName != null) {
 					if (!dbTableName.equalsIgnoreCase(tableName)) {
@@ -347,15 +346,12 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 				}
 
 				logger.debug("Adding column "+col.getName());
-				
-				if (addTo.getColumnByName(col.getName(), false, true) != null) {
-					throw new DuplicateColumnException(addTo, col.getName());
-				}
-				
-				addTo.columnsFolder.children.add(col); // don't use addTo.columnsFolder.addColumn() (avoids multiple SQLObjectEvents)
+				cols.add(col);
 
 			}
 
+			return cols;
+			
 		} finally {
 		    try {
                 if (typeRs != null) typeRs.close();
@@ -366,11 +362,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 				if (rs != null) rs.close();
 			} catch (SQLException ex) {
 				logger.error("Couldn't close result set", ex);
-			}
-			try {
-			    if (con != null) con.close();
-			} catch (SQLException ex) {
-			    logger.error("Couldn't close connection", ex);
 			}
 		}
 	}

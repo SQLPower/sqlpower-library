@@ -341,10 +341,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
      * @throws SQLObjectException
      */
 	public void attachRelationship(SQLTable pkTable, SQLTable fkTable, boolean autoGenerateMapping) throws SQLObjectException {
-	    attachRelationship(pkTable, fkTable, autoGenerateMapping, null);
-	}
-	
-	void attachRelationship(SQLTable pkTable, SQLTable fkTable, boolean autoGenerateMapping, DatabaseMetaData dbmd) throws SQLObjectException {
 		if(pkTable == null) throw new NullPointerException("Null pkTable not allowed");
 		if(fkTable == null) throw new NullPointerException("Null fkTable not allowed");
 
@@ -516,7 +512,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 * @throws SQLObjectException if a database error occurs or if the
 	 * given table's parent database is not marked as populated.
 	 */
-	static boolean addImportedRelationshipsToTable(SQLTable pkTable, SQLTable table, DatabaseMetaData dbmd) throws SQLObjectException {
+	static boolean addImportedRelationshipsToTable(SQLTable pkTable, SQLTable table) throws SQLObjectException {
 		boolean allRelationshipsAdded = true;
 		SQLDatabase db = table.getParentDatabase();
 		if (!db.isPopulated()) {
@@ -527,8 +523,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		ResultSet tempRS = null; // just a temporary place for the live result set. use crs instead.
 		try {
 			con = db.getConnection();
-			logger.debug("dbmd is " + dbmd);
-			if (dbmd == null) dbmd = con.getMetaData();
+			DatabaseMetaData dbmd = con.getMetaData();
 			crs = new CachedRowSet();
 			tempRS = dbmd.getImportedKeys(table.getCatalogName(),
                         			      table.getSchemaName(),
@@ -599,7 +594,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				}
 				
 				logger.debug("Looking for pk column '"+crs.getString(4)+"' in table '"+r.pkTable+"'");
-				m.pkColumn = r.pkTable.getColumnByName(crs.getString(4), dbmd);
+				m.pkColumn = r.pkTable.getColumnByName(crs.getString(4));
 				if (m.pkColumn == null) {
 					throw new SQLObjectException("relationship.populate.nullPkColumn");
 				}
@@ -631,7 +626,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			// now that all the new SQLRelationship objects are set up, add them to their tables
             for (SQLRelationship addMe : newKeys) {
             	if (!addMe.pkTable.getExportedKeysFolder().retrieveChildrenNoPopulate().contains(addMe)) {
-            		addMe.attachRelationship(addMe.pkTable, addMe.fkTable, false, dbmd);
+            		addMe.attachRelationship(addMe.pkTable, addMe.fkTable, false);
             	}
             }
 

@@ -593,4 +593,29 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
     public int getMaxActiveConnections() {
         return maxActiveConnections;
     }
+
+    /**
+     * Re-reads the definition of all populated objects for this entire
+     * database. This involves a lot of recursion and re-populating. When
+     * SQLObjects are added, removed, or modified as a result of this process,
+     * they will fire the appropriate SQLObject events. The entire operation
+     * happens in the context of a single compound event.
+     * <p>
+     * The refresh will not cause any additional SQLObjects to become populated,
+     * although it may end up removing some objects that were already populated
+     * (because they were dropped in the physical database).
+     */
+    public void refresh() throws SQLObjectException {
+        try {
+            startCompoundEdit("Refresh database " + getName());
+            
+            // TODO hint a DatabaseMetadata cache flush for our wrappers
+            
+            for (SQLObject o : (List<SQLObject>) children) {
+                o.refresh();
+            }
+        } finally {
+            endCompoundEdit("Refresh database" + getName());
+        }
+    }
 }

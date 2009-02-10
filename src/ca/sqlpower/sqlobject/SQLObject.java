@@ -745,4 +745,20 @@ public abstract class SQLObject implements java.io.Serializable {
         this.childrenInaccessibleReason = message;
         fireDbObjectChanged("childrenInaccessibleReason", oldVal, childrenInaccessibleReason);
     }
+
+    /**
+     * A basic refresh method that simply calls refresh on all existing
+     * children. Most classes will have to override this with an implementation
+     * that checks for changes in the physical database and adjusts the child
+     * list accordingly.
+     * <p>
+     * Note that this package-private method is not meant to be called directly!
+     * All refresh operations have to be initiated by calling the parent database's
+     * refresh method, {@link SQLDatabase#refresh()}, which is public.
+     */
+    void refresh() throws SQLObjectException {
+        for (SQLObject o : (List<SQLObject>) children) {
+            o.refresh();
+        }
+    }
 }
