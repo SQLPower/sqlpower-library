@@ -485,45 +485,41 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
         }
     }
 
-	/**
-	 * Fetches all imported keys for the given table.  (Imported keys
-	 * are the PK columns of other tables that are referenced by the
-	 * given table).
-	 *
-	 * <p>Mainly for use by SQLTable's populate method.  Does not cause
-	 * SQLObjectEvents (to avoid infinite recursion), so you have to
-	 * generate them yourself at a safe time.
-	 *
-	 * <p>Note that <code>table</code>'s database must be fully
-	 * populated up to the table level (the tables themselves can be
-	 * unpopulated) before you call this method; it requires that all
-	 * referenced tables are represented by in-memory SQLTable
-	 * objects.
-	 * 
-	 * @param pkTable the specific table to import relationships from if
-	 * there is only one table to import relationships from. This value
-	 * can be null if all relationships on the importing tables are to 
-	 * be added.
-	 * 
-	 * @return true if all of the relationships have been added and the
-	 * table's relationships are fully populated. False if some of the
-	 * relationships were not added.
-	 *
-	 * @throws SQLObjectException if a database error occurs or if the
-	 * given table's parent database is not marked as populated.
-	 */
-	static boolean addImportedRelationshipsToTable(SQLTable pkTable, SQLTable table) throws SQLObjectException {
+    /**
+     * Fetches imported keys for the given table. (Imported keys are the
+     * uniquely-indexed columns of other tables that are referenced by (imported
+     * from) the given table). Nothing is added to the given table or any other
+     * objects, although the returned SQLRelationship column mapping objects
+     * will likely have references to columns in that table and others. It is
+     * the caller's option whether or not to attach some, all, or none of the
+     * returned SQLRelationship objects to the object model. All returned
+     * objects can be safely thrown away simply by ignoring them, or kept by
+     * invoking their {@link #attachRelationship(SQLTable, SQLTable, boolean)}
+     * method.
+     * <p>
+     * Note that <code>table</code>'s database must be fully populated up to the
+     * table level (the tables themselves can be unpopulated) before you call
+     * this method; it requires that all referenced tables are represented by
+     * in-memory SQLTable objects. The tables this table imports its keys from
+     * will be populated as a side effect of this call.
+     * 
+     * @throws SQLObjectException
+     *             if a database error occurs or if the given table's parent
+     *             database is not marked as populated.
+     */
+	static List<SQLRelationship> fetchImportedKeys(SQLTable table)
+	throws SQLObjectException {
 		boolean allRelationshipsAdded = true;
 		SQLDatabase db = table.getParentDatabase();
 		if (!db.isPopulated()) {
 			throw new SQLObjectException("relationship.unpopulatedTargetDatabase");
 		}
-		Connection con = null;
 		CachedRowSet crs = null;
 		ResultSet tempRS = null; // just a temporary place for the live result set. use crs instead.
+		Connection con = null;
 		try {
-			con = db.getConnection();
-			DatabaseMetaData dbmd = con.getMetaData();
+		    con = table.getParentDatabase().getConnection();
+		    DatabaseMetaData dbmd = con.getMetaData();
 			crs = new CachedRowSet();
 			tempRS = dbmd.getImportedKeys(table.getCatalogName(),
                         			      table.getSchemaName(),
@@ -532,8 +528,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		} catch (SQLException e) {
 		    throw new SQLObjectException("relationship.populate", e);
 		} finally {
-			// close the connection before it makes the recursive call
-            // that could lead to opening more connections
             try {
                 if (tempRS != null) tempRS.close();
             } catch (SQLException e) {
@@ -566,14 +560,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				String pkCat = crs.getString(1);
 				String pkSchema = crs.getString(2);
 				String pkTableName = crs.getString(3);
-				if (logger.isDebugEnabled()) {
-					logger.debug("Found relationship for pk table " + pkCat + "." + pkSchema + "." + pkTableName);
-					if (pkTable != null) {
-						logger.debug("Looking for relationships on " + pkTable.getCatalogName() + "." + pkTable.getSchemaName() + "." + pkTable.getName());
-					} else {
-						logger.debug("Looking for all relationships.");
-					}
-				}
+				
 				r.pkTable = db.getTableByName(pkCat,  // catalog
 											  pkSchema,  // schema
 											  pkTableName); // table
@@ -583,14 +570,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				            +pkCat+"."+pkSchema+"."+pkTableName
 				            +" in target database!");
 				    continue;
-				}
-				
-				if (pkTable != null &&
-						pkTable != r.pkTable) {
-					//PK Table is not the same as the expected PK Table we are loading from
-					allRelationshipsAdded = false;
-					newKeys.remove(r);
-					continue;
 				}
 				
 				logger.debug("Looking for pk column '"+crs.getString(4)+"' in table '"+r.pkTable+"'");
@@ -620,16 +599,10 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
                             " relationship. Defaulting to NOT_DEFERRABLE.", ex);
                     r.deferrability = Deferrability.NOT_DEFERRABLE;
                 }
-				// FIXME: need to determine if the column is identifying or non-identifying!
 			}
 
-			// now that all the new SQLRelationship objects are set up, add them to their tables
-            for (SQLRelationship addMe : newKeys) {
-            	if (!addMe.pkTable.getExportedKeysFolder().retrieveChildrenNoPopulate().contains(addMe)) {
-            		addMe.attachRelationship(addMe.pkTable, addMe.fkTable, false);
-            	}
-            }
-
+			return newKeys;
+			
 		} catch (SQLException e) {
 			throw new SQLObjectException("relationship.populate", e);
 		} finally {
@@ -639,7 +612,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				logger.warn("Couldn't close resultset", e);
 			}
 		}
-		return allRelationshipsAdded;
 	}
 
 	public ColumnMapping getMappingByPkCol(SQLColumn pkcol) {

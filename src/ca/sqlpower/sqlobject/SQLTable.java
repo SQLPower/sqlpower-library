@@ -327,7 +327,24 @@ public class SQLTable extends SQLObject {
 		importedKeysFolder.populated = true;
 		boolean allRelationshipsAdded = false;
 		try {
-			allRelationshipsAdded = SQLRelationship.addImportedRelationshipsToTable(pkTable, this);
+			List<SQLRelationship> newKeys = SQLRelationship.fetchImportedKeys(this);
+
+			/* now attach the new SQLRelationship objects to their tables,
+             * which may already be partially populated (we avoid adding the
+			 * same relationship if it's already there). We also filter by
+			 * pkTable if that was requested.
+			 */
+            for (SQLRelationship addMe : newKeys) {
+                if (pkTable != null && addMe.pkTable != pkTable) {
+                    allRelationshipsAdded = false;
+                    continue;
+                }
+                if (!addMe.pkTable.getExportedKeysFolder().retrieveChildrenNoPopulate().contains(addMe)) {
+                    addMe.attachRelationship(addMe.pkTable, addMe.fkTable, false);
+                }
+            }
+
+
 		} finally {
 			int newSize = importedKeysFolder.children.size();
 			if (newSize > oldSize) {
@@ -1527,7 +1544,8 @@ public class SQLTable extends SQLObject {
             List<SQLColumn> newCols = SQLColumn.fetchColumnsForTable(getCatalogName(), getSchemaName(), getName(), dbmd);
             SQLObjectUtils.refreshChildren(columnsFolder, newCols);
             
-            // TODO relationships
+            // relationships
+            
             
             // indexes (incl. PK)
             List<SQLIndex> newIndexes = SQLIndex.fetchIndicesForTable(dbmd, this);
