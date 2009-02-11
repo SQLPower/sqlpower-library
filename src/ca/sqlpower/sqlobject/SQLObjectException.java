@@ -22,7 +22,7 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 
 /**
- * A general exception class for the Architect application.
+ * A general exception class for the SQL Objects.
  */
 public class SQLObjectException extends Exception implements java.io.Serializable {
 	protected Throwable cause;

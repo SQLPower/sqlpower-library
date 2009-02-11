@@ -19,15 +19,15 @@
 package ca.sqlpower.sqlobject;
 
 /**
- * The ArchitectRuntimeException is designed to wrap an
- * ArchitectException in cases where a method which is not allowed to
- * throw checked exceptions must propogate an ArchitectException.
+ * The SQLObjectRuntimeException is designed to wrap an
+ * SQLObjectException in cases where a method which is not allowed to
+ * throw checked exceptions must propogate an SQLObjectException.
  *
  * <p>This exception takes on the message and cause of the
- * ArchitectException that it wraps, so it will rarely be necessary to
- * "unwrap" an ArchitectException from an ArchitectRuntimeException.
+ * SQLObjectException that it wraps, so it will rarely be necessary to
+ * "unwrap" an SQLObjectException from an SQLObjectRuntimeException.
  * If you do need that (for instance, when re-throwing as a checked
- * exception), use the asArchitectException method.
+ * exception), use the asSQLObjectException method.
  */
 public class SQLObjectRuntimeException extends RuntimeException {
 	protected SQLObjectException wrapped;
@@ -60,7 +60,7 @@ public class SQLObjectRuntimeException extends RuntimeException {
 	 * Returns the actual ArchitectException that this exception
 	 * wraps.  It shouldn't normally be nexessary to use this method.
 	 */
-	public SQLObjectException asArchitectException() {
+	public SQLObjectException asSQLObjectException() {
 		return wrapped;
 	}
 }
