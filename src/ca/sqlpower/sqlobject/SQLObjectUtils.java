@@ -20,8 +20,10 @@
 package ca.sqlpower.sqlobject;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -208,6 +210,26 @@ public class SQLObjectUtils {
     	for (int i = 0; i < sources.length; i++) {
     		undoUnlistenToHierarchy(listener, sources[i]);
     	}
+    }
+
+    public static void refreshChildren(SQLObject parent, List<? extends SQLObject> newChildren) throws SQLObjectException {
+        Set<String> oldChildNames = parent.getChildNames();
+        Set<String> newChildNames = new HashSet<String>(); // will populate in following loop
+        for (SQLObject newChild : newChildren) {
+            newChildNames.add(newChild.getName());
+            if (oldChildNames.contains(newChild.getName())) {
+                parent.getChildByName(newChild.getName()).updateToMatch(newChild);
+            } else {
+                parent.addChild(newChild);
+            }
+        }
+        
+        // get rid of removed children
+        oldChildNames.removeAll(newChildNames);
+        for (String removedColName : oldChildNames) {
+            parent.removeChild(parent.getChildByName(removedColName));
+        }
+    
     }
 
 }

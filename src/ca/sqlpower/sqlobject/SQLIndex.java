@@ -374,25 +374,27 @@ public class SQLIndex extends SQLObject {
      *            The index to copy properties and columns from. If it has columns,
      *            they must already belong to the same table as this index does.
      */
-    public final void updateToMatch(SQLIndex source) throws SQLObjectException {
-        setName(source.getName());
-        unique = source.unique;
-        populated = source.populated;
-        type = source.type;
-        filterCondition = source.filterCondition;
-        qualifier = source.qualifier;
-        clustered = source.clustered;
+    @Override
+    public final void updateToMatch(SQLObject source) throws SQLObjectException {
+        SQLIndex sourceIdx = (SQLIndex) source;
+        setName(sourceIdx.getName());
+        setUnique(sourceIdx.unique);
+        populated = sourceIdx.populated;
+        setType(sourceIdx.type);
+        setFilterCondition(sourceIdx.filterCondition);
+        setQualifier(sourceIdx.qualifier);
+        setClustered(sourceIdx.clustered);
         
         while (children.size() > 0) {
             removeChild(0);
         }
         
-        for (Object c : source.getChildren()) {
+        for (Object c : sourceIdx.getChildren()) {
             Column oldCol = (Column) c;
             Column newCol = new Column();
             newCol.setAscendingOrDescending(oldCol.ascendingOrDescending);
             newCol.setAscendingOrDescending(oldCol.ascendingOrDescending);
-            newCol.column = oldCol.column;
+            newCol.setColumn(oldCol.column);
             newCol.setName(oldCol.getName());
             addChild(newCol);
         }

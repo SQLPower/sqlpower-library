@@ -25,12 +25,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -1527,44 +1525,13 @@ public class SQLTable extends SQLObject {
             con = getParentDatabase().getConnection();
             DatabaseMetaData dbmd = con.getMetaData();
             List<SQLColumn> newCols = SQLColumn.fetchColumnsForTable(getCatalogName(), getSchemaName(), getName(), dbmd);
-            Set<String> oldColNames = columnsFolder.getChildNames();
-            Set<String> newColNames = new HashSet<String>(); // will populate in following loop
-            for (SQLColumn newCol : newCols) {
-                newColNames.add(newCol.getName());
-                if (oldColNames.contains(newCol.getName())) {
-                    getColumnByName(newCol.getName(), false, true).updateToMatch(newCol);
-                } else {
-                    addColumn(newCol);
-                }
-            }
-            
-            // get rid of removed columns
-            oldColNames.removeAll(newColNames);
-            for (String removedColName : oldColNames) {
-                removeColumn(getColumnByName(removedColName));
-            }
+            SQLObjectUtils.refreshChildren(columnsFolder, newCols);
             
             // TODO relationships
             
             // indexes (incl. PK)
             List<SQLIndex> newIndexes = SQLIndex.fetchIndicesForTable(dbmd, this);
-            Set<String> oldIndexNames = indicesFolder.getChildNames();
-            Set<String> newIndexNames = new HashSet<String>(); // will populate in following loop
-            for (SQLIndex newIdx : newIndexes) {
-                newIndexNames.add(newIdx.getName());
-                if (oldIndexNames.contains(newIdx.getName())) {
-                    getIndexByName(newIdx.getName(), false).updateToMatch(newIdx);
-                } else {
-                    addIndex(newIdx);
-                }
-            }
-            
-            // get rid of old indexes
-            oldIndexNames.removeAll(newIndexNames);
-            for (String removedIndexName : oldIndexNames) {
-                SQLIndex removeMe = getIndexByName(removedIndexName, false);
-                getIndicesFolder().removeChild(removeMe);
-            }
+            SQLObjectUtils.refreshChildren(indicesFolder, newIndexes);
             
             normalizePrimaryKey();
             

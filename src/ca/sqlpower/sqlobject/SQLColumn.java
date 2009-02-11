@@ -274,10 +274,11 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      * given column's properties.
      * 
      * @param source
-     *            The column to copy the properties from
+     *            The SQLColumn to copy the properties from
      */
-    public void updateToMatch(SQLColumn source) {
-        copyProperties(this, source);
+	@Override
+    public void updateToMatch(SQLObject source) {
+        copyProperties(this, (SQLColumn) source);
     }
 
 	/**

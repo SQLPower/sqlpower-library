@@ -29,6 +29,8 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 import ca.sqlpower.sqlobject.SQLRelationship.RelationshipManager;
 import ca.sqlpower.sqlobject.undo.CompoundEvent;
 import ca.sqlpower.sqlobject.undo.CompoundEventListener;
@@ -778,5 +780,28 @@ public abstract class SQLObject implements java.io.Serializable {
         for (SQLObject o : (List<SQLObject>) children) {
             o.refresh();
         }
+    }
+
+    /**
+     * Updates all the properties of this SQLObject to match those of the other
+     * SQLObject. Some implementations also update the list of children (see
+     * SQLIndex and SQLRelationship for examples of this). If any of the properties
+     * of this object change as a result of the update, the corresponding
+     * events will be fired.
+     * 
+     * @param source
+     *            The SQLObject to read the new property values from. Must be of
+     *            the same type as the receiving object.
+     * @throws SQLObjectException if the attempted update causes a populate that fails
+     * @throws NotImplementedException
+     *             The default implementation from SQLObject just throws this
+     *             exception. Subclasses that want to implement this
+     *             functionality must override this method.
+     * @throws ClassCastException
+     *             if the given source object is not the same type as this
+     *             SQLObject.
+     */
+    public void updateToMatch(SQLObject source) throws SQLObjectException {
+        throw new NotImplementedException();
     }
 }
