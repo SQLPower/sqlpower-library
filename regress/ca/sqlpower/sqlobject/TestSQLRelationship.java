@@ -1171,8 +1171,8 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
     	assertEquals(0, fkTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
     	assertEquals(0, dontConnectMe.getExportedKeysFolder().retrieveChildCountNoPopulate());
     	
-    	fkTable.getImportedKeysFolder().setPopulated(true);
-    	SQLRelationship.addImportedRelationshipsToTable(pkTable, fkTable);
+    	// this should partially populate fkTable's imported keys folder (1 of 2 relationships added)
+    	pkTable.getExportedKeysFolder().populate();
     	
     	assertEquals(1, fkTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
     	assertEquals(1, pkTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
@@ -1259,8 +1259,8 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
     	assertEquals(0, anotherTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
     	assertEquals(0, anotherTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
     	
-    	SQLRelationship.addImportedRelationshipsToTable(null, fkTable);
-     	
+     	fkTable.getImportedKeysFolder().populate();
+    	
     	System.out.println("Have exported keys " + pkTable.getExportedKeysFolder().retrieveChildrenNoPopulate());
     	assertEquals(1, pkTable.getExportedKeysFolder().retrieveChildCountNoPopulate());
     	assertEquals(0, pkTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
@@ -1349,8 +1349,8 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
     	assertEquals(0, fkTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
     	assertEquals(0, dontConnectMe.getExportedKeysFolder().retrieveChildCountNoPopulate());
     	
-    	fkTable.getImportedKeysFolder().setPopulated(true);
-    	SQLRelationship.addImportedRelationshipsToTable(pkTable, fkTable);
+        // this should partially populate fkTable's imported keys folder (1 of 2 relationships added)
+    	pkTable.getExportedKeysFolder().populate();
     	
     	assertEquals(0, schemaCopyPKTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
     	assertEquals(1, fkTable.getImportedKeysFolder().retrieveChildCountNoPopulate());
