@@ -75,7 +75,7 @@ public class CursorManager {
      */
     private void modifyCursorImage() {
         if (dragAllModeActive || draggingTable) {
-            component.setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+            component.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         } else if (placeModeActive) {
             component.setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
         } else {
