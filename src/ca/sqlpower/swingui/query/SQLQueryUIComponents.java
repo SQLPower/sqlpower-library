@@ -105,6 +105,7 @@ import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.DatabaseListChangeEvent;
 import ca.sqlpower.sql.DatabaseListChangeListener;
 import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.swingui.MonitorableWorker;
 import ca.sqlpower.swingui.SPSUtils;
 import ca.sqlpower.swingui.SwingWorkerRegistry;
@@ -167,24 +168,10 @@ public class SQLQueryUIComponents {
             if (e.getStateChange() != ItemEvent.SELECTED) {
                 return;
             }
-            if (!conMap.containsKey(e.getItem())) {
-                SPDataSource ds = (SPDataSource)e.getItem();
-                try {
-                    Connection con = ds.createConnection();
-                    conMap.put(ds, new ConnectionAndStatementBean(con));
-                } catch (SQLException e1) {
-                    SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedConnectingToDBWithName", ds.getName()), e1);
-                    return;
-                }
-            }
-            try {
-                autoCommitToggleButton.setSelected(conMap.get(e.getItem()).getConnection().getAutoCommit());
-            } catch (SQLException ex) {
-                SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedConnectingToDB"), ex);
-            }
-            stopButton.setEnabled(conMap.get(e.getItem()).getCurrentStmt() != null);
-            executeButton.setEnabled(conMap.get(e.getItem()).getCurrentStmt() == null);
+            SPDataSource ds = (SPDataSource)e.getItem();
+            addConnection(ds);
         }
+
     }
    
     /**
@@ -396,6 +383,12 @@ public class SQLQueryUIComponents {
             Connection con = null;
             Statement stmt = null;
             try {
+            	if (conMap.get(ds) == null || conMap.get(ds).getConnection() == null || conMap.get(ds).getConnection().isClosed()) {
+            		addConnection(ds);
+            		if (conMap.get(ds) == null) {
+            			throw new SQLObjectException("Cannot connect to " + ds.getName());
+            		}
+            	}
             	con = conMap.get(ds).getConnection();
                 stmt = con.createStatement();
                 conMap.get(ds).setCurrentStmt(stmt);
@@ -1262,6 +1255,30 @@ public class SQLQueryUIComponents {
     		}
     	}
 	}
+	
+    /**
+     * This will add a connection to the map of known connections.
+     * 
+     * <p>This is package private for testing.
+     */
+	void addConnection(SPDataSource ds) {
+		if (!conMap.containsKey(ds)) {
+            try {
+                Connection con = ds.createConnection();
+                conMap.put(ds, new ConnectionAndStatementBean(con));
+            } catch (SQLException e1) {
+                SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedConnectingToDBWithName", ds.getName()), e1);
+                return;
+            }
+        }
+        try {
+            autoCommitToggleButton.setSelected(conMap.get(ds).getConnection().getAutoCommit());
+        } catch (SQLException ex) {
+            SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedConnectingToDB"), ex);
+        }
+        stopButton.setEnabled(conMap.get(ds).getCurrentStmt() != null);
+        executeButton.setEnabled(conMap.get(ds).getCurrentStmt() == null);
+	}
     
     public void addWindowListener(Window container){
     	container.addWindowListener(windowListener);
@@ -1359,6 +1376,24 @@ public class SQLQueryUIComponents {
     
     public void setShowSearchOnResults(boolean showSearchOnResults) {
 		this.showSearchOnResults = showSearchOnResults;
+	}
+    
+    /**
+     * Sets the data source combo box to the given data source.
+     * 
+     * <p> This is used for testing.
+     */
+    void setCurrentDataSource(SPDataSource ds) {
+    	databaseComboBox.getModel().setSelectedItem(ds);
+    }
+    
+    /**
+     * Gets the currently executing SQL worker or null if none are currently executing.
+     * 
+     * <p>Used in testing.
+     */
+    ExecuteSQLWorker getSqlExecuteWorker() {
+		return sqlExecuteWorker;
 	}
 }
 
