@@ -35,6 +35,7 @@ import ca.sqlpower.sqlobject.SQLObjectUtils;
 import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
+import ca.sqlpower.testutil.NewValueMaker;
 
 public class TestSQLIndex extends SQLTestCase {
 
@@ -452,5 +453,24 @@ public class TestSQLIndex extends SQLTestCase {
         assertEquals(0, l.getEditsBeforeLastGroup());
         table.removeColumn(0);
         assertEquals(0, l.getEditsBeforeLastGroup());
+    }
+    
+    /**
+     * SQLIndex.updateToMatch should not create an index with Column entries
+     * that point to columns of other tables. This test ensures that it doesn't.
+     */
+    public void testUpdateToMatchBadColumnRefs() throws Exception {
+        SQLIndex source = dbTable.getPrimaryKeyIndex();
+        SQLIndex target = index3;
+        
+        target.updateToMatch(source);
+        
+        assertEquals(3, target.getChildCount()); // just to ensure we're testing something!
+        
+        for (SQLIndex.Column icol : target.getChildren()) {
+            if (icol.getColumn() != null) {
+                assertNotSame(source, icol.getColumn().getParentTable());
+            }
+        }
     }
 }

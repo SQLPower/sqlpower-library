@@ -168,7 +168,7 @@ public class SQLIndex extends SQLObject {
         }
 
         @Override
-        public SQLObject getParent() {
+        public SQLIndex getParent() {
             return SQLIndex.this;
         }
 
