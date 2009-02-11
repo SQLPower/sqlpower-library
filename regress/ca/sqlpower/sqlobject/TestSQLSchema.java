@@ -18,13 +18,9 @@
  */
 package ca.sqlpower.sqlobject;
 
-import ca.sqlpower.sqlobject.SQLDatabase;
-import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.sqlobject.SQLSchema;
-import ca.sqlpower.sqlobject.SQLTable;
 
 
-public class TestSQLSchema extends SQLTestCase {
+public class TestSQLSchema extends BaseSQLObjectTestCase {
 
 	private SQLSchema s;
 	
@@ -32,6 +28,7 @@ public class TestSQLSchema extends SQLTestCase {
 		super(name);
 	}
 
+	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 		s = new SQLSchema(true);

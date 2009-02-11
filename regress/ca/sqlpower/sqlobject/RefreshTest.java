@@ -19,33 +19,23 @@
 
 package ca.sqlpower.sqlobject;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Types;
-
-import junit.framework.TestCase;
-import ca.sqlpower.sql.SPDataSource;
 
 /**
  * This test suite cuts across all the populatable SQLObjects, and sets a number
  * of scenarios for refresh, including where multiple related items change
  * simultaneously.
+ * <p>
+ * Refreshing tables with foreign key constraints (SQLRelationship) is not tested
+ * in this class because it needs a more complicated setup and I didn't want to
+ * make these simpler things overly complex. See {@link RefreshFKTest} for the
+ * tests involving refresh with foreign keys.
  */
-public class RefreshTest extends TestCase {
-
-    /**
-     * Connection to an in-memory HSQLDB. MockJDBC isn't complete enough (no
-     * FKs) for testing all types of refresh yet.
-     */
-    private SPDataSource ds;
-
-    private SQLDatabase db;
+public class RefreshTest extends DatabaseConnectedTestCase {
 
     @Override
     protected void setUp() throws Exception {
-        
-        db = new SQLDatabase(SQLTestCase.getDataSource());
+        super.setUp();
         
         sqlx("CREATE TABLE public.moose (" +
              "\n moose_pk INTEGER NOT NULL," +
@@ -53,38 +43,10 @@ public class RefreshTest extends TestCase {
              "\n antler_length INTEGER NOT NULL," +
              "\n CONSTRAINT moose_pk PRIMARY KEY (moose_pk)" +
              "\n);");
-    }
-    
-    @Override
-    protected void tearDown() throws Exception {
-        sqlx("SHUTDOWN");
-        db.disconnect();
-    }
-    
-    private int sqlx(String sql) throws SQLException, SQLObjectException {
-        Connection con = null;
-        Statement stmt = null;
-        try {
-            con = db.getConnection();
-            stmt = con.createStatement();
-            return stmt.executeUpdate(sql);
-        } catch (SQLException ex) {
-            System.err.println("Got SQL Exception when executing: " + sql);
-            throw ex;
-        } finally {
-            try {
-                if (stmt != null) stmt.close();
-            } catch (SQLException ex) {
-                System.err.println("Failed to close statement; squishing this exception:");
-                ex.printStackTrace();
-            }
-            try {
-                if (con != null) con.close();
-            } catch (SQLException ex) {
-                System.err.println("Failed to close connection; squishing this exception:");
-                ex.printStackTrace();
-            }
-        }
+        
+        // Hey you! Yeah, you--the person about to add a new table and a foreign key
+        // to this setup! Go to the RefreshFKTest class. It already has the setup
+        // you're looking for.
     }
     
     public void testAddNonPkCol() throws Exception {

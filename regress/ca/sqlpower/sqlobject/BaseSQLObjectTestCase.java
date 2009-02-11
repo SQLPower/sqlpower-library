@@ -19,73 +19,31 @@
 package ca.sqlpower.sqlobject;
 
 import java.beans.PropertyDescriptor;
-import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import junit.framework.TestCase;
-
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 
-import ca.sqlpower.sql.DataSourceCollection;
-import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.undo.SQLObjectUndoManager;
 import ca.sqlpower.testutil.MockJDBCDriver;
 
 /**
- * SQLTestCase is an abstract base class for test cases that require a
- * database connection.
+ * Extends the basic database-connected test class with some test methods that
+ * should be applied to every SQLObject implementation. If you are making a test
+ * for a new SQLObject implementation, this is the test class you should extend!
  */
-public abstract class SQLTestCase extends TestCase {
+public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
 
-	/**
-	 * This is the SQLDatabase object.  It will be set up according to
-	 * some system properties in the <code>setup()</code> method.
-	 *
-	 * @see #setup()
-	 */
-	SQLDatabase db;
-    private static final DataSourceCollection plini = new PlDotIni();
-    
     Set<String>propertiesToIgnoreForUndo = new HashSet<String>();
     Set<String>propertiesToIgnoreForEventGeneration = new HashSet<String>();
 
-	public SQLTestCase(String name) throws Exception {
+	public BaseSQLObjectTestCase(String name) throws Exception {
 		super(name);
-	}
-	
-	/**
-	 * Looks up and returns an SPDataSource that represents the testing
-	 * database. Uses a PL.INI file located in the current working directory, 
-	 * called "pl.regression.ini" and creates a connection to the database called
-	 * "regression_test".
-	 * 
-	 * <p>FIXME: Need to parameterise this so that we can test each supported
-	 * database platform!
-	 * @throws SQLObjectException 
-	 */
-	static SPDataSource getDataSource() throws IOException, SQLObjectException {
-		plini.read(new File("pl.regression.ini"));
-		return plini.getDataSource("regression_test");
-	}
-	
-	/**
-	 * Sets up the instance variable <code>db</code> using the getDatabase() method.
-	 */
-	protected void setUp() throws Exception {
-		db = new SQLDatabase(new SPDataSource(getDataSource()));
-        assertNotNull(db.getDataSource().getParentType());
-	}
-	
-	protected void tearDown() throws Exception {
-		db.disconnect();
-		db = null;
 	}
 	
 	protected abstract SQLObject getSQLObjectUnderTest() throws SQLObjectException;
@@ -153,7 +111,7 @@ public abstract class SQLTestCase extends TestCase {
 			} else if (property.getPropertyType() == SQLCatalog.class) {
 				newVal = new SQLCatalog(new SQLDatabase(),"This is a new catalog");
 			} else if (property.getPropertyType() == SPDataSource.class) {
-				newVal = new SPDataSource(plini);
+				newVal = new SPDataSource(getPLIni());
 				((SPDataSource)newVal).setName("test");
 				((SPDataSource)newVal).setDisplayName("test");
 				((SPDataSource)newVal).setUser("a");
@@ -280,7 +238,7 @@ public abstract class SQLTestCase extends TestCase {
 			} else if (property.getPropertyType() == SQLCatalog.class) {
 				newVal = new SQLCatalog(new SQLDatabase(),"This is a new catalog");
 			} else if (property.getPropertyType() == SPDataSource.class) {
-				newVal = new SPDataSource(plini);
+				newVal = new SPDataSource(getPLIni());
 				((SPDataSource)newVal).setName("test");
 				((SPDataSource)newVal).setDisplayName("test");
 				((SPDataSource)newVal).setUser("a");
@@ -329,14 +287,6 @@ public abstract class SQLTestCase extends TestCase {
      */
     public void testChildrenNotNull() throws SQLObjectException {
         assertNotNull(getSQLObjectUnderTest().getChildren());
-    }
-
-    public SQLDatabase getDb() {
-        return new SQLDatabase(new SPDataSource(db.getDataSource()));
-    }
-    
-    public DataSourceCollection getPLIni() {
-        return plini;
     }
 
 }

@@ -23,11 +23,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import ca.sqlpower.sqlobject.SQLObjectException;
-import ca.sqlpower.sqlobject.SQLColumn;
-import ca.sqlpower.sqlobject.SQLObject;
-
-public class SQLObjectTest extends SQLTestCase {
+public class SQLObjectTest extends BaseSQLObjectTestCase {
 
 	public SQLObjectTest(String name) throws Exception {
         super(name);

@@ -21,104 +21,22 @@ package ca.sqlpower.sqlobject;
 import java.beans.PropertyChangeEvent;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.List;
 
-import junit.extensions.TestSetup;
-import junit.framework.Test;
-import junit.framework.TestSuite;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.SPDataSourceType;
-import ca.sqlpower.sqlobject.SQLObjectException;
-import ca.sqlpower.sqlobject.SQLCatalog;
-import ca.sqlpower.sqlobject.SQLDatabase;
-import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.sqlobject.SQLSchema;
-import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.testutil.MockJDBCDriver;
 
-public class TestSQLDatabase extends SQLTestCase {
+public class TestSQLDatabase extends BaseSQLObjectTestCase {
 	
-	/**
-	 * Creates a wrapper around the normal test suite which runs the
-	 * OneTimeSetup and OneTimeTearDown procedures.
-	 */
-	public static Test suite() {
-		TestSuite suite = new TestSuite();
-		suite.addTestSuite(TestSQLDatabase.class);
-		TestSetup wrapper = new TestSetup(suite) {
-			protected void setUp() throws Exception {
-				oneTimeSetUp();
-			}
-			protected void tearDown() throws Exception {
-				oneTimeTearDown();
-			}
-		};
-		return wrapper;
-	}
-
-	/**
-	 * One-time initialization code.  The special {@link #suite()} method arranges for
-	 * this method to be called one time before the individual tests are run.
-	 * @throws Exception 
-	 */
-	public static void oneTimeSetUp() throws Exception {
-		System.out.println("TestSQLDatabase.oneTimeSetUp()");
-		SQLDatabase mydb = new SQLDatabase(getDataSource());
-		Connection con = null;
-		Statement stmt = null;
-
-		try {
-			con = mydb.getConnection();
-			stmt = con.createStatement();
-			
-			/*
-			 * Setting up a clean db for each of the tests
-			 */
-			try {
-				stmt.executeUpdate("DROP TABLE REGRESSION_TEST1");
-				stmt.executeUpdate("DROP TABLE REGRESSION_TEST2");
-			}
-			catch (SQLException sqle ){
-				System.out.println("+++ TestSQLDatabase exception should be for dropping a non-existant table");
-				sqle.printStackTrace();
-			}
-			
-			stmt.executeUpdate("CREATE TABLE REGRESSION_TEST1 (t1_c1 numeric(10))");
-			stmt.executeUpdate("CREATE TABLE REGRESSION_TEST2 (t2_c1 char(10))");
-			
-		} finally {
-			try {
-				if (stmt != null) stmt.close();
-			} catch (SQLException ex) {
-				System.out.println("Couldn't close statement");
-				ex.printStackTrace();
-			}
-			try {
-				if (con != null) con.close();
-			} catch (SQLException ex) {
-				System.out.println("Couldn't close connection");
-				ex.printStackTrace();
-			}
-			mydb.disconnect();
-		}
-	}
-
-	/**
-	 * One-time cleanup code.  The special {@link #suite()} method arranges for
-	 * this method to be called one time before the individual tests are run.
-	 */
-	public static void oneTimeTearDown() {
-		System.out.println("TestSQLDatabase.oneTimeTearDown()");
-	}
-
 	public TestSQLDatabase(String name) throws Exception {
 		super(name);
 	}
 
 	protected void setUp() throws Exception {
 		super.setUp();
-        assertNotNull(db.getDataSource().getParentType());
+        sqlx("CREATE TABLE REGRESSION_TEST1 (t1_c1 numeric(10))");
+        sqlx("CREATE TABLE REGRESSION_TEST2 (t2_c1 char(10))");
 	}
 	
 	@Override
@@ -151,10 +69,11 @@ public class TestSQLDatabase extends SQLTestCase {
 	}
 	
 	public void testGoodConnect() throws SQLObjectException, SQLException {
-		assertFalse("db shouldn't have been connected yet", db.isConnected());
-		Connection con = db.getConnection();
+	    SQLDatabase mydb = new SQLDatabase(getDataSource());
+		assertFalse("db shouldn't have been connected yet", mydb.isConnected());
+		Connection con = mydb.getConnection();
 		assertNotNull("db gave back a null connection", con);
-		assertTrue("db should have said it is connected", db.isConnected());
+		assertTrue("db should have said it is connected", mydb.isConnected());
 		con.close();
 	}
 
@@ -305,7 +224,7 @@ public class TestSQLDatabase extends SQLTestCase {
 			db.addChild(table3);
 		}
 
-		List getTablesTest = db.getTables();
+		List<SQLTable> getTablesTest = db.getTables();
 		assertTrue(getTablesTest.contains(table1));
 		assertTrue(getTablesTest.contains(table2));
 		assertTrue(getTablesTest.contains(table3));					
@@ -486,7 +405,7 @@ public class TestSQLDatabase extends SQLTestCase {
 		Connection con = null;
 		SQLObjectException exc = null;
 		try {
-			assertFalse("db shouldn't have been connected yet", db.isConnected());
+			assertFalse("db shouldn't have been connected yet", mydb.isConnected());
 			con = mydb.getConnection();
 		} catch (SQLObjectException e) {
 			exc = e;
@@ -526,7 +445,7 @@ public class TestSQLDatabase extends SQLTestCase {
 		Connection con = null;
 		SQLObjectException exc = null;
 		try {
-			assertFalse("db shouldn't have been connected yet", db.isConnected());
+			assertFalse("db shouldn't have been connected yet", mydb.isConnected());
 			con = mydb.getConnection();
 		} catch (SQLObjectException e) {
 			exc = e;
@@ -564,7 +483,7 @@ public class TestSQLDatabase extends SQLTestCase {
     
 	public void testConnectionPoolFreesResources() throws SQLException, SQLObjectException {
         assertEquals(0,db.getConnectionPool().getNumActive());
-        assertEquals(0,db.getConnectionPool().getNumIdle());
+        assertEquals(1,db.getConnectionPool().getNumIdle());
 	    Connection con1 = db.getConnection();
         Connection con2 = db.getConnection();
         Connection con3 = db.getConnection();
@@ -627,7 +546,5 @@ public class TestSQLDatabase extends SQLTestCase {
 		cg1.con.close();
 		cg2.con.close();
 	}
-	
-	
 	
 }

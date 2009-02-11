@@ -23,14 +23,8 @@ import java.sql.DatabaseMetaData;
 import java.util.Iterator;
 
 import ca.sqlpower.sql.SPDataSource;
-import ca.sqlpower.sqlobject.SQLObjectException;
-import ca.sqlpower.sqlobject.SQLCatalog;
-import ca.sqlpower.sqlobject.SQLDatabase;
-import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.sqlobject.SQLSchema;
-import ca.sqlpower.sqlobject.SQLTable;
 
-public class TestSQLCatalog extends SQLTestCase {
+public class TestSQLCatalog extends BaseSQLObjectTestCase {
 
 	private SQLCatalog c;
 	public TestSQLCatalog(String name) throws Exception {

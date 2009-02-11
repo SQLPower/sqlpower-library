@@ -20,7 +20,7 @@ package ca.sqlpower.sqlobject;
 
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 
-public class TestSQLIndexColumn extends SQLTestCase {
+public class TestSQLIndexColumn extends BaseSQLObjectTestCase {
     
     private SQLIndex.Column indexColumn; 
 

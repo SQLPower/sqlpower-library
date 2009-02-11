@@ -19,10 +19,7 @@
 package ca.sqlpower.sqlobject;
 
 import java.lang.reflect.InvocationTargetException;
-import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,101 +31,16 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import junit.extensions.TestSetup;
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.apache.commons.beanutils.BeanUtils;
 
 import ca.sqlpower.sql.SPDataSource;
-import ca.sqlpower.sqlobject.SQLObjectException;
-import ca.sqlpower.sqlobject.SQLObjectRuntimeException;
-import ca.sqlpower.sqlobject.LockedColumnException;
-import ca.sqlpower.sqlobject.SQLColumn;
-import ca.sqlpower.sqlobject.SQLDatabase;
-import ca.sqlpower.sqlobject.SQLIndex;
-import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.sqlobject.SQLObjectEvent;
-import ca.sqlpower.sqlobject.SQLObjectListener;
-import ca.sqlpower.sqlobject.SQLObjectUtils;
-import ca.sqlpower.sqlobject.SQLRelationship;
-import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLTable.Folder;
 import ca.sqlpower.sqlobject.TestSQLTable.EventLogger.SQLObjectSnapshot;
 import ca.sqlpower.sqlobject.undo.CompoundEvent;
 import ca.sqlpower.testutil.MockJDBCDriver;
 
-public class TestSQLTable extends SQLTestCase {
-    
-    /**
-     * Creates a wrapper around the normal test suite which runs the
-     * OneTimeSetup and OneTimeTearDown procedures.
-     */
-    public static Test suite() {
-        TestSuite suite = new TestSuite();
-        suite.addTestSuite(TestSQLTable.class);
-        TestSetup wrapper = new TestSetup(suite) {
-            protected void setUp() throws Exception {
-                oneTimeSetUp();
-            }
-            protected void tearDown() throws Exception {
-                oneTimeTearDown();
-            }
-        };
-        return wrapper;
-    }
-    
-    /**
-     * One-time initialization code.  The special {@link #suite()} method arranges for
-     * this method to be called one time before the individual tests are run.
-     * @throws Exception 
-     */
-    public static void oneTimeSetUp() throws Exception {
-        System.out.println("TestSQLTable.oneTimeSetUp()");
-        SQLDatabase mydb = new SQLDatabase(getDataSource());
-        Connection con = null;
-        Statement stmt = null;
-        
-        /*
-         * Setting up a clean db for each of the tests
-         */
-        try {
-            con = mydb.getConnection();
-            stmt = con.createStatement();
-            try {
-                stmt.executeUpdate("DROP TABLE REGRESSION_TEST1");
-                stmt.executeUpdate("DROP TABLE REGRESSION_TEST2");
-            } catch (SQLException sqle) {
-                System.out.println("+++ TestSQLDatabase exception should be for dropping a non-existant table");
-                sqle.printStackTrace();
-            }
-            
-            stmt.executeUpdate("CREATE TABLE REGRESSION_TEST1 (t1_c1 numeric(10), t1_c2 numeric(5))");
-            stmt.executeUpdate("CREATE TABLE REGRESSION_TEST2 (t2_c1 char(10))");
-            stmt.executeUpdate("CREATE VIEW REGRESSION_TEST1_VIEW AS SELECT * FROM REGRESSION_TEST1");
-        } finally {
-            try {
-                if (stmt != null) stmt.close();
-            } catch (SQLException e) {
-                System.out.println("Couldn't close statement");
-            }
-            try {
-                if (con != null) con.close();
-            } catch (SQLException e) {
-                System.out.println("Couldn't close connection");
-            }
-            mydb.disconnect();
-        }
-    }
-    
-    /**
-     * One-time cleanup code.  The special {@link #suite()} method arranges for
-     * this method to be called one time before the individual tests are run.
-     */
-    public static void oneTimeTearDown() {
-        System.out.println("TestSQLTable.oneTimeTearDown()");
-    }
+public class TestSQLTable extends BaseSQLObjectTestCase {
     
     private SQLTable table;    
     
@@ -136,8 +48,14 @@ public class TestSQLTable extends SQLTestCase {
         super(name);
     }
     
+    @Override
     protected void setUp() throws Exception {
         super.setUp();
+
+        sqlx("CREATE TABLE REGRESSION_TEST1 (t1_c1 numeric(10), t1_c2 numeric(5))");
+        sqlx("CREATE TABLE REGRESSION_TEST2 (t2_c1 char(10))");
+        sqlx("CREATE VIEW REGRESSION_TEST1_VIEW AS SELECT * FROM REGRESSION_TEST1");
+
         table = new SQLTable(null, true);
         table.addColumn(new SQLColumn(table, "one", Types.INTEGER, 10, 0));
         table.addColumn(new SQLColumn(table, "two", Types.INTEGER, 10, 0));
@@ -788,7 +706,6 @@ public class TestSQLTable extends SQLTestCase {
         assertEquals(2, t.getColumns().size());
     }
     
-    //TODO: Convert this test to work on a local Hypersonic DB
     public void testPopulateViewIndices() throws Exception {
         SPDataSource ds = getDataSource();
         

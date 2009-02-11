@@ -18,9 +18,6 @@
  */
 package ca.sqlpower.sqlobject;
 
-import ca.sqlpower.sqlobject.SQLColumn;
-import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.sqlobject.SQLTable;
 import junit.framework.TestCase;
 
 /**

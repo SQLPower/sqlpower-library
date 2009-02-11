@@ -19,31 +19,31 @@
 
 package ca.sqlpower.sqlobject;
 
+import junit.framework.Test;
+import junit.framework.TestSuite;
 import ca.sqlpower.sqlobject.undo.ArchitectPropertyChangeUndoableEditTest;
 import ca.sqlpower.sqlobject.undo.SQLObjectChildrenTest;
 import ca.sqlpower.sqlobject.undo.TestSQLObjectChildrenInsert;
 import ca.sqlpower.sqlobject.undo.TestUndoManager;
-import junit.framework.Test;
-import junit.framework.TestSuite;
 
 public class AllTests {
 
     public static Test suite() {
-        TestSuite suite = new TestSuite("Test for ca.sqlpower.sqlobject");
+        TestSuite suite = new TestSuite("Core SQLObject tests");
         //$JUnit-BEGIN$
         suite.addTestSuite(RefreshTest.class);
         suite.addTestSuite(SQLObjectExceptionTest.class);
         suite.addTestSuite(SQLObjectMagicTest.class);
         suite.addTestSuite(SQLObjectTest.class);
-        suite.addTest(TestFolder.suite());
+        suite.addTestSuite(TestFolder.class);
         suite.addTestSuite(TestSQLCatalog.class);
-        suite.addTest(TestSQLColumn.suite());
-        suite.addTest(TestSQLDatabase.suite());
+        suite.addTestSuite(TestSQLColumn.class);
+        suite.addTestSuite(TestSQLDatabase.class);
         suite.addTestSuite(TestSQLIndex.class);
         suite.addTestSuite(TestSQLIndexColumn.class);
         suite.addTestSuite(TestSQLRelationship.class);
         suite.addTestSuite(TestSQLSchema.class);
-        suite.addTest(TestSQLTable.suite());
+        suite.addTestSuite(TestSQLTable.class);
         suite.addTestSuite(ArchitectPropertyChangeUndoableEditTest.class);
         suite.addTestSuite(SQLObjectChildrenTest.class);
         suite.addTestSuite(TestSQLObjectChildrenInsert.class);

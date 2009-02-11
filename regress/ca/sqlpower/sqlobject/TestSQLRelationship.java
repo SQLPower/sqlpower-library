@@ -29,7 +29,7 @@ import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLRelationship.ColumnMapping;
 
 
-public class TestSQLRelationship extends SQLTestCase {
+public class TestSQLRelationship extends BaseSQLObjectTestCase {
 
     /**
      * Set up by {@link #setUp()} to have this structure:
@@ -129,11 +129,6 @@ public class TestSQLRelationship extends SQLTestCase {
 		rel2 = new SQLRelationship();
 		rel2.setName("rel2");
 		rel2.attachRelationship(parentTable,childTable2,true);
-	}
-	
-	@Override
-	protected void tearDown() throws Exception {
-		super.tearDown();
 	}
 	
 	/**

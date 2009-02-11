@@ -20,9 +20,6 @@ package ca.sqlpower.sqlobject;
 
 import java.util.ArrayList;
 
-import ca.sqlpower.sqlobject.SQLObjectException;
-import ca.sqlpower.sqlobject.SQLObject;
-
 /**
  * The StubSQLObject is a general-purpose SQLObject that you can use for testing
  * the Architect.  You might need to subclass it, or you might need to enhance

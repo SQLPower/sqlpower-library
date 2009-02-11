@@ -18,8 +18,6 @@
  */
 package ca.sqlpower.sqlobject;
 
-import ca.sqlpower.sqlobject.SQLObjectEvent;
-import ca.sqlpower.sqlobject.SQLObjectListener;
 import ca.sqlpower.sqlobject.undo.CompoundEvent;
 import ca.sqlpower.sqlobject.undo.CompoundEventListener;
 

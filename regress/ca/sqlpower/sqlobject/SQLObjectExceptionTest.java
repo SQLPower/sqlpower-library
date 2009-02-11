@@ -18,7 +18,6 @@
  */
 package ca.sqlpower.sqlobject;
 
-import ca.sqlpower.sqlobject.SQLObjectException;
 import junit.framework.TestCase;
 
 public class SQLObjectExceptionTest extends TestCase {

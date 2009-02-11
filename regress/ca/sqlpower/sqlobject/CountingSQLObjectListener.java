@@ -18,8 +18,6 @@
  */
 package ca.sqlpower.sqlobject;
 
-import ca.sqlpower.sqlobject.SQLObjectEvent;
-import ca.sqlpower.sqlobject.SQLObjectListener;
 
 
 /**

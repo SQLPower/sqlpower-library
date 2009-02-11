@@ -18,26 +18,12 @@
  */
 package ca.sqlpower.sqlobject;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Types;
 
-import junit.extensions.TestSetup;
-import junit.framework.Test;
-import junit.framework.TestSuite;
-import ca.sqlpower.sqlobject.SQLObjectException;
-import ca.sqlpower.sqlobject.SQLColumn;
-import ca.sqlpower.sqlobject.SQLDatabase;
-import ca.sqlpower.sqlobject.SQLIndex;
-import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.sqlobject.SQLObjectUtils;
-import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
-import ca.sqlpower.testutil.NewValueMaker;
 
-public class TestSQLIndex extends SQLTestCase {
+public class TestSQLIndex extends BaseSQLObjectTestCase {
 
     private SQLIndex index;
     private SQLIndex index2;
@@ -48,108 +34,6 @@ public class TestSQLIndex extends SQLTestCase {
     private SQLTable table;
     private SQLTable dbTable;
     
-    
-    /**
-     * Creates a wrapper around the normal test suite which runs the
-     * OneTimeSetup and OneTimeTearDown procedures.
-     */
-    public static Test suite() {
-        TestSuite suite = new TestSuite();
-        suite.addTestSuite(TestSQLIndex.class);
-        TestSetup wrapper = new TestSetup(suite) {
-            protected void setUp() throws Exception {
-                oneTimeSetUp();
-            }
-            protected void tearDown() throws Exception {
-                oneTimeTearDown();
-            }
-        };
-        return wrapper;
-    }
-
-    /**
-     * Tries to drop the named table, but doesn't throw an exception if the
-     * DROP TABLE command fails.
-     * 
-     * @param con Connection to the database that has the offending table.
-     * @param tableName The table to nix.
-     * @throws SQLException if the created Statement object's close() method fails.
-     */
-    private static void dropTableNoFail(Connection con, String tableName) throws SQLException {
-        Statement stmt = null;
-        try {
-            stmt = con.createStatement();
-            stmt.executeUpdate("DROP TABLE "+tableName);
-        } catch (SQLException e) {
-            System.out.println("Ignoring SQLException.  Assume "+tableName+" didn't exist.");
-            e.printStackTrace();
-        } finally {
-            if (stmt != null) stmt.close();
-        }
-    }
-
-    
-    /**
-     * One-time initialization code.  The special {@link #suite()} method arranges for
-     * this method to be called one time before the individual tests are run.
-     * @throws Exception 
-     */
-    public static void oneTimeSetUp() throws Exception {
-        System.out.println("TestSQLColumn.oneTimeSetUp()");
-        
-        SQLDatabase mydb = new SQLDatabase(getDataSource());
-        Connection con = null;
-        Statement stmt = null;
-        
-        try {
-            con = mydb.getConnection();
-            stmt = con.createStatement();
-            
-            dropTableNoFail(con, "SQL_COLUMN_TEST_1PK");
-            dropTableNoFail(con, "SQL_COLUMN_TEST_3PK");
-            dropTableNoFail(con, "SQL_COLUMN_TEST_0PK");
-            
-            stmt.executeUpdate("CREATE TABLE SQL_COLUMN_TEST_1PK (\n" +
-                    " cow numeric(11),\n" +
-                    " moo varchar(10),\n" +
-                    " foo char(10)," +
-                    " CONSTRAINT test1pk PRIMARY KEY (cow))");
-            
-            stmt.executeUpdate("CREATE TABLE SQL_COLUMN_TEST_3PK (\n" +
-                    " cow numeric(11) NOT NULL,\n" +
-                    " moo varchar(10) NOT NULL,\n" +
-                    " foo char(10) NOT NULL,\n" +
-                    " CONSTRAINT test3pk PRIMARY KEY (cow, moo, foo))");
-            
-            stmt.executeUpdate("CREATE TABLE SQL_COLUMN_TEST_0PK (\n" +
-                    " cow numeric(11),\n" +
-                    " moo varchar(10),\n" +
-                    " foo char(10))");
-        } finally {
-            try {
-                if (stmt != null) stmt.close();
-            } catch (SQLException ex) {
-                System.out.println("Couldn't close statement");
-                ex.printStackTrace();
-            }
-            try {
-                if (con != null) con.close();
-            } catch (SQLException ex) {
-                System.out.println("Couldn't close connection");
-                ex.printStackTrace();
-            }
-            //mydb.disconnect();  FIXME: this should be uncommented when bug 1005 is fixed
-        }
-    }
-
-    /**
-     * One-time cleanup code.  The special {@link #suite()} method arranges for
-     * this method to be called one time before the individual tests are run.
-     */
-    public static void oneTimeTearDown() {
-        System.out.println("TestSQLColumn.oneTimeTearDown()");
-    }
-    
     public TestSQLIndex(String name) throws Exception {
         super(name);
         propertiesToIgnoreForEventGeneration.add("parentTable");
@@ -158,6 +42,24 @@ public class TestSQLIndex extends SQLTestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
+        
+        sqlx("CREATE TABLE SQL_COLUMN_TEST_1PK (\n" +
+                " cow numeric(11),\n" +
+                " moo varchar(10),\n" +
+                " foo char(10)," +
+                " CONSTRAINT test1pk PRIMARY KEY (cow))");
+        
+        sqlx("CREATE TABLE SQL_COLUMN_TEST_3PK (\n" +
+                " cow numeric(11) NOT NULL,\n" +
+                " moo varchar(10) NOT NULL,\n" +
+                " foo char(10) NOT NULL,\n" +
+                " CONSTRAINT test3pk PRIMARY KEY (cow, moo, foo))");
+        
+        sqlx("CREATE TABLE SQL_COLUMN_TEST_0PK (\n" +
+                " cow numeric(11),\n" +
+                " moo varchar(10),\n" +
+                " foo char(10))");
+
         index = new SQLIndex("Test Index",true,"a", "HASH","b");
         table = new SQLTable(null,true);
         table.setName("Test Table");
@@ -182,10 +84,6 @@ public class TestSQLIndex extends SQLTestCase {
         index3.addIndexColumn(col2, AscendDescend.DESCENDING);
         index3.addIndexColumn(col1, AscendDescend.UNSPECIFIED);
         table.addIndex(index3);
-    }
-
-    protected void tearDown() throws Exception {
-        super.tearDown();
     }
 
     @Override

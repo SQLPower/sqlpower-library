@@ -52,33 +52,74 @@ public class DataEntryPanelBuilder {
 	public static final String OK_BUTTON_LABEL = Messages.getString("DataEntryPanelBuilder.okButton"); //$NON-NLS-1$
 	public static final String CANCEL_BUTTON_LABEL = Messages.getString("DataEntryPanelBuilder.cancelButton"); //$NON-NLS-1$
     
-	/**
-	 * Build a JDialog around an object that implements DataEntryPanel, to
-	 * provide consistent behaviours such as Cancel button, <ESC> to close, and
-	 * so on.
-	 * XXX Worry about modal vs non-modal
-	 * @param dataEntry
-	 *            The DataEntryPanel implementation
-	 * @param dialogParent
-	 *            A Window object to be the dialog's parent
-	 * @param dialogTitle
-	 *            The dialog title.
-	 * @param actionButtonTitle
-	 *            The label text for the OK button
-	 * @return The new JDialog, which has the panel in it along with OK and Cancel buttons
-	 * @param okCall<Boolean> Call to be invoked when the OK/action button is
-	 * 	pressed; does NOT need to dismiss the dialog we will do this if the call returns false
-	 * @param cancelCall<Boolean> Call to be invoked when the cancel button is
-	 * 	pressed; We will dismiss the dialog if the call returns true
-	 * @return
-	 */
-	public static JDialog createDataEntryPanelDialog(
-			final DataEntryPanel dataEntry,
-			final Window dialogParent,
-			final String dialogTitle,
-			final String actionButtonTitle,
-			final Callable<Boolean> okCall,
-			final Callable<Boolean> cancelCall) {
+    /**
+     * Works like
+     * {@link #createDataEntryPanelDialog(DataEntryPanel, Window, String, String, Callable, Callable, boolean)}
+     * with a <code>oneShot</code> argument of <code>false</code>.
+     *  
+     * @param dataEntry
+     *            The DataEntryPanel implementation
+     * @param dialogParent
+     *            A Window object to be the dialog's parent
+     * @param dialogTitle
+     *            The dialog title.
+     * @param actionButtonTitle
+     *            The label text for the OK button
+     * @return The new JDialog, which has the panel in it along with OK and Cancel buttons
+     * @param okCall<Boolean> Call to be invoked when the OK/action button is
+     *  pressed; does NOT need to dismiss the dialog we will do this if the call returns false
+     * @param cancelCall<Boolean> Call to be invoked when the cancel button is
+     *  pressed; We will dismiss the dialog if the call returns true
+     * @return
+     */
+    public static JDialog createDataEntryPanelDialog(
+            final DataEntryPanel dataEntry,
+            final Window dialogParent,
+            final String dialogTitle,
+            final String actionButtonTitle,
+            final Callable<Boolean> okCall,
+            final Callable<Boolean> cancelCall) {
+        return createDataEntryPanelDialog(
+                dataEntry, dialogParent, dialogTitle,
+                actionButtonTitle, okCall, cancelCall, false);
+    }
+    
+    /**
+     * Builds a JDialog around an object that implements DataEntryPanel, to
+     * provide consistent behaviours such as Cancel button, <ESC> to close, and
+     * so on.
+     * 
+     * @param dataEntry
+     *            The DataEntryPanel implementation
+     * @param dialogParent
+     *            A Window object to be the dialog's parent
+     * @param dialogTitle
+     *            The dialog title.
+     * @param actionButtonTitle
+     *            The label text for the OK button
+     * @param okCall
+     *            Call to be invoked when the OK/action button is pressed; does
+     *            NOT need to dismiss the dialog we will do this if the call
+     *            returns false
+     * @param cancelCall
+     *            Call to be invoked when the cancel button is pressed; We will
+     *            dismiss the dialog if the call returns true
+     * @param oneShot
+     *            When true, the OK and Cancel buttons will be permanently
+     *            deactivated once one of them has been pressed. If false, the
+     *            buttons will reactivate once the <code>okCall</code> or
+     *            <code>cancelCall</code> has returned.
+     * @return The new JDialog, which has the panel in it along with OK and
+     *         Cancel buttons
+     */
+    public static JDialog createDataEntryPanelDialog(
+            final DataEntryPanel dataEntry,
+            final Window dialogParent,
+            final String dialogTitle,
+            final String actionButtonTitle,
+            final Callable<Boolean> okCall,
+            final Callable<Boolean> cancelCall,
+            final boolean oneShot) {
 
 		final JDialog d = createDialog(dialogParent, dialogTitle);
 		JComponent panel = dataEntry.getPanel();
@@ -94,20 +135,29 @@ public class DataEntryPanelBuilder {
 						okCall.call();
 					} catch (Exception ex) {
 						throw new RuntimeException(ex);
-					}
+					} finally {
+                        if (!oneShot) {
+                            this.setEnabled(true);
+                        }
+                    }
 				}
 			};
 		} else {
 			okAction = new AbstractAction() {
 				public void actionPerformed(ActionEvent e) {
 					try {
+					    this.setEnabled(false);
 						boolean close = okCall.call().booleanValue();
 						if (close) {
 							d.dispose();
 						}
 					} catch (Exception ex) {
 						throw new RuntimeException(ex);
-					}
+					} finally {
+                        if (!oneShot) {
+                            this.setEnabled(true);
+                        }
+                    }
 				}
 			};
 		}
@@ -194,7 +244,6 @@ public class DataEntryPanelBuilder {
 
 		// Now build the GUI.
 		JPanel cp = new JPanel(new BorderLayout());
-		cp.setBorder(BorderFactory.createEmptyBorder(12,12,12,12));
 		cp.add(panel, BorderLayout.CENTER);
 
 		cp.add(ButtonBarFactory.buildOKCancelBar(okButton, cancelButton),

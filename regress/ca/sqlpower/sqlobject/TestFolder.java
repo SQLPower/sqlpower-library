@@ -18,142 +18,17 @@
  */
 package ca.sqlpower.sqlobject;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.extensions.TestSetup;
-import junit.framework.Test;
-import junit.framework.TestSuite;
-import ca.sqlpower.sqlobject.SQLObjectException;
-import ca.sqlpower.sqlobject.SQLColumn;
-import ca.sqlpower.sqlobject.SQLDatabase;
-import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.SQLTable.Folder;
 
-public class TestFolder extends SQLTestCase {
+public class TestFolder extends BaseSQLObjectTestCase {
 
 	public TestFolder(String name) throws Exception {
 		super(name);
 	}
     
-    /**
-     * Creates a wrapper around the normal test suite which runs the
-     * OneTimeSetup and OneTimeTearDown procedures.
-     */
-    public static Test suite() {
-        TestSuite suite = new TestSuite();
-        suite.addTestSuite(TestFolder.class);
-        TestSetup wrapper = new TestSetup(suite) {
-            protected void setUp() throws Exception {
-                oneTimeSetUp();
-            }
-            protected void tearDown() throws Exception {
-                oneTimeTearDown();
-            }
-        };
-        return wrapper;
-    }
-	
-	/**
-	 * One-time initialization code.  The special {@link #suite()} method arranges for
-	 * this method to be called one time before the individual tests are run.
-	 * @throws Exception 
-	 */
-	public static void oneTimeSetUp() throws Exception {
-		System.out.println("TestSQLColumn.oneTimeSetUp()");
-		
-		SQLDatabase mydb = new SQLDatabase(getDataSource());
-		Connection con = null;
-		Statement stmt = null;
-		
-		try {
-			con = mydb.getConnection();
-			stmt = con.createStatement();
-			
-			dropTableNoFail(con, "SQL_COLUMN_TEST_1PK");
-			dropTableNoFail(con, "SQL_COLUMN_TEST_3PK");
-			dropTableNoFail(con, "SQL_COLUMN_TEST_0PK");
-			
-			dropTableNoFail(con, "SQL_TABLE_POPULATE_TEST");
-			dropTableNoFail(con, "SQL_TABLE_1_POPULATE_TEST");
-	        dropTableNoFail(con, "SQL_TABLE_2_POPULATE_TEST");
-	        dropTableNoFail(con, "SQL_TABLE_3_POPULATE_TEST");
-	
-			stmt.executeUpdate("CREATE TABLE SQL_COLUMN_TEST_1PK (\n" +
-					" cow numeric(11),\n" +
-					" moo varchar(10),\n" +
-					" foo char(10),\n" +
-                    " CONSTRAINT test1pk PRIMARY KEY (cow))");
-            
-			stmt.executeUpdate("CREATE TABLE SQL_COLUMN_TEST_3PK (\n" +
-					" cow numeric(11) NOT NULL,\n" +
-					" moo varchar(10) NOT NULL,\n" +
-					" foo char(10) NOT NULL,\n" +
-					" CONSTRAINT test3pk PRIMARY KEY (cow, moo, foo))");
-
-            stmt.executeUpdate("CREATE TABLE SQL_COLUMN_TEST_0PK (\n" +
-					" cow numeric(11),\n" +
-					" moo varchar(10),\n" +
-					" foo char(10))");
-            
-            stmt.executeUpdate("CREATE TABLE SQL_TABLE_POPULATE_TEST (\n" +
-                    " cow numeric(10) NOT NULL, \n" +
-                    " CONSTRAINT test4pk PRIMARY KEY (cow))");
-            stmt.executeUpdate("CREATE TABLE SQL_TABLE_1_POPULATE_TEST (\n" +
-                    " cow numeric(10) NOT NULL, \n" +
-                    " CONSTRAINT test5pk PRIMARY KEY(cow))");
-            stmt.executeUpdate("ALTER TABLE SQL_TABLE_1_POPULATE_TEST " +
-            		"ADD CONSTRAINT TEST_FK FOREIGN KEY (cow) " +
-            		"REFERENCES SQL_TABLE_POPULATE_TEST (cow)");
-
-        } finally {
-			try {
-				if (stmt != null) stmt.close();
-			} catch (SQLException ex) {
-				System.out.println("Couldn't close statement");
-			}
-			try {
-				if (con != null) con.close();
-			} catch (SQLException ex) {
-				System.out.println("Couldn't close connection");
-			}
-			//mydb.disconnect();  FIXME: this should be uncommented when bug 1005 is fixed
-            System.out.println("finished TestSQLColumn.oneTimeSetUp()");
-		}
-	}
-	
-	/**
-	 * Tries to drop the named table, but doesn't throw an exception if the
-	 * DROP TABLE command fails.
-	 * 
-	 * @param con Connection to the database that has the offending table.
-	 * @param tableName The table to nix.
-	 * @throws SQLException if the created Statement object's close() method fails.
-	 */
-	private static void dropTableNoFail(Connection con, String tableName) throws SQLException {
-		Statement stmt = null;
-		try {
-			stmt = con.createStatement();
-			stmt.executeUpdate("DROP TABLE "+tableName);
-		} catch (SQLException e) {
-			System.out.println("Ignoring SQLException.  Assume "+tableName+" didn't exist.");
-			e.printStackTrace();
-		} finally {
-			if (stmt != null) stmt.close();
-		}
-	}
-
-	/**
-	 * One-time cleanup code.  The special {@link #suite()} method arranges for
-	 * this method to be called one time before the individual tests are run.
-	 */
-	public static void oneTimeTearDown() {
-		System.out.println("TestSQLColumn.oneTimeTearDown()");
-	}
 	/**
 	 * A table with one primary key column.  Gets set up in setUp().
 	 */
@@ -161,6 +36,34 @@ public class TestFolder extends SQLTestCase {
 
 	protected void setUp() throws Exception {		
 		super.setUp();
+		
+		sqlx("CREATE TABLE SQL_COLUMN_TEST_1PK (\n" +
+		        " cow numeric(11),\n" +
+		        " moo varchar(10),\n" +
+		        " foo char(10),\n" +
+		        " CONSTRAINT test1pk PRIMARY KEY (cow))");
+
+		sqlx("CREATE TABLE SQL_COLUMN_TEST_3PK (\n" +
+		        " cow numeric(11) NOT NULL,\n" +
+		        " moo varchar(10) NOT NULL,\n" +
+		        " foo char(10) NOT NULL,\n" +
+		        " CONSTRAINT test3pk PRIMARY KEY (cow, moo, foo))");
+
+		sqlx("CREATE TABLE SQL_COLUMN_TEST_0PK (\n" +
+		        " cow numeric(11),\n" +
+		        " moo varchar(10),\n" +
+		        " foo char(10))");
+
+		sqlx("CREATE TABLE SQL_TABLE_POPULATE_TEST (\n" +
+		        " cow numeric(10) NOT NULL, \n" +
+		        " CONSTRAINT test4pk PRIMARY KEY (cow))");
+		sqlx("CREATE TABLE SQL_TABLE_1_POPULATE_TEST (\n" +
+		        " cow numeric(10) NOT NULL, \n" +
+		        " CONSTRAINT test5pk PRIMARY KEY(cow))");
+		sqlx("ALTER TABLE SQL_TABLE_1_POPULATE_TEST " +
+		        "ADD CONSTRAINT TEST_FK FOREIGN KEY (cow) " +
+		        "REFERENCES SQL_TABLE_POPULATE_TEST (cow)");
+
 		table1pk = getDb().getTableByName("SQL_COLUMN_TEST_1PK");
 		getDb().getTableByName("SQL_COLUMN_TEST_0PK");
 		getDb().getTableByName("SQL_COLUMN_TEST_3PK");

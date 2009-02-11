@@ -19,8 +19,6 @@
 
 package ca.sqlpower.sqlobject;
 
-import ca.sqlpower.sqlobject.SQLObjectPreEvent;
-import ca.sqlpower.sqlobject.SQLObjectPreEventListener;
 
 /**
  * A SQLObjectPreEventListener implementation that counts how many
