@@ -39,7 +39,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.swing.DefaultListModel;
 import javax.swing.event.UndoableEditEvent;
 import javax.swing.event.UndoableEditListener;
 import javax.swing.undo.AbstractUndoableEdit;
@@ -47,6 +46,8 @@ import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 
 import org.apache.log4j.Logger;
+
+import ca.sqlpower.sqlobject.SQLIndex;
 
 /**
  * The PlDotIni class represents the contents of a PL.INI file; despit
@@ -309,6 +310,9 @@ public class PlDotIni implements DataSourceCollection {
 
             while ((lineBytes = readLine(in)) != null) {
                 String line = new String(lineBytes);
+                
+                line = convertOldLines(line);
+                
                 logger.debug("Read in new line: "+line);
                 
                 if (line.startsWith("[")) {
@@ -398,6 +402,21 @@ public class PlDotIni implements DataSourceCollection {
 	}
 
     /**
+     * This method exists to convert older properties in a Pl.ini file to new properties.
+     * This is for cases where a class was moved causing its full class name to be modified.
+     * @param line
+     * 			A line of text in the Pl.ini file that may need to be converted.
+     * @return
+     * 			The same line of text passed in with possible parts of it modified.
+     */
+    private String convertOldLines(String line) {
+    	
+    	if (line.contains("ca.sqlpower.architect.SQLIndex")) return line.replace("ca.sqlpower.architect.SQLIndex", SQLIndex.class.getName());
+
+    	return line;
+	}
+
+	/**
      * A subroutine of the read() method. Merges data from any of the three types of
      * sections into the fileSections collection.
      * <p> 
