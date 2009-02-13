@@ -1545,7 +1545,8 @@ public class SQLTable extends SQLObject {
             SQLObjectUtils.refreshChildren(columnsFolder, newCols);
             
             // relationships
-            
+            List<SQLRelationship> newRels = SQLRelationship.fetchImportedKeys(this);
+            SQLObjectUtils.refreshChildren(importedKeysFolder, newRels);
             
             // indexes (incl. PK)
             List<SQLIndex> newIndexes = SQLIndex.fetchIndicesForTable(dbmd, this);

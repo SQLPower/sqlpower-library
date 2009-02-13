@@ -212,6 +212,35 @@ public class SQLObjectUtils {
     	}
     }
 
+    /**
+     * Updates the child list of the given parent object with the new children in the
+     * given list, in the following way:
+     * 
+     * <ol>
+     *  <li>For children in both lists, the parent's existing child object is retained,
+     *      but its updateToMatch() method is called to update its properties
+     *  <li>For children in the newChildren list but not in the parent's current
+     *      list of children, the newChildren object is added as a child
+     *  <li>Children of the parent that are not in the newChildren list are removed from
+     *      the parent.
+     * </ol>
+     * 
+     * All comparisons are done by child name, and are case sensitive. The caveat is,
+     * this refresh process will not work properly if the parent contains multiple children
+     * with exactly the same name.
+     * <p>
+     * There is a special case to make this method work with SQLRelationship: if the objects
+     * in newChildren are SQLRelationships, those objects will be attached using
+     * {@link SQLRelationship#attachRelationship(SQLTable, SQLTable, boolean)} rather than
+     * {@link SQLObject#addChild(SQLObject)}. 
+     * 
+     * @param parent The object whose children list to update
+     * @param newChildren The list of children to update from. All objects in this list
+     * are expected to be of the correct child type for parent. Also, they must not be attached
+     * to any parent objects to start with (this method may connect some or all of them).
+     * @throws SQLObjectException If this exercise causes any SQLObjects to populate, and that
+     * populate operation fails.
+     */
     public static void refreshChildren(SQLObject parent, List<? extends SQLObject> newChildren) throws SQLObjectException {
         Set<String> oldChildNames = parent.getChildNames();
         Set<String> newChildNames = new HashSet<String>(); // will populate in following loop
@@ -220,14 +249,26 @@ public class SQLObjectUtils {
             if (oldChildNames.contains(newChild.getName())) {
                 parent.getChildByName(newChild.getName()).updateToMatch(newChild);
             } else {
-                parent.addChild(newChild);
+                if (newChild instanceof SQLRelationship) {
+                    SQLRelationship r = (SQLRelationship) newChild;
+                    r.attachRelationship(r.getPkTable(), r.getFkTable(), false);
+                } else {
+                    parent.addChild(newChild);
+                }
             }
         }
         
         // get rid of removed children
         oldChildNames.removeAll(newChildNames);
         for (String removedColName : oldChildNames) {
-            parent.removeChild(parent.getChildByName(removedColName));
+            SQLObject removeMe = parent.getChildByName(removedColName);
+            if (removeMe instanceof SQLRelationship) {
+                SQLRelationship r = (SQLRelationship) removeMe;
+                r.getPkTable().getExportedKeysFolder().removeChild(r);
+                r.getFkTable().getImportedKeysFolder().removeChild(r);
+            } else {
+                parent.removeChild(removeMe);
+            }
         }
     
     }

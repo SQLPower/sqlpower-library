@@ -281,12 +281,20 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
      */
 	public SQLRelationship(SQLRelationship relationshipToCopy) throws SQLObjectException {
 	    this();
+	    updateToMatch(relationshipToCopy);
+	}
+	
+	@Override
+	public final void updateToMatch(SQLObject source) throws SQLObjectException {
+	    SQLRelationship relationshipToCopy = (SQLRelationship) source;
         setName(relationshipToCopy.getName());
         setIdentifying(relationshipToCopy.determineIdentifyingStatus());
         setUpdateRule(relationshipToCopy.getUpdateRule());
         setDeleteRule(relationshipToCopy.getDeleteRule());
         setDeferrability(relationshipToCopy.getDeferrability());
         setChildrenInaccessibleReason(relationshipToCopy.getChildrenInaccessibleReason());
+        
+        // TODO column mappings
 	}
 	
 	/**
