@@ -606,6 +606,28 @@ public class SQLQueryUIComponents {
         }
         
     };
+
+    /**
+     * This list keeps track of all previous queries executed to allow users to move through
+     * their query history.
+     */
+    private final List<String> previousQueries;
+    
+    /**
+     * The button to go back to old queries in the previousQueries list.
+     */
+    private final JButton prevQueryButton;
+    
+    /**
+     * The button to go forward in the old query list.
+     */
+    private final JButton nextQueryButton;
+
+    /**
+     * This is the position in the list of previous queries where the user is if they
+     * are moving between old and older queries.
+     */
+    private int prevQueryPosition;
     /**
      * This is the method that will close the dialog and remove any connections in the dialog
      */
@@ -853,6 +875,7 @@ public class SQLQueryUIComponents {
 	 */
     public SQLQueryUIComponents(SwingWorkerRegistry s, DataSourceCollection ds, JComponent dialogOwner) {
         super();
+        previousQueries = new ArrayList<String>();
         this.dialogOwner = dialogOwner;
         this.swRegistry = s;
         this.dsCollection = ds;
@@ -1013,6 +1036,33 @@ public class SQLQueryUIComponents {
             }
         
         });
+         
+        prevQueryButton = new JButton(new AbstractAction("Prev") {
+		    public void actionPerformed(ActionEvent e) {
+			    if (prevQueryPosition > 0) {
+					prevQueryPosition--;
+					queryArea.setText(previousQueries.get(prevQueryPosition));
+				}
+				getPrevQueryButton().setEnabled(prevQueryPosition > 0);
+				getNextQueryButton().setEnabled(prevQueryPosition < previousQueries.size() - 1);
+			}
+		});
+        
+        nextQueryButton = new JButton(new AbstractAction("Next") {
+		
+			public void actionPerformed(ActionEvent e) {
+				if (prevQueryPosition < previousQueries.size() - 1) {
+					prevQueryPosition++;
+					queryArea.setText(previousQueries.get(prevQueryPosition));
+				}
+				getPrevQueryButton().setEnabled(prevQueryPosition > 0);
+				getNextQueryButton().setEnabled(prevQueryPosition < previousQueries.size() - 1);
+			}
+		});
+        
+        getPrevQueryButton().setEnabled(false);
+        getNextQueryButton().setEnabled(false);
+        
          dbcsManagerButton.setText(Messages.getString("SQLQuery.manageConnections"));
          
          undoButton= new JButton (undoSQLStatementAction);
@@ -1061,6 +1111,11 @@ public class SQLQueryUIComponents {
     	} catch (SQLException e1) {
     		SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedRetrievingConnection", ((SPDataSource)databaseComboBox.getSelectedItem()).getName()), e1);
     	}
+    	
+    	prevQueryPosition = previousQueries.size();
+    	previousQueries.add(sql);
+		getPrevQueryButton().setEnabled(prevQueryPosition > 0);
+		getNextQueryButton().setEnabled(prevQueryPosition < previousQueries.size() - 1);
     	
     	logger.debug("Executing SQL " + sql);
     	sqlExecuteWorker = new ExecuteSQLWorker(swRegistry, sql);
@@ -1114,6 +1169,9 @@ public class SQLQueryUIComponents {
         queryParts.addWindowListener(owner);
         JToolBar toolbar = new JToolBar();
         toolbar.setFloatable(false);
+        toolbar.add(queryParts.getPrevQueryButton());
+        toolbar.add(queryParts.getNextQueryButton());
+        toolbar.addSeparator();
         toolbar.add(queryParts.getExecuteButton());
         toolbar.add(queryParts.getStopButton());
         toolbar.add(queryParts.getClearButton());
@@ -1394,6 +1452,14 @@ public class SQLQueryUIComponents {
      */
     ExecuteSQLWorker getSqlExecuteWorker() {
 		return sqlExecuteWorker;
+	}
+
+	public JButton getNextQueryButton() {
+		return nextQueryButton;
+	}
+
+	public JButton getPrevQueryButton() {
+		return prevQueryButton;
 	}
 }
 
