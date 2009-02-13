@@ -73,6 +73,9 @@ public class RefreshFKTest extends DatabaseConnectedTestCase {
         assertNotNull(grandchild);
     }
     
+    /**
+     * This one removes an FK between two existing tables.
+     */
     public void testRemoveFK() throws Exception {
         assertEquals(1, parent.getExportedKeys().size());
         assertEquals(1, child.getImportedKeys().size());
@@ -87,6 +90,9 @@ public class RefreshFKTest extends DatabaseConnectedTestCase {
         
     }
     
+    /**
+     * This one adds an FK between two existing tables.
+     */
     public void testAddFK() throws Exception {
         sqlx("ALTER TABLE public.child DROP CONSTRAINT parent_child_fk");
 
@@ -104,6 +110,7 @@ public class RefreshFKTest extends DatabaseConnectedTestCase {
         
     }
 
+    /** This one recreates a FK between two tables with the same name, but different column mappings */
     public void testChangeFKMapping() throws Exception {
         assertEquals(1, parent.getExportedKeys().size());
         assertEquals(1, child.getImportedKeys().size());
@@ -133,4 +140,38 @@ public class RefreshFKTest extends DatabaseConnectedTestCase {
         assertEquals("NAME", ((ColumnMapping) parentChildFk.getChild(1)).getPkColumn().getName());
     }
 
+    /** This one adds a whole new table with an FK to an existing table, in one step! */
+    public void testAddTableWithFK() throws Exception {
+        assertEquals(0, parent.getImportedKeys().size());
+        
+        sqlx("CREATE TABLE public.grandparent (" +
+             "\n grandparent_id INTEGER NOT NULL," +
+             "\n name VARCHAR(20)," +
+             "\n CONSTRAINT grandparent_pk PRIMARY KEY (grandparent_id))");
+        sqlx("ALTER TABLE public.parent ADD COLUMN grandparent_id INTEGER");
+        sqlx("ALTER TABLE public.parent ADD CONSTRAINT grandparent_parent_fk" +
+             "\n FOREIGN KEY (grandparent_id) REFERENCES public.grandparent (grandparent_id)");
+        db.refresh();
+        
+        assertEquals(1, parent.getImportedKeys().size());
+        SQLTable grandparent = db.getTableByName("GRANDPARENT");
+        assertEquals(0, grandparent.getImportedKeys().size());
+        assertEquals(1, grandparent.getExportedKeys().size());
+        assertSame(parent.getImportedKeys().get(0), grandparent.getExportedKeys().get(0));
+    }
+
+    /** This one removes a whole table that had an FK to an existing table, in one step! */
+    public void testRemoveTableWithFK() throws Exception {
+        assertEquals(1, parent.getExportedKeys().size());
+        assertEquals(0, parent.getImportedKeys().size());
+        assertEquals(1, child.getExportedKeys().size());
+        assertEquals(1, child.getImportedKeys().size());
+
+        sqlx("ALTER TABLE public.child DROP CONSTRAINT parent_child_fk");
+        sqlx("DROP TABLE public.parent");
+        db.refresh();
+        
+        assertEquals(0, child.getImportedKeys().size());
+        assertEquals(1, child.getExportedKeys().size());
+    }
 }
