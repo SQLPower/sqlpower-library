@@ -35,7 +35,7 @@ import ca.sqlpower.sql.SPDataSource;
  * database, which will be fresh and empty for every test, and the tearDown
  * method shuts it down (which wipes out that database).
  */
-public class DatabaseConnectedTestCase extends TestCase {
+public abstract class DatabaseConnectedTestCase extends TestCase {
 
     private DataSourceCollection plini = new PlDotIni();
     protected SQLDatabase db;
