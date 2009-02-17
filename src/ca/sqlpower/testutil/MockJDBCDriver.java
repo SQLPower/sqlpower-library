@@ -23,6 +23,8 @@ import java.sql.Driver;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
@@ -34,6 +36,9 @@ import org.apache.log4j.Logger;
  * resulting database "connection" will behave.
  * 
  * <dl>
+ *  <dd>name</dd>
+ *   <dt>The name for the connection instance being created. The connection can be
+ *       retrieved via </dt>
  *  <dd>dbmd.*</dd>
  *   <dt>These properties define the return value of various DatabaseMetaData methods</dt>
  *  <dd>dbmd.catalogTerm</dd>
@@ -55,12 +60,19 @@ import org.apache.log4j.Logger;
  *        which will be reported by DatabaseMetaData.getColumns as being auto-increment.
  * </dl>
  * 
+ * <p>
+ * If you want to change this setup after creating the connection (in order to simulate
+ * DDL activity in a database), you can.
+ * 
  * @author fuerth
  * @version $Id: MockJDBCDriver.java 1600 2007-07-05 18:49:10Z fuerth $
  */
 public class MockJDBCDriver implements Driver {
 
 	private static final Logger logger = Logger.getLogger(MockJDBCDriver.class);
+	
+	private static final Map<String, MockJDBCConnection> namedConnections =
+	    new HashMap<String, MockJDBCConnection>();
 	
 	public Connection connect(String url, Properties info) throws SQLException {
 		String params = url.substring("jdbc:mock:".length());
@@ -70,7 +82,13 @@ public class MockJDBCDriver implements Driver {
 			logger.debug("Found URL property '"+kv[0]+"' = '"+kv[1]+"'");
 			info.put(kv[0], kv[1]);
 		}
-		return new MockJDBCConnection(url, info);
+		
+		MockJDBCConnection newConnection = new MockJDBCConnection(url, info);
+		if (info.getProperty("name") != null) {
+		    namedConnections.put(info.getProperty("name"), newConnection);
+		}
+		
+        return newConnection;
 	}
 
 	public boolean acceptsURL(String url) throws SQLException {
@@ -94,4 +112,17 @@ public class MockJDBCDriver implements Driver {
 		return false;
 	}
 
+    /**
+     * Returns the existing connection with the given name, which must have
+     * already been created via the {@link #connect(String, Properties)} method.
+     * 
+     * @param name
+     *            The connection name as originally specified in
+     *            {@link #connect(String, Properties)}.
+     * @return The named connection, or null if no connection with that name has
+     *         been created.
+     */
+	public static MockJDBCConnection getConnection(String name) {
+	    return namedConnections.get(name);
+	}
 }

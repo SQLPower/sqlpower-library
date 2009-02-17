@@ -78,6 +78,21 @@ public class MockJDBCConnection implements Connection {
     public void registerResultSet(String regex, MockJDBCResultSet rs) {
         resultSets.put(regex, rs);
     }
+
+    /**
+     * Allows you to modify or augment the property list that was passed in
+     * (from the JDBC URL) when this connection was created. The meaning of the
+     * keys and values is described in the documentation for
+     * {@link MockJDBCDriver#connect(String, Properties)}.
+     * 
+     * @param key
+     *            The key to set or replace the value of.
+     * @param value
+     *            The new value.
+     */
+    public void setProperty(String key, String value) {
+        properties.setProperty(key, value);
+    }
     
     /**
      * Returns a result set whose registered regex matches the given SQL string.
