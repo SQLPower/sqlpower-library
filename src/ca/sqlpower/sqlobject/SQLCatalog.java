@@ -24,6 +24,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 
@@ -152,7 +153,11 @@ public class SQLCatalog extends SQLObject {
 				rs = null;
 				
 				if (oldSize == children.size()) {
-				    SQLTable.addTablesToTableContainer(this, dbmd, getName(), null);
+				    List<SQLTable> tables = SQLTable.fetchTablesForTableContainer(dbmd, getName(), null);
+				    for (SQLTable table : tables) {
+				        table.setParent(this);
+				        children.add(table);
+				    }
 				}
 				
 			} catch (SQLException e) {

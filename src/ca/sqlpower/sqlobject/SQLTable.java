@@ -137,6 +137,21 @@ public class SQLTable extends SQLObject {
 	}
 
 	/**
+	 * Updates all the simple properties of this SQLTable to match those of the given
+	 * source table. Does not descend into children (columns, indexes, etc). Does not
+	 * update the parent pointer of this SQLObject.
+	 */
+	@Override
+	public void updateToMatch(SQLObject source) throws SQLObjectException {
+	    SQLTable sourceTable = (SQLTable) source;
+	    setName(sourceTable.getName());
+	    setRemarks(sourceTable.getRemarks());
+	    setPhysicalName(sourceTable.getPhysicalName());
+	    setPhysicalPrimaryKeyName(sourceTable.getPhysicalPrimaryKeyName());
+	    setObjectType(sourceTable.getObjectType());
+	}
+	
+	/**
 	 * Creates a new SQLTable under the given parent database.  The new table will have
 	 * all the same properties as the given source table.
 	 *
@@ -1493,9 +1508,7 @@ public class SQLTable extends SQLObject {
      * the places from which this method gets called already have an instance
      * of DatabaseMetaData ready to go.
      */
-    static void addTablesToTableContainer(
-            SQLObject container, DatabaseMetaData dbmd,
-            String catalogName, String schemaName)
+    static List<SQLTable> fetchTablesForTableContainer(DatabaseMetaData dbmd, String catalogName, String schemaName)
     throws SQLObjectException, SQLException {
         ResultSet rs = null;
         try {
@@ -1504,15 +1517,17 @@ public class SQLTable extends SQLObject {
                     "%",
                     new String[] {"TABLE", "VIEW"});
 
+            List<SQLTable> tables = new ArrayList<SQLTable>();
             while (rs.next()) {
-                container.children.add(new SQLTable(container,
+                tables.add(new SQLTable(null,
                         rs.getString(3),
                         rs.getString(5),
                         rs.getString(4),
                         false));
             }
-            rs.close();
-            rs = null;
+            
+            return tables;
+            
         } finally {
             if (rs != null) rs.close();
         }
@@ -1533,9 +1548,22 @@ public class SQLTable extends SQLObject {
     public String toQualifiedName() {
         return SQLObjectUtils.toQualifiedName(this, SQLDatabase.class);
     }
-    
+
+    /**
+     * Refreshing tables only works if it is done for the whole
+     * "table container" at once, since all the columns have to be refreshed
+     * before any of the FK relationships. As such, this method just throws
+     * an exception. The generic refresh in SQLObject knows about this requirement,
+     * and does the right thing when it encounters a table container.
+     */
     @Override
     void refresh() throws SQLObjectException {
+        // XXX think about automatically forwarding this request to parent.refresh(),
+        // since parent ought to be the table container we're looking for...
+        throw new UnsupportedOperationException("Individual tables can't be refreshed.");
+    }
+    
+    void refreshColumns() throws SQLObjectException {
         if (!isColumnsPopulated()) return;
         Connection con = null;
         try {
@@ -1544,9 +1572,35 @@ public class SQLTable extends SQLObject {
             List<SQLColumn> newCols = SQLColumn.fetchColumnsForTable(getCatalogName(), getSchemaName(), getName(), dbmd);
             SQLObjectUtils.refreshChildren(columnsFolder, newCols);
             
-            // relationships
-            List<SQLRelationship> newRels = SQLRelationship.fetchImportedKeys(this);
-            SQLObjectUtils.refreshChildren(importedKeysFolder, newRels);
+            normalizePrimaryKey();
+            
+        } catch (SQLException e) {
+            throw new SQLObjectException("Refresh failed", e);
+        } finally {
+            if (con != null) {
+                try {
+                    con.close();
+                } catch (SQLException e) {
+                    logger.error("Failed to close connection. Squishing this exception: ", e);
+                }
+            }
+        }
+
+    }
+    
+    void refreshImportedKeys() throws SQLObjectException {
+        if (!isRelationshipsPopulated()) return;
+
+        List<SQLRelationship> newRels = SQLRelationship.fetchImportedKeys(this);
+        SQLObjectUtils.refreshChildren(importedKeysFolder, newRels);
+    }
+
+    void refreshIndexes() throws SQLObjectException {
+        if (!isIndicesPopulated()) return;
+        Connection con = null;
+        try {
+            con = getParentDatabase().getConnection();
+            DatabaseMetaData dbmd = con.getMetaData();
             
             // indexes (incl. PK)
             List<SQLIndex> newIndexes = SQLIndex.fetchIndicesForTable(dbmd, this);
@@ -1566,5 +1620,5 @@ public class SQLTable extends SQLObject {
             }
         }
     }
-    
+
 }

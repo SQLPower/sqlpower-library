@@ -31,6 +31,8 @@ public class AllTests {
     public static Test suite() {
         TestSuite suite = new TestSuite("Core SQLObject tests");
         //$JUnit-BEGIN$
+        suite.addTestSuite(RefreshTablesTest.class);
+        suite.addTestSuite(RefreshFKTest.class);
         suite.addTestSuite(RefreshTest.class);
         suite.addTestSuite(SQLObjectExceptionTest.class);
         suite.addTestSuite(SQLObjectMagicTest.class);

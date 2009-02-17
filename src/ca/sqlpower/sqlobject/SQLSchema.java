@@ -24,6 +24,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 
@@ -111,9 +112,18 @@ public class SQLSchema extends SQLObject {
 				DatabaseMetaData dbmd = con.getMetaData();
 				
 				if ( getParent() instanceof SQLDatabase ) {
-                    SQLTable.addTablesToTableContainer(this, dbmd, null, getName());
+                    List<SQLTable> tables = SQLTable.fetchTablesForTableContainer(dbmd, null, getName());
+                    for (SQLTable table : tables) {
+                        table.setParent(this);
+                        children.add(table);
+                    }
+
 				} else if ( getParent() instanceof SQLCatalog ) {
-                    SQLTable.addTablesToTableContainer(this, dbmd, getParent().getName(), getName());
+                    List<SQLTable> tables = SQLTable.fetchTablesForTableContainer(dbmd, getParent().getName(), getName());
+                    for (SQLTable table : tables) {
+                        table.setParent(this);
+                        children.add(table);
+                    }
 				}
 			}
 		} catch (SQLException e) {

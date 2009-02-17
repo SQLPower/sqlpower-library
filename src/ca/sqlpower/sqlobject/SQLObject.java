@@ -18,6 +18,9 @@
  */
 package ca.sqlpower.sqlobject;
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,7 +33,6 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 import ca.sqlpower.sqlobject.SQLRelationship.RelationshipManager;
 import ca.sqlpower.sqlobject.undo.CompoundEvent;
 import ca.sqlpower.sqlobject.undo.CompoundEventListener;
@@ -777,11 +779,66 @@ public abstract class SQLObject implements java.io.Serializable {
      * refresh method, {@link SQLDatabase#refresh()}, which is public.
      */
     void refresh() throws SQLObjectException {
-        for (SQLObject o : (List<SQLObject>) children) {
-            o.refresh();
+        if (!isPopulated()) return;
+        
+        if (isTableContainer()) {
+            Connection con = null;
+            try {
+                SQLDatabase db = SQLObjectUtils.getAncestor(this, SQLDatabase.class);
+                SQLCatalog cat = SQLObjectUtils.getAncestor(this, SQLCatalog.class);
+                SQLSchema sch = SQLObjectUtils.getAncestor(this, SQLSchema.class);
+                
+                con = db.getConnection();
+                DatabaseMetaData dbmd = con.getMetaData();
+                List<SQLTable> newChildren = SQLTable.fetchTablesForTableContainer(
+                        dbmd,
+                        cat == null ? null : cat.getName(),
+                        sch == null ? null : sch.getName());
+                SQLObjectUtils.refreshChildren(this, newChildren);
+
+                for (SQLTable t : (List<SQLTable>) children) {
+                    t.refreshColumns();
+                }
+                for (SQLTable t : (List<SQLTable>) children) {
+                    t.refreshIndexes();
+                }
+                for (SQLTable t : (List<SQLTable>) children) {
+                    t.refreshImportedKeys();
+                }
+            } catch (SQLException e) {
+                throw new SQLObjectException("Refresh failed", e);
+            } finally {
+                try {
+                    if (con != null) con.close();
+                } catch (SQLException ex) {
+                    logger.warn("Failed to close connection! Squishing this exception:", ex);
+                }
+            }
+        } else {
+            for (SQLObject o : (List<SQLObject>) children) {
+                o.refresh();
+            }
         }
     }
 
+    /**
+     * Returns true if this SQLObject is definitely a container for SQLTable
+     * objects. Depending on the source database topology, instances of
+     * SQLDatabase, SQLCatalog, and SQLSchema may return true. Other types of
+     * SQLObject will always return false, since there is no topology in which
+     * they are table containers.
+     * <p>
+     * Calling this method will never result in populating an unpopulated SQLObject,
+     * but that means this method has the limitation that it will return false if
+     * this SQLObject has not yet been populated. If this limitation is unacceptable,
+     * in your use case, you can call {@link #populate()} before calling this method.
+     * 
+     * @return
+     */
+    public boolean isTableContainer() {
+        return (children.size() > 0 && children.get(0).getClass() == SQLTable.class);
+    }
+    
     /**
      * Updates all the properties of this SQLObject to match those of the other
      * SQLObject. Some implementations also update the list of children (see

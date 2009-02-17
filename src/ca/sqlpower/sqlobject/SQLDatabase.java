@@ -129,7 +129,11 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
             // Finally, look for tables directly under the database (this
             // could be a platform without catalogs or schemas at all)
             if (children.size() == oldSize) {
-                SQLTable.addTablesToTableContainer(this, dbmd, "", "");
+                List<SQLTable> tables = SQLTable.fetchTablesForTableContainer(dbmd, "", "");
+                for (SQLTable table : tables) {
+                    table.setParent(this);
+                    children.add(table);
+                }
             }
             
 		} catch (SQLException e) {
@@ -611,9 +615,8 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
             
             // TODO hint a DatabaseMetadata cache flush for our wrappers
             
-            for (SQLObject o : (List<SQLObject>) children) {
-                o.refresh();
-            }
+            super.refresh();
+            
         } finally {
             endCompoundEdit("Refresh database" + getName());
         }
