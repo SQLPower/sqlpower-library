@@ -79,12 +79,14 @@ public class RefreshFKTest extends DatabaseConnectedTestCase {
     public void testRemoveFK() throws Exception {
         assertEquals(1, parent.getExportedKeys().size());
         assertEquals(1, child.getImportedKeys().size());
+        assertTrue(child.getImportedKeysFolder().isPopulated());
         
         sqlx("ALTER TABLE public.child DROP CONSTRAINT parent_child_fk");
         
         db.refresh();
         
-        assertEquals(0, child.getImportedKeys().size());
+        assertEquals("Child imported keys: " + child.getImportedKeysFolder().getChildNames(),
+                0, child.getImportedKeys().size());
         assertEquals("Parent exported keys: " + parent.getExportedKeysFolder().getChildNames(),
                 0, parent.getExportedKeys().size());
         

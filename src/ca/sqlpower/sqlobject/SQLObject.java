@@ -779,9 +779,13 @@ public abstract class SQLObject implements java.io.Serializable {
      * refresh method, {@link SQLDatabase#refresh()}, which is public.
      */
     void refresh() throws SQLObjectException {
-        if (!isPopulated()) return;
+        if (!isPopulated()) {
+            logger.debug("Not refreshing unpopulated object " + this);
+            return;
+        }
         
         if (isTableContainer()) {
+            logger.debug("Refreshing table container " + this);
             Connection con = null;
             try {
                 SQLDatabase db = SQLObjectUtils.getAncestor(this, SQLDatabase.class);
@@ -805,6 +809,8 @@ public abstract class SQLObject implements java.io.Serializable {
                 for (SQLTable t : (List<SQLTable>) children) {
                     t.refreshImportedKeys();
                 }
+                
+                logger.debug("Table container refresh complete for " + this);
             } catch (SQLException e) {
                 throw new SQLObjectException("Refresh failed", e);
             } finally {
@@ -826,17 +832,80 @@ public abstract class SQLObject implements java.io.Serializable {
      * objects. Depending on the source database topology, instances of
      * SQLDatabase, SQLCatalog, and SQLSchema may return true. Other types of
      * SQLObject will always return false, since there is no topology in which
-     * they are table containers.
+     * they are table containers. Calling this method will never result in
+     * populating an unpopulated SQLObject.
      * <p>
-     * Calling this method will never result in populating an unpopulated SQLObject,
-     * but that means this method has the limitation that it will return false if
-     * this SQLObject has not yet been populated. If this limitation is unacceptable,
-     * in your use case, you can call {@link #populate()} before calling this method.
+     * If this SQLObject is populated and has at least one child, this method
+     * makes the determination cheap and accurate by checking if the children
+     * are of type SQLTable. Otherwise, the object has no children (whether or
+     * not it is populated), so this method examines the JDBC driver's database
+     * metadata to determine the topology based on the reported catalogTerm and
+     * schemaTerm. A null value for either term is interpreted to mean the
+     * database does not have that level of object containment. The (major)
+     * downside of this approach is that it does not work when the database
+     * connection is unavailable.
      * 
      * @return
+     * @throws SQLObjectException
+     *             if the determination requires database metadata access, and
+     *             it's not possible to obtain the database connection or the
+     *             database metadata.
      */
-    public boolean isTableContainer() {
-        return (children.size() > 0 && children.get(0).getClass() == SQLTable.class);
+    public boolean isTableContainer() throws SQLObjectException {
+        
+        // first, check for existing SQLTable children--this is a dead giveaway for a table container!
+        if (children.size() > 0) {
+            if (children.get(0).getClass() == SQLTable.class) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        
+        // no children. we have to do a bit of structural investigation.
+        
+        // schemas can only contain tables
+        if (getClass() == SQLSchema.class) {
+            return true;
+        }
+
+        // determination for catalogs and databases requires database metadata
+        Connection con = null;
+        try {
+            
+            // catalogs could contain schemas or tables. If schemaTerm is null, it must be tables.
+            if (getClass() == SQLCatalog.class) {
+                SQLDatabase db = (SQLDatabase) getParent();
+                con = db.getConnection();
+                if (con == null) {
+                    throw new SQLObjectException("Unable to determine table container status without database connection");
+                }
+                DatabaseMetaData dbmd = con.getMetaData();
+                return dbmd.getSchemaTerm() == null;
+            }
+
+            // databases could contain catalogs, schemas, or tables
+            if (getClass() == SQLDatabase.class) {
+                SQLDatabase db = (SQLDatabase) this;
+                con = db.getConnection();
+                if (con == null) {
+                    throw new SQLObjectException("Unable to determine table container status without database connection");
+                }
+                DatabaseMetaData dbmd = con.getMetaData();
+                return (dbmd.getSchemaTerm() == null) && (dbmd.getCatalogTerm() == null);
+            }
+        } catch (SQLException ex) {
+            throw new SQLObjectException("Failed to obtain database metadata", ex);
+        } finally {
+            try {
+                if (con != null) con.close();
+            } catch (SQLException ex) {
+                logger.warn("Failed to close connection", ex);
+            }
+        }
+        
+        // other types of SQLObject are never table containers
+        return false;
     }
     
     /**

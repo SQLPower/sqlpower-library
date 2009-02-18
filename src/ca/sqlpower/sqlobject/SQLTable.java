@@ -1589,9 +1589,15 @@ public class SQLTable extends SQLObject {
     }
     
     void refreshImportedKeys() throws SQLObjectException {
-        if (!isRelationshipsPopulated()) return;
+        if (!getImportedKeysFolder().isPopulated()) {
+            logger.debug("Not refreshing unpopulated imported keys of " + this);
+            return;
+        }
 
         List<SQLRelationship> newRels = SQLRelationship.fetchImportedKeys(this);
+        if (logger.isDebugEnabled()) {
+            logger.debug("New imported keys of " + getName() + ": " + newRels);
+        }
         SQLObjectUtils.refreshChildren(importedKeysFolder, newRels);
     }
 
