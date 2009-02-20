@@ -35,6 +35,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import org.apache.log4j.Logger;
@@ -73,6 +74,11 @@ public class SPDataSourcePanel implements DataEntryPanel {
 	private JPasswordField dbPassField;
 	private JButton dbTestConnection;
 	private JLabel dbTestResult;
+	
+	/**
+	 * Contains information on the DB connection and system properties.
+	 */
+	private JTextArea sysprops;
 
 	/**
 	 * Extra data entry fields provided by subclasses. These fields will be
@@ -129,8 +135,15 @@ public class SPDataSourcePanel implements DataEntryPanel {
         }
         
         dbTestResult = new JLabel();
+        sysprops = new JTextArea();
+        sysprops.setBorder( null );
+        sysprops.setOpaque( false );
+        sysprops.setEditable( false ); 
+        sysprops.setFont(dbTestResult.getFont());
+        
         dbTestConnection = new JButton(new AbstractAction(Messages.getString("SPDataSourcePanel.testConnectionActionName")) { //$NON-NLS-1$
 			public void actionPerformed(ActionEvent e) {
+				sysprops.setText("");
 				Connection con = null;
 				try {
 					SPDataSource dbcs = new SPDataSource(SPDataSourcePanel.this.dbcs.getParentCollection());
@@ -145,9 +158,10 @@ public class SPDataSourcePanel implements DataEntryPanel {
 					
 					// No exception thrown, so success!
 					dbTestResult.setText(Messages.getString("SPDataSourcePanel.connectionTestSuccessful")); //$NON-NLS-1$
-					
+					sysprops.append(new SelectSystemPropertiesStringBuild(dbcs, true).generateCompleteString());
 				} catch (SQLException ex) {
 					dbTestResult.setText(Messages.getString("SPDataSourcePanel.connectionTestFailed")); //$NON-NLS-1$
+					sysprops.append(new SelectSystemPropertiesStringBuild().getConnectionInfoIndependentString());
 					SPSUtils.showExceptionDialogNoReport(panel, Messages.getString("SPDataSourcePanel.connectionTestException"), ex); //$NON-NLS-1$
 				} finally {
 					if (con != null) {
@@ -170,12 +184,14 @@ public class SPDataSourcePanel implements DataEntryPanel {
         builder.append(Messages.getString("SPDataSourcePanel.jdbcUrlLabel"), dbUrlField); //$NON-NLS-1$
         builder.append(Messages.getString("SPDataSourcePanel.usernameLabel"), dbUserField = new JTextField(dbcs.getUser())); //$NON-NLS-1$
         builder.append(Messages.getString("SPDataSourcePanel.passwordLabel"), dbPassField = new JPasswordField(dbcs.getPass())); //$NON-NLS-1$
-        builder.append(dbTestConnection, dbTestResult);
-        
+                
         // extra fields supplied by subclasses
         for (JComponent extraField : extraFields) {
         	builder.append((String) extraField.getClientProperty(EXTRA_FIELD_LABEL_PROP), extraField);
         }
+        
+        builder.append(dbTestConnection, dbTestResult);
+        builder.append("\t\t", sysprops );
         
         dataSourceTypeBox.addItemListener(new ItemListener() {
             public void itemStateChanged(ItemEvent e) {
@@ -187,7 +203,7 @@ public class SPDataSourcePanel implements DataEntryPanel {
         
         // ensure enough width for the platform specific options
         JPanel p = builder.getPanel();
-        p.setPreferredSize(new Dimension(600, 300));
+        p.setPreferredSize(new Dimension(600, 400));
 
         return p;
     }
