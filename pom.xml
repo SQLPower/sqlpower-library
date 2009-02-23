@@ -66,6 +66,12 @@
                 </directory>
                 <targetPath>ca/sqlpower/sqlobject</targetPath>
             </resource>
+            <resource>
+                <directory>
+                    src/ca/sqlpower/demodata
+                </directory>
+                <targetPath>ca/sqlpower/demodata</targetPath>
+            </resource>
 			<resource>
 				<directory>src</directory>
 				<includes>
