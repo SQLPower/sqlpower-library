@@ -130,12 +130,11 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			// instead (i.e. this database has no catalogs, and schemas
             // may be attached directly to the database)
 			if ( children.size() == oldSize ) {
-				rs = dbmd.getSchemas();
-				while (rs.next()) {
-					children.add(new SQLSchema(this, rs.getString(1),false));
+				List<SQLSchema> schemas = SQLSchema.fetchSchemas(dbmd, null);
+				for (SQLSchema schema : schemas) {
+				    schema.setParent(this);
+				    children.add(schema);
 				}
-				rs.close();
-				rs = null;
 			}
             
             // Finally, look for tables directly under the database (this
@@ -644,7 +643,11 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
                 SQLObjectUtils.refreshChildren(this, newCatalogs);
             }
 
-            // TODO schema refresh if catalog term is null and schema term isn't
+            if (schemaTerm != null) {
+                logger.debug("refresh: schemaTerm is '"+schemaTerm+"'. refreshing schemas!");
+                List<SQLSchema> newSchemas = SQLSchema.fetchSchemas(dbmd, null);
+                SQLObjectUtils.refreshChildren(this, newSchemas);
+            }
             
             // TODO hint a DatabaseMetadata cache flush for our wrappers
 

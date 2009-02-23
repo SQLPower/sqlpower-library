@@ -22,6 +22,8 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,8 +37,74 @@ import org.apache.log4j.Logger;
  */
 public class SQLSchema extends SQLObject {
 	private static final Logger logger = Logger.getLogger(SQLSchema.class);
-	protected String nativeTerm;
 
+    /**
+     * Creates a list of unpopulated Schema objects corresponding to the list of
+     * schemas in the given database metadata.
+     * 
+     * @param dbmd
+     *            The database metadata to get the schema names from.
+     * @param catalogName
+     *            The catalog under which to look for the schemas. If the
+     *            underlying database does not support catalogs, or you just
+     *            want the schema list for the current catalog, set this
+     *            argument to null.
+     * @return A list of unpopulated, unparented SQLSchema objects whose names
+     *         and order matches that given by the database metadata.
+     * @throws SQLObjectException If database access fails.
+     */
+    public static List<SQLSchema> fetchSchemas(DatabaseMetaData dbmd, String catalogName)
+    throws SQLObjectException {
+    
+        ResultSet rs = null;
+        String oldCatalog = null;
+        try {
+            
+            if (catalogName != null) {
+                oldCatalog = dbmd.getConnection().getCatalog();
+                // This can fail in SS2K because of privilege problems.  There is
+                // apparently no way to check if it will fail; you just have to try.
+                try {
+                    dbmd.getConnection().setCatalog(catalogName);
+                } catch (SQLException ex) {
+                    // XXX it would be preferable to store this exception in a popuateFailReason on the containing catalog
+                    logger.info("populate: Could not setCatalog("+catalogName+"). Assuming it's a permission problem.  Stack trace:", ex);
+                    return Collections.emptyList();
+                }
+            }
+            
+            List<SQLSchema> schemas = new ArrayList<SQLSchema>();
+            rs = dbmd.getSchemas();
+            while (rs.next()) {
+                String schemaName = rs.getString(1);
+                if (schemaName != null) {
+                    SQLSchema schema = new SQLSchema(null, schemaName, false);
+                    schema.setNativeTerm(dbmd.getSchemaTerm());
+                    logger.debug("Set schema term to "+schema.getNativeTerm());
+                    schemas.add(schema);
+                }
+            }
+            return schemas;
+        } catch (SQLException ex) {
+            throw new SQLObjectException("Failed to get schema names from source database", ex);
+        } finally {
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException e) {
+                logger.warn("Couldn't close result set. Squishing this exception:", e);
+            }
+            try {
+                if (oldCatalog != null) {
+                    dbmd.getConnection().setCatalog(oldCatalog);
+                }
+            } catch (SQLException e) {
+                logger.warn("Couldn't set catalog back to '"+oldCatalog+"'. Squishing this exception:", e);
+            }
+        }
+    }
+
+	protected String nativeTerm;
+	
 	public SQLSchema(boolean populated) {
 		this(null, null, populated);
 	}
@@ -51,6 +119,14 @@ public class SQLSchema extends SQLObject {
 		this.nativeTerm = "schema";
 		this.populated = populated;
 	}
+
+    @Override
+    public void updateToMatch(SQLObject source) throws SQLObjectException {
+        SQLSchema s = (SQLSchema) source;
+        setName(s.getName());
+        setNativeTerm(s.getNativeTerm());
+        setPhysicalName(s.getPhysicalName());
+    }
 
 	public SQLTable getTableByName(String tableName) throws SQLObjectException {
 		populate();

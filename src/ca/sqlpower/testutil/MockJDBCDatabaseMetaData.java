@@ -743,6 +743,7 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
 			logger.debug("getSchemas: catalogTerm==null; schemaList="+schemaList);
 			if (schemaList == null) throw new SQLException("Missing property: 'schemas'");
 			for (String schName : Arrays.asList(schemaList.split(","))) {
+			    if (schName.equals("")) continue;
 				schemas.put(schName, null);
 				if (logger.isDebugEnabled()) logger.debug("getSchemas: put '"+schName+"'");
 			}

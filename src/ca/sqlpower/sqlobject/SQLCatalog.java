@@ -154,39 +154,19 @@ public class SQLCatalog extends SQLObject {
 	
 		int oldSize = children.size();
 		synchronized (getParent()) {
-			String oldCatalog = null;
 			Connection con = null;
-			ResultSet rs = null;
 			try {
-			
 				con = ((SQLDatabase) getParent()).getConnection();
 				DatabaseMetaData dbmd = con.getMetaData();	
-				oldCatalog = con.getCatalog();
-                
-                // This can fail in SS2K because of privelege problems.  There is
-                // apparently no way to check if it will fail; you just have to try.
-                try {
-                    con.setCatalog(getName());
-                } catch (SQLException ex) {
-                    logger.info("populate: Could not setCatalog("+getName()+"). Assuming it's a permission problem.  Stack trace:", ex);
-                    return;
-                }
 				
-				rs = dbmd.getSchemas();
-				while (rs.next()) {
-					String schName = rs.getString(1);
-					SQLSchema schema = null;
-
-					if (schName != null) {
-						schema = new SQLSchema(this, schName, false);
-						children.add(schema);
-						schema.setNativeTerm(dbmd.getSchemaTerm());
-						logger.debug("Set schema term to "+schema.getNativeTerm());
-					}
+				// Try to find schemas in this catalog
+				List<SQLSchema> schemas = SQLSchema.fetchSchemas(dbmd, getName());
+				for (SQLSchema schema : schemas) {
+				    schema.setParent(this);
+				    children.add(schema);
 				}
-				rs.close();
-				rs = null;
-				
+
+				// No schemas found--fall through and check for tables
 				if (oldSize == children.size()) {
 				    List<SQLTable> tables = SQLTable.fetchTablesForTableContainer(dbmd, getName(), null);
 				    for (SQLTable table : tables) {
@@ -208,17 +188,11 @@ public class SQLCatalog extends SQLObject {
 					fireDbChildrenInserted(changedIndices, children.subList(oldSize, newSize));
 				}
 				try {
-					if (rs != null) rs.close();
-				} catch (SQLException e2) {
-					throw new SQLObjectException("catalog.rs.close.fail", e2);
-				}
-				try {
 					if (con != null) {
-                        con.setCatalog(oldCatalog);
                         con.close();
                     }
-				} catch (SQLException e2) {
-					throw new SQLObjectException("Couldn't close connection", e2);
+				} catch (SQLException e) {
+					throw new SQLObjectException("Couldn't close connection", e);
 				}
 			}
 		}

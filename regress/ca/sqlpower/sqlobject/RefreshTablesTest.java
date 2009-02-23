@@ -247,4 +247,125 @@ public class RefreshTablesTest extends TestCase {
         assertEquals(0, db.getChildCount());
     }
 
+    
+    // ---------------- DATABASE.SCHEMA SECTION ----------------------
+    
+    public void testAddTableInEmptySchema() throws Exception {
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("schemas", "moo");
+        SQLSchema schema = (SQLSchema) db.getChildByName("moo");
+        assertNotNull("Didn't find schema in db: "+db.getChildNames(), schema);
+        
+        assertEquals(0, schema.getChildCount());
+        con.setProperty("tables.moo", "cows");
+        
+        db.refresh();
+        
+        assertEquals(1, schema.getChildCount());
+        assertEquals(SQLTable.class, schema.getChild(0).getClass());
+        assertEquals("cows", schema.getChild(0).getName());
+    }
+
+    public void testAddTableInNonEmptySchema() throws Exception {
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("schemas", "moo");
+        SQLSchema schema = (SQLSchema) db.getChildByName("moo");
+        assertNotNull("Didn't find schema in db: "+db.getChildNames(), schema);
+
+        con.setProperty("tables.moo", "cows");
+        assertEquals(1, schema.getChildCount());
+        
+        con.setProperty("tables.moo", "cows,chickens");
+        db.refresh();
+        
+        assertEquals(2, schema.getChildCount());
+        assertEquals(SQLTable.class, schema.getChild(0).getClass());
+        assertEquals("cows", schema.getChild(0).getName());
+        assertEquals("chickens", schema.getChild(1).getName());
+    }
+    
+    public void testRemoveTableInSchema() throws Exception {
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("schemas", "moo");
+        SQLSchema schema = (SQLSchema) db.getChildByName("moo");
+        assertNotNull("Didn't find schema in db: "+db.getChildNames(), schema);
+
+        con.setProperty("tables.moo", "cows,chickens");
+        assertEquals(2, schema.getChildCount());
+        
+        con.setProperty("tables.moo", "cows");
+        db.refresh();
+        
+        assertEquals(1, schema.getChildCount());
+        assertEquals(SQLTable.class, schema.getChild(0).getClass());
+        assertEquals("cows", schema.getChild(0).getName());
+    }
+
+    public void testRemoveLastTableInSchema() throws Exception {
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("schemas", "moo");
+        SQLSchema schema = (SQLSchema) db.getChildByName("moo");
+        assertNotNull("Didn't find schema in db: "+db.getChildNames(), schema);
+
+        con.setProperty("tables.moo", "cows");
+        assertEquals(1, schema.getChildCount());
+        
+        con.setProperty("tables.moo", "");
+        db.refresh();
+        
+        assertEquals("Unexpected tables in database: " + schema.getChildNames(),
+                0, schema.getChildCount());
+    }
+    
+    public void testAddSchemaInDatabase() throws Exception {
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("schemas", "moo");
+        SQLSchema schema = (SQLSchema) db.getChildByName("moo");
+        assertNotNull("Didn't find schema in db: "+db.getChildNames(), schema);
+        assertEquals(1, db.getChildCount());
+        
+        con.setProperty("schemas", "moo,cluck");
+        db.refresh();
+        
+        assertEquals(2, db.getChildCount());
+        assertEquals("moo", db.getChild(0).getName());
+        assertEquals("cluck", db.getChild(1).getName());
+    }
+
+    public void testAddSchemaInEmptyDatabase() throws Exception {
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("schemas", "");
+        assertEquals("Unexpected schemas: " + db.getChildNames(),
+                0, db.getChildCount());
+        
+        con.setProperty("schemas", "cows");
+        db.refresh();
+        
+        assertEquals(1, db.getChildCount());
+        assertEquals("cows", db.getChild(0).getName());
+    }
+
+    public void testRemoveSchemaInDatabase() throws Exception {
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("schemas", "moo,splorch");
+        assertEquals(2, db.getChildCount());
+        
+        con.setProperty("schemas", "splorch");
+        db.refresh();
+        
+        assertEquals(1, db.getChildCount());
+        assertEquals("splorch", db.getChild(0).getName());
+    }
+
+    public void testRemoveOnlySchemaInDatabase() throws Exception {
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("schemas", "moo");
+        assertEquals(1, db.getChildCount());
+        
+        con.setProperty("schemas", "");
+        db.refresh();
+        
+        assertEquals(0, db.getChildCount());
+    }
+
 }
