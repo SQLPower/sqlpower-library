@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,6 +37,32 @@ import org.apache.log4j.Logger;
 public class SQLCatalog extends SQLObject {
 	private static Logger logger = Logger.getLogger(SQLCatalog.class);
 
+	static List<SQLCatalog> fetchCatalogs(DatabaseMetaData dbmd) throws SQLObjectException {
+	    ResultSet rs = null;
+	    try {
+	        List<SQLCatalog> catalogs = new ArrayList<SQLCatalog>();
+	        rs = dbmd.getCatalogs();
+            while (rs.next()) {
+                String catName = rs.getString(1);
+                if (catName != null) {
+                    SQLCatalog cat = new SQLCatalog(null, catName);
+                    cat.setNativeTerm(dbmd.getCatalogTerm());
+                    logger.debug("Set catalog term to "+cat.getNativeTerm());
+                    catalogs.add(cat);
+                }
+            }
+            return catalogs;
+	    } catch (SQLException ex) {
+	        throw new SQLObjectException("Failed to get catalog names from source database", ex);
+	    } finally {
+            try {
+                if (rs != null ) rs.close();
+            } catch (SQLException e) {
+                throw new SQLObjectException("Couldn't close result set. Squishing this exception:", e);
+            }
+	    }
+	}
+	
 	/**
 	 * The term used for catalogs in the native database system.  In
 	 * SQLServer2000, this is "database".
@@ -56,6 +83,14 @@ public class SQLCatalog extends SQLObject {
         this.children = new LinkedList();
         this.nativeTerm = "catalog";
         this.populated = startPopulated;
+    }
+    
+    @Override
+    public void updateToMatch(SQLObject source) throws SQLObjectException {
+        SQLCatalog c = (SQLCatalog) source;
+        setName(c.getName());
+        setNativeTerm(c.getNativeTerm());
+        setPhysicalName(c.getPhysicalName());
     }
 
 	protected SQLTable getTableByName(String tableName) throws SQLObjectException {

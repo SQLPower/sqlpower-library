@@ -37,6 +37,8 @@ import org.apache.commons.pool.impl.GenericObjectPool;
 import org.apache.commons.pool.impl.GenericObjectPool.Config;
 import org.apache.log4j.Logger;
 
+import quicktime.std.movies.EffectsList;
+
 import ca.sqlpower.sql.SPDSConnectionFactory;
 import ca.sqlpower.sql.SPDataSource;
 
@@ -66,6 +68,20 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 * Indicates the maximum number of connections held active ever.
 	 */
 	private int maxActiveConnections = 0;
+	
+	/**
+	 * The catalog term for the underlying database, according to the JDBC driver's
+	 * database meta data at the time this database object was populated. Null means
+	 * the database does not have catalogs.
+	 */
+	private String catalogTerm;
+	
+    /**
+     * The schema term for the underlying database, according to the JDBC driver's
+     * database meta data at the time this database object was populated. Null means
+     * the database does not have schemas.
+     */
+	private String schemaTerm;
 	
 	/**
 	 * Constructor for instances that connect to a real database by JDBC.
@@ -100,19 +116,17 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			con = getConnection();
 			DatabaseMetaData dbmd = con.getMetaData();
 			
-			rs = dbmd.getCatalogs();
-			while (rs.next()) {
-				String catName = rs.getString(1);
-				SQLCatalog cat = null;
-				if (catName != null) {
-					cat = new SQLCatalog(this, catName);
-					cat.setNativeTerm(dbmd.getCatalogTerm());
-					logger.debug("Set catalog term to "+cat.getNativeTerm());
-					children.add(cat);
-				}
+			catalogTerm = dbmd.getCatalogTerm();
+			if ("".equals(catalogTerm)) catalogTerm = null;
+			
+			schemaTerm = dbmd.getSchemaTerm();
+			if ("".equals(schemaTerm)) schemaTerm = null;
+			
+			List<SQLCatalog> catalogs = SQLCatalog.fetchCatalogs(dbmd);
+			for (SQLCatalog cat : catalogs) {
+			    cat.setParent(this);
+			    children.add(cat);
 			}
-			rs.close();
-			rs = null;
 
 			// If there were no catalogs, we should look for schemas
 			// instead (i.e. this database has no catalogs, and schemas
@@ -533,8 +547,12 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			return null;
 		} else {
 			try {
-			    maxActiveConnections = Math.max(maxActiveConnections,
-			            getConnectionPool().getNumActive() + 1);
+			    int newActiveCount = getConnectionPool().getNumActive() + 1;
+                maxActiveConnections = Math.max(maxActiveConnections,
+			            newActiveCount);
+			    if (logger.isDebugEnabled()) {
+			        logger.debug("getConnection(): giving out active connection " + newActiveCount);
+			    }
 				return (Connection) getConnectionPool().borrowObject();
 			} catch (Exception e) {
 			    SQLObjectException ex = new SQLObjectException(
@@ -610,15 +628,46 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
      * (because they were dropped in the physical database).
      */
     public void refresh() throws SQLObjectException {
+        if (!populated) {
+            logger.info("Not refreshing unpopulated database " + getName());
+            return;
+        }
+        
+        Connection con = null;
         try {
             startCompoundEdit("Refresh database " + getName());
+
+            con = getConnection();
+            DatabaseMetaData dbmd = con.getMetaData();
+            
+            if (catalogTerm != null) {
+                logger.debug("refresh: catalogTerm is '"+catalogTerm+"'. refreshing catalogs!");
+                List<SQLCatalog> newCatalogs = SQLCatalog.fetchCatalogs(dbmd);
+                SQLObjectUtils.refreshChildren(this, newCatalogs);
+            }
+
+            // TODO schema refresh if catalog term is null and schema term isn't
             
             // TODO hint a DatabaseMetadata cache flush for our wrappers
+
+            // close connection before invoking the super refresh,
+            // which will probably want to open another one
+            con.close();
+            con = null;
             
+            // bootstrap: if this database is a catalog or schema container, 
             super.refresh();
-            
+
+        } catch (SQLException e) {
+            throw new SQLObjectException("Failed to refresh database", e);
         } finally {
             endCompoundEdit("Refresh database" + getName());
+            
+            try {
+                if (con != null) con.close();
+            } catch (SQLException ex) {
+                logger.warn("Failed to close connection. Squishing this exception:", ex);
+            }
         }
     }
 }

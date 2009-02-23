@@ -618,7 +618,7 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
 				if (schemas.get(cat) == null) {
 					// no catalogs, no schemas
 					String tableList = connection.getProperties().getProperty("tables");
-					if (tableList == null) throw new SQLException("Missing property: 'tables'");
+					if (tableList == null) throw new SQLException("Missing property: 'tables'. property dump: " + connection.getProperties());
 					for (String table : Arrays.asList(tableList.split(","))) {
 						if (tablePattern.matcher(table).matches()) {
 							rs.addRow();
@@ -689,9 +689,29 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
 		return rs;
 	}
 
+	/**
+	 * Translates a SQL LIKE wildcard into a regular expression pattern.
+	 * The returned pattern will not match an empty string (it will only
+	 * match strings of length &gt;= 1). This is meant as an internal
+	 * convenience for Mock JDBC lists:
+	 * <ul>
+	 *  <li>a list like "foo,,bar" will have only two members
+	 *  <li>a list like "" or "," will have no members
+	 * </ul>
+	 * this is important because otherwise there would be no way to specify
+	 * an empty list: "" would specify a list of size 1 (the sole member
+	 * being the empty string).
+	 * 
+	 * @param sqlWildcard The SQL LIKE wildcard. The % character translates
+	 * to regular expression ".*" and the _ character translates to ".". Null
+	 * and the empty string are equivalent to a wildcard consisting of just %.
+	 * @return The regex pattern that corresponds with thshe given SQL wildcard,
+	 * adjusted for the empty string caveat mentioned above.
+	 */
 	private Pattern createPatternFromSQLWildcard(String sqlWildcard) {
-		if (sqlWildcard == null) {
-			return Pattern.compile(".*");
+		if (sqlWildcard == null || sqlWildcard.equals("") || sqlWildcard.equals("%")) {
+		    // this pattern won't match an empty string (see doc comment)
+			return Pattern.compile(".+");
 		} else {
 			// remove existing regex metachars
 			sqlWildcard = sqlWildcard.replace(".", "\\.");
@@ -763,6 +783,7 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
 		rs.setColumnName(1, "TABLE_CAT");
 		if (getCatalogTerm() != null) {
 			for (String catName : Arrays.asList(catalogList.split(","))) {
+			    if (catName.equals("")) continue;
 				rs.addRow();
 				rs.updateObject(1, catName);
 				if (logger.isDebugEnabled()) logger.debug("getCatalogs: added '"+catName+"'");

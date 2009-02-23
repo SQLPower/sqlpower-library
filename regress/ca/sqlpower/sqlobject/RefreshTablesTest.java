@@ -19,13 +19,16 @@
 
 package ca.sqlpower.sqlobject;
 
+import junit.framework.TestCase;
+
+import org.apache.log4j.Logger;
+
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.SPDataSourceType;
 import ca.sqlpower.testutil.MockJDBCConnection;
 import ca.sqlpower.testutil.MockJDBCDriver;
-import junit.framework.TestCase;
 
 /**
  * Tests all the permutations of refreshing table containers where tables
@@ -33,6 +36,8 @@ import junit.framework.TestCase;
  */
 public class RefreshTablesTest extends TestCase {
 
+    private static final Logger logger = Logger.getLogger(RefreshTablesTest.class);
+    
     private SQLDatabase db;
 
     /**
@@ -48,6 +53,7 @@ public class RefreshTablesTest extends TestCase {
      */
     @Override
     protected void setUp() throws Exception {
+        logger.debug("=====setUp=====");
         super.setUp();
         
         DataSourceCollection dscol = new PlDotIni();
@@ -63,9 +69,12 @@ public class RefreshTablesTest extends TestCase {
         con = MockJDBCDriver.getConnection("refresh_test");
         assertNotNull(con);
     }
+
+    
+    // ---------------- DATABASE ONLY SECTION ----------------------
     
     /**
-     * XXX this one is tricky, because it's hard to know if something is really a table container when it's got no children
+     * this one is tricky, because it's hard to know if something is really a table container when it's got no children
      */
     public void testAddTableInEmptyDatabase() throws Exception {
         assertEquals(0, db.getChildCount());
@@ -90,4 +99,152 @@ public class RefreshTablesTest extends TestCase {
         assertEquals("cows", db.getChild(0).getName());
         assertEquals("chickens", db.getChild(1).getName());
     }
+    
+    public void testRemoveTableInDatabase() throws Exception {
+        con.setProperty("tables", "cows,chickens");
+        assertEquals(2, db.getChildCount());
+        
+        con.setProperty("tables", "cows");
+        db.refresh();
+        
+        assertEquals(1, db.getChildCount());
+        assertEquals(SQLTable.class, db.getChild(0).getClass());
+        assertEquals("cows", db.getChild(0).getName());
+    }
+
+    public void testRemoveLastTableInDatabase() throws Exception {
+        con.setProperty("tables", "cows");
+        assertEquals(1, db.getChildCount());
+        
+        con.setProperty("tables", "");
+        db.refresh();
+        
+        assertEquals("Unexpected tables in database: " + db.getChildNames(),
+                0, db.getChildCount());
+    }
+
+    
+    // ---------------- DATABASE.CATALOG SECTION ----------------------
+    
+    /**
+     * this one is tricky, because it's hard to know if something is really a table container when it's got no children
+     */
+    public void testAddTableInEmptyCatalog() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("catalogs", "moo");
+        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
+        
+        assertEquals(0, cat.getChildCount());
+        con.setProperty("tables.moo", "cows");
+        
+        db.refresh();
+        
+        assertEquals(1, cat.getChildCount());
+        assertEquals(SQLTable.class, cat.getChild(0).getClass());
+        assertEquals("cows", cat.getChild(0).getName());
+    }
+
+    public void testAddTableInNonEmptyCatalog() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("catalogs", "moo");
+        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
+
+        con.setProperty("tables.moo", "cows");
+        assertEquals(1, cat.getChildCount());
+        
+        con.setProperty("tables.moo", "cows,chickens");
+        db.refresh();
+        
+        assertEquals(2, cat.getChildCount());
+        assertEquals(SQLTable.class, cat.getChild(0).getClass());
+        assertEquals("cows", cat.getChild(0).getName());
+        assertEquals("chickens", cat.getChild(1).getName());
+    }
+    
+    public void testRemoveTableInCatalog() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("catalogs", "moo");
+        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
+
+        con.setProperty("tables.moo", "cows,chickens");
+        assertEquals(2, cat.getChildCount());
+        
+        con.setProperty("tables.moo", "cows");
+        db.refresh();
+        
+        assertEquals(1, cat.getChildCount());
+        assertEquals(SQLTable.class, cat.getChild(0).getClass());
+        assertEquals("cows", cat.getChild(0).getName());
+    }
+
+    public void testRemoveLastTableInCatalog() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("catalogs", "moo");
+        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
+
+        con.setProperty("tables.moo", "cows");
+        assertEquals(1, cat.getChildCount());
+        
+        con.setProperty("tables.moo", "");
+        db.refresh();
+        
+        assertEquals("Unexpected tables in database: " + cat.getChildNames(),
+                0, cat.getChildCount());
+    }
+    
+    public void testAddCatalogInDatabase() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("catalogs", "moo");
+        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
+        assertEquals(1, db.getChildCount());
+        
+        con.setProperty("catalogs", "moo,cluck");
+        db.refresh();
+        
+        assertEquals(2, db.getChildCount());
+        assertEquals("moo", db.getChild(0).getName());
+        assertEquals("cluck", db.getChild(1).getName());
+    }
+
+    public void testAddCatalogInEmptyDatabase() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("catalogs", "");
+        assertEquals("Unexpected catalogs: " + db.getChildNames(),
+                0, db.getChildCount());
+        
+        con.setProperty("catalogs", "cows");
+        db.refresh();
+        
+        assertEquals(1, db.getChildCount());
+        assertEquals("cows", db.getChild(0).getName());
+    }
+
+    public void testRemoveCatalogInDatabase() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("catalogs", "moo,splorch");
+        assertEquals(2, db.getChildCount());
+        
+        con.setProperty("catalogs", "splorch");
+        db.refresh();
+        
+        assertEquals(1, db.getChildCount());
+        assertEquals("splorch", db.getChild(0).getName());
+    }
+
+    public void testRemoveOnlyCatalogInDatabase() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("catalogs", "moo");
+        assertEquals(1, db.getChildCount());
+        
+        con.setProperty("catalogs", "");
+        db.refresh();
+        
+        assertEquals(0, db.getChildCount());
+    }
+
 }

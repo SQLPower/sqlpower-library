@@ -31,6 +31,8 @@ import java.util.Properties;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
+import org.apache.log4j.Logger;
+
 /**
  * A fake connection object that we can use for unit testing.
  * 
@@ -39,6 +41,8 @@ import java.util.regex.Pattern;
  */
 public class MockJDBCConnection implements Connection {
 
+    private static final Logger logger = Logger.getLogger(MockJDBCConnection.class);
+    
 	private boolean autoCommit;
 	private boolean readOnly;
 	private String currentCatalog;
@@ -91,6 +95,7 @@ public class MockJDBCConnection implements Connection {
      *            The new value.
      */
     public void setProperty(String key, String value) {
+        logger.debug("Changing property '"+key+"': '"+properties.getProperty(key)+"' -> '"+value+"'");
         properties.setProperty(key, value);
     }
     
