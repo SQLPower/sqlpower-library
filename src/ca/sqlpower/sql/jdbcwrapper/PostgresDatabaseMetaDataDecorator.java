@@ -72,10 +72,18 @@ public class PostgresDatabaseMetaDataDecorator extends
 	}
 
 	/**
+	 * Returns "Database".
+	 */
+	@Override
+	public String getCatalogTerm() throws SQLException {
+	    return "Database";
+	}
+	
+	/**
 	 * The Postgres JDBC driver is able to return each Catalog Name, but ignores
 	 * requests to view schemas that belong to a Catalog other than the one 
 	 * you are connected to and instead always returns the same set of schenms.
-	 * 
+	 * <p>
 	 * To minimize confusion, only return the Catalog for the database you are 
 	 * connected to.  Use a sqlpower CachedRowSet to ensure resources are freed 
 	 * up once the query has been run.
