@@ -37,8 +37,6 @@ import org.apache.commons.pool.impl.GenericObjectPool;
 import org.apache.commons.pool.impl.GenericObjectPool.Config;
 import org.apache.log4j.Logger;
 
-import quicktime.std.movies.EffectsList;
-
 import ca.sqlpower.sql.SPDSConnectionFactory;
 import ca.sqlpower.sql.SPDataSource;
 
