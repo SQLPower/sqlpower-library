@@ -158,10 +158,9 @@ public class SPDataSourcePanel implements DataEntryPanel {
 					
 					// No exception thrown, so success!
 					dbTestResult.setText(Messages.getString("SPDataSourcePanel.connectionTestSuccessful")); //$NON-NLS-1$
-					sysprops.append(new SelectSystemPropertiesStringBuild(dbcs, true).generateCompleteString());
+					sysprops.append(SPDataSource.getConnectionInfoString(dbcs, true));
 				} catch (SQLException ex) {
 					dbTestResult.setText(Messages.getString("SPDataSourcePanel.connectionTestFailed")); //$NON-NLS-1$
-					sysprops.append(new SelectSystemPropertiesStringBuild().getConnectionInfoIndependentString());
 					SPSUtils.showExceptionDialogNoReport(panel, Messages.getString("SPDataSourcePanel.connectionTestException"), ex); //$NON-NLS-1$
 				} finally {
 					if (con != null) {
@@ -203,7 +202,7 @@ public class SPDataSourcePanel implements DataEntryPanel {
         
         // ensure enough width for the platform specific options
         JPanel p = builder.getPanel();
-        p.setPreferredSize(new Dimension(600, 400));
+        p.setPreferredSize(new Dimension(600, 300));
 
         return p;
     }

@@ -41,6 +41,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.Driver;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -184,6 +185,49 @@ public class SPDataSource {
         }
         return listedFile;
     }
+    
+    /**
+	 * Builds a string of the DB connection properties to display to the user when 
+	 * testing a DB connection or in a log of a SQL query. <br>
+	 * NOTE: This method uses the StringBuilder class to create strings which is not 
+     * thread safe.<p>
+	 * @param ds - The SPDataSource for which connection details are wanted<p>
+	 * @param testConnection - This boolean should be true when the string is to be 
+	 * displayed when testing a connection. False, otherwise. The boolean decides whether 
+	 * or not to display the datasource's name. There is no point in displaying the 
+	 * datasource's name if it is already shown to the user as it is when testing a 
+	 * connection (in one of the text fields)<p>
+	 * @return A string of the DB connection properties
+	 */
+    public static String getConnectionInfoString(SPDataSource ds, boolean testConnection)
+	{
+		//If the connection fails, it returns an empty string
+		StringBuilder summary = new StringBuilder("");
+        Connection con = null;
+        try {
+            con = ds.createConnection();
+            DatabaseMetaData dbmd = con.getMetaData();
+            if(!testConnection) {
+            	summary.append(ds.getDisplayName()+": \n");
+            }
+            summary.append("Database Product Name: ").append(dbmd.getDatabaseProductName()+"\n");
+            summary.append("Database Product Version: ").append(dbmd.getDatabaseProductVersion()+"\n");
+            summary.append("Database Driver Name: ").append(dbmd.getDriverName()+"\n");
+            summary.append("Database Driver Version: ").append(dbmd.getDriverVersion()+"\n");
+            
+        } catch (SQLException e) {
+            logger.error("Couldn't get database metadata!", e);
+        } finally {
+            try {
+                if (con != null) {
+                    con.close();
+                }
+            } catch (SQLException ex) {
+                logger.warn("Couldn't close connection", ex);
+            } 
+            }
+        return summary.toString();
+      }
 
     /**
      * A property change listener that should be connected to the current parentType.

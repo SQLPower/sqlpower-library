@@ -108,7 +108,6 @@ import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.swingui.MonitorableWorker;
 import ca.sqlpower.swingui.SPSUtils;
-import ca.sqlpower.swingui.SelectSystemPropertiesStringBuild;
 import ca.sqlpower.swingui.SwingWorkerRegistry;
 import ca.sqlpower.swingui.db.DatabaseConnectionManager;
 import ca.sqlpower.swingui.event.TaskTerminationEvent;
@@ -171,7 +170,7 @@ public class SQLQueryUIComponents {
             }
             SPDataSource ds = (SPDataSource)e.getItem();
             addConnection(ds);
-          logTextArea.append(new SelectSystemPropertiesStringBuild(ds, false).getConnectionInfoString() + "\n\n");
+          logTextArea.append(SPDataSource.getConnectionInfoString(ds, false) + "\n\n");
         }
 
     }
@@ -387,7 +386,7 @@ public class SQLQueryUIComponents {
             try {
             	if (conMap.get(ds) == null || conMap.get(ds).getConnection() == null || conMap.get(ds).getConnection().isClosed()) {
             		addConnection(ds);
-            		logTextArea.append(new SelectSystemPropertiesStringBuild(ds, false).getConnectionInfoString() + "\n\n");
+            		logTextArea.append(SPDataSource.getConnectionInfoString(ds, false) + "\n\n");
             		if (conMap.get(ds) == null) {
             			throw new SQLObjectException("Cannot connect to " + ds.getName());
             		}
