@@ -30,7 +30,8 @@ import javax.swing.JPanel;
  */
 public class CursorManager {
     
-    private boolean draggingTable = false;
+    private boolean waiting = false;
+	private boolean draggingTable = false;
     private boolean dragAllModeActive = false;
     private boolean placeModeActive = false;
     private JComponent component;
@@ -69,15 +70,27 @@ public class CursorManager {
         modifyCursorImage();
     }
     
+    public void startWaitMode() {
+    	waiting = true;
+    	modifyCursorImage();
+    }
+    
+    public void finishWaitMode() {
+    	waiting = false;
+    	modifyCursorImage();
+    }
+    
     /**
      * Sets the appropriate cursor type based on the current
      * state of this cursor manager.
      */
     private void modifyCursorImage() {
         if (dragAllModeActive || draggingTable) {
-            component.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            component.setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
         } else if (placeModeActive) {
             component.setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
+        } else if (waiting) {
+        	component.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         } else {
             component.setCursor(null);
         }
