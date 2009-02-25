@@ -169,8 +169,12 @@ public class SQLQueryUIComponents {
                 return;
             }
             SPDataSource ds = (SPDataSource)e.getItem();
-            addConnection(ds);
-          logTextArea.append(SPDataSource.getConnectionInfoString(ds, false) + "\n\n");
+            try {
+				addConnection(ds);
+				logTextArea.append(SPDataSource.getConnectionInfoString(ds, false) + "\n\n");
+			} catch (SQLObjectException e1) {
+				logTextArea.append(createErrorStringMessage(e1));
+			}
         }
 
     }
@@ -386,11 +390,8 @@ public class SQLQueryUIComponents {
             try {
             	if (conMap.get(ds) == null || conMap.get(ds).getConnection() == null || conMap.get(ds).getConnection().isClosed()) {
             		addConnection(ds);
-            		logTextArea.append(SPDataSource.getConnectionInfoString(ds, false) + "\n\n");
-            		if (conMap.get(ds) == null) {
-            			throw new SQLObjectException("Cannot connect to " + ds.getName());
-            		}
             	}
+            	logTextArea.append(SPDataSource.getConnectionInfoString(ds, false) + "\n\n");
             	con = conMap.get(ds).getConnection();
                 stmt = con.createStatement();
                 conMap.get(ds).setCurrentStmt(stmt);
@@ -453,17 +454,6 @@ public class SQLQueryUIComponents {
 			return isFinished;
 		}
 		
-		/**
-		 * This will create the an error Message String similar to the details in the Exception Dialog.
-		 */
-		public String createErrorStringMessage(Throwable e) {
-			StringWriter stringWriter = new StringWriter();
-			PrintWriter traceWriter = new PrintWriter(stringWriter);
-			stringWriter.write(Messages.getString("SQLQuery.queryFailed"));
-			e.printStackTrace(traceWriter);
-			return stringWriter.toString();
-		}
-        
     }
     
     /**
@@ -1321,14 +1311,13 @@ public class SQLQueryUIComponents {
      * 
      * <p>This is package private for testing.
      */
-	void addConnection(SPDataSource ds) {
+	void addConnection(SPDataSource ds) throws SQLObjectException {
 		if (!conMap.containsKey(ds)) {
             try {
                 Connection con = ds.createConnection();
                 conMap.put(ds, new ConnectionAndStatementBean(con));
             } catch (SQLException e1) {
-                SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedConnectingToDBWithName", ds.getName()), e1);
-                return;
+                throw new SQLObjectException(Messages.getString("SQLQuery.failedConnectingToDBWithName", ds.getName()), e1);
             }
         }
         try {
@@ -1462,6 +1451,19 @@ public class SQLQueryUIComponents {
 
 	public JButton getPrevQueryButton() {
 		return prevQueryButton;
+	}
+	
+	/**
+	 * This will create the an error Message String similar to the details in the Exception Dialog.
+	 */
+	private static String createErrorStringMessage(Throwable e) {
+		StringWriter stringWriter = new StringWriter();
+		PrintWriter traceWriter = new PrintWriter(stringWriter);
+		stringWriter.write(Messages.getString("SQLQuery.queryFailed"));
+		e.printStackTrace(traceWriter);
+		stringWriter.write("\n\n");
+		stringWriter.write(Messages.getString("SQLQuery.queryFailedSeeAbove", e.getMessage()));
+		return stringWriter.toString();
 	}
 }
 

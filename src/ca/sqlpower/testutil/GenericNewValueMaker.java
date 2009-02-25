@@ -20,6 +20,7 @@
 package ca.sqlpower.testutil;
 
 import java.awt.Font;
+import java.awt.geom.Point2D;
 import java.io.File;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -88,6 +89,34 @@ public class GenericNewValueMaker implements NewValueMaker {
         	newVal = new SQLObjectException("Test Exception");
         } else if (valueType == UserPrompter.class) {
             newVal = new DefaultUserPrompter(UserPromptOptions.OK_NEW_NOTOK_CANCEL, UserPromptResponse.CANCEL, null);
+        } else if (valueType == Point2D.class) {
+        	Point2D point = new Point2D(){
+			
+        		private double x;
+        		private double y;
+        		
+				@Override
+				public void setLocation(double x, double y) {
+					this.x = x;
+					this.y = y;
+				}
+			
+				@Override
+				public double getY() {
+					return y;
+				}
+			
+				@Override
+				public double getX() {
+					return x;
+				}
+			};
+			if (oldVal == null) {
+				point.setLocation(0, 0);
+			} else {
+				point.setLocation(((Point2D) oldVal).getX() + 1, ((Point2D) oldVal).getY() - 1);
+			}
+			return point;
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +
