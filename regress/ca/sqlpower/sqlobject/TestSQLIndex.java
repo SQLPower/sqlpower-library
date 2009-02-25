@@ -220,7 +220,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         assertNotNull("No primary key loaded",dbTable.getPrimaryKeyIndex());
         assertEquals("Wrong indices: " + dbTable.getIndicesFolder().getChildNames(),
                 1, dbTable.getIndicesFolder().getChildCount());
-        assertEquals("Wrong primary key","SYS_IDX_",dbTable.getPrimaryKeyName().substring(0, 8));
+        assertEquals("Wrong primary key", "TEST3PK", dbTable.getPrimaryKeyName());
     }
     
     public void testAddStringColumnToPKThrowsException() throws SQLObjectException{

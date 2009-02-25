@@ -128,16 +128,16 @@ public class RefreshTest extends DatabaseConnectedTestCase {
         moose.getExportedKeysFolder().populate();
         moose.getIndicesFolder().populate();
         
-        // NOTE this should be 1, but there is a bug in HSQLDB that makes us see the PK twice
+        // NOTE this will fail on the raw HSQL driver. be sure you're using our jdbc wrapper!
         assertEquals("Unexpected indexes: " + moose.getIndicesFolder().getChildNames(),
-                2, moose.getIndicesFolder().getChildCount());
+                1, moose.getIndicesFolder().getChildCount());
 
         sqlx("CREATE INDEX moose_idx ON moose (name)");
         db.refresh();
         
         assertEquals("Unexpected indexes: " + moose.getIndicesFolder().getChildNames(),
-                3, moose.getIndicesFolder().getChildCount());
-        SQLIndex mooseIdx = moose.getIndices().get(2);
+                2, moose.getIndicesFolder().getChildCount());
+        SQLIndex mooseIdx = moose.getIndices().get(1);
         assertEquals("MOOSE_IDX", mooseIdx.getName());
         assertEquals(1, mooseIdx.getChildCount());
         assertEquals("NAME", mooseIdx.getChild(0).getName());
@@ -152,16 +152,15 @@ public class RefreshTest extends DatabaseConnectedTestCase {
         moose.getExportedKeysFolder().populate();
         moose.getIndicesFolder().populate();
         
-        // NOTE this should be 2, but there is a bug in HSQLDB that makes us see the PK twice
+        // NOTE this will fail on the raw HSQL driver. be sure you're using our jdbc wrapper!
         assertEquals("Unexpected indexes: " + moose.getIndicesFolder().getChildNames(),
-                3, moose.getIndicesFolder().getChildCount());
+                2, moose.getIndicesFolder().getChildCount());
 
         sqlx("DROP INDEX moose_idx");
         db.refresh();
         
-        // NOTE this should be 1, but there is a bug in HSQLDB that makes us see the PK twice
         assertEquals("Unexpected indexes: " + moose.getIndicesFolder().getChildNames(),
-                2, moose.getIndicesFolder().getChildCount());
+                1, moose.getIndicesFolder().getChildCount());
     }
 
     public void testAddColumnToIndex() throws Exception {
@@ -173,20 +172,20 @@ public class RefreshTest extends DatabaseConnectedTestCase {
         moose.getExportedKeysFolder().populate();
         moose.getIndicesFolder().populate();
         
-        // NOTE this should be 2, but there is a bug in HSQLDB that makes us see the PK twice
+        // NOTE this will fail on the raw HSQL driver. be sure you're using our jdbc wrapper!
         assertEquals("Unexpected indexes: " + moose.getIndicesFolder().getChildNames(),
-                3, moose.getIndicesFolder().getChildCount());
-        SQLIndex mooseIdx = (SQLIndex) moose.getIndicesFolder().getChild(2);
+                2, moose.getIndicesFolder().getChildCount());
+        SQLIndex mooseIdx = (SQLIndex) moose.getIndicesFolder().getChild(1);
         assertEquals(1, mooseIdx.getChildCount());
-        
+        assertEquals("MOOSE_IDX", mooseIdx.getName());
+
         sqlx("DROP INDEX moose_idx");
         sqlx("CREATE INDEX moose_idx ON moose (name, antler_length)");
         db.refresh();
         
-        // NOTE this should be 2, but there is a bug in HSQLDB that makes us see the PK twice
         assertEquals("Unexpected indexes: " + moose.getIndicesFolder().getChildNames(),
-                3, moose.getIndicesFolder().getChildCount());
-        assertSame(mooseIdx, moose.getIndicesFolder().getChild(2));
+                2, moose.getIndicesFolder().getChildCount());
+        assertSame(mooseIdx, moose.getIndicesFolder().getChild(0));
         assertEquals(2, mooseIdx.getChildCount());
         assertEquals("NAME", mooseIdx.getChild(0).getName());
         assertEquals("ANTLER_LENGTH", mooseIdx.getChild(1).getName());
@@ -201,20 +200,20 @@ public class RefreshTest extends DatabaseConnectedTestCase {
         moose.getExportedKeysFolder().populate();
         moose.getIndicesFolder().populate();
         
-        // NOTE this should be 2, but there is a bug in HSQLDB that makes us see the PK twice
+        // NOTE this will fail on the raw HSQL driver. be sure you're using our jdbc wrapper!
         assertEquals("Unexpected indexes: " + moose.getIndicesFolder().getChildNames(),
-                3, moose.getIndicesFolder().getChildCount());
-        SQLIndex mooseIdx = (SQLIndex) moose.getIndicesFolder().getChild(2);
+                2, moose.getIndicesFolder().getChildCount());
+        SQLIndex mooseIdx = (SQLIndex) moose.getIndicesFolder().getChild(1);
         assertEquals(2, mooseIdx.getChildCount());
+        assertEquals("MOOSE_IDX", mooseIdx.getName());
         
         sqlx("DROP INDEX moose_idx");
         sqlx("CREATE INDEX moose_idx ON moose (antler_length)");
         db.refresh();
         
-        // NOTE this should be 2, but there is a bug in HSQLDB that makes us see the PK twice
         assertEquals("Unexpected indexes: " + moose.getIndicesFolder().getChildNames(),
-                3, moose.getIndicesFolder().getChildCount());
-        assertSame(mooseIdx, moose.getIndicesFolder().getChild(2));
+                2, moose.getIndicesFolder().getChildCount());
+        assertSame(mooseIdx, moose.getIndicesFolder().getChild(0));
         assertEquals(1, mooseIdx.getChildCount());
         assertEquals("ANTLER_LENGTH", mooseIdx.getChild(0).getName());
     }
@@ -228,19 +227,19 @@ public class RefreshTest extends DatabaseConnectedTestCase {
         moose.getExportedKeysFolder().populate();
         moose.getIndicesFolder().populate();
         
-        // NOTE this should be 2, but there is a bug in HSQLDB that makes us see the PK twice
+        // NOTE this will fail on the raw HSQL driver. be sure you're using our jdbc wrapper!
         assertEquals("Unexpected indexes: " + moose.getIndicesFolder().getChildNames(),
-                3, moose.getIndicesFolder().getChildCount());
-        SQLIndex mooseIdx = (SQLIndex) moose.getIndicesFolder().getChild(2);
+                2, moose.getIndicesFolder().getChildCount());
+        SQLIndex mooseIdx = (SQLIndex) moose.getIndicesFolder().getChild(1);
         assertEquals(2, mooseIdx.getChildCount());
+        assertEquals("MOOSE_IDX", mooseIdx.getName());
         
         // note to test maintainers: dropping this column causes the whole index to be dropped
         sqlx("ALTER TABLE moose DROP COLUMN antler_length");
         db.refresh();
         
-        // NOTE this should be 1, but there is a bug in HSQLDB that makes us see the PK twice
         assertEquals("Unexpected indexes: " + moose.getIndicesFolder().getChildNames(),
-                2, moose.getIndicesFolder().getChildCount());
+                1, moose.getIndicesFolder().getChildCount());
         
         assertEquals(2, moose.getColumns().size());
     }

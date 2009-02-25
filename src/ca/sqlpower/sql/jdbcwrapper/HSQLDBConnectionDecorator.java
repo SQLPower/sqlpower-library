@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, SQL Power Group Inc.
+ * Copyright (c) 2009, SQL Power Group Inc.
  *
  * This file is part of SQL Power Library.
  *
@@ -19,18 +19,18 @@
 
 package ca.sqlpower.sql.jdbcwrapper;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
 
-public class AllTests {
+public class HSQLDBConnectionDecorator extends GenericConnectionDecorator {
 
-    public static Test suite() {
-        TestSuite suite = new TestSuite("Test for ca.sqlpower.sql.jdbcwrapper");
-        //$JUnit-BEGIN$
-        suite.addTestSuite(SQLServer2005DatabaseMetaDataDecoratorTest.class);
-        suite.addTestSuite(HSQLDBMDTest.class);
-        //$JUnit-END$
-        return suite;
+    protected HSQLDBConnectionDecorator(Connection delegate) {
+        super(delegate);
     }
 
+    @Override
+    public DatabaseMetaData getMetaData() throws SQLException {
+        return new HSQLDBDatabaseMetaDataDecorator(super.getMetaData());
+    }
 }

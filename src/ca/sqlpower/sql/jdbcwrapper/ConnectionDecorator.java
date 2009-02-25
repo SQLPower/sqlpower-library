@@ -71,18 +71,21 @@ public abstract class ConnectionDecorator implements Connection {
 	 * @param delegate The object to which all JDBC operations will be delegated.
 	 */
 	public static Connection createFacade(Connection delegate) throws SQLException {
+	    String driverName = delegate.getMetaData().getDriverName();
 		logger.debug("static createFacade, driver class is: " + delegate.getClass().getName());
-		logger.debug("static createFacade, driver name is: " + delegate.getMetaData().getDriverName());
-		if (delegate.getMetaData().getDriverName().equals("PostgreSQL Native Driver")) {
+        logger.debug("static createFacade, driver name is: " + driverName);
+		if (driverName.equals("PostgreSQL Native Driver")) {
 			return new PostgresConnectionDecorator(delegate);
-        } else if (delegate.getMetaData().getDriverName().equals("Oracle JDBC driver")) {
+        } else if (driverName.equals("Oracle JDBC driver")) {
             return new OracleConnectionDecorator(delegate);
-        } else if (delegate.getMetaData().getDriverName().equals("SQLServer")
-        		|| delegate.getMetaData().getDriverName().equals("Microsoft SQL Server 2005 JDBC Driver")) {
+        } else if (driverName.equals("SQLServer")
+        		|| driverName.equals("Microsoft SQL Server 2005 JDBC Driver")) {
             return new SQLServerConnectionDecorator(delegate);
-        } else if (delegate.getMetaData().getDriverName().equals("MySQL-AB JDBC Driver")) {
+        } else if (driverName.equals("MySQL-AB JDBC Driver")) {
             return new MySQLConnectionDecorator(delegate);
-		} else if (delegate.getMetaData().getDriverName().equals("SQL Power Mock JDBC Database Driver")) {
+        } else if (driverName.equals("HSQL Database Engine Driver")) {
+            return new HSQLDBConnectionDecorator(delegate);
+		} else if (driverName.equals("SQL Power Mock JDBC Database Driver")) {
 			// we don't want to decorate these at all
 			return delegate;
 		} else {
