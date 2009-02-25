@@ -27,9 +27,11 @@ package ca.sqlpower.util;
 public class DefaultUserPrompter implements UserPrompter {
 
 	private Object defaultResponse;
+	private final UserPromptOptions defaultOptionType;
 	private final UserPromptResponse defaultResponseType;
 	
-	public DefaultUserPrompter(UserPromptResponse defaultResponseType, Object defaultResponse) {
+	public DefaultUserPrompter(UserPromptOptions defaultOptionType, UserPromptResponse defaultResponseType, Object defaultResponse) {
+		this.defaultOptionType = defaultOptionType;
 		this.defaultResponseType = defaultResponseType;
 		this.defaultResponse = defaultResponse;
 	}

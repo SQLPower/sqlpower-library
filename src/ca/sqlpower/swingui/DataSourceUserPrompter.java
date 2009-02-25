@@ -41,6 +41,7 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.util.UserPrompter;
+import ca.sqlpower.util.UserPrompter.UserPromptOptions;
 
 import com.jgoodies.forms.builder.ButtonBarBuilder;
 import com.jgoodies.forms.builder.DefaultFormBuilder;
@@ -102,8 +103,17 @@ public class DataSourceUserPrompter implements UserPrompter {
 	
 	private Rectangle oldBounds;
 
-	public DataSourceUserPrompter(UserPromptResponse defaultResponseType, SPDataSource defaultResponse, JFrame frame, String questionMessage,
-			String okText, String newText, String notOkText, String cancelText, DataSourceCollection collection) {
+	public DataSourceUserPrompter(UserPromptOptions optionType, UserPromptResponse defaultResponseType, SPDataSource defaultResponse, JFrame frame, String questionMessage,
+			DataSourceCollection collection, String ...  buttonNames) {
+		if(optionType.getButtonNum() != buttonNames.length) {
+			String buttonNamesConcat = "";
+			for(String button : buttonNames) {
+				buttonNamesConcat.concat(button + " ");
+			}
+			throw new IllegalStateException("Expecting " + optionType.getButtonNum() + 
+					"arguments for the optionType " + optionType + "Recieved only " + buttonNames.length + "arguments\n" +
+					buttonNamesConcat);
+		}
 		this.defaultResponseType = defaultResponseType;
 		selectedDataSource = defaultResponse;
 		this.owner = frame;
@@ -122,20 +132,28 @@ public class DataSourceUserPrompter implements UserPrompter {
 		
 		dsComboBox = new JComboBox(collection.getConnections().toArray());
 		builder.append(Messages.getString("DataSourceUserPrompter.selectDataSource"), dsComboBox);
-		builder.append(new JButton(new AbstractAction(okText) {
-			public void actionPerformed(ActionEvent e) {
-				selectedDataSource = (SPDataSource) dsComboBox.getSelectedItem();
-				response = UserPromptResponse.OK;
-				userPrompt.setVisible(false);
+		JButton okButton = new JButton();
+		if(optionType == UserPromptOptions.OK_NEW_NOTOK_CANCEL || optionType == UserPromptOptions.OK_NOTOK_CANCEL
+        		|| optionType == UserPromptOptions.OK_NEW_CANCEL || optionType == UserPromptOptions.OK_CANCEL) {
+			okButton.setAction(new AbstractAction(buttonNames[0]) {
+				public void actionPerformed(ActionEvent e) {
+					selectedDataSource = (SPDataSource) dsComboBox.getSelectedItem();
+					response = UserPromptResponse.OK;
+					userPrompt.setVisible(false);
 			}
-		}));
+		});
+		builder.append(okButton);
+		}
 		builder.nextLine();
 		
 		final JPanel newDSPanel = new JPanel(new BorderLayout());
+		newDSPanel.setVisible(false);
 		ButtonBarBuilder bbBuilder = new ButtonBarBuilder();
 		bbBuilder.addGlue();
+		
 		final JButton newDBButton = new JButton();
-		newDBButton.setAction(new AbstractAction(newText) {
+		if(optionType == UserPromptOptions.OK_NEW_CANCEL || optionType == UserPromptOptions.OK_NEW_NOTOK_CANCEL) {
+			newDBButton.setAction(new AbstractAction(buttonNames[1]) {
 			public void actionPerformed(ActionEvent e) {
 				newDSPanel.setVisible(true);
 				userPrompt.validate();
@@ -149,9 +167,11 @@ public class DataSourceUserPrompter implements UserPrompter {
 			}
 		});
 		bbBuilder.addFixed(newDBButton);
+		}
 		
-		bbBuilder.addRelatedGap();
-		bbBuilder.addFixed(new JButton(new AbstractAction(notOkText) {
+		if(optionType == UserPromptOptions.OK_NEW_NOTOK_CANCEL || optionType == UserPromptOptions.OK_NOTOK_CANCEL) {
+			bbBuilder.addRelatedGap();
+			bbBuilder.addFixed(new JButton(new AbstractAction((optionType == UserPromptOptions.OK_NOTOK_CANCEL)? buttonNames[1] : buttonNames[2]) {
 		
 			public void actionPerformed(ActionEvent e) {
 				selectedDataSource = null;
@@ -159,16 +179,22 @@ public class DataSourceUserPrompter implements UserPrompter {
 				userPrompt.setVisible(false);
 			}
 		}));
+		}
 		
-		bbBuilder.addRelatedGap();
-		bbBuilder.addFixed(new JButton(new AbstractAction(cancelText) {
+		JButton cancelButton = new JButton();
+		if(optionType == UserPromptOptions.OK_NEW_NOTOK_CANCEL || optionType == UserPromptOptions.OK_NOTOK_CANCEL
+        		|| optionType == UserPromptOptions.OK_NEW_CANCEL || optionType == UserPromptOptions.OK_CANCEL) {
+			bbBuilder.addRelatedGap();
+		    cancelButton.setAction(new AbstractAction(buttonNames[buttonNames.length-1]) {
 			
-			public void actionPerformed(ActionEvent e) {
-				selectedDataSource = null;
-				response = UserPromptResponse.CANCEL;
-				userPrompt.setVisible(false);
+		    	public void actionPerformed(ActionEvent e) {
+		    		selectedDataSource = null;
+		    		response = UserPromptResponse.CANCEL;
+		    		userPrompt.setVisible(false);
 			}
-		}));
+		});
+		bbBuilder.addFixed(cancelButton);
+		}
 		builder.append(bbBuilder.getPanel(), 5);
 		
 		final SPDataSource newDS = new SPDataSource(dsCollection);

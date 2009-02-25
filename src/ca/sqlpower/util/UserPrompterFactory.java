@@ -36,6 +36,7 @@ import java.io.File;
 import java.text.MessageFormat;
 
 import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.util.UserPrompter.UserPromptOptions;
 import ca.sqlpower.util.UserPrompter.UserPromptResponse;
 
 public interface UserPrompterFactory {
@@ -98,37 +99,45 @@ public interface UserPrompterFactory {
 	 *            question is asked via the
 	 *            {@link UserPrompter#promptUser(Object[])} method is called.
 	 *            See {@link MessageFormat} for details.
-	 *            <p>
+	 *            <br>
 	 *            Also, UserPrompter implementations will ensure that newline
 	 *            characters (\n) show up as new lines when the question is
-	 *            presented to the user.
-	 * @param okText
-	 *            The text to associate with the OK response. Try to use a word
-	 *            or phrase from the question instead of a generic word like
-	 *            "OK" or "Yes".
-	 * @param newText
-	 *            The text to associate with the NEW response. Try to use a word
-	 *            or phrase from the question instead of a generic word like
-	 *            "NEW" or "Yes". This action should create an appropriate new
-	 *            object.
-	 * @param notOkText
-	 *            The text to associate with the "not OK" response. Try to use a
-	 *            word or phrase from the question instead of a generic word
-	 *            like "No".
-	 * @param cancelText
-	 *            The text to associate with response that cancels the whole
-	 *            operation.
+	 *            presented to the user.<p>
 	 * @param responseType
-	 *            The object type that will be returned by the prompter.
+	 *            The object type that will be returned by the prompter.<p>
+	 * @param optionType
+	 * 			  The combination of responses to be used to prompt the user<p>          
 	 * @param defaultResponse
 	 *            The response object to use as a default. The default will be
 	 *            used to specify the default selection for user interactive
 	 *            prompters or it will be the returned value if the selection is
-	 *            automatic.
-	 * 
+	 *            automatic.<p>
+	 * @param buttonNames
+	 * 			  An array of strings of an indefinite size which will be used 
+	 * 			  as labels for each of the responses. The strings should be stored 
+	 * 			  in the array in the order indicated by the optionType. If the number
+	 * 			  of strings in the array does not match the number of responses required 
+	 * 			  for each optionType, an IllegalStateException will be thrown.
+	 * 			  The following are currently the types of strings used:<br>
+	 * 		      1)okText<br>
+	 *            The text to associate with the OK response. Try to use a word
+	 *            or phrase from the question instead of a generic word like
+	 *            "OK" or "Yes".<br>
+	 *            2)newText<br>
+	 *            The text to associate with the NEW response. Try to use a word
+	 *            or phrase from the question instead of a generic word like
+	 *            "NEW" or "Yes". This action should create an appropriate new
+	 *            object.<br>
+	 *            3)notOkText<br>
+	 *            The text to associate with the "not OK" response. Try to use a
+	 *            word or phrase from the question instead of a generic word
+	 *            like "No".<br>
+	 *            4)cancelText<br>
+	 *            The text to associate with response that cancels the whole
+	 *            operation.<br>
 	 */
     public UserPrompter createUserPrompter(String question,
-            String okText, String newText, String notOkText, String cancelText, 
-            UserPromptType responseType, UserPromptResponse defaultResponseType,
-            Object defaultResponse);
+            UserPromptType responseType, UserPromptOptions optionType,
+            UserPromptResponse defaultResponseType, Object defaultResponse,
+            String ... buttonNames);
 }

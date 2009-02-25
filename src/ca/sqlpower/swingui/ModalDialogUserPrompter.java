@@ -36,6 +36,7 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.util.UserPrompter;
 import ca.sqlpower.util.UserPrompterFactory;
+import ca.sqlpower.util.UserPrompter.UserPromptOptions;
 import ca.sqlpower.util.UserPrompter.UserPromptResponse;
 
 import com.jgoodies.forms.builder.ButtonBarBuilder;
@@ -97,10 +98,18 @@ public class ModalDialogUserPrompter implements UserPrompter {
      * Normally this constructor should be called via a {@link UserPrompterFactory}
      * such as the current ArchitectSession.
      */
-    public ModalDialogUserPrompter(UserPromptResponse defaultResponseType,
-            JFrame owner, String questionMessage, String okText,
-            String notOkText, String cancelText) {
-        this.defaultResponseType = defaultResponseType;
+    public ModalDialogUserPrompter(UserPromptOptions optionType, UserPromptResponse defaultResponseType,
+            JFrame owner, String questionMessage, String ... buttonNames) {
+    	if(optionType.getButtonNum() != buttonNames.length) {
+			String buttonNamesConcat = "";
+			for(String button : buttonNames) {
+				buttonNamesConcat.concat(button + " ");
+			}
+			throw new IllegalStateException("Expecting " + optionType.getButtonNum() + 
+					"arguments for the optionType " + optionType + "Recieved only " + buttonNames.length + "arguments\n" +
+					buttonNamesConcat);
+		}
+    	this.defaultResponseType = defaultResponseType;
 		this.owner = owner;
         applyToAll = new JCheckBox(Messages.getString("ModalDialogUserPrompter.applyToAllOption")); //$NON-NLS-1$
         
@@ -128,15 +137,26 @@ public class ModalDialogUserPrompter implements UserPrompter {
         builder.nextLine();
         
         ButtonBarBuilder buttonBar = new ButtonBarBuilder();
-        JButton okButton = new JButton(okText);
-        JButton notOkButton = new JButton(notOkText);
-        JButton cancelButton = new JButton(cancelText);
         buttonBar.addGlue();
-        buttonBar.addGridded(okButton);
-        buttonBar.addRelatedGap();
-        buttonBar.addGridded(notOkButton);
-        buttonBar.addRelatedGap();
-        buttonBar.addGridded(cancelButton);
+        JButton okButton = new JButton();
+        if(optionType == UserPromptOptions.OK_NEW_NOTOK_CANCEL || optionType == UserPromptOptions.OK_NOTOK_CANCEL
+        		|| optionType == UserPromptOptions.OK_NEW_CANCEL || optionType == UserPromptOptions.OK_CANCEL) {
+        	okButton.setName(buttonNames[0]);
+        	buttonBar.addGridded(okButton);
+        }
+        JButton notOkButton = new JButton();
+        if(optionType == UserPromptOptions.OK_NEW_NOTOK_CANCEL || optionType == UserPromptOptions.OK_NOTOK_CANCEL) {
+        	buttonBar.addRelatedGap();
+            notOkButton.setName((optionType == UserPromptOptions.OK_NOTOK_CANCEL)? buttonNames[1]: buttonNames[2]);
+        	buttonBar.addGridded(notOkButton);
+        }
+        JButton cancelButton = new JButton();
+        if(optionType == UserPromptOptions.OK_NEW_NOTOK_CANCEL || optionType == UserPromptOptions.OK_NOTOK_CANCEL
+        		|| optionType == UserPromptOptions.OK_NEW_CANCEL || optionType == UserPromptOptions.OK_CANCEL) {
+        	buttonBar.addRelatedGap();
+            cancelButton.setName(buttonNames[buttonNames.length-1]);
+        	buttonBar.addGridded(cancelButton);
+        }
         buttonBar.addGlue();
         
         okButton.addActionListener(new ActionListener() {

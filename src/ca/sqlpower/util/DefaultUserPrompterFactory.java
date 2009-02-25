@@ -19,6 +19,7 @@
 
 package ca.sqlpower.util;
 
+import ca.sqlpower.util.UserPrompter.UserPromptOptions;
 import ca.sqlpower.util.UserPrompter.UserPromptResponse;
 
 /**
@@ -28,11 +29,11 @@ import ca.sqlpower.util.UserPrompter.UserPromptResponse;
  */
 public class DefaultUserPrompterFactory implements UserPrompterFactory {
 
-	public UserPrompter createUserPrompter(String question, String okText,
-			String newText, String notOkText, String cancelText,
-			UserPromptType responseType, UserPromptResponse defaultResponseType, 
-			Object defaultResponse) {
-		return new DefaultUserPrompter(defaultResponseType, defaultResponse);
+	public UserPrompter createUserPrompter(String question,
+			UserPromptType responseType, UserPromptOptions optionType,
+			UserPromptResponse defaultResponseType, Object defaultResponse,
+			String ... buttonNames) {
+		return new DefaultUserPrompter(UserPromptOptions.OK_NEW_NOTOK_CANCEL, defaultResponseType, defaultResponse);
 	}
 
 }

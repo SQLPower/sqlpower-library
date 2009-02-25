@@ -18,10 +18,7 @@
  */
 package ca.sqlpower.util;
 
-import java.io.File;
 import java.text.MessageFormat;
-
-import ca.sqlpower.sqlobject.SQLDatabase;
 
 /**
  * The UserPrompter interface is a UI-neutral way for core business objects to
@@ -82,6 +79,36 @@ public interface UserPrompter {
          * not save the work, but also not quit the program.
          */
         CANCEL;
+    }
+    
+    /**
+     * An enumeration of different combinations of UserPromptResponse 
+     * enum constants that can be used to prompt for responses from the user. 
+     * These enum constants are written out in the order the buttons containing
+     * these responses should be placed. Each enum constant is declared with
+     * the number of buttons allowed(for each combination of responses) as a parameter.
+     */
+    public static enum UserPromptOptions {
+    	
+    	OK_NEW_NOTOK_CANCEL(4),
+    	
+    	OK_NOTOK_CANCEL(3),
+    	
+    	OK_NEW_CANCEL(3),
+    	
+    	OK_CANCEL(2);
+    	
+    	private final int buttonNum;
+    	
+    	private UserPromptOptions(int buttonNum) {
+			this.buttonNum = buttonNum;
+		}
+    	 	
+    	public int getButtonNum() {
+    		return buttonNum;
+    	}
+    	
+        	
     }
 
     /**

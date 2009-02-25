@@ -31,6 +31,7 @@ import ca.sqlpower.sqlobject.SQLIndex;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.util.DefaultUserPrompter;
 import ca.sqlpower.util.UserPrompter;
+import ca.sqlpower.util.UserPrompter.UserPromptOptions;
 import ca.sqlpower.util.UserPrompter.UserPromptResponse;
 
 /**
@@ -86,7 +87,7 @@ public class GenericNewValueMaker implements NewValueMaker {
         } else if (valueType.isAssignableFrom(Throwable.class)) {
         	newVal = new SQLObjectException("Test Exception");
         } else if (valueType == UserPrompter.class) {
-            newVal = new DefaultUserPrompter(UserPromptResponse.CANCEL, null);
+            newVal = new DefaultUserPrompter(UserPromptOptions.OK_NEW_NOTOK_CANCEL, UserPromptResponse.CANCEL, null);
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +
