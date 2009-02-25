@@ -41,7 +41,6 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.util.UserPrompter;
-import ca.sqlpower.util.UserPrompter.UserPromptOptions;
 
 import com.jgoodies.forms.builder.ButtonBarBuilder;
 import com.jgoodies.forms.builder.DefaultFormBuilder;
@@ -106,13 +105,9 @@ public class DataSourceUserPrompter implements UserPrompter {
 	public DataSourceUserPrompter(UserPromptOptions optionType, UserPromptResponse defaultResponseType, SPDataSource defaultResponse, JFrame frame, String questionMessage,
 			DataSourceCollection collection, String ...  buttonNames) {
 		if(optionType.getButtonNum() != buttonNames.length) {
-			String buttonNamesConcat = "";
-			for(String button : buttonNames) {
-				buttonNamesConcat.concat(button + " ");
-			}
 			throw new IllegalStateException("Expecting " + optionType.getButtonNum() + 
 					"arguments for the optionType " + optionType + "Recieved only " + buttonNames.length + "arguments\n" +
-					buttonNamesConcat);
+					Arrays.toString(buttonNames));
 		}
 		this.defaultResponseType = defaultResponseType;
 		selectedDataSource = defaultResponse;

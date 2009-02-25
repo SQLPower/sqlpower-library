@@ -36,8 +36,6 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.util.UserPrompter;
 import ca.sqlpower.util.UserPrompterFactory;
-import ca.sqlpower.util.UserPrompter.UserPromptOptions;
-import ca.sqlpower.util.UserPrompter.UserPromptResponse;
 
 import com.jgoodies.forms.builder.ButtonBarBuilder;
 import com.jgoodies.forms.builder.DefaultFormBuilder;
@@ -101,13 +99,9 @@ public class ModalDialogUserPrompter implements UserPrompter {
     public ModalDialogUserPrompter(UserPromptOptions optionType, UserPromptResponse defaultResponseType,
             JFrame owner, String questionMessage, String ... buttonNames) {
     	if(optionType.getButtonNum() != buttonNames.length) {
-			String buttonNamesConcat = "";
-			for(String button : buttonNames) {
-				buttonNamesConcat.concat(button + " ");
-			}
 			throw new IllegalStateException("Expecting " + optionType.getButtonNum() + 
 					"arguments for the optionType " + optionType + "Recieved only " + buttonNames.length + "arguments\n" +
-					buttonNamesConcat);
+					Arrays.toString(buttonNames));
 		}
     	this.defaultResponseType = defaultResponseType;
 		this.owner = owner;
