@@ -20,6 +20,7 @@
 package ca.sqlpower.sqlobject;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -53,21 +54,26 @@ public abstract class DatabaseConnectedTestCase extends TestCase {
      * database. Uses a PL.INI file located in the current working directory, 
      * called "pl.regression.ini" and creates a connection to the database called
      * "regression_test".
+     * <p>
+     * You are welcome to override this method in order to provide your own pl.ini
+     * and/or your own data source to the {@link #setUp()} method.
      * 
      * <p>FIXME: Need to parameterise this so that we can test each supported
      * database platform!
+     * @throws IOException 
      * @throws SQLObjectException 
      */
-    protected SPDataSource getDataSource() {
+    protected SPDataSource getDataSource() throws IOException {
+        plini.read(new File("pl.regression.ini"));
     	return plini.getDataSource("regression_test");
     }
     
     /**
-     * Sets up the instance variable <code>db</code> using the getDatabase() method.
+     * Sets up the instance variable <code>db</code>, which will be a SQLDatabase
+     * connected to the data source returned by {@link #getDataSource()}.
      */
     @Override
     protected void setUp() throws Exception {
-        plini.read(new File("pl.regression.ini"));
         db = new SQLDatabase(new SPDataSource(getDataSource()));
         assertNotNull(db.getDataSource().getParentType());
     }
@@ -93,6 +99,14 @@ public abstract class DatabaseConnectedTestCase extends TestCase {
         return new SQLDatabase(new SPDataSource(db.getDataSource()));
     }
     
+    /**
+     * Returns the data source collection that the current connection was obtained
+     * from. If you have not overridden the {@link #getDataSource()} method, this
+     * will be the data source collection specified by the file pl.regression.ini
+     * in the current working directory. If you have overridden that method, this
+     * method will return whatever plini value you set up in your override (which will
+     * be null if you didn't set the {@link #plini} variable).
+     */
     public DataSourceCollection getPLIni() {
         return plini;
     }

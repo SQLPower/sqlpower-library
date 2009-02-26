@@ -19,6 +19,7 @@
 package ca.sqlpower.sqlobject;
 
 import java.beans.PropertyChangeEvent;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
@@ -68,7 +69,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 		assertNull(db.getParent());
 	}
 	
-	public void testGoodConnect() throws SQLObjectException, SQLException {
+	public void testGoodConnect() throws SQLObjectException, SQLException, IOException {
 	    SQLDatabase mydb = new SQLDatabase(getDataSource());
 		assertFalse("db shouldn't have been connected yet", mydb.isConnected());
 		Connection con = mydb.getConnection();
