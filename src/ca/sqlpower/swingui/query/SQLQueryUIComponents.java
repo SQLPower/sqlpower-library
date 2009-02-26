@@ -171,7 +171,6 @@ public class SQLQueryUIComponents {
             SPDataSource ds = (SPDataSource)e.getItem();
             try {
 				addConnection(ds);
-				logTextArea.append(SPDataSource.getConnectionInfoString(ds, false) + "\n\n");
 			} catch (SQLObjectException e1) {
 				logTextArea.append(createErrorStringMessage(e1));
 			}
@@ -391,7 +390,6 @@ public class SQLQueryUIComponents {
             	if (conMap.get(ds) == null || conMap.get(ds).getConnection() == null || conMap.get(ds).getConnection().isClosed()) {
             		addConnection(ds);
             	}
-            	logTextArea.append(SPDataSource.getConnectionInfoString(ds, false) + "\n\n");
             	con = conMap.get(ds).getConnection();
                 stmt = con.createStatement();
                 conMap.get(ds).setCurrentStmt(stmt);
@@ -1330,6 +1328,7 @@ public class SQLQueryUIComponents {
         }
         stopButton.setEnabled(conMap.get(ds).getCurrentStmt() != null);
         executeButton.setEnabled(conMap.get(ds).getCurrentStmt() == null);
+        logTextArea.append("\n" + SPDataSource.getConnectionInfoString(ds, false) + "\n\n");
 	}
     
     public void addWindowListener(Window container){
