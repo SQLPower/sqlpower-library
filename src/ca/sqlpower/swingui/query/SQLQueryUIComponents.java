@@ -888,8 +888,11 @@ public class SQLQueryUIComponents {
         executeAction = new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.execute")) {
 
             public void actionPerformed(ActionEvent e) {
-            	
-            	executeQuery(queryArea.getText());
+            	String sql = queryArea.getText();
+            	if (queryArea.getSelectedText() != null && queryArea.getSelectedText().trim().length() > 0) {
+            		sql = queryArea.getSelectedText();
+            	}
+				executeQuery(sql);
             }
 
         };
