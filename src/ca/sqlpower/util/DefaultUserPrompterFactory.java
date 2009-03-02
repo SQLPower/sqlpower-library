@@ -33,7 +33,7 @@ public class DefaultUserPrompterFactory implements UserPrompterFactory {
 			UserPromptType responseType, UserPromptOptions optionType,
 			UserPromptResponse defaultResponseType, Object defaultResponse,
 			String ... buttonNames) {
-		return new DefaultUserPrompter(UserPromptOptions.OK_NEW_NOTOK_CANCEL, defaultResponseType, defaultResponse);
+		return new DefaultUserPrompter(optionType, defaultResponseType, defaultResponse);
 	}
 
 }

@@ -100,7 +100,7 @@ public class ModalDialogUserPrompter implements UserPrompter {
             JFrame owner, String questionMessage, String ... buttonNames) {
     	if(optionType.getButtonNum() != buttonNames.length) {
 			throw new IllegalStateException("Expecting " + optionType.getButtonNum() + 
-					"arguments for the optionType " + optionType + "Recieved only " + buttonNames.length + "arguments\n" +
+					" arguments for the optionType " + optionType + "Recieved only " + buttonNames.length + "arguments\n" +
 					Arrays.toString(buttonNames));
 		}
     	this.defaultResponseType = defaultResponseType;
@@ -135,20 +135,20 @@ public class ModalDialogUserPrompter implements UserPrompter {
         JButton okButton = new JButton();
         if(optionType == UserPromptOptions.OK_NEW_NOTOK_CANCEL || optionType == UserPromptOptions.OK_NOTOK_CANCEL
         		|| optionType == UserPromptOptions.OK_NEW_CANCEL || optionType == UserPromptOptions.OK_CANCEL) {
-        	okButton.setName(buttonNames[0]);
+        	okButton.setText(buttonNames[0]);
         	buttonBar.addGridded(okButton);
         }
         JButton notOkButton = new JButton();
         if(optionType == UserPromptOptions.OK_NEW_NOTOK_CANCEL || optionType == UserPromptOptions.OK_NOTOK_CANCEL) {
         	buttonBar.addRelatedGap();
-            notOkButton.setName((optionType == UserPromptOptions.OK_NOTOK_CANCEL)? buttonNames[1]: buttonNames[2]);
+            notOkButton.setText((optionType == UserPromptOptions.OK_NOTOK_CANCEL)? buttonNames[1]: buttonNames[2]);
         	buttonBar.addGridded(notOkButton);
         }
         JButton cancelButton = new JButton();
         if(optionType == UserPromptOptions.OK_NEW_NOTOK_CANCEL || optionType == UserPromptOptions.OK_NOTOK_CANCEL
         		|| optionType == UserPromptOptions.OK_NEW_CANCEL || optionType == UserPromptOptions.OK_CANCEL) {
         	buttonBar.addRelatedGap();
-            cancelButton.setName(buttonNames[buttonNames.length-1]);
+            cancelButton.setText(buttonNames[buttonNames.length-1]);
         	buttonBar.addGridded(cancelButton);
         }
         buttonBar.addGlue();
