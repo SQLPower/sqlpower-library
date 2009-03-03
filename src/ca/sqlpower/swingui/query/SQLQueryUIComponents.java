@@ -304,21 +304,20 @@ public class SQLQueryUIComponents {
         
         private List<CachedRowSet> resultSets = new ArrayList<CachedRowSet>();
         private List<Integer> rowsAffected = new ArrayList<Integer>(); 
-        private final String sqlString;
-        private final int rowLimit;
 		private final SPDataSource ds;
 		private boolean hasStarted;
 		private boolean isFinished;
 		private long startExecutionTime;
+		private final StatementExecutor stmtExecutor;
         
         /**
          * Constructs a new ExecuteSQLWorker that will use the
          * given SQL statement as the string to execute on.
          */
-        public ExecuteSQLWorker(SwingWorkerRegistry registry, String sqlStatement) {
+        public ExecuteSQLWorker(SwingWorkerRegistry registry, StatementExecutor stmtExecutor) {
         	super(registry);
-        	sqlString = sqlStatement;
-        	if(sqlString.equals("")) {
+			this.stmtExecutor = stmtExecutor;
+        	if(stmtExecutor.getStatement().equals("")) {
         		logger.debug("Empty String");
         		// if the string is empty there will be no execute so we need to reset the Panel from here.
         		firstResultPanel.removeAll();
@@ -334,8 +333,6 @@ public class SQLQueryUIComponents {
                 // value to keep it an actual number.
                 rowLimitSpinner.setValue(rowLimitSpinner.getValue());
             }
-            rowLimit = ((Integer) rowLimitSpinner.getValue()).intValue();
-            logger.debug("Row limit is " + rowLimit);
             
             executeButton.setEnabled(false);
             stopButton.setEnabled(true);
@@ -357,7 +354,7 @@ public class SQLQueryUIComponents {
         		}
         		
         		if (queuedSQLStatement == null) {
-        			createResultSetTables(resultSets, sqlString);
+        			createResultSetTables(resultSets, stmtExecutor.getStatement());
         		}
 
         		resultSets.clear();
@@ -377,57 +374,40 @@ public class SQLQueryUIComponents {
         public void doStuff() throws Exception {
         	startExecutionTime = System.currentTimeMillis();
         	hasStarted = true;
-            logger.debug("Starting execute action of \"" + sqlString + "\".");
+            logger.debug("Starting execute action of \"" + stmtExecutor.getStatement() + "\".");
             if (ds == null) {
                 return;
             }
-            if (sqlString.trim().length() == 0) {
+            if (stmtExecutor.getStatement().trim().length() == 0) {
             	return;
             }
-            Connection con = null;
-            Statement stmt = null;
-            try {
-            	if (conMap.get(ds) == null || conMap.get(ds).getConnection() == null || conMap.get(ds).getConnection().isClosed()) {
-            		addConnection(ds);
-            	}
-            	con = conMap.get(ds).getConnection();
-                stmt = con.createStatement();
-                conMap.get(ds).setCurrentStmt(stmt);
-                
-                stmt.setMaxRows(rowLimit);
-                logger.debug("Executing statement " + sqlString);
-                boolean sqlResult = stmt.execute(sqlString);
-                logger.debug("Finished execution");
-                boolean hasNext = true;
-                
-                while (hasNext) {
-                    if (sqlResult) {
-                        ResultSet rs = stmt.getResultSet();
-                        CachedRowSet rowSet = new CachedRowSet();
-                        logger.debug("Populating cached row set");
-                        rowSet.populate(rs);
-                        logger.debug("Result set row count is " + rowSet.size());
-                        resultSets.add(rowSet);
-                        rowsAffected.add(new Integer(rowSet.size()));
-                        rs.close();
-                    } else {
-                        rowsAffected.add(new Integer(stmt.getUpdateCount()));
-                        logger.debug("Update count is : " + stmt.getUpdateCount());
-                    }
-                    sqlResult = stmt.getMoreResults();
-                    hasNext = !((sqlResult == false) && (stmt.getUpdateCount() == -1));
-                }
-                logger.debug("Finished Execute method");
-            } finally {
-                if (stmt != null) {
-                    try {
-                        stmt.close();
-                    } catch (SQLException ex) {
-                        ex.printStackTrace();
-                    }
-                    conMap.get(ds).setCurrentStmt(null);
-                }
+            if (conMap.get(ds) == null || conMap.get(ds).getConnection() == null || conMap.get(ds).getConnection().isClosed()) {
+            	addConnection(ds);
             }
+            
+            logger.debug("Executing statement " + stmtExecutor.getStatement());
+            boolean sqlResult = stmtExecutor.executeStatement();
+            logger.debug("Finished execution");
+            boolean hasNext = true;
+                
+            while (hasNext) {
+            	if (sqlResult) {
+            		ResultSet rs = stmtExecutor.getResultSet();
+            		CachedRowSet rowSet = new CachedRowSet();
+            		logger.debug("Populating cached row set");
+            		rowSet.populate(rs);
+            		logger.debug("Result set row count is " + rowSet.size());
+            		resultSets.add(rowSet);
+            		rowsAffected.add(new Integer(rowSet.size()));
+            		rs.close();
+            	} else {
+            		rowsAffected.add(new Integer(stmtExecutor.getUpdateCount()));
+            		logger.debug("Update count is : " + stmtExecutor.getUpdateCount());
+            	}
+            	sqlResult = stmtExecutor.getMoreResults();
+            	hasNext = !((sqlResult == false) && (stmtExecutor.getUpdateCount() == -1));
+            }
+            logger.debug("Finished Execute method");
         }
 
 		public Integer getJobSize() {
@@ -454,6 +434,85 @@ public class SQLQueryUIComponents {
 		
     }
     
+    private class DefaultStatementExecutor implements StatementExecutor {
+    	
+    	private final SPDataSource ds;
+		private final String sqlString;
+		private final int rowLimit;
+		private final List<ResultSet> resultSets = new ArrayList<ResultSet>();
+		private final List<Integer> updateCounts = new ArrayList<Integer>();
+		private int resultPosition;
+
+		public DefaultStatementExecutor(SPDataSource ds, String sqlString, int rowLimit) {
+			this.rowLimit = rowLimit;
+			this.sqlString = sqlString;
+			this.ds = ds;
+			resultPosition = 0;
+		}
+
+		public boolean executeStatement() throws SQLException {
+			resultPosition = 0;
+			Connection con = null;
+            Statement stmt = null;
+            try {
+            	con = conMap.get(ds).getConnection();
+                stmt = con.createStatement();
+                conMap.get(ds).setCurrentStmt(stmt);
+                
+                stmt.setMaxRows(rowLimit);
+                boolean initialResult = stmt.execute(sqlString);
+                boolean sqlResult = initialResult;
+                boolean hasNext = true;
+                while (hasNext) {
+                	if (stmt.getResultSet() != null) {
+                		CachedRowSet crs = new CachedRowSet();
+                		crs.populate(stmt.getResultSet());
+                		resultSets.add(crs);
+                	} else {
+                		resultSets.add(null);
+                	}
+                    updateCounts.add(stmt.getUpdateCount());
+                    sqlResult = stmt.getMoreResults();
+                    hasNext = !((sqlResult == false) && (stmt.getUpdateCount() == -1));
+                }
+                return initialResult;
+            } finally {
+                if (stmt != null) {
+                    try {
+                        stmt.close();
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+                    conMap.get(ds).setCurrentStmt(null);
+                }
+            }
+		}
+
+		public ResultSet getResultSet() {
+			if (resultPosition >= resultSets.size()) {
+				return null;
+			}
+			return resultSets.get(resultPosition);
+		}
+
+		public String getStatement() {
+			return sqlString;
+		}
+
+		public int getUpdateCount() {
+			if (resultPosition >= updateCounts.size()) {
+				return -1;
+			}
+			return updateCounts.get(resultPosition);
+		}
+
+		public boolean getMoreResults() {
+			resultPosition++;
+			return resultPosition < resultSets.size();
+		}
+    	
+    }
+    
     /**
      * This is the Panel that holds the first result JTable, This is normally used when multiple queries
      * not enabled and you wish to return this panel instead of the tabbedResult panel.
@@ -475,7 +534,7 @@ public class SQLQueryUIComponents {
     
     private final TaskTerminationListener sqlExecuteTerminationListener = new TaskTerminationListener() {
 		public void taskFinished(TaskTerminationEvent e) {
-			executeQuery(null);
+			executeQuery((StatementExecutor) null);
 		}
 	};
     
@@ -483,7 +542,7 @@ public class SQLQueryUIComponents {
      * This stores the next SQL statement to be run when the currently executing worker
      * is running.
      */
-    private String queuedSQLStatement;
+    private StatementExecutor queuedSQLStatement;
     
     /**
      * The action for executing and displaying a user's query.
@@ -513,7 +572,7 @@ public class SQLQueryUIComponents {
     /**
      * A JSpinner for the user to enter the row limit of a query.
      */
-    private final JSpinner rowLimitSpinner;
+    private JSpinner rowLimitSpinner;
     
     /**
      * Toggles auto commit on an off for the selected connection.
@@ -1073,24 +1132,37 @@ public class SQLQueryUIComponents {
      * ie the previous query waiting to execute will not be run.
      */
     public synchronized void executeQuery(String sql) {
+    	executeQuery(new DefaultStatementExecutor((SPDataSource) databaseComboBox.getSelectedItem(), sql, ((Integer) rowLimitSpinner.getValue()).intValue()));
+    }
+    
+    /**
+     * Executes a given query with the help of a worker. This will also clear
+     * the results tabs before execution.
+     * 
+     * NOTE: If a query is currently executing then the query passed in will
+     * execute after the current query is complete. Additionally, if there is 
+     * a query already waiting to execute it will be REPLACED by the new query.
+     * ie the previous query waiting to execute will not be run.
+     */
+    public synchronized void executeQuery(StatementExecutor stmtExecutor) {
     	if (sqlExecuteWorker != null && !sqlExecuteWorker.isFinished()) {
-    		if (sql != null) {
-    			queuedSQLStatement = sql;
+    		if (stmtExecutor != null) {
+    			queuedSQLStatement = stmtExecutor;
     		}
     		return;
     	} else if (sqlExecuteWorker != null && sqlExecuteWorker.isFinished()) {
-    		if (sql != null) {
+    		if (stmtExecutor != null) {
     			queuedSQLStatement = null;
-    		} else if (sql == null && queuedSQLStatement != null) {
-    			String tempSQL = sql;
-    			sql = queuedSQLStatement;
+    		} else if (stmtExecutor == null && queuedSQLStatement != null) {
+    			StatementExecutor tempSQL = stmtExecutor;
+    			stmtExecutor = queuedSQLStatement;
    				queuedSQLStatement = tempSQL;
     		}
     		sqlExecuteWorker.removeTaskTerminationListener(sqlExecuteTerminationListener);
     		sqlExecuteWorker = null;
     	}
     	
-    	if (sql == null) {
+    	if (stmtExecutor == null) {
     		return;
     	}
     	
@@ -1106,12 +1178,12 @@ public class SQLQueryUIComponents {
     	}
     	
     	prevQueryPosition = previousQueries.size();
-    	previousQueries.add(sql);
+    	previousQueries.add(stmtExecutor.getStatement());
 		getPrevQueryButton().setEnabled(prevQueryPosition > 0);
 		getNextQueryButton().setEnabled(prevQueryPosition < previousQueries.size() - 1);
     	
-    	logger.debug("Executing SQL " + sql);
-    	sqlExecuteWorker = new ExecuteSQLWorker(swRegistry, sql);
+    	logger.debug("Executing SQL " + stmtExecutor);
+    	sqlExecuteWorker = new ExecuteSQLWorker(swRegistry, stmtExecutor);
     	sqlExecuteWorker.addTaskTerminationListener(sqlExecuteTerminationListener);
     	new Thread(sqlExecuteWorker).start();
     }
@@ -1378,6 +1450,10 @@ public class SQLQueryUIComponents {
 
     public JSpinner getRowLimitSpinner() {
     	return rowLimitSpinner;
+    }
+    
+    public void setRowLimitSpinner(JSpinner newRowLimitSpinner) {
+    	rowLimitSpinner = newRowLimitSpinner;
     }
 
     public RSyntaxTextArea getQueryArea() {
