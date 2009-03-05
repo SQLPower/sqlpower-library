@@ -43,6 +43,11 @@ public abstract class StatementDecorator implements Statement {
 		con.incrementOpenStatements();
 	}
 
+	/**
+	 * @param rs The result set returned by the underlying statement. This value
+	 * can be null if the statement that was executed returned a row count, from an
+	 * inset or update, that had no result set.
+	 */
 	protected abstract ResultSet makeResultSetDecorator(ResultSet rs);
 	
 	// ================= The Statement Interface is implemented below this line ============

@@ -27,6 +27,7 @@ public class AllTests {
     public static Test suite() {
         TestSuite suite = new TestSuite("Test for ca.sqlpower.sql.jdbcwrapper");
         //$JUnit-BEGIN$
+        suite.addTestSuite(GenericStatementDecoratorTest.class);
         suite.addTestSuite(SQLServer2005DatabaseMetaDataDecoratorTest.class);
         suite.addTestSuite(HSQLDBMDTest.class);
         //$JUnit-END$

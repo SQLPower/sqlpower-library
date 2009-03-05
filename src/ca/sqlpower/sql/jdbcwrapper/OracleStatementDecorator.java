@@ -13,6 +13,9 @@ public class OracleStatementDecorator extends StatementDecorator {
 
 	@Override
 	protected ResultSet makeResultSetDecorator(ResultSet rs) {
+		if (rs == null) {
+			return null;
+		}
 		return new OracleResultSetDecorator(this, rs);
 	}
 
