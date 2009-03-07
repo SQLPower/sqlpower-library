@@ -102,11 +102,11 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	}
 
 	public synchronized void populateImpl() throws SQLObjectException {
-	    logger.debug("SQLDatabase: is populated " + populated);
+	    logger.debug("SQLDatabase: is populated " + populated); //$NON-NLS-1$
 		if (populated) return;
 		int oldSize = children.size();
 		
-		logger.debug("SQLDatabase: populate starting");
+		logger.debug("SQLDatabase: populate starting"); //$NON-NLS-1$
 		
 		Connection con = null;
 		ResultSet rs = null;
@@ -115,10 +115,10 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			DatabaseMetaData dbmd = con.getMetaData();
 			
 			catalogTerm = dbmd.getCatalogTerm();
-			if ("".equals(catalogTerm)) catalogTerm = null;
+			if ("".equals(catalogTerm)) catalogTerm = null; //$NON-NLS-1$
 			
 			schemaTerm = dbmd.getSchemaTerm();
-			if ("".equals(schemaTerm)) schemaTerm = null;
+			if ("".equals(schemaTerm)) schemaTerm = null; //$NON-NLS-1$
 			
 			List<SQLCatalog> catalogs = SQLCatalog.fetchCatalogs(dbmd);
 			for (SQLCatalog cat : catalogs) {
@@ -140,7 +140,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
             // Finally, look for tables directly under the database (this
             // could be a platform without catalogs or schemas at all)
             if (children.size() == oldSize) {
-                List<SQLTable> tables = SQLTable.fetchTablesForTableContainer(dbmd, "", "");
+                List<SQLTable> tables = SQLTable.fetchTablesForTableContainer(dbmd, "", ""); //$NON-NLS-1$ //$NON-NLS-2$
                 for (SQLTable table : tables) {
                     table.setParent(this);
                     children.add(table);
@@ -148,7 +148,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
             }
             
 		} catch (SQLException e) {
-			throw new SQLObjectException("database.populate.fail", e);
+			throw new SQLObjectException(Messages.getString("SQLDatabase.populateFailed"), e); //$NON-NLS-1$
 		} finally {
 			populated = true;
 			int newSize = children.size();
@@ -162,16 +162,16 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			try {
 				if (rs != null ) rs.close();
 			} catch (SQLException e2) {
-				throw new SQLObjectException("database.rs.close.fail", e2);
+				throw new SQLObjectException(Messages.getString("SQLDatabase.closeRSFailed"), e2); //$NON-NLS-1$
 			}
 			try {
 				if (con != null ) con.close();
 			} catch (SQLException e2) {
-				throw new SQLObjectException("Couldn't close connection", e2);
+				throw new SQLObjectException(Messages.getString("SQLDatabase.closeConFailed"), e2); //$NON-NLS-1$
 			}
 		}
 		
-		logger.debug("SQLDatabase: populate finished");
+		logger.debug("SQLDatabase: populate finished"); //$NON-NLS-1$
 	}
 	
 
@@ -234,7 +234,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 					return (SQLSchema) child;
 				}
 			} else {
-				throw new IllegalStateException("Database contains a mix of schemas or catalogs with other objects");
+				throw new IllegalStateException("Database contains a mix of schemas or catalogs with other objects"); //$NON-NLS-1$
 			}
 		}
 		return null;
@@ -264,7 +264,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		this.populate();
 
 		if (tableName == null || tableName.length() == 0) {
-			throw new NullPointerException("Table Name must be specified");
+			throw new NullPointerException("Table Name must be specified"); //$NON-NLS-1$
 		}
 		
 		// we will recursively search a target (database, catalog, or schema)
@@ -277,7 +277,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		// no such catalog?
 		if (target == null) {
 		    if (logger.isDebugEnabled())
-		        logger.debug("getTableByName("+catalogName+","+schemaName+","+tableName+"): no such catalog!");
+		        logger.debug("getTableByName("+catalogName+","+schemaName+","+tableName+"): no such catalog!"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			return null;
 		}
 
@@ -287,14 +287,14 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			} else if (target instanceof SQLCatalog) {
 				target = ((SQLCatalog) target).getSchemaByName(schemaName);
 			} else {
-				throw new IllegalStateException("Oops, somebody forgot to update this!");
+				throw new IllegalStateException("Oops, somebody forgot to update this!"); //$NON-NLS-1$
 			}
 		}
 
 		// no such schema or catalog.schema?
 		if (target == null) {
 		    if (logger.isDebugEnabled())
-		        logger.debug("getTableByName("+catalogName+","+schemaName+","+tableName+"): no such schema!");
+		        logger.debug("getTableByName("+catalogName+","+schemaName+","+tableName+"): no such schema!"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			return null;
 		}
 		target.populate();		
@@ -320,7 +320,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		}
 
 		if (logger.isDebugEnabled())
-	        logger.debug("getTableByName("+catalogName+","+schemaName+","+tableName+"): catalog and schema ok; no such table!");
+	        logger.debug("getTableByName("+catalogName+","+schemaName+","+tableName+"): catalog and schema ok; no such table!"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 		return null;
 	}
 
@@ -329,11 +329,11 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	@Override
 	public String getName() {
 		if (isPlayPenDatabase()) {
-			return "PlayPen Database";
+			return Messages.getString("SQLDatabase.playPenDB"); //$NON-NLS-1$
 		} else if (dataSource != null) {
 		    return dataSource.getDisplayName();
 		} else {
-		    return "Disconnected";
+		    return Messages.getString("SQLDatabase.disconnected"); //$NON-NLS-1$
 		}
 	}
 	/**
@@ -455,7 +455,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		}
 		dataSource = argDataSource;
 		dataSource.addPropertyChangeListener(this);		
-		fireDbObjectChanged("dataSource",oldDataSource,argDataSource);
+		fireDbObjectChanged("dataSource",oldDataSource,argDataSource); //$NON-NLS-1$
 	}
 
 	public void setPlayPenDatabase(boolean v) {
@@ -463,7 +463,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		playPenDatabase = v;
 
 		if (oldValue != v) {
-			fireDbObjectChanged("playPenDatabase", oldValue, v);
+			fireDbObjectChanged("playPenDatabase", oldValue, v); //$NON-NLS-1$
 		}
 	}
 
@@ -480,11 +480,11 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		if (playPenDatabase) {
 			// preserve the objects that are in the Target system when
             // the connection spec changes
-			logger.debug("Ignoring Reset request for: " + getDataSource());
+			logger.debug("Ignoring Reset request for: " + getDataSource()); //$NON-NLS-1$
 			populated = true;
 		} else {
 			// discard everything and reload (this is generally for source systems)
-			logger.debug("Resetting: " + getDataSource() );
+			logger.debug("Resetting: " + getDataSource() ); //$NON-NLS-1$
 			// tear down old connection stuff
 			List old = children;
 			if (old != null && old.size() > 0) {
@@ -521,10 +521,10 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			 || (e.getOldValue() != null && e.getNewValue() == null)
 			 || (e.getOldValue() != null && e.getNewValue() != null 
 				 && !e.getOldValue().equals(e.getNewValue())) ) {
-			if ("url".equals(pn) || "driverClass".equals(pn) || "user".equals(pn)) {
+			if ("url".equals(pn) || "driverClass".equals(pn) || "user".equals(pn)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				reset();
-			} else if ("name".equals(pn)) {				
-				fireDbObjectChanged("shortDisplayName",e.getOldValue(),e.getNewValue());
+			} else if ("name".equals(pn)) {				 //$NON-NLS-1$
+				fireDbObjectChanged("shortDisplayName",e.getOldValue(),e.getNewValue()); //$NON-NLS-1$
 			}
 		}
 	}
@@ -548,12 +548,12 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
                 maxActiveConnections = Math.max(maxActiveConnections,
 			            newActiveCount);
 			    if (logger.isDebugEnabled()) {
-			        logger.debug("getConnection(): giving out active connection " + newActiveCount);
+			        logger.debug("getConnection(): giving out active connection " + newActiveCount); //$NON-NLS-1$
 			    }
 				return (Connection) getConnectionPool().borrowObject();
 			} catch (Exception e) {
 			    SQLObjectException ex = new SQLObjectException(
-			            "Couldn't connect to database: "+e.getMessage(), e);
+			            "Couldn't connect to database: "+e.getMessage(), e); //$NON-NLS-1$
 			    setChildrenInaccessibleReason(ex);
 			    throw ex;
 			}
@@ -574,7 +574,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 				connectionPool.close();
             }
 		} catch (Exception ex) {
-			logger.error("Error closing connection pool", ex);
+			logger.error("Error closing connection pool", ex); //$NON-NLS-1$
 		} finally {
 			connectionPool = null;
 		}
@@ -626,25 +626,25 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
      */
     public void refresh() throws SQLObjectException {
         if (!populated) {
-            logger.info("Not refreshing unpopulated database " + getName());
+            logger.info("Not refreshing unpopulated database " + getName()); //$NON-NLS-1$
             return;
         }
         
         Connection con = null;
         try {
-            startCompoundEdit("Refresh database " + getName());
+            startCompoundEdit(Messages.getString("SQLDatabase.refreshDatabase", getName())); //$NON-NLS-1$
 
             con = getConnection();
             DatabaseMetaData dbmd = con.getMetaData();
             
             if (catalogTerm != null) {
-                logger.debug("refresh: catalogTerm is '"+catalogTerm+"'. refreshing catalogs!");
+                logger.debug("refresh: catalogTerm is '"+catalogTerm+"'. refreshing catalogs!"); //$NON-NLS-1$ //$NON-NLS-2$
                 List<SQLCatalog> newCatalogs = SQLCatalog.fetchCatalogs(dbmd);
                 SQLObjectUtils.refreshChildren(this, newCatalogs);
             }
 
             if (schemaTerm != null) {
-                logger.debug("refresh: schemaTerm is '"+schemaTerm+"'. refreshing schemas!");
+                logger.debug("refresh: schemaTerm is '"+schemaTerm+"'. refreshing schemas!"); //$NON-NLS-1$ //$NON-NLS-2$
                 List<SQLSchema> newSchemas = SQLSchema.fetchSchemas(dbmd, null);
                 SQLObjectUtils.refreshChildren(this, newSchemas);
             }
@@ -660,14 +660,14 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
             super.refresh();
 
         } catch (SQLException e) {
-            throw new SQLObjectException("Failed to refresh database", e);
+            throw new SQLObjectException(Messages.getString("SQLDatabase.refreshFailed"), e); //$NON-NLS-1$
         } finally {
-            endCompoundEdit("Refresh database" + getName());
+            endCompoundEdit(Messages.getString("SQLDatabase.refreshDatabase", getName())); //$NON-NLS-1$
             
             try {
                 if (con != null) con.close();
             } catch (SQLException ex) {
-                logger.warn("Failed to close connection. Squishing this exception:", ex);
+                logger.warn("Failed to close connection. Squishing this exception:", ex); //$NON-NLS-1$
             }
         }
     }
