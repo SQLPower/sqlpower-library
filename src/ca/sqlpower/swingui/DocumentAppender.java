@@ -39,17 +39,37 @@ public class DocumentAppender extends AppenderSkeleton {
 	 * The document to add logging messages to.
 	 */
 	private final Document doc;
-
+	
+	/**
+	 * Boolean to specify whether the document should have
+	 * a set number of characters. True, if a limit should
+     * be set. 
+	 */
+	private boolean setLimit;
+	
+	/**
+	 * The maximum number of characters that can be contained 
+	 * by the document at any point of time.
+	 */
+	private int limit;
+	
 	/**
 	 * The visual appearance attributes of the text we put into doc.
 	 */
 	private final SimpleAttributeSet attributes = new SimpleAttributeSet();
 	
 	/**
-	 * Creates a Log4J appender that writes into the given Swing Document.
+	 * Creates a Log4J appender that writes into the given Swing Document. It
+	 * will act like a FIFO buffer where if the boolean setLimit is set to true,
+	 * a maximum number of characters that the document can contain is defined
+	 * by the integer 'limit'. When the no. of characters in the document
+	 * approaches the limit, a few lines from the beginning of the document are
+	 * deleted.
 	 */
-	public DocumentAppender(Document doc) {
+	public DocumentAppender(Document doc, boolean setLimit, int limit) {
 		this.doc = doc;
+		this.setLimit = setLimit;
+		this.limit = limit;
 		StyleConstants.setForeground(attributes, Color.BLACK);
 		layout = new PatternLayout("%d %p %m\n");
 	}
@@ -68,6 +88,11 @@ public class DocumentAppender extends AppenderSkeleton {
 			            doc.insertString(doc.getLength(), traceElem + "\n", attributes);
 			        }
 			    }
+			}
+			if (setLimit && doc.getLength() + 25 >= limit) {
+				int newlineposition = doc.getText(0, doc.getLength() - 1)
+						.indexOf("\n", 25);
+				doc.remove(0, newlineposition);
 			}
 		} catch (BadLocationException e) {
 			e.printStackTrace();
