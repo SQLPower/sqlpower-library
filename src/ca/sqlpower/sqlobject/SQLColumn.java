@@ -121,11 +121,10 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 
 	// *** REMEMBER *** update the copyProperties method if you add new properties!
 
-	/**
-     * These are not specific Column properties.Instead,they are default column
-     * user settings.
-     */
-	private static String defaultName = "New Column";
+	
+    //  These are not specific Column properties.Instead,they are default column
+    //  user settings.
+   	private static String defaultName = "New_Column";
     
     private static int defaultType = Types.INTEGER;
     
@@ -161,7 +160,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	
 	public SQLColumn() {
 		logger.debug("NEW COLUMN (noargs) @"+hashCode());
-		setRemarks(defaultRemarks);
 		logger.debug("SQLColumn() set ref count to 1");
 		children = Collections.EMPTY_LIST;
 		referenceCount = 1;
