@@ -121,7 +121,28 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 
 	// *** REMEMBER *** update the copyProperties method if you add new properties!
 
-	
+	/**
+     * These are not specific Column properties.Instead,they are default column
+     * user settings.
+     */
+	private static String defaultName = "New Column";
+    
+    private static int defaultType = Types.INTEGER;
+    
+    private static int defaultPrec = 10;
+    
+    private static int defaultScale;
+    
+    private static boolean defaultInPK;
+    
+    private static boolean defaultNullable;
+    
+    private static boolean defaultAutoInc;
+    
+    private static String defaultRemarks;
+    
+    private static String defaultForDefaultValue;   
+    
 	/**
 	 * referenceCount is meant to keep track of how many containers (i.e. 
 	 * folders and relationships) have a reference to a column.  A new 
@@ -140,15 +161,22 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	
 	public SQLColumn() {
 		logger.debug("NEW COLUMN (noargs) @"+hashCode());
-		setName("New_Column");
-		type = Types.INTEGER;		
-		// scale = 10;
-		precision = 10;
-		nullable = DatabaseMetaData.columnNoNulls;
-		autoIncrement = false;
+		setRemarks(defaultRemarks);
 		logger.debug("SQLColumn() set ref count to 1");
-		referenceCount = 1;
 		children = Collections.EMPTY_LIST;
+		referenceCount = 1;
+		setName(defaultName);
+		setType(defaultType);
+		setPrecision(defaultPrec);
+		setScale(defaultScale);
+		if (defaultNullable) {
+			nullable = DatabaseMetaData.columnNullable;
+		} else {
+			nullable = DatabaseMetaData.columnNoNulls;
+		}
+		autoIncrement = defaultAutoInc;
+		setRemarks(defaultRemarks);
+		setDefaultValue(defaultForDefaultValue);
 	}
 
 	/**
@@ -655,6 +683,78 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		logger.debug("Changing nullable "+oldNullable+" -> "+argNullable);
 		this.nullable = argNullable;
 		fireDbObjectChanged("nullable",oldNullable,argNullable);
+	}
+    	
+    public static String getDefaultName() {
+		return defaultName;
+	}
+
+	public static void setDefaultName(String defaultName) {
+		SQLColumn.defaultName = defaultName;
+	}
+
+	public static int getDefaultType() {
+		return defaultType;
+	}
+
+	public static void setDefaultType(int defaultType) {
+		SQLColumn.defaultType = defaultType;
+	}
+
+	public static int getDefaultPrec() {
+		return defaultPrec;
+	}
+
+	public static void setDefaultPrec(int defaultPrec) {
+		SQLColumn.defaultPrec = defaultPrec;
+	}
+
+	public static int getDefaultScale() {
+		return defaultScale;
+	}
+
+	public static void setDefaultScale(int defaultScale) {
+		SQLColumn.defaultScale = defaultScale;
+	}
+
+	public static boolean isDefaultInPK() {
+		return defaultInPK;
+	}
+
+	public static void setDefaultInPK(boolean defaultInPK) {
+		SQLColumn.defaultInPK = defaultInPK;
+	}
+
+	public static boolean isDefaultNullable() {
+		return defaultNullable;
+	}
+
+	public static void setDefaultNullable(boolean defaultNullable) {
+		SQLColumn.defaultNullable = defaultNullable;
+	}
+
+	public static boolean isDefaultAutoInc() {
+		return defaultAutoInc;
+	}
+
+	public static void setDefaultAutoInc(boolean defaultAutoInc) {
+		SQLColumn.defaultAutoInc = defaultAutoInc;
+	}
+
+	public static String getDefaultRemarks() {
+		return defaultRemarks;
+	}
+
+	public static void setDefaultRemarks(String defaultRemarks) {
+		SQLColumn.defaultRemarks = defaultRemarks;
+	}
+
+	public static String getDefaultForDefaultValue() {
+		return defaultForDefaultValue;
+	}
+
+	public static void setDefaultForDefaultValue(String defaultForDefaultValue) {
+		SQLColumn.defaultForDefaultValue = defaultForDefaultValue;
 	}
 
 	/**

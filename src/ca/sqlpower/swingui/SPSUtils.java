@@ -13,6 +13,8 @@ import java.awt.Rectangle;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -46,6 +48,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.JTree;
 import javax.swing.KeyStroke;
@@ -53,6 +56,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.text.Document;
+import javax.swing.text.JTextComponent;
 
 import org.apache.log4j.Logger;
 
@@ -1016,5 +1020,45 @@ public class SPSUtils {
 		});
 		treeBuilder.add(sqlpLabel);
 		return treeBuilder.getPanel();
+    }
+
+	/**
+	 * Modifies the given JSpinner so that when the textfield gains focus, the
+	 * entire text will be selected.
+	 * <p>
+	 * This is a workaround for an existing bug in Swing in which calling
+	 * selectAll() on the TextField of a JSpinner does not select all the text.
+	 * <p>
+	 * The existing bug report is available here: <a
+	 * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4699955"
+	 * >http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4699955</a>
+	 * 
+	 * @param spinner
+	 *            The JSpinner instance that you want to make select all text in
+	 *            its text field when it gains focus.
+	 */
+    public static void makeJSpinnerSelectAllTextOnFocus(JSpinner spinner) {
+        JSpinner.DefaultEditor editor = (JSpinner.DefaultEditor)spinner.getEditor();
+        editor.getTextField().addFocusListener(new FocusAdapter() {
+            public void focusGained(FocusEvent e) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Focus Gained: " + e);
+                }
+                if (e.getSource() instanceof JTextComponent) {
+                    final JTextComponent textComponent = ((JTextComponent)e.getSource());
+                    SwingUtilities.invokeLater(new Runnable() {
+                        public void run() {
+                            textComponent.selectAll();
+                        }
+                    });
+                }
+            }
+            
+            public void focusLost(FocusEvent e) {
+                if(logger.isDebugEnabled()) {
+                    logger.debug("Focus Lost:" + e);
+                }
+            }
+        });
     }
 }
