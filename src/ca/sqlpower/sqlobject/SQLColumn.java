@@ -264,7 +264,11 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		copyProperties(c, source);
 		c.setParent(addTo.getColumnsFolder());
 		if (source != null && SQLObjectUtils.isInSameSession(c, source)) {
-		    c.sourceColumn = source;
+			if (source.getSourceColumn() == null) {
+				c.sourceColumn = source;
+			} else {
+				c.sourceColumn = source.getSourceColumn();
+			}
 		} else {
 		    c.sourceColumn = null;
 		}
