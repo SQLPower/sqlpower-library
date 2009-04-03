@@ -81,8 +81,16 @@ public abstract class SQLObject implements java.io.Serializable {
 	private static Logger logger = Logger.getLogger(SQLObject.class);
 	protected boolean populated = false;
 	
-
+	/**
+	 * This is the actual table name which satisfies the specific 
+	 * database requirements.
+	 */
 	private String physicalName;
+	
+	/**
+	 * This is the alternate name for this column for
+	 * easier understanding.
+	 */
 	private String name;
 	
 	/**
@@ -143,8 +151,9 @@ public abstract class SQLObject implements java.io.Serializable {
 	}
 	
 	/**
-	 * This is the name of the object.  For tables, it returns the
-	 * table name; for catalogs, the catalog name, and so on.
+	 * This is the alternate name of the object for easier understanding. 
+	 * For tables, it returns the table name; for catalogs, 
+	 * the catalog name, and so on.
 	 */
 	public String getName()
 	{

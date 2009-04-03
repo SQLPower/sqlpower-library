@@ -47,12 +47,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	protected SQLColumn sourceColumn;
 	
 	/**
-	 * This is the alternate name for this column for
-	 * easier understanding.
-	 */
-	private String logicalName;
-
-	/**
 	 * Must be a type defined in java.sql.Types.  Move to enum in 1.5
 	 * (we hope!).
 	 */
@@ -144,7 +138,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
     
     private static boolean defaultAutoInc;
     
-    private static String defaultRemarks;
+    private static String defaultRemarks = "";
     
     private static String defaultForDefaultValue;   
     
@@ -170,7 +164,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		children = Collections.EMPTY_LIST;
 		referenceCount = 1;
 		setName(defaultName);
-		setLogicalName("");
+		setPhysicalName("");
 		setType(defaultType);
 		setPrecision(defaultPrec);
 		setScale(defaultScale);
@@ -293,7 +287,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 */
 	private static final void copyProperties(SQLColumn target, SQLColumn source) {
 		target.setName(source.getName());
-		target.setLogicalName(source.getLogicalName());
 		target.type = source.type;
 		target.sourceDataTypeName = source.sourceDataTypeName;
 		target.setPhysicalName(source.getPhysicalName());
@@ -1042,11 +1035,4 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		return null;
 	}
 
-	public void setLogicalName(String aliasName) {
-		this.logicalName = aliasName;
-	}
-
-	public String getLogicalName() {
-		return logicalName;
-	}
 }
