@@ -62,6 +62,12 @@ public class ColourScheme {
         new WebColour("#64992c"),
         new WebColour("#006633")
     };
+
+    /**
+     * This is the official SQL Power orange colour on the website and used
+     * throughout our products as a highlight colour.
+     */
+    public static final WebColour SQLPOWER_ORANGE = new WebColour(0xff, 0x66, 0x00);
     
     public static final WebColour[] RELATIONSHIP_LINE_COLOURS = {
     	new WebColour("#eeeeee"),
