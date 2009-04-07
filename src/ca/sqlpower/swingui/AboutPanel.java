@@ -29,6 +29,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.table.AbstractTableModel;
 
 import org.apache.log4j.Logger;
@@ -39,9 +40,14 @@ import org.apache.log4j.Logger;
  */
 public class AboutPanel extends AbstractNoEditDataEntryPanel {
 
-    Logger logger = Logger.getLogger(AboutPanel.class);
+    /**
+     * Traditional computer value for "1 megabyte" (1024^2).
+     */
+    private static final long MEBIBYTE = 1024 * 1024;
+
+    private final Logger logger = Logger.getLogger(AboutPanel.class);
     
-	private JLabel content;
+	private JTextArea content;
 
 	/**
 	 * Creates an AboutPanel with a given icon, product name, and product
@@ -72,12 +78,12 @@ public class AboutPanel extends AbstractNoEditDataEntryPanel {
 	}
 
     private JComponent initAboutTab(ImageIcon icon, String productName, String versionPropertiesPath, String defaultAppVersion) {
-        JPanel pan = new JPanel();
-		pan.setLayout(new FlowLayout());
+        JPanel panel = new JPanel();
+		panel.setLayout(new FlowLayout());
 
         // Include the Icon!
 		if (icon != null) {
-			pan.add(new JLabel(icon));
+			panel.add(new JLabel(icon));
 		}
 
         String version;
@@ -85,19 +91,59 @@ public class AboutPanel extends AbstractNoEditDataEntryPanel {
         Properties properties = new Properties();
         try {
             properties.load(AboutPanel.class.getClassLoader().getResourceAsStream(versionPropertiesPath));
-            version = properties.get("app.version").toString();
+            version = properties.get("app.version").toString(); //$NON-NLS-1$
         } catch (Exception ex) {
-            logger.error("Exception occured while trying to read version properties file. Falling back to default", ex);
+            logger.error("Exception occured while trying to read version properties file. Falling back to default", ex); //$NON-NLS-1$
             version = defaultAppVersion;
         }
         
-		content = new JLabel("<html>" + productName + " " + //$NON-NLS-1$
-		                    version+"<br><br>" + //$NON-NLS-1$
-							Messages.getString("AboutPanel.copyright") + "<br>" + //$NON-NLS-1$ //$NON-NLS-2$
-							"</html>"); //$NON-NLS-1$
-		pan.add(content);
-        return pan;
+		content = new JTextArea();
+		content.setText(createEnvironmentSynposis(productName, version));
+		content.setEditable(false);
+		content.setOpaque(false);
+		panel.add(content);
+		
+        return panel;
 	}
+
+    /**
+     * Creates the runtime environment synopsis that appears in the About
+     * Panel's default tab. This is available as public method so this
+     * information can be obtained when generating support requests and
+     * performing similar operations.
+     * <p>
+     * The message will be localized to the user's preferred locale if possible.
+     * 
+     * @param productName
+     *            The product name to include in the synposis
+     * @param productVersion
+     *            The product version string to include in the synopsis
+     * @return A localized multi-line string with information about the product,
+     *         java runtime, java vm, and current memory stats.
+     */
+    public static String createEnvironmentSynposis(String productName, String productVersion) {
+        String maxMemoryMiB = String.valueOf(Runtime.getRuntime().maxMemory() / MEBIBYTE);
+		String totalMemoryMiB = String.valueOf(Runtime.getRuntime().totalMemory() / MEBIBYTE);
+		String freeMemoryMiB = String.valueOf(Runtime.getRuntime().freeMemory() / MEBIBYTE);
+        String versionInfo = productName + " " + productVersion + "\n" + //$NON-NLS-1$ //$NON-NLS-2$
+		    Messages.getString("AboutPanel.copyright") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$
+		    "\n" + //$NON-NLS-1$
+		    Messages.getString("AboutPanel.operatingSystem") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$
+		    System.getProperty("os.name") + " " + System.getProperty("os.version") + " (" + System.getProperty("os.arch") + ")\n" + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
+		    "\n" + //$NON-NLS-1$
+		    Messages.getString("AboutPanel.runtimeEnvironment") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$
+		    System.getProperty("java.runtime.name") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$
+		    System.getProperty("java.runtime.version") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$
+		    "\n" + //$NON-NLS-1$
+		    Messages.getString("AboutPanel.vmInfo") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$
+		    System.getProperty("java.vm.name") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$
+		    System.getProperty("java.vm.version") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$
+		    System.getProperty("java.vm.vendor") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$
+		    "\n" + //$NON-NLS-1$
+		    Messages.getString("AboutPanel.memory") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$
+		    Messages.getString("AboutPanel.memoryAllocMaxFree", totalMemoryMiB, maxMemoryMiB, freeMemoryMiB); //$NON-NLS-1$
+        return versionInfo;
+    }
 
     /**
      * A JTable model to display the system properties
