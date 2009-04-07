@@ -191,7 +191,8 @@ public abstract class SQLObject implements java.io.Serializable {
 		}
 		return getName(); 
 	}
-	public final void setPhysicalName(String argName) {
+	
+	public void setPhysicalName(String argName) {
 		String oldPhysicalName = this.physicalName;
 		this.physicalName = argName;
 		fireDbObjectChanged("physicalName",oldPhysicalName,argName);

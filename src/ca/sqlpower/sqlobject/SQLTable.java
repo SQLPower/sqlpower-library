@@ -84,6 +84,7 @@ public class SQLTable extends SQLObject {
 		super.setName(name);  // this.setName will try to be far to fancy at this point, and break stuff
 		this.remarks = remarks;
 		this.objectType = objectType;
+		super.setPhysicalName("");
 		if (this.objectType == null) throw new NullPointerException();
     }
 
@@ -783,7 +784,7 @@ public class SQLTable extends SQLObject {
                 // Phase 3 (see doc comment)
 
                 if (getPrimaryKeyIndex() == null) {
-                    SQLIndex pkIndex = new SQLIndex(getName()+"_pk", true, null, null ,null);
+                    SQLIndex pkIndex = new SQLIndex(getPhysicalName()+"_pk", true, null, null ,null);
                     pkIndex.setPrimaryKeyIndex(true);
                     addIndex(pkIndex);
                     logger.debug("new pkIndex.getChildCount()="+pkIndex.getChildCount());
@@ -1237,28 +1238,32 @@ public class SQLTable extends SQLObject {
 	 *
 	 * @param argName The new table name.  NULL is not allowed.
 	 */
-	public void setName(String argName) {
+	public void setPhysicalName(String argName) {
 
-        logger.debug("About to change table name from \""+getName()+"\" to \""+argName+"\"");
+        logger.debug("About to change table name from \""+getPhysicalName()+"\" to \""+argName+"\"");
         
         // this method can be called very early in a SQLTable's life,
         // before its folders exist.  Therefore, we have to
         // be careful not to look up the primary key before one exists.
 
         if ( (!isMagicEnabled()) || (indicesFolder == null) || (columnsFolder == null) ) {
-            super.setName(argName);
+            super.setPhysicalName(argName);
         } else try {
-            String oldName = getName();
+            String oldName = getPhysicalName();
             
             startCompoundEdit("Table Name Change");
-            super.setName(argName);
+            super.setPhysicalName(argName);
             SQLIndex primaryKeyIndex = getPrimaryKeyIndex();
             if (argName != null &&
                 primaryKeyIndex != null && 
                (getPrimaryKeyName() == null
                     || "".equals(getPrimaryKeyName())
-                    || (oldName+"_pk").equals(getPrimaryKeyName())) ) {
-                primaryKeyIndex.setName(getName()+"_pk");
+                    || (oldName + "_pk").equals(getPrimaryKeyName())) ) {
+            	// if the physical name is still null when forward engineer,
+            	// the DDLGenerator will generate the physical name from the 
+            	// logic name and this index will be updated.
+            	primaryKeyIndex.setName(getPhysicalName()+"_pk");
+            	
             }
             
             for (SQLColumn col : getColumns()) {

@@ -107,28 +107,36 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         
     }
     
-    public void testRenameTableRenamesPK() throws SQLObjectException{
+    public void testRenamePhysicalNameOfTableRenamesPK() throws SQLObjectException{
         assertNotNull("Table has null name",table.getName());
         String newName = "newTableName";
+        String newPhysicalName = "new_Table_Name";
         table.setName(newName);
-        assertEquals(newName+"_pk",table.getPrimaryKeyName());
+        
+        assertNotNull(table.getPhysicalName() == null);
+        assertEquals("The physical name is not empty", "", table.getPhysicalName().trim());
+        
+        table.setPhysicalName(newPhysicalName);
+        assertEquals(newPhysicalName+"_pk",table.getPrimaryKeyName());
     }
     
-    public void testRenameTableDoesntRenamePKIfPKRenamed() throws SQLObjectException {
+    public void testRenamePhysicalNameOfTableDoesntRenamePKIfPKRenamed() throws SQLObjectException {
         assertNotNull("Table has null name",table.getName());
         String newTableName = "newTableName";
         String newPKName = "NewPKName";
+        String newPhysicalName = "new_Table_Name";
         table.getPrimaryKeyIndex().setName(newPKName);
         table.setName(newTableName);
+        table.setPhysicalName(newPhysicalName);
         assertEquals(newPKName, table.getPrimaryKeyName());
     }
     
-    public void testRenameTableRenamesSequences() throws Exception {
-        table.setName("old name");
-        table.getColumn(0).setAutoIncrementSequenceName("moo_" + table.getName() + "_cow");
-        table.setName("new name");
+    public void testRenamePhysicalNameOfTableRenamesSequences() throws Exception {
+        table.setPhysicalName("old name");
+        table.getColumn(0).setAutoIncrementSequenceName("moo_" + table.getPhysicalName() + "_cow");
+        table.setPhysicalName("new name");
         assertTrue(table.getColumn(0).isAutoIncrementSequenceNameSet());
-        assertEquals("moo_" + table.getName() + "_cow", table.getColumn(0).getAutoIncrementSequenceName());
+        assertEquals("moo_" + table.getPhysicalName() + "_cow", table.getColumn(0).getAutoIncrementSequenceName());
     }
 
     public void testRenameTableDoesNotRenameUnnamedSequences() throws Exception {

@@ -1363,8 +1363,21 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
             throws SQLObjectException {
         SQLRelationship model = new SQLRelationship();
         // XXX: need to ensure uniqueness of setName(), but 
-        // to_identifier should take care of this...			
-        model.setName(pkTable.getName()+"_"+fkTable.getName()+"_fk");  //$NON-NLS-1$ //$NON-NLS-2$
+        // to_identifier should take care of this...		
+        StringBuilder sb = new StringBuilder();
+        if (pkTable.getPhysicalName() == null || pkTable.getPhysicalName().trim().equals("")) {
+        	sb.append(pkTable.getName());
+        } else {
+        	sb.append(pkTable.getPhysicalName());
+        }
+        sb.append("_");
+        if (fkTable.getPhysicalName() == null || fkTable.getPhysicalName().trim().equals("")) {
+        	sb.append(fkTable.getName());
+        } else {
+        	sb.append(fkTable.getPhysicalName());
+        }
+        sb.append("_fk");
+        model.setName(sb.toString());  //$NON-NLS-1$ //$NON-NLS-2$
         model.setIdentifying(identifying);
         model.attachRelationship(pkTable,fkTable,true);
         return model;
