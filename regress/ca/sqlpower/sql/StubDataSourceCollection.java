@@ -33,6 +33,7 @@ public class StubDataSourceCollection implements DataSourceCollection {
 	private final List<SPDataSource> dataSources = new ArrayList<SPDataSource>();
 	private final List<SPDataSourceType> dsTypes = new ArrayList<SPDataSourceType>();
 	private final List<UndoableEditListener> undoableEdits = new ArrayList<UndoableEditListener>();
+	private final List<DatabaseListChangeListener> dbListChangeListeners = new ArrayList<DatabaseListChangeListener>();
 
 	public void addDataSource(SPDataSource dbcs) {
 		dataSources.add(dbcs);
@@ -43,7 +44,7 @@ public class StubDataSourceCollection implements DataSourceCollection {
 	}
 
 	public void addDatabaseListChangeListener(DatabaseListChangeListener l) {
-		throw new UnsupportedOperationException("Unsupported in the current stub implementation");
+		dbListChangeListeners.add(l);
 	}
 
 	public void addUndoableEditListener(UndoableEditListener l) {
@@ -92,7 +93,7 @@ public class StubDataSourceCollection implements DataSourceCollection {
 	}
 
 	public void removeDatabaseListChangeListener(DatabaseListChangeListener l) {
-		throw new UnsupportedOperationException("Unsupported in the current stub implementation");
+		dbListChangeListeners.remove(l);
 	}
 
 	public void removeUndoableEditListener(UndoableEditListener l) {

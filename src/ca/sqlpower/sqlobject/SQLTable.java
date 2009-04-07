@@ -40,6 +40,18 @@ public class SQLTable extends SQLObject {
 
 	private static Logger logger = Logger.getLogger(SQLTable.class);
 
+	/**
+	 * These are the different ways of transfering an object
+	 * to/in the play pen. An object could be copied from one 
+	 * place to another or reverse engineered. These two 
+	 * operations differ slightly in what they create and
+	 * inherit.
+	 */
+	public enum TransferStyles {
+	    REVERSE_ENGINEER,
+	    COPY;
+	}
+
 	protected String remarks="";
 	private String objectType;
 	protected String physicalPrimaryKeyName;
@@ -156,30 +168,53 @@ public class SQLTable extends SQLObject {
 	 * Creates a new SQLTable under the given parent database.  The new table will have
 	 * all the same properties as the given source table.
 	 *
-	 * @param source The table to copy
 	 * @param parent The database to insert the new table into
 	 * @return The new table
 	 * @throws SQLObjectException if there are populate problems on source or parent
 	 * Or if the parent has children of type other than SQLTable.
 	 */
-	public static SQLTable getDerivedInstance(SQLTable source, SQLDatabase parent)
+	public SQLTable createInheritingInstance(SQLDatabase parent) throws SQLObjectException {
+		return createTableFromSource(parent, TransferStyles.REVERSE_ENGINEER, false);
+	}
+	
+	/**
+	 * This method creates a new table based on this table. This method
+	 * is used for reverse engineering and copying as they are similar.
+	 * @throws SQLObjectException if there are populate problems on source or parent
+	 * Or if the parent has children of type other than SQLTable.
+	 */
+	private SQLTable createTableFromSource(SQLDatabase parent, TransferStyles transferStyle, boolean preserveColumnSource)
 		throws SQLObjectException {
-		source.populateColumns();
-		source.populateRelationships();
-        source.populateIndices();
+		populateColumns();
+		populateRelationships();
+        populateIndices();
 		SQLTable t = new SQLTable(parent, true);
-		t.setName(source.getName());
-		t.remarks = source.remarks;
-		t.setChildrenInaccessibleReason(source.getChildrenInaccessibleReason());
+		t.setName(getName());
+		t.remarks = remarks;
+		t.setChildrenInaccessibleReason(getChildrenInaccessibleReason());
 
-		t.setPhysicalName(source.getPhysicalName());
-		t.physicalPrimaryKeyName = source.getPhysicalPrimaryKeyName();
+		t.setPhysicalName(getPhysicalName());
+		t.physicalPrimaryKeyName = getPhysicalPrimaryKeyName();
 
-		t.inherit(source);
-        inheritIndices(source,t);
+		t.inherit(this, transferStyle, preserveColumnSource);
+        inheritIndices(this, t);
         
 		parent.addChild(t);
 		return t;
+	}
+	
+	/**
+	 * Creates a new SQLTable under the given parent database.  The new table will have
+	 * all the same properties as the given source table.
+	 *
+	 * @param parent The database to insert the new table into
+	 * @return The new table
+	 * @throws SQLObjectException if there are populate problems on source or parent
+	 * Or if the parent has children of type other than SQLTable.
+	 */
+	public SQLTable createCopy(SQLDatabase parent, boolean preserveColumnSource)
+		throws SQLObjectException {
+		return createTableFromSource(parent, TransferStyles.COPY, preserveColumnSource);
 	}
     
     /**
@@ -438,8 +473,8 @@ public class SQLTable extends SQLObject {
 	 * Adds all the columns of the given source table to the end of
 	 * this table's column list.
 	 */
-	public void inherit(SQLTable source) throws SQLObjectException {
-		inherit(columnsFolder.children.size(), source);
+	public void inherit(SQLTable source, TransferStyles transferStyle, boolean preserveColumnSource) throws SQLObjectException {
+		inherit(columnsFolder.children.size(), source, transferStyle, preserveColumnSource);
 	}
 
 	/**
@@ -453,7 +488,7 @@ public class SQLTable extends SQLObject {
 	 * added to this table's primary key.  Otherwise, no source
 	 * columns will be added to this table's primary key.
 	 */
-	public void inherit(int pos, SQLTable source) throws SQLObjectException {
+	public void inherit(int pos, SQLTable source, TransferStyles transferStyle, boolean preserveColumnSource) throws SQLObjectException {
 		SQLColumn c;
 		if (source == this)
 		{
@@ -476,7 +511,16 @@ public class SQLTable extends SQLObject {
 		Iterator it = source.getColumns().iterator();
 		while (it.hasNext()) {
 			SQLColumn child = (SQLColumn) it.next();
-			c = SQLColumn.getDerivedInstance(child, this);
+			switch (transferStyle) {
+			case REVERSE_ENGINEER:
+				c = child.createInheritingInstance(this);
+				break;
+			case COPY:
+				c = child.createCopy(this, preserveColumnSource);
+				break;
+			default:
+				throw new IllegalStateException("Unknown transfer type of " + transferStyle);
+			}
 			if (originalSize > 0) {
 				if (addToPK) {
 					c.primaryKeySeq = new Integer(pos);
@@ -489,11 +533,21 @@ public class SQLTable extends SQLObject {
 		}
 	}
 
-	public void inherit(int pos, SQLColumn sourceCol, boolean addToPK) throws SQLObjectException {
+	public void inherit(int pos, SQLColumn sourceCol, boolean addToPK, TransferStyles transferStyle, boolean preserveColumnSource) throws SQLObjectException {
 	    if (addToPK && pos > 0 && !getColumn(pos - 1).isPrimaryKey()) {
 	        throw new IllegalArgumentException("Can't inherit new PK column below a non-PK column! Insert pos="+pos+"; addToPk="+addToPK);
 	    }
-		SQLColumn c = SQLColumn.getDerivedInstance(sourceCol, this);
+		SQLColumn c = sourceCol.createInheritingInstance(this);
+		switch (transferStyle) {
+		case REVERSE_ENGINEER:
+			c = sourceCol.createInheritingInstance(this);
+			break;
+		case COPY:
+			c = sourceCol.createCopy(this, preserveColumnSource);
+			break;
+		default:
+			throw new IllegalStateException("Unknown transfer type of " + transferStyle);
+		}
 		if (addToPK) {
 			c.primaryKeySeq = new Integer(1);
 		} else {

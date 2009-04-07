@@ -18,7 +18,6 @@
  */
 package ca.sqlpower.sqlobject;
 
-import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -251,27 +250,43 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * Makes a near clone of the given source column.  The new column
 	 * you get back will have a parent pointer of addTo.columnsFolder,
 	 * but will not be attached as a child (you will normally do that
-	 * right after calling this).  It will refer to source as its
+	 * right after calling this).  It will refer to this column as its
 	 * sourceColumn property if the source is in the same session, 
 	 * and otherwise be identical to source.
 	 * 
-     * getDerivedInstance is used for reverse engineering.  
+     * createInheritingInstance is used for reverse engineering.  
      * Will not preserve listeners.
 	 * 
 	 */
-	public static SQLColumn getDerivedInstance(SQLColumn source, SQLTable addTo) {
+	public SQLColumn createInheritingInstance(SQLTable addTo) {
 		logger.debug("derived instance SQLColumn constructor invocation.");
 		SQLColumn c = new SQLColumn();
-		copyProperties(c, source);
+		copyProperties(c, this);
 		c.setParent(addTo.getColumnsFolder());
-		if (source != null && SQLObjectUtils.isInSameSession(c, source)) {
-			if (source.getSourceColumn() == null) {
-				c.sourceColumn = source;
-			} else {
-				c.sourceColumn = source.getSourceColumn();
-			}
+		if (SQLObjectUtils.isInSameSession(c, this)) {
+			c.sourceColumn = this;
 		} else {
 		    c.sourceColumn = null;
+		}
+		logger.debug("getDerivedInstance set ref count to 1");
+		c.referenceCount = 1;
+		return c;
+	}
+	
+	/**
+	 * Makes a copy of the given source column.  The new column
+	 * you get back will have a parent pointer of addTo.columnsFolder,
+	 * but will not be attached as a child (you will normally do that
+	 * right after calling this). Listeners will not be added to this
+	 * copy.
+	 */
+	public SQLColumn createCopy(SQLTable addTo, boolean preserveSource) {
+		logger.debug("derived instance SQLColumn constructor invocation.");
+		SQLColumn c = new SQLColumn();
+		copyProperties(c, this);
+		c.setParent(addTo.getColumnsFolder());
+		if (preserveSource) {
+			c.sourceColumn = getSourceColumn();
 		}
 		logger.debug("getDerivedInstance set ref count to 1");
 		c.referenceCount = 1;

@@ -223,7 +223,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		origCol.setSourceDataTypeName("NUMERIC");
 		
 		origCol.setAutoIncrementSequenceName("custom_sequence_name");  // supress auto-generate behaviour
-		SQLColumn derivCol = SQLColumn.getDerivedInstance(origCol, table3pk);
+		SQLColumn derivCol = origCol.createInheritingInstance(table3pk);
 		
 		// These should be the only differences between origCol and derivCol
 		assertEquals(table3pk, derivCol.getParentTable());
@@ -348,11 +348,11 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		SQLColumn cowCol = table1pk.getColumn(0);
 		assertNull(cowCol.getSourceColumn());
 		
-		tmpCol = SQLColumn.getDerivedInstance(cowCol, table3pk);
+		tmpCol = cowCol.createInheritingInstance(table3pk);
 		assertEquals(table3pk, tmpCol.getParentTable());
 		assertEquals(cowCol, tmpCol.getSourceColumn());
 		
-		tmpCol = SQLColumn.getDerivedInstance(new SQLColumn(), table3pk);
+		tmpCol = new SQLColumn().createInheritingInstance(table3pk);
 		assertNull(tmpCol.getSourceColumn());
 	}
 

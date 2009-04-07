@@ -36,6 +36,7 @@ import org.apache.commons.beanutils.BeanUtils;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLTable.Folder;
+import ca.sqlpower.sqlobject.SQLTable.TransferStyles;
 import ca.sqlpower.sqlobject.TestSQLTable.EventLogger.SQLObjectSnapshot;
 import ca.sqlpower.sqlobject.undo.CompoundEvent;
 import ca.sqlpower.testutil.MockJDBCDriver;
@@ -86,7 +87,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         SQLDatabase pp = new SQLDatabase();
         pp.setPlayPenDatabase(true);
         assertNotNull(table1 = db.getTableByName("REGRESSION_TEST1"));
-        derivedTable = SQLTable.getDerivedInstance(table1, pp);
+        derivedTable = table1.createInheritingInstance(pp);
         
         TreeMap derivedPropertyMap = new TreeMap(BeanUtils.describe(derivedTable));
         TreeMap table1PropertyMap = new TreeMap(BeanUtils.describe(table1));
@@ -159,7 +160,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         assertEquals(2, table1.getColumns().size());
         assertEquals(1, table2.getColumns().size());
         
-        table2.inherit(table1);
+        table2.inherit(table1, TransferStyles.REVERSE_ENGINEER, true);
         assertEquals("The wrong 1st column was inherited",
                 table1.getColumn(0).toString(), table2.getColumn(1).toString());
         assertEquals("The wrong 2nd column was inherited",
@@ -167,7 +168,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         assertEquals("The wrong number of columns were inherited",
                 table2.getColumns().size(), 3);
         try {
-            table2.inherit(table2);
+            table2.inherit(table2, TransferStyles.REVERSE_ENGINEER, true);
         } catch (SQLObjectException ae) {
             if ("Cannot inherit from self".equals(ae.getMessage())) {
                 System.out.println("Expected Behaviour is to not be able to inherit from self");
