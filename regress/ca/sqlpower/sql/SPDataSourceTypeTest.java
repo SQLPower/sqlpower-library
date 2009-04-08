@@ -312,4 +312,13 @@ public class SPDataSourceTypeTest extends TestCase {
     	
     	assertEquals(3, undoableEditListener.getEditCount());
     }
+    
+    public void testStreamFlagDefaultsFalse() throws Exception {
+        assertFalse(subType.getSupportsStreamQueries());
+    }
+    
+    public void testStreamFlagChange() throws Exception {
+        subType.setSupportsStreamQueries(true);
+        assertTrue(subType.getSupportsStreamQueries());
+    }
 }

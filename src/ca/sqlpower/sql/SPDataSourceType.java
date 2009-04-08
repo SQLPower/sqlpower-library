@@ -251,6 +251,7 @@ public class SPDataSourceType {
     public static final String DDL_GENERATOR = "DDL Generator";
     public static final String KETTLE_DB_TYPES = "ca.sqlpower.architect.etl.kettle.connectionType";
     public static final String SUPPORTS_UPDATEABLE_RESULT_SETS = "Supports Updatable Result Sets";
+    public static final String SUPPORTS_STREAM_QUERIES = "Supports Stream Queries";
     
     /**
      * This type's parent type.  This value will be null if this type has no
@@ -485,23 +486,41 @@ public class SPDataSourceType {
     }
     
     /**
-     * Returns true iff and only if the platform supports updatable result sets.
+     * Returns true if and only if the platform supports updateable result sets.
      */
-	public boolean getSupportsUpdateableResultSets() {
-		String ret = getProperty(SUPPORTS_UPDATEABLE_RESULT_SETS);
-		if (ret == null || !Boolean.parseBoolean(ret)) {
-			return false;
-		}
-		return true;
-	}
-	
+    public boolean getSupportsUpdateableResultSets() {
+        String ret = getProperty(SUPPORTS_UPDATEABLE_RESULT_SETS);
+        if (ret == null || !Boolean.parseBoolean(ret)) {
+            return false;
+        }
+        return true;
+    }
+
 	/**
 	 * Sets if the DataBaseType will support an updatable result set.
 	 */
 	public void setSupportsUpdatableResultSet(boolean supports) {
 		properties.put(SUPPORTS_UPDATEABLE_RESULT_SETS,String.valueOf(supports));
 	}
-    
+
+    /**
+     * Returns true if and only if the platform supports the SELECT STREAM syntax.
+     */
+    public boolean getSupportsStreamQueries() {
+        String ret = getProperty(SUPPORTS_STREAM_QUERIES);
+        if (ret == null || !Boolean.parseBoolean(ret)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Sets the flag that indicates this database type supports the SELECT STREAM syntax.
+     */
+    public void setSupportsStreamQueries(boolean supports) {
+        properties.put(SUPPORTS_STREAM_QUERIES, String.valueOf(supports));
+    }
+
     /**
      * Returns all the properties of this data source type.  This will not
      * include any inherited values, so unless you're trying to save this data source
