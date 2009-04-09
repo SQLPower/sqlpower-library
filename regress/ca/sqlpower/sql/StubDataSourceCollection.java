@@ -22,6 +22,7 @@ package ca.sqlpower.sql;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -108,4 +109,7 @@ public class StubDataSourceCollection implements DataSourceCollection {
 		throw new UnsupportedOperationException("Unsupported in the current stub implementation");
 	}
 
+	public void write(OutputStream out) throws IOException {
+        throw new UnsupportedOperationException("Unsupported in the current stub implementation");
+	}
 }

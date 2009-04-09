@@ -21,6 +21,7 @@ package ca.sqlpower.sql;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 import javax.swing.event.UndoableEditListener;
@@ -53,14 +54,22 @@ public interface DataSourceCollection {
     public void write() throws IOException;
     
     /**
-     * Writes out every section in the fileSections list in the
-     * order they appear in that list.
+     * Works the same as {@link #write(OutputStream)}, but writes the data to a file.
      *
      * @param location The location to write to.
      * @throws IOException if the location is not writeable for any reason.
      */
     public void write(File location) throws IOException;
 
+    /**
+     * Writes out the entire contents of this DataSourceCollection in a format
+     * that can be understood by {@link #read(InputStream)}.
+     * 
+     * @param out The output stream to write to.
+     * @throws IOException if writing fails
+     */
+    public void write(OutputStream out) throws IOException;
+    
     /**
      * Searches the list of connections for one with the given name.
      *
