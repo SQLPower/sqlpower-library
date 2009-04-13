@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,6 +36,7 @@ public class StubDataSourceCollection implements DataSourceCollection {
 	private final List<SPDataSourceType> dsTypes = new ArrayList<SPDataSourceType>();
 	private final List<UndoableEditListener> undoableEdits = new ArrayList<UndoableEditListener>();
 	private final List<DatabaseListChangeListener> dbListChangeListeners = new ArrayList<DatabaseListChangeListener>();
+    private URI serverBaseURI;
 
 	public void addDataSource(SPDataSource dbcs) {
 		dataSources.add(dbcs);
@@ -112,4 +114,12 @@ public class StubDataSourceCollection implements DataSourceCollection {
 	public void write(OutputStream out) throws IOException {
         throw new UnsupportedOperationException("Unsupported in the current stub implementation");
 	}
+
+    public URI getServerBaseURI() {
+        return serverBaseURI;
+    }
+
+    public void setServerBaseURI(URI serverBaseURI) {
+        this.serverBaseURI = serverBaseURI;
+    }
 }

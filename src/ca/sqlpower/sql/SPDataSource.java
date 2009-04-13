@@ -37,9 +37,9 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
-import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Driver;
@@ -59,8 +59,18 @@ import ca.sqlpower.sql.jdbcwrapper.ConnectionDecorator;
 public class SPDataSource {
 
     private static final Logger logger = Logger.getLogger(SPDataSource.class);
-    
+
+    /**
+     * JDBC driver pathname prefix that says to look for a JAR file resource on
+     * the classpath.
+     */
     public static final String BUILTIN = "builtin:";
+
+    /**
+     * JDBC driver pathname prefix that says to look for a JAR file resource on
+     * the remote SQL Power Enterprise server we're attached to.
+     */
+    private static final String SERVER = "server:";
     
 	/**
 	 * Compares this data source to the given data source by comparing
@@ -151,39 +161,54 @@ public class SPDataSource {
 			return 0;
 		}
 	}
-    
+
     /**
-     * The custom JDBC classloaders in this app support a special "builtin:" filename
-     * prefix, which means a JAR file on the classpath rather than an absolute
-     * local path name.  This method will take a string that might be a builtin reference
-     * and return the java.io.File object that points to the builtin file's real location
-     * in the filesystem.  If the given string doesn't start with builtin:, it will
-     * be treated as a normal (absolute or relative) file pathname.
+     * The custom JDBC classloaders in this app support special "builtin:" and
+     * "server:" filename prefixes, which means a JAR file as a resource on the
+     * classpath or on a remote HTTP server rather than an absolute local path
+     * name. This method will take a string that might be a builtin reference
+     * and return the java.io.File object that points to the builtin file's real
+     * location in the filesystem. If the given string doesn't start with
+     * builtin: or server:, it will be treated as a normal (absolute or
+     * relative) file pathname.
      * 
-     * @param jarFileName The builtin: file spec or a normal path name
-     * @param classLoader The classloader against which to resolve the builtin resource names.
-     * @return a File object that refers to the given filespec.
+     * @param jarFileName
+     *            The builtin: or server: file spec or a normal local path name
+     * @param classLoader
+     *            The classloader against which to resolve the builtin resource
+     *            names. If no builtin: resources are expected, this may be
+     *            null.
+     * @param serverBaseURI
+     *            The base URI against which to resolve server: resourcve names.
+     *            If no server: resources are expected, this may be null.
+     * @return a URL object that refers to the given filespec. It is not tested
+     *         for existence, so trying to read it may cause an IO Exception.
      */
-    public static File jarSpecToFile(String jarFileName, ClassLoader classLoader) {
-        File listedFile;
-        if (jarFileName.startsWith(BUILTIN)) {
-            String jarName = jarFileName.substring(BUILTIN.length());
-            URL resource = classLoader.getResource(jarName);
-            if (resource == null) {
-                logger.warn("Couldn't find built-in system resource \""+jarName+"\". Skipping it.");
-                listedFile = null;
-            } else {
-                logger.debug(resource + " path = " + resource.getPath());
-                try {
-                    listedFile = new File(URLDecoder.decode(resource.getPath(),"iso8859-1"));
-                } catch (UnsupportedEncodingException ex) {
-                    throw new RuntimeException("couldn't decode url with iso8859-1", ex);
+    public static URL jarSpecToFile(String jarFileName, ClassLoader classLoader, URI serverBaseURI) {
+        URL location;
+        try {
+            if (jarFileName.startsWith(BUILTIN)) {
+                String jarName = jarFileName.substring(BUILTIN.length());
+                location = classLoader.getResource(jarName);
+                if (location == null) {
+                    logger.warn("Couldn't find built-in system resource \""+jarName+"\". Skipping it.");
                 }
+            } else if (jarFileName.startsWith(SERVER)) {
+                if (serverBaseURI == null) {
+                    throw new IllegalArgumentException(
+                            "The JDBC driver at " + jarFileName + " can't" +
+                    " be located because no server base URI was specified");
+                }
+                String jarFilePath = jarFileName.substring(SERVER.length());
+                location = serverBaseURI.toURL();
+                location = new URL(location, jarFilePath);
+            } else {
+                location = new File(jarFileName).toURL();
             }
-        } else {
-            listedFile = new File(jarFileName);
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
         }
-        return listedFile;
+        return location;
     }
     
     /**

@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.util.List;
 
 import javax.swing.event.UndoableEditListener;
@@ -110,6 +111,18 @@ public interface DataSourceCollection {
      * collection of data sources.
      */
     public List<SPDataSourceType> getDataSourceTypes();
+
+    /**
+     * Returns the base URI that server: type jar specifications are resolved
+     * against. Can be set to null if server-based JAR lookup is not in use.
+     */
+    public URI getServerBaseURI();
+
+    /**
+     * Sets the base URI that server: type jar specifications are resolved
+     * against. Can be set to null if server-based JAR lookup is not in use.
+     */
+    public void setServerBaseURI(URI serverBaseURI);
     
     /**
      * Adds the new data source type to this collection.  See also

@@ -23,6 +23,7 @@ import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -77,9 +78,23 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
      * Generally, we use this to add application-specific connection properties.
      */
     private List<DataSourceTypeEditorTabPanel> tabPanels = new ArrayList<DataSourceTypeEditorTabPanel>();
-    
+
+    /**
+     * Creates a multi-tabbed panel with facilities for configuring all the
+     * database types defined in a particular data source collection.
+     * 
+     * @param collection
+     *            The data source collection to edit.
+     * @param serverBaseURI
+     *            The base URI to the server the JDBC driver JAR files may be
+     *            stored on. If the data source collection doesn't refer to any
+     *            JAR files on a server, this URI may be specified as null.
+     * @param owner The Window that should own any dialogs created within the editor GUI.
+     * @see DataSourceTypeEditor
+     * @see DefaultDataSourceTypeDialogFactory
+     */
     public DataSourceTypeEditorPanel(final DataSourceCollection collection, final Window owner) {
-    	jdbcPanel = new JDBCDriverPanel();
+    	jdbcPanel = new JDBCDriverPanel(collection.getServerBaseURI());
     	
     	jdbcPanel.addDriverTreeSelectionListener(new TreeSelectionListener() {
 			public void valueChanged(TreeSelectionEvent e) {

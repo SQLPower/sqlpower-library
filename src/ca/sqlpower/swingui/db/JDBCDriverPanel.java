@@ -27,6 +27,9 @@ import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.JarURLConnection;
+import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -147,9 +150,26 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
     private JButton addButton;
     private DefaultMutableTreeNode rootNode;
 
-	public JDBCDriverPanel() {
-        
-	    // TODO default to most recent JDBC driver location
+    private final URI serverBaseURI;
+
+    /**
+     * Creates an interactive GUI for users to find JDBC drivers inside a
+     * collection of JAR files. The JAR files can be specified as built-in JARs
+     * on the classpath, JARs that reside on a remote server (such as a SQL
+     * Power Enterprise Server), or local files.
+     * <p>
+     * This is part of a larger system rooted at {@link DataSourceTypeDialogFactory}.
+     * 
+     * @param serverBaseURI
+     *            The base URI to the server where JAR files are stored. Can be
+     *            null if server JAR specs are not in use.
+     * @see {@link SPDataSource#jarSpecToFile(String, ClassLoader, URI)} for a
+     *      description of which types of file specifications are allowed.
+     */
+	public JDBCDriverPanel(URI serverBaseURI) {
+	    this.serverBaseURI = serverBaseURI;
+	    
+        // TODO default to most recent JDBC driver location
 		fileChooser = new JFileChooser();
 
 		setLayout(new BorderLayout());
@@ -305,15 +325,26 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 
 		public boolean hasStarted = false;
 		public boolean finished = false;
-		private List driverJarList = null;
+		private List<String> driverJarList = null;
 
 
 		private int jarCount = 0; // which member of the JAR file list are we currently processing
-		private JarFile jf = null;
 		private JDBCScanClassLoader cl = null;
 
-		public LoadJDBCDrivers (List driverJarList) {
-			this.driverJarList = driverJarList;
+        /**
+         * A monitorable scanner that finds all JDBC drivers within a given set
+         * of JAR files.
+         * 
+         * @param driverJarList
+         *            The list of JAR locations. These can be absolute or
+         *            relative path names, or special prefixed values as
+         *            specified in
+         *            {@link SPDataSource#jarSpecToFile(String, ClassLoader, URI)}
+         *            .
+         * @see {@link SPDataSource#jarSpecToFile(String, ClassLoader, URI)}
+         */
+		public LoadJDBCDrivers(List<String> driverJarList) {
+            this.driverJarList = driverJarList;
 			logger.debug("in constructor, setting finished to false..."); //$NON-NLS-1$
 			finished = false;
 		}
@@ -368,9 +399,9 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 					jarCount++;
 					logger.debug("**************** processing file #" + jarCount + " of " + driverJarList.size()); //$NON-NLS-1$ //$NON-NLS-2$
 					String path = (String) it.next();
-                    File file = SPDataSource.jarSpecToFile(path, getClass().getClassLoader());
-					if (file != null) {
-                        addJarFile(file);
+                    URL jarLocation = SPDataSource.jarSpecToFile(path, getClass().getClassLoader(), serverBaseURI);
+					if (jarLocation != null) {
+                        addJarLocation(jarLocation);
                     }
 				}
 				finished = true;
@@ -384,13 +415,12 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 			}
 		}
 
-		private void addJarFile(File file) {
+		private void addJarLocation(URL url) {
 			DefaultMutableTreeNode root = (DefaultMutableTreeNode) dtm.getRoot();
-            DefaultMutableTreeNode node = new DefaultMutableTreeNode(file.getPath());
+            DefaultMutableTreeNode node = new DefaultMutableTreeNode(url.toString());
             dtm.insertNodeInto(node, root, root.getChildCount());
 			try {
-				jf = new JarFile(file);
-				cl = new JDBCScanClassLoader(jf);
+			    cl = new JDBCScanClassLoader(url);
 				List driverClasses = cl.scanForDrivers();
 				logger.info("Found drivers: "+driverClasses); //$NON-NLS-1$
 				Iterator it = driverClasses.iterator();
@@ -414,18 +444,25 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 	 */
 	private class JDBCScanClassLoader extends ClassLoader {
 
-		JarFile jf;
-		List drivers;
-		int count = 0;
+		private List drivers;
+		private int count = 0;
+        private JarURLConnection jarConnection;
+        private JarFile jf;
 
-
-		/**
-		 * Creates a class loader that uses this class's class loader
-		 * as its parent.
-		 */
-		public JDBCScanClassLoader(JarFile jf) {
+        /**
+         * Creates a class loader that can scan the given JAR for JDBC drivers.
+         * Uses this class's class loader as its parent.
+         * 
+         * @param jarLocation
+         *            The JAR to scan. This URL must <i>not</i> be a jar: URL;
+         *            it will be converted to one within this constructor.
+         * @throws IOException
+         */
+		public JDBCScanClassLoader(URL jarLocation) throws IOException {
 			super();
-			this.jf = jf;
+			URL jarURL = new URL("jar:" + jarLocation + "!/");
+            jarConnection = (JarURLConnection) jarURL.openConnection();
+            jf = jarConnection.getJarFile();
 		}
 
 		public synchronized double getFraction() {

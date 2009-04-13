@@ -32,6 +32,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -217,6 +218,12 @@ public class PlDotIni implements DataSourceCollection {
      * The time we last read the PL.INI file.
      */
     private long fileTime;
+    
+    /**
+     * Base URI for server: JAR spec lookups.
+     */
+    private URI serverBaseURI;
+    
     boolean shuttingDown = false;
     
     /** Seconds to wait between checking the file. */
@@ -891,4 +898,11 @@ public class PlDotIni implements DataSourceCollection {
 		undoListeners.remove(l);
 	}
 
+	public URI getServerBaseURI() {
+	    return serverBaseURI;
+	}
+	
+	public void setServerBaseURI(URI serverBaseURI) {
+	    this.serverBaseURI = serverBaseURI;
+	}
 }

@@ -23,6 +23,7 @@ import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.net.URI;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -91,6 +92,15 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      */
 	private DefaultListModel dsTypeListModel;
     
+    /**
+     * Creates a multi-tabbed panel with facilities for configuring all the
+     * database types defined in a particular data source collection.
+     * 
+     * @param collection
+     *            The data source collection to edit.
+     * @param owner The Window that should own any dialogs created within the editor GUI.
+     * @see DefaultDataSourceTypeDialogFactory for a more out-of-the-box setup
+     */
     public DataSourceTypeEditor(DataSourceCollection dataSourceCollection, final Window owner) {
         this.dataSourceCollection = dataSourceCollection;
         

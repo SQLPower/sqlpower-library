@@ -24,6 +24,7 @@ import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.JarURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.security.AllPermission;
@@ -42,10 +43,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.jar.JarFile;
+import java.util.jar.JarEntry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
 
 import javax.swing.event.UndoableEditEvent;
 import javax.swing.event.UndoableEditListener;
@@ -111,8 +111,17 @@ public class SPDataSourceType {
      */
     public class JDBCClassLoader extends ClassLoader {
 
-        protected JDBCClassLoader() {
+        /**
+         * The base URI against which to resolve server: type JAR specs. This
+         * can legally be null, which will simply cause attempts at reading
+         * server: JAR files to fail. If there are no server: JAR specs, this
+         * null value won't cause any trouble.
+         */
+        private final URI serverBaseUri;
+
+        protected JDBCClassLoader(URI serverBaseUri) {
             super(JDBCClassLoader.class.getClassLoader());
+            this.serverBaseUri = serverBaseUri;
 
             logger.debug("Created new JDBC Classloader @"+System.identityHashCode(this));
             
@@ -157,19 +166,22 @@ public class SPDataSourceType {
             for (String jarFileName : getJdbcJarList()) {
                 try {
                     logger.debug("checking file "+jarFileName);
-                    File listedFile = SPDataSource.jarSpecToFile(jarFileName, getParent());
-                    if (listedFile == null || !listedFile.exists()) {
+                    URL jarLocation = SPDataSource.jarSpecToFile(jarFileName, getParent(), serverBaseUri);
+                    
+                    String jarEntryPath = name.replace('.','/') + ".class";
+                    URL url = new URL("jar:" + jarLocation.toString() + "!/" + jarEntryPath);
+                    JarURLConnection jarConnection;
+                    try {
+                        jarConnection = (JarURLConnection) url.openConnection();
+                    } catch (IOException ex) {
+                        // this was the old behaviour if the file didn't exist. still a good idea?
                         logger.debug("Skipping non-existant JAR file "+jarFileName);
                         continue;
                     }
-                    JarFile jf = new JarFile(listedFile);
-                    ZipEntry ent = jf.getEntry(name.replace('.','/')+".class");
-                    if (ent == null) {
-                        jf.close();
-                        continue;
-                    }
+                    
+                    JarEntry ent = jarConnection.getJarEntry();
                     byte[] buf = new byte[(int) ent.getSize()];
-                    InputStream is = jf.getInputStream(ent);
+                    InputStream is = jarConnection.getInputStream();
                     int offs = 0, n = 0;
                     while ( (n = is.read(buf, offs, buf.length-offs)) >= 0 && offs < buf.length) {
                         offs += n;
@@ -178,7 +190,6 @@ public class SPDataSourceType {
                     if (total != ent.getSize()) {
                         logger.warn("What gives?  ZipEntry "+ent.getName()+" is "+ent.getSize()+" bytes long, but we only read "+total+" bytes!");
                     }
-                    jf.close();
                     return defineClass(name, buf, 0, buf.length);
                 } catch (IOException ex) {
                     String errorMsg = "IO Exception reading class from jar file";
@@ -216,23 +227,34 @@ public class SPDataSourceType {
             List<URL> results = new ArrayList<URL>();
             for (String jarName : getJdbcJarList()) {
                 logger.debug("Converting JAR name: " + jarName);
-                File listedFile = SPDataSource.jarSpecToFile(jarName, getParent());
-                logger.debug("  File is "+listedFile);
+                URL jarLocation = SPDataSource.jarSpecToFile(jarName, getParent(), serverBaseUri);
+                logger.debug("  JAR is "+jarLocation);
                 try {
-                    if (listedFile == null || !listedFile.exists()) {
-                        logger.debug("  Skipping non-existant JAR file " + (listedFile == null ? "" : listedFile.getPath()) );
+                    if (jarLocation == null) {
+                        logger.debug("  Skipping non-existant JAR file " + jarName);
                         continue;
                     } else {
-                        logger.debug("  Searching JAR "+listedFile.getPath());
+                        logger.debug("  Searching JAR " + jarLocation);
                     }
-                    JarFile jf = new JarFile(listedFile);
-                    if (jf.getEntry(name) != null) {
-                        URI jarUri = listedFile.toURI();
-                        results.add(new URL("jar:"+jarUri.toURL()+"!/"+name));
+                    
+                    URL url = new URL("jar:" + jarLocation.toString() + "!/" + name);
+
+                    JarURLConnection jarConnection;
+                    try {
+                        jarConnection = (JarURLConnection) url.openConnection();
+                    } catch (IOException ex) {
+                        // this was the old behaviour if the file didn't exist. still a good idea?
+                        logger.debug("Skipping non-existant JAR file " + jarLocation);
+                        continue;
+                    }
+                    
+                    JarEntry ent = jarConnection.getJarEntry();
+                    if (ent != null) {
+                        results.add(url);
                         logger.debug("    Found entry " + name);
                     }
                 } catch (IOException ex) {
-                    logger.warn("  IO Exception while searching "+ (listedFile == null ? "" : listedFile.getPath())
+                    logger.warn("  IO Exception while searching "+ jarLocation
                                 + " for resource " + name + ". Continuing...", ex);
                 }
             }
@@ -272,7 +294,7 @@ public class SPDataSourceType {
      * The Class Loader that is responsible for finding and defining the JDBC
      * driver classes from the database vendor, for this connection type only.
      */
-    private ClassLoader classLoader = new JDBCClassLoader();
+    private final ClassLoader classLoader;
     
     /**
      * Deletgate class for supporting the bound properties of this class.
@@ -283,12 +305,24 @@ public class SPDataSourceType {
      * Listeners listening for undoable edits.
      */
 	private final List<UndoableEditListener> undoableEditListeners = new ArrayList<UndoableEditListener>();
-    
+
     /**
-     * Creates a new default data source type.
+     * Creates a new default data source type that can load drivers from a local
+     * file or a JAR resource on the classpath, but not from a server.
+     * 
+     * @see #SPDataSourceType(URI)
      */
     public SPDataSourceType() {
+        this(null);
+    }
+
+    /**
+     * Creates a new default data source type that can load drivers from a
+     * server, a local file, or JAR resources on the classpath.
+     */
+    public SPDataSourceType(URI serverBaseUri) {
         super();
+        classLoader = new JDBCClassLoader(serverBaseUri);
     }
     
     public String getComment() {
