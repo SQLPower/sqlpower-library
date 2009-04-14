@@ -1,7 +1,6 @@
 package ca.sqlpower.sql;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
@@ -89,7 +88,17 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
      * After populating this row set, you can safely call rs.close().
      */
     public void populate(ResultSet rs) throws SQLException {
-        populate(rs, null);
+        populate(rs, (RowSetChangeListener) null);
+    }
+    
+    /**
+     * Fills this row set with all the data of the given result set.
+     * After populating this row set, you can safely call rs.close().
+     * Each time a row is added to the row set the listener will be
+     * notified.
+     */
+    public void populate(ResultSet rs, RowSetChangeListener listener) throws SQLException {
+        populate(rs, null, listener, new String[0]);
     }
     
     /**
@@ -101,7 +110,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
      * @param filter the filter to consult about which rows to keep
      */
     public void populate(ResultSet rs, RowFilter filter) throws SQLException {
-    	populate(rs, filter, new String[0]);
+    	populate(rs, filter, null, new String[0]);
     }
     
     /**
@@ -118,6 +127,25 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
      * all rows will contain null values for the extra columns.
      */
     public void populate(ResultSet rs, RowFilter filter, String ... extraColNames) throws SQLException {
+    	populate(rs, filter, null, extraColNames);
+    }
+    
+    /**
+     * Fills this row set with all the data of the given result set
+     * which is accepted by the given row filter.
+     * After populating this row set, you can safely call rs.close().
+     * 
+     * @param rs The result set to read all data from
+     * @param filter the filter to consult about which rows to keep
+     * @param changeListener the listener to notify when extra columns
+     * are added to the result set.
+     * @param extraColNames The names of any extra placeholder columns
+     * you want to add to the copy of the given result set. The result set
+     * metadata for those columns will claim they are all VARCHAR columns,
+     * but you can put any type of data in them. After populate() has returned,
+     * all rows will contain null values for the extra columns.
+     */
+    public void populate(ResultSet rs, RowFilter filter, RowSetChangeListener changeListener, String ... extraColNames) throws SQLException {
 
     	/*
 		 * XXX: this upcases all the column names in the metadata for
@@ -138,7 +166,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		}
 
 		int rowNum = 0;
-		ArrayList<Object[]> newData = new ArrayList<Object[]>();
+		data = new ArrayList<Object[]>();
 		while (rs.next()) {
 		    if (logger.isDebugEnabled()) logger.debug("Populating Row "+rowNum);
 			Object[] row = new Object[colCount];
@@ -153,13 +181,15 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 			}
             
             if (filter == null || filter.acceptsRow(row)) {
-                newData.add(row);
+                data.add(row);
                 rowNum++;
+                if (changeListener != null) {
+                	changeListener.rowAdded(new RowSetChangeEvent(this, row));
+                }
             } else {
                 logger.debug("Skipped this row (rejected by filter)");
             }
 		}
-		data = newData;
 	}
 
 	/**
