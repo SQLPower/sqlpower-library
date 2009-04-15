@@ -167,6 +167,10 @@ public class SPDataSourceType {
                 try {
                     logger.debug("checking file "+jarFileName);
                     URL jarLocation = SPDataSource.jarSpecToFile(jarFileName, getParent(), serverBaseUri);
+                    if (jarLocation == null) {
+                    	// missing JAR file in classpath. just skip it.
+                    	continue;
+                    }
                     
                     String jarEntryPath = name.replace('.','/') + ".class";
                     URL url = new URL("jar:" + jarLocation.toString() + "!/" + jarEntryPath);
