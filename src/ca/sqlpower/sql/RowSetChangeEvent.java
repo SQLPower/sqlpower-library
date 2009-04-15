@@ -23,10 +23,12 @@ public class RowSetChangeEvent {
 	
 	private final CachedRowSet rs;
 	private final Object[] row;
+	private final int rowNumber;
 	
-	public RowSetChangeEvent(CachedRowSet rs, Object[] row) {
+	public RowSetChangeEvent(CachedRowSet rs, Object[] row, int rowNumber) {
 		this.rs = rs;
 		this.row = row;
+		this.rowNumber = rowNumber;
 	}
 
 	public CachedRowSet getRs() {
@@ -35,6 +37,10 @@ public class RowSetChangeEvent {
 
 	public Object[] getRow() {
 		return row;
+	}
+
+	public int getRowNumber() {
+		return rowNumber;
 	}
 
 }

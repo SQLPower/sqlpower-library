@@ -40,7 +40,7 @@ import ca.sqlpower.swingui.SPSUtils;
  * 
  * XXX: This model eats tableChanged events that get thrown from below this should be fixed! 
  */
-public class TableModelSearchDecorator extends AbstractTableModel {
+public class TableModelSearchDecorator extends AbstractTableModel implements CleanupTableModel {
 
     private static final Logger logger = Logger.getLogger(TableModelSearchDecorator.class);
 
@@ -81,6 +81,15 @@ public class TableModelSearchDecorator extends AbstractTableModel {
         }
     };
     
+    /**
+     * This table model listener sends events from the model it wraps up to the parent.
+     */
+    final TableModelListener tableModelListener = new TableModelListener() {
+    	public void tableChanged(TableModelEvent e) {
+    		fireTableChanged(e);
+    	}
+    };
+    
     @Override
     public boolean isCellEditable(int rowIndex, int columnIndex) {
         return tableModel.isCellEditable(rowIndex, columnIndex);
@@ -95,6 +104,7 @@ public class TableModelSearchDecorator extends AbstractTableModel {
     public TableModelSearchDecorator(TableModel model) {
         super();
         this.tableModel = model;
+		tableModel.addTableModelListener(tableModelListener);
         setDoc(new DefaultStyledDocument());
 
         model.addTableModelListener(new TableModelListener(){
@@ -189,7 +199,9 @@ public class TableModelSearchDecorator extends AbstractTableModel {
     }
 
     public void setTableModel(TableModel tableModel) {
+    	this.tableModel.removeTableModelListener(tableModelListener);
         this.tableModel = tableModel;
+        tableModel.addTableModelListener(tableModelListener);
         fireTableStructureChanged();
     }
 
@@ -224,4 +236,11 @@ public class TableModelSearchDecorator extends AbstractTableModel {
     public void setTableTextConverter(TableTextConverter tableTextConverter) {
         this.tableTextConverter = tableTextConverter;
     }
+
+	public void cleanup() {
+		doc.removeDocumentListener(docListener);
+		if (tableModel instanceof CleanupTableModel) {
+			((CleanupTableModel) tableModel).cleanup();
+		}
+	}
 }

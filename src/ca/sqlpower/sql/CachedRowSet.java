@@ -77,6 +77,12 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	protected CachedResultSetMetaData rsmd;
 
 	/**
+	 * These listeners will be notified of row set changes for populating
+	 * a cached row set when a streaming statement is used.
+	 */
+	private List<RowSetChangeListener> rowSetChangeListeners = new ArrayList<RowSetChangeListener>();
+	
+	/**
 	 * Makes an empty cached rowset.
 	 */
 	public CachedRowSet() throws SQLException {
@@ -182,10 +188,13 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
             
             if (filter == null || filter.acceptsRow(row)) {
                 data.add(row);
-                rowNum++;
                 if (changeListener != null) {
-                	changeListener.rowAdded(new RowSetChangeEvent(this, row));
+                	changeListener.rowAdded(new RowSetChangeEvent(this, row, rowNum));
                 }
+                for (RowSetChangeListener l : rowSetChangeListeners) {
+                	l.rowAdded(new RowSetChangeEvent(this, row, rowNum));
+                }
+                rowNum++;
             } else {
                 logger.debug("Skipped this row (rejected by filter)");
             }
@@ -216,6 +225,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 			Collections.sort(newRowSet.data, c);
 		} else {
 			newRowSet.data = data;
+			newRowSet.rowSetChangeListeners = rowSetChangeListeners;
 		}
 
 		return newRowSet;
@@ -1649,5 +1659,14 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 */
     public void moveToCurrentRow() throws SQLException {
 		throw new UnsupportedOperationException("Updates not supported!");
+	}
+
+	public void addRowSetChangeListener(
+			RowSetChangeListener rowSetChangeListener) {
+		rowSetChangeListeners.add(rowSetChangeListener);
+	}
+	
+	public void removeRowSetChangeListener(RowSetChangeListener l) {
+		rowSetChangeListeners.remove(l);
 	}
 }

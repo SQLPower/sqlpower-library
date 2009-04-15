@@ -98,7 +98,7 @@ import org.apache.log4j.Logger;
  * @version 2.0 02/27/04
  */
 
-public class TableModelSortDecorator extends AbstractTableModel {
+public class TableModelSortDecorator extends AbstractTableModel implements CleanupTableModel {
 	private static final Logger logger = Logger.getLogger(TableModelSortDecorator.class);
 	
     protected TableModel tableModel;
@@ -578,4 +578,10 @@ public class TableModelSortDecorator extends AbstractTableModel {
     	headerLabelYLoc = yLoc;
     	headerLabelHeight = height;
     }
+
+	public void cleanup() {
+		if (tableModel instanceof CleanupTableModel) {
+			((CleanupTableModel) tableModel).cleanup();
+		}
+	}
 }
