@@ -151,6 +151,11 @@ public class PlDotIni implements DataSourceCollection {
         listeners.add(saver);
     }
 
+    public PlDotIni(URI serverBaseURI) {
+    	this();
+		this.serverBaseURI = serverBaseURI;
+    }
+    
 	/**
      * The Section class represents a named section in the PL.INI file.
      * It has default visibility because the unit test needs to use it.
@@ -331,7 +336,7 @@ public class PlDotIni implements DataSourceCollection {
                     mode = ReadState.READ_DS;
                 } else if (line.startsWith("[Database Types_")) {
                     logger.debug("It's a new database type!" + fileSections);
-                    currentType =  new SPDataSourceType();
+                    currentType =  new SPDataSourceType(getServerBaseURI());
                     mode = ReadState.READ_TYPE;
                 } else if (line.startsWith("[")) {
                     logger.debug("It's a new generic section!");
@@ -901,8 +906,5 @@ public class PlDotIni implements DataSourceCollection {
 	public URI getServerBaseURI() {
 	    return serverBaseURI;
 	}
-	
-	public void setServerBaseURI(URI serverBaseURI) {
-	    this.serverBaseURI = serverBaseURI;
-	}
+
 }

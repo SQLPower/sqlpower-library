@@ -114,15 +114,9 @@ public interface DataSourceCollection {
 
     /**
      * Returns the base URI that server: type jar specifications are resolved
-     * against. Can be set to null if server-based JAR lookup is not in use.
+     * against. May be set to null if server-based JAR lookup is not in use.
      */
     public URI getServerBaseURI();
-
-    /**
-     * Sets the base URI that server: type jar specifications are resolved
-     * against. Can be set to null if server-based JAR lookup is not in use.
-     */
-    public void setServerBaseURI(URI serverBaseURI);
     
     /**
      * Adds the new data source type to this collection.  See also
