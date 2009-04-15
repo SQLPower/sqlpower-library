@@ -5,7 +5,10 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -515,5 +518,28 @@ public class SQL {
 			}
 		}
 		return -1;
+	}
+	
+	/**
+	 * Returns true if the JDBC type given is a numeric value, returns false otherwise.
+	 */
+	public static boolean isNumeric(int jdbcType) {
+		return new ArrayList<Integer>(Arrays.asList(new Integer[]{Types.BIGINT, Types.BINARY, Types.BIT, Types.DECIMAL, Types.DOUBLE, Types.FLOAT, Types.INTEGER, Types.NUMERIC, Types.SMALLINT, Types.TINYINT})).contains(jdbcType);
+	}
+	
+	/**
+	 * Returns true if the JDBC type given is a date value, returns false otherwise.
+	 * @param jdbcType
+	 * @return
+	 */
+	public static boolean isDate(int jdbcType) {
+		return new ArrayList<Integer>(Arrays.asList(new Integer[]{Types.DATE, Types.TIMESTAMP})).contains(jdbcType);
+	}
+	
+	/**
+	 * Returns true if the JDBC type give is a boolean value, returns false otherwise.
+	 */
+	public static boolean isBoolean(int jdbcType) {
+		return new ArrayList<Integer>(Arrays.asList(new Integer[]{Types.BOOLEAN})).contains(jdbcType);
 	}
 }
