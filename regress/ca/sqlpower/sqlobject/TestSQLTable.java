@@ -109,12 +109,12 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     }
     
     public void testRenamePhysicalNameOfTableRenamesPK() throws SQLObjectException{
-        assertNotNull("Table has null name",table.getName());
+        assertNotNull("Table has null logical name",table.getName());
         String newName = "newTableName";
         String newPhysicalName = "new_Table_Name";
         table.setName(newName);
         
-        assertNotNull(table.getPhysicalName() == null);
+        assertNotNull("Table has null physical name", table.getPhysicalName());
         assertEquals("The physical name is not empty", "", table.getPhysicalName().trim());
         
         table.setPhysicalName(newPhysicalName);

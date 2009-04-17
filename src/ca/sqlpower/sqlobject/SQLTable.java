@@ -96,7 +96,7 @@ public class SQLTable extends SQLObject {
 		super.setName(name);  // this.setName will try to be far to fancy at this point, and break stuff
 		this.remarks = remarks;
 		this.objectType = objectType;
-		super.setPhysicalName("");
+		super.setPhysicalName(name);
 		if (this.objectType == null) throw new NullPointerException();
     }
 
@@ -1303,7 +1303,13 @@ public class SQLTable extends SQLObject {
         if ( (!isMagicEnabled()) || (indicesFolder == null) || (columnsFolder == null) ) {
             super.setPhysicalName(argName);
         } else try {
-            String oldName = getPhysicalName();
+        	logger.info("The physical name of the table is: " + getPhysicalName());
+        	String oldName;
+        	if (getPhysicalName() != null) {
+        		oldName = getPhysicalName();
+        	} else {
+        		oldName = getName();
+        	}
             
             startCompoundEdit("Table Name Change");
             super.setPhysicalName(argName);
@@ -1311,7 +1317,7 @@ public class SQLTable extends SQLObject {
             if (argName != null &&
                 primaryKeyIndex != null && 
                (getPrimaryKeyName() == null
-                    || "".equals(getPrimaryKeyName())
+                    || "".equals(getPrimaryKeyName().trim())
                     || (oldName + "_pk").equals(getPrimaryKeyName())) ) {
             	// if the physical name is still null when forward engineer,
             	// the DDLGenerator will generate the physical name from the 

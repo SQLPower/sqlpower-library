@@ -941,7 +941,14 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      */
     public String getAutoIncrementSequenceName() {
         if (autoIncrementSequenceName == null) {
-            String tableName = getParentTable() == null ? "" : getParentTable().getName() + "_";
+        	String tableName;
+        	if (getParentTable() == null) {
+        		tableName = "";
+        	} else if (getParentTable().getPhysicalName() != null && !getPhysicalName().trim().equals("")) {
+        		tableName = getParentTable().getPhysicalName() + "_";
+        	} else {
+        		tableName = getParentTable().getName() +"_";
+        	}
             return tableName + getName() + "_seq";
         } else {
             return autoIncrementSequenceName;
