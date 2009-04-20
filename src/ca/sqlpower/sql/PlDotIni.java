@@ -304,6 +304,8 @@ public class PlDotIni implements DataSourceCollection {
     
     public void read(InputStream inStream) throws IOException {
         
+    	if (inStream == null) throw new NullPointerException("InputStream was null!");
+    	
         logger.info("Beginning to read/merge new pl.ini data");
         
 	    ReadState mode = ReadState.READ_GENERIC;
