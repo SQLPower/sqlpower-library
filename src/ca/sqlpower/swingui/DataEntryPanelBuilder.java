@@ -253,10 +253,10 @@ public class DataEntryPanelBuilder {
 		//d.add(cp);
 		d.setContentPane(cp);
 
-		// XXX maybe pass yet another argument for this?
-		// d.setLocationRelativeTo(someFrame);
-
 		d.pack();
+
+		// XXX maybe pass yet another argument for this?
+		d.setLocation(dialogParent.getX() + dialogParent.getWidth() / 2 - d.getWidth() / 2, dialogParent.getY() + dialogParent.getHeight() / 2 - d.getHeight() / 2);
 		return d;
 	}
 
