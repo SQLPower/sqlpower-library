@@ -104,6 +104,7 @@ import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.DatabaseListChangeEvent;
 import ca.sqlpower.sql.DatabaseListChangeListener;
+import ca.sqlpower.sql.RowSetChangeEvent;
 import ca.sqlpower.sql.RowSetChangeListener;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLObjectException;
@@ -113,7 +114,8 @@ import ca.sqlpower.swingui.SwingWorkerRegistry;
 import ca.sqlpower.swingui.db.DatabaseConnectionManager;
 import ca.sqlpower.swingui.event.TaskTerminationEvent;
 import ca.sqlpower.swingui.event.TaskTerminationListener;
-import ca.sqlpower.swingui.table.ResultSetTableFactory;
+import ca.sqlpower.swingui.table.FancyExportableJTable;
+import ca.sqlpower.swingui.table.ResultSetTableModel;
 import ca.sqlpower.validation.swingui.StatusComponent;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
@@ -355,7 +357,7 @@ public class SQLQueryUIComponents {
         		}
         		
         		if (queuedSQLStatement == null) {
-        			createResultSetTables(resultSets, stmtExecutor.getStatement());
+        			createResultSetTables(resultSets, stmtExecutor);
         		}
 
         		resultSets.clear();
@@ -870,6 +872,45 @@ public class SQLQueryUIComponents {
 		}
     }
     
+	/**
+	 * This listener is attached to a statement executor and is used to pass row set changes
+	 * from the row set to table models to update the table models.
+	 */
+	private class StreamingRowSetListener implements RowSetChangeListener {
+
+		/**
+		 * The result set this listener is listening to.
+		 */
+		private final StatementExecutor stmtExecutor;
+		
+		/**
+		 * These models will receive events of row changes when this listener receives
+		 * a row added event.
+		 */
+		private final ResultSetTableModel listeningTableModel;
+
+		/**
+		 * @param rs The result set this listener is listening to.
+		 */
+		public StreamingRowSetListener(StatementExecutor stmtExecutor, ResultSetTableModel tableModel) {
+			this.stmtExecutor = stmtExecutor;
+			listeningTableModel = tableModel;
+		}
+		
+		/**
+		 * This will disconnect the listener from what it is listening to and also disconnect
+		 * all of the tables listening to this listener.
+		 */
+		public void disconnect() {
+			stmtExecutor.removeRowSetChangeListener(this);
+		}
+		
+		public void rowAdded(RowSetChangeEvent e) {
+			listeningTableModel.rowAdded(e.getRowNumber());
+		}
+		
+	}
+    
     /**
      * This button will execute the sql statements in the text area.
      */
@@ -927,6 +968,12 @@ public class SQLQueryUIComponents {
 	 * This will replace the default executor for text queries and is used in at least Wabit.
 	 */
 	private StatementExecutor stmtExecutor = null;
+	
+	/**
+	 * These listeners will pass events from the row set last executed to the table models
+	 * being displayed as results of the statement execution.
+	 */
+	private final List<StreamingRowSetListener> rowSetListeners = new ArrayList<StreamingRowSetListener>();
 
 	/**
 	 * Creates all of the components of a query tool, but does not lay them out
@@ -1386,12 +1433,16 @@ public class SQLQueryUIComponents {
      * Creates all of the JTables for the result tab and adds them to the result tab.
      * @throws SQLException 
      */
-    private synchronized void createResultSetTables(List<CachedRowSet> resultSets, String query) throws SQLException {
+    private synchronized void createResultSetTables(List<CachedRowSet> resultSets, StatementExecutor executor) throws SQLException {
     	clearResultTables();
+   		for (StreamingRowSetListener rowSetListener : rowSetListeners) {
+			rowSetListener.disconnect();
+		}
+   		rowSetListeners.clear();
 
     	searchDocument = new DefaultStyledDocument();
     	for (CachedRowSet rs : resultSets) {
-    		ResultSet r = rs.createShared();
+    		CachedRowSet r = rs.createShared();
     		JComponent tempTable;
     		FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "pref, fill:min(pref;50dlu):grow");
     		DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
@@ -1402,14 +1453,19 @@ public class SQLQueryUIComponents {
     			JTextField tableFilterTextField = new JTextField(searchDocument, null, 0);
     			tableAreaBuilder.append(searchLabel, tableFilterTextField);
     		}
-    		tempTable = ResultSetTableFactory.createResultSetJTableWithSearch(r, searchDocument);
+    		ResultSetTableModel model = new ResultSetTableModel(r);
+    		StreamingRowSetListener rowSetListener = new StreamingRowSetListener(executor, model);
+    		executor.addRowSetChangeListener(rowSetListener);
+    		rowSetListeners.add(rowSetListener);
+    		
+    		tempTable = new FancyExportableJTable(model, searchDocument);
 
     		tableAreaBuilder.nextLine();
     		JScrollPane tableScrollPane = new JScrollPane(tempTable);
     		tableAreaBuilder.append(tableScrollPane, 3);
 
     		resultJTables.add((JTable)tempTable);
-    		tableToSQLMap.put(((JTable)tempTable), query);
+    		tableToSQLMap.put(((JTable)tempTable), executor.getStatement());
     		JPanel tempResultPanel = tableAreaBuilder.getPanel();
     		resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
     		resultTabPane.setSelectedIndex(1);
@@ -1554,6 +1610,9 @@ public class SQLQueryUIComponents {
     
     public void disconnectListeners() {
     	dsCollection.removeDatabaseListChangeListener(dbListChangeListener);
+   		for (StreamingRowSetListener rowSetListener : rowSetListeners) {
+			rowSetListener.disconnect();
+		}
     }
     
     public Document getSearchDocument() {

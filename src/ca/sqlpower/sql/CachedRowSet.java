@@ -77,16 +77,76 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	protected CachedResultSetMetaData rsmd;
 
 	/**
-	 * These listeners will be notified of row set changes for populating
-	 * a cached row set when a streaming statement is used.
-	 */
-	private List<RowSetChangeListener> rowSetChangeListeners = new ArrayList<RowSetChangeListener>();
-	
-	/**
 	 * Makes an empty cached rowset.
 	 */
 	public CachedRowSet() throws SQLException {
         // Nothing to do
+	}
+
+	/**
+	 * This is the "populate" method for streaming result sets. This method will
+	 * update the cached row set with a new row every time one is inserted into
+	 * the result set and notify the listener of the new row. Only rowLimit rows
+	 * will be stored in the cached row set and when the row limit is reached
+	 * the oldest row in the cached row set will be removed.
+	 * 
+	 * @param rs
+	 *            The result set to track.
+	 * @param listener
+	 *            A listener that will be notified that a new row was added to
+	 *            the cached row set. More listeners can be added from the
+	 *            {@link CachedRowSet#addRowSetChangeListener(RowSetChangeListener)}
+	 *            method.
+	 * @param rowLimit
+	 *            The maximum number of rows this cached row set will store. Old
+	 *            rows will be removed when necessary to make room for new rows.
+	 * @throws SQLException 
+	 */
+	public void follow(ResultSet rs, RowSetChangeListener listener, int rowLimit, String ... extraColNames) throws SQLException {
+		/*
+		 * XXX: this upcases all the column names in the metadata for
+		 * the Dashboard's benefit.  We should add a switch for this
+		 * behaviour to the CachedRowSet API and then use it from the
+		 * Dashboard
+		 */
+		rsmd = new CachedResultSetMetaData(rs.getMetaData(), true);
+    	int rsColCount = rsmd.getColumnCount();
+    	int colCount = rsColCount + extraColNames.length;
+		for (String extraColName : extraColNames) {
+			/* bleh */
+			rsmd.addColumn(
+					false, false, false, false, DatabaseMetaData.columnNullable,
+					true, 10, extraColName,	extraColName, null, 10, 0, null,
+					null, Types.VARCHAR, "VARCHAR", false, true, true,
+					String.class.getName());
+		}
+
+		int rowNum = 0;
+		data = new ArrayList<Object[]>();
+		while (rs.next()) {
+		    if (logger.isDebugEnabled()) logger.debug("Populating Row "+rowNum);
+			Object[] row = new Object[colCount];
+			for (int i = 0; i < rsColCount; i++) {
+				Object o = rs.getObject(i+1);
+				if (o == null) {
+				    if (logger.isDebugEnabled()) logger.debug("   Col "+i+": null");
+				} else {
+				    if (logger.isDebugEnabled()) logger.debug("   Col "+i+": "+o+" ("+o.getClass()+")");
+				}				
+				row[i] = o;
+			}
+            
+			data.add(row);
+			
+			while (data.size() > rowLimit) { 
+				data.remove(0);
+			}
+			
+			if (listener != null) {
+				listener.rowAdded(new RowSetChangeEvent(this, row, rowNum));
+			}
+			rowNum++;
+		}
 	}
 
     /**
@@ -94,17 +154,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
      * After populating this row set, you can safely call rs.close().
      */
     public void populate(ResultSet rs) throws SQLException {
-        populate(rs, (RowSetChangeListener) null);
-    }
-    
-    /**
-     * Fills this row set with all the data of the given result set.
-     * After populating this row set, you can safely call rs.close().
-     * Each time a row is added to the row set the listener will be
-     * notified.
-     */
-    public void populate(ResultSet rs, RowSetChangeListener listener) throws SQLException {
-        populate(rs, null, listener, new String[0]);
+        populate(rs, null);
     }
     
     /**
@@ -116,7 +166,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
      * @param filter the filter to consult about which rows to keep
      */
     public void populate(ResultSet rs, RowFilter filter) throws SQLException {
-    	populate(rs, filter, null, new String[0]);
+    	populate(rs, filter, new String[0]);
     }
     
     /**
@@ -133,25 +183,6 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
      * all rows will contain null values for the extra columns.
      */
     public void populate(ResultSet rs, RowFilter filter, String ... extraColNames) throws SQLException {
-    	populate(rs, filter, null, extraColNames);
-    }
-    
-    /**
-     * Fills this row set with all the data of the given result set
-     * which is accepted by the given row filter.
-     * After populating this row set, you can safely call rs.close().
-     * 
-     * @param rs The result set to read all data from
-     * @param filter the filter to consult about which rows to keep
-     * @param changeListener the listener to notify when extra columns
-     * are added to the result set.
-     * @param extraColNames The names of any extra placeholder columns
-     * you want to add to the copy of the given result set. The result set
-     * metadata for those columns will claim they are all VARCHAR columns,
-     * but you can put any type of data in them. After populate() has returned,
-     * all rows will contain null values for the extra columns.
-     */
-    public void populate(ResultSet rs, RowFilter filter, RowSetChangeListener changeListener, String ... extraColNames) throws SQLException {
 
     	/*
 		 * XXX: this upcases all the column names in the metadata for
@@ -188,12 +219,6 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
             
             if (filter == null || filter.acceptsRow(row)) {
                 data.add(row);
-                if (changeListener != null) {
-                	changeListener.rowAdded(new RowSetChangeEvent(this, row, rowNum));
-                }
-                for (RowSetChangeListener l : rowSetChangeListeners) {
-                	l.rowAdded(new RowSetChangeEvent(this, row, rowNum));
-                }
                 rowNum++;
             } else {
                 logger.debug("Skipped this row (rejected by filter)");
@@ -225,7 +250,6 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 			Collections.sort(newRowSet.data, c);
 		} else {
 			newRowSet.data = data;
-			newRowSet.rowSetChangeListeners = rowSetChangeListeners;
 		}
 
 		return newRowSet;
@@ -1661,12 +1685,4 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		throw new UnsupportedOperationException("Updates not supported!");
 	}
 
-	public void addRowSetChangeListener(
-			RowSetChangeListener rowSetChangeListener) {
-		rowSetChangeListeners.add(rowSetChangeListener);
-	}
-	
-	public void removeRowSetChangeListener(RowSetChangeListener l) {
-		rowSetChangeListeners.remove(l);
-	}
 }

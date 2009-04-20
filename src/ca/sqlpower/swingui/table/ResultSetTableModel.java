@@ -26,16 +26,12 @@ import java.sql.Types;
 import javax.swing.event.TableModelEvent;
 import javax.swing.table.AbstractTableModel;
 
-import ca.sqlpower.sql.CachedRowSet;
-import ca.sqlpower.sql.RowSetChangeEvent;
-import ca.sqlpower.sql.RowSetChangeListener;
-
 /**
  * This is a basic table model that takes in a result set to be displayed in a
  * table. This model can export a given set of rows to a CSV or HTML file. The
  * result set is not allowed to be modified in this table.
  */
-public class ResultSetTableModel extends AbstractTableModel implements CleanupTableModel {
+public class ResultSetTableModel extends AbstractTableModel {
 
 	/**
 	 * This result set holds the cell entries in the table. 
@@ -43,25 +39,11 @@ public class ResultSetTableModel extends AbstractTableModel implements CleanupTa
 	private final ResultSet rs;
 	
 	/**
-	 * This row set change listener listens for streaming cached row sets and
-	 * fires row added events if a row is added to the result set.
-	 */
-	private final RowSetChangeListener rowSetChangeListener = new RowSetChangeListener() {
-		public void rowAdded(RowSetChangeEvent e) {
-			fireTableChanged(new TableModelEvent(ResultSetTableModel.this, e.getRowNumber()));
-		}
-	};
-	
-	/**
 	 * The result set passed in here must be scrollable. If it is not
 	 * it should be wrapped in a CachedRowSet first.
 	 */
 	public ResultSetTableModel(ResultSet result) {
 		this.rs = result;
-		if (rs instanceof CachedRowSet) {
-			CachedRowSet crs = (CachedRowSet) rs;
-			crs.addRowSetChangeListener(rowSetChangeListener);
-		}
 	}
 	
 	public int getColumnCount() {
@@ -152,10 +134,12 @@ public class ResultSetTableModel extends AbstractTableModel implements CleanupTa
 		
 	}
 
-	public void cleanup() {
-		if (rs instanceof CachedRowSet) {
-			((CachedRowSet) rs).removeRowSetChangeListener(rowSetChangeListener);
-		}
+	/**
+	 * This method should be called when a row is added to the result set in
+	 * this table model.
+	 */
+	public void rowAdded(int rowNumber) {
+		fireTableChanged(new TableModelEvent(this, rowNumber));
 	}
 	
 }
