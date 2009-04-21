@@ -103,7 +103,8 @@ public class DataEntryPanelBuilder {
      *            returns false
      * @param cancelCall
      *            Call to be invoked when the cancel button is pressed; We will
-     *            dismiss the dialog if the call returns true
+     *            dismiss the dialog if the call returns true. You can specify
+     *            null for this parameter if no custom cancel behaviour is required.
      * @param oneShot
      *            When true, the OK and Cancel buttons will be permanently
      *            deactivated once one of them has been pressed. If false, the
@@ -254,9 +255,8 @@ public class DataEntryPanelBuilder {
 		d.setContentPane(cp);
 
 		d.pack();
-
-		// XXX maybe pass yet another argument for this?
-		d.setLocation(dialogParent.getX() + dialogParent.getWidth() / 2 - d.getWidth() / 2, dialogParent.getY() + dialogParent.getHeight() / 2 - d.getHeight() / 2);
+		d.setLocationRelativeTo(dialogParent);
+		
 		return d;
 	}
 
