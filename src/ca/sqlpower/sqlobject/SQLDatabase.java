@@ -549,6 +549,9 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			            newActiveCount);
 			    if (logger.isDebugEnabled()) {
 			        logger.debug("getConnection(): giving out active connection " + newActiveCount); //$NON-NLS-1$
+			        for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+			        	logger.debug(ste.toString());
+			        }
 			    }
 				return (Connection) getConnectionPool().borrowObject();
 			} catch (Exception e) {

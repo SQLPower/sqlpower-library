@@ -57,8 +57,10 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -107,6 +109,8 @@ import ca.sqlpower.sql.DatabaseListChangeListener;
 import ca.sqlpower.sql.RowSetChangeEvent;
 import ca.sqlpower.sql.RowSetChangeListener;
 import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sqlobject.SQLDatabase;
+import ca.sqlpower.sqlobject.SQLDatabaseMapping;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.swingui.MonitorableWorker;
 import ca.sqlpower.swingui.SPSUtils;
@@ -172,8 +176,9 @@ public class SQLQueryUIComponents {
                 return;
             }
             SPDataSource ds = (SPDataSource)e.getItem();
+            SQLDatabase db = databaseMapping.getDatabase(ds);
             try {
-				addConnection(ds);
+				addConnection(db);
 			} catch (SQLObjectException e1) {
 				logTextArea.append(createErrorStringMessage(e1));
 			}
@@ -307,7 +312,7 @@ public class SQLQueryUIComponents {
         
         private List<CachedRowSet> resultSets = new ArrayList<CachedRowSet>();
         private List<Integer> rowsAffected = new ArrayList<Integer>(); 
-		private final SPDataSource ds;
+		private final SQLDatabase db;
 		private boolean hasStarted;
 		private boolean isFinished;
 		private long startExecutionTime;
@@ -327,7 +332,7 @@ public class SQLQueryUIComponents {
         		firstResultPanel.revalidate();
         	} 
         	
-        	ds = (SPDataSource)databaseComboBox.getSelectedItem();
+        	db = databaseMapping.getDatabase((SPDataSource) databaseComboBox.getSelectedItem());
         	
         	try {
                 rowLimitSpinner.commitEdit();
@@ -378,14 +383,14 @@ public class SQLQueryUIComponents {
         	startExecutionTime = System.currentTimeMillis();
         	hasStarted = true;
             logger.debug("Starting execute action of \"" + stmtExecutor.getStatement() + "\".");
-            if (ds == null) {
+            if (db == null) {
                 return;
             }
             if (stmtExecutor.getStatement().trim().length() == 0) {
             	return;
             }
-            if (conMap.get(ds) == null || conMap.get(ds).getConnection() == null || conMap.get(ds).getConnection().isClosed()) {
-            	addConnection(ds);
+            if (conMap.get(db) == null || conMap.get(db).getConnection() == null || conMap.get(db).getConnection().isClosed()) {
+            	addConnection(db);
             }
             
             logger.debug("Executing statement " + stmtExecutor.getStatement());
@@ -423,7 +428,7 @@ public class SQLQueryUIComponents {
 		}
 
 		public String getMessage() {
-			return Messages.getString("SQLQuery.workerMessage", ds.getName());
+			return Messages.getString("SQLQuery.workerMessage", db.getName());
 		}
 
 		public int getProgress() {
@@ -443,7 +448,7 @@ public class SQLQueryUIComponents {
     
     private class DefaultStatementExecutor implements StatementExecutor {
     	
-    	private final SPDataSource ds;
+    	private final SQLDatabase db;
 		private final String sqlString;
 		private final int rowLimit;
 		private final List<ResultSet> resultSets = new ArrayList<ResultSet>();
@@ -457,10 +462,10 @@ public class SQLQueryUIComponents {
 		 */
 		private final List<RowSetChangeListener> rowSetChangeListeners = new ArrayList<RowSetChangeListener>();
 
-		public DefaultStatementExecutor(SPDataSource ds, String sqlString, int rowLimit) {
+		public DefaultStatementExecutor(SQLDatabase db, String sqlString, int rowLimit) {
 			this.rowLimit = rowLimit;
 			this.sqlString = sqlString;
-			this.ds = ds;
+			this.db = db;
 			resultPosition = 0;
 		}
 
@@ -469,9 +474,9 @@ public class SQLQueryUIComponents {
 			Connection con = null;
             Statement stmt = null;
             try {
-            	con = conMap.get(ds).getConnection();
+            	con = conMap.get(db).getConnection();
                 stmt = con.createStatement();
-                conMap.get(ds).setCurrentStmt(stmt);
+                conMap.get(db).setCurrentStmt(stmt);
                 
                 stmt.setMaxRows(rowLimit);
                 boolean initialResult = stmt.execute(sqlString);
@@ -497,7 +502,7 @@ public class SQLQueryUIComponents {
                     } catch (SQLException ex) {
                         ex.printStackTrace();
                     }
-                    conMap.get(ds).setCurrentStmt(null);
+                    conMap.get(db).setCurrentStmt(null);
                 }
             }
 		}
@@ -578,7 +583,7 @@ public class SQLQueryUIComponents {
      * committing or rolling back. Additionally, it will allow switching of data
      * sources while keeping the commit or rollback execution sequence preserved.
      */
-    private Map<SPDataSource, ConnectionAndStatementBean> conMap;
+    private Map<SQLDatabase, ConnectionAndStatementBean> conMap;
     
     /**
      * The text area users can enter SQL queries to get data from the database.
@@ -722,7 +727,9 @@ public class SQLQueryUIComponents {
      */
 	public boolean closeConMap() {
 		boolean commitedOrRollBacked = true;
-		for (Map.Entry<SPDataSource, ConnectionAndStatementBean> entry : conMap.entrySet()) {
+		final Iterator<Entry<SQLDatabase, ConnectionAndStatementBean>> iterator = conMap.entrySet().iterator();
+		for (;iterator.hasNext();) {
+			final Entry<SQLDatabase, ConnectionAndStatementBean> entry = iterator.next();
             try {	
                 Connection con = entry.getValue().getConnection();
                 if (!con.getAutoCommit() && entry.getValue().isConnectionUncommitted()) {
@@ -733,15 +740,15 @@ public class SQLQueryUIComponents {
                     if (result == JOptionPane.OK_OPTION) {
                         con.commit();
                         commitedOrRollBacked = true;
-                        con.close();
                     } else if (result == JOptionPane.NO_OPTION) {
                         con.rollback();
                         commitedOrRollBacked = true;
-                        con.close();
                     }else if(result == JOptionPane.CANCEL_OPTION) {
-                    	//Do nothing
+                    	return false;
                     }
                 }
+                con.close();
+                iterator.remove();
                 
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -974,6 +981,14 @@ public class SQLQueryUIComponents {
 	 * being displayed as results of the statement execution.
 	 */
 	private final List<StreamingRowSetListener> rowSetListeners = new ArrayList<StreamingRowSetListener>();
+	
+	/**
+	 * This database mapping maps available {@link SQLDatabase} objects to 
+	 * corresponding {@link SPDataSource} objects. This helps prevent extra
+	 * connections from being created as the {@link SQLDatabase} does
+	 * the connection pooling.
+	 */
+	private final SQLDatabaseMapping databaseMapping;
 
 	/**
 	 * Creates all of the components of a query tool, but does not lay them out
@@ -999,8 +1014,8 @@ public class SQLQueryUIComponents {
 	 *            instead of a default statement executor. This will be used to
 	 *            run queries entered in the text editor.
 	 */
-	public SQLQueryUIComponents(SwingWorkerRegistry s, DataSourceCollection ds, JComponent dialogOwner, StatementExecutor stmtExecutor) {
-		this(s, ds, dialogOwner);
+	public SQLQueryUIComponents(SwingWorkerRegistry s, DataSourceCollection ds, SQLDatabaseMapping mapping, JComponent dialogOwner, StatementExecutor stmtExecutor) {
+		this(s, ds, mapping, dialogOwner);
 		this.stmtExecutor = stmtExecutor;
 	}
 	
@@ -1024,12 +1039,13 @@ public class SQLQueryUIComponents {
 	 *            The component whose nearest Window ancestor will own any
 	 *            dialogs generated by the parts of the query tool.
 	 */
-    public SQLQueryUIComponents(SwingWorkerRegistry s, DataSourceCollection ds, JComponent dialogOwner) {
+    public SQLQueryUIComponents(SwingWorkerRegistry s, DataSourceCollection dsCollection, SQLDatabaseMapping mapping, JComponent dialogOwner) {
         super();
+        databaseMapping = mapping;
         previousQueries = new ArrayList<String>();
         this.dialogOwner = dialogOwner;
         this.swRegistry = s;
-        this.dsCollection = ds;
+        this.dsCollection = dsCollection;
         this.errorTextArea.setEditable(false);
 		dsCollection.addDatabaseListChangeListener(dbListChangeListener);
         resultTabPane = new JTabbedPane();
@@ -1042,7 +1058,7 @@ public class SQLQueryUIComponents {
         resultJTables = new ArrayList<JTable>();
         tableToSQLMap = new HashMap<JTable, String>();
         tableListeners = new ArrayList<TableChangeListener>();
-        dbConnectionManager = new DatabaseConnectionManager(ds);
+        dbConnectionManager = new DatabaseConnectionManager(dsCollection);
         
         executeAction = new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.execute")) {
 
@@ -1142,7 +1158,7 @@ public class SQLQueryUIComponents {
         queryArea.getActionMap().put(REDO_SQL_EDIT, redoSQLStatementAction);
         queryArea.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() + InputEvent.SHIFT_MASK), REDO_SQL_EDIT);
         
-        conMap = new HashMap<SPDataSource, ConnectionAndStatementBean>();
+        conMap = new HashMap<SQLDatabase, ConnectionAndStatementBean>();
         
         databaseComboBox = new JComboBox(dsCollection.getConnections().toArray());
         databaseComboBox.setSelectedItem(null);
@@ -1170,7 +1186,7 @@ public class SQLQueryUIComponents {
                                 sqlExecuteWorker = null;
                             }
                         } catch (SQLException e) {
-                            SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.stopException", ((SPDataSource)databaseComboBox.getSelectedItem()).getName()), e);
+                            SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.stopException", ((SQLDatabase) databaseComboBox.getSelectedItem()).getName()), e);
                         }
                     }
                 }
@@ -1235,7 +1251,7 @@ public class SQLQueryUIComponents {
      */
     public synchronized void executeQuery(String sql) {
     	if (stmtExecutor == null) {
-    		executeQuery(new DefaultStatementExecutor((SPDataSource) databaseComboBox.getSelectedItem(), sql, ((Integer) rowLimitSpinner.getValue()).intValue()));
+    		executeQuery(new DefaultStatementExecutor(databaseMapping.getDatabase((SPDataSource) databaseComboBox.getSelectedItem()), sql, ((Integer) rowLimitSpinner.getValue()).intValue()));
     	} else {
     		executeQuery(stmtExecutor);
     	}
@@ -1280,7 +1296,7 @@ public class SQLQueryUIComponents {
     			}
     		}
     	} catch (SQLException e1) {
-    		SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedRetrievingConnection", ((SPDataSource)databaseComboBox.getSelectedItem()).getName()), e1);
+    		SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedRetrievingConnection", ((SQLDatabase) databaseComboBox.getSelectedItem()).getName()), e1);
     	}
     	
     	prevQueryPosition = previousQueries.size();
@@ -1306,8 +1322,8 @@ public class SQLQueryUIComponents {
 	 *            The collection of data sources that will be available for
 	 *            querying from the UI. This argument must not be null.
 	 */
-    public static JComponent createQueryPanel(SwingWorkerRegistry swRegistry, DataSourceCollection ds, Window owner) {
-    	return createQueryPanel(swRegistry, ds, owner, null, null);
+    public static JComponent createQueryPanel(SwingWorkerRegistry swRegistry, DataSourceCollection ds, SQLDatabaseMapping mapping, Window owner) {
+    	return createQueryPanel(swRegistry, ds, mapping, owner, null, null);
     }
 
 	/**
@@ -1333,10 +1349,10 @@ public class SQLQueryUIComponents {
 	 *            The string that will be executed immediately when the query
 	 *            tool is shown. If this is null then no query will be executed.
 	 */
-    public static JComponent createQueryPanel(SwingWorkerRegistry swRegistry, DataSourceCollection dsCollection, Window owner, SPDataSource ds, String initialSQL) {
+    public static JComponent createQueryPanel(SwingWorkerRegistry swRegistry, DataSourceCollection dsCollection, SQLDatabaseMapping mapping, Window owner, SQLDatabase db, String initialSQL) {
         
         JPanel defaultQueryPanel = new JPanel();
-        SQLQueryUIComponents queryParts = new SQLQueryUIComponents(swRegistry, dsCollection, defaultQueryPanel);
+        SQLQueryUIComponents queryParts = new SQLQueryUIComponents(swRegistry, dsCollection, mapping, defaultQueryPanel);
         queryParts.addWindowListener(owner);
         JToolBar toolbar = new JToolBar();
         toolbar.setFloatable(false);
@@ -1378,8 +1394,8 @@ public class SQLQueryUIComponents {
    
         queryPane.add(queryParts.getResultTabPane(), JSplitPane.BOTTOM);
         
-        if (ds != null && initialSQL != null && dsCollection.getConnections().contains(ds)) {
-        	queryParts.getDatabaseComboBox().setSelectedItem(ds);
+        if (db != null && initialSQL != null && dsCollection.getConnections().contains(db.getDataSource())) {
+        	queryParts.getDatabaseComboBox().setSelectedItem(db.getDataSource());
         	queryParts.getQueryArea().setText(initialSQL);
         	queryParts.executeQuery(initialSQL);
         }
@@ -1499,23 +1515,19 @@ public class SQLQueryUIComponents {
      * 
      * <p>This is package private for testing.
      */
-	void addConnection(SPDataSource ds) throws SQLObjectException {
-		if (!conMap.containsKey(ds)) {
-            try {
-                Connection con = ds.createConnection();
-                conMap.put(ds, new ConnectionAndStatementBean(con));
-            } catch (SQLException e1) {
-                throw new SQLObjectException(Messages.getString("SQLQuery.failedConnectingToDBWithName", ds.getName()), e1);
-            }
+	void addConnection(SQLDatabase db) throws SQLObjectException {
+		if (!conMap.containsKey(db)) {
+			Connection con = db.getConnection();
+			conMap.put(db, new ConnectionAndStatementBean(con));
         }
         try {
-            autoCommitToggleButton.setSelected(conMap.get(ds).getConnection().getAutoCommit());
+            autoCommitToggleButton.setSelected(conMap.get(db).getConnection().getAutoCommit());
         } catch (SQLException ex) {
             SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedConnectingToDB"), ex);
         }
-        stopButton.setEnabled(conMap.get(ds).getCurrentStmt() != null);
-        executeButton.setEnabled(conMap.get(ds).getCurrentStmt() == null);
-        logTextArea.append("\n" + SPDataSource.getConnectionInfoString(ds, false) + "\n\n");
+        stopButton.setEnabled(conMap.get(db).getCurrentStmt() != null);
+        executeButton.setEnabled(conMap.get(db).getCurrentStmt() == null);
+        logTextArea.append("\n" + SPDataSource.getConnectionInfoString(db.getDataSource(), false) + "\n\n");
 	}
     
     public void addWindowListener(Window container){
@@ -1628,8 +1640,8 @@ public class SQLQueryUIComponents {
      * 
      * <p> This is used for testing.
      */
-    void setCurrentDataSource(SPDataSource ds) {
-    	databaseComboBox.getModel().setSelectedItem(ds);
+    void setCurrentDataSource(SQLDatabase db) {
+    	databaseComboBox.getModel().setSelectedItem(db);
     }
     
     /**
