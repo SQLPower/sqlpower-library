@@ -259,6 +259,16 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
      * A counter for {@link #setParent()} to decide when to detach listeners.
      */
     private int parentCount;
+    
+    /**
+     * This is the text for parent label of relationship.
+     */
+    private String textForParentLabel = "";
+    
+    /**
+     * This is the text for child label of relationship.
+     */
+    private String textForChildLabel = "";
 
 	public SQLRelationship() {
 		children = new LinkedList();
@@ -293,7 +303,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
         setDeleteRule(relationshipToCopy.getDeleteRule());
         setDeferrability(relationshipToCopy.getDeferrability());
         setChildrenInaccessibleReason(relationshipToCopy.getChildrenInaccessibleReason());
-        
+        setTextForChildLabel(relationshipToCopy.getTextForChildLabel());
+        setTextForParentLabel(relationshipToCopy.getTextForParentLabel());
         // TODO column mappings
 	}
 	
@@ -1425,4 +1436,24 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
     	return result;
     }
+
+	public void setTextForParentLabel(String textForParentLabel) {
+		String oldVal = this.textForParentLabel;
+		this.textForParentLabel = textForParentLabel;
+		fireDbObjectChanged("textForParentLabel", oldVal, textForParentLabel);
+	}
+
+	public String getTextForParentLabel() {
+		return textForParentLabel;
+	}
+
+	public void setTextForChildLabel(String textForChildLabel) {
+		String oldVal = this.textForChildLabel;
+		this.textForChildLabel = textForChildLabel;
+		fireDbObjectChanged("textForChildLabel", oldVal, textForChildLabel);
+	}
+
+	public String getTextForChildLabel() {
+		return textForChildLabel;
+	}
 }
