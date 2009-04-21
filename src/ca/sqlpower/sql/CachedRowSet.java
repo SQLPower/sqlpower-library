@@ -57,7 +57,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * row's first column; data.get(0)[1] would be the first row's second
 	 * column, and so on.
 	 */
-	protected List data;
+	protected List<Object[]> data;
 
 	/**
 	 * The current row.  This gets updated by next().

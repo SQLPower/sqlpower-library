@@ -77,6 +77,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	 * either, we cache the entire key list for a schema and then query the cache
 	 * in subsequent queries.
 	 */
+    @SuppressWarnings("unchecked")
     private static final Map<CacheKey, CachedRowSet> importedAndExportedKeysCache =
         Collections.synchronizedMap(new ReferenceMap(AbstractReferenceMap.HARD, AbstractReferenceMap.SOFT));
     
@@ -85,6 +86,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	 * entire column list for a schema and then query the cache in subsequent
 	 * queries.
 	 */
+    @SuppressWarnings("unchecked")
     private static final Map<CacheKey, IndexedCachedRowSet> columnsCache =
         Collections.synchronizedMap(new ReferenceMap(AbstractReferenceMap.HARD, AbstractReferenceMap.SOFT));
     

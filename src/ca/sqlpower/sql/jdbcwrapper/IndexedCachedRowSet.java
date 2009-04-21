@@ -86,7 +86,7 @@ class IndexedCachedRowSet extends CachedRowSet {
         absolute(row - 1);
         IndexedCachedRowSet extracted = new IndexedCachedRowSet();
         extracted.rsmd = rsmd;
-        extracted.data = new ArrayList();
+        extracted.data = new ArrayList<Object[]>();
         while (next() && tableName.equals(getString(tableNameColumn))) {
             extracted.data.add(curRow);
         }
