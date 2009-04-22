@@ -1310,25 +1310,31 @@ public class SQLTable extends SQLObject {
             
             startCompoundEdit("Table Name Change");
             super.setPhysicalName(argName);
-            SQLIndex primaryKeyIndex = getPrimaryKeyIndex();
-            if (argName != null &&
-                primaryKeyIndex != null && 
-               (getPrimaryKeyName() == null
-                    || "".equals(getPrimaryKeyName().trim())
-                    || (oldName + "_pk").equals(getPrimaryKeyName())) ) {
-            	// if the physical name is still null when forward engineer,
-            	// the DDLGenerator will generate the physical name from the 
-            	// logic name and this index will be updated.
-            	primaryKeyIndex.setName(getPhysicalName()+"_pk");
-            	
-            }
             
-            for (SQLColumn col : getColumns()) {
-                if (col.isAutoIncrementSequenceNameSet()) {
-                    String newName = col.getAutoIncrementSequenceName().replace(oldName, argName);
-                    col.setAutoIncrementSequenceName(newName);
+            if (isIndicesPopulated()) {
+                SQLIndex primaryKeyIndex = getPrimaryKeyIndex();
+                if (argName != null &&
+                        primaryKeyIndex != null && 
+                        (getPrimaryKeyName() == null
+                                || "".equals(getPrimaryKeyName().trim())
+                                || (oldName + "_pk").equals(getPrimaryKeyName())) ) {
+                    // if the physical name is still null when forward engineer,
+                    // the DDLGenerator will generate the physical name from the 
+                    // logic name and this index will be updated.
+                    primaryKeyIndex.setName(getPhysicalName()+"_pk");
+
                 }
             }
+            
+            if (isColumnsPopulated()) {
+                for (SQLColumn col : getColumns()) {
+                    if (col.isAutoIncrementSequenceNameSet()) {
+                        String newName = col.getAutoIncrementSequenceName().replace(oldName, argName);
+                        col.setAutoIncrementSequenceName(newName);
+                    }
+                }
+            }
+            
         } catch (SQLObjectException e) {
             throw new SQLObjectRuntimeException(e);
         } finally {
