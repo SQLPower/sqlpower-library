@@ -18,53 +18,24 @@
  */
 package ca.sqlpower.sqlobject;
 
-import java.io.PrintStream;
-import java.io.PrintWriter;
-
 /**
  * A general exception class for the SQL Objects.
  */
 public class SQLObjectException extends Exception implements java.io.Serializable {
-	protected Throwable cause;
 
 	public SQLObjectException(String message) {
 		this(message, null);
 	}
 
 	public SQLObjectException(String message, Throwable cause) {
-		super(message);
-		this.cause = cause;
+		super(message, cause);
 	}
 
-	public Throwable getCause() {
-		return cause;
-	}
-
-	public String toString() {
-		if (cause != null) {
-			return super.toString()+" (cause: "+cause.toString()+")";
-		} else {
-			return super.toString();
-		}
+	public SQLObjectException(Throwable cause) {
+		super(cause);
 	}
 
 	public void printStackTrace() {
 		printStackTrace(System.out);
-	}
-
-	public void printStackTrace(PrintWriter out) {
-		super.printStackTrace(out);
-		if (cause != null) {
-			out.println("Root Cause:");
-			cause.printStackTrace(out);
-		}
-	}
-
-	public void printStackTrace(PrintStream out) {
-		super.printStackTrace(out);
-		if (cause != null) {
-			out.println("Root Cause:");
-			cause.printStackTrace(out);
-		}
 	}
 }
