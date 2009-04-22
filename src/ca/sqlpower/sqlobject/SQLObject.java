@@ -221,6 +221,12 @@ public abstract class SQLObject implements java.io.Serializable {
      */
 	public final void populate() throws SQLObjectException {
 	    if (populated) return;
+	    
+        // We're going to just leave caching on all the time and see how it pans out
+        DatabaseMetaDataDecorator.putHint(
+                DatabaseMetaDataDecorator.CACHE_TYPE,
+                DatabaseMetaDataDecorator.CacheType.EAGER_CACHE);
+
 	    childrenInaccessibleReason = null;
 	    try {
 	        populateImpl();

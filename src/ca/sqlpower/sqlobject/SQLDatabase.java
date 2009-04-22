@@ -635,6 +635,13 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
             return;
         }
 
+        DatabaseMetaDataDecorator.putHint(DatabaseMetaDataDecorator.CACHE_STALE_DATE, new Date());
+
+        // We're going to just leave caching on all the time and see how it pans out
+        DatabaseMetaDataDecorator.putHint(
+                DatabaseMetaDataDecorator.CACHE_TYPE,
+                DatabaseMetaDataDecorator.CacheType.EAGER_CACHE);
+
         Connection con = null;
         try {
             startCompoundEdit(Messages.getString("SQLDatabase.refreshDatabase", getName())); //$NON-NLS-1$
@@ -653,8 +660,6 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
                 List<SQLSchema> newSchemas = SQLSchema.fetchSchemas(dbmd, null);
                 SQLObjectUtils.refreshChildren(this, newSchemas);
             }
-            
-            DatabaseMetaDataDecorator.putHint(DatabaseMetaDataDecorator.CACHE_STALE_DATE, new Date());
             
             // close connection before invoking the super refresh,
             // which will probably want to open another one
