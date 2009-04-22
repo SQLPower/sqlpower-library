@@ -557,8 +557,8 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			} catch (Exception e) {
 			    SQLObjectException ex = new SQLObjectException(
 			            "Couldn't connect to database: "+e.getMessage(), e); //$NON-NLS-1$
-			    setChildrenInaccessibleReason(ex);
-			    throw ex;
+			    setChildrenInaccessibleReason(ex, true);
+			    throw new AssertionError("Unreachable code");
 			}
 		}
 	}

@@ -191,7 +191,7 @@ public class SQLTable extends SQLObject {
 		SQLTable t = new SQLTable(parent, true);
 		t.setName(getName());
 		t.remarks = remarks;
-		t.setChildrenInaccessibleReason(getChildrenInaccessibleReason());
+		t.setChildrenInaccessibleReason(getChildrenInaccessibleReason(), false);
 
 		t.setPhysicalName(getPhysicalName());
 		t.physicalPrimaryKeyName = getPhysicalPrimaryKeyName();

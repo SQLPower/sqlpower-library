@@ -251,7 +251,12 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
             }
         };
         
-        o.populate();
+        try {
+        	o.populate();
+        	fail("Failing on populate should throw an exception as well as store it in the children inaccessible reason.");
+        } catch (SQLObjectException ex) {
+        	assertEquals(e, ex.getCause());
+        }
         
         assertEquals(e, o.getChildrenInaccessibleReason());
             

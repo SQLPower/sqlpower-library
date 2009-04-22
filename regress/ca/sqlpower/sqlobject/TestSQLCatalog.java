@@ -138,15 +138,6 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 		assertTrue(c.isPopulated());
 		c.setPopulated(false);
 		assertFalse(c.isPopulated());
-		
-		c.setPopulated(true);
-		c.populate();
-		c.setPopulated(false);
-		try {
-			c.populate();
-		} catch ( NullPointerException e ) {
-			// it's ok
-		}
 	}
 	
 	public void testIsPopulateWithCatalogs() throws Exception {		

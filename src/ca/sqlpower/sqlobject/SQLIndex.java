@@ -818,7 +818,7 @@ public class SQLIndex extends SQLObject {
         index.setPrimaryKeyIndex(source.isPrimaryKeyIndex());
         index.setPhysicalName(source.getPhysicalName());
         index.setClustered(source.isClustered());
-        index.setChildrenInaccessibleReason(source.getChildrenInaccessibleReason());
+        index.setChildrenInaccessibleReason(source.getChildrenInaccessibleReason(), false);
 
         for (Column column : source.getChildren()) {
             Column newColumn;

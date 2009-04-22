@@ -302,7 +302,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
         setUpdateRule(relationshipToCopy.getUpdateRule());
         setDeleteRule(relationshipToCopy.getDeleteRule());
         setDeferrability(relationshipToCopy.getDeferrability());
-        setChildrenInaccessibleReason(relationshipToCopy.getChildrenInaccessibleReason());
+        setChildrenInaccessibleReason(relationshipToCopy.getChildrenInaccessibleReason(), false);
         setTextForChildLabel(relationshipToCopy.getTextForChildLabel());
         setTextForParentLabel(relationshipToCopy.getTextForParentLabel());
         // TODO column mappings

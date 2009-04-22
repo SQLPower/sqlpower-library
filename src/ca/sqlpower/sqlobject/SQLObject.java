@@ -224,9 +224,9 @@ public abstract class SQLObject implements java.io.Serializable {
 	    try {
 	        populateImpl();
 	    } catch (SQLObjectException e) {
-	        setChildrenInaccessibleReason(e);
+	        setChildrenInaccessibleReason(e, true);
 	    } catch (RuntimeException e) {
-	        setChildrenInaccessibleReason(e);
+	        setChildrenInaccessibleReason(e, true);
 	    }
 	}
 
@@ -766,16 +766,27 @@ public abstract class SQLObject implements java.io.Serializable {
     public Throwable getChildrenInaccessibleReason() {
         return childrenInaccessibleReason;
     }
-    
-    /**
-     * This setter will take in either a Throwable to set the inaccessible reason
-     * to, for things like copy methods, or a string of the exception message, for
-     * things like loading the exception.
-     */
-    public void setChildrenInaccessibleReason(Throwable message) {
+
+	/**
+	 * This setter will take in either a Throwable to set the inaccessible
+	 * reason to, for things like copy methods, or a string of the exception
+	 * message, for things like loading the exception.
+	 * 
+	 * @param cause
+	 *            The throwable that made the children of this object
+	 *            inaccessible
+	 * @param rethrow
+	 *            Decides if the cause should be rethrown wrapped in a
+	 *            SQLObjectException. Set this to true to have the exception be
+	 *            rethrown.
+	 */
+    public void setChildrenInaccessibleReason(Throwable cause, boolean rethrow) throws SQLObjectException {
         Throwable oldVal = this.childrenInaccessibleReason;
-        this.childrenInaccessibleReason = message;
+        this.childrenInaccessibleReason = cause;
         fireDbObjectChanged("childrenInaccessibleReason", oldVal, childrenInaccessibleReason);
+        if (rethrow) {
+        	throw new SQLObjectException(cause);
+        }
     }
 
     /**
