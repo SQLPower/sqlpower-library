@@ -147,7 +147,7 @@ public class SQLCatalog extends SQLObject {
 		return true;
 	}
 
-	public void populateImpl() throws SQLObjectException {
+	protected void populateImpl() throws SQLObjectException {
 		if (populated) return;
 
 		logger.debug("SQLCatalog: populate starting");

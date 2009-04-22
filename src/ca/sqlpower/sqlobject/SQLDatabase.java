@@ -26,6 +26,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -39,6 +40,7 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.sql.SPDSConnectionFactory;
 import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
 
 public class SQLDatabase extends SQLObject implements java.io.Serializable, PropertyChangeListener {
 	private static Logger logger = Logger.getLogger(SQLDatabase.class);
@@ -101,7 +103,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		return connectionPool != null;
 	}
 
-	public synchronized void populateImpl() throws SQLObjectException {
+	protected synchronized void populateImpl() throws SQLObjectException {
 	    logger.debug("SQLDatabase: is populated " + populated); //$NON-NLS-1$
 		if (populated) return;
 		int oldSize = children.size();
@@ -652,8 +654,8 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
                 SQLObjectUtils.refreshChildren(this, newSchemas);
             }
             
-            // TODO hint a DatabaseMetadata cache flush for our wrappers
-
+            DatabaseMetaDataDecorator.putHint(DatabaseMetaDataDecorator.CACHE_STALE_DATE, new Date());
+            
             // close connection before invoking the super refresh,
             // which will probably want to open another one
             con.close();

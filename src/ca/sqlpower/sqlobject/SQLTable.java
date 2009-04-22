@@ -941,7 +941,7 @@ public class SQLTable extends SQLObject {
      * step.  The various populate operations (columns, keys, indices) are triggered
      * by visiting the individual folders.
 	 */
-	public void populateImpl() throws SQLObjectException {
+	protected void populateImpl() throws SQLObjectException {
 		// SQLTable: populate is a no-op
 	}
 
@@ -1014,7 +1014,7 @@ public class SQLTable extends SQLObject {
 			parent = (SQLTable) newParentTable;
 		}
 
-		public void populateImpl() throws SQLObjectException {
+		protected void populateImpl() throws SQLObjectException {
 		    if (logger.isDebugEnabled()) {
 		        List<SQLObject> hierarchy = new ArrayList<SQLObject>();
 		        SQLObject parent = this;

@@ -50,7 +50,7 @@ public class SQLObjectRoot extends SQLObject {
 		return true;
 	}
 	
-	public void populateImpl() throws SQLObjectException {
+	protected void populateImpl() throws SQLObjectException {
 		return;
 	}
 	

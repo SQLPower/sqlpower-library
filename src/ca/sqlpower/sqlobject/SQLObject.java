@@ -33,6 +33,7 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
 import ca.sqlpower.sqlobject.SQLRelationship.RelationshipManager;
 import ca.sqlpower.sqlobject.undo.CompoundEvent;
 import ca.sqlpower.sqlobject.undo.CompoundEventListener;
@@ -218,7 +219,7 @@ public abstract class SQLObject implements java.io.Serializable {
      * Causes this SQLObject to load its children through populateImpl (if any exist).
      * This will do nothing if the object is already populated.
      */
-	public void populate() throws SQLObjectException {
+	public final void populate() throws SQLObjectException {
 	    if (populated) return;
 	    childrenInaccessibleReason = null;
 	    try {
@@ -237,8 +238,6 @@ public abstract class SQLObject implements java.io.Serializable {
 	 * possible.
 	 */
 	protected abstract void populateImpl() throws SQLObjectException;
-
-	
 
 	/**
 	 * Returns a short string that should be displayed to the user for

@@ -166,7 +166,7 @@ public class SQLSchema extends SQLObject {
 	 * 
 	 * @throws NullPointerException if this schema has no parent database.
 	 */
-	public void populateImpl() throws SQLObjectException {
+	protected void populateImpl() throws SQLObjectException {
 		if (populated) return;
 		
 		logger.debug("SQLSchema: populate starting");

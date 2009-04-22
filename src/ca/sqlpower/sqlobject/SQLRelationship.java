@@ -1028,7 +1028,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	/**
 	 * This class is not a lazy-loading class.  This call does nothing.
 	 */
-	public void populateImpl() {
+	protected void populateImpl() {
 		// nothing to do.
 	}
 
@@ -1280,7 +1280,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		/**
 		 * This class is not a lazy-loading class.  This call does nothing.
 		 */
-		public void populateImpl() throws SQLObjectException {
+		protected void populateImpl() throws SQLObjectException {
 			return;
 		}
 
