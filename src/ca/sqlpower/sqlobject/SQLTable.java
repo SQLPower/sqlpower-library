@@ -1486,11 +1486,16 @@ public class SQLTable extends SQLObject {
         return indicesFolder.isPopulated();
     }
 
-	/**
-	 * Gets the name of this table's Primary Key index if it has one, otherwise
+    /**
+     * Gets the name of this table's Primary Key index if it has one, otherwise
      * returns null.
-	 * @throws SQLObjectException 
-	 */
+     * 
+     * @throws SQLObjectException
+     * @deprecated this method is left over from an incomplete refactoring, and
+     *             it will be removed in a future release. Use
+     *             {@link #getPrimaryKeyIndex()}.getName() instead.
+     */
+    @Deprecated
 	public String getPrimaryKeyName() throws SQLObjectException  {
         SQLIndex primaryKeyIndex = getPrimaryKeyIndex();
 		return primaryKeyIndex == null ? null : primaryKeyIndex.getName();
