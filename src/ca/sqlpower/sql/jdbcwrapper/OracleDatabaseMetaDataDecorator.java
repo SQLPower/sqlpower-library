@@ -22,13 +22,10 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.apache.commons.collections.map.AbstractReferenceMap;
-import org.apache.commons.collections.map.ReferenceMap;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.sql.CachedRowSet;
@@ -76,19 +73,23 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	 * A cache of the imported and exported key metadata. When querying for
 	 * either, we cache the entire key list for a schema and then query the cache
 	 * in subsequent queries.
+     * <p>
+     * This field should be accessed via {@link #getCachedResult(MetaDataCache, CacheKey)}
+     * and {@link #putCachedResult(MetaDataCache, CacheKey, Object)}.
 	 */
-    @SuppressWarnings("unchecked")
-    private static final Map<CacheKey, CachedRowSet> importedAndExportedKeysCache =
-        Collections.synchronizedMap(new ReferenceMap(AbstractReferenceMap.HARD, AbstractReferenceMap.SOFT));
+    private static final MetaDataCache<CacheKey, CachedRowSet> importedAndExportedKeysCache =
+        new MetaDataCache<CacheKey, CachedRowSet>();
     
     /**
 	 * A cache of column metadata. When queried the first time, we cache the
 	 * entire column list for a schema and then query the cache in subsequent
 	 * queries.
+	 * <p>
+	 * This field should be accessed via {@link #getCachedResult(MetaDataCache, CacheKey)}
+	 * and {@link #putCachedResult(MetaDataCache, CacheKey, Object)}.
 	 */
-    @SuppressWarnings("unchecked")
-    private static final Map<CacheKey, IndexedCachedRowSet> columnsCache =
-        Collections.synchronizedMap(new ReferenceMap(AbstractReferenceMap.HARD, AbstractReferenceMap.SOFT));
+    private static final MetaDataCache<CacheKey, IndexedCachedRowSet> columnsCache =
+        new MetaDataCache<CacheKey, IndexedCachedRowSet>();
     
     @Override
 	public ResultSet getTypeInfo() throws SQLException {
@@ -305,7 +306,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		try {
 			stmt = getConnection().createStatement();
 	        StringBuilder sql = new StringBuilder();
-	        CachedRowSet cachedResult = importedAndExportedKeysCache.get(cacheKey);
+	        CachedRowSet cachedResult = getCachedResult(importedAndExportedKeysCache, cacheKey);
 
 	        if (cachedResult == null) {
 		        /*
@@ -359,7 +360,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		        if (cacheType.get() == null || cacheType.get().equals(CacheType.NO_CACHE)) {
 		        	return result;
 		        } else {
-		        	importedAndExportedKeysCache.put(cacheKey, result);
+		        	putCachedResult(importedAndExportedKeysCache, cacheKey, result);
 		        	cachedResult = result;
 		        }
 	        }
@@ -412,7 +413,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		try {
 			stmt = getConnection().createStatement();
 	        StringBuilder sql = new StringBuilder();
-	        CachedRowSet cachedResult = importedAndExportedKeysCache.get(cacheKey);
+	        CachedRowSet cachedResult = getCachedResult(importedAndExportedKeysCache, cacheKey);
 
 	        if (cachedResult == null) {
 		        /*
@@ -466,7 +467,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		        if (cacheType.get() == null || cacheType.get().equals(CacheType.NO_CACHE)) {
 		        	return result;
 		        } else {
-		        	importedAndExportedKeysCache.put(cacheKey, result);
+		        	putCachedResult(importedAndExportedKeysCache, cacheKey, result);
 		        	cachedResult = result;
 		        }
 	        }
@@ -527,7 +528,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		Statement stmt = null;
 		ResultSet rs = null;
 		try {
-		    IndexedCachedRowSet cachedResult = columnsCache.get(cacheKey);
+		    IndexedCachedRowSet cachedResult = getCachedResult(columnsCache, cacheKey);
 			if (cachedResult == null) {
 			    logger.debug("No cached data found. Querying data dictionary...");
 				stmt = getConnection().createStatement();
@@ -586,7 +587,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		        	return result;
 		        } else {
 		            IndexedCachedRowSet result = new IndexedCachedRowSet(rs, 3);
-		        	columnsCache.put(cacheKey, result);
+		        	putCachedResult(columnsCache, cacheKey, result);
 		        	cachedResult = result;
 		        }
 			}

@@ -27,6 +27,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 
 /**
  * The DatabaseMetaDataDecorator delegates all operations to a protected DatabaseMetaData instance.
@@ -57,19 +58,96 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
 	 */
     public static enum CacheType { NO_CACHE, EAGER_CACHE };
 
-	/**
-	 * A ThreadLocal variable used to indicate to the DatabaseMetaData
-	 * implementation on whether to use metadata caching or not for performance.
-	 * Client code should use {@link #putHint(String, Object)} to set the value.
-	 */
+    /**
+     * A ThreadLocal variable used to indicate to the DatabaseMetaData
+     * implementation on whether to use metadata caching or not for performance.
+     * Client code should use {@link #putHint(String, Object)} to set the value.
+     */
     protected static final ThreadLocal<CacheType> cacheType = new ThreadLocal<CacheType>();
+
+    /**
+     * A ThreadLocal variable used to indicate to the DatabaseMetaData
+     * implementation whether or not cached information has gone stale.
+     * If the cached information predates this value, it is considered stale and should be flushed.
+     * Client code should use {@link #putHint(String, Object)} to set the value.
+     */
+    protected static final ThreadLocal<Date> cacheStaleDate = new ThreadLocal<Date>();
 
     /**
      * The key used to set the {@link CacheType} hint when using
      * {@link #putHint(String, Object)} 
      */
     public static final String CACHE_TYPE = "cacheType";
-    
+
+    /**
+     * Setting this cache hint causes the cache stale date to be updated to the
+     * given time. The value must be a java.util.Date object (usually you will
+     * specify new Date())
+     */
+    public static final String CACHE_STALE_DATE = "cacheStaleDate";
+
+    /**
+     * Retrieves a cached result from the give cache, taking into account stale
+     * dating and whether or not caching is turned on. Also handles thread
+     * synchronization by accessing the cache while synchronized on the given
+     * cache object.
+     * 
+     * @param <T>
+     *            The cache's value type
+     * @param cache
+     *            The cache to retrieve the value from (if appropriate to the
+     *            current cache settings). This cache will be flushed if it's
+     *            stale.
+     * @param key
+     *            The key to attempt to retrieve from the cache.
+     * @return The cached item (if caching is enabled and the given cache was
+     *         not stale) or null.
+     */
+    protected <T> T getCachedResult(MetaDataCache<CacheKey, T> cache, CacheKey key) {
+        CacheType ct = cacheType.get();
+        if (ct == CacheType.NO_CACHE) {
+            return null;
+        }
+        synchronized (cache) {
+            Date staleDate = cacheStaleDate.get();
+            if (staleDate != null && cache.getLastFlushDate().before(staleDate)) {
+                cache.flush();
+                return null;
+            }
+            return cache.get(key);
+        }
+    }
+
+    /**
+     * Puts a key-value association into the give cache, taking into account
+     * stale dating and whether or not caching is turned on. Also handles thread
+     * synchronization by accessing the cache while synchronized on the given
+     * cache object.
+     * 
+     * @param <T>
+     *            The cache's value type
+     * @param cache
+     *            The cache to put the value into (if appropriate to the current
+     *            cache settings). This cache will be flushed if it's stale.
+     * @param key
+     *            The key to store into the cache.
+     * @param value
+     *            The value to associate with the given key.
+     */
+    protected <T> void putCachedResult(MetaDataCache<CacheKey, T> cache, CacheKey key, T value) {
+        CacheType ct = cacheType.get();
+        if (ct == CacheType.NO_CACHE) {
+            return;
+        }
+        synchronized (cache) {
+            Date staleDate = cacheStaleDate.get();
+            if (staleDate != null && cache.getLastFlushDate().before(staleDate)) {
+                cache.flush();
+            }
+            cache.put(key, value);
+        }
+    }
+
     /**
      * Creates a DatabaseMetaDataDecorator which delegates operations to the given delegate.
      * 
@@ -1372,15 +1450,26 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
     public boolean usesLocalFiles() throws SQLException {
         return databaseMetaData.usesLocalFiles();
     }
-    
-    
+
+    /**
+     * Sets a behavioural hint visible to all decorated DatabaseMetaData
+     * instances when invoked on the current thread.
+     * 
+     * @param key
+     *            See {@link #CACHE_STALE_DATE} and {@link #CACHE_TYPE}.
+     * @param value
+     *            The value to associate with the given key. Consult the
+     *            documentation for each key to know which value type to use.
+     */
     public static void putHint(String key, Object value) {
     	if (key.equals(CACHE_TYPE)) {
     		if (value instanceof CacheType) {
-    			cacheType.set((CacheType)value);
+    			cacheType.set((CacheType) value);
     		} else {
     			cacheType.set(null);
     		}
+    	} else if (key.equals(CACHE_STALE_DATE)) {
+    	    cacheStaleDate.set((Date) value);
     	}
     }
 }

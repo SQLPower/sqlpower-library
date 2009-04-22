@@ -11,7 +11,7 @@ import java.util.Date;
  * @author Jonathan Fuerth
  * @version $Id$
  */
-public interface Cache extends Map {
+public interface Cache<K, V> extends Map<K, V> {
 
 	/**
 	 * Sets the maximum member count, which influences the behaviour

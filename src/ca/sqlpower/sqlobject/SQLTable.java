@@ -54,7 +54,6 @@ public class SQLTable extends SQLObject {
 
 	protected String remarks="";
 	private String objectType;
-	protected String physicalPrimaryKeyName;
 
 	/**
 	 * A List of SQLColumn objects which make up all the columns of
@@ -160,7 +159,6 @@ public class SQLTable extends SQLObject {
 	    setName(sourceTable.getName());
 	    setRemarks(sourceTable.getRemarks());
 	    setPhysicalName(sourceTable.getPhysicalName());
-	    setPhysicalPrimaryKeyName(sourceTable.getPhysicalPrimaryKeyName());
 	    setObjectType(sourceTable.getObjectType());
 	}
 	
@@ -194,7 +192,6 @@ public class SQLTable extends SQLObject {
 		t.setChildrenInaccessibleReason(getChildrenInaccessibleReason(), false);
 
 		t.setPhysicalName(getPhysicalName());
-		t.physicalPrimaryKeyName = getPhysicalPrimaryKeyName();
 
 		t.inherit(this, transferStyle, preserveColumnSource);
         inheritIndices(this, t);
@@ -1498,30 +1495,6 @@ public class SQLTable extends SQLObject {
         SQLIndex primaryKeyIndex = getPrimaryKeyIndex();
 		return primaryKeyIndex == null ? null : primaryKeyIndex.getName();
 	}
-  
-	/**
-	 * Gets the value of physicalPrimaryKeyName
-	 *
-	 * @return the value of physicalPrimaryKeyName
-	 * @throws SQLObjectException 
-	 */
-	public String getPhysicalPrimaryKeyName() throws SQLObjectException  {
-        SQLIndex primaryKeyIndex = getPrimaryKeyIndex();
-        return primaryKeyIndex == null ? null : primaryKeyIndex.getPhysicalName();
-	}
-
-	/**
-	 * Sets the value of physicalPrimaryKeyName
-	 *
-	 * @param argPhysicalPrimaryKeyName Value to assign to this.physicalPrimaryKeyName
-	 */
-
-    public void setPhysicalPrimaryKeyName(String argPhysicalPrimaryKeyName) {
-		String oldPhysicalPrimaryKeyName = this.physicalPrimaryKeyName;
-		this.physicalPrimaryKeyName = argPhysicalPrimaryKeyName;
-		fireDbObjectChanged("physicalPrimaryKeyName",oldPhysicalPrimaryKeyName,argPhysicalPrimaryKeyName);
-	}
-
 
 	/**
 	 * Gets the type of table this object represents (TABLE or VIEW).

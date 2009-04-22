@@ -77,9 +77,10 @@ public class RefreshTablesTest extends TestCase {
      * this one is tricky, because it's hard to know if something is really a table container when it's got no children
      */
     public void testAddTableInEmptyDatabase() throws Exception {
+        con.setProperty("tables", "");
         assertEquals(0, db.getChildCount());
-        con.setProperty("tables", "cows");
         
+        con.setProperty("tables", "cows");
         db.refresh();
         
         assertEquals(1, db.getChildCount());
@@ -135,6 +136,7 @@ public class RefreshTablesTest extends TestCase {
         SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
         assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
         
+        con.setProperty("tables.moo", "");
         assertEquals(0, cat.getChildCount());
         con.setProperty("tables.moo", "cows");
         
@@ -256,6 +258,7 @@ public class RefreshTablesTest extends TestCase {
         SQLSchema schema = (SQLSchema) db.getChildByName("moo");
         assertNotNull("Didn't find schema in db: "+db.getChildNames(), schema);
         
+        con.setProperty("tables.moo", "");
         assertEquals(0, schema.getChildCount());
         con.setProperty("tables.moo", "cows");
         

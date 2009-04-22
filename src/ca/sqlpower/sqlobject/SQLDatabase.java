@@ -634,7 +634,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
             logger.info("Not refreshing unpopulated database " + getName()); //$NON-NLS-1$
             return;
         }
-        
+
         Connection con = null;
         try {
             startCompoundEdit(Messages.getString("SQLDatabase.refreshDatabase", getName())); //$NON-NLS-1$
