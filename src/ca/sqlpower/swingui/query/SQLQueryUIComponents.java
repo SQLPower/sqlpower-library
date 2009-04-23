@@ -732,22 +732,24 @@ public class SQLQueryUIComponents {
 			final Entry<SQLDatabase, ConnectionAndStatementBean> entry = iterator.next();
             try {	
                 Connection con = entry.getValue().getConnection();
-                if (!con.getAutoCommit() && entry.getValue().isConnectionUncommitted()) {
-                	commitedOrRollBacked = false;
-                    int result = JOptionPane.showOptionDialog(dialogOwner, Messages.getString("SQLQuery.commitOrRollback", entry.getKey().getName()),
-                            Messages.getString("SQLQuery.commitOrRollbackTitle"), JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null,
-                            new Object[] {Messages.getString("SQLQuery.commit"), Messages.getString("SQLQuery.rollback"), "Cancel"}, Messages.getString("SQLQuery.commit"));
-                    if (result == JOptionPane.OK_OPTION) {
-                        con.commit();
-                        commitedOrRollBacked = true;
-                    } else if (result == JOptionPane.NO_OPTION) {
-                        con.rollback();
-                        commitedOrRollBacked = true;
-                    }else if(result == JOptionPane.CANCEL_OPTION) {
-                    	return false;
-                    }
+                if (!con.isClosed()) {
+                	if (!con.getAutoCommit() && entry.getValue().isConnectionUncommitted()) {
+                		commitedOrRollBacked = false;
+                		int result = JOptionPane.showOptionDialog(dialogOwner, Messages.getString("SQLQuery.commitOrRollback", entry.getKey().getName()),
+                				Messages.getString("SQLQuery.commitOrRollbackTitle"), JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+                				new Object[] {Messages.getString("SQLQuery.commit"), Messages.getString("SQLQuery.rollback"), "Cancel"}, Messages.getString("SQLQuery.commit"));
+                		if (result == JOptionPane.OK_OPTION) {
+                			con.commit();
+                			commitedOrRollBacked = true;
+                		} else if (result == JOptionPane.NO_OPTION) {
+                			con.rollback();
+                			commitedOrRollBacked = true;
+                		}else if(result == JOptionPane.CANCEL_OPTION) {
+                			return false;
+                		}
+                	}
+                	con.close();
                 }
-                con.close();
                 iterator.remove();
                 
             } catch (SQLException e) {
