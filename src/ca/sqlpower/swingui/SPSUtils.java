@@ -51,7 +51,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.JTree;
+import javax.swing.JViewport;
 import javax.swing.KeyStroke;
+import javax.swing.Scrollable;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileFilter;
@@ -1000,8 +1002,48 @@ public class SPSUtils {
 	 * @return A JPanel containing the given JTree and the SQL Power Logo
 	 *         branding
 	 */
-    public static JPanel getBrandedTreePanel(JTree tree) {
-    	DefaultFormBuilder treeBuilder = new DefaultFormBuilder(new FormLayout("fill:pref:grow", "fill:pref:grow, pref"));
+    public static JPanel getBrandedTreePanel(final JTree tree) {
+    	class ScrollableDelegatePanelClassThingThatsNotAnonymous extends JPanel implements Scrollable {
+    		Scrollable scrollable = tree;
+
+    		@Override
+    		public Dimension getPreferredSize() {
+    			Dimension realPrefSize = super.getPreferredSize();
+				JViewport viewport = (JViewport) SwingUtilities.getAncestorOfClass(JViewport.class, this);
+				if (viewport != null) {
+					realPrefSize.width = Math.max(viewport.getWidth(), realPrefSize.width);
+					realPrefSize.height = Math.max(viewport.getHeight(), realPrefSize.height);
+				}
+				return realPrefSize;
+    		}
+    		
+			public Dimension getPreferredScrollableViewportSize() {
+				return scrollable.getPreferredScrollableViewportSize();
+			}
+
+			public int getScrollableBlockIncrement(Rectangle visibleRect,
+					int orientation, int direction) {
+				return scrollable.getScrollableBlockIncrement(visibleRect,
+						orientation, direction);
+			}
+
+			public boolean getScrollableTracksViewportHeight() {
+				return scrollable.getScrollableTracksViewportHeight();
+			}
+
+			public boolean getScrollableTracksViewportWidth() {
+				return scrollable.getScrollableTracksViewportWidth();
+			}
+
+			public int getScrollableUnitIncrement(Rectangle visibleRect,
+					int orientation, int direction) {
+				return scrollable.getScrollableUnitIncrement(visibleRect,
+						orientation, direction);
+			}
+    		
+    	};
+    	JPanel panel = new ScrollableDelegatePanelClassThingThatsNotAnonymous();
+    	DefaultFormBuilder treeBuilder = new DefaultFormBuilder(new FormLayout("fill:pref:grow", "fill:pref:grow, pref"), panel);
     	treeBuilder.add(tree);
     	treeBuilder.nextLine();
     	JLabel sqlpLabel = new JLabel(new ImageIcon(SPSUtils.class.getClassLoader().getResource("ca/sqlpower/swingui/sqlp-72.png")));
@@ -1019,7 +1061,7 @@ public class SPSUtils {
     		}
 		});
 		treeBuilder.add(sqlpLabel);
-		return treeBuilder.getPanel();
+		return panel;
     }
 
 	/**
