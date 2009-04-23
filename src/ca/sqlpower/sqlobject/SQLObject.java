@@ -790,7 +790,13 @@ public abstract class SQLObject implements java.io.Serializable {
         this.childrenInaccessibleReason = cause;
         fireDbObjectChanged("childrenInaccessibleReason", oldVal, childrenInaccessibleReason);
         if (rethrow) {
-        	throw new SQLObjectException(cause);
+        	if (cause instanceof SQLObjectException) {
+        		throw (SQLObjectException) cause;
+        	} else if (cause instanceof RuntimeException) {
+        		throw (RuntimeException) cause;
+        	} else {
+        		throw new SQLObjectException(cause);
+        	}
         }
     }
 
