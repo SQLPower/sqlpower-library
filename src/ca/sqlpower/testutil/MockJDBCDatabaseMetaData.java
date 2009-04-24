@@ -752,6 +752,7 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
 			String restrictToCatalog = connection.getCatalog();
 
 			for (String catName : Arrays.asList(catalogList.split(","))) {
+			    if (catName.equals("")) continue;
 				if (restrictToCatalog != null &&
 						!restrictToCatalog.equalsIgnoreCase(catName)) continue;
 				

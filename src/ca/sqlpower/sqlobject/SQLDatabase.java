@@ -653,9 +653,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
                 logger.debug("refresh: catalogTerm is '"+catalogTerm+"'. refreshing catalogs!"); //$NON-NLS-1$ //$NON-NLS-2$
                 List<SQLCatalog> newCatalogs = SQLCatalog.fetchCatalogs(dbmd);
                 SQLObjectUtils.refreshChildren(this, newCatalogs);
-            }
-
-            if (schemaTerm != null) {
+            } else if (schemaTerm != null) {
                 logger.debug("refresh: schemaTerm is '"+schemaTerm+"'. refreshing schemas!"); //$NON-NLS-1$ //$NON-NLS-2$
                 List<SQLSchema> newSchemas = SQLSchema.fetchSchemas(dbmd, null);
                 SQLObjectUtils.refreshChildren(this, newSchemas);

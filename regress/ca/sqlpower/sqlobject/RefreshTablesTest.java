@@ -371,4 +371,162 @@ public class RefreshTablesTest extends TestCase {
         assertEquals(0, db.getChildCount());
     }
 
+    
+    // ---------------- DATABASE.CATALOG.SCHEMA SECTION ----------------------
+
+    /**
+     * this one is tricky, because it's hard to know if something is really a table container when it's got no children
+     */
+    public void testAddTableInEmptyCatalogSchema() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("catalogs", "moo");
+        con.setProperty("schemas.moo", "cow");
+        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
+        
+        SQLSchema sch = (SQLSchema) cat.getChildByName("cow");
+        assertNotNull("Didn't find schema in catalog: "+cat.getChildNames(), sch);
+        
+        con.setProperty("tables.moo.cow", "");
+        assertEquals(0, sch.getChildCount());
+        con.setProperty("tables.moo.cow", "cows");
+        
+        db.refresh();
+        
+        assertEquals(1, sch.getChildCount());
+        assertEquals(SQLTable.class, sch.getChild(0).getClass());
+        assertEquals("cows", sch.getChild(0).getName());
+    }
+
+    public void testAddTableInNonEmptyCatalogSchema() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("catalogs", "moo");
+        con.setProperty("schemas.moo", "cow");
+        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
+
+        SQLSchema sch = (SQLSchema) cat.getChildByName("cow");
+        assertNotNull("Didn't find schema in catalog: "+cat.getChildNames(), sch);
+
+        con.setProperty("tables.moo.cow", "cows");
+        assertEquals(1, sch.getChildCount());
+        
+        con.setProperty("tables.moo.cow", "cows,chickens");
+        db.refresh();
+        
+        assertEquals(2, sch.getChildCount());
+        assertEquals(SQLTable.class, sch.getChild(0).getClass());
+        assertEquals("cows", sch.getChild(0).getName());
+        assertEquals("chickens", sch.getChild(1).getName());
+    }
+    
+    public void testRemoveTableInCatalogSchema() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("catalogs", "moo");
+        con.setProperty("schemas.moo", "cow");
+        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
+
+        SQLSchema sch = (SQLSchema) cat.getChildByName("cow");
+        assertNotNull("Didn't find schema in catalog: "+cat.getChildNames(), sch);
+
+        con.setProperty("tables.moo.cow", "cows,chickens");
+        assertEquals(2, sch.getChildCount());
+        
+        con.setProperty("tables.moo.cow", "cows");
+        db.refresh();
+        
+        assertEquals(1, sch.getChildCount());
+        assertEquals(SQLTable.class, sch.getChild(0).getClass());
+        assertEquals("cows", sch.getChild(0).getName());
+    }
+
+    public void testRemoveLastTableInCatalogSchema() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("catalogs", "moo");
+        con.setProperty("schemas.moo", "cow");
+        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
+
+        SQLSchema sch = (SQLSchema) cat.getChildByName("cow");
+        assertNotNull("Didn't find schema in catalog: "+cat.getChildNames(), sch);
+
+        con.setProperty("tables.moo.cow", "cows");
+        assertEquals(1, sch.getChildCount());
+        
+        con.setProperty("tables.moo.cow", "");
+        db.refresh();
+        
+        assertEquals("Unexpected tables in database: " + sch.getChildNames(),
+                0, sch.getChildCount());
+    }
+    
+    public void testAddSchemaContainingCatalogInDatabase() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("catalogs", "moo");
+        con.setProperty("schemas.moo", "cow");
+        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
+        assertEquals(1, db.getChildCount());
+        
+        con.setProperty("catalogs", "moo,cluck");
+        con.setProperty("schemas.cluck", "duck");
+        db.refresh();
+        
+        assertEquals(2, db.getChildCount());
+        assertEquals("moo", db.getChild(0).getName());
+        assertEquals("cluck", db.getChild(1).getName());
+        assertEquals("duck", db.getChild(1).getChild(0).getName());
+    }
+
+    public void testAddSchemaContainingCatalogInEmptyDatabase() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("catalogs", "");
+        assertEquals("Unexpected catalogs: " + db.getChildNames(),
+                0, db.getChildCount());
+        
+        con.setProperty("catalogs", "cows");
+        con.setProperty("schemas.cows", "moo");
+        db.refresh();
+        
+        assertEquals(1, db.getChildCount());
+        assertEquals("cows", db.getChild(0).getName());
+        assertEquals("moo", db.getChild(0).getChild(0).getName());
+    }
+
+    public void testRemoveSchemaContainingCatalogInDatabase() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("catalogs", "moo,splorch");
+        con.setProperty("schemas.moo", "cow");
+        con.setProperty("schemas.splorch", "poop");
+        assertEquals(2, db.getChildCount());
+        
+        con.setProperty("catalogs", "splorch");
+        db.refresh();
+        
+        assertEquals(1, db.getChildCount());
+        assertEquals("splorch", db.getChild(0).getName());
+        assertEquals("poop", db.getChild(0).getChild(0).getName());
+    }
+
+    public void testRemoveOnlySchemaContainingCatalogInDatabase() throws Exception {
+        con.setProperty("dbmd.catalogTerm", "Catalog");
+        con.setProperty("dbmd.schemaTerm", "Schema");
+        con.setProperty("catalogs", "moo");
+        con.setProperty("schemas.moo", "cow");
+        assertEquals(1, db.getChildCount());
+        
+        con.setProperty("catalogs", "");
+        db.refresh();
+        
+        assertEquals(0, db.getChildCount());
+    }
+
 }
