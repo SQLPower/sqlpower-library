@@ -39,16 +39,18 @@ public class SQLServerConnectionDecorator extends GenericConnectionDecorator {
 
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        DatabaseMetaData rawRSMD = super.getMetaData();
-        if (rawRSMD.getDatabaseProductVersion().charAt(0) == '8') {
-            return new SQLServer2000DatabaseMetaDataDecorator(rawRSMD);
-        } else if (rawRSMD.getDatabaseProductVersion().charAt(0) == '9') {
-            return new SQLServer2005DatabaseMetaDataDecorator(rawRSMD);
+        DatabaseMetaData rawDBMD = super.getMetaData();
+        if (rawDBMD.getDatabaseProductVersion().startsWith("8")) {
+            return new SQLServer2000DatabaseMetaDataDecorator(rawDBMD);
+        } else if (rawDBMD.getDatabaseProductVersion().startsWith("9")) {
+            return new SQLServer2005DatabaseMetaDataDecorator(rawDBMD);
+        } else if (rawDBMD.getDatabaseProductVersion().startsWith("10")) {
+            return new SQLServer2008DatabaseMetaDataDecorator(rawDBMD);
         } else {
             logger.warn("Unknown database product version: " +
-                    rawRSMD.getDatabaseProductVersion() +
+                    rawDBMD.getDatabaseProductVersion() +
                     " -- returning generic SQL Server wrapper");
-            return new SQLServerDatabaseMetaDataDecorator(rawRSMD);
+            return new SQLServerDatabaseMetaDataDecorator(rawDBMD);
         }
     }
 }
