@@ -108,7 +108,7 @@ public class SPDataSource {
 			if (v1 == null && v2 != null) return -1;
 			else if (v1 != null && v2 == null) return 1;
 			else if (v1 != null && v2 != null) {
-				tmp = v1.compareTo(v2);
+				tmp = v1.compareToIgnoreCase(v2);
 			} else {
 				tmp = 0;
 			}
