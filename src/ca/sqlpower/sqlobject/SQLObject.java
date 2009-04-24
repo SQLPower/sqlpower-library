@@ -83,15 +83,18 @@ public abstract class SQLObject implements java.io.Serializable {
 	protected boolean populated = false;
 	
 	/**
-	 * This is the actual table name which satisfies the specific 
-	 * database requirements.
+	 * The name used for this object in a physical database system. This name may have
+	 * to be altered to fit the naming constraints of a particular system, in terms
+	 * of length, case, allowable characters, and other requirements.
 	 */
 	private String physicalName;
-	
-	/**
-	 * This is the alternate name for this column for
-	 * easier understanding.
-	 */
+
+    /**
+     * The name given to this object by the data model designer. There are no
+     * database-specific constraints on the length or permissible characters in
+     * this name, and it will not be adjusted by the program unless specifically
+     * directed by the designer.
+     */
 	private String name;
 	
 	/**
@@ -151,48 +154,62 @@ public abstract class SQLObject implements java.io.Serializable {
 		return true;
 	}
 	
-	/**
-	 * This is the alternate name of the object for easier understanding. 
-	 * For tables, it returns the table name; for catalogs, 
-	 * the catalog name, and so on.
-	 */
-	public String getName()
-	{
+    /**
+     * The name given to this object by the data model designer. There are no
+     * database-specific constraints on the length or permissible characters in
+     * this name, and it will not be adjusted by the program unless specifically
+     * directed by the designer.
+     */
+	public String getName()	{
 		return name;
 	}
 	
 	
-	/**
-	 * Sets the value of sql object name
-	 *
-	 * @param argName Value to assign to this.name
-	 */
+    /**
+     * Sets the name given to this object by the data model designer. There are no
+     * database-specific constraints on the length or permissible characters in
+     * this name, and it will not be adjusted by the program unless specifically
+     * directed by the designer.
+     */
 	public void setName(String argName) {
 		String oldValue = name;
 		this.name = argName;
 		fireDbObjectChanged("name", oldValue, name);
 	}
-	
 
-	/**
-	 * when the logical name is an illegal identifier in the target
-     * database, generate a legal name store it here.  Some 
-     * SQLObject classes do not need to implement this, so the method
-     * is declared concrete, and passes through to getName() by
-     * default.  SQLObject subclasses that use this idea should
-     * override this class to return the physicalName and then 
-     * pass through to the getName method if one is not found.
+    /**
+     * Returns the name used for this object in a physical database system. This
+     * name may have to be altered to fit the naming constraints of a particular
+     * system, in terms of length, case, allowable characters, duplication of
+     * names within the same namespace, and other requirements. Presently, the
+     * DDL Generators take it upon themselves to perform this alteration. In the
+     * near future, we hope to make the DDL Generators use this name verbatim
+     * and simply fail on names that are not permissible. The responsibility of
+     * suggesting physical name changes will shift to critics configured for
+     * each database platform's particular needs. Those critics would provide
+     * "quick fix" suggestions with names that are legal in their own target
+     * platform, and then set them.
+     * <p>
+     * there is no good reason why this method is declared final, but there is
+     * no good reason to override it at this time.
      * 
-     * <p>there is no good reason why this is final, but there is no good
-     * reason to override it at this time. </p>
-	 */
+     * @return The physical name to use for forward engineering and database
+     *         comparison, or the logical name (see {@link #getName()}) if no
+     *         physical name has been set.
+     */
 	public final String getPhysicalName() {
 		if (physicalName != null) {
 			return physicalName;
 		}
 		return getName(); 
 	}
-	
+
+    /**
+     * Sets the physical identifier name to use when forward-engineering into
+     * the target database and comparing with existing databases.
+     * 
+     * @param argName The new physical name to use.
+     */
 	public void setPhysicalName(String argName) {
 		String oldPhysicalName = this.physicalName;
 		this.physicalName = argName;
