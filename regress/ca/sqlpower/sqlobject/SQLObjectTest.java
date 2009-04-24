@@ -243,7 +243,7 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
     }
     
     public void testChildrenInaccessibleReasonSetOnPopulateError() throws Exception {
-        final RuntimeException e = new RuntimeException();
+        final RuntimeException e = new RuntimeException("freaky!");
         SQLObject o = new SQLObjectImpl() {
             @Override
             protected void populateImpl() throws SQLObjectException {
@@ -254,8 +254,8 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
         try {
         	o.populate();
         	fail("Failing on populate should throw an exception as well as store it in the children inaccessible reason.");
-        } catch (SQLObjectException ex) {
-        	assertEquals(e, ex.getCause());
+        } catch (RuntimeException ex) {
+        	assertEquals(e, ex);
         }
         
         assertEquals(e, o.getChildrenInaccessibleReason());
