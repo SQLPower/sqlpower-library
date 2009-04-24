@@ -342,9 +342,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		List<SQLColumn> cols = new ArrayList<SQLColumn>();
 		try {
 		    typeRs = dbmd.getTypeInfo();
-		    Map<Double, Double> typeToMaxPrecisionMap = new HashMap<Double, Double>();
+		    Map<Integer, Integer> typeToMaxPrecisionMap = new HashMap<Integer, Integer>();
             while (typeRs.next()) {
-                typeToMaxPrecisionMap.put(new Double(typeRs.getDouble(2)), new Double(typeRs.getDouble(3)));
+                typeToMaxPrecisionMap.put(new Integer(typeRs.getInt(2)), new Integer(typeRs.getInt(3)));
             }
 		    
 			logger.debug("SQLColumn.addColumnsToTable: catalog="+catalog+"; schema="+schema+"; tableName="+tableName);
@@ -361,7 +361,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 				//precision.
 				
 				int precision = rs.getInt(7);
-				Double typePrecision = typeToMaxPrecisionMap.get(new Double(rs.getInt(5)));
+				Integer typePrecision = typeToMaxPrecisionMap.get(new Integer(rs.getInt(5)));
 				if (typePrecision != null && (rs.getInt(7) < 1 || rs.getInt(7) > typePrecision.intValue())) { //equate across java.sql.Types
 				    precision = typePrecision.intValue();
 				}
