@@ -31,4 +31,8 @@ public abstract class MonitorableWorker extends SPSwingWorker implements Monitor
         super(registry);
     }
     
+    public MonitorableWorker(SwingWorkerRegistry registry, Integer frequency) {
+        super(registry, frequency);
+    }
+    
 }

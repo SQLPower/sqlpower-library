@@ -18,8 +18,12 @@
  */
 package ca.sqlpower.swingui;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.swing.SwingUtilities;
 
@@ -39,10 +43,32 @@ public abstract class SPSwingWorker implements Runnable {
 	
     private final List<TaskTerminationListener> taskTerminationListeners
     = new ArrayList<TaskTerminationListener>();
+    
+	/**
+	 * The number of times the timer will fire a property change in a second.
+	 * The timer in this worker will start firing events when doStuff starts
+	 * and will stop firing events when cleanup is finished.
+	 * <p>
+	 * This will be null if a timer is not needed.
+	 */
+	private Integer frequency = null;
+	
+	/**
+	 * The number of ticks that has occurred since the start of the do stuff
+	 * method.
+	 */
+	private int timerTicks;
+	
+	private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
 
     
     public SPSwingWorker(SwingWorkerRegistry registry) {
         this.registry = registry;
+    }
+    
+    public SPSwingWorker(SwingWorkerRegistry registry, Integer frequency) {
+    	this(registry);
+		this.frequency = frequency;
     }
     
 	/**
@@ -54,6 +80,17 @@ public abstract class SPSwingWorker implements Runnable {
 	
 	public final void run() {
 		try {
+			final Timer timer = new Timer();
+			timer.scheduleAtFixedRate(new TimerTask() {
+			
+				@Override
+				public void run() {
+					int oldTicks = timerTicks;
+					timerTicks++;
+					pcs.firePropertyChange("timerTicks", oldTicks, timerTicks);
+				}
+			}, 1000/frequency, 1000/frequency);
+			
             registry.registerSwingWorker(this);
             thread = Thread.currentThread();
             try {
@@ -69,6 +106,7 @@ public abstract class SPSwingWorker implements Runnable {
             			try {
             				cleanup();
             			} finally {
+            				timer.cancel();
             				fireTaskFinished();
             			}
             			
@@ -163,5 +201,17 @@ public abstract class SPSwingWorker implements Runnable {
 			thread.interrupt();
 		}
 		setCancelled(true);
+	}
+	
+	/**
+	 * Listeners will be notified when the timer ticks. The timer will tick
+	 * at the frequency specified in the constructor as ticks/second.
+	 */
+	public void addTimerListener(PropertyChangeListener l) {
+		pcs.addPropertyChangeListener(l);
+	}
+	
+	public void removeTimerListener(PropertyChangeListener l) {
+		pcs.removePropertyChangeListener(l);
 	}
 }

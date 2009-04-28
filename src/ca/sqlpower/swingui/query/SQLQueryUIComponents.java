@@ -41,6 +41,9 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -143,6 +146,12 @@ import com.jgoodies.forms.layout.FormLayout;
 public class SQLQueryUIComponents {
     
     private static final Logger logger = Logger.getLogger(SQLQueryUIComponents.class);
+    
+	/**
+	 * This is the frequency the ExecuteSQLWorker will notify its timer listeners
+	 * to update as the worker is still executing.
+	 */
+	private static final Integer NOTIFICATION_FREQUENCY = Integer.valueOf(12);
     
     /**
      * The entry value in the input map that will map a key press to our
@@ -309,7 +318,7 @@ public class SQLQueryUIComponents {
      * a new worker should be created.
      */
     private class ExecuteSQLWorker extends MonitorableWorker {
-        
+    	
         private List<CachedRowSet> resultSets = new ArrayList<CachedRowSet>();
         private List<Integer> rowsAffected = new ArrayList<Integer>(); 
 		private final SQLDatabase db;
@@ -323,7 +332,7 @@ public class SQLQueryUIComponents {
          * given SQL statement as the string to execute on.
          */
         public ExecuteSQLWorker(SwingWorkerRegistry registry, StatementExecutor stmtExecutor) {
-        	super(registry);
+        	super(registry, NOTIFICATION_FREQUENCY);
 			this.stmtExecutor = stmtExecutor;
         	if(stmtExecutor.getStatement().equals("")) {
         		logger.debug("Empty String");
@@ -344,6 +353,7 @@ public class SQLQueryUIComponents {
             
             executeButton.setEnabled(false);
             stopButton.setEnabled(true);
+            addTimerListener(stmtExecutor.getTimerListener());
         }
 
         @Override
@@ -461,6 +471,17 @@ public class SQLQueryUIComponents {
 		 * is allowed in the Universal SQL Access tool.
 		 */
 		private final List<RowSetChangeListener> rowSetChangeListeners = new ArrayList<RowSetChangeListener>();
+		
+		private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
+		
+		/**
+		 * This listener forwards timer events to the listeners on this executor.
+		 */
+		private final PropertyChangeListener timerListener = new PropertyChangeListener() {
+			public void propertyChange(PropertyChangeEvent evt) {
+				pcs.firePropertyChange(evt);
+			}
+		};
 
 		public DefaultStatementExecutor(SQLDatabase db, String sqlString, int rowLimit) {
 			this.rowLimit = rowLimit;
@@ -536,6 +557,18 @@ public class SQLQueryUIComponents {
 
 		public void removeRowSetChangeListener(RowSetChangeListener l) {
 			rowSetChangeListeners.remove(l);
+		}
+
+		public void addTimerListener(PropertyChangeListener l) {
+			pcs.addPropertyChangeListener(l);
+		}
+
+		public void removeTimerListener(PropertyChangeListener l) {
+			pcs.removePropertyChangeListener(l);
+		}
+
+		public PropertyChangeListener getTimerListener() {
+			return timerListener;
 		}
     	
     }
