@@ -32,6 +32,7 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
@@ -41,7 +42,6 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.BufferedReader;
@@ -332,7 +332,7 @@ public class SQLQueryUIComponents {
          * given SQL statement as the string to execute on.
          */
         public ExecuteSQLWorker(SwingWorkerRegistry registry, StatementExecutor stmtExecutor) {
-        	super(registry, NOTIFICATION_FREQUENCY);
+        	super(registry, NOTIFICATION_FREQUENCY, stmtExecutor.getTimerListener());
 			this.stmtExecutor = stmtExecutor;
         	if(stmtExecutor.getStatement().equals("")) {
         		logger.debug("Empty String");
@@ -353,7 +353,6 @@ public class SQLQueryUIComponents {
             
             executeButton.setEnabled(false);
             stopButton.setEnabled(true);
-            addTimerListener(stmtExecutor.getTimerListener());
         }
 
         @Override
@@ -477,9 +476,14 @@ public class SQLQueryUIComponents {
 		/**
 		 * This listener forwards timer events to the listeners on this executor.
 		 */
-		private final PropertyChangeListener timerListener = new PropertyChangeListener() {
-			public void propertyChange(PropertyChangeEvent evt) {
-				pcs.firePropertyChange(evt);
+		private final ActionListener timerListener = new ActionListener() {
+			
+			private int timerTicks = 0;
+			
+			public void actionPerformed(ActionEvent e) {
+				int oldTicks = timerTicks;
+				timerTicks++;
+				pcs.firePropertyChange("timerTicks", oldTicks, timerTicks);
 			}
 		};
 
@@ -567,7 +571,7 @@ public class SQLQueryUIComponents {
 			pcs.removePropertyChangeListener(l);
 		}
 
-		public PropertyChangeListener getTimerListener() {
+		public ActionListener getTimerListener() {
 			return timerListener;
 		}
     	

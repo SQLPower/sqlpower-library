@@ -18,6 +18,8 @@
  */
 package ca.sqlpower.swingui;
 
+import java.awt.event.ActionListener;
+
 import ca.sqlpower.util.Monitorable;
 
 
@@ -31,8 +33,8 @@ public abstract class MonitorableWorker extends SPSwingWorker implements Monitor
         super(registry);
     }
     
-    public MonitorableWorker(SwingWorkerRegistry registry, Integer frequency) {
-        super(registry, frequency);
+    public MonitorableWorker(SwingWorkerRegistry registry, Integer frequency, ActionListener timerListener) {
+        super(registry, frequency, timerListener);
     }
     
 }

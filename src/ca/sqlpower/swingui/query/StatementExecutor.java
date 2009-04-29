@@ -19,6 +19,7 @@
 
 package ca.sqlpower.swingui.query;
 
+import java.awt.event.ActionListener;
 import java.beans.PropertyChangeListener;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -95,5 +96,5 @@ public interface StatementExecutor {
 	 * This returns the listener added to the worker to forward timer
 	 * events from the worker to listeners of this statement executor.
 	 */
-	PropertyChangeListener getTimerListener();
+	ActionListener getTimerListener();
 }
