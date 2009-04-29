@@ -79,7 +79,8 @@ public abstract class ConnectionDecorator implements Connection {
         } else if (driverName.equals("Oracle JDBC driver")) {
             return new OracleConnectionDecorator(delegate);
         } else if (driverName.equals("SQLServer")
-        		|| driverName.equals("Microsoft SQL Server 2005 JDBC Driver")) {
+        		|| driverName.equals("Microsoft SQL Server 2005 JDBC Driver")
+        		|| driverName.equals("Microsoft SQL Server JDBC Driver 2.0")) {
             return new SQLServerConnectionDecorator(delegate);
         } else if (driverName.equals("MySQL-AB JDBC Driver")) {
             return new MySQLConnectionDecorator(delegate);
