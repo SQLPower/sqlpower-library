@@ -50,11 +50,16 @@ public class SQLServer2008DatabaseMetaDataDecorator extends SQLServerDatabaseMet
         try {
             stmt = getConnection().createStatement();
             String sql = 
-                "SELECT name AS 'TABLE_SCHEM', db_name() AS 'TABLE_CATALOG'" +
-                " FROM sys.schemas" +
-                " ORDER BY 1";
+                "SELECT s.name AS TABLE_SCHEM, db_name() AS TABLE_CATALOG" +
+                "\nFROM sys.schemas s" +
+                "\nWHERE EXISTS (" +
+                "\n SELECT 1 FROM sys.database_principals p" +
+                "\n WHERE p.is_fixed_role=0 AND s.principal_id=p.principal_id" +
+                "\n) OR EXISTS (" +
+                "\n SELECT 1 FROM sys.tables t WHERE t.schema_id = s.schema_id" +
+                "\n)" +
+                "\nORDER BY 1";
             rs = stmt.executeQuery(sql);
-            
             CachedRowSet crs = new CachedRowSet();
             crs.populate(rs);
             return crs;
