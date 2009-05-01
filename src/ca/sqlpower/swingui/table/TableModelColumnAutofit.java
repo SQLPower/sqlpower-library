@@ -34,7 +34,7 @@ import javax.swing.table.TableModel;
  * has is bounded by the other columns as well. This problem could be fixed
  * if the table is in a JScrollPane
  */
-public class TableModelColumnAutofit extends AbstractTableModel{
+public class TableModelColumnAutofit extends AbstractTableModel implements TableModelWrapper {
 
     private TableModel tableModel;
     private MouseListener mouseListener;
@@ -113,4 +113,12 @@ public class TableModelColumnAutofit extends AbstractTableModel{
         }
     }
     
+    public TableModel getWrappedModel() {
+        return tableModel;
+    }
+    
+    public void setWrappedModel(TableModel model) {
+        throw new UnsupportedOperationException(
+                "Up until now, there was no use for this. Please implement carefully!");
+    }
 }

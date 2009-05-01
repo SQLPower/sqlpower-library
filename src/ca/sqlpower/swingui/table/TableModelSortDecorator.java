@@ -98,7 +98,7 @@ import org.apache.log4j.Logger;
  * @version 2.0 02/27/04
  */
 
-public class TableModelSortDecorator extends AbstractTableModel implements CleanupTableModel {
+public class TableModelSortDecorator extends AbstractTableModel implements CleanupTableModel, TableModelWrapper {
 	private static final Logger logger = Logger.getLogger(TableModelSortDecorator.class);
 	
     protected TableModel tableModel;
@@ -151,13 +151,13 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
 
     public TableModelSortDecorator(TableModel tableModel) {
         this();
-        setTableModel(tableModel);
+        setWrappedModel(tableModel);
     }
 
     public TableModelSortDecorator(TableModel tableModel, JTableHeader tableHeader) {
         this();
         setTableHeader(tableHeader);
-        setTableModel(tableModel);
+        setWrappedModel(tableModel);
     }
 
     private void clearSortingState() {
@@ -165,11 +165,11 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
         modelToView = null;
     }
 
-    public TableModel getTableModel() {
+    public TableModel getWrappedModel() {
         return tableModel;
     }
 
-    public void setTableModel(TableModel tableModel) {
+    public void setWrappedModel(TableModel tableModel) {
         if (this.tableModel != null) {
             this.tableModel.removeTableModelListener(tableModelListener);
         }

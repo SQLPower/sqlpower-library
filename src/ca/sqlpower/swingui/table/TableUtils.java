@@ -23,6 +23,7 @@ import java.awt.Component;
 import javax.swing.JTable;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableModel;
 
 /**
  * The TableUtils class contains simple static utility methods that are
@@ -116,4 +117,21 @@ public class TableUtils {
         fitColumnWidths(table, -1, padding);
     }
 
+    /**
+     * Digs through any number of layers of TableModelWrapper to find the
+     * non-wrapper model at the bottom.
+     * 
+     * @param m
+     *            The table model to unwrap. You probably suspect it implementes
+     *            TableModelWrapper.
+     * @return The first TableModel encountered which is not an instance of
+     *         TableModelWrapper. If m itself is not a wrapper, m will be returned.
+     * @see TableModelWrapper#getWrappedModel()
+     */
+    public static TableModel unwrap(TableModel m) {
+        while (m instanceof TableModelWrapper) {
+            m = ((TableModelWrapper) m).getWrappedModel();
+        }
+        return m;
+    }
 }

@@ -206,19 +206,18 @@ public class FancyExportableJTable extends EditableJTable {
 	
 	@Override
 	public void setModel(TableModel model) {
-		
-		//Set the inner TableModel wrapped by the search and sort decorators
-		//to keep the search and sort decorators attached to their document 
-		//and header.
-		TableModel innerModel = model;
-		if (getModel() instanceof TableModelSearchDecorator) {
-			innerModel = ((TableModelSearchDecorator) getModel()).getTableModel();
-		}
-		if (innerModel instanceof TableModelSortDecorator) {
-			((TableModelSortDecorator) innerModel).setTableModel(model);
-			super.setModel(getModel());
+		TableModel m = getModel();
+		if (! (m instanceof TableModelWrapper)) {
+		    super.setModel(model);
 		} else {
-			super.setModel(model);
+		    TableModelWrapper lowestWrapper = (TableModelWrapper) m;
+		    
+		    // down the rabbit hole as far as it goes
+		    while (lowestWrapper.getWrappedModel() instanceof TableModelWrapper) {
+		        lowestWrapper = (TableModelWrapper) lowestWrapper.getWrappedModel();
+		    }
+		    
+		    lowestWrapper.setWrappedModel(model);
 		}
 	}
 	

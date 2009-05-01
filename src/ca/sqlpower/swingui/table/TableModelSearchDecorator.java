@@ -32,15 +32,13 @@ import javax.swing.text.DefaultStyledDocument;
 import javax.swing.text.Document;
 
 import org.apache.log4j.Logger;
-
-import ca.sqlpower.swingui.SPSUtils;
 /**
  * Searches through a table model using a table text converter.  It reduces the visible table 
  * rows as rows stop matching.
  * 
  * XXX: This model eats tableChanged events that get thrown from below this should be fixed! 
  */
-public class TableModelSearchDecorator extends AbstractTableModel implements CleanupTableModel {
+public class TableModelSearchDecorator extends AbstractTableModel implements CleanupTableModel, TableModelWrapper {
 
     private static final Logger logger = Logger.getLogger(TableModelSearchDecorator.class);
 
@@ -52,9 +50,9 @@ public class TableModelSearchDecorator extends AbstractTableModel implements Cle
      */
     private TableTextConverter tableTextConverter;
 
-    protected TableModel tableModel;
+    private TableModel tableModel;
     private List<Integer> rowMapping = null;  // null means identity mapping
-    protected Document doc;
+    private Document doc;
     private String searchText = null;
 
     private DocumentListener docListener = new DocumentListener(){
@@ -64,7 +62,7 @@ public class TableModelSearchDecorator extends AbstractTableModel implements Cle
             try {
                 searchText = e.getDocument().getText(0,e.getDocument().getLength());
             } catch (BadLocationException e1) {
-                SPSUtils.showExceptionDialogNoReport("Internal Error (search profile)!", e1);
+                throw new RuntimeException(e1);
             }
             return searchText;
         }
@@ -86,6 +84,9 @@ public class TableModelSearchDecorator extends AbstractTableModel implements Cle
      */
     final TableModelListener tableModelListener = new TableModelListener() {
     	public void tableChanged(TableModelEvent e) {
+    	    search(searchText);
+
+    	    // XXX adjust co-ordinates to compensate for missing rows (the ones that don't match the search)
     		fireTableChanged(e);
     	}
     };
@@ -103,15 +104,8 @@ public class TableModelSearchDecorator extends AbstractTableModel implements Cle
 
     public TableModelSearchDecorator(TableModel model) {
         super();
-        this.tableModel = model;
-		tableModel.addTableModelListener(tableModelListener);
+        setWrappedModel(model);
         setDoc(new DefaultStyledDocument());
-
-        model.addTableModelListener(new TableModelListener(){
-
-            public void tableChanged(TableModelEvent e) {
-                search(searchText);
-            }});
     }
 
     private void search(String searchText) {
@@ -194,14 +188,16 @@ public class TableModelSearchDecorator extends AbstractTableModel implements Cle
     }
 
 
-    public TableModel getTableModel() {
+    public TableModel getWrappedModel() {
         return tableModel;
     }
 
-    public void setTableModel(TableModel tableModel) {
-    	this.tableModel.removeTableModelListener(tableModelListener);
-        this.tableModel = tableModel;
-        tableModel.addTableModelListener(tableModelListener);
+    public void setWrappedModel(TableModel newModel) {
+        if (tableModel != null) {
+            tableModel.removeTableModelListener(tableModelListener);
+        }
+        tableModel = newModel;
+        newModel.addTableModelListener(tableModelListener);
         fireTableStructureChanged();
     }
 
