@@ -115,8 +115,8 @@ import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLDatabaseMapping;
 import ca.sqlpower.sqlobject.SQLObjectException;
-import ca.sqlpower.swingui.MonitorableWorker;
 import ca.sqlpower.swingui.SPSUtils;
+import ca.sqlpower.swingui.SPSwingWorker;
 import ca.sqlpower.swingui.SwingWorkerRegistry;
 import ca.sqlpower.swingui.db.DatabaseConnectionManager;
 import ca.sqlpower.swingui.event.TaskTerminationEvent;
@@ -317,7 +317,7 @@ public class SQLQueryUIComponents {
      * worker. If a different SQL statement is to be executed later
      * a new worker should be created.
      */
-    private class ExecuteSQLWorker extends MonitorableWorker {
+    private class ExecuteSQLWorker extends SPSwingWorker {
     	
         private List<CachedRowSet> resultSets = new ArrayList<CachedRowSet>();
         private List<Integer> rowsAffected = new ArrayList<Integer>(); 

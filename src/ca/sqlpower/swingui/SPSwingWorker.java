@@ -29,8 +29,9 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.swingui.event.TaskTerminationEvent;
 import ca.sqlpower.swingui.event.TaskTerminationListener;
+import ca.sqlpower.util.Monitorable;
 
-public abstract class SPSwingWorker implements Runnable {
+public abstract class SPSwingWorker implements Runnable, Monitorable {
 	private static final Logger logger = Logger.getLogger(SPSwingWorker.class);
 	private Throwable doStuffException;
 	
@@ -57,6 +58,11 @@ public abstract class SPSwingWorker implements Runnable {
 	 */
 	private final ActionListener timerListener;
 
+	private boolean started;
+	private boolean finished;
+	private int progress;
+	private String message;
+	private Integer jobSize;
     
     public SPSwingWorker(SwingWorkerRegistry registry) {
     	this(registry, null, null);
@@ -84,6 +90,8 @@ public abstract class SPSwingWorker implements Runnable {
 			} else {
 				timer = null;
 			}
+			setStarted(true);
+			setFinished(false);
 			
             registry.registerSwingWorker(this);
             thread = Thread.currentThread();
@@ -100,6 +108,7 @@ public abstract class SPSwingWorker implements Runnable {
             			try {
             				cleanup();
             			} finally {
+            				setFinished(true);
             				if (timer != null) {
             					timer.stop();
             				}
@@ -197,5 +206,45 @@ public abstract class SPSwingWorker implements Runnable {
 			thread.interrupt();
 		}
 		setCancelled(true);
+	}
+
+	public Integer getJobSize() {
+		return jobSize;
+	}
+	
+	public synchronized void setJobSize(Integer newJobSize) {
+		jobSize = newJobSize;
+	}
+
+	public String getMessage() {
+		return message;
+	}
+	
+	public synchronized void setMessage(String newMessage) {
+		message = newMessage;
+	}
+
+	public int getProgress() {
+		return progress;
+	}
+	
+	public synchronized void setProgress(int newProgress) {
+		progress = newProgress;
+	}
+
+	public boolean hasStarted() {
+		return started;
+	}
+
+	public boolean isFinished() {
+		return finished;
+	}
+	
+	private synchronized void setStarted(boolean started) {
+		this.started= started;
+	}
+	
+	private synchronized void setFinished(boolean finished) {
+		this.finished = finished;
 	}
 }
