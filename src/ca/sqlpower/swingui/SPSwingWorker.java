@@ -208,43 +208,102 @@ public abstract class SPSwingWorker implements Runnable, Monitorable {
 		setCancelled(true);
 	}
 
-	public Integer getJobSize() {
-		return jobSize;
+	public final synchronized Integer getJobSize() {
+		return getJobSizeImpl();
 	}
 	
-	public synchronized void setJobSize(Integer newJobSize) {
+	/**
+     * Override this method only if something more than using getJobSize
+     * and setJobSize is needed. This forces the user to go through
+     * a synchronized method for thread safety.
+     */
+	protected Integer getJobSizeImpl() {
+	    return jobSize;
+	}
+	
+	public final synchronized void setJobSize(Integer newJobSize) {
 		jobSize = newJobSize;
 	}
 
-	public String getMessage() {
-		return message;
+	public final synchronized String getMessage() {
+		return getMessageImpl();
 	}
 	
-	public synchronized void setMessage(String newMessage) {
+	/**
+	 * Override this method only if something more than using getMessage
+	 * and setMessage is needed. This forces the user to go through
+	 * a synchronized method for thread safety.
+	 */
+	protected String getMessageImpl() {
+	    return message;
+	}
+	
+	public final synchronized void setMessage(String newMessage) {
 		message = newMessage;
 	}
 
-	public int getProgress() {
-		return progress;
+	public final synchronized int getProgress() {
+	    return getProgressImpl();
 	}
 	
-	public synchronized void setProgress(int newProgress) {
+	/**
+     * Override this method only if something more than using getProgress
+     * and setProgress is needed. This forces the user to go through
+     * a synchronized method for thread safety.
+     */
+	protected int getProgressImpl() {
+	    return progress;
+	}
+	
+	public final synchronized void setProgress(int newProgress) {
 		progress = newProgress;
 	}
-
-	public boolean hasStarted() {
-		return started;
+	
+	public final synchronized void increaseProgress() {
+	    progress++;
 	}
 
-	public boolean isFinished() {
-		return finished;
+	public final synchronized boolean hasStarted() {
+	    return hasStartedImpl();
 	}
 	
-	private synchronized void setStarted(boolean started) {
+	/**
+     * Override this method if something more than using hasStarted
+     * and setStarted is needed. This forces the user to go through
+     * a synchronized method for thread safety.
+     */
+	protected boolean hasStartedImpl() {
+	    return started;
+	}
+
+	public final synchronized boolean isFinished() {
+	    return isFinishedImpl();
+	}
+	
+	   /**
+     * Override this method only if something more than using isFinished
+     * and setFinished is needed. This forces the user to go through
+     * a synchronized method for thread safety.
+     */
+	protected boolean isFinishedImpl() {
+	    return finished;
+	}
+	
+	/**
+	 * This only needs to be called from outside the SPSwingWorker
+	 * if the started flag needs to be set in a place other than at
+	 * the start of the doStuff method.
+	 */
+	protected final synchronized void setStarted(boolean started) {
 		this.started= started;
 	}
 	
-	private synchronized void setFinished(boolean finished) {
+	/**
+	 * This only needs to be called from outside the SPSwingWorker 
+	 * if the finished flag needs to be set in a place other than at
+	 * the end of the cleanup method.
+	 */
+	protected final synchronized void setFinished(boolean finished) {
 		this.finished = finished;
 	}
 }

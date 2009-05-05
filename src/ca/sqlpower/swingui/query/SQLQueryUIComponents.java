@@ -322,8 +322,6 @@ public class SQLQueryUIComponents {
         private List<CachedRowSet> resultSets = new ArrayList<CachedRowSet>();
         private List<Integer> rowsAffected = new ArrayList<Integer>(); 
 		private final SQLDatabase db;
-		private boolean hasStarted;
-		private boolean isFinished;
 		private long startExecutionTime;
 		private final StatementExecutor stmtExecutor;
         
@@ -353,6 +351,14 @@ public class SQLQueryUIComponents {
             
             executeButton.setEnabled(false);
             stopButton.setEnabled(true);
+            
+            setJobSize(null);
+            setProgress(0);
+            if (db != null) {
+                setMessage(Messages.getString("SQLQuery.workerMessage", db.getName()));
+            } else {
+                setMessage(Messages.getString("SQLQuery.queryingNullDB"));
+            }
         }
 
         @Override
@@ -383,14 +389,12 @@ public class SQLQueryUIComponents {
         		logTextArea.append("\n");
         		executeButton.setEnabled(true);
         		stopButton.setEnabled(false);
-        		isFinished = true;
         	}
         }
 
         @Override
         public void doStuff() throws Exception {
         	startExecutionTime = System.currentTimeMillis();
-        	hasStarted = true;
             logger.debug("Starting execute action of \"" + stmtExecutor.getStatement() + "\".");
             if (db == null) {
                 return;
@@ -431,28 +435,6 @@ public class SQLQueryUIComponents {
             logger.debug("Finished Execute method");
         }
 
-		public Integer getJobSize() {
-			//This is unknown
-			return null;
-		}
-
-		public String getMessage() {
-			return Messages.getString("SQLQuery.workerMessage", db.getName());
-		}
-
-		public int getProgress() {
-			//The job size is always unknown for fetching from the db.
-			return 0;
-		}
-
-		public boolean hasStarted() {
-			return hasStarted;
-		}
-
-		public boolean isFinished() {
-			return isFinished;
-		}
-		
     }
     
     private class DefaultStatementExecutor implements StatementExecutor {
