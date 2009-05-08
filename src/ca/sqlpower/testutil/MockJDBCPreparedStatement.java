@@ -27,16 +27,13 @@ import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.Date;
-import java.sql.NClob;
 import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.Ref;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
-import java.sql.RowId;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
-import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -416,111 +413,5 @@ public class MockJDBCPreparedStatement implements PreparedStatement {
     public void setQueryTimeout(int seconds) throws SQLException {
         throw new UnsupportedOperationException("This isn't yet implemented in the mock object");
     }
-
-	public void setAsciiStream(int parameterIndex, InputStream x)
-			throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setAsciiStream(int parameterIndex, InputStream x, long length)
-			throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setBinaryStream(int parameterIndex, InputStream x)
-			throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setBinaryStream(int parameterIndex, InputStream x, long length)
-			throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setBlob(int parameterIndex, InputStream inputStream)
-			throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setBlob(int parameterIndex, InputStream inputStream, long length)
-			throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setCharacterStream(int parameterIndex, Reader reader)
-			throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setCharacterStream(int parameterIndex, Reader reader,
-			long length) throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setClob(int parameterIndex, Reader reader) throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setClob(int parameterIndex, Reader reader, long length)
-			throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setNCharacterStream(int parameterIndex, Reader value)
-			throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setNCharacterStream(int parameterIndex, Reader value,
-			long length) throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setNClob(int parameterIndex, NClob value) throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setNClob(int parameterIndex, Reader reader) throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setNClob(int parameterIndex, Reader reader, long length)
-			throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setNString(int parameterIndex, String value)
-			throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setRowId(int parameterIndex, RowId x) throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setSQLXML(int parameterIndex, SQLXML xmlObject)
-			throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public boolean isClosed() throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public boolean isPoolable() throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setPoolable(boolean poolable) throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public boolean isWrapperFor(Class<?> iface) throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public <T> T unwrap(Class<T> iface) throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
 
 }

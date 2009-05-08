@@ -232,24 +232,4 @@ public class MockJDBCStatement implements Statement {
 		throw new UnsupportedOperationException("Not implemented");
 	}
 
-	public boolean isClosed() throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public boolean isPoolable() throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public void setPoolable(boolean poolable) throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public boolean isWrapperFor(Class<?> iface) throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
-	public <T> T unwrap(Class<T> iface) throws SQLException {
-		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
-	}
-
 }
