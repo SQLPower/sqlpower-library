@@ -275,4 +275,12 @@ public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Seria
     public String getColumnClassName(int column) throws SQLException {
 		return columnClassName[column - 1];
 	}
+
+	public boolean isWrapperFor(Class<?> arg0) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public <T> T unwrap(Class<T> arg0) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
 }

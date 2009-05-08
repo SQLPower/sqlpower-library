@@ -26,6 +26,7 @@ package ca.sqlpower.sql.jdbcwrapper;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
+import java.sql.RowIdLifetime;
 import java.sql.SQLException;
 import java.util.Date;
 
@@ -1472,4 +1473,42 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
     	    cacheStaleDate.set((Date) value);
     	}
     }
+
+	public boolean autoCommitFailureClosesAllResultSets() throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public ResultSet getClientInfoProperties() throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public ResultSet getFunctionColumns(String arg0, String arg1, String arg2,
+			String arg3) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public ResultSet getFunctions(String arg0, String arg1, String arg2)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public RowIdLifetime getRowIdLifetime() throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public ResultSet getSchemas(String arg0, String arg1) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public boolean supportsStoredFunctionsUsingCallSyntax() throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public boolean isWrapperFor(Class<?> iface) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public <T> T unwrap(Class<T> iface) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
 }

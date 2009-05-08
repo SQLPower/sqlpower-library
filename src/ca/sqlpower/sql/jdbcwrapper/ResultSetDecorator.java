@@ -8,11 +8,14 @@ import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Date;
+import java.sql.NClob;
 import java.sql.Ref;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.RowId;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
+import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -28,6 +31,236 @@ import java.util.Map;
  */
 public abstract class ResultSetDecorator implements ResultSet {
 	
+	public boolean isWrapperFor(Class<?> iface) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public <T> T unwrap(Class<T> iface) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public int getHoldability() throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public Reader getNCharacterStream(int columnIndex) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public Reader getNCharacterStream(String columnLabel) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public NClob getNClob(int columnIndex) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public NClob getNClob(String columnLabel) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public String getNString(int columnIndex) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public String getNString(String columnLabel) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public RowId getRowId(int columnIndex) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public RowId getRowId(String columnLabel) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public SQLXML getSQLXML(int columnIndex) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public SQLXML getSQLXML(String columnLabel) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public boolean isClosed() throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateAsciiStream(int columnIndex, InputStream x, long length)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateAsciiStream(int columnIndex, InputStream x)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateAsciiStream(String columnLabel, InputStream x, long length)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateAsciiStream(String columnLabel, InputStream x)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateBinaryStream(int columnIndex, InputStream x, long length)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateBinaryStream(int columnIndex, InputStream x)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateBinaryStream(String columnLabel, InputStream x,
+			long length) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateBinaryStream(String columnLabel, InputStream x)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateBlob(int columnIndex, InputStream inputStream, long length)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateBlob(int columnIndex, InputStream inputStream)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateBlob(String columnLabel, InputStream inputStream,
+			long length) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateBlob(String columnLabel, InputStream inputStream)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateCharacterStream(int columnIndex, Reader x, long length)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateCharacterStream(int columnIndex, Reader x)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateCharacterStream(String columnLabel, Reader reader,
+			long length) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateCharacterStream(String columnLabel, Reader reader)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateClob(int columnIndex, Reader reader, long length)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateClob(int columnIndex, Reader reader) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateClob(String columnLabel, Reader reader, long length)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateClob(String columnLabel, Reader reader)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateNCharacterStream(int columnIndex, Reader x, long length)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateNCharacterStream(int columnIndex, Reader x)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateNCharacterStream(String columnLabel, Reader reader,
+			long length) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateNCharacterStream(String columnLabel, Reader reader)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateNClob(int columnIndex, NClob clob) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateNClob(int columnIndex, Reader reader, long length)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateNClob(int columnIndex, Reader reader) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateNClob(String columnLabel, NClob clob) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateNClob(String columnLabel, Reader reader, long length)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateNClob(String columnLabel, Reader reader)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateNString(int columnIndex, String string)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateNString(String columnLabel, String string)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateRowId(int columnIndex, RowId x) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateRowId(String columnLabel, RowId x) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateSQLXML(int columnIndex, SQLXML xmlObject)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public void updateSQLXML(String columnLabel, SQLXML xmlObject)
+			throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
 	public static void checkInterrupted() throws SQLException {
 		if (Thread.interrupted()) {
 			throw new SQLException("Operation canceled due to interrupt request.");

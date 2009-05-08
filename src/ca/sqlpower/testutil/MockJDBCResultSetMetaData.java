@@ -234,5 +234,11 @@ public class MockJDBCResultSetMetaData implements ResultSetMetaData {
     public void setWritable(int column, boolean writable) {
         this.writable[column - 1] = writable;
     }
+	public boolean isWrapperFor(Class<?> iface) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+	public <T> T unwrap(Class<T> iface) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
 
 }
