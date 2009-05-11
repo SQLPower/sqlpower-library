@@ -1135,13 +1135,16 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 */
     public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
 		curCol = columnIndex - 1;
-		if (curRow[columnIndex - 1] == null) {
+		Object curColObject = curRow[columnIndex - 1];
+		if (curColObject == null) {
 			return new BigDecimal(0);
 		} else {
-			if (curRow[columnIndex - 1] instanceof BigDecimal) {
+			if (curColObject instanceof BigDecimal) {
 				return (BigDecimal) curRow[columnIndex - 1];
+			} else if (curColObject instanceof Number) {
+				return new BigDecimal(String.valueOf(curColObject));
 			} else {
-				throw new SQLException("Can't convert column " + columnIndex + " to BigDecimal.");
+				throw new SQLException("Could not convert column " + columnIndex + " of type " + curColObject.getClass() + " to BigDecimal.");
 			}
 		}
 	}
