@@ -3,6 +3,7 @@ package ca.sqlpower.sql;
 import java.awt.Color;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.text.DateFormat;
@@ -10,8 +11,6 @@ import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Iterator;
 import java.util.List;
-
-import javax.servlet.jsp.JspWriter;
 
 import ca.sqlpower.util.Hyperlink;
 import ca.sqlpower.util.LongMessageFormat;
@@ -367,7 +366,7 @@ public abstract class WebResultFormatter {
     public abstract void formatToStream(WebResultSet wrs, PrintWriter out) 
         throws SQLException, NoRowidException;
     
-    public void formatToStream(WebResultSet wrs, JspWriter out) 
+    public void formatToStream(WebResultSet wrs, Writer out) 
         throws SQLException, NoRowidException {
         formatToStream(wrs, new PrintWriter(out));
     }   

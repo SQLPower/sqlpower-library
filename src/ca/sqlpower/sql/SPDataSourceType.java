@@ -67,6 +67,13 @@ import org.apache.log4j.Logger;
 public class SPDataSourceType {
     
     static final Logger logger = Logger.getLogger(SPDataSourceType.class);
+
+    /**
+     * Map of classpaths to classloaders. This facilitates class sharing between
+     * incarnations of the same database type (as long as it still has the same
+     * set of JAR files as its previous incarnations).
+     */
+    private static final Map<List<String>, JDBCClassLoader> jdbcClassloaders = new HashMap<List<String>, JDBCClassLoader>();
     
     /**
      * For debugging only, we count how many times we've attempted to load
@@ -94,12 +101,14 @@ public class SPDataSourceType {
     	public void redo() throws CannotRedoException {
     		super.redo();
     		source.properties.put(changedProperty, newValue);
+    		source.classLoader = getClassLoaderFromCache();
     	}
     	
     	@Override
     	public void undo() throws CannotUndoException {
     		super.undo();
     		source.properties.put(changedProperty, oldValue);
+            source.classLoader = getClassLoaderFromCache();
     	}
     }
     
@@ -109,7 +118,7 @@ public class SPDataSourceType {
      * one of these class loaders, configured to search the database vendor's
      * jar/zip files.
      */
-    public class JDBCClassLoader extends ClassLoader {
+    static class JDBCClassLoader extends ClassLoader {
 
         /**
          * The base URI against which to resolve server: type JAR specs. This
@@ -119,9 +128,22 @@ public class SPDataSourceType {
          */
         private final URI serverBaseUri;
 
-        protected JDBCClassLoader(URI serverBaseUri) {
+        /**
+         * The classpath of this loader at the time it was created.
+         */
+        private final List<String> classpath;
+
+        /**
+         * Don't call this method directly. Use the
+         * {@link SPDataSourceType#getClassLoaderFromCache()} method instead.
+         * 
+         * @param serverBaseUri Base URI to resolve classpath entries against.
+         * @param classpath The JAR specifications to consult.
+         */
+        protected JDBCClassLoader(URI serverBaseUri, List<String> classpath) {
             super(JDBCClassLoader.class.getClassLoader());
             this.serverBaseUri = serverBaseUri;
+            this.classpath = classpath;
 
             logger.debug("Created new JDBC Classloader @"+System.identityHashCode(this));
             
@@ -163,7 +185,7 @@ public class SPDataSourceType {
                         ": Looking for class "+name+" (count = "+count+")");
             }
 
-            for (String jarFileName : getJdbcJarList()) {
+            for (String jarFileName : classpath) {
                 try {
                     logger.debug("checking file "+jarFileName);
                     URL jarLocation = SPDataSource.jarSpecToFile(jarFileName, getParent(), serverBaseUri);
@@ -201,9 +223,10 @@ public class SPDataSourceType {
 					throw new ClassNotFoundException(errorMsg, ex);
                 }
             }
-            String errorMsg = "Could not locate class "+name
-			 +" in any of the JDBC Driver JAR files "+getJdbcJarList();
-            logger.error(errorMsg);
+            String errorMsg =
+                "Could not locate class " + name +
+			    " in any of the JDBC Driver JAR files: " + classpath;
+            logger.debug(errorMsg);
 			throw new ClassNotFoundException(errorMsg);
         }
 
@@ -229,7 +252,7 @@ public class SPDataSourceType {
         protected Enumeration<URL> findResources(String name) {
             logger.debug("Looking for all resources with path "+name);
             List<URL> results = new ArrayList<URL>();
-            for (String jarName : getJdbcJarList()) {
+            for (String jarName : classpath) {
                 logger.debug("Converting JAR name: " + jarName);
                 URL jarLocation = SPDataSource.jarSpecToFile(jarName, getParent(), serverBaseUri);
                 logger.debug("  JAR is "+jarLocation);
@@ -298,7 +321,7 @@ public class SPDataSourceType {
      * The Class Loader that is responsible for finding and defining the JDBC
      * driver classes from the database vendor, for this connection type only.
      */
-    private final ClassLoader classLoader;
+    private JDBCClassLoader classLoader;
     
     /**
      * Deletgate class for supporting the bound properties of this class.
@@ -309,6 +332,8 @@ public class SPDataSourceType {
      * Listeners listening for undoable edits.
      */
 	private final List<UndoableEditListener> undoableEditListeners = new ArrayList<UndoableEditListener>();
+
+    private final URI serverBaseUri;
 
     /**
      * Creates a new default data source type that can load drivers from a local
@@ -326,7 +351,23 @@ public class SPDataSourceType {
      */
     public SPDataSourceType(URI serverBaseUri) {
         super();
-        classLoader = new JDBCClassLoader(serverBaseUri);
+        this.serverBaseUri = serverBaseUri;
+        classLoader = getClassLoaderFromCache();
+    }
+
+    /**
+     * Returns the cached classloader that has the same set of jar files in its
+     * classpath as this data source type currently does. If no such classloader
+     * is already cached, a new one will be created and stored in the cache.
+     */
+    private JDBCClassLoader getClassLoaderFromCache() {
+        List<String> classpath = Collections.unmodifiableList(new ArrayList<String>(getJdbcJarList()));
+        JDBCClassLoader classLoader = jdbcClassloaders.get(classpath);
+        if (classLoader == null) {
+            classLoader = new JDBCClassLoader(serverBaseUri, classpath);
+            jdbcClassloaders.put(classpath, classLoader);
+        }
+        return classLoader;
     }
     
     public String getComment() {
@@ -402,6 +443,7 @@ public class SPDataSourceType {
             properties.put(JDBC_JAR_BASE+"_"+i, jar);
             i++;
         }
+        classLoader = getClassLoaderFromCache();
     }
     
     /**
@@ -415,10 +457,12 @@ public class SPDataSourceType {
         int count = getJdbcJarCount();
         properties.put(JDBC_JAR_BASE+"_"+count, jarPath);
         setJdbcJarCount(count + 1);
+        classLoader = getClassLoaderFromCache();
     }
 
     private void setJdbcJarCount(int count) {
         putPropertyImpl("jdbcJarCount", JDBC_JAR_COUNT, String.valueOf(count));
+        classLoader = getClassLoaderFromCache();
     }
 
     private int getJdbcJarCount() {
@@ -580,19 +624,15 @@ public class SPDataSourceType {
     public Set<String> getPropertyNames() {
     	return Collections.unmodifiableSet(properties.keySet());
     }
-    
+
     /**
-     * Adds or replaces a value in the property map.
+     * Adds or replaces a value in the property map. Fires an undoable edit
+     * event, but not a property change event. Use
+     * {@link #putPropertyImpl(String, String, String)} if the change should
+     * produce a property change event.
      */
     public void putProperty(String key, String value) {
-    	String oldValue = properties.get(key);
-        properties.put(key, value);
-        if ((oldValue == null && value != null) || (oldValue != null && !oldValue.equals(value))) {
-        	UndoableEdit edit = new UndoablePropertyEdit(key, oldValue, value, this);
-        	for (int i = undoableEditListeners.size() -1; i >= 0; i--) {
-        		undoableEditListeners.get(i).undoableEditHappened(new UndoableEditEvent(this, edit));
-        	}
-        }
+    	putPropertyImpl(null, key, value);
     }
 
     public ClassLoader getJdbcClassLoader() {
@@ -674,15 +714,26 @@ public class SPDataSourceType {
      * Modifies the value of the named property, firing a change event if the
      * new value differs from the pre-existing one.
      * 
-     * @param javaPropName The name of the JavaBeans property you are modifying
-     * @param plPropName The name of PL.INI the property to set/update (this is also
-     * the key in the in-memory properties map)
-     * @param propValue The new value for the property
+     * @param javaPropName
+     *            The name of the JavaBeans property you are modifying. If the
+     *            change does not correspond with a bean property, or you want
+     *            to suppress the property change event, this parameter should
+     *            be null.
+     * @param plPropName
+     *            The name of PL.INI the property to set/update (this is also
+     *            the key in the in-memory properties map)
+     * @param propValue
+     *            The new value for the property
      */
     private void putPropertyImpl(String javaPropName, String plPropName, String propValue) {
         String oldValue = properties.get(plPropName);
         properties.put(plPropName, propValue);
-        firePropertyChange(javaPropName, oldValue, propValue);
+        classLoader = getClassLoaderFromCache(); // in case this changes the classpath
+        
+        if (javaPropName != null) {
+            firePropertyChange(javaPropName, oldValue, propValue);
+        }
+        
         if ((oldValue == null && propValue != null) || (oldValue != null && !oldValue.equals(propValue))) {
         	UndoableEdit edit = new UndoablePropertyEdit(plPropName, oldValue, propValue, this);
         	for (int i = undoableEditListeners.size() -1; i >= 0; i--) {

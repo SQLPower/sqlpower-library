@@ -24,7 +24,7 @@ public class BrowserUtil {
         } else if (OS_NAME.startsWith("Mac OS")) {
             p = runtime.exec("open " + uri);
         } else {
-            // XXX check PATH for mozilla OR firefox? Opera????
+            // XXX check PATH for mozilla OR firefox? Opera???? chrome????????? chromium??????????!??????
             p = runtime.exec("firefox " + uri);
         }
         try {

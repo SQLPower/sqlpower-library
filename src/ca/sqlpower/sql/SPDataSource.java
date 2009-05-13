@@ -488,7 +488,9 @@ public class SPDataSource {
             return connection;
         } catch (ClassNotFoundException e) {
             logger.warn("Driver Class not found", e);
-            throw new SQLException("JDBC Driver \""+getDriverClass()+"\" not found.");
+            SQLException sqlException = new SQLException("JDBC Driver \""+getDriverClass()+"\" not found.");
+            sqlException.initCause(e);
+            throw sqlException;
         } catch (InstantiationException e) {
             logger.error("Creating SQL Exception to conform to interface.  Real exception is: ", e);
             throw new SQLException("Couldn't create an instance of the " +
