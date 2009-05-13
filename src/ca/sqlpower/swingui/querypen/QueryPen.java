@@ -481,16 +481,13 @@ public class QueryPen implements MouseState {
 	public JPanel createQueryPen() {
         panel.setLayout(new BorderLayout());
         panel.add(getScrollPane(), BorderLayout.CENTER);
-        final ImageIcon deleteIcon = new ImageIcon(QueryPen.class.getClassLoader().getResource("icons/delete.png"));
+        final ImageIcon deleteIcon = new ImageIcon(QueryPen.class.getClassLoader().getResource("ca/sqlpower/swingui/querypen/delete.png"));
         getDeleteButton().setToolTipText(DELETE_ACTION+ " (Shortcut Delete)");
         getDeleteButton().setIcon(deleteIcon);
         
         queryPenBar = new JToolBar(JToolBar.HORIZONTAL);
         queryPenBar.setLayout(new BorderLayout());
         
-    	
-    	ImageIcon executeIcon = new ImageIcon(QueryPen.class.getClassLoader().getResource("icons/wabit_execute.png"));
-    	getPlayPenExecuteButton().setIcon(executeIcon);
     	getPlayPenExecuteButton().setToolTipText(QUERY_EXECUTE + "(Shortcut "+ getAcceleratorKeyString()+ " R)");
     	
     	canvas.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(
@@ -600,8 +597,8 @@ public class QueryPen implements MouseState {
         zoomSliderContainer = new JPanel(new BorderLayout());
         zoomSliderContainer.setMaximumSize(new Dimension((int)zoomSlider.getPreferredSize().getWidth(), 200));
         zoomSliderContainer.add(zoomSlider, BorderLayout.CENTER);
-        zoomSliderContainer.add(new JLabel(new ImageIcon(QueryPen.class.getClassLoader().getResource("icons/zoom_in16.png"))), BorderLayout.EAST);
-        zoomSliderContainer.add(new JLabel(new ImageIcon(QueryPen.class.getClassLoader().getResource("icons/zoom_out16.png"))), BorderLayout.WEST);
+        zoomSliderContainer.add(new JLabel(new ImageIcon(QueryPen.class.getClassLoader().getResource("ca/sqlpower/swingui/querypen/zoom_in16.png"))), BorderLayout.EAST);
+        zoomSliderContainer.add(new JLabel(new ImageIcon(QueryPen.class.getClassLoader().getResource("ca/sqlpower/swingui/querypen/zoom_out16.png"))), BorderLayout.WEST);
         panel.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(
                 KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask() | KeyEvent.SHIFT_MASK)
                 , ZOOM_IN_ACTION);
@@ -616,7 +613,7 @@ public class QueryPen implements MouseState {
                 , ZOOM_OUT_ACTION);
         panel.getActionMap().put(ZOOM_OUT_ACTION, zoomOutAction);
         
-        ImageIcon joinIcon = new ImageIcon(QueryPen.class.getClassLoader().getResource("icons/j.png"));
+        ImageIcon joinIcon = new ImageIcon(QueryPen.class.getClassLoader().getResource("ca/sqlpower/swingui/querypen/j.png"));
         AbstractAction joinAction = new AbstractAction() {
         	public void actionPerformed(ActionEvent e) {
         		setMouseState(MouseStates.CREATE_JOIN);
@@ -816,5 +813,9 @@ public class QueryPen implements MouseState {
 
     public JToolBar getQueryPenToolBar() {
         return queryPenToolBar;
+    }
+    
+    public void setExecuteIcon(ImageIcon icon) {
+        getPlayPenExecuteButton().setIcon(icon);
     }
 }

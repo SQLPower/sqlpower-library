@@ -315,8 +315,8 @@ public class JoinLine extends PNode implements CleanupPNode {
 		addChild(rightPath);
 		rightPath.setStroke(new BasicStroke(2));
 		
-		joinSelectedIcon = new ImageIcon(JoinLine.class.getClassLoader().getResource("icons/node_on.png"));
-		joinUnselectedIcon = new ImageIcon(JoinLine.class.getClassLoader().getResource("icons/node_off.png"));
+		joinSelectedIcon = new ImageIcon(JoinLine.class.getClassLoader().getResource("ca/sqlpower/swingui/querypen/node_on.png"));
+		joinUnselectedIcon = new ImageIcon(JoinLine.class.getClassLoader().getResource("ca/sqlpower/swingui/querypen/node_off.png"));
 		selectedImageNode = new PImage(joinSelectedIcon.getImage());
 		unselectedImageNode = new PImage(joinUnselectedIcon.getImage());
 		addChild(selectedImageNode);
