@@ -225,6 +225,20 @@
             <version>1.8.0</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>edu.umd.cs</groupId>
+            <artifactId>piccolo</artifactId>
+            <version>1.2.1</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/piccolo.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>edu.umd.cs</groupId>
+            <artifactId>piccolox</artifactId>
+            <version>1.2.1</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/piccolox.jar</systemPath>
+        </dependency>
 	</dependencies>
 
 	<repositories>
