@@ -281,7 +281,8 @@ public class SPDataSourceType {
                         logger.debug("    Found entry " + name);
                     }
                 } catch (IOException ex) {
-                    logger.warn("  IO Exception while searching "+ jarLocation
+                    // missing resource is not a fatal error
+                    logger.debug("  IO Exception while searching "+ jarLocation
                                 + " for resource " + name + ". Continuing...", ex);
                 }
             }
