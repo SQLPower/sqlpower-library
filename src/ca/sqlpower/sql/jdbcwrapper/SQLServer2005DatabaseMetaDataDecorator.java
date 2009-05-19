@@ -38,9 +38,14 @@ public class SQLServer2005DatabaseMetaDataDecorator extends SQLServerDatabaseMet
 
     /**
      * Works around a user-reported bug in the SQL Server JDBC driver. Note this
-     * is a different workaround than the one for SQL Server 2000. See <a
-     * href="http://www.sqlpower.ca/forum/posts/list/0/1788.page">the post</a>
-     * for details.
+     * is a different workaround than the one for SQL Server 2000, and it was updated again
+     * just before the 0.9.13 release.
+     * <p>
+     * See <a href="http://www.sqlpower.ca/forum/posts/list/0/1788.page">the original post</a>
+     * for details on the original SS2k5 query. See
+     * <a href="http://www.sqlpower.ca/forum/posts/list/15/2271.page">the new post</a>
+     * for the reasoning behind the change to this query (which is the same one we're using
+     * for SQL Server 2008).
      */
     @Override
     public ResultSet getSchemas() throws SQLException {
@@ -49,10 +54,13 @@ public class SQLServer2005DatabaseMetaDataDecorator extends SQLServerDatabaseMet
         try {
             stmt = getConnection().createStatement();
             String sql = 
-                "SELECT s.name AS 'TABLE_SCHEM', db_name() AS 'TABLE_CATALOG'" +
-                " FROM sys.schemas s" +
-                " INNER JOIN sys.database_principals db ON s.principal_id = db.principal_id" +
-                " WHERE is_fixed_role = 0";
+                "SELECT DISTINCT" +
+                "\n  w.schema_name AS TABLE_SCHEM," +
+                "\n  w.catalog_name AS TABLE_CAT" +
+                "\nFROM sys.schemas u" +
+                "\nJOIN sys.objects v ON u.schema_id = v.schema_id" +
+                "\nJOIN INFORMATION_SCHEMA.SCHEMATA w ON w.schema_name = u.name" +
+                "\nORDER BY table_schem";
             rs = stmt.executeQuery(sql);
             
             CachedRowSet crs = new CachedRowSet();

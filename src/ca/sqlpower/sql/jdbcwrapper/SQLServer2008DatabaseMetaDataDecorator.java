@@ -28,7 +28,7 @@ import ca.sqlpower.sql.CachedRowSet;
 
 /**
  * Extends the base SQL Server database meta data decorator by providing a more accurate
- * method of retrieving schema names on SQL Server 2005.
+ * method of retrieving schema names on SQL Server 2008.
  */
 public class SQLServer2008DatabaseMetaDataDecorator extends SQLServerDatabaseMetaDataDecorator {
 
@@ -42,6 +42,10 @@ public class SQLServer2008DatabaseMetaDataDecorator extends SQLServerDatabaseMet
      * Microsoft has been busy. See <a
      * href="http://www.sqlpower.ca/forum/posts/list/0/1788.page">the post</a>
      * for details.
+     * <p>
+     * Note: the query changed just before the 0.9.13 release. See
+     * <a href="http://www.sqlpower.ca/forum/posts/list/15/2271.page">the new post</a>
+     * for reasons.
      */
     @Override
     public ResultSet getSchemas() throws SQLException {
@@ -50,15 +54,13 @@ public class SQLServer2008DatabaseMetaDataDecorator extends SQLServerDatabaseMet
         try {
             stmt = getConnection().createStatement();
             String sql = 
-                "SELECT s.name AS TABLE_SCHEM, db_name() AS TABLE_CATALOG" +
-                "\nFROM sys.schemas s" +
-                "\nWHERE EXISTS (" +
-                "\n SELECT 1 FROM sys.database_principals p" +
-                "\n WHERE p.is_fixed_role=0 AND s.principal_id=p.principal_id" +
-                "\n) OR EXISTS (" +
-                "\n SELECT 1 FROM sys.tables t WHERE t.schema_id = s.schema_id" +
-                "\n)" +
-                "\nORDER BY 1";
+                "SELECT DISTINCT" +
+                "\n  w.schema_name AS TABLE_SCHEM," +
+                "\n  w.catalog_name AS TABLE_CAT" +
+                "\nFROM sys.schemas u" +
+                "\nJOIN sys.objects v ON u.schema_id = v.schema_id" +
+                "\nJOIN INFORMATION_SCHEMA.SCHEMATA w ON w.schema_name = u.name" +
+                "\nORDER BY table_schem";
             rs = stmt.executeQuery(sql);
             CachedRowSet crs = new CachedRowSet();
             crs.populate(rs);
