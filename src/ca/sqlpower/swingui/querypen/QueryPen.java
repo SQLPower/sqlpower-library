@@ -42,8 +42,10 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -231,12 +233,9 @@ public class QueryPen implements MouseState {
     									logger.debug("FK item node is " + fkItemNode);
     									if (pkItemNode != null && fkItemNode != null) {
     										if (pkItemNode.getParent() != fkItemNode.getParent()) {
-    											JoinLine join = new JoinLine(QueryPen.this, canvas, pkItemNode, fkItemNode);
-    											join.getModel().addJoinChangeListener(queryChangeListener);
-    											joinLayer.addChild(join);
-    											for (PropertyChangeListener l : queryListeners) {
-    												l.propertyChange(new PropertyChangeEvent(canvas, SQLJoin.PROPERTY_JOIN_ADDED, null, join.getModel()));
-    											}
+    										    SQLJoin join = new SQLJoin(pkItemNode.getItem(), fkItemNode.getItem());
+    											join.addJoinChangeListener(queryChangeListener);
+    											QueryPen.this.model.addJoin(join);
     										} else {
     											logger.debug("we don't allow items joining on the same table");
     										}
@@ -257,12 +256,9 @@ public class QueryPen implements MouseState {
     										if (pkItemNode.getParent() != fkItemNode.getParent()) {
     											logger.debug(" pkItemNode" + ((ContainerPane)pkItemNode.getParent()).getModel().getName());
     											logger.debug(" fkItemNode" + ((ContainerPane)fkItemNode.getParent()).getModel().getName());
-    											JoinLine join = new JoinLine(QueryPen.this, canvas, fkItemNode, pkItemNode);
-    											join.getModel().addJoinChangeListener(queryChangeListener);
-    											joinLayer.addChild(join);
-    											for (PropertyChangeListener l : queryListeners) {
-    												l.propertyChange(new PropertyChangeEvent(canvas, SQLJoin.PROPERTY_JOIN_ADDED, null, join.getModel()));
-    											}
+    											SQLJoin join = new SQLJoin(fkItemNode.getItem(), pkItemNode.getItem());
+    											join.addJoinChangeListener(queryChangeListener);
+    											QueryPen.this.model.addJoin(join);
     										} else {
     											logger.debug("we don't allow items joining on the same table");
     										}
@@ -430,11 +426,7 @@ public class QueryPen implements MouseState {
 	 * It also fires the propertyChange event to update the query
 	 */
 	public void deleteJoinLine(JoinLine pickedNode) {
-		pickedNode.disconnectJoin();
-		joinLayer.removeChild(pickedNode);
-		for (PropertyChangeListener l : queryListeners) {
-			l.propertyChange(new PropertyChangeEvent(canvas, SQLJoin.PROPERTY_JOIN_REMOVED, pickedNode.getModel(), null));
-		}
+		model.removeJoin(pickedNode.getModel());
 	}
 	
 	/**
@@ -478,12 +470,70 @@ public class QueryPen implements MouseState {
      */
     private final ForumAction forumAction;
 
+    /**
+     * This listener will listen for new joins being made on the query
+     * model and add graphical join lines to the query pen appropriately.
+     */
+    private final PropertyChangeListener joinAddedListener = new PropertyChangeListener() {
+    
+        public void propertyChange(PropertyChangeEvent evt) {
+            if (evt.getPropertyName().equals(SQLJoin.PROPERTY_JOIN_ADDED)) {
+                SQLJoin sqlJoin = (SQLJoin) evt.getNewValue();
+                JoinLine join = new JoinLine(QueryPen.this, canvas, sqlJoin);
+                joinLayer.addChild(join);
+            } else if (evt.getPropertyName().equals(QueryData.PROPERTY_QUERY) && evt.getNewValue() instanceof QueryData) {
+                //This case is for compound edits where multiple things may have been created
+                QueryData oldQuery = (QueryData) evt.getOldValue();
+                QueryData newQuery = (QueryData) evt.getNewValue();
+                Collection<SQLJoin> oldJoins = new HashSet<SQLJoin>(oldQuery.getJoins());
+                Collection<SQLJoin> newJoins = new HashSet<SQLJoin>(newQuery.getJoins());
+                newJoins.removeAll(oldJoins);
+                for (SQLJoin join : newJoins) {
+                    joinLayer.addChild(new JoinLine(QueryPen.this, canvas, join));
+                }
+            }
+        }
+    };
+    
+    /**
+     * This will listen to the model of the query pen and remove joins from the view
+     * when they are removed from the model.
+     */
+    private final PropertyChangeListener joinRemovedListener = new PropertyChangeListener() {
+    
+        public void propertyChange(PropertyChangeEvent evt) {
+            if (evt.getPropertyName().equals(SQLJoin.PROPERTY_JOIN_REMOVED)) {
+                SQLJoin removedJoin = (SQLJoin) evt.getOldValue();
+                JoinLine pickedNode = null;
+                for (Object node : joinLayer.getAllNodes()) {
+                    if (node instanceof JoinLine && ((JoinLine) node).getModel() == removedJoin) {
+                        pickedNode.disconnectJoin();
+                        joinLayer.removeChild(pickedNode);
+                        break;
+                    }
+                }
+            } else if (evt.getPropertyName().equals(QueryData.PROPERTY_QUERY) && evt.getNewValue() instanceof QueryData) {
+                //This case is for compound edits where multiple things may have been removed
+                QueryData oldQuery = (QueryData) evt.getOldValue();
+                QueryData newQuery = (QueryData) evt.getNewValue();
+                Collection<SQLJoin> oldJoins = new HashSet<SQLJoin>(oldQuery.getJoins());
+                Collection<SQLJoin> newJoins = new HashSet<SQLJoin>(newQuery.getJoins());
+                oldJoins.removeAll(newJoins);
+                for (Object node : joinLayer.getAllNodes()) {
+                    if (node instanceof JoinLine && oldJoins.contains(((JoinLine) node).getModel())) {
+                        JoinLine pickedNode = (JoinLine) node;
+                        pickedNode.disconnectJoin();
+                        joinLayer.removeChild(pickedNode);
+                    }
+                }
+            }
+        }
+    };
+
 	public JPanel createQueryPen() {
         panel.setLayout(new BorderLayout());
         panel.add(getScrollPane(), BorderLayout.CENTER);
-        final ImageIcon deleteIcon = new ImageIcon(QueryPen.class.getClassLoader().getResource("ca/sqlpower/swingui/querypen/delete.png"));
-        getDeleteButton().setToolTipText(DELETE_ACTION+ " (Shortcut Delete)");
-        getDeleteButton().setIcon(deleteIcon);
+
         
         queryPenBar = new JToolBar(JToolBar.HORIZONTAL);
         queryPenBar.setLayout(new BorderLayout());
@@ -542,12 +592,44 @@ public class QueryPen implements MouseState {
      *            forums.
      */
 	public QueryPen(Action executeQueryAction, QueryData model, ForumAction forumAction) {
+	    this(executeQueryAction, model, forumAction, true);
+	}
+
+    /**
+     * Creates a query pen set up with the given model.
+     * 
+     * @param executeQueryAction
+     *            This action will be used to execute the query built in the
+     *            query pen.
+     * @param model
+     *            This model will be used to set up the query pen initially and
+     *            save changes to when the query pen changes.
+     * @param toolBar
+     *            This tool bar will be the tool bar defined to be at the top of
+     *            the query pen. If the tool bar given is null a default tool
+     *            bar will be created.
+     * @param forumAction
+     *            This action will open a browser and take them to the SQL Power
+     *            forums.
+     * @param showConstantContainer
+     *            This value should be set to true if the constants container is
+     *            to be shown in the query pen. In some cases we don't want to
+     *            show the constants pane as we are only interested in using
+     *            actual tables. The container still exists and gets hooked up
+     *            but it is just not displayed.
+     */
+	public QueryPen(Action executeQueryAction, QueryData model, ForumAction forumAction, boolean showConstantContainer) {
 	    this.forumAction = forumAction;
         playPenExecuteButton = new JButton(executeQueryAction);
 	    deleteButton = new JButton(getDeleteAction());
+        final ImageIcon deleteIcon = new ImageIcon(QueryPen.class.getClassLoader().getResource("ca/sqlpower/swingui/querypen/delete.png"));
+        getDeleteButton().setToolTipText(DELETE_ACTION+ " (Shortcut Delete)");
+        getDeleteButton().setIcon(deleteIcon);
 		this.executeQueryAction = executeQueryAction;
 		
 		this.model = model;
+		model.addPropertyChangeListener(joinAddedListener);
+		model.addPropertyChangeListener(joinRemovedListener);
 		panel = new JPanel();
 	    cursorManager = new CursorManager(panel);
 		if (System.getProperty("os.name").toLowerCase().startsWith("mac os x")) {
@@ -629,7 +711,7 @@ public class QueryPen implements MouseState {
                 , JOIN_ACTION);
         canvas.getActionMap().put(JOIN_ACTION, joinAction);
         
-        joinCreationListener = new CreateJoinEventHandler(this, joinLayer, canvas, cursorManager);
+        joinCreationListener = new CreateJoinEventHandler(this, canvas, cursorManager);
 		canvas.addInputEventListener(joinCreationListener);
 		joinCreationListener.addCreateJoinListener(queryChangeListener);
         
@@ -667,16 +749,20 @@ public class QueryPen implements MouseState {
 		
 		setQueryPenToolBar(createToolBar());
 		
-		loadQueryCache();
+		loadQueryCache(showConstantContainer);
 	}
 	
 	/**
 	 * This will load the related tables and their properties into the QueryPen.
 	 */
-	private void loadQueryCache() {
+	private void loadQueryCache(boolean showConstantContainer) {
         constantsContainer = new ConstantsPane(this, canvas, model.getConstantsContainer());
         constantsContainer.addChangeListener(queryChangeListener);
-        topLayer.addChild(constantsContainer);
+        
+        if (showConstantContainer) {
+            topLayer.addChild(constantsContainer);
+        }
+        
         Map<Item, UnmodifiableItemPNode> loadedItemPNodes = new HashMap<Item, UnmodifiableItemPNode>();
         for (Container c : model.getFromTableList()) {
         	ContainerPane container = new ContainerPane(this, canvas, c);
@@ -686,7 +772,7 @@ public class QueryPen implements MouseState {
 			}
         }
         for (SQLJoin join : model.getJoins()) {
-        	joinLayer.addChild(new JoinLine(QueryPen.this, canvas, loadedItemPNodes.get(join.getLeftColumn()), loadedItemPNodes.get(join.getRightColumn()), join));
+        	joinLayer.addChild(new JoinLine(QueryPen.this, canvas, join));
         }
 	}
 	
@@ -778,6 +864,9 @@ public class QueryPen implements MouseState {
 	}
 
 	public void cleanup() {
+	    model.removePropertyChangeListener(joinAddedListener);
+	    model.removePropertyChangeListener(joinRemovedListener);
+	    
 		queryListeners.clear();
 		for (Object o : topLayer.getAllNodes()) {
 			if (o instanceof CleanupPNode) {

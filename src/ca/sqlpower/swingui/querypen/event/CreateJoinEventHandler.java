@@ -30,12 +30,10 @@ import javax.swing.SwingUtilities;
 import ca.sqlpower.query.SQLJoin;
 import ca.sqlpower.swingui.CursorManager;
 import ca.sqlpower.swingui.querypen.ConstantPNode;
-import ca.sqlpower.swingui.querypen.JoinLine;
 import ca.sqlpower.swingui.querypen.QueryPen;
 import ca.sqlpower.swingui.querypen.UnmodifiableItemPNode;
 import ca.sqlpower.swingui.querypen.MouseState.MouseStates;
 import edu.umd.cs.piccolo.PCanvas;
-import edu.umd.cs.piccolo.PLayer;
 import edu.umd.cs.piccolo.PNode;
 import edu.umd.cs.piccolo.event.PBasicInputEventHandler;
 import edu.umd.cs.piccolo.event.PInputEvent;
@@ -48,7 +46,6 @@ public class CreateJoinEventHandler extends PBasicInputEventHandler {
 	private QueryPen queryPen;
 	private UnmodifiableItemPNode leftText;
 	private UnmodifiableItemPNode rightText;
-	private PLayer joinLayer;
 	private PCanvas canvas;
 	private CursorManager cursorManager;
 	private double mouseFirstClickX;
@@ -65,9 +62,8 @@ public class CreateJoinEventHandler extends PBasicInputEventHandler {
 	
 	private List<PropertyChangeListener> createJoinListeners = new ArrayList<PropertyChangeListener>();
 
-	public CreateJoinEventHandler(QueryPen mouseStatePane, PLayer joinLayer, PCanvas canvas, CursorManager cursorManager) {
+	public CreateJoinEventHandler(QueryPen mouseStatePane, PCanvas canvas, CursorManager cursorManager) {
 		this.queryPen = mouseStatePane;
-		this.joinLayer = joinLayer;
 		this.canvas = canvas;
 		this.cursorManager = cursorManager;
 		this.mouseFirstClickX=0;
@@ -106,13 +102,11 @@ public class CreateJoinEventHandler extends PBasicInputEventHandler {
 						rightText = tempNode;
 						mouseFirstClickX = mouseSecondClickX = 0;
 					}
-					JoinLine join = new JoinLine(queryPen, canvas, leftText, rightText);
-					join.getModel().addJoinChangeListener(changeListener);
-					joinLayer.addChild(join);
-					for(PropertyChangeListener listener : createJoinListeners) {
-						listener.propertyChange(new PropertyChangeEvent(canvas, SQLJoin.PROPERTY_JOIN_ADDED, null, join.getModel()));
-					}
-					 resetJoin();
+					SQLJoin join = new SQLJoin(leftText.getItem(), rightText.getItem());
+					join.addJoinChangeListener(changeListener);
+					queryPen.getModel().addJoin(join);
+					
+					resetJoin();
 				} else {
 					throw new IllegalStateException("Trying to create a join while both ends have already been specified.");
 				}

@@ -62,7 +62,7 @@ public class QueryData {
 	 * the query has changed. This is a generic default change to a query
 	 * rather than a specific query change.
 	 */
-	private static final String PROPERTY_QUERY = "query";
+	public static final String PROPERTY_QUERY = "query";
 	
 	/**
 	 * The arguments that can be added to a column in the 
@@ -303,7 +303,7 @@ public class QueryData {
 	 * Stores the current query at the start of a compound edit. For use
 	 * when deciding how the query was changed.
 	 */
-	private String queryBeforeEdit;
+	private QueryData queryBeforeEdit;
 	
 	/**
 	 * This database instance is obtained from the session when the 
@@ -422,7 +422,11 @@ public class QueryData {
 
 			selectedColumns.addAll(query.getSelectedColumns());
 			fromTableList.addAll(query.getFromTableList());
-			joinMapping.putAll(query.getJoinMapping());
+			
+			for(Map.Entry<Container, List<SQLJoin>> entry : query.getJoinMapping().entrySet()) {
+			    joinMapping.put(entry.getKey(), new ArrayList<SQLJoin>(entry.getValue()));
+			}
+			
 			groupByList.addAll(query.getGroupByList());
 			groupByAggregateMap.putAll(query.getGroupByAggregateMap());
 			havingMap.putAll(query.getHavingMap());
@@ -852,7 +856,7 @@ public class QueryData {
 			}
 		}
 		if (!compoundEdit) {
-		    pcs.firePropertyChange(PROPERTY_QUERY, joinLine, null);
+		    pcs.firePropertyChange(SQLJoin.PROPERTY_JOIN_REMOVED, joinLine, null);
 		}
 	}
 
@@ -897,7 +901,7 @@ public class QueryData {
 			joinMapping.get(rightContainer).add(join);
 		}
 		if (!compoundEdit) {
-		    pcs.firePropertyChange(PROPERTY_QUERY, null, join);
+		    pcs.firePropertyChange(SQLJoin.PROPERTY_JOIN_ADDED, null, join);
 		}
 	}
 	
@@ -996,16 +1000,14 @@ public class QueryData {
 	
 	public void startCompoundEdit() {
 		compoundEdit = true;
-		queryBeforeEdit = generateQuery();
+		queryBeforeEdit = new QueryData(this);
 	}
 	
 	public void endCompoundEdit() {
 		compoundEdit = false;
-		String currentQuery = generateQuery();
-		if (!currentQuery.equals(queryBeforeEdit)) {
-		    pcs.firePropertyChange(PROPERTY_QUERY, queryBeforeEdit, currentQuery);
-		}
-		queryBeforeEdit = "";
+		QueryData currentQuery = this;
+		pcs.firePropertyChange(PROPERTY_QUERY, queryBeforeEdit, currentQuery);
+		queryBeforeEdit = null;
 	}
 
 	public boolean isGroupingEnabled() {

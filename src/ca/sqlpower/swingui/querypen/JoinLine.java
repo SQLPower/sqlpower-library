@@ -26,6 +26,7 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.Collection;
 
 import javax.swing.ImageIcon;
 import javax.swing.JEditorPane;
@@ -86,12 +87,12 @@ public class JoinLine extends PNode implements CleanupPNode {
 	/**
 	 * One of the columns that is being joined on.
 	 */
-	private final UnmodifiableItemPNode leftNode;
+	private UnmodifiableItemPNode leftNode;
 	
 	/**
 	 * The other column that is being joined on.
 	 */
-	private final UnmodifiableItemPNode rightNode;
+	private UnmodifiableItemPNode rightNode;
 	
 	/**
 	 * The parent to the leftNode. This will be used to know where
@@ -265,34 +266,36 @@ public class JoinLine extends PNode implements CleanupPNode {
 	 * contain the left and right items respectively so the JoinLine can connect itself correctly. Failing
 	 * to pass in the correct ItemPNodes will result in an IllegalStateException.
 	 */
-	public JoinLine(QueryPen queryPen, PCanvas c, UnmodifiableItemPNode leftNode, UnmodifiableItemPNode rightNode, SQLJoin model) throws IllegalStateException {
-		this(queryPen, c, leftNode, rightNode);
-		if (model.getLeftColumn() != leftNode.getItem()) {
-			throw new IllegalStateException("The left column items were not equal.");
-		}
-		if (model.getRightColumn() != rightNode.getItem()) {
-			throw new IllegalStateException("The right column items were not equal.");
-		}
-		this.model = model;
-		editorPane.setText(model.getComparator());
-		symbolText.syncWithDocument();
-		updateLine();
-	}
-	
-	/**
-	 * Creates the line representing a join between two columns.
-	 * The parent of these nodes will be listened to for movement
-	 * to update the position of the line.
-	 */
-	public JoinLine(QueryPen queryPen, PCanvas c, UnmodifiableItemPNode leftNode, UnmodifiableItemPNode rightNode) {
+	public JoinLine(QueryPen queryPen, PCanvas c, SQLJoin joinModel) throws IllegalStateException {
 		super();
+		
+		Collection<PNode> allNodes = (Collection<PNode>) queryPen.getTopLayer().getAllNodes();
+		leftNode = null;
+		rightNode = null;
+		for (PNode node : allNodes) {
+		    if (node instanceof UnmodifiableItemPNode) {
+		        UnmodifiableItemPNode pnode = (UnmodifiableItemPNode) node;
+		        if (leftNode == null && pnode.getModel() == joinModel.getLeftColumn()) {
+		            leftNode = pnode;
+		        } else if (rightNode == null && pnode.getModel() == joinModel.getRightColumn()) {
+		            rightNode = pnode;
+		        }
+		        if (leftNode != null && rightNode != null) break;
+		    }
+		}
+		if (leftNode == null) {
+			throw new IllegalStateException("The view and model are inconsistent. Could not find a view component for " + joinModel.getLeftColumn());
+		}
+		if (rightNode == null) {
+		    throw new IllegalStateException("The view and model are inconsistent. Could not find a view component for " + joinModel.getRightColumn());
+		}
+		
+		this.model = joinModel;
+	
 		this.queryPen = queryPen;
 		this.canvas = c;
-		model = new SQLJoin(leftNode.getItem(), rightNode.getItem());
 
 		model.addJoinChangeListener(joinListener);
-		this.leftNode = leftNode;
-		this.rightNode = rightNode;
 		leftNode.JoinTo(this);
 		rightNode.JoinTo(this);
 		leftContainerPane = leftNode.getParent();
@@ -424,6 +427,10 @@ public class JoinLine extends PNode implements CleanupPNode {
 
 		PNotificationCenter.defaultCenter().addListener(this, "setFocusColour", PSelectionEventHandler.SELECTION_CHANGED_NOTIFICATION, null);
 		setFocusColour(new PNotification(null, null, null));
+		
+		editorPane.setText(model.getComparator());
+		symbolText.syncWithDocument();
+		updateLine();
 	}
 
 	/**
