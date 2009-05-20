@@ -163,7 +163,8 @@ public class DataMover {
 			} catch (Exception e2) {
 				logger.error("Roll back on error failed", e2);
 			}
-			throw e;
+			throw new RuntimeException(
+			        "Prepared insert statement failed at row " + numRows + ":\n" + lastSqlString, e);
 		} finally {
 			if (srcRS != null) srcRS.close();
 			if (srcStmt != null) srcStmt.close();
