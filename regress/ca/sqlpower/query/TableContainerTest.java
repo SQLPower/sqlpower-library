@@ -36,7 +36,7 @@ import ca.sqlpower.sqlobject.StubSQLDatabaseMapping;
 public class TableContainerTest extends TestCase {
 
 	private TableContainer tableContainer;
-	private QueryData queryCache;
+	private Query queryCache;
 	private PlDotIni plIni;
 	private SQLDatabase db;
 	
@@ -54,7 +54,7 @@ public class TableContainerTest extends TestCase {
         con.close();
         
         SQLTable testTable = db.getTableByName("test_table");
-		queryCache = new QueryData(new StubSQLDatabaseMapping());
+		queryCache = new Query(new StubSQLDatabaseMapping());
 		
 		tableContainer = new TableContainer(queryCache, testTable);
 	}
@@ -70,7 +70,7 @@ public class TableContainerTest extends TestCase {
 		
         SQLTable testTable = db.getTableByName("test_table");
         assertNotNull(testTable);
-		queryCache = new QueryData(new StubSQLDatabaseMapping());
+		queryCache = new Query(new StubSQLDatabaseMapping());
 		
 		tableContainer = new TableContainer(UUID.randomUUID().toString(), queryCache, "test_table", "", "public", new ArrayList<SQLObjectItem>());
 		

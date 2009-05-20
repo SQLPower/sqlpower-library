@@ -47,9 +47,9 @@ import ca.sqlpower.sqlobject.SQLTable;
  * statement and also listen to everything that could
  * change the select statement.
  */
-public class QueryData {
+public class Query {
 	
-	private static final Logger logger = Logger.getLogger(QueryData.class);
+	private static final Logger logger = Logger.getLogger(Query.class);
 	
     /**
      * If the row limit changes causing the result set cache to become empty
@@ -303,7 +303,7 @@ public class QueryData {
 	 * Stores the current query at the start of a compound edit. For use
 	 * when deciding how the query was changed.
 	 */
-	private QueryData queryBeforeEdit;
+	private Query queryBeforeEdit;
 	
 	/**
 	 * This database instance is obtained from the session when the 
@@ -364,7 +364,7 @@ public class QueryData {
 
     public static final String GROUPING_CHANGED = " GROUPING_CHANGED";
 	
-	public QueryData(SQLDatabaseMapping dbMapping) {
+	public Query(SQLDatabaseMapping dbMapping) {
 		this((String)null, dbMapping);
 	}
 	
@@ -372,7 +372,7 @@ public class QueryData {
 	 * The uuid defines the unique id of this query cache. If null
 	 * is passed in a new UUID will be generated.
 	 */
-	public QueryData(String uuid, SQLDatabaseMapping dbMapping) {
+	public Query(String uuid, SQLDatabaseMapping dbMapping) {
 		if (uuid == null) {
 		    this.uuid = UUID.randomUUID();
 		} else {
@@ -404,7 +404,7 @@ public class QueryData {
 	 * A copy constructor for the query cache. This will not
 	 * hook up listeners.
 	 */
-	public QueryData(QueryData copy) {
+	public Query(Query copy) {
 	    uuid = UUID.randomUUID();
 		selectedColumns = new ArrayList<Item>();
 		fromTableList = new ArrayList<Container>();
@@ -417,8 +417,8 @@ public class QueryData {
 		
 		dbMapping = copy.getDBMapping();
 		setName(copy.getName());
-		if (copy instanceof QueryData) {
-			QueryData query = (QueryData) copy;
+		if (copy instanceof Query) {
+			Query query = (Query) copy;
 
 			selectedColumns.addAll(query.getSelectedColumns());
 			fromTableList.addAll(query.getFromTableList());
@@ -474,7 +474,7 @@ public class QueryData {
 			groupByAggregateMap.clear();
 			havingMap.clear();
 		}
-		pcs.firePropertyChange(QueryData.GROUPING_CHANGED, groupingEnabled, enabled);
+		pcs.firePropertyChange(Query.GROUPING_CHANGED, groupingEnabled, enabled);
 		groupingEnabled = enabled;
 	}
 	
@@ -809,7 +809,7 @@ public class QueryData {
 			removeItem(col);
 		}
 		if (!compoundEdit) {
-		    pcs.firePropertyChange(QueryData.PROPERTY_TABLE_REMOVED, table, null);
+		    pcs.firePropertyChange(Query.PROPERTY_TABLE_REMOVED, table, null);
 		}
 	}
 
@@ -935,7 +935,7 @@ public class QueryData {
 	 */
 	public void setGrouping(Item column, String groupByAggregate) {
 		SQLGroupFunction oldAggregate = groupByAggregateMap.get(column);
-		if (groupByAggregate.equals(QueryData.GROUP_BY)) {
+		if (groupByAggregate.equals(Query.GROUP_BY)) {
 			if (groupByList.contains(column)) {
 				return;
 			}
@@ -1000,12 +1000,12 @@ public class QueryData {
 	
 	public void startCompoundEdit() {
 		compoundEdit = true;
-		queryBeforeEdit = new QueryData(this);
+		queryBeforeEdit = new Query(this);
 	}
 	
 	public void endCompoundEdit() {
 		compoundEdit = false;
-		QueryData currentQuery = this;
+		Query currentQuery = this;
 		pcs.firePropertyChange(PROPERTY_QUERY, queryBeforeEdit, currentQuery);
 		queryBeforeEdit = null;
 	}
@@ -1077,7 +1077,7 @@ public class QueryData {
 		if (generatedQuery.equals(query)) {
 			return;
 		}
-		pcs.firePropertyChange(QueryData.PROPERTY_QUERY_TEXT, userModifiedQuery, query);
+		pcs.firePropertyChange(Query.PROPERTY_QUERY_TEXT, userModifiedQuery, query);
 		userModifiedQuery = query;
 	}
 	

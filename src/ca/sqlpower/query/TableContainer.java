@@ -61,9 +61,9 @@ public class TableContainer extends ItemContainer implements Container {
 	/**
 	 * This is the cache this container is contained in.
 	 */
-	private final QueryData cache;
+	private final Query cache;
 	
-	public TableContainer(QueryData cache, SQLTable t) {
+	public TableContainer(Query cache, SQLTable t) {
 	    super(t.getName());
 		this.cache = cache;
 		table = t;
@@ -108,7 +108,7 @@ public class TableContainer extends ItemContainer implements Container {
 	 * to retrieve the table from the database. The items of this container will have it's object
 	 * set when the table is loaded.
 	 */
-	public TableContainer(String uuid, QueryData cache, String name, String schema, String catalog, List<SQLObjectItem> items) {
+	public TableContainer(String uuid, Query cache, String name, String schema, String catalog, List<SQLObjectItem> items) {
 		super(name, uuid);
 		this.cache = cache;
 		if (schema != null) {

@@ -19,13 +19,12 @@
 
 package ca.sqlpower.swingui.querypen;
 
-import javax.management.Query;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import ca.sqlpower.query.QueryData;
+import ca.sqlpower.query.Query;
 import ca.sqlpower.swingui.DataEntryPanel;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
@@ -40,7 +39,7 @@ public class QueryPropertiesPanel implements DataEntryPanel {
 	/**
 	 * The query this panel will modify.
 	 */
-	private final QueryData query;
+	private final Query query;
 	
 	/**
 	 * The main editor panel.
@@ -49,7 +48,7 @@ public class QueryPropertiesPanel implements DataEntryPanel {
 	
 	private final JTextField streamingRowLimitField = new JTextField();
 	
-	public QueryPropertiesPanel(QueryData query) {
+	public QueryPropertiesPanel(Query query) {
 		this.query = query;
 		streamingRowLimitField.setText(new Integer(query.getStreamingRowLimit()).toString());
 		streamingRowLimitField.setToolTipText("The number of rows to retain while streaming. Old rows will be removed for new ones.");

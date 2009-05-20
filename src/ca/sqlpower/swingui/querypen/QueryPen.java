@@ -70,7 +70,7 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.query.Container;
 import ca.sqlpower.query.Item;
-import ca.sqlpower.query.QueryData;
+import ca.sqlpower.query.Query;
 import ca.sqlpower.query.SQLJoin;
 import ca.sqlpower.query.StringCountItem;
 import ca.sqlpower.query.TableContainer;
@@ -340,7 +340,7 @@ public class QueryPen implements MouseState {
 	/**
 	 * This is the queryPen's model
 	 */
-	private final QueryData model;
+	private final Query model;
 	
 	/**
 	 * The mouse state in this query pen.
@@ -481,10 +481,10 @@ public class QueryPen implements MouseState {
                 SQLJoin sqlJoin = (SQLJoin) evt.getNewValue();
                 JoinLine join = new JoinLine(QueryPen.this, canvas, sqlJoin);
                 joinLayer.addChild(join);
-            } else if (evt.getPropertyName().equals(QueryData.PROPERTY_QUERY) && evt.getNewValue() instanceof QueryData) {
+            } else if (evt.getPropertyName().equals(Query.PROPERTY_QUERY) && evt.getNewValue() instanceof Query) {
                 //This case is for compound edits where multiple things may have been created
-                QueryData oldQuery = (QueryData) evt.getOldValue();
-                QueryData newQuery = (QueryData) evt.getNewValue();
+                Query oldQuery = (Query) evt.getOldValue();
+                Query newQuery = (Query) evt.getNewValue();
                 Collection<SQLJoin> oldJoins = new HashSet<SQLJoin>(oldQuery.getJoins());
                 Collection<SQLJoin> newJoins = new HashSet<SQLJoin>(newQuery.getJoins());
                 newJoins.removeAll(oldJoins);
@@ -512,10 +512,10 @@ public class QueryPen implements MouseState {
                         break;
                     }
                 }
-            } else if (evt.getPropertyName().equals(QueryData.PROPERTY_QUERY) && evt.getNewValue() instanceof QueryData) {
+            } else if (evt.getPropertyName().equals(Query.PROPERTY_QUERY) && evt.getNewValue() instanceof Query) {
                 //This case is for compound edits where multiple things may have been removed
-                QueryData oldQuery = (QueryData) evt.getOldValue();
-                QueryData newQuery = (QueryData) evt.getNewValue();
+                Query oldQuery = (Query) evt.getOldValue();
+                Query newQuery = (Query) evt.getNewValue();
                 Collection<SQLJoin> oldJoins = new HashSet<SQLJoin>(oldQuery.getJoins());
                 Collection<SQLJoin> newJoins = new HashSet<SQLJoin>(newQuery.getJoins());
                 oldJoins.removeAll(newJoins);
@@ -591,7 +591,7 @@ public class QueryPen implements MouseState {
      *            This action will open a browser and take them to the SQL Power
      *            forums.
      */
-	public QueryPen(Action executeQueryAction, QueryData model, ForumAction forumAction) {
+	public QueryPen(Action executeQueryAction, Query model, ForumAction forumAction) {
 	    this(executeQueryAction, model, forumAction, true);
 	}
 
@@ -618,7 +618,7 @@ public class QueryPen implements MouseState {
      *            actual tables. The container still exists and gets hooked up
      *            but it is just not displayed.
      */
-	public QueryPen(Action executeQueryAction, QueryData model, ForumAction forumAction, boolean showConstantContainer) {
+	public QueryPen(Action executeQueryAction, Query model, ForumAction forumAction, boolean showConstantContainer) {
 	    this.forumAction = forumAction;
         playPenExecuteButton = new JButton(executeQueryAction);
 	    deleteButton = new JButton(getDeleteAction());
@@ -851,7 +851,7 @@ public class QueryPen implements MouseState {
 		queryListeners.remove(l);
 	}
 	
-	public QueryData getModel() {
+	public Query getModel() {
 		return model;
 	}
 	

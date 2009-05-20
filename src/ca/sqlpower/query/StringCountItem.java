@@ -34,9 +34,9 @@ public class StringCountItem extends StringItem implements Item {
 	
 	private static Logger logger = Logger.getLogger(StringCountItem.class);
 
-	private final QueryData queryCache;
+	private final Query queryCache;
 	
-	public StringCountItem(QueryData query) {
+	public StringCountItem(Query query) {
 		super("");
 		this.queryCache = query;
 		setName("COUNT(*)");
@@ -44,17 +44,17 @@ public class StringCountItem extends StringItem implements Item {
 		queryCache.addPropertyChangeListener(new PropertyChangeListener(){
 
 			public void propertyChange(PropertyChangeEvent evt) {
-				if (evt.getPropertyName().equals(QueryData.PROPERTY_TABLE_REMOVED)) {
+				if (evt.getPropertyName().equals(Query.PROPERTY_TABLE_REMOVED)) {
 					logger.debug(" Table has been removed, removing constant item");
 					if(queryCache.getFromTableList().isEmpty()) {
 						setName("");
 					}
-				} else if(evt.getPropertyName().equals(QueryData.GROUPING_CHANGED)) {
+				} else if(evt.getPropertyName().equals(Query.GROUPING_CHANGED)) {
 					logger.debug("Grouping has changed to "+ evt.getNewValue());
 					if(evt.getNewValue().equals(false) && isSelected()) {
 						logger.debug("grouping is false, setting model and view's selected to false");
 						setSelected(false);
-						firePropertyChange(QueryData.GROUPING_CHANGED,evt.getOldValue(), evt.getNewValue());
+						firePropertyChange(Query.GROUPING_CHANGED,evt.getOldValue(), evt.getNewValue());
 					}
 				}
 			}
