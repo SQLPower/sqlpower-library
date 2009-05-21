@@ -372,7 +372,13 @@ public class SQLQueryUIComponents {
         			String errorMessage = createErrorStringMessage(e);
         			logTextArea.append(errorMessage + "\n");
         			logger.error(e.getStackTrace());
-        			clearResultTables();
+        			clearResultTables(false);
+        			for (Map.Entry<JTable, JScrollPane> entry : resultJTableScrollPanes.entrySet()) {
+        			    JPanel panel = new JPanel(new BorderLayout());
+        			    panel.add(entry.getKey().getTableHeader(), BorderLayout.NORTH);
+        			    panel.add(new JTextArea(Messages.getString("SQLQuery.queryFailedSeeLog", e.getMessage())));
+        			    entry.getValue().getViewport().setView(panel);
+        			}
         			return;
         		}
         		
@@ -643,6 +649,14 @@ public class SQLQueryUIComponents {
     private JTextArea logTextArea;
     private static final ImageIcon ICON = new ImageIcon(StatusComponent.class.getClassLoader().getResource("ca/sqlpower/swingui/query/search.png"));
     private ArrayList<JTable> resultJTables;
+
+    /**
+     * These {@link JScrollPane}s each contain one table in the resultJTables
+     * list. They are stored to place an exception message in the scroll pane if
+     * a query fails. The result JTables are mapped to the scroll panes they
+     * are contained in.
+     */
+    private final Map<JTable, JScrollPane> resultJTableScrollPanes = new HashMap<JTable, JScrollPane>();
     
     /**
      * This maps the JTables to the SQL statement that created them.
@@ -1471,7 +1485,7 @@ public class SQLQueryUIComponents {
      * @throws SQLException 
      */
     private synchronized void createResultSetTables(List<CachedRowSet> resultSets, StatementExecutor executor) throws SQLException {
-    	clearResultTables();
+    	clearResultTables(true);
    		for (StreamingRowSetListener rowSetListener : rowSetListeners) {
 			rowSetListener.disconnect();
 		}
@@ -1480,7 +1494,7 @@ public class SQLQueryUIComponents {
     	searchDocument = new DefaultStyledDocument();
     	for (CachedRowSet rs : resultSets) {
     		CachedRowSet r = rs.createShared();
-    		JComponent tempTable;
+    		JTable tempTable;
     		FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "pref, fill:min(pref;50dlu):grow");
     		DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
 
@@ -1499,6 +1513,7 @@ public class SQLQueryUIComponents {
 
     		tableAreaBuilder.nextLine();
     		JScrollPane tableScrollPane = new JScrollPane(tempTable);
+    		resultJTableScrollPanes.put(tempTable, tableScrollPane);
     		tableAreaBuilder.append(tableScrollPane, 3);
 
     		resultJTables.add((JTable)tempTable);
@@ -1515,19 +1530,27 @@ public class SQLQueryUIComponents {
     	}
     }
 
-	private void clearResultTables() {
+    /**
+     * @param removeTabs
+     *            If true the tabs that the result tables were in will be
+     *            removed.
+     */
+	private void clearResultTables(boolean removeTabs) {
 		tableToSQLMap.clear();
     	for (JTable table : resultJTables) {
     		for (int i = tableListeners.size() - 1; i >= 0; i--) {
     			tableListeners.get(i).tableRemoved(new TableChangeEvent(this, table));
     		}
     	}
-    	resultJTables.clear();
     	
-    	if(resultTabPane.getComponentCount() > 1) {
-    		for(int i = resultTabPane.getComponentCount()-1; i >= 1; i--){
-    			resultTabPane.remove(i);
-    		}
+    	if (removeTabs) {
+    	    resultJTables.clear();
+    	    resultJTableScrollPanes.clear();
+    	    if(resultTabPane.getComponentCount() > 1) {
+    	        for(int i = resultTabPane.getComponentCount()-1; i >= 1; i--){
+    	            resultTabPane.remove(i);
+    	        }
+    	    }
     	}
 	}
 	
