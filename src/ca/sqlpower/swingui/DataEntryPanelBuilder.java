@@ -19,6 +19,7 @@
 package ca.sqlpower.swingui;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.Frame;
 import java.awt.Window;
@@ -37,6 +38,7 @@ import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 import org.apache.log4j.Logger;
 
@@ -74,7 +76,7 @@ public class DataEntryPanelBuilder {
      */
     public static JDialog createDataEntryPanelDialog(
             final DataEntryPanel dataEntry,
-            final Window dialogParent,
+            final Component dialogParent,
             final String dialogTitle,
             final String actionButtonTitle,
             final Callable<Boolean> okCall,
@@ -115,7 +117,7 @@ public class DataEntryPanelBuilder {
      */
     public static JDialog createDataEntryPanelDialog(
             final DataEntryPanel dataEntry,
-            final Window dialogParent,
+            final Component dialogParent,
             final String dialogTitle,
             final String actionButtonTitle,
             final Callable<Boolean> okCall,
@@ -264,8 +266,16 @@ public class DataEntryPanelBuilder {
 	 * Returns a JDialog with the given Window as its parent, and with the given title.
 	 * If the dialog parent is neither a Frame or Dialog, it will throw an IllegalArgumentException
 	 */
-	private static JDialog createDialog(final Window dialogParent, final String dialogTitle) {
+	private static JDialog createDialog(final Component dialogParentComponent, final String dialogTitle) {
 		JDialog dialog;
+		
+	      
+        Window dialogParent;
+        if (dialogParentComponent instanceof Window) {
+            dialogParent = (Window) dialogParentComponent;
+        } else {
+            dialogParent = SwingUtilities.getWindowAncestor(dialogParentComponent);
+        }
 		
 		if ( dialogParent == null ) {
             dialog = new JDialog();
@@ -304,7 +314,7 @@ public class DataEntryPanelBuilder {
      */
     public static JDialog createSingleButtonDataEntryPanelDialog(
     		final DataEntryPanel dataEntry,
-    		final Window dialogParent,
+    		final Component dialogParent,
     		final String dialogTitle,
     		final String actionButtonTitle) {
     	
@@ -335,7 +345,7 @@ public class DataEntryPanelBuilder {
 	 */
 	public static JDialog createDataEntryPanelDialog(
 			final DataEntryPanel dataEntry,
-			final Window dialogParent,
+			final Component dialogParent,
 			final String dialogTitle,
 			final String actionButtonTitle) {
 
@@ -384,7 +394,7 @@ public class DataEntryPanelBuilder {
      */
     public static JDialog createSingleButtonDataEntryPanelDialog(
             final DataEntryPanel dataEntry,
-            final Window dialogParent,
+            final Component dialogParent,
             final String dialogTitle,
             final String actionButtonTitle,
             final Action okAction ) {
