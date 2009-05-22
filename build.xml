@@ -108,7 +108,7 @@
 	</target>
 	
 	<target name="javadoc" 
-		description="Generate the Javadoc documentation for the MatchMaker API"
+		description="Generate the Javadoc documentation for the SQL Power Library API"
 		depends="compile">
 		<mkdir dir="${dist.dir}/doc/api"/>
 		<javadoc sourcepath="${src}" destdir="${dist.dir}/doc/api"
@@ -128,7 +128,7 @@
 	</target>
 	
 	<target name="javadoc.with.umlgraph" 
-		description="Generate the Javadoc documentation for the MatchMaker API along with UML diagrams generated using UMLGraph"
+		description="Generate the Javadoc documentation for the SQL Power Library API along with UML diagrams generated using UMLGraph"
 		depends="compile">
 		<mkdir dir="${dist.dir}/doc/api"/>
 		<javadoc sourcepath="${src}" destdir="${dist.dir}/doc/api"
