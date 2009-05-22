@@ -26,11 +26,13 @@ import java.util.UUID;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.query.Query.OrderByArgument;
+
 
 public abstract class AbstractItem implements Item {
     
     private static final Logger logger = Logger.getLogger(AbstractItem.class);
-
+    
 	/**
 	 * The width that this item should take up when displayed in a column of a table.
 	 */
@@ -43,6 +45,15 @@ public abstract class AbstractItem implements Item {
 	private Container parent;
 	
 	private String name;
+	
+    /**
+     * This aggregate is either the toString of a SQLGroupFunction or null
+     * if the item is not being aggregated on.
+     */
+    private SQLGroupFunction groupBy = SQLGroupFunction.GROUP_BY;
+    
+    private String having;
+    private OrderByArgument orderBy = OrderByArgument.NONE;
 	
 	public AbstractItem() {
 	    uuid = UUID.randomUUID();
@@ -113,6 +124,37 @@ public abstract class AbstractItem implements Item {
     
     public UUID getUUID() {
         return uuid;
+    }
+    
+    public void setGroupBy(SQLGroupFunction groupBy) {
+        SQLGroupFunction oldGroupBy = this.groupBy;
+        this.groupBy = groupBy;
+        firePropertyChange(GROUP_BY, oldGroupBy, groupBy);
+    }
+
+    public SQLGroupFunction getGroupBy() {
+        return groupBy;
+    }
+
+    public void setHaving(String having) {
+        String oldHaving = this.having;
+        this.having = having;
+        firePropertyChange(HAVING, oldHaving, having);
+    }
+
+    public String getHaving() {
+        return having;
+    }
+
+    public void setOrderBy(OrderByArgument orderBy) {
+        if (orderBy == null) throw new IllegalArgumentException("The order by value of a column should not be set to null");
+        OrderByArgument oldOrder = this.orderBy;
+        this.orderBy = orderBy;
+        firePropertyChange(ORDER_BY, oldOrder, orderBy);
+    }
+
+    public OrderByArgument getOrderBy() {
+        return orderBy;
     }
 
 }

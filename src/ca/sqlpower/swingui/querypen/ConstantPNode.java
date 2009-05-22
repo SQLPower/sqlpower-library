@@ -105,16 +105,16 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 	private final PropertyChangeListener modelChangeListener = new PropertyChangeListener(){
 
 		public void propertyChange(PropertyChangeEvent evt) {
-			if(evt.getPropertyName().equals(Item.PROPERTY_ITEM)) {
+			if (evt.getPropertyName().equals(Item.PROPERTY_ITEM)) {
 				constantText.getEditorPane().setText(evt.getNewValue().toString());
-				if(constantText.getEditorPane().getText().length() <= 0) {
+				if (constantText.getEditorPane().getText().length() <= 0) {
 					removeItem();
 				} else {
 				logger.debug("Model Name changed, updating view");
 				constantText.syncWithDocument();
 				}
-			} else if(evt.getPropertyName().equals(Query.GROUPING_CHANGED)) {
-					selectionCheckbox.setSelected(false);
+			} else if (evt.getPropertyName().equals(Query.GROUPING_ENABLED)) {
+			    selectionCheckbox.setSelected(false);
 			}
 			
 		}

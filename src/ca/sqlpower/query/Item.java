@@ -22,6 +22,8 @@ package ca.sqlpower.query;
 import java.beans.PropertyChangeListener;
 import java.util.UUID;
 
+import ca.sqlpower.query.Query.OrderByArgument;
+
 
 /**
  * A class implementing this interface wraps an item in a container.
@@ -31,18 +33,24 @@ public interface Item {
 	/**
 	 * Defines a property change of an alias on an item.
 	 */
-	public static final String PROPERTY_ALIAS = "ALIAS";
+	public static final String ALIAS = "alias";
 	
 	/**
 	 * Defines the item contained by this Item was added
 	 * or removed from the select list.
 	 */
-	public static final String PROPERTY_SELECTED = "SELECTED";
+	public static final String SELECTED = "selected";
 	
 	/**
 	 * Defines a change of the where filer for this contained item.
 	 */
-	public static final String PROPERTY_WHERE = "WHERE";
+	public static final String WHERE = "where";
+	
+	public static final String GROUP_BY = "groupBy";
+	
+	public static final String HAVING = "having";
+	
+	public static final String ORDER_BY = "orderBy";
 
 	/**
 	 * Defines a change to the item contained by this Item itself.
@@ -91,6 +99,18 @@ public interface Item {
      * Sets the name for this object 
      */
     void setName(String name);
+    
+    public void setGroupBy(SQLGroupFunction groupBy);
+
+    public SQLGroupFunction getGroupBy();
+
+    public void setHaving(String having);
+
+    public String getHaving();
+
+    public void setOrderBy(OrderByArgument orderBy);
+
+    public OrderByArgument getOrderBy();
     
     UUID getUUID();
 	

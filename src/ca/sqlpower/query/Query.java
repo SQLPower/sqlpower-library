@@ -21,7 +21,6 @@ package ca.sqlpower.query;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,7 +36,6 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.graph.DepthFirstSearch;
 import ca.sqlpower.graph.GraphModel;
 import ca.sqlpower.sql.SPDataSource;
-import ca.sqlpower.sql.SQLGroupFunction;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLDatabaseMapping;
 import ca.sqlpower.sqlobject.SQLTable;
@@ -65,12 +63,23 @@ public class Query {
 	public static final String PROPERTY_QUERY = "query";
 	
 	/**
+	 * This is the property name for grouping enabled.
+	 */
+	public static final String GROUPING_ENABLED = "groupingEnabled";
+	
+	/**
+	 * This is the property name for the global where clause text.
+	 */
+	private static final String GLOBAL_WHERE_CLAUSE = "globalWhereClause";
+	
+	/**
 	 * The arguments that can be added to a column in the 
 	 * order by clause.
 	 */
 	public enum OrderByArgument {
 		ASC,
-		DESC
+		DESC,
+		NONE
 	}
 	
 	/**
@@ -141,37 +150,11 @@ public class Query {
 	private boolean groupingEnabled = false;
 
 	/**
-	 * This maps the SQLColumns in the select statement to their group by
-	 * functions. If the column is in the GROUP BY clause and is not being
-	 * aggregated on it should appear in the group by list.
-	 */
-	private Map<Item, SQLGroupFunction> groupByAggregateMap;
-	
-	/**
-	 * A list of columns we are grouping by. These are not
-	 * being aggregated on but are in the GROUP BY clause. 
-	 */
-	private List<Item> groupByList;
-
-	/**
-	 * This maps SQLColumns to having clauses. The entry with a null key
-	 * contains the generic having clause that is not defined for a specific
-	 * column.
-	 */
-	private Map<Item, String> havingMap;
-	
-	/**
 	 * The columns in the SELECT statement that will be returned.
 	 * These columns are stored in the order they will be returned
 	 * in.
 	 */
 	private final List<Item> selectedColumns;
-	
-	/**
-	 * This map contains the columns that have an ascending
-	 * or descending argument and is in the order by clause.
-	 */
-	private final Map<Item, OrderByArgument> orderByArgumentMap;
 	
 	/**
 	 * The order by list keeps track of the order that columns were selected in.
@@ -200,34 +183,37 @@ public class Query {
 	 */
 	private int zoomLevel;
 	
-	private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
-	
-	/**
-	 * Listens for changes to the alias on the item and fires events to its 
-	 * listeners if the alias was changed.
-	 */
-	private PropertyChangeListener aliasListener = new PropertyChangeListener() {
+	private final List<QueryChangeListener> changeListeners = new ArrayList<QueryChangeListener>();
+
+    /**
+     * Listens for changes to the item and fires events to its listeners.
+     */
+	private PropertyChangeListener itemListener = new PropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent e) {
-			if (e.getPropertyName().equals(Item.PROPERTY_ALIAS)) {
-				if (!compoundEdit) {
-					pcs.firePropertyChange(PROPERTY_QUERY, e.getOldValue(), e.getNewValue());
-				}
-			}
+		    if (e.getPropertyName().equals(Item.SELECTED)) {
+		        if ((Boolean) e.getNewValue()) {
+		            selectedColumns.add((Item) e.getSource());
+		        } else {
+		            selectedColumns.remove((Item) e.getSource());
+		        }
+		    } else if (e.getPropertyName().equals(Item.ORDER_BY)) {
+		        orderByList.remove(e.getSource());
+		        if (!e.getNewValue().equals(OrderByArgument.NONE)) {
+		            orderByList.add((Item) e.getSource());
+		        }
+		    }
+		    
+		    for (int i = changeListeners.size() - 1; i >= 0; i--) {
+		        changeListeners.get(i).itemPropertyChangeEvent(e);
+		    }
 		}
 	};
-	
-	/**
-	 * Listens for changes to the select checkbox on the column of a table in 
-	 * the query pen.
-	 */
-	private PropertyChangeListener selectedColumnListener = new PropertyChangeListener() {
-		public void propertyChange(PropertyChangeEvent e) {
-			if (e.getPropertyName().equals(Item.PROPERTY_SELECTED)) {
-				selectionChanged((Item)e.getSource(), (Boolean)e.getNewValue());
-			}
-		}
-	};
-	
+
+    /**
+     * This change listener will re-send the change event to listeners on this
+     * query. This will also keep the map of {@link Container}s to the joins on
+     * them in order.
+     */
 	private PropertyChangeListener joinChangeListener = new PropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent e) {
 			if (e.getPropertyName().equals(SQLJoin.LEFT_JOIN_CHANGED)) {
@@ -240,9 +226,6 @@ public class Query {
 					} else {
 						join.setRightColumnOuterJoin((Boolean)e.getNewValue());
 					}
-				}
-				if (!compoundEdit) {
-				    pcs.firePropertyChange(e.getPropertyName(), e.getOldValue(), e.getNewValue());
 				}
 			} else if (e.getPropertyName().equals(SQLJoin.RIGHT_JOIN_CHANGED)) {
 				logger.debug("Got right join changed.");
@@ -258,13 +241,9 @@ public class Query {
 						join.setRightColumnOuterJoin((Boolean)e.getNewValue());
 					}
 				}
-				if (!compoundEdit) {
-				    pcs.firePropertyChange(e.getPropertyName(), e.getOldValue(), e.getNewValue());
-				}
-			} else if (e.getPropertyName().equals(SQLJoin.COMPARATOR_CHANGED)) {
-				if (!compoundEdit) {
-				    pcs.firePropertyChange(e.getPropertyName(), e.getOldValue(), e.getNewValue());
-				}
+			}
+			for (int i = changeListeners.size() - 1; i >= 0; i--) {
+			    changeListeners.get(i).joinPropertyChangeEvent(e);
 			}
 		}
 	};
@@ -278,14 +257,6 @@ public class Query {
 		}
 	}; 
 	
-	private final PropertyChangeListener whereListener = new PropertyChangeListener() {
-		public void propertyChange(PropertyChangeEvent evt) {
-			if (evt.getPropertyName().equals(Item.PROPERTY_WHERE) && !compoundEdit) {
-			    pcs.firePropertyChange(evt.getPropertyName(), evt.getOldValue(), evt.getNewValue());
-			}
-		}
-	};
-	
 	/**
 	 * This container holds the items that are considered constants in the SQL statement.
 	 * This could include functions or other elements that don't belong in a table.
@@ -294,17 +265,13 @@ public class Query {
 	
 	/**
 	 * If true the query cache will be in an editing state. When in this
-	 * state events should not be fired. When the compound edit ends
-	 * the query should fire a state changed if the query was changed.
+	 * state the query should not be executed. When the query can be executed
+	 * again the listeners should have the {@link QueryChangeListener#canExecuteQuery()}
+	 * method called on them to let all the classes know they can execute the
+	 * query again.
 	 */
-	private boolean compoundEdit = false;
+	private boolean canExecuteQuery = true;
 
-	/**
-	 * Stores the current query at the start of a compound edit. For use
-	 * when deciding how the query was changed.
-	 */
-	private Query queryBeforeEdit;
-	
 	/**
 	 * This database instance is obtained from the session when the 
 	 * data source is called.
@@ -349,21 +316,13 @@ public class Query {
      * maintained and monitored by this query will not contain this
      * type.
      */
-    public static final String PROPERTY_QUERY_TEXT = "propertyQueryText";
-
-    /**
-     * The grouping function defined on a group by event if the column is
-     * to be grouped by and not aggregated on.
-     */
-    public static final String GROUP_BY = "(GROUP BY)";
+    public static final String USER_MODIFIED_QUERY = "userModifiedQuery";
 
     /**
      * A property name that is thrown when the Table is removed.
      */
     public static final String PROPERTY_TABLE_REMOVED = "PROPERTY_TABLE_REMOVED";
 
-    public static final String GROUPING_CHANGED = " GROUPING_CHANGED";
-	
 	public Query(SQLDatabaseMapping dbMapping) {
 		this((String)null, dbMapping);
 	}
@@ -379,14 +338,10 @@ public class Query {
 		    this.uuid = UUID.fromString(uuid);
 		}
         this.dbMapping = dbMapping;
-		orderByArgumentMap = new HashMap<Item, OrderByArgument>();
 		orderByList = new ArrayList<Item>();
 		selectedColumns = new ArrayList<Item>();
 		fromTableList = new ArrayList<Container>();
 		joinMapping = new HashMap<Container, List<SQLJoin>>();
-		groupByAggregateMap = new HashMap<Item, SQLGroupFunction>();
-		groupByList = new ArrayList<Item>();
-		havingMap = new HashMap<Item, String>();
 		
 		constantsContainer = new ItemContainer("Constants");
 		StringItem currentTime = new StringItem("current_time");
@@ -409,11 +364,7 @@ public class Query {
 		selectedColumns = new ArrayList<Item>();
 		fromTableList = new ArrayList<Container>();
 		joinMapping = new HashMap<Container, List<SQLJoin>>();
-		groupByList = new ArrayList<Item>();
-		groupByAggregateMap = new HashMap<Item, SQLGroupFunction>();
-		havingMap = new HashMap<Item, String>();
 		orderByList = new ArrayList<Item>();
-		orderByArgumentMap = new HashMap<Item, OrderByArgument>();
 		
 		dbMapping = copy.getDBMapping();
 		setName(copy.getName());
@@ -427,11 +378,7 @@ public class Query {
 			    joinMapping.put(entry.getKey(), new ArrayList<SQLJoin>(entry.getValue()));
 			}
 			
-			groupByList.addAll(query.getGroupByList());
-			groupByAggregateMap.putAll(query.getGroupByAggregateMap());
-			havingMap.putAll(query.getHavingMap());
 			orderByList.addAll(query.getOrderByList());
-			orderByArgumentMap.putAll(query.getOrderByArgumentMap());
 			globalWhereClause = query.getGlobalWhereClause();
 			groupingEnabled = query.isGroupingEnabled();
 			streaming = query.isStreaming();
@@ -458,23 +405,16 @@ public class Query {
 		logger.debug("Setting grouping enabled to " + enabled);
 		if (!groupingEnabled && enabled) {
 			startCompoundEdit();
-			for (Item col : selectedColumns) {
-				if (!groupByAggregateMap.containsKey(col)) {
-					groupByList.add(col);
-				}
-			}
 			for (Item item : getSelectedColumns()) {
 				if (item instanceof StringItem) {
-					setGrouping(item, SQLGroupFunction.COUNT.toString());
+					item.setGroupBy(SQLGroupFunction.COUNT);
 				}
 			}
 			endCompoundEdit();
-		} else if (!enabled) {
-			groupByList.clear();
-			groupByAggregateMap.clear();
-			havingMap.clear();
 		}
-		pcs.firePropertyChange(Query.GROUPING_CHANGED, groupingEnabled, enabled);
+		for (int i = changeListeners.size() - 1; i >= 0; i--) {
+            changeListeners.get(i).propertyChangeEvent(new PropertyChangeEvent(this, GROUPING_ENABLED, groupingEnabled, enabled));
+		}
 		groupingEnabled = enabled;
 	}
 	
@@ -484,11 +424,7 @@ public class Query {
 	 */
 	private void removeColumnSelection(Item column) {
 		selectedColumns.remove(column);
-		groupByList.remove(column);
-		groupByAggregateMap.remove(column);
-		havingMap.remove(column);
 		orderByList.remove(column);
-		orderByArgumentMap.remove(column);
 	}
 	
 	/**
@@ -517,11 +453,11 @@ public class Query {
 			} else {
 				query.append(", ");
 			}
-			if (groupByAggregateMap.containsKey(col)) {
+			if (groupingEnabled && !col.getGroupBy().equals(SQLGroupFunction.GROUP_BY)) {
 				if(col instanceof StringCountItem) {
 					query.append(col.getName());
 				} else {
-					query.append(groupByAggregateMap.get(col).toString() + "(");
+					query.append(col.getGroupBy() + "(");
 				}
 			}
 			String alias = col.getContainer().getAlias();
@@ -533,7 +469,7 @@ public class Query {
 			if(!(col instanceof StringCountItem)) {
 				query.append(converter.getName(col));			
 			}
-			if (groupByAggregateMap.containsKey(col) && !(col instanceof StringCountItem)) {
+			if (groupingEnabled && !col.getGroupBy().equals(SQLGroupFunction.GROUP_BY) && !(col instanceof StringCountItem)) {
 				query.append(")");
 			}
 			if (col.getAlias() != null && col.getAlias().trim().length() > 0) {
@@ -664,57 +600,56 @@ public class Query {
 			}
 			query.append(" " + globalWhereClause);
 		}
-		if (!groupByList.isEmpty()) {
-			query.append("\nGROUP BY");
-			boolean isFirstGroupBy = true;
-			for (Item col : groupByList) {
-				if (isFirstGroupBy) {
-					query.append(" ");
-					isFirstGroupBy = false;
-				} else {
-					query.append(", ");
-				}
-				String alias = col.getContainer().getAlias();
-				if (alias != null && alias.length() > 0) {
-					query.append(alias + ".");
-				} else if (fromTableList.contains(col.getContainer())) {
-					query.append(col.getContainer().getName() + ".");
-				}
-				query.append(col.getName());
-			}
-			query.append(" ");
-		}
-		if (!havingMap.isEmpty()) {
-			query.append("\nHAVING");
-			boolean isFirstHaving = true;
-			for (Map.Entry<Item, String> entry : havingMap.entrySet()) {
-				if (isFirstHaving) {
-					query.append(" ");
-					isFirstHaving = false;
-				} else {
-					query.append(", ");
-				}
-				Item column = entry.getKey();
-				if (groupByAggregateMap.get(column) != null) {
-					query.append(groupByAggregateMap.get(column).toString() + "(");
-				}
-				String alias = column.getContainer().getAlias();
-				if (alias != null && alias.length() > 0) {
-					query.append(alias + ".");
-				} else if (fromTableList.contains(column.getContainer())) {
-					query.append(column.getContainer().getName() + ".");
-				}
-				query.append(column.getName());
-				if (groupByAggregateMap.get(column) != null) {
-					query.append(")");
-				}
-				query.append(" ");
-				query.append(entry.getValue());
-			}
-			query.append(" ");
+		if (groupingEnabled) {
+		    boolean isFirstGroupBy = true;
+		    for (Item col : selectedColumns) {
+		        if (col.getGroupBy().equals(SQLGroupFunction.GROUP_BY)) {
+		            if (isFirstGroupBy) {
+		                query.append("\nGROUP BY ");
+		                isFirstGroupBy = false;
+		            } else {
+		                query.append(", ");
+		            }
+		            String alias = col.getContainer().getAlias();
+		            if (alias != null && alias.length() > 0) {
+		                query.append(alias + ".");
+		            } else if (fromTableList.contains(col.getContainer())) {
+		                query.append(col.getContainer().getName() + ".");
+		            }
+		            query.append(col.getName());
+		        }
+		    }
+		    query.append(" ");
+		    boolean isFirstHaving = true;
+		    for (Item column : selectedColumns) {
+		        if (column.getHaving() != null && column.getHaving().trim().length() > 0) {
+		            if (isFirstHaving) {
+		                query.append("\nHAVING ");
+		                isFirstHaving = false;
+		            } else {
+		                query.append(", ");
+		            }
+		            if (column.getGroupBy() != null) {
+		                query.append(column.getGroupBy() + "(");
+		            }
+		            String alias = column.getContainer().getAlias();
+		            if (alias != null && alias.length() > 0) {
+		                query.append(alias + ".");
+		            } else if (fromTableList.contains(column.getContainer())) {
+		                query.append(column.getContainer().getName() + ".");
+		            }
+		            query.append(column.getName());
+		            if (column.getGroupBy() != null) {
+		                query.append(")");
+		            }
+		            query.append(" ");
+		            query.append(column.getHaving());
+		        }
+		    }
+		    query.append(" ");
 		}
 		
-		if (!orderByArgumentMap.isEmpty()) {
+		if (!orderByList.isEmpty()) {
 			boolean isFirstOrder = true;
 			for (Item col : orderByList) {
 				if (col instanceof StringItem) {
@@ -726,8 +661,8 @@ public class Query {
 				} else {
 					query.append(", ");
 				}
-				if (groupByAggregateMap.containsKey(col)) {
-					query.append(groupByAggregateMap.get(col) + "(");
+				if (groupingEnabled && !col.getGroupBy().equals(SQLGroupFunction.GROUP_BY)) {
+					query.append(col.getGroupBy() + "(");
 				}
 				String alias = col.getContainer().getAlias();
 				if (alias != null && alias.length() > 0) {
@@ -736,12 +671,12 @@ public class Query {
 					query.append(col.getContainer().getName() + ".");
 				}
 				query.append(col.getName());
-				if (groupByAggregateMap.containsKey(col)) {
+				if (groupingEnabled && !col.getGroupBy().equals(SQLGroupFunction.GROUP_BY)) {
 					query.append(")");
 				}
 				query.append(" ");
-				if (orderByArgumentMap.get(col) != null) {
-					query.append(orderByArgumentMap.get(col).toString() + " ");
+				if (!col.getOrderBy().equals(OrderByArgument.NONE)) {
+					query.append(col.getOrderBy().toString() + " ");
 				}
 			}
 		}
@@ -753,53 +688,17 @@ public class Query {
 		return Collections.unmodifiableList(selectedColumns);
 	}
 
-	/**
-	 * Returns the grouping function if the column is being aggregated on
-	 * or null otherwise.
-	 */
-	public SQLGroupFunction getGroupByAggregate(Item column) {
-		return groupByAggregateMap.get(column);
-	}
-	
-	/**
-	 * Returns the having clause of a specific column if it has text. Returns
-	 * null otherwise.
-	 * @param column
-	 * @return
-	 */
-	public String getHavingClause(Item column) {
-		return havingMap.get(column);
-	}
-
-	public OrderByArgument getOrderByArgument(Item column) {
-		return orderByArgumentMap.get(column);
-	}
-
 	public List<Item> getOrderByList() {
 		return Collections.unmodifiableList(orderByList);
 	}
 	
 	/**
-	 * This method will change the selection of a column.
+	 * This will move a column that is being sorted to the end of the
+	 * list of columns that are being sorted.
 	 */
-	public void selectionChanged(Item column, Boolean isSelected) {
-		if (isSelected.equals(true)) {
-			selectedColumns.add(column);
-			if (groupingEnabled) {
-				if (column instanceof StringItem) {
-					groupByAggregateMap.put(column, SQLGroupFunction.COUNT);
-				} else {
-					groupByList.add(column);
-				}
-			}
-			logger.debug("Added " + column.getName() + " to the column list");
-		} else if (isSelected.equals(false)) {
-			removeColumnSelection(column);
-		}
-		if (!compoundEdit) {
-			logger.debug("Firing change for selection.");
-			pcs.firePropertyChange(PROPERTY_QUERY, Boolean.valueOf(!isSelected), Boolean.valueOf(isSelected));
-		}
+	public void moveSortedItemToEnd(Item item) {
+	    orderByList.remove(item);
+	    orderByList.add(item);
 	}
 	
 	public void removeTable(Container table) {
@@ -808,8 +707,8 @@ public class Query {
 		for (Item col : table.getItems()) {
 			removeItem(col);
 		}
-		if (!compoundEdit) {
-		    pcs.firePropertyChange(Query.PROPERTY_TABLE_REMOVED, table, null);
+		for (int i = changeListeners.size() - 1; i >= 0; i--) {
+		    changeListeners.get(i).containerRemoved(new QueryChangeEvent(this, table));
 		}
 	}
 
@@ -819,9 +718,9 @@ public class Query {
 		for (Item col : container.getItems()) {
 			addItem(col);
 		}
-		if (!compoundEdit) {
-		    pcs.firePropertyChange(PROPERTY_QUERY, null, container);
-		}
+		for (int i = changeListeners.size() - 1; i >= 0; i--) {
+            changeListeners.get(i).containerAdded(new QueryChangeEvent(this, container));
+        }
 	}
 	
 	/**
@@ -830,8 +729,8 @@ public class Query {
 	public void setGlobalWhereClause(String whereClause) {
 		String oldWhere = globalWhereClause;
 		globalWhereClause = whereClause;
-		if (!compoundEdit) {
-		    pcs.firePropertyChange(PROPERTY_QUERY, oldWhere, whereClause);
+		for (int i = changeListeners.size() - 1; i >= 0; i--) {
+		    changeListeners.get(i).propertyChangeEvent(new PropertyChangeEvent(this, GLOBAL_WHERE_CLAUSE, oldWhere, whereClause));
 		}
 	}
 	
@@ -855,8 +754,8 @@ public class Query {
 				break;
 			}
 		}
-		if (!compoundEdit) {
-		    pcs.firePropertyChange(SQLJoin.PROPERTY_JOIN_REMOVED, joinLine, null);
+		for (int i = changeListeners.size() - 1; i >= 0; i--) {
+		    changeListeners.get(i).joinRemoved(new QueryChangeEvent(this, joinLine));
 		}
 	}
 
@@ -900,8 +799,8 @@ public class Query {
 			}
 			joinMapping.get(rightContainer).add(join);
 		}
-		if (!compoundEdit) {
-		    pcs.firePropertyChange(SQLJoin.PROPERTY_JOIN_ADDED, null, join);
+		for (int i = changeListeners.size() - 1; i >= 0; i--) {
+		    changeListeners.get(i).joinAdded(new QueryChangeEvent(this, join));
 		}
 	}
 	
@@ -911,12 +810,10 @@ public class Query {
 	 */
 	public void removeItem(Item col) {
 		logger.debug("Item name is " + col.getName());
-		col.removePropertyChangeListener(aliasListener);
-		col.removePropertyChangeListener(selectedColumnListener);
-		col.removePropertyChangeListener(whereListener);
+		col.removePropertyChangeListener(itemListener);
 		removeColumnSelection(col);
-		if (!compoundEdit) {
-		    pcs.firePropertyChange(PROPERTY_QUERY, col, null);
+		for (int i = changeListeners.size() - 1; i >= 0; i--) {
+		    changeListeners.get(i).itemRemoved(new QueryChangeEvent(this, col));
 		}
 	}
 	
@@ -924,110 +821,30 @@ public class Query {
 	 * This adds the appropriate listeners to the new Item.
 	 */
 	public void addItem(Item col) {
-		col.addPropertyChangeListener(aliasListener);
-		col.addPropertyChangeListener(selectedColumnListener);
-		col.addPropertyChangeListener(whereListener);
-	}
-	
-	/**
-	 * This aggregate is either the toString of a SQLGroupFunction or the
-	 * string GROUP_BY defined in this class.
-	 */
-	public void setGrouping(Item column, String groupByAggregate) {
-		SQLGroupFunction oldAggregate = groupByAggregateMap.get(column);
-		if (groupByAggregate.equals(Query.GROUP_BY)) {
-			if (groupByList.contains(column)) {
-				return;
-			}
-			groupByList.add(column);
-			groupByAggregateMap.remove(column);
-			logger.debug("Added " + column.getName() + " to group by list.");
-		} else {
-			if (SQLGroupFunction.valueOf(groupByAggregate).equals(groupByAggregateMap.get(column)) 
-					&& !(column instanceof StringCountItem)) {
-				return;
-			}
-			groupByAggregateMap.put(column, SQLGroupFunction.valueOf(groupByAggregate));
-			groupByList.remove(column);
-			logger.debug("Added " + column.getName() + " with aggregate " + groupByAggregate + " to aggregate group by map.");
-		}
-		if (!compoundEdit) {
-		    pcs.firePropertyChange(PROPERTY_QUERY, oldAggregate, groupByAggregate);
-		}		
-
-	}
-	
-	public void removeSort(Item item) {
-		orderByList.remove(item);
-		orderByArgumentMap.remove(item);
-		if (!compoundEdit) {
-		    pcs.firePropertyChange(PROPERTY_QUERY, item, null);
-		}
-	}
-	
-	public void setSortOrder(Item item, OrderByArgument arg) {
-		OrderByArgument oldSortArg = orderByArgumentMap.get(item);
-		removeSort(item);
-		orderByArgumentMap.put(item, arg);
-		orderByList.add(item);
-		if (!compoundEdit) {
-		    pcs.firePropertyChange(PROPERTY_QUERY, oldSortArg, arg);
-		}
-	}
-	
-	public void setHavingClause(Item item, String havingText) {
-		String oldText = havingMap.get(item);
-		if (havingText != null && havingText.length() > 0) {
-			if (!havingText.equals(havingMap.get(item))) {
-				havingMap.put(item, havingText);
-			}
-		} else {
-			havingMap.remove(item);
-		}
-		if (!compoundEdit) {
-		    pcs.firePropertyChange(PROPERTY_QUERY, oldText, havingText);
+		col.addPropertyChangeListener(itemListener);
+		for (int i = changeListeners.size() - 1; i >= 0; i--) {
+		    changeListeners.get(i).itemAdded(new QueryChangeEvent(this, col));
 		}
 	}
 	
 	public void moveItem(Item movedColumn, int toIndex) {
-		int oldIndex = selectedColumns.indexOf(movedColumn);
 		selectedColumns.remove(movedColumn);
 		selectedColumns.add(toIndex, movedColumn);
-		if (!compoundEdit) {
-		    pcs.firePropertyChange(PROPERTY_QUERY, oldIndex, toIndex);
+		for (int i = changeListeners.size() - 1; i >= 0; i--) {
+		    changeListeners.get(i).itemOrderChanged(new QueryChangeEvent(this, movedColumn));
 		}
 	}
 	
 	public void startCompoundEdit() {
-		compoundEdit = true;
-		queryBeforeEdit = new Query(this);
+		setCanExecuteQuery(false);
 	}
 	
 	public void endCompoundEdit() {
-		compoundEdit = false;
-		Query currentQuery = this;
-		pcs.firePropertyChange(PROPERTY_QUERY, queryBeforeEdit, currentQuery);
-		queryBeforeEdit = null;
+		setCanExecuteQuery(true);
 	}
 
 	public boolean isGroupingEnabled() {
 		return groupingEnabled;
-	}
-
-	public Map<Item, SQLGroupFunction> getGroupByAggregateMap() {
-		return Collections.unmodifiableMap(groupByAggregateMap);
-	}
-
-	protected List<Item> getGroupByList() {
-		return Collections.unmodifiableList(groupByList);
-	}
-
-	public Map<Item, String> getHavingMap() {
-		return Collections.unmodifiableMap(havingMap);
-	}
-
-	public Map<Item, OrderByArgument> getOrderByArgumentMap() {
-		return Collections.unmodifiableMap(orderByArgumentMap);
 	}
 
 	public List<Container> getFromTableList() {
@@ -1077,7 +894,9 @@ public class Query {
 		if (generatedQuery.equals(query)) {
 			return;
 		}
-		pcs.firePropertyChange(Query.PROPERTY_QUERY_TEXT, userModifiedQuery, query);
+		for (int i = changeListeners.size() - 1; i >= 0; i--) {
+            changeListeners.get(i).propertyChangeEvent(new PropertyChangeEvent(this, USER_MODIFIED_QUERY, userModifiedQuery, query));
+        }
 		userModifiedQuery = query;
 	}
 	
@@ -1149,18 +968,12 @@ public class Query {
         this.name = name;
     }
     
-    public void addPropertyChangeListener(PropertyChangeListener l) {
-        pcs.addPropertyChangeListener(l);
-    }
-    
-    public void removePropertyChangeListener(PropertyChangeListener l) {
-        pcs.removePropertyChangeListener(l);
-    }
-    
     public void setRowLimit(int rowLimit) {
         int oldLimit = this.rowLimit;
         this.rowLimit = rowLimit;
-        pcs.firePropertyChange(ROW_LIMIT, oldLimit, rowLimit);
+        for (int i = changeListeners.size() - 1; i >= 0; i--) {
+            changeListeners.get(i).propertyChangeEvent(new PropertyChangeEvent(this, ROW_LIMIT, oldLimit, rowLimit));
+        }
     }
 
     public int getRowLimit() {
@@ -1181,5 +994,26 @@ public class Query {
 
     public boolean isStreaming() {
         return streaming;
+    }
+
+    public void setCanExecuteQuery(boolean canExecuteQuery) {
+        this.canExecuteQuery = canExecuteQuery;
+        if (canExecuteQuery) {
+            for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).canExecuteQuery();
+            }
+        }
+    }
+
+    public boolean getCanExecuteQuery() {
+        return canExecuteQuery;
+    }
+    
+    public void addQueryChangeListener(QueryChangeListener l) {
+        changeListeners.add(l);
+    }
+    
+    public void removeQueryChangeListener(QueryChangeListener l) {
+        changeListeners.remove(l);
     }
 }

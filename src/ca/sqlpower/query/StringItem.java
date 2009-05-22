@@ -21,6 +21,7 @@ package ca.sqlpower.query;
 
 
 
+
 /**
  * This class stores generic strings, such as functions, constants and any other
  * string that can be included in a SQL statement, but is not a column.
@@ -69,7 +70,7 @@ public class StringItem extends AbstractItem {
 			return;
 		}
 		this.alias = alias;
-		firePropertyChange(PROPERTY_ALIAS, oldAlias, alias);
+		firePropertyChange(ALIAS, oldAlias, alias);
 	}
 	
 	public String getWhere() {
@@ -86,7 +87,7 @@ public class StringItem extends AbstractItem {
 			return;
 		}
 		this.selected = selected;
-		firePropertyChange(PROPERTY_SELECTED, oldSelect, selected);
+		firePropertyChange(SELECTED, oldSelect, selected);
 	}
 	
 	public void setWhere(String where) {
@@ -95,7 +96,7 @@ public class StringItem extends AbstractItem {
 			return;
 		}
 		this.where = where;
-		firePropertyChange(PROPERTY_WHERE, oldWhere, where);
+		firePropertyChange(WHERE, oldWhere, where);
 	}
 	
 	public Container getContainer() {

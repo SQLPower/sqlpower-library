@@ -17,20 +17,42 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-package ca.sqlpower.sql;
+package ca.sqlpower.query;
 
 /**
  * An enumeration of group (aggregate) functions we think SQL
  * databases will support.
  */
 public enum SQLGroupFunction {
-
-	SUM,
-	MIN,
-	MAX,
-	AVG,
-	COUNT,
-	FIRST,
-	LAST,
-	MID
+    GROUP_BY ("(Group By)"),
+	SUM ("SUM"),
+	MIN ("MIN"),
+	MAX ("MAX"),
+	AVG ("AVG"),
+	COUNT ("COUNT"),
+	FIRST ("FIRST"),
+	LAST ("LAST"),
+	MID ("MID");
+	
+	private final String groupingName;
+    
+    private SQLGroupFunction(String groupingName) {
+        this.groupingName = groupingName;
+    }
+    
+    public String getGroupingName() {
+        return groupingName;
+    }
+    
+    /**
+     * This method will get a SQLGroupFunction object based on the grouping name.
+     */
+    public static SQLGroupFunction getGroupType(String groupingName) {
+        for (SQLGroupFunction function : SQLGroupFunction.values()) {
+            if (function.getGroupingName().equals(groupingName)) {
+                return function;
+            }
+        }
+        throw new IllegalArgumentException("Unknown name to group by " + groupingName);
+    }
 }

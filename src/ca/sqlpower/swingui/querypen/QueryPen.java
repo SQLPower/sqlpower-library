@@ -42,10 +42,8 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +69,8 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.query.Container;
 import ca.sqlpower.query.Item;
 import ca.sqlpower.query.Query;
+import ca.sqlpower.query.QueryChangeEvent;
+import ca.sqlpower.query.QueryChangeListener;
 import ca.sqlpower.query.SQLJoin;
 import ca.sqlpower.query.StringCountItem;
 import ca.sqlpower.query.TableContainer;
@@ -471,62 +471,65 @@ public class QueryPen implements MouseState {
     private final ForumAction forumAction;
 
     /**
-     * This listener will listen for new joins being made on the query
-     * model and add graphical join lines to the query pen appropriately.
+     * This listener will be attached to the query that is the model of this
+     * component and handle all query changes.
      */
-    private final PropertyChangeListener joinAddedListener = new PropertyChangeListener() {
+    private final QueryChangeListener queryListener = new QueryChangeListener() {
     
-        public void propertyChange(PropertyChangeEvent evt) {
-            if (evt.getPropertyName().equals(SQLJoin.PROPERTY_JOIN_ADDED)) {
-                SQLJoin sqlJoin = (SQLJoin) evt.getNewValue();
-                JoinLine join = new JoinLine(QueryPen.this, canvas, sqlJoin);
-                joinLayer.addChild(join);
-            } else if (evt.getPropertyName().equals(Query.PROPERTY_QUERY) && evt.getNewValue() instanceof Query) {
-                //This case is for compound edits where multiple things may have been created
-                Query oldQuery = (Query) evt.getOldValue();
-                Query newQuery = (Query) evt.getNewValue();
-                Collection<SQLJoin> oldJoins = new HashSet<SQLJoin>(oldQuery.getJoins());
-                Collection<SQLJoin> newJoins = new HashSet<SQLJoin>(newQuery.getJoins());
-                newJoins.removeAll(oldJoins);
-                for (SQLJoin join : newJoins) {
-                    joinLayer.addChild(new JoinLine(QueryPen.this, canvas, join));
+        public void propertyChangeEvent(PropertyChangeEvent evt) {
+            //do nothing
+        }
+    
+        public void joinRemoved(QueryChangeEvent evt) {
+            SQLJoin removedJoin = evt.getJoinChanged();
+            for (Object node : joinLayer.getAllNodes()) {
+                if (node instanceof JoinLine && ((JoinLine) node).getModel() == removedJoin) {
+                    JoinLine pickedNode = (JoinLine) node;
+                    pickedNode.disconnectJoin();
+                    joinLayer.removeChild(pickedNode);
+                    break;
                 }
             }
         }
-    };
     
-    /**
-     * This will listen to the model of the query pen and remove joins from the view
-     * when they are removed from the model.
-     */
-    private final PropertyChangeListener joinRemovedListener = new PropertyChangeListener() {
+        public void joinPropertyChangeEvent(PropertyChangeEvent evt) {
+            //do nothing
+        }
     
-        public void propertyChange(PropertyChangeEvent evt) {
-            if (evt.getPropertyName().equals(SQLJoin.PROPERTY_JOIN_REMOVED)) {
-                SQLJoin removedJoin = (SQLJoin) evt.getOldValue();
-                JoinLine pickedNode = null;
-                for (Object node : joinLayer.getAllNodes()) {
-                    if (node instanceof JoinLine && ((JoinLine) node).getModel() == removedJoin) {
-                        pickedNode.disconnectJoin();
-                        joinLayer.removeChild(pickedNode);
-                        break;
-                    }
-                }
-            } else if (evt.getPropertyName().equals(Query.PROPERTY_QUERY) && evt.getNewValue() instanceof Query) {
-                //This case is for compound edits where multiple things may have been removed
-                Query oldQuery = (Query) evt.getOldValue();
-                Query newQuery = (Query) evt.getNewValue();
-                Collection<SQLJoin> oldJoins = new HashSet<SQLJoin>(oldQuery.getJoins());
-                Collection<SQLJoin> newJoins = new HashSet<SQLJoin>(newQuery.getJoins());
-                oldJoins.removeAll(newJoins);
-                for (Object node : joinLayer.getAllNodes()) {
-                    if (node instanceof JoinLine && oldJoins.contains(((JoinLine) node).getModel())) {
-                        JoinLine pickedNode = (JoinLine) node;
-                        pickedNode.disconnectJoin();
-                        joinLayer.removeChild(pickedNode);
-                    }
-                }
-            }
+        public void joinAdded(QueryChangeEvent evt) {
+            SQLJoin sqlJoin = evt.getJoinChanged();
+            JoinLine join = new JoinLine(QueryPen.this, canvas, sqlJoin);
+            joinLayer.addChild(join);
+        }
+    
+        public void itemRemoved(QueryChangeEvent evt) {
+            //do nothing
+        }
+    
+        public void itemPropertyChangeEvent(PropertyChangeEvent evt) {
+            //do nothing
+        }
+    
+        public void itemOrderChanged(QueryChangeEvent evt) {
+            //do nothing
+        }
+    
+        public void itemAdded(QueryChangeEvent evt) {
+            //do nothing
+        }
+    
+        public void containerRemoved(QueryChangeEvent evt) {
+            //TODO refactor the delete action to only delete the model component
+            //This listener should remove the view component based on the model.
+        }
+    
+        public void containerAdded(QueryChangeEvent evt) {
+            // TODO Refactor the DropTargetListener in this class to only create
+            // the model components. This listener should create the view component
+        }
+    
+        public void canExecuteQuery() {
+            //do nothing
         }
     };
 
@@ -628,8 +631,7 @@ public class QueryPen implements MouseState {
 		this.executeQueryAction = executeQueryAction;
 		
 		this.model = model;
-		model.addPropertyChangeListener(joinAddedListener);
-		model.addPropertyChangeListener(joinRemovedListener);
+		model.addQueryChangeListener(queryListener);
 		panel = new JPanel();
 	    cursorManager = new CursorManager(panel);
 		if (System.getProperty("os.name").toLowerCase().startsWith("mac os x")) {
@@ -864,8 +866,7 @@ public class QueryPen implements MouseState {
 	}
 
 	public void cleanup() {
-	    model.removePropertyChangeListener(joinAddedListener);
-	    model.removePropertyChangeListener(joinRemovedListener);
+	    model.removeQueryChangeListener(queryListener);
 	    
 		queryListeners.clear();
 		for (Object o : topLayer.getAllNodes()) {

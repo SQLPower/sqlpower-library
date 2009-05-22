@@ -33,7 +33,7 @@ public class SQLObjectItem extends AbstractItem {
 	private boolean selected;
 
 	private String where;
-
+	
 	public SQLObjectItem(SQLObject object) {
 		sqlObject = object;
 		this.alias = "";
@@ -91,7 +91,7 @@ public class SQLObjectItem extends AbstractItem {
 			return;
 		}
 		this.alias = alias;
-		firePropertyChange(PROPERTY_ALIAS, oldAlias, alias);
+		firePropertyChange(ALIAS, oldAlias, alias);
 	}
 	
 	public String getWhere() {
@@ -108,7 +108,7 @@ public class SQLObjectItem extends AbstractItem {
 			return;
 		}
 		this.selected = selected;
-		firePropertyChange(PROPERTY_SELECTED, oldSelect, selected);
+		firePropertyChange(SELECTED, oldSelect, selected);
 	}
 
 	public void setWhere(String where) {
@@ -117,7 +117,7 @@ public class SQLObjectItem extends AbstractItem {
 			return;
 		}
 		this.where = where;
-		firePropertyChange(PROPERTY_WHERE, oldWhere, where);
+		firePropertyChange(WHERE, oldWhere, where);
 	}
 
 	public Container getContainer() {
@@ -140,5 +140,5 @@ public class SQLObjectItem extends AbstractItem {
 		result = 31 * result + getUUID().hashCode();
 		return result;
 	}
-
+	
 }

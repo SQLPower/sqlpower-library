@@ -20,7 +20,6 @@
 package ca.sqlpower.query;
 
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 
 import org.apache.log4j.Logger;
 
@@ -34,34 +33,39 @@ public class StringCountItem extends StringItem implements Item {
 	
 	private static Logger logger = Logger.getLogger(StringCountItem.class);
 
-	private final Query queryCache;
+	private final Query query;
 	
-	public StringCountItem(Query query) {
+	public StringCountItem(final Query query) {
 		super("");
-		this.queryCache = query;
+		this.query = query;
 		setName("COUNT(*)");
 		
-		queryCache.addPropertyChangeListener(new PropertyChangeListener(){
+		query.addQueryChangeListener(new QueryChangeAdapter() {
+		    
+		    @Override
+		    public void propertyChangeEvent(PropertyChangeEvent evt) {
+		        if (evt.getPropertyName().equals(Query.GROUPING_ENABLED)) {
+		            logger.debug("Grouping has changed to "+ evt.getNewValue());
+		            if (evt.getNewValue().equals(false) && isSelected()) {
+		                logger.debug("grouping is false, setting model and view's selected to false");
+		                setSelected(false);
+		                firePropertyChange(Query.GROUPING_ENABLED,evt.getOldValue(), evt.getNewValue());
+		            }
+		        }
+		    }
+		    
+		    @Override
+		    public void containerRemoved(QueryChangeEvent evt) {
+		        logger.debug(" Table has been removed, removing constant item");
+		        if(query.getFromTableList().isEmpty()) {
+		            setName("");
+		        }
+		    }
 
-			public void propertyChange(PropertyChangeEvent evt) {
-				if (evt.getPropertyName().equals(Query.PROPERTY_TABLE_REMOVED)) {
-					logger.debug(" Table has been removed, removing constant item");
-					if(queryCache.getFromTableList().isEmpty()) {
-						setName("");
-					}
-				} else if(evt.getPropertyName().equals(Query.GROUPING_CHANGED)) {
-					logger.debug("Grouping has changed to "+ evt.getNewValue());
-					if(evt.getNewValue().equals(false) && isSelected()) {
-						logger.debug("grouping is false, setting model and view's selected to false");
-						setSelected(false);
-						firePropertyChange(Query.GROUPING_CHANGED,evt.getOldValue(), evt.getNewValue());
-					}
-				}
-			}
 		});
 	}
 	public boolean isGroupingEnabled() {
-		return queryCache.isGroupingEnabled();
+		return query.isGroupingEnabled();
 	}
 
 }
