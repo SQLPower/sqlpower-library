@@ -25,9 +25,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.log4j.Logger;
 
@@ -338,15 +336,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	                                DatabaseMetaData dbmd) 
 		throws SQLException, DuplicateColumnException, SQLObjectException {
 		ResultSet rs = null;
-		ResultSet typeRs = null;
 		List<SQLColumn> cols = new ArrayList<SQLColumn>();
 		try {
-		    typeRs = dbmd.getTypeInfo();
-		    Map<Integer, Integer> typeToMaxPrecisionMap = new HashMap<Integer, Integer>();
-            while (typeRs.next()) {
-                typeToMaxPrecisionMap.put(new Integer(typeRs.getInt(2)), new Integer(typeRs.getInt(3)));
-            }
-		    
 			logger.debug("SQLColumn.addColumnsToTable: catalog="+catalog+"; schema="+schema+"; tableName="+tableName);
 			rs = dbmd.getColumns(catalog, schema, tableName, "%");
 			
@@ -355,16 +346,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 			
 			while (rs.next()) {
 				logger.debug("addColumnsToTable SQLColumn constructor invocation.");
-				
-				//Must check precision from the column against the database allowed precision
-				//as some jdbc drivers returns a display precision and not an allowed database
-				//precision.
-				
-				int precision = rs.getInt(7);
-				Integer typePrecision = typeToMaxPrecisionMap.get(new Integer(rs.getInt(5)));
-				if (typePrecision != null && (rs.getInt(7) < 1 || rs.getInt(7) > typePrecision.intValue())) { //equate across java.sql.Types
-				    precision = typePrecision.intValue();
-				}
 				
 				boolean autoIncrement;
                 if (autoIncCol > 0) {
@@ -377,7 +358,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 											  rs.getString(4),  // col name
 											  rs.getInt(5), // data type (from java.sql.Types)
 											  rs.getString(6), // native type name
-											  precision, // column size (precision)
+											  rs.getInt(7), // column size (precision)
 											  rs.getInt(9), // decimal size (scale)
 											  rs.getInt(11), // nullable
 											  rs.getString(12) == null ? "" : rs.getString(12), // remarks
@@ -409,11 +390,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 			return cols;
 			
 		} finally {
-		    try {
-                if (typeRs != null) typeRs.close();
-            } catch (SQLException ex) {
-                logger.error("Couldn't close result set", ex);
-            }
 			try {
 				if (rs != null) rs.close();
 			} catch (SQLException ex) {

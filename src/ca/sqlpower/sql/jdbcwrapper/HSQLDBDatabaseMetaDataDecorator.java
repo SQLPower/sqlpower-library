@@ -22,6 +22,7 @@ package ca.sqlpower.sql.jdbcwrapper;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -179,5 +180,39 @@ public class HSQLDBDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
     private String makeKey(String cat, String sch, String tab) {
         String key = cat + "." + sch + "." + tab;
         return key;
+    }
+    
+    /**
+     * Fixes a problem where integer columns are marked as having a precision of 0.
+     */
+    @Override
+    public ResultSet getColumns(String catalog, String schemaPattern,
+            String tableNamePattern, String columnNamePattern)
+            throws SQLException {
+        ResultSet columns = null;
+        try {
+            columns = super.getColumns(catalog, schemaPattern, tableNamePattern, columnNamePattern);
+            CachedRowSet crs = new CachedRowSet();
+            crs.populate(columns);
+            while (crs.next()) {
+                int type = crs.getInt(5);
+                if (type == Types.INTEGER && crs.getInt(7) == 0) {
+                    crs.updateInt(7, 10);
+                }
+            }
+            
+            crs.beforeFirst();
+            return crs;
+            
+        } finally {
+            if (columns != null) {
+                try {
+                    columns.close();
+                } catch (SQLException ex) {
+                    logger.error("Failed to close original result set", ex);
+                }
+            }
+        }
+        
     }
 }

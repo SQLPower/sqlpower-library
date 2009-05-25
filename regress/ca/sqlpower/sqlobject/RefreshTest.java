@@ -106,7 +106,8 @@ public class RefreshTest extends DatabaseConnectedTestCase {
         SQLColumn antlerLength = moose.getColumns().get(2);
 
         assertEquals(Types.INTEGER, antlerLength.getType());
-        assertEquals(10, antlerLength.getPrecision());
+        assertEquals(antlerLength.getName() + " Precision: " + antlerLength.getPrecision() + " Scale: " + antlerLength.getScale(),
+                10, antlerLength.getPrecision());
         assertEquals(0, antlerLength.getScale());
 
         sqlx("ALTER TABLE moose ALTER COLUMN antler_length NUMERIC(10,2)");
