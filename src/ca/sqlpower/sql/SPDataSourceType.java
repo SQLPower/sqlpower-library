@@ -578,13 +578,6 @@ public class SPDataSourceType {
         return true;
     }
 
-	/**
-	 * Sets if the DataBaseType will support an updatable result set.
-	 */
-	public void setSupportsUpdatableResultSet(boolean supports) {
-		properties.put(SUPPORTS_UPDATEABLE_RESULT_SETS,String.valueOf(supports));
-	}
-
     /**
      * Returns true if and only if the platform supports the SELECT STREAM syntax.
      */
@@ -594,13 +587,6 @@ public class SPDataSourceType {
             return false;
         }
         return true;
-    }
-
-    /**
-     * Sets the flag that indicates this database type supports the SELECT STREAM syntax.
-     */
-    public void setSupportsStreamQueries(boolean supports) {
-        properties.put(SUPPORTS_STREAM_QUERIES, String.valueOf(supports));
     }
 
     /**

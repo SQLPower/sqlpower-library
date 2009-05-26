@@ -318,7 +318,7 @@ public class SPDataSourceTypeTest extends TestCase {
     }
     
     public void testStreamFlagChange() throws Exception {
-        subType.setSupportsStreamQueries(true);
+        subType.putProperty(SPDataSourceType.SUPPORTS_STREAM_QUERIES, String.valueOf(true));
         assertTrue(subType.getSupportsStreamQueries());
     }
 }

@@ -45,13 +45,13 @@ public class DataSourceTypeCopyPropertiesPanelTest extends TestCase {
 		DataSourceCollection collection = new StubDataSourceCollection();
 		SPDataSourceType firstDSType = new SPDataSourceType();
 		firstDSType.setJdbcUrl("First Testing URL");
-		firstDSType.setSupportsUpdatableResultSet(true);
+		firstDSType.putProperty(SPDataSourceType.SUPPORTS_UPDATEABLE_RESULT_SETS, String.valueOf(true));
 		firstDSType.setComment("First testing comment");
 		collection.addDataSourceType(firstDSType);
 		
 		SPDataSourceType secondDSType = new SPDataSourceType();
 		secondDSType.setJdbcUrl("Second Testing URL");
-		secondDSType.setSupportsUpdatableResultSet(false);
+        secondDSType.putProperty(SPDataSourceType.SUPPORTS_UPDATEABLE_RESULT_SETS, String.valueOf(false));
 		secondDSType.setComment("Second testing comment");
 		
 		dsTypeCopyPanel = new DataSourceTypeCopyPropertiesPanel(dsType, collection);

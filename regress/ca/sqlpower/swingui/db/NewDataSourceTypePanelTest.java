@@ -48,13 +48,13 @@ public class NewDataSourceTypePanelTest extends TestCase {
 		collection = new StubDataSourceCollection();
 		firstDSType = new SPDataSourceType();
 		firstDSType.setJdbcUrl("First Testing URL");
-		firstDSType.setSupportsUpdatableResultSet(true);
+        firstDSType.putProperty(SPDataSourceType.SUPPORTS_UPDATEABLE_RESULT_SETS, String.valueOf(true));
 		firstDSType.setComment("First testing comment");
 		collection.addDataSourceType(firstDSType);
 		
 		secondDSType = new SPDataSourceType();
 		secondDSType.setJdbcUrl("Second Testing URL");
-		secondDSType.setSupportsUpdatableResultSet(false);
+		secondDSType.putProperty(SPDataSourceType.SUPPORTS_UPDATEABLE_RESULT_SETS, String.valueOf(false));
 		secondDSType.setComment("Second testing comment");
 		
 		editor = new DataSourceTypeEditor(collection, null);
