@@ -70,7 +70,7 @@ public class FancyExportableJTable extends EditableJTable {
 					Callable<Boolean> okCall = new Callable<Boolean>() {
 					    public Boolean call() {
 							setFont(fontSelector.getSelectedFont());
-							TableUtils.fitColumnWidths(parentTable, 0);
+							TableUtils.fitColumnWidths(parentTable, 15);
 							
 							FontRenderContext frc = ((Graphics2D) parentTable.getGraphics()).getFontRenderContext();
 							Rectangle2D fontBounds = fontSelector.getSelectedFont().getMaxCharBounds(frc);
@@ -197,7 +197,7 @@ public class FancyExportableJTable extends EditableJTable {
 		
 		setModel(model);
 		addMouseListener(new PopupMenuMouseListener(this));
-		TableUtils.fitColumnWidths(this, 0);
+		TableUtils.fitColumnWidths(this, 15);
 	}
 	
 	public FancyExportableJTable(TableModel model) {
@@ -224,7 +224,7 @@ public class FancyExportableJTable extends EditableJTable {
 	@Override
 	public void createDefaultColumnsFromModel() {
 		super.createDefaultColumnsFromModel();
-		TableUtils.fitColumnWidths(this, 0);
+		TableUtils.fitColumnWidths(this, 15);
 	}
 	
 	
