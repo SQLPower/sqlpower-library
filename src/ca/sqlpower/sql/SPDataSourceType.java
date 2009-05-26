@@ -218,9 +218,8 @@ public class SPDataSourceType {
                     }
                     return defineClass(name, buf, 0, buf.length);
                 } catch (IOException ex) {
-                    String errorMsg = "IO Exception reading class from jar file";
-                    logger.error(errorMsg, ex);
-					throw new ClassNotFoundException(errorMsg, ex);
+                    // there might be more classpath entries to search
+                    continue;
                 }
             }
             String errorMsg =
