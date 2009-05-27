@@ -66,7 +66,7 @@ public class TableUtils {
 
         comp = headerRenderer.getTableCellRendererComponent(
                 table, column.getHeaderValue(),
-                false, false, 0, 0);
+                false, false, 0, colIndex);
 
         // Headers need additional padding for some reason!
         cellWidth = comp.getPreferredSize().width + 2;
