@@ -27,9 +27,10 @@ import java.util.Set;
 
 import org.apache.commons.beanutils.BeanUtils;
 
+import ca.sqlpower.sql.JDBCDataSource;
+import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
-import ca.sqlpower.sql.SPDataSourceType;
 import ca.sqlpower.testutil.TestUtils;
 
 
@@ -799,13 +800,13 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
     }
     
     public void testReverseEngineerAutoInc() throws Exception {
-        PlDotIni plini = new PlDotIni();
+        PlDotIni<SPDataSource> plini = new PlDotIni<SPDataSource>(SPDataSource.class);
 
-        SPDataSourceType dst = new SPDataSourceType();
+        JDBCDataSourceType dst = new JDBCDataSourceType();
         dst.setJdbcDriver("ca.sqlpower.testutil.MockJDBCDriver");
         plini.addDataSourceType(dst);
 
-        SPDataSource ds = new SPDataSource(plini);
+        JDBCDataSource ds = new JDBCDataSource(plini);
         String url = "jdbc:mock:tables=table1" +
         		"&columns.table1=pkcol,normalcol" +
         		"&autoincrement_cols=table1.pkcol";

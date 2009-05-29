@@ -23,7 +23,6 @@ import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.net.URI;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -40,7 +39,8 @@ import javax.swing.undo.UndoManager;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.sql.DataSourceCollection;
-import ca.sqlpower.sql.SPDataSourceType;
+import ca.sqlpower.sql.JDBCDataSource;
+import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.swingui.AddRemoveIcon;
 import ca.sqlpower.swingui.DataEntryPanel;
 import ca.sqlpower.swingui.DataEntryPanelBuilder;
@@ -60,7 +60,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      */
     private final JPanel panel;
     
-    private final DataSourceCollection dataSourceCollection;
+    private final DataSourceCollection<JDBCDataSource> dataSourceCollection;
     
     /**
      * The list of data source types.
@@ -101,12 +101,12 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      * @param owner The Window that should own any dialogs created within the editor GUI.
      * @see DefaultDataSourceTypeDialogFactory for a more out-of-the-box setup
      */
-    public DataSourceTypeEditor(DataSourceCollection dataSourceCollection, final Window owner) {
+    public DataSourceTypeEditor(DataSourceCollection<JDBCDataSource> dataSourceCollection, final Window owner) {
         this.dataSourceCollection = dataSourceCollection;
         
         dsTypeListModel = new DefaultListModel();
         dataSourceCollection.addUndoableEditListener(undoManager);
-        for (SPDataSourceType type : dataSourceCollection.getDataSourceTypes()) {
+        for (JDBCDataSourceType type : dataSourceCollection.getDataSourceTypes()) {
             dsTypeListModel.addElement(type);
             type.addUndoableEditListener(undoManager);
         }
@@ -142,8 +142,8 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         dsTypeList.addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent e) {
                 if (!e.getValueIsAdjusting()) {
-                    SPDataSourceType dst =
-                        (SPDataSourceType) dsTypeList.getSelectedValue();
+                    JDBCDataSourceType dst =
+                        (JDBCDataSourceType) dsTypeList.getSelectedValue();
                     switchToDsType(dst);
                 }
                 
@@ -159,14 +159,14 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      * no selected type, does nothing.
      */
     private void removeSelectedDsType() {
-        SPDataSourceType type = (SPDataSourceType) dsTypeList.getSelectedValue();
+        JDBCDataSourceType type = (JDBCDataSourceType) dsTypeList.getSelectedValue();
         if (type != null) {
             ((DefaultListModel) dsTypeList.getModel()).removeElement(type);
             dataSourceCollection.removeDataSourceType(type);
         }
     }
 
-    public void addDsType(SPDataSourceType type) {
+    public void addDsType(JDBCDataSourceType type) {
         if (type == null) {
             throw new NullPointerException("Don't add null data source types, silly!"); //$NON-NLS-1$
         }
@@ -212,7 +212,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         applyCurrentChanges();
         ListModel lm = dsTypeList.getModel();
         for (int i = 0; i < lm.getSize(); i++) {
-            SPDataSourceType dst = (SPDataSourceType) lm.getElementAt(i);
+            JDBCDataSourceType dst = (JDBCDataSourceType) lm.getElementAt(i);
             dataSourceCollection.mergeDataSourceType(dst);
         }
         try {
@@ -240,7 +240,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
     	dsTypePanel.discardChanges();
     	
     	dsTypeListModel.clear();
-    	for (SPDataSourceType type : dataSourceCollection.getDataSourceTypes()) {
+    	for (JDBCDataSourceType type : dataSourceCollection.getDataSourceTypes()) {
     		dsTypeListModel.addElement(type);
     	}
     }
@@ -249,7 +249,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      * Call this to disconnect the editor from the DS types.
      */
     public void cleanup() {
-    	for (SPDataSourceType type : dataSourceCollection.getDataSourceTypes()) {
+    	for (JDBCDataSourceType type : dataSourceCollection.getDataSourceTypes()) {
     		type.removeUndoableEditListener(undoManager);
     	}
     	dataSourceCollection.removeUndoableEditListener(undoManager);
@@ -259,7 +259,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      * Causes this editor to set up all its GUI components to edit the given data source type.
      * Null is an acceptable value, and means to make no DS Type the current type.
      */
-    public void switchToDsType(SPDataSourceType dst) {
+    public void switchToDsType(JDBCDataSourceType dst) {
         applyCurrentChanges();
         dsTypeList.setSelectedValue(dst, true);
         dsTypePanel.editDsType(dst);

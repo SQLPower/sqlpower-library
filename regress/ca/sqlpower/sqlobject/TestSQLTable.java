@@ -33,7 +33,7 @@ import java.util.TreeMap;
 
 import org.apache.commons.beanutils.BeanUtils;
 
-import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLTable.Folder;
 import ca.sqlpower.sqlobject.SQLTable.TransferStyles;
@@ -700,7 +700,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     }
     
     public void testPopulateColumnsCaseSensitive() throws Exception {
-        SPDataSource ds = new SPDataSource(getPLIni());
+        JDBCDataSource ds = new JDBCDataSource(getPLIni());
         ds.setDisplayName("tableWithMixedColumnCase");
         ds.getParentType().setJdbcDriver(MockJDBCDriver.class.getName());
         ds.setUser("fake");
@@ -716,7 +716,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     }
     
     public void testPopulateViewIndices() throws Exception {
-        SPDataSource ds = getDataSource();
+        JDBCDataSource ds = getJDBCDataSource();
         
         SQLDatabase db = new SQLDatabase(ds);
           

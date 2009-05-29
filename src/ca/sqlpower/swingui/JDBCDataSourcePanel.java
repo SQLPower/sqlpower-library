@@ -41,15 +41,16 @@ import javax.swing.JTextField;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.sql.DataSourceCollection;
+import ca.sqlpower.sql.JDBCDataSource;
+import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sql.SPDataSource;
-import ca.sqlpower.sql.SPDataSourceType;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 import com.jgoodies.forms.layout.FormLayout;
 
-public class SPDataSourcePanel implements DataEntryPanel {
+public class JDBCDataSourcePanel implements DataEntryPanel {
 
-	private static final Logger logger = Logger.getLogger(SPDataSourcePanel.class);
+	private static final Logger logger = Logger.getLogger(JDBCDataSourcePanel.class);
 
 	protected static final String EXTRA_FIELD_LABEL_PROP = "ca.sqlpower.swingui.LABEL"; //$NON-NLS-1$
 	
@@ -64,7 +65,7 @@ public class SPDataSourcePanel implements DataEntryPanel {
     /**
      * The data source we're editing.
      */
-	private final SPDataSource dbcs;
+	private final JDBCDataSource dbcs;
     
 	private JTextField dbNameField;
 	private JComboBox dataSourceTypeBox;
@@ -97,7 +98,7 @@ public class SPDataSourcePanel implements DataEntryPanel {
 	 * @param ds The data source to edit.  It is the only data source this instance
 	 * will ever be able to edit.
 	 */
-	public SPDataSourcePanel(SPDataSource ds) {
+	public JDBCDataSourcePanel(JDBCDataSource ds) {
 	    this.dbcs = ds;
 	}
 
@@ -106,10 +107,10 @@ public class SPDataSourcePanel implements DataEntryPanel {
      * settings (the ones that are always required no matter what you want to
      * use this connection for).
      */
-    private JPanel buildGeneralPanel(SPDataSource dbcs) {
+    private JPanel buildGeneralPanel(JDBCDataSource dbcs) {
         DataSourceCollection dsCollection = dbcs.getParentCollection();
-        List<SPDataSourceType> dataSourceTypes = dsCollection.getDataSourceTypes();
-        dataSourceTypes.add(0, new SPDataSourceType());
+        List<JDBCDataSourceType> dataSourceTypes = dsCollection.getDataSourceTypes();
+        dataSourceTypes.add(0, new JDBCDataSourceType());
         dataSourceTypeBox = new JComboBox(dataSourceTypes.toArray());
         dataSourceTypeBox.setRenderer(new SPDataSourceTypeListCellRenderer());
         dataSourceTypeBox.setSelectedIndex(0);
@@ -146,11 +147,11 @@ public class SPDataSourcePanel implements DataEntryPanel {
 				sysprops.setText("");
 				Connection con = null;
 				try {
-					SPDataSource dbcs = new SPDataSource(SPDataSourcePanel.this.dbcs.getParentCollection());
+					JDBCDataSource dbcs = new JDBCDataSource(JDBCDataSourcePanel.this.dbcs.getParentCollection());
 					String name = dbNameField.getText();
 					dbcs.setName(name);
 					dbcs.setDisplayName(name);
-					dbcs.setParentType((SPDataSourceType) dataSourceTypeBox.getSelectedItem());
+					dbcs.setParentType((JDBCDataSourceType) dataSourceTypeBox.getSelectedItem());
 					dbcs.setUrl(dbUrlField.getText());
 					dbcs.setUser(dbUserField.getText());
 					dbcs.setPass(new String(dbPassField.getPassword()));
@@ -158,7 +159,7 @@ public class SPDataSourcePanel implements DataEntryPanel {
 					
 					// No exception thrown, so success!
 					dbTestResult.setText(Messages.getString("SPDataSourcePanel.connectionTestSuccessful")); //$NON-NLS-1$
-					sysprops.append(SPDataSource.getConnectionInfoString(dbcs, true));
+					sysprops.append(JDBCDataSource.getConnectionInfoString(dbcs, true));
 				} catch (SQLException ex) {
 					dbTestResult.setText(Messages.getString("SPDataSourcePanel.connectionTestFailed")); //$NON-NLS-1$
 					SPSUtils.showExceptionDialogNoReport(panel, Messages.getString("SPDataSourcePanel.connectionTestException"), ex); //$NON-NLS-1$
@@ -194,8 +195,8 @@ public class SPDataSourcePanel implements DataEntryPanel {
         
         dataSourceTypeBox.addItemListener(new ItemListener() {
             public void itemStateChanged(ItemEvent e) {
-                SPDataSourceType parentType =
-                    (SPDataSourceType) dataSourceTypeBox.getSelectedItem();
+                JDBCDataSourceType parentType =
+                    (JDBCDataSourceType) dataSourceTypeBox.getSelectedItem();
                 platformSpecificOptions.setTemplate(parentType);
             }
         });
@@ -222,7 +223,7 @@ public class SPDataSourcePanel implements DataEntryPanel {
      * Returns a reference to the data source this panel is editing (that is,
      * the one that will be updated when apply() is called).
      */
-    public SPDataSource getDbcs() {
+    public JDBCDataSource getDbcs() {
         return dbcs;
     }
 
@@ -271,7 +272,7 @@ public class SPDataSourcePanel implements DataEntryPanel {
 		String name = dbNameField.getText();
 		dbcs.setName(name);
 		dbcs.setDisplayName(name);
-		dbcs.setParentType((SPDataSourceType) dataSourceTypeBox.getSelectedItem());
+		dbcs.setParentType((JDBCDataSourceType) dataSourceTypeBox.getSelectedItem());
 		dbcs.setUrl(dbUrlField.getText());
 		dbcs.setUser(dbUserField.getText());
 		dbcs.setPass(new String(dbPassField.getPassword())); // completely defeats the purpose for JPasswordField.getText() being deprecated, but we're saving passwords to the config file so it hardly matters.

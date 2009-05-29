@@ -4,7 +4,7 @@ import java.awt.Window;
 
 import javax.swing.JDialog;
 
-import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sql.JDBCDataSource;
 
 /**
  * Generic interface for creating and showing a dialog box that allows users to
@@ -36,6 +36,6 @@ public interface DataSourceDialogFactory {
 	 *            taken.
 	 * @return The dialog which has been made visible.
 	 */
-	public JDialog showDialog(Window parentWindow, SPDataSource dataSource, Runnable onAccept);
+	public JDialog showDialog(Window parentWindow, JDBCDataSource dataSource, Runnable onAccept);
 }
 

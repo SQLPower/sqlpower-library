@@ -24,9 +24,9 @@ import java.util.concurrent.Callable;
 
 import javax.swing.JDialog;
 
-import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.swingui.DataEntryPanelBuilder;
-import ca.sqlpower.swingui.SPDataSourcePanel;
+import ca.sqlpower.swingui.JDBCDataSourcePanel;
 
 /**
  * A default factory implementation that just shows a plain data source edit
@@ -38,8 +38,8 @@ public class DefaultDataSourceDialogFactory implements DataSourceDialogFactory {
      * Creates and shows a non-modal dialog box for editing the properties
      * of the given data source.
      */
-    public JDialog showDialog(Window parentWindow, SPDataSource ds, final Runnable onAccept) {
-        final SPDataSourcePanel dataSourcePanel = new SPDataSourcePanel(ds);
+    public JDialog showDialog(Window parentWindow, JDBCDataSource ds, final Runnable onAccept) {
+        final JDBCDataSourcePanel dataSourcePanel = new JDBCDataSourcePanel(ds);
         
         Callable<Boolean> okCall = new Callable<Boolean>() {
             public Boolean call() {

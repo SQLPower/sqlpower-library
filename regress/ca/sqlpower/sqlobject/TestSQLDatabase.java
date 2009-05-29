@@ -24,8 +24,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 
-import ca.sqlpower.sql.SPDataSource;
-import ca.sqlpower.sql.SPDataSourceType;
+import ca.sqlpower.sql.JDBCDataSource;
+import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.testutil.MockJDBCDriver;
 
 public class TestSQLDatabase extends BaseSQLObjectTestCase {
@@ -70,7 +70,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 	}
 	
 	public void testGoodConnect() throws SQLObjectException, SQLException, IOException {
-	    SQLDatabase mydb = new SQLDatabase(getDataSource());
+	    SQLDatabase mydb = new SQLDatabase(getJDBCDataSource());
 		assertFalse("db shouldn't have been connected yet", mydb.isConnected());
 		Connection con = mydb.getConnection();
 		assertNotNull("db gave back a null connection", con);
@@ -90,7 +90,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 	}
     
     public void testPopulateTablesOnly() throws Exception {
-        SPDataSource ds = new SPDataSource(getPLIni());
+        JDBCDataSource ds = new JDBCDataSource(getPLIni());
         ds.setDisplayName("tablesOnly");
         ds.getParentType().setJdbcDriver(MockJDBCDriver.class.getName());
         ds.setUser("fake");
@@ -104,7 +104,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
     }
 
     public void testPopulateSchemasAndTables() throws Exception {
-        SPDataSource ds = new SPDataSource(getPLIni());
+        JDBCDataSource ds = new JDBCDataSource(getPLIni());
         ds.setDisplayName("schemasAndTables");
         ds.getParentType().setJdbcDriver(MockJDBCDriver.class.getName());
         ds.setUser("fake");
@@ -118,7 +118,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
     }
 
     public void testPopulateCatalogsAndTables() throws Exception {
-        SPDataSource ds = new SPDataSource(getPLIni());
+        JDBCDataSource ds = new JDBCDataSource(getPLIni());
         ds.setDisplayName("catalogsAndTables");
         ds.getParentType().setJdbcDriver(MockJDBCDriver.class.getName());
         ds.setUser("fake");
@@ -132,7 +132,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
     }
 
     public void testPopulateCatalogsSchemasAndTables() throws Exception {
-        SPDataSource ds = new SPDataSource(getPLIni());
+        JDBCDataSource ds = new JDBCDataSource(getPLIni());
         ds.setDisplayName("catalogsSchemasAndTables");
         ds.getParentType().setJdbcDriver(MockJDBCDriver.class.getName());
         ds.setUser("fake");
@@ -237,7 +237,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 	public void testGetDataSource() {
 		SQLDatabase db1 = new SQLDatabase();
 		assertNull (db1.getDataSource());
-		SPDataSource data = db.getDataSource();
+		JDBCDataSource data = db.getDataSource();
 		db1.setDataSource(data);
 		assertEquals (db.getDataSource(), db1.getDataSource());
 		db1 = new SQLDatabase(data);
@@ -399,7 +399,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 	}
 
 	public void testMissingDriverConnect() throws SQLException {
-		SPDataSource ds = db.getDataSource();
+		JDBCDataSource ds = db.getDataSource();
 		ds.getParentType().setJdbcDriver("ca.sqlpower.xxx.does.not.exist");
 		
 		SQLDatabase mydb = new SQLDatabase(ds);
@@ -419,7 +419,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 	}
 
 	public void testBadURLConnect() throws Exception {
-		SPDataSource ds = db.getDataSource();
+		JDBCDataSource ds = db.getDataSource();
 		ds.setUrl("jdbc:bad:moo");
 		
 		SQLDatabase mydb = new SQLDatabase(ds);
@@ -439,7 +439,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 	}
 
 	public void testBadPasswordConnect() throws SQLException {
-		SPDataSource ds = db.getDataSource();
+		JDBCDataSource ds = db.getDataSource();
 		ds.setPass("foofoofoofoofooSDFGHJK");  // XXX: if this is the password, we lose.
 		
 		SQLDatabase mydb = new SQLDatabase(ds);
@@ -509,8 +509,8 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
     }
     
 	public void testConnectionsPerThreadAreUnique() throws Exception{
-		SPDataSource ads = new SPDataSource(getPLIni());
-        ads.setParentType(new SPDataSourceType());
+		JDBCDataSource ads = new JDBCDataSource(getPLIni());
+        ads.setParentType(new JDBCDataSourceType());
 		ads.getParentType().setJdbcDriver(MockJDBCDriver.class.getName());
 		ads.setUrl("jdbc:mock:dbmd.catalogTerm=Catalog&dbmd.schemaTerm=Schema&catalogs=farm,yard,zoo&schemas.farm=cow,pig&schemas.yard=cat,robin&schemas.zoo=lion,giraffe&tables.farm.cow=moo&tables.farm.pig=oink&tables.yard.cat=meow&tables.yard.robin=tweet&tables.zoo.lion=roar&tables.zoo.giraffe=***,^%%");
 		ads.setUser("fake");

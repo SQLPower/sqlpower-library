@@ -109,6 +109,7 @@ import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.DatabaseListChangeEvent;
 import ca.sqlpower.sql.DatabaseListChangeListener;
+import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.RowSetChangeEvent;
 import ca.sqlpower.sql.RowSetChangeListener;
 import ca.sqlpower.sql.SPDataSource;
@@ -184,7 +185,7 @@ public class SQLQueryUIComponents {
             if (e.getStateChange() != ItemEvent.SELECTED) {
                 return;
             }
-            SPDataSource ds = (SPDataSource)e.getItem();
+            JDBCDataSource ds = (JDBCDataSource)e.getItem();
             SQLDatabase db = databaseMapping.getDatabase(ds);
             try {
 				addConnection(db);
@@ -339,7 +340,7 @@ public class SQLQueryUIComponents {
         		firstResultPanel.revalidate();
         	} 
         	
-        	db = databaseMapping.getDatabase((SPDataSource) databaseComboBox.getSelectedItem());
+        	db = databaseMapping.getDatabase((JDBCDataSource) databaseComboBox.getSelectedItem());
         	
         	try {
                 rowLimitSpinner.commitEdit();
@@ -699,12 +700,14 @@ public class SQLQueryUIComponents {
     private DatabaseListChangeListener dbListChangeListener = new DatabaseListChangeListener() {
 
         public void databaseAdded(DatabaseListChangeEvent e) {
+            if (!(e.getDataSource() instanceof JDBCDataSource)) return;
         	logger.debug("dataBase added");
             databaseComboBox.addItem(e.getDataSource());
             databaseComboBox.revalidate();
         }
 
         public void databaseRemoved(DatabaseListChangeEvent e) {
+            if (!(e.getDataSource() instanceof JDBCDataSource)) return;
         	logger.debug("dataBase removed");
             if (databaseComboBox.getSelectedItem() != null && databaseComboBox.getSelectedItem().equals(e.getDataSource())) {
                 databaseComboBox.setSelectedItem(null);
@@ -1114,13 +1117,13 @@ public class SQLQueryUIComponents {
             	if(databaseComboBox.getSelectedItem() == null){
             		return;
             	}
-                Connection con = conMap.get(databaseMapping.getDatabase((SPDataSource) databaseComboBox.getSelectedItem())).getConnection();
+                Connection con = conMap.get(databaseMapping.getDatabase((JDBCDataSource) databaseComboBox.getSelectedItem())).getConnection();
                 if (con == null) {
                     return;
                 }
                 try {
                     boolean isPressed = autoCommitToggleButton.getModel().isSelected();
-                    if (isPressed && conMap.get(databaseMapping.getDatabase((SPDataSource) databaseComboBox.getSelectedItem())).isConnectionUncommitted()) {
+                    if (isPressed && conMap.get(databaseMapping.getDatabase((JDBCDataSource) databaseComboBox.getSelectedItem())).isConnectionUncommitted()) {
                         int result = JOptionPane.showOptionDialog(dialogOwner, Messages.getString("SQLQuery.commitOrRollbackBeforeAutoCommit"),
                                 Messages.getString("SQLQuery.commitOrRollbackTitle"), JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null,
                                 new Object[] {Messages.getString("SQLQuery.commit"), Messages.getString("SQLQuery.cancel"), Messages.getString("SQLQuery.rollback")}, Messages.getString("SQLQuery.commit"));
@@ -1195,7 +1198,7 @@ public class SQLQueryUIComponents {
         
         conMap = new HashMap<SQLDatabase, ConnectionAndStatementBean>();
         
-        databaseComboBox = new JComboBox(dsCollection.getConnections().toArray());
+        databaseComboBox = new JComboBox(dsCollection.getConnections(JDBCDataSource.class).toArray());
         databaseComboBox.setSelectedItem(null);
         databaseComboBox.addItemListener(new DatabaseItemListener());
         
@@ -1208,7 +1211,7 @@ public class SQLQueryUIComponents {
         
         stopButton = new JButton(new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.stop")) {
             public void actionPerformed(ActionEvent arg0) {
-                ConnectionAndStatementBean conBean = conMap.get(databaseMapping.getDatabase((SPDataSource) databaseComboBox.getSelectedItem()));
+                ConnectionAndStatementBean conBean = conMap.get(databaseMapping.getDatabase((JDBCDataSource) databaseComboBox.getSelectedItem()));
                 if (conBean != null) {
                     Statement stmt = conBean.getCurrentStmt();
                     if (stmt != null) {
@@ -1221,7 +1224,7 @@ public class SQLQueryUIComponents {
                                 sqlExecuteWorker = null;
                             }
                         } catch (SQLException e) {
-                            SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.stopException", ((SQLDatabase) databaseMapping.getDatabase((SPDataSource) databaseComboBox.getSelectedItem())).getName()), e);
+                            SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.stopException", ((SQLDatabase) databaseMapping.getDatabase((JDBCDataSource) databaseComboBox.getSelectedItem())).getName()), e);
                         }
                     }
                 }
@@ -1286,7 +1289,7 @@ public class SQLQueryUIComponents {
      */
     public synchronized void executeQuery(String sql) {
     	if (stmtExecutor == null) {
-    		executeQuery(new DefaultStatementExecutor(databaseMapping.getDatabase((SPDataSource) databaseComboBox.getSelectedItem()), sql, ((Integer) rowLimitSpinner.getValue()).intValue()));
+    		executeQuery(new DefaultStatementExecutor(databaseMapping.getDatabase((JDBCDataSource) databaseComboBox.getSelectedItem()), sql, ((Integer) rowLimitSpinner.getValue()).intValue()));
     	} else {
     		executeQuery(stmtExecutor);
     	}
@@ -1323,7 +1326,7 @@ public class SQLQueryUIComponents {
     		return;
     	}
     	
-    	ConnectionAndStatementBean conBean = conMap.get(databaseMapping.getDatabase((SPDataSource) databaseComboBox.getSelectedItem()));
+    	ConnectionAndStatementBean conBean = conMap.get(databaseMapping.getDatabase((JDBCDataSource) databaseComboBox.getSelectedItem()));
     	try {
     		if(conBean!= null) {
     			if (!conBean.getConnection().getAutoCommit()) {
@@ -1331,7 +1334,7 @@ public class SQLQueryUIComponents {
     			}
     		}
     	} catch (SQLException e1) {
-    		SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedRetrievingConnection", ((SQLDatabase) databaseMapping.getDatabase((SPDataSource) databaseComboBox.getSelectedItem())).getName()), e1);
+    		SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedRetrievingConnection", ((SQLDatabase) databaseMapping.getDatabase((JDBCDataSource) databaseComboBox.getSelectedItem())).getName()), e1);
     	}
     	
     	prevQueryPosition = previousQueries.size();
@@ -1445,7 +1448,7 @@ public class SQLQueryUIComponents {
      * auto commit mode then any changes will be committed.
      */
     private void commitCurrentDB() {
-        ConnectionAndStatementBean conBean = conMap.get(databaseMapping.getDatabase((SPDataSource) databaseComboBox.getSelectedItem()));
+        ConnectionAndStatementBean conBean = conMap.get(databaseMapping.getDatabase((JDBCDataSource) databaseComboBox.getSelectedItem()));
         Connection con = conBean.getConnection();
         if (con == null) {
             return;
@@ -1465,7 +1468,7 @@ public class SQLQueryUIComponents {
      * auto commit mode then any changes will be rolled back.
      */
     private void rollbackCurrentDB() {
-        ConnectionAndStatementBean conBean = conMap.get(databaseMapping.getDatabase((SPDataSource) databaseComboBox.getSelectedItem()));
+        ConnectionAndStatementBean conBean = conMap.get(databaseMapping.getDatabase((JDBCDataSource) databaseComboBox.getSelectedItem()));
         Connection con = conBean.getConnection();
         if (con == null) {
             return;
@@ -1571,7 +1574,7 @@ public class SQLQueryUIComponents {
         }
         stopButton.setEnabled(conMap.get(db).getCurrentStmt() != null);
         executeButton.setEnabled(conMap.get(db).getCurrentStmt() == null);
-        logTextArea.append("\n" + SPDataSource.getConnectionInfoString(db.getDataSource(), false) + "\n\n");
+        logTextArea.append("\n" + JDBCDataSource.getConnectionInfoString(db.getDataSource(), false) + "\n\n");
 	}
     
     public void addWindowListener(Window container){

@@ -25,21 +25,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import ca.sqlpower.sql.DataSourceCollection;
-import ca.sqlpower.sql.PlDotIni;
-import ca.sqlpower.sql.SPDataSource;
-import ca.sqlpower.sql.SPDataSourceType;
-
 import junit.framework.TestCase;
 
 public class PLDotIniTest extends TestCase {
 
 	private static final String FUN_DATASOURCE_NAME = "broomhilda";
-	private PlDotIni target;
+	private PlDotIni<SPDataSource> target;
 
 	@Override
 	public void setUp() {
-		target = new PlDotIni();
+		target = new PlDotIni<SPDataSource>(SPDataSource.class);
 	}
 	/*
 	 * Test method for 'ca.sqlpower.architect.PlDotIni.read(File)'
@@ -112,21 +107,21 @@ public class PLDotIniTest extends TestCase {
         assertEquals(null, ((PlDotIni.Section) s).getName());
         
         s = target.getSection(1);
-        assertEquals(SPDataSourceType.class, s.getClass());
+        assertEquals(JDBCDataSourceType.class, s.getClass());
 
         s = target.getSection(2);
-        assertEquals(SPDataSourceType.class, s.getClass());
+        assertEquals(JDBCDataSourceType.class, s.getClass());
         
         s = target.getSection(3);
         assertEquals(PlDotIni.Section.class, s.getClass());
 
         s = target.getSection(4);
-        assertEquals(SPDataSource.class, s.getClass());
+        assertEquals(JDBCDataSource.class, s.getClass());
     }
 
     /* simple test of getDataSource() which assumes addDataSource() works. */
     public void testGetDataSource() {
-        SPDataSource dbcs = new SPDataSource(target);
+        SPDataSource dbcs = new JDBCDataSource(target);
         dbcs.setName("cows");
         target.addDataSource(dbcs);
         
@@ -153,8 +148,8 @@ public class PLDotIniTest extends TestCase {
                 sb.append(((PlDotIni.Section) o).getPropertiesMap().toString());
             } else if (o instanceof SPDataSource) {
                 sb.append(((SPDataSource) o).getPropertiesMap().toString());
-            } else if (o instanceof SPDataSourceType) {
-                sb.append(((SPDataSourceType) o).getProperties().toString());
+            } else if (o instanceof JDBCDataSourceType) {
+                sb.append(((JDBCDataSourceType) o).getProperties().toString());
             } else {
                 throw new IllegalArgumentException("Unknown pl.ini section type: "+o);
             }
@@ -182,11 +177,11 @@ public class PLDotIniTest extends TestCase {
     public void testReadDataSourceType() throws IOException {
         testRead();
         
-        SPDataSourceType dst = target.getDataSourceType("my db type");
+        JDBCDataSourceType dst = target.getDataSourceType("my db type");
         assertNotNull(dst);
         assertEquals(dst.getProperty("silly property"), "diddle");
         
-        SPDataSourceType dst2 = target.getDataSourceType("my other db type");
+        JDBCDataSourceType dst2 = target.getDataSourceType("my other db type");
         assertNotNull(dst2);
         assertEquals(dst2.getProperty("silly property"), "fiddle");
         assertSame(dst, dst2.getParentType());
@@ -205,8 +200,8 @@ public class PLDotIniTest extends TestCase {
     public void testDatabaseTypeParentDoesntExist() throws Exception {
         testRead();
         
-        SPDataSourceType dbType = target.getDataSourceType("my other db type");
-        dbType.putProperty(SPDataSourceType.PARENT_TYPE_NAME, "non existant parent");
+        JDBCDataSourceType dbType = target.getDataSourceType("my other db type");
+        dbType.putProperty(JDBCDataSourceType.PARENT_TYPE_NAME, "non existant parent");
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         target.write(out);
@@ -222,7 +217,7 @@ public class PLDotIniTest extends TestCase {
 
     public void testHookUpDataSourceToParentType() throws Exception {
         testRead();
-        SPDataSource ds = target.getDataSource(FUN_DATASOURCE_NAME);
+        JDBCDataSource ds = target.getDataSource(FUN_DATASOURCE_NAME, JDBCDataSource.class);
         assertNotNull(ds);
         assertNotNull(ds.getParentType());
     }
@@ -237,7 +232,7 @@ public class PLDotIniTest extends TestCase {
         File tmp2 = File.createTempFile("pl.out", null);
         target.write(tmp2);
         
-        PlDotIni reread = new PlDotIni();
+        PlDotIni<SPDataSource> reread = new PlDotIni<SPDataSource>(SPDataSource.class);
         reread.read(tmp2);
         Object sect = reread.getSection(0);
         assertEquals(PlDotIni.Section.class, sect.getClass());
@@ -246,19 +241,19 @@ public class PLDotIniTest extends TestCase {
     
     public void testAddDsType() {
         int oldCount = target.getDataSourceTypes().size();
-        target.addDataSourceType(new SPDataSourceType());
+        target.addDataSourceType(new JDBCDataSourceType());
         assertEquals(oldCount + 1, target.getDataSourceTypes().size());
     }
     
     public void testRemoveDsType() {
-        final SPDataSourceType newType = new SPDataSourceType();
+        final JDBCDataSourceType newType = new JDBCDataSourceType();
         target.addDataSourceType(newType);
         int oldCount = target.getDataSourceTypes().size();
         
         assertFalse(target.removeDataSourceType(null));
         assertEquals(oldCount, target.getDataSourceTypes().size());
 
-        assertFalse(target.removeDataSourceType(new SPDataSourceType()));
+        assertFalse(target.removeDataSourceType(new JDBCDataSourceType()));
         assertEquals(oldCount, target.getDataSourceTypes().size());
 
         assertTrue(target.removeDataSourceType(newType));

@@ -41,7 +41,7 @@ import javax.swing.event.TreeSelectionListener;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.sql.DataSourceCollection;
-import ca.sqlpower.sql.SPDataSourceType;
+import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.swingui.DataEntryPanel;
 import ca.sqlpower.swingui.DataEntryPanelBuilder;
 import ca.sqlpower.swingui.Messages;
@@ -56,7 +56,7 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
 
     private static final Logger logger = Logger.getLogger(DataSourceTypeEditorPanel.class);
     
-    private SPDataSourceType dsType;
+    private JDBCDataSourceType dsType;
     private JPanel panel;
     private JTabbedPane tabbedPane;
     final private JTextField name = new JTextField();
@@ -197,7 +197,7 @@ public class DataSourceTypeEditorPanel implements DataEntryPanel {
      * Modifies the fields in the editor panel and all tabbed panels to match those of the given SPDataSourceType
      * @param dst The SPDataSourceType that is being edited
      */
-    public void editDsType(SPDataSourceType dst) {
+    public void editDsType(JDBCDataSourceType dst) {
         dsType = dst;
         if (dst == null) {
             name.setText(""); //$NON-NLS-1$

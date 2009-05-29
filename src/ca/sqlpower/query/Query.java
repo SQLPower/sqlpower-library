@@ -35,7 +35,7 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.graph.DepthFirstSearch;
 import ca.sqlpower.graph.GraphModel;
-import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLDatabaseMapping;
 import ca.sqlpower.sqlobject.SQLTable;
@@ -431,7 +431,7 @@ public class Query {
 	 * Generates the query based on the cache.
 	 */
 	public String generateQuery() {
-	    SPDataSource dataSource = null;
+	    JDBCDataSource dataSource = null;
 	    if (database != null) {
             dataSource = database.getDataSource();
 	    }
@@ -877,7 +877,7 @@ public class Query {
 		return constantsContainer;
 	}
 	
-	public void setDataSource(SPDataSource dataSource) {
+	public void setDataSource(JDBCDataSource dataSource) {
 	    this.database = dbMapping.getDatabase(dataSource);
 	    if (dataSource != null) {
             setStreaming(dataSource.getParentType().getSupportsStreamQueries());

@@ -21,7 +21,7 @@ package ca.sqlpower.swingui.db;
 
 import junit.framework.TestCase;
 import ca.sqlpower.sql.DataSourceCollection;
-import ca.sqlpower.sql.SPDataSourceType;
+import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sql.StubDataSourceCollection;
 
 public class DataSourceTypeCopyPropertiesPanelTest extends TestCase {
@@ -29,7 +29,7 @@ public class DataSourceTypeCopyPropertiesPanelTest extends TestCase {
 	/**
 	 * The ds type that will change in this test case.
 	 */
-	private SPDataSourceType dsType;
+	private JDBCDataSourceType dsType;
 	
 	/**
 	 * The panel to test against.
@@ -39,19 +39,19 @@ public class DataSourceTypeCopyPropertiesPanelTest extends TestCase {
 	@Override
 	protected void setUp() throws Exception {
 		
-		dsType = new SPDataSourceType();
+		dsType = new JDBCDataSourceType();
 		dsType.setName("Testing DS Name Shouldn't Change");
 		
 		DataSourceCollection collection = new StubDataSourceCollection();
-		SPDataSourceType firstDSType = new SPDataSourceType();
+		JDBCDataSourceType firstDSType = new JDBCDataSourceType();
 		firstDSType.setJdbcUrl("First Testing URL");
-		firstDSType.putProperty(SPDataSourceType.SUPPORTS_UPDATEABLE_RESULT_SETS, String.valueOf(true));
+		firstDSType.putProperty(JDBCDataSourceType.SUPPORTS_UPDATEABLE_RESULT_SETS, String.valueOf(true));
 		firstDSType.setComment("First testing comment");
 		collection.addDataSourceType(firstDSType);
 		
-		SPDataSourceType secondDSType = new SPDataSourceType();
+		JDBCDataSourceType secondDSType = new JDBCDataSourceType();
 		secondDSType.setJdbcUrl("Second Testing URL");
-        secondDSType.putProperty(SPDataSourceType.SUPPORTS_UPDATEABLE_RESULT_SETS, String.valueOf(false));
+        secondDSType.putProperty(JDBCDataSourceType.SUPPORTS_UPDATEABLE_RESULT_SETS, String.valueOf(false));
 		secondDSType.setComment("Second testing comment");
 		
 		dsTypeCopyPanel = new DataSourceTypeCopyPropertiesPanel(dsType, collection);
@@ -63,7 +63,7 @@ public class DataSourceTypeCopyPropertiesPanelTest extends TestCase {
 	 */
 	public void testCopyDSTypeChanges() {
 		String originalDSTypeName = dsType.getName();
-		SPDataSourceType dsTypeToCopyFrom = (SPDataSourceType) dsTypeCopyPanel.getDsTypesComboBox().getItemAt(0);
+		JDBCDataSourceType dsTypeToCopyFrom = (JDBCDataSourceType) dsTypeCopyPanel.getDsTypesComboBox().getItemAt(0);
 		dsTypeCopyPanel.getDsTypesComboBox().setSelectedItem(dsTypeToCopyFrom);
 		dsTypeCopyPanel.applyChanges();
 		

@@ -64,9 +64,9 @@ import org.apache.log4j.Logger;
  * Data Source types can have supertypes, from which they inherit any undefined property
  * values.
  */
-public class SPDataSourceType {
+public class JDBCDataSourceType {
     
-    static final Logger logger = Logger.getLogger(SPDataSourceType.class);
+    static final Logger logger = Logger.getLogger(JDBCDataSourceType.class);
 
     /**
      * Map of classpaths to classloaders. This facilitates class sharing between
@@ -88,9 +88,9 @@ public class SPDataSourceType {
     	private final String changedProperty;
     	private final String oldValue;
     	private final String newValue;
-    	private final SPDataSourceType source;
+    	private final JDBCDataSourceType source;
     	
-    	public UndoablePropertyEdit(String propertyName, String oldValue, String newValue, SPDataSourceType source) {
+    	public UndoablePropertyEdit(String propertyName, String oldValue, String newValue, JDBCDataSourceType source) {
 			changedProperty = propertyName;
 			this.oldValue = oldValue;
 			this.newValue = newValue;
@@ -135,7 +135,7 @@ public class SPDataSourceType {
 
         /**
          * Don't call this method directly. Use the
-         * {@link SPDataSourceType#getClassLoaderFromCache()} method instead.
+         * {@link JDBCDataSourceType#getClassLoaderFromCache()} method instead.
          * 
          * @param serverBaseUri Base URI to resolve classpath entries against.
          * @param classpath The JAR specifications to consult.
@@ -188,7 +188,7 @@ public class SPDataSourceType {
             for (String jarFileName : classpath) {
                 try {
                     logger.debug("checking file "+jarFileName);
-                    URL jarLocation = SPDataSource.jarSpecToFile(jarFileName, getParent(), serverBaseUri);
+                    URL jarLocation = JDBCDataSource.jarSpecToFile(jarFileName, getParent(), serverBaseUri);
                     if (jarLocation == null) {
                     	// missing JAR file in classpath. just skip it.
                     	continue;
@@ -253,7 +253,7 @@ public class SPDataSourceType {
             List<URL> results = new ArrayList<URL>();
             for (String jarName : classpath) {
                 logger.debug("Converting JAR name: " + jarName);
-                URL jarLocation = SPDataSource.jarSpecToFile(jarName, getParent(), serverBaseUri);
+                URL jarLocation = JDBCDataSource.jarSpecToFile(jarName, getParent(), serverBaseUri);
                 logger.debug("  JAR is "+jarLocation);
                 try {
                     if (jarLocation == null) {
@@ -306,7 +306,7 @@ public class SPDataSourceType {
      * This type's parent type.  This value will be null if this type has no
      * parent.
      */
-    private SPDataSourceType parentType;
+    private JDBCDataSourceType parentType;
     
     /**
      * This type's properties.  There are a set of property
@@ -341,7 +341,7 @@ public class SPDataSourceType {
      * 
      * @see #SPDataSourceType(URI)
      */
-    public SPDataSourceType() {
+    public JDBCDataSourceType() {
         this(null);
     }
 
@@ -349,7 +349,7 @@ public class SPDataSourceType {
      * Creates a new default data source type that can load drivers from a
      * server, a local file, or JAR resources on the classpath.
      */
-    public SPDataSourceType(URI serverBaseUri) {
+    public JDBCDataSourceType(URI serverBaseUri) {
         super();
         this.serverBaseUri = serverBaseUri;
         classLoader = getClassLoaderFromCache();
@@ -559,11 +559,11 @@ public class SPDataSourceType {
         putPropertyImpl("DDLGeneratorClass", DDL_GENERATOR, className);
     }
 
-    public SPDataSourceType getParentType() {
+    public JDBCDataSourceType getParentType() {
         return parentType;
     }
     
-    public void setParentType(SPDataSourceType parentType) {
+    public void setParentType(JDBCDataSourceType parentType) {
         this.parentType = parentType;
     }
     

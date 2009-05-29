@@ -23,6 +23,7 @@ import java.io.File;
 import java.sql.Statement;
 
 import junit.framework.TestCase;
+import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLDatabase;
@@ -30,13 +31,13 @@ import ca.sqlpower.sqlobject.SQLDatabase;
 public class GenericStatementDecoratorTest extends TestCase {
 	
 	private SQLDatabase db;
-	PlDotIni plini;
+	PlDotIni<SPDataSource> plini;
 
 	@Override
 	protected void setUp() throws Exception {
-		plini = new PlDotIni();
+		plini = new PlDotIni<SPDataSource>(SPDataSource.class);
         plini.read(new File("pl.regression.ini"));
-        db = new SQLDatabase(new SPDataSource(plini.getDataSource("regression_test")));
+        db = new SQLDatabase(new JDBCDataSource(plini.getDataSource("regression_test", JDBCDataSource.class)));
         assertNotNull(db.getDataSource().getParentType());
 	}
 	

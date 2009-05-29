@@ -35,7 +35,7 @@ package ca.sqlpower.util;
 import java.io.File;
 import java.text.MessageFormat;
 
-import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.util.UserPrompter.UserPromptOptions;
 import ca.sqlpower.util.UserPrompter.UserPromptResponse;
 
@@ -59,7 +59,7 @@ public interface UserPrompterFactory {
     	 * The database prompt allows users to choose an existing DB, create
     	 * a new DB, or not load the DB if it is not loaded in the app's context.
     	 */
-    	DATA_SOURCE(SPDataSource.class),
+    	JDBC_DATA_SOURCE(JDBCDataSource.class),
     	
     	/**
     	 * File prompt types can have OK, NEW, NOT_OK, and CANCEL options.

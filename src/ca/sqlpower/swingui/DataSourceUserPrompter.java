@@ -39,6 +39,7 @@ import javax.swing.SwingUtilities;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.sql.DataSourceCollection;
+import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.util.UserPrompter;
 
@@ -192,9 +193,9 @@ public class DataSourceUserPrompter implements UserPrompter {
 		}
 		builder.append(bbBuilder.getPanel(), 5);
 		
-		final SPDataSource newDS = new SPDataSource(dsCollection);
+		final JDBCDataSource newDS = new JDBCDataSource(dsCollection);
 		
-		final SPDataSourcePanel SPDSPanel = new SPDataSourcePanel(newDS);
+		final JDBCDataSourcePanel SPDSPanel = new JDBCDataSourcePanel(newDS);
 		newDSPanel.add(SPDSPanel.getPanel(), BorderLayout.CENTER);
 		
 		bbBuilder = new ButtonBarBuilder();

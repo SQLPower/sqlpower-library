@@ -19,6 +19,7 @@
 
 package ca.sqlpower.sqlobject;
 
+import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
 
 /**
@@ -29,9 +30,9 @@ import ca.sqlpower.sql.SPDataSource;
 public interface SQLDatabaseMapping {
 
 	/**
-	 * Returns the {@link SQLDatabase} associated with this {@link SPDataSource}.
+	 * Returns the {@link SQLDatabase} associated with this {@link JDBCDataSource}.
 	 * If the data source does not exist it will be added to the {@link SQLDatabase}
 	 * list.
 	 */
-	public SQLDatabase getDatabase(SPDataSource ds);
+	public SQLDatabase getDatabase(JDBCDataSource ds);
 }

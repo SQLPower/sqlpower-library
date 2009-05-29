@@ -23,14 +23,14 @@ import java.awt.Component;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
 
-import ca.sqlpower.sql.SPDataSourceType;
+import ca.sqlpower.sql.JDBCDataSourceType;
 
 public class SPDataSourceTypeListCellRenderer extends DefaultListCellRenderer {
     
     @Override
     public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-        if (value instanceof SPDataSourceType) {
-            return super.getListCellRendererComponent(list, ((SPDataSourceType) value).getName(), index, isSelected,
+        if (value instanceof JDBCDataSourceType) {
+            return super.getListCellRendererComponent(list, ((JDBCDataSourceType) value).getName(), index, isSelected,
                 cellHasFocus);
         } else {
             throw new IllegalArgumentException("Value should only be of type SPDataSourceType not "+value.getClass()); //$NON-NLS-1$

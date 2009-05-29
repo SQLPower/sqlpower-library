@@ -27,7 +27,7 @@ import java.util.List;
 
 import javax.swing.event.UndoableEditListener;
 
-public interface DataSourceCollection {
+public interface DataSourceCollection<T extends SPDataSource> {
 
     public static final String DOS_CR_LF = "\r\n";
 
@@ -78,12 +78,27 @@ public interface DataSourceCollection {
      * @return the first SPDataSource in the file whose name matches the
      * given name, or null if no such datasource exists.
      */
-    public SPDataSource getDataSource(String name);
+    public T getDataSource(String name);
+
+    /**
+     * Searches the list of connections for one with the given name. The data
+     * source will be of the given type as well.
+     * 
+     * @param name
+     *            The Logical datbabase name to look for.
+     * @param classType
+     *            The type of {@link SPDataSource} being searched for.
+     * @return the first SPDataSource in the file whose name matches the given
+     *         name, or null if no such datasource exists.
+     */
+    public <C extends T> C getDataSource(String name, Class<C> classType);
 
     /**
      * @return a sorted List of all the data sources in this pl.ini.
      */
-    public List<SPDataSource> getConnections();
+    public List<T> getConnections();
+    
+    public <C extends T> List<C> getConnections(Class<C> classType);
 
     public String toString();
 
@@ -93,7 +108,7 @@ public interface DataSourceCollection {
      *
      * @param dbcs The new data source to add
      */
-    public void addDataSource(SPDataSource dbcs);
+    public void addDataSource(T dbcs);
 
     /**
      * Make sure an SPDataSource is in the master list; either copy its properties
@@ -102,15 +117,15 @@ public interface DataSourceCollection {
      * source is added (rather than updated), there will be an add event.
      * @param dbcs
      */
-    public void mergeDataSource(SPDataSource dbcs);
+    public void mergeDataSource(T dbcs);
 
-    public void removeDataSource(SPDataSource dbcs);
+    public void removeDataSource(T dbcs);
 
     /**
      * Returns an unmodifiable list of all data source types in this
      * collection of data sources.
      */
-    public List<SPDataSourceType> getDataSourceTypes();
+    public List<JDBCDataSourceType> getDataSourceTypes();
 
     /**
      * Returns the base URI that server: type jar specifications are resolved
@@ -120,10 +135,10 @@ public interface DataSourceCollection {
     
     /**
      * Adds the new data source type to this collection.  See also
-     * {@link #mergeDataSourceType(SPDataSourceType)}
+     * {@link #mergeDataSourceType(JDBCDataSourceType)}
      * for a method that can update an existing entry.
      */
-    void addDataSourceType(SPDataSourceType dataSourceType);
+    void addDataSourceType(JDBCDataSourceType dataSourceType);
 
     /**
      * Removes the given data source type from this collection.
@@ -132,14 +147,14 @@ public interface DataSourceCollection {
      * @return True if the item was present in the list (and hence
      * it was removed).  False otherwise.
      */
-    boolean removeDataSourceType(SPDataSourceType dataSourceType);
+    boolean removeDataSourceType(JDBCDataSourceType dataSourceType);
 
     /**
      * Adds or updates the given data source type properties in this data source collection.
      * Matching is performed by name and is case insensitive.
      * @param dst
      */
-    public void mergeDataSourceType(SPDataSourceType dst);
+    public void mergeDataSourceType(JDBCDataSourceType dst);
     
     public void addDatabaseListChangeListener(DatabaseListChangeListener l);
 

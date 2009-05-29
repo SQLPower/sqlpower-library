@@ -22,7 +22,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.util.Iterator;
 
-import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sql.JDBCDataSource;
 
 public class TestSQLCatalog extends BaseSQLObjectTestCase {
 
@@ -141,7 +141,7 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 	}
 	
 	public void testIsPopulateWithCatalogs() throws Exception {		
-		SPDataSource dataSource = getDb().getDataSource();
+		JDBCDataSource dataSource = getDb().getDataSource();
 		Connection conn = getDb().getConnection();
 		DatabaseMetaData meta = conn.getMetaData();
 		conn.close();

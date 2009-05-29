@@ -60,8 +60,9 @@ import javax.swing.tree.TreeSelectionModel;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.sql.JDBCDataSource;
+import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sql.SPDataSource;
-import ca.sqlpower.sql.SPDataSourceType;
 import ca.sqlpower.swingui.DataEntryPanel;
 import ca.sqlpower.swingui.Messages;
 import ca.sqlpower.swingui.ProgressWatcher;
@@ -121,7 +122,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 	 * The current data source type (whose JDBC driver search path we're editting).
      * This value will be null when there is no "current" data source type to edit.
 	 */
-	private SPDataSourceType dataSourceType;
+	private JDBCDataSourceType dataSourceType;
 
 	/**
 	 * This view shows the driver JAR files and the JDBC drivers they
@@ -236,7 +237,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
     /**
      * Switches to edit the given data source type.
      */
-	public void editDsType(SPDataSourceType dst) {
+	public void editDsType(JDBCDataSourceType dst) {
         dataSourceType = dst;
 	    dtm.setRoot(new DefaultMutableTreeNode());
         if (dst != null) {
@@ -399,7 +400,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 					jarCount++;
 					logger.debug("**************** processing file #" + jarCount + " of " + driverJarList.size()); //$NON-NLS-1$ //$NON-NLS-2$
 					String path = (String) it.next();
-                    URL jarLocation = SPDataSource.jarSpecToFile(path, getClass().getClassLoader(), serverBaseURI);
+                    URL jarLocation = JDBCDataSource.jarSpecToFile(path, getClass().getClassLoader(), serverBaseURI);
 					if (jarLocation != null) {
                         addJarLocation(jarLocation);
                     }

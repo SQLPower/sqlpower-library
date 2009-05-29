@@ -28,6 +28,7 @@ import java.util.Set;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 
+import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.undo.SQLObjectUndoManager;
 import ca.sqlpower.testutil.MockJDBCDriver;
@@ -112,13 +113,21 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
 			} else if (property.getPropertyType() == SQLCatalog.class) {
 				newVal = new SQLCatalog(new SQLDatabase(),"This is a new catalog");
 			} else if (property.getPropertyType() == SPDataSource.class) {
-				newVal = new SPDataSource(getPLIni());
+				newVal = new JDBCDataSource(getPLIni());
 				((SPDataSource)newVal).setName("test");
 				((SPDataSource)newVal).setDisplayName("test");
-				((SPDataSource)newVal).setUser("a");
-				((SPDataSource)newVal).setPass("b");
-				((SPDataSource)newVal).getParentType().setJdbcDriver(MockJDBCDriver.class.getName());
-				((SPDataSource)newVal).setUrl("jdbc:mock:tables=tab1");
+				((JDBCDataSource)newVal).setUser("a");
+				((JDBCDataSource)newVal).setPass("b");
+				((JDBCDataSource)newVal).getParentType().setJdbcDriver(MockJDBCDriver.class.getName());
+				((JDBCDataSource)newVal).setUrl("jdbc:mock:tables=tab1");
+			} else if (property.getPropertyType() == JDBCDataSource.class) {
+                newVal = new JDBCDataSource(getPLIni());
+                ((SPDataSource)newVal).setName("test");
+                ((SPDataSource)newVal).setDisplayName("test");
+                ((JDBCDataSource)newVal).setUser("a");
+                ((JDBCDataSource)newVal).setPass("b");
+                ((JDBCDataSource)newVal).getParentType().setJdbcDriver(MockJDBCDriver.class.getName());
+                ((JDBCDataSource)newVal).setUrl("jdbc:mock:tables=tab1");
 			} else if (property.getPropertyType() == SQLTable.class) {
 				newVal = new SQLTable();
             } else if ( property.getPropertyType() == SQLColumn.class){
@@ -240,13 +249,21 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
 			} else if (property.getPropertyType() == SQLCatalog.class) {
 				newVal = new SQLCatalog(new SQLDatabase(),"This is a new catalog");
 			} else if (property.getPropertyType() == SPDataSource.class) {
-				newVal = new SPDataSource(getPLIni());
+				newVal = new JDBCDataSource(getPLIni());
 				((SPDataSource)newVal).setName("test");
 				((SPDataSource)newVal).setDisplayName("test");
-				((SPDataSource)newVal).setUser("a");
-				((SPDataSource)newVal).setPass("b");
-				((SPDataSource)newVal).getParentType().setJdbcDriver(MockJDBCDriver.class.getName());
-				((SPDataSource)newVal).setUrl("jdbc:mock:tables=tab1,tab2");
+				((JDBCDataSource)newVal).setUser("a");
+				((JDBCDataSource)newVal).setPass("b");
+				((JDBCDataSource)newVal).getParentType().setJdbcDriver(MockJDBCDriver.class.getName());
+				((JDBCDataSource)newVal).setUrl("jdbc:mock:tables=tab1,tab2");
+			} else if (property.getPropertyType() == JDBCDataSource.class) {
+                newVal = new JDBCDataSource(getPLIni());
+                ((SPDataSource)newVal).setName("test");
+                ((SPDataSource)newVal).setDisplayName("test");
+                ((JDBCDataSource)newVal).setUser("a");
+                ((JDBCDataSource)newVal).setPass("b");
+                ((JDBCDataSource)newVal).getParentType().setJdbcDriver(MockJDBCDriver.class.getName());
+                ((JDBCDataSource)newVal).setUrl("jdbc:mock:tables=tab1,tab2");
 			} else if (property.getPropertyType() == SQLTable.class) {
 				newVal = new SQLTable();
             } else if (property.getPropertyType() == SQLColumn.class) {

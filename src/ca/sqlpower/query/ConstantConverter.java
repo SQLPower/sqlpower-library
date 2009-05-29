@@ -21,7 +21,7 @@ package ca.sqlpower.query;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sql.JDBCDataSource;
 
 /**
  * This constant converter will convert constants defined by users and the system to
@@ -35,7 +35,7 @@ public class ConstantConverter {
 	
 	private static final Logger logger = Logger.getLogger(ConstantConverter.class);
 
-	public static ConstantConverter getConverter(SPDataSource ds) {
+	public static ConstantConverter getConverter(JDBCDataSource ds) {
 		if (ds == null) {
 			return new ConstantConverter();
 		}

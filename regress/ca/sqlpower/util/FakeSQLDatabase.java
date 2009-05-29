@@ -26,8 +26,8 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 import ca.sqlpower.sql.DataSourceCollection;
-import ca.sqlpower.sql.SPDataSource;
-import ca.sqlpower.sql.SPDataSourceType;
+import ca.sqlpower.sql.JDBCDataSource;
+import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.testutil.MockJDBCConnection;
 import ca.sqlpower.testutil.MockJDBCDriver;
@@ -41,13 +41,13 @@ import ca.sqlpower.testutil.MockJDBCDriver;
 public class FakeSQLDatabase extends SQLDatabase {
     
     private final MockJDBCConnection con;
-    private final SPDataSource ds;
+    private final JDBCDataSource ds;
 
     public FakeSQLDatabase(String url) throws SQLException {
-        super((SPDataSource) null);
+        super((JDBCDataSource) null);
         MockJDBCDriver driver = new MockJDBCDriver();
         con = (MockJDBCConnection) driver.connect(url, new Properties());
-        ds = new SPDataSource((DataSourceCollection)null) {
+        ds = new JDBCDataSource((DataSourceCollection)null) {
             
             @Override
             public String getName() {
@@ -55,8 +55,8 @@ public class FakeSQLDatabase extends SQLDatabase {
             }
             
             @Override
-            public SPDataSourceType getParentType() {
-                return new SPDataSourceType() {
+            public JDBCDataSourceType getParentType() {
+                return new JDBCDataSourceType() {
                     @Override
                     public boolean getSupportsUpdateableResultSets() {
                         return true;
@@ -72,12 +72,12 @@ public class FakeSQLDatabase extends SQLDatabase {
     }
     
     @Override
-    public SPDataSource getDataSource() {
+    public JDBCDataSource getDataSource() {
     	return ds;
     }
     
     @Override
-    public void setDataSource(SPDataSource argDataSource) {
+    public void setDataSource(JDBCDataSource argDataSource) {
         // do nothing
     }
 }

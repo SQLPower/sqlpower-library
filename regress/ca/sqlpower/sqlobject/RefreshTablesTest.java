@@ -24,9 +24,10 @@ import junit.framework.TestCase;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.sql.DataSourceCollection;
+import ca.sqlpower.sql.JDBCDataSource;
+import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
-import ca.sqlpower.sql.SPDataSourceType;
 import ca.sqlpower.testutil.MockJDBCConnection;
 import ca.sqlpower.testutil.MockJDBCDriver;
 
@@ -56,10 +57,10 @@ public class RefreshTablesTest extends TestCase {
         logger.debug("=====setUp=====");
         super.setUp();
         
-        DataSourceCollection dscol = new PlDotIni();
-        SPDataSourceType dstype = new SPDataSourceType();
+        DataSourceCollection<SPDataSource> dscol = new PlDotIni<SPDataSource>(SPDataSource.class);
+        JDBCDataSourceType dstype = new JDBCDataSourceType();
         dstype.setJdbcDriver("ca.sqlpower.testutil.MockJDBCDriver");
-        SPDataSource ds = new SPDataSource(dscol);
+        JDBCDataSource ds = new JDBCDataSource(dscol);
         ds.setParentType(dstype);
         ds.setUrl("jdbc:mock:name=refresh_test");
         ds.setUser("");

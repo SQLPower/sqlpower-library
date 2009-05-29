@@ -19,7 +19,7 @@
 
 package ca.sqlpower.sqlobject;
 
-import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sql.JDBCDataSource;
 
 
 public class StubSQLDatabaseMapping implements SQLDatabaseMapping{
@@ -27,7 +27,7 @@ public class StubSQLDatabaseMapping implements SQLDatabaseMapping{
         super();
     }
 
-    public SQLDatabase getDatabase(SPDataSource ds) {
+    public SQLDatabase getDatabase(JDBCDataSource ds) {
         return null;
     }
     

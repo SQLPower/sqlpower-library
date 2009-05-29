@@ -26,10 +26,10 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 import junit.framework.TestCase;
+import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLDatabase;
-import ca.sqlpower.sqlobject.SQLDatabaseMapping;
 import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.StubSQLDatabaseMapping;
 
@@ -37,14 +37,14 @@ public class TableContainerTest extends TestCase {
 
 	private TableContainer tableContainer;
 	private Query queryCache;
-	private PlDotIni plIni;
+	private PlDotIni<SPDataSource> plIni;
 	private SQLDatabase db;
 	
 	@Override
 	protected void setUp() throws Exception {
-		plIni = new PlDotIni();
+		plIni = new PlDotIni<SPDataSource>(SPDataSource.class);
         plIni.read(new File("pl.regression.ini"));
-        SPDataSource ds = plIni.getDataSource("regression_test");
+        JDBCDataSource ds = plIni.getDataSource("regression_test", JDBCDataSource.class);
 
         db = new SQLDatabase(ds);
         Connection con = db.getConnection();

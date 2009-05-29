@@ -27,6 +27,7 @@ import java.sql.Statement;
 
 import junit.framework.TestCase;
 import ca.sqlpower.sql.DataSourceCollection;
+import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
 
@@ -38,7 +39,7 @@ import ca.sqlpower.sql.SPDataSource;
  */
 public abstract class DatabaseConnectedTestCase extends TestCase {
 
-    private DataSourceCollection plini = new PlDotIni();
+    private DataSourceCollection<SPDataSource> plini = new PlDotIni<SPDataSource>(SPDataSource.class);
     protected SQLDatabase db;
 
     public DatabaseConnectedTestCase() {
@@ -63,18 +64,18 @@ public abstract class DatabaseConnectedTestCase extends TestCase {
      * @throws IOException 
      * @throws SQLObjectException 
      */
-    protected SPDataSource getDataSource() throws IOException {
+    protected JDBCDataSource getJDBCDataSource() throws IOException {
         plini.read(new File("pl.regression.ini"));
-    	return plini.getDataSource("regression_test");
+    	return plini.getDataSource("regression_test", JDBCDataSource.class);
     }
     
     /**
      * Sets up the instance variable <code>db</code>, which will be a SQLDatabase
-     * connected to the data source returned by {@link #getDataSource()}.
+     * connected to the data source returned by {@link #getJDBCDataSource()}.
      */
     @Override
     protected void setUp() throws Exception {
-        db = new SQLDatabase(new SPDataSource(getDataSource()));
+        db = new SQLDatabase(new JDBCDataSource(getJDBCDataSource()));
         assertNotNull(db.getDataSource().getParentType());
     }
     
@@ -86,9 +87,9 @@ public abstract class DatabaseConnectedTestCase extends TestCase {
             db = null;
         } catch (Exception ex) {
             System.err.println("Shutdown failed. Test case probably modified the database connection! Retrying...");
-            DataSourceCollection dscol = new PlDotIni();
+            DataSourceCollection<SPDataSource> dscol = new PlDotIni<SPDataSource>(SPDataSource.class);
             dscol.read(new File("pl.regression.ini"));
-            db.setDataSource(dscol.getDataSource("regression_test"));
+            db.setDataSource(dscol.getDataSource("regression_test", JDBCDataSource.class));
             sqlx("SHUTDOWN");
             db.disconnect();
             db = null;
@@ -96,12 +97,12 @@ public abstract class DatabaseConnectedTestCase extends TestCase {
     }
 
     public SQLDatabase getDb() {
-        return new SQLDatabase(new SPDataSource(db.getDataSource()));
+        return new SQLDatabase(new JDBCDataSource(db.getDataSource()));
     }
     
     /**
      * Returns the data source collection that the current connection was obtained
-     * from. If you have not overridden the {@link #getDataSource()} method, this
+     * from. If you have not overridden the {@link #getJDBCDataSource()} method, this
      * will be the data source collection specified by the file pl.regression.ini
      * in the current working directory. If you have overridden that method, this
      * method will return whatever plini value you set up in your override (which will

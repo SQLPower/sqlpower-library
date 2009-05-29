@@ -36,7 +36,7 @@ import com.jgoodies.forms.builder.DefaultFormBuilder;
 import com.jgoodies.forms.layout.FormLayout;
 
 import ca.sqlpower.sql.DataSourceCollection;
-import ca.sqlpower.sql.SPDataSourceType;
+import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.swingui.DataEntryPanel;
 import ca.sqlpower.swingui.Messages;
 
@@ -51,7 +51,7 @@ public class NewDataSourceTypePanel implements DataEntryPanel {
 	 * The new type that the properties will be copied into if the user
 	 * selected a data source type to copy from.
 	 */
-	private final SPDataSourceType dsType;
+	private final JDBCDataSourceType dsType;
 	
 	/**
 	 * A combo box for users to choose which DS type to copy from.
@@ -80,7 +80,7 @@ public class NewDataSourceTypePanel implements DataEntryPanel {
 	
 	public NewDataSourceTypePanel(DataSourceTypeEditor editor, DataSourceCollection collection) {
 		this.editor = editor;
-		this.dsType = new SPDataSourceType();
+		this.dsType = new JDBCDataSourceType();
         dsType.setName(Messages.getString("DataSourceTypeEditor.defaultDataSourceName")); //$NON-NLS-1$
 		
 		existingDSTypes = new JComboBox(collection.getDataSourceTypes().toArray());
@@ -90,7 +90,7 @@ public class NewDataSourceTypePanel implements DataEntryPanel {
 					int index, boolean isSelected, boolean cellHasFocus) {
 				Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 				if (c instanceof JLabel && value != null) {
-					((JLabel) c).setText(((SPDataSourceType) value).getName());
+					((JLabel) c).setText(((JDBCDataSourceType) value).getName());
 				}
 				return c;
 			}
@@ -129,10 +129,10 @@ public class NewDataSourceTypePanel implements DataEntryPanel {
 	
 	public boolean applyChanges() {
 		if (copyOption.isSelected()) {
-			SPDataSourceType defaultDSType = (SPDataSourceType) existingDSTypes.getSelectedItem();
+			JDBCDataSourceType defaultDSType = (JDBCDataSourceType) existingDSTypes.getSelectedItem();
 			if (defaultDSType != null && defaultDSType != dsType) {
 				for (String key : defaultDSType.getPropertyNames()) {
-					if (SPDataSourceType.TYPE_NAME.equals(key)) {
+					if (JDBCDataSourceType.TYPE_NAME.equals(key)) {
 						continue;
 					}
 					dsType.putProperty(key, defaultDSType.getProperty(key));
@@ -169,7 +169,7 @@ public class NewDataSourceTypePanel implements DataEntryPanel {
 	 * be selected in the existingDSTypes combo box.
 	 * @param copyType
 	 */
-	void setCopyDSType(SPDataSourceType copyType) {
+	void setCopyDSType(JDBCDataSourceType copyType) {
 		existingDSTypes.setSelectedItem(copyType);
 	}
 

@@ -30,19 +30,19 @@ import java.util.List;
 
 import javax.swing.event.UndoableEditListener;
 
-public class StubDataSourceCollection implements DataSourceCollection {
+public class StubDataSourceCollection<T extends SPDataSource> implements DataSourceCollection<T> {
 	
-	private final List<SPDataSource> dataSources = new ArrayList<SPDataSource>();
-	private final List<SPDataSourceType> dsTypes = new ArrayList<SPDataSourceType>();
+	private final List<T> dataSources = new ArrayList<T>();
+	private final List<JDBCDataSourceType> dsTypes = new ArrayList<JDBCDataSourceType>();
 	private final List<UndoableEditListener> undoableEdits = new ArrayList<UndoableEditListener>();
 	private final List<DatabaseListChangeListener> dbListChangeListeners = new ArrayList<DatabaseListChangeListener>();
     private URI serverBaseURI;
 
-	public void addDataSource(SPDataSource dbcs) {
+	public void addDataSource(T dbcs) {
 		dataSources.add(dbcs);
 	}
 
-	public void addDataSourceType(SPDataSourceType dataSourceType) {
+	public void addDataSourceType(JDBCDataSourceType dataSourceType) {
 		dsTypes.add(dataSourceType);
 	}
 
@@ -54,28 +54,29 @@ public class StubDataSourceCollection implements DataSourceCollection {
 		undoableEdits.add(l);
 	}
 
-	public List<SPDataSource> getConnections() {
+	public List<T> getConnections() {
 		return Collections.unmodifiableList(dataSources);
 	}
 
-	public SPDataSource getDataSource(String name) {
-		for (SPDataSource ds : dataSources) {
-			if (ds.getName().equals(name)) {
-				return ds;
-			}
-		}
-		return null;
-	}
+    public <C extends T> C getDataSource(String name,
+            Class<C> classType) {
+        for (SPDataSource ds : dataSources) {
+            if (ds.getName().equals(name) && classType.isInstance(ds)) {
+                return classType.cast(ds);
+            }
+        }
+        return null;
+    }
 
-	public List<SPDataSourceType> getDataSourceTypes() {
+	public List<JDBCDataSourceType> getDataSourceTypes() {
 		return Collections.unmodifiableList(dsTypes);
 	}
 
-	public void mergeDataSource(SPDataSource dbcs) {
+	public void mergeDataSource(T dbcs) {
 		dataSources.add(dbcs);
 	}
 
-	public void mergeDataSourceType(SPDataSourceType dst) {
+	public void mergeDataSourceType(JDBCDataSourceType dst) {
 		dsTypes.add(dst);
 	}
 
@@ -91,7 +92,7 @@ public class StubDataSourceCollection implements DataSourceCollection {
 		dataSources.remove(dbcs);
 	}
 
-	public boolean removeDataSourceType(SPDataSourceType dataSourceType) {
+	public boolean removeDataSourceType(JDBCDataSourceType dataSourceType) {
 		return dsTypes.remove(dataSourceType);
 	}
 
@@ -122,4 +123,18 @@ public class StubDataSourceCollection implements DataSourceCollection {
     public void setServerBaseURI(URI serverBaseURI) {
         this.serverBaseURI = serverBaseURI;
     }
+
+    public <C extends T> List<C> getConnections(Class<C> classType) {
+        return null;
+    }
+
+    public T getDataSource(String name) {
+        for (T ds : dataSources) {
+            if (ds.getName().equals(name)) {
+                return ds;
+            }
+        }
+        return null;
+    }
+
 }

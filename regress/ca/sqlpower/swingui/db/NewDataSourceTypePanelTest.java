@@ -19,10 +19,11 @@
 
 package ca.sqlpower.swingui.db;
 
-import ca.sqlpower.sql.DataSourceCollection;
-import ca.sqlpower.sql.SPDataSourceType;
-import ca.sqlpower.sql.StubDataSourceCollection;
 import junit.framework.TestCase;
+import ca.sqlpower.sql.DataSourceCollection;
+import ca.sqlpower.sql.JDBCDataSource;
+import ca.sqlpower.sql.JDBCDataSourceType;
+import ca.sqlpower.sql.StubDataSourceCollection;
 
 public class NewDataSourceTypePanelTest extends TestCase {
 
@@ -36,25 +37,25 @@ public class NewDataSourceTypePanelTest extends TestCase {
 	 */
 	private DataSourceTypeEditor editor;
 
-	private DataSourceCollection collection;
+	private DataSourceCollection<JDBCDataSource> collection;
 
-	private SPDataSourceType firstDSType;
+	private JDBCDataSourceType firstDSType;
 
-	private SPDataSourceType secondDSType;
+	private JDBCDataSourceType secondDSType;
 	
 	@Override
 	protected void setUp() throws Exception {
 		
-		collection = new StubDataSourceCollection();
-		firstDSType = new SPDataSourceType();
+		collection = new StubDataSourceCollection<JDBCDataSource>();
+		firstDSType = new JDBCDataSourceType();
 		firstDSType.setJdbcUrl("First Testing URL");
-        firstDSType.putProperty(SPDataSourceType.SUPPORTS_UPDATEABLE_RESULT_SETS, String.valueOf(true));
+        firstDSType.putProperty(JDBCDataSourceType.SUPPORTS_UPDATEABLE_RESULT_SETS, String.valueOf(true));
 		firstDSType.setComment("First testing comment");
 		collection.addDataSourceType(firstDSType);
 		
-		secondDSType = new SPDataSourceType();
+		secondDSType = new JDBCDataSourceType();
 		secondDSType.setJdbcUrl("Second Testing URL");
-		secondDSType.putProperty(SPDataSourceType.SUPPORTS_UPDATEABLE_RESULT_SETS, String.valueOf(false));
+		secondDSType.putProperty(JDBCDataSourceType.SUPPORTS_UPDATEABLE_RESULT_SETS, String.valueOf(false));
 		secondDSType.setComment("Second testing comment");
 		
 		editor = new DataSourceTypeEditor(collection, null);
@@ -66,8 +67,8 @@ public class NewDataSourceTypePanelTest extends TestCase {
 		newDSTypePanel.setBlankOptionSelected(true);
 		newDSTypePanel.applyChanges();
 		
-		SPDataSourceType newType = null;
-		for (SPDataSourceType type : collection.getDataSourceTypes()) {
+		JDBCDataSourceType newType = null;
+		for (JDBCDataSourceType type : collection.getDataSourceTypes()) {
 			if (type != firstDSType && type != secondDSType) {
 				newType = type;
 				break;
@@ -84,8 +85,8 @@ public class NewDataSourceTypePanelTest extends TestCase {
 		newDSTypePanel.setCopyDSType(firstDSType);
 		newDSTypePanel.applyChanges();
 		
-		SPDataSourceType newType = null;
-		for (SPDataSourceType type : collection.getDataSourceTypes()) {
+		JDBCDataSourceType newType = null;
+		for (JDBCDataSourceType type : collection.getDataSourceTypes()) {
 			if (type != firstDSType && type != secondDSType) {
 				newType = type;
 				break;

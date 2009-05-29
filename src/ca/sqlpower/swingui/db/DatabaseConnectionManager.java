@@ -50,6 +50,7 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.DatabaseListChangeEvent;
 import ca.sqlpower.sql.DatabaseListChangeListener;
+import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.swingui.Messages;
 import ca.sqlpower.swingui.SPSUtils;
@@ -128,7 +129,8 @@ public class DatabaseConnectionManager {
     private final Action newDatabaseConnectionAction = new AbstractAction(Messages.getString("DatabaseConnectionManager.newDbConnectionActionName")) { //$NON-NLS-1$
 
         public void actionPerformed(ActionEvent e) {
-            final SPDataSource ds = new SPDataSource(getPlDotIni());
+            //TODO This should pop up a menu to select the type of data source the user wants to create.
+            final JDBCDataSource ds = new JDBCDataSource(getPlDotIni());
             Runnable onOk = new Runnable() {
                 public void run() {
                     dsCollection.addDataSource(ds);
@@ -147,27 +149,32 @@ public class DatabaseConnectionManager {
 			}
 			final SPDataSource ds = (SPDataSource) dsTable.getValueAt(selectedRow,0);
 			
-            Runnable onOk = new Runnable() {
-                public void run() {
-                    try {
-                        for (int i = 0; i < dsTable.getRowCount(); i++) {
-                            if (dsTable.getValueAt(i, 0) == ds) {
-                                dsTable.setRowSelectionInterval(i, i);
-                                dsTable.scrollRectToVisible(dsTable.getCellRect(i, 0, true));
-                                dsTable.repaint();
-                                break;
-                            }
-                        }
-                    } catch (Exception ex) {
-                        SPSUtils.showExceptionDialogNoReport(
-                        		(d != null) ? d : DatabaseConnectionManager.this.currentOwner,
-                                "Unexpected exception while editing a database connection.", //$NON-NLS-1$
-                                ex);
-                    }
-                }
-            };
+			if (ds instanceof JDBCDataSource) {
+			    JDBCDataSource jdbcDS = (JDBCDataSource) ds;
+			    Runnable onOk = new Runnable() {
+			        public void run() {
+			            try {
+			                for (int i = 0; i < dsTable.getRowCount(); i++) {
+			                    if (dsTable.getValueAt(i, 0) == ds) {
+			                        dsTable.setRowSelectionInterval(i, i);
+			                        dsTable.scrollRectToVisible(dsTable.getCellRect(i, 0, true));
+			                        dsTable.repaint();
+			                        break;
+			                    }
+			                }
+			            } catch (Exception ex) {
+			                SPSUtils.showExceptionDialogNoReport(
+			                        (d != null) ? d : DatabaseConnectionManager.this.currentOwner,
+			                                "Unexpected exception while editing a database connection.", //$NON-NLS-1$
+			                                ex);
+			            }
+			        }
+			    };
 
-            dsDialogFactory.showDialog((d != null) ? d : DatabaseConnectionManager.this.currentOwner, ds, onOk);
+			    dsDialogFactory.showDialog((d != null) ? d : DatabaseConnectionManager.this.currentOwner, jdbcDS, onOk);
+			} else {
+			    throw new IllegalStateException("Unknown SPDataSource type in the connection manager. Type is " + ds.getClass());
+			}
 		}
 	};
 

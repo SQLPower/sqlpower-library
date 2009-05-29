@@ -35,7 +35,7 @@ import javax.swing.event.DocumentListener;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.sql.SPDataSourceType;
+import ca.sqlpower.sql.JDBCDataSourceType;
 
 /**
  * The PlatformSpecificConnectionOptionPanel creates and modifies a
@@ -147,7 +147,7 @@ public class PlatformSpecificConnectionOptionPanel {
     private boolean updatingFieldsFromUrl = false;
     private JTextField dbUrlField;
     private JPanel platformSpecificOptionPanel;
-    private SPDataSourceType template;
+    private JDBCDataSourceType template;
     
     public PlatformSpecificConnectionOptionPanel(JTextField dbUrlField) {
         platformSpecificOptionPanel = new JPanel();
@@ -323,11 +323,11 @@ public class PlatformSpecificConnectionOptionPanel {
         return platformSpecificOptionPanel;
     }
 
-    public SPDataSourceType getTemplate() {
+    public JDBCDataSourceType getTemplate() {
         return template;
     }
 
-    public void setTemplate(SPDataSourceType template) {
+    public void setTemplate(JDBCDataSourceType template) {
         this.template = template;
         createFieldsFromTemplate();
         updateUrlFromFields();

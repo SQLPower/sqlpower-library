@@ -62,13 +62,13 @@ import ca.sqlpower.sqlobject.SQLIndex;
  * could result in a bare \n in the encryption...
  * @version $Id$
  */
-public class PlDotIni implements DataSourceCollection {
+public class PlDotIni<T extends SPDataSource> implements DataSourceCollection<T> {
 	
 	private class AddDSTypeUndoableEdit extends AbstractUndoableEdit {
 
-		private final SPDataSourceType type;
+		private final JDBCDataSourceType type;
 
-		public AddDSTypeUndoableEdit(SPDataSourceType type) {
+		public AddDSTypeUndoableEdit(JDBCDataSourceType type) {
 			this.type = type;
 		}
 
@@ -87,9 +87,9 @@ public class PlDotIni implements DataSourceCollection {
 
 	private class RemoveDSTypeUndoableEdit extends AbstractUndoableEdit {
 
-		private final SPDataSourceType type;
+		private final JDBCDataSourceType type;
 
-		public RemoveDSTypeUndoableEdit(SPDataSourceType type) {
+		public RemoveDSTypeUndoableEdit(JDBCDataSourceType type) {
 			this.type = type;
 		}
 
@@ -141,18 +141,25 @@ public class PlDotIni implements DataSourceCollection {
 
 	    }
 	};
+	
+	/**
+	 * This class type is the same value represented by T, this allows us to use the 
+	 * class type in checks at runtime
+	 */
+    private final Class<T> classType;
 
     /**
      * Construct a PL.INI object, and set an Add Listener to save
      * the file when a database is added (bugid 1032).
      */
-    public PlDotIni() {
+    public PlDotIni(Class<T> classType) {
+        this.classType = classType;
         listeners = new ArrayList<DatabaseListChangeListener>();
         listeners.add(saver);
     }
 
-    public PlDotIni(URI serverBaseURI) {
-    	this();
+    public PlDotIni(URI serverBaseURI, Class<T> classType) {
+    	this(classType);
 		this.serverBaseURI = serverBaseURI;
     }
     
@@ -313,7 +320,7 @@ public class PlDotIni implements DataSourceCollection {
         try {
             dontAutoSave = true;
 
-            SPDataSourceType currentType = null;
+            JDBCDataSourceType currentType = null;
             SPDataSource currentDS = null;
             Section currentSection = new Section(null);  // this accounts for any properties before the first named section
 
@@ -334,11 +341,11 @@ public class PlDotIni implements DataSourceCollection {
                 }
                 if (line.startsWith("[Databases_")) {
                     logger.debug("It's a new database connection spec!" +fileSections);
-                    currentDS =  new SPDataSource(this);
+                    currentDS =  new JDBCDataSource(this);
                     mode = ReadState.READ_DS;
                 } else if (line.startsWith("[Database Types_")) {
                     logger.debug("It's a new database type!" + fileSections);
-                    currentType =  new SPDataSourceType(getServerBaseURI());
+                    currentType =  new JDBCDataSourceType(getServerBaseURI());
                     mode = ReadState.READ_TYPE;
                 } else if (line.startsWith("[")) {
                     logger.debug("It's a new generic section!");
@@ -380,11 +387,11 @@ public class PlDotIni implements DataSourceCollection {
 
             // hook up database type hierarchy, and assign parentType pointers to data sources themselves
             for (Object o : fileSections) {
-                if (o instanceof SPDataSourceType) {
-                    SPDataSourceType dst = (SPDataSourceType) o;
-                    String parentTypeName = dst.getProperty(SPDataSourceType.PARENT_TYPE_NAME);
+                if (o instanceof JDBCDataSourceType) {
+                    JDBCDataSourceType dst = (JDBCDataSourceType) o;
+                    String parentTypeName = dst.getProperty(JDBCDataSourceType.PARENT_TYPE_NAME);
                     if (parentTypeName != null) {
-                        SPDataSourceType parentType = getDataSourceType(parentTypeName);
+                        JDBCDataSourceType parentType = getDataSourceType(parentTypeName);
                         if (parentType == null) {
                             throw new IllegalStateException(
                                     "Database type \""+dst.getName()+"\" refers to parent type \""+
@@ -392,11 +399,11 @@ public class PlDotIni implements DataSourceCollection {
                         }
                         dst.setParentType(parentType);
                     }
-                } else if (o instanceof SPDataSource) {
-                    SPDataSource ds = (SPDataSource) o;
-                    String typeName = ds.getPropertiesMap().get(SPDataSource.DBCS_CONNECTION_TYPE);
+                } else if (o instanceof JDBCDataSource) {
+                    JDBCDataSource ds = (JDBCDataSource) o;
+                    String typeName = ds.getPropertiesMap().get(JDBCDataSource.DBCS_CONNECTION_TYPE);
                     if (typeName != null) {
-                        SPDataSourceType type = getDataSourceType(typeName);
+                        JDBCDataSourceType type = getDataSourceType(typeName);
                         if (type == null) {
                             throw new IllegalStateException(
                                     "Database connection \""+ds.getName()+"\" refers to database type \""+
@@ -443,7 +450,7 @@ public class PlDotIni implements DataSourceCollection {
      * @param currentDS Only used when mode = READ_DS
      * @param currentSection Only used when mode = READ_GENERIC
      */
-    private void mergeFileData(ReadState mode, SPDataSourceType currentType, SPDataSource currentDS, Section currentSection) {
+    private void mergeFileData(ReadState mode, JDBCDataSourceType currentType, SPDataSource currentDS, Section currentSection) {
         if (mode == ReadState.READ_DS) {
             mergeDataSource(currentDS);
         } else if (mode == ReadState.READ_GENERIC) {
@@ -559,8 +566,8 @@ public class PlDotIni implements DataSourceCollection {
             } else if (next instanceof SPDataSource) {
                 writeSection(out, "Databases_"+dbNum, ((SPDataSource) next).getPropertiesMap());
                 dbNum++;
-            } else if (next instanceof SPDataSourceType) {
-                writeSection(out, "Database Types_"+typeNum, ((SPDataSourceType) next).getProperties());
+            } else if (next instanceof JDBCDataSourceType) {
+                writeSection(out, "Database Types_"+typeNum, ((JDBCDataSourceType) next).getProperties());
                 typeNum++;
 	        } else if (next == null) {
 	            logger.error("write: Null section");
@@ -615,12 +622,16 @@ public class PlDotIni implements DataSourceCollection {
 	    }
 	}
 
-    public SPDataSource getDataSource(String name) {
+    public T getDataSource(String name) {
+        return getDataSource(name, classType);
+    }
+    
+    public <C extends T> C getDataSource(String name, Class<C> classType) {
         Iterator it = fileSections.iterator();
         while (it.hasNext()) {
             Object next = it.next();
-            if (next instanceof SPDataSource) {
-                SPDataSource ds = (SPDataSource) next;
+            if (classType.isInstance(next)) {
+                C ds = classType.cast(next);
                 if (logger.isDebugEnabled()) {
                     logger.debug("Checking if data source "+ds+" is PL Logical connection "+name);
                 }
@@ -630,10 +641,10 @@ public class PlDotIni implements DataSourceCollection {
         return null;
     }
 
-    public SPDataSourceType getDataSourceType(String name) {
+    public JDBCDataSourceType getDataSourceType(String name) {
         for (Object next : fileSections) {
-            if (next instanceof SPDataSourceType) {
-                SPDataSourceType dst = (SPDataSourceType) next;
+            if (next instanceof JDBCDataSourceType) {
+                JDBCDataSourceType dst = (JDBCDataSourceType) next;
                 if (logger.isDebugEnabled()) {
                     logger.debug("Checking if data source type "+dst+" is called "+name);
                 }
@@ -643,11 +654,11 @@ public class PlDotIni implements DataSourceCollection {
         return null;
     }
 
-    public List<SPDataSourceType> getDataSourceTypes() {
-        List<SPDataSourceType> list = new ArrayList<SPDataSourceType>();
+    public List<JDBCDataSourceType> getDataSourceTypes() {
+        List<JDBCDataSourceType> list = new ArrayList<JDBCDataSourceType>();
         for (Object next : fileSections) {
-            if (next instanceof SPDataSourceType) {
-                SPDataSourceType dst = (SPDataSourceType) next;
+            if (next instanceof JDBCDataSourceType) {
+                JDBCDataSourceType dst = (JDBCDataSourceType) next;
                 list.add(dst);
             }
         }
@@ -659,16 +670,26 @@ public class PlDotIni implements DataSourceCollection {
      * optimal, but we can defer optimising it until someone proves it's an
      * actual performance issue.
      */
-    public List<SPDataSource> getConnections() {
-        List<SPDataSource> connections = new ArrayList<SPDataSource>();
+    public List<T> getConnections() {
+        return getConnections(classType);
+    }
+    
+    /**
+     * Gets a list of SPDataSource objects that are sorted. This will get only
+     * {@link SPDataSource} objects of the specified type.
+     * @param classType
+     * @return
+     */
+    public <C extends T> List<C> getConnections(Class<C> classType) {
+        List<C> connections = new ArrayList<C>();
 	    Iterator it = fileSections.iterator();
 	    while (it.hasNext()) {
 	        Object next = it.next();
-	        if (next instanceof SPDataSource) {
-	            connections.add((SPDataSource) next);
+	        if (classType.isInstance(next)) {
+	            connections.add(classType.cast(next));
 	        }
 	    }
-        Collections.sort(connections, new SPDataSource.DefaultComparator());
+        Collections.sort(connections);
         return connections;
     }
 
@@ -811,15 +832,15 @@ public class PlDotIni implements DataSourceCollection {
      * Copies all the properties in the given dst into the existing DataSourceType section
      * with the same name, if one exists.  Otherwise, adds the given dst as a new section.
      */
-    public void mergeDataSourceType(SPDataSourceType dst) {
+    public void mergeDataSourceType(JDBCDataSourceType dst) {
         logger.debug("Merging data source type "+dst.getName());
         String newName = dst.getName();
         if (newName == null) {
             throw new IllegalArgumentException("Can't merge a nameless data source type: "+dst);
         }
         for (Object o : fileSections) {
-            if (o instanceof SPDataSourceType) {
-                SPDataSourceType current = (SPDataSourceType) o;
+            if (o instanceof JDBCDataSourceType) {
+                JDBCDataSourceType current = (JDBCDataSourceType) o;
                 if (newName.equalsIgnoreCase(current.getName())) {
                     logger.debug("    Found it");
                     for (Map.Entry<String, String> ent : dst.getProperties().entrySet()) {
@@ -844,7 +865,7 @@ public class PlDotIni implements DataSourceCollection {
 		fireAddEvent(dbcs);
 	}
 
-    public void addDataSourceType(SPDataSourceType dataSourceType) {
+    public void addDataSourceType(JDBCDataSourceType dataSourceType) {
         // TODO fire an event for adding the dstype
         fileSections.add(dataSourceType);
         for (int i = undoListeners.size() - 1; i >= 0; i--) {
@@ -852,7 +873,7 @@ public class PlDotIni implements DataSourceCollection {
         }
     }
 
-    public boolean removeDataSourceType(SPDataSourceType dataSourceType) {
+    public boolean removeDataSourceType(JDBCDataSourceType dataSourceType) {
         // TODO fire an event for removing the dstype
     	for (int i = undoListeners.size() - 1; i >= 0; i--) {
     		undoListeners.get(i).undoableEditHappened(new UndoableEditEvent(this, new RemoveDSTypeUndoableEdit(dataSourceType)));

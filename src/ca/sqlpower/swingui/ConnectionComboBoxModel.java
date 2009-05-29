@@ -32,12 +32,16 @@ import ca.sqlpower.sql.DatabaseListChangeEvent;
 import ca.sqlpower.sql.DatabaseListChangeListener;
 import ca.sqlpower.sql.SPDataSource;
 
+/**
+ * If you only want to see a specific {@link SPDataSource} type here
+ * see #DataSourceWrapper#.
+ */
 public class ConnectionComboBoxModel implements ComboBoxModel, DatabaseListChangeListener {
 
     private static final Logger logger = Logger.getLogger(ConnectionComboBoxModel.class); 
     SPDataSource selectedItem;
 
-    List<SPDataSource> connections;
+    List<? extends SPDataSource> connections;
 
     List<ListDataListener> listenerList;
 

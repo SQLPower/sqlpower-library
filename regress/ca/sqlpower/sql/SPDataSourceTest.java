@@ -18,23 +18,20 @@
  */
 package ca.sqlpower.sql;
 
-import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeMap;
 
-import ca.sqlpower.testutil.CountingPropertyChangeListener;
-import ca.sqlpower.sql.SPDataSource;
-
 import junit.framework.TestCase;
+import ca.sqlpower.testutil.CountingPropertyChangeListener;
 
 public class SPDataSourceTest extends TestCase {
 
-	SPDataSource ds;
+	JDBCDataSource ds;
 	
 	protected void setUp() throws Exception {
 		super.setUp();
-		ds = new SPDataSource(new PlDotIni());
-		System.out.println("NEW DATA SOURCE parent type name = "+ds.getPropertiesMap().get(SPDataSource.DBCS_CONNECTION_TYPE));
+		ds = new JDBCDataSource(new PlDotIni<SPDataSource>(SPDataSource.class));
+		System.out.println("NEW DATA SOURCE parent type name = "+ds.getPropertiesMap().get(JDBCDataSource.DBCS_CONNECTION_TYPE));
 		ds.setDisplayName("Regression Test");
 		ds.getParentType().setJdbcDriver("com.does.not.exist");
 		ds.setName("test_name");
@@ -44,7 +41,7 @@ public class SPDataSourceTest extends TestCase {
 		ds.setPlSchema("my_fake_pl_schema");
 		ds.setUrl("jdbc:fake:fake:fake");
 		ds.setUser("fake_user");
-        System.out.println("NEW DATA SOURCE after init parent type name = "+ds.getPropertiesMap().get(SPDataSource.DBCS_CONNECTION_TYPE));
+        System.out.println("NEW DATA SOURCE after init parent type name = "+ds.getPropertiesMap().get(JDBCDataSource.DBCS_CONNECTION_TYPE));
 	}
 
 	protected void tearDown() throws Exception {
@@ -106,8 +103,8 @@ public class SPDataSourceTest extends TestCase {
 	 * Test method for 'ca.sqlpower.architect.SPDataSource.equals(Object)'
 	 */
 	public void testEquals() {
-		SPDataSource ds1 = new SPDataSource(new PlDotIni());
-		SPDataSource ds2 = new SPDataSource(new PlDotIni());
+		JDBCDataSource ds1 = new JDBCDataSource(new PlDotIni<SPDataSource>(SPDataSource.class));
+		JDBCDataSource ds2 = new JDBCDataSource(new PlDotIni<SPDataSource>(SPDataSource.class));
 		
 		ds1.setDisplayName("Regression Test");
 		ds2.setDisplayName("Regression Test");
@@ -272,31 +269,22 @@ public class SPDataSourceTest extends TestCase {
 
 	public void testComparator() {
 		// set up identical second data source
-		SPDataSource ds2 = new SPDataSource(new PlDotIni());
+		JDBCDataSource ds2 = new JDBCDataSource(new PlDotIni<SPDataSource>(SPDataSource.class));
         ds2.setParentType(ds.getParentType());
 		for (String key : ds.getPropertiesMap().keySet()) {
 			ds2.put(key, ds.get(key));
         }
         
-		Comparator<SPDataSource> cmp = new SPDataSource.DefaultComparator();
-		assertEquals(0, cmp.compare(ds, ds2));
+		assertEquals(0, ds.compareTo(ds2));
 		
 		// test that the display name takes precedence over other properties
 		ds2.setDisplayName("a");
 		ds2.setUser("z");
-		assertTrue(cmp.compare(ds, ds2) > 0);
+		assertTrue(ds.compareTo(ds2) > 0);
 		
 		ds2.setDisplayName("z");
 		ds2.setUser("a");
-		assertTrue(cmp.compare(ds, ds2) < 0);
-		
-		// test that comparison bubbles down to user (which is near the end of the comparison order)
-		ds2.setDisplayName(ds.getDisplayName());
-		ds2.setUser("a");
-		assertTrue(cmp.compare(ds, ds2) > 0);
-
-		ds2.setUser("z");
-		assertTrue(cmp.compare(ds, ds2) < 0);
+		assertTrue(ds.compareTo(ds2) < 0);
 	}
     
     /* The parent type name is just stored in the map as a string.  When the parent type's
@@ -304,13 +292,13 @@ public class SPDataSourceTest extends TestCase {
      * so it matches.
      */
     public void testParentNameSync() {
-        assertEquals(ds.getParentType().getName(), ds.getPropertiesMap().get(SPDataSource.DBCS_CONNECTION_TYPE));
+        assertEquals(ds.getParentType().getName(), ds.getPropertiesMap().get(JDBCDataSource.DBCS_CONNECTION_TYPE));
         ds.getParentType().setName("New Name");
-        assertEquals(ds.getParentType().getName(), ds.getPropertiesMap().get(SPDataSource.DBCS_CONNECTION_TYPE));
+        assertEquals(ds.getParentType().getName(), ds.getPropertiesMap().get(JDBCDataSource.DBCS_CONNECTION_TYPE));
     }
     
     public void testCopyFrom() {
-        SPDataSource targetDs = new SPDataSource(new PlDotIni());
+        JDBCDataSource targetDs = new JDBCDataSource(new PlDotIni<SPDataSource>(SPDataSource.class));
         targetDs.copyFrom(ds);
 
         // need to copy all props into a tree map so they're both sorted in the same order
@@ -324,7 +312,7 @@ public class SPDataSourceTest extends TestCase {
     public void testCopyFromFiresNameChange() {
         CountingPropertyChangeListener pcl = new CountingPropertyChangeListener();
         
-        SPDataSource targetDs = new SPDataSource(new PlDotIni());
+        JDBCDataSource targetDs = new JDBCDataSource(new PlDotIni<SPDataSource>(SPDataSource.class));
         targetDs.addPropertyChangeListener(pcl);
         targetDs.copyFrom(ds);
 

@@ -26,6 +26,7 @@ import java.util.List;
 import javax.swing.JPanel;
 
 import junit.framework.TestCase;
+import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.StubDataSourceCollection;
@@ -57,14 +58,14 @@ public class SQLQueryUIComponentsTest extends TestCase {
 	 * will reopen the connection.
 	 */
 	public void testClosedConnectionIsReopened() throws Exception {
-		PlDotIni plini = new PlDotIni();
+		PlDotIni<SPDataSource> plini = new PlDotIni<SPDataSource>(SPDataSource.class);
 		plini.read(new File("pl.regression.ini"));
 		StubDataSourceCollection dsCollection = new StubDataSourceCollection();
-		final SPDataSource ds = plini.getDataSource("regression_test");
+		final SPDataSource ds = plini.getDataSource("regression_test", JDBCDataSource.class);
 		dsCollection.addDataSource(ds);
-		final SQLDatabase db = new SQLDatabase(ds);
+		final SQLDatabase db = new SQLDatabase((JDBCDataSource) ds);
 		SQLDatabaseMapping mapping = new SQLDatabaseMapping() {
-			public SQLDatabase getDatabase(SPDataSource dataSource) {
+			public SQLDatabase getDatabase(JDBCDataSource dataSource) {
 				if (dataSource.equals(ds)) {
 					return db;
 				}

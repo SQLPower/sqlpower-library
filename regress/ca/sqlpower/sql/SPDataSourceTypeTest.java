@@ -27,7 +27,7 @@ import javax.swing.event.UndoableEditListener;
 import javax.swing.undo.UndoableEdit;
 
 import junit.framework.TestCase;
-import ca.sqlpower.sql.SPDataSourceType.JDBCClassLoader;
+import ca.sqlpower.sql.JDBCDataSourceType.JDBCClassLoader;
 
 public class SPDataSourceTypeTest extends TestCase {
 
@@ -49,18 +49,18 @@ public class SPDataSourceTypeTest extends TestCase {
     /**
      * A sample instance of the data source type for testing.
      */
-    private SPDataSourceType superType;
+    private JDBCDataSourceType superType;
     
     /**
      * This is a subtype of superType.
      */
-    private SPDataSourceType subType;
+    private JDBCDataSourceType subType;
     
     protected void setUp() throws Exception {
-        superType = new SPDataSourceType();
-        subType = new SPDataSourceType();
+        superType = new JDBCDataSourceType();
+        subType = new JDBCDataSourceType();
         subType.setParentType(superType);
-        SPDataSourceType currentType = null;
+        JDBCDataSourceType currentType = null;
         for (String line : PL_INI_CONTENTS.split("\\n")) {
             if (line.equals("[Database Types_0]")) {
                 currentType = superType;
@@ -154,7 +154,7 @@ public class SPDataSourceTypeTest extends TestCase {
         superType.addJdbcJar("new thing");
         
         assertEquals(list, superType.getJdbcJarList());
-        assertEquals(String.valueOf(list.size()), superType.getProperty(SPDataSourceType.JDBC_JAR_COUNT));
+        assertEquals(String.valueOf(list.size()), superType.getProperty(JDBCDataSourceType.JDBC_JAR_COUNT));
     }
 
     public void testJdbcJarListImmutable() {
@@ -176,7 +176,7 @@ public class SPDataSourceTypeTest extends TestCase {
     }
     
     public void testRetrieveURLParsing() {
-        SPDataSourceType dsType = new SPDataSourceType();
+        JDBCDataSourceType dsType = new JDBCDataSourceType();
         dsType.setJdbcUrl("<Database>:<Port>:<Hostname>");
         Map<String, String> map = dsType.retrieveURLParsing("data:1234:");
         assertEquals("data", map.get("Database"));
@@ -185,14 +185,14 @@ public class SPDataSourceTypeTest extends TestCase {
     }
 
     public void testRetrieveURLParsingWithUnclosedVariable() {
-        SPDataSourceType dsType = new SPDataSourceType();
+        JDBCDataSourceType dsType = new JDBCDataSourceType();
         dsType.setJdbcUrl("<Database");
         Map<String, String> map = dsType.retrieveURLParsing("data");
         assertTrue(map.isEmpty());
     }
 
     public void testRetrieveURLParsingWithDefaults() {
-        SPDataSourceType dsType = new SPDataSourceType();
+        JDBCDataSourceType dsType = new JDBCDataSourceType();
         dsType.setJdbcUrl("<Database:db>:<Port:2222>:<Hostname:home>");
         Map<String, String> map = dsType.retrieveURLParsing("data:1234:");
         assertEquals("data", map.get("Database"));
@@ -201,21 +201,21 @@ public class SPDataSourceTypeTest extends TestCase {
     }
     
     public void testRetrieveURLParsingNullTemplateURL() {
-        SPDataSourceType dsType = new SPDataSourceType();
+        JDBCDataSourceType dsType = new JDBCDataSourceType();
         dsType.setJdbcUrl(null);
         Map<String, String> map = dsType.retrieveURLParsing("data:1234:");
         assertEquals(0, map.size());
     }
     
     public void testRetrieveURLParsingURLDoesntmMatchTemplate() {
-        SPDataSourceType dsType = new SPDataSourceType();
+        JDBCDataSourceType dsType = new JDBCDataSourceType();
         dsType.setJdbcUrl("hello:<Database:db>:<Port:2222>:<Hostname:home>");
         Map<String, String> map = dsType.retrieveURLParsing("hello");
         assertEquals(0, map.size());
     }
     
     public void testRetrieveURLDefaults(){
-        SPDataSourceType dsType = new SPDataSourceType();
+        JDBCDataSourceType dsType = new JDBCDataSourceType();
         dsType.setJdbcUrl("<Database>:<Port:1234>:<Hostname:home>");
         Map<String, String> map = dsType.retrieveURLDefaults();
         assertEquals("", map.get("Database"));
@@ -229,14 +229,14 @@ public class SPDataSourceTypeTest extends TestCase {
      * name (&lt; without a matching &gt;).
      */
     public void testRetrieveURLDefaultsWithUnclosedVariable(){
-        SPDataSourceType dsType = new SPDataSourceType();
+        JDBCDataSourceType dsType = new JDBCDataSourceType();
         dsType.setJdbcUrl("<Database");
         Map<String, String> map = dsType.retrieveURLDefaults();
         assertTrue(map.isEmpty());
     }
 
     public void testRetrieveURLDefaultsNoTemplate(){
-        SPDataSourceType dsType = new SPDataSourceType();
+        JDBCDataSourceType dsType = new JDBCDataSourceType();
         dsType.setJdbcUrl(null);
         Map<String, String> map = dsType.retrieveURLDefaults();
         assertEquals(0, map.size());
@@ -248,7 +248,7 @@ public class SPDataSourceTypeTest extends TestCase {
      * just a resource)
      */
     public void testLoadResourceFromMissingJar() throws Exception {
-        SPDataSourceType dsType = new SPDataSourceType();
+        JDBCDataSourceType dsType = new JDBCDataSourceType();
         dsType.addJdbcJar("builtin:does/not/exist.jar");
         
         JDBCClassLoader jdbcClassLoader = (JDBCClassLoader) dsType.getJdbcClassLoader();
@@ -257,7 +257,7 @@ public class SPDataSourceTypeTest extends TestCase {
     }
     
     public void testUndoAndRedo() throws Exception {
-    	final SPDataSourceType dsType = new SPDataSourceType();
+    	final JDBCDataSourceType dsType = new JDBCDataSourceType();
     	class TestUndoableEditListener implements UndoableEditListener {
     		private int editCount = 0;
     		
@@ -291,7 +291,7 @@ public class SPDataSourceTypeTest extends TestCase {
      * redo edits.
      */
     public void testUndoOnSetters() throws Exception {
-    	final SPDataSourceType dsType = new SPDataSourceType();
+    	final JDBCDataSourceType dsType = new JDBCDataSourceType();
     	
     	class TestUndoableEditListener implements UndoableEditListener {
     		private int editCount = 0;
@@ -318,7 +318,7 @@ public class SPDataSourceTypeTest extends TestCase {
     }
     
     public void testStreamFlagChange() throws Exception {
-        subType.putProperty(SPDataSourceType.SUPPORTS_STREAM_QUERIES, String.valueOf(true));
+        subType.putProperty(JDBCDataSourceType.SUPPORTS_STREAM_QUERIES, String.valueOf(true));
         assertTrue(subType.getSupportsStreamQueries());
     }
 }

@@ -31,7 +31,7 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 
 import ca.sqlpower.sql.DataSourceCollection;
-import ca.sqlpower.sql.SPDataSourceType;
+import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.swingui.DataEntryPanel;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
@@ -49,17 +49,17 @@ public class DataSourceTypeCopyPropertiesPanel implements DataEntryPanel {
 	/**
 	 * The target ds type to copy the properties to.
 	 */
-	private final SPDataSourceType dsType;
+	private final JDBCDataSourceType dsType;
 	
 	/**
 	 * The combo box used for selecting the ds type to copy from.
 	 */
 	private final JComboBox dsTypesComboBox;
 	
-	public DataSourceTypeCopyPropertiesPanel(SPDataSourceType type, DataSourceCollection collection) {
+	public DataSourceTypeCopyPropertiesPanel(JDBCDataSourceType type, DataSourceCollection collection) {
 		this.dsType = type;
 		
-		List<SPDataSourceType> types = new ArrayList<SPDataSourceType>(collection.getDataSourceTypes());
+		List<JDBCDataSourceType> types = new ArrayList<JDBCDataSourceType>(collection.getDataSourceTypes());
 		types.remove(dsType);
 		dsTypesComboBox = new JComboBox(types.toArray());
 		dsTypesComboBox.setRenderer(new DefaultListCellRenderer() {
@@ -67,7 +67,7 @@ public class DataSourceTypeCopyPropertiesPanel implements DataEntryPanel {
 					int index, boolean isSelected, boolean cellHasFocus) {
 				Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 				if (c instanceof JLabel && value != null) {
-					((JLabel) c).setText(((SPDataSourceType) value).getName());
+					((JLabel) c).setText(((JDBCDataSourceType) value).getName());
 				}
 				return c;
 			}
@@ -86,10 +86,10 @@ public class DataSourceTypeCopyPropertiesPanel implements DataEntryPanel {
 	}
 	
 	public boolean applyChanges() {
-		SPDataSourceType defaultDSType = (SPDataSourceType) dsTypesComboBox.getSelectedItem();
+		JDBCDataSourceType defaultDSType = (JDBCDataSourceType) dsTypesComboBox.getSelectedItem();
         if (defaultDSType != null && defaultDSType != dsType) {
         	for (String key : defaultDSType.getPropertyNames()) {
-        		if (SPDataSourceType.TYPE_NAME.equals(key)) {
+        		if (JDBCDataSourceType.TYPE_NAME.equals(key)) {
         			continue;
         		}
         		dsType.putProperty(key, defaultDSType.getProperty(key));

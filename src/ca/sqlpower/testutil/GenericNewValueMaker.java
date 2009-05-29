@@ -25,6 +25,7 @@ import java.io.File;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 
+import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLColumn;
@@ -59,8 +60,11 @@ public class GenericNewValueMaker implements NewValueMaker {
             newVal = new Boolean(! ((Boolean) oldVal).booleanValue());
         } else if (valueType == File.class) {
             newVal = new File("temp" + System.currentTimeMillis());
+        } else if (valueType == JDBCDataSource.class) {
+            newVal = new JDBCDataSource(new PlDotIni<JDBCDataSource>(JDBCDataSource.class));
+            ((SPDataSource)newVal).setName("Testing data source");
         } else if (valueType == SPDataSource.class) {
-            newVal = new SPDataSource(new PlDotIni());
+            newVal = new JDBCDataSource(new PlDotIni<SPDataSource>(SPDataSource.class));
             ((SPDataSource)newVal).setName("Testing data source");
         } else if (valueType == Font.class) {
             newVal = Font.decode("Dialog");

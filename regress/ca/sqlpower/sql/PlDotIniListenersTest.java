@@ -23,8 +23,8 @@ import javax.swing.undo.UndoManager;
 import junit.framework.TestCase;
 
 public class PlDotIniListenersTest extends TestCase {
-	DataSourceCollection pld = new PlDotIni();
-	SPDataSource dbcs = new SPDataSource(pld);
+	DataSourceCollection<SPDataSource> pld = new PlDotIni<SPDataSource>(SPDataSource.class);
+	JDBCDataSource dbcs = new JDBCDataSource(pld);
 	
 	@Override
 	protected void setUp() throws Exception {
@@ -103,7 +103,7 @@ public class PlDotIniListenersTest extends TestCase {
 	public void testUndoAddDSType() {
 		UndoManager manager = new UndoManager();
 		pld.addUndoableEditListener(manager);
-		SPDataSourceType type = new SPDataSourceType();
+		JDBCDataSourceType type = new JDBCDataSourceType();
 		pld.addDataSourceType(type);
 		
 		assertTrue(manager.canUndo());
@@ -116,7 +116,7 @@ public class PlDotIniListenersTest extends TestCase {
 	
 	public void testUndoRemoveDSType() {
 		UndoManager manager = new UndoManager();
-		SPDataSourceType type = new SPDataSourceType();
+		JDBCDataSourceType type = new JDBCDataSourceType();
 		pld.addDataSourceType(type);
 		pld.addUndoableEditListener(manager);
 		

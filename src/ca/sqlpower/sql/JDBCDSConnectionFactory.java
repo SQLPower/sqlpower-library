@@ -29,12 +29,12 @@ import org.apache.log4j.Logger;
  * the Apache DBCP ConnectionFactory interface.  We didn't want to pollute
  * SPDataSource itself with the Apache class dependency.
  */
-public class SPDSConnectionFactory implements ConnectionFactory {
-	private static final Logger logger = Logger.getLogger(SPDSConnectionFactory.class);
+public class JDBCDSConnectionFactory implements ConnectionFactory {
+	private static final Logger logger = Logger.getLogger(JDBCDSConnectionFactory.class);
 	
-	private SPDataSource dataSource;
+	private JDBCDataSource dataSource;
 	
-	public SPDSConnectionFactory(SPDataSource dataSource) {
+	public JDBCDSConnectionFactory(JDBCDataSource dataSource) {
 		this.dataSource = dataSource;
 	}
 	
