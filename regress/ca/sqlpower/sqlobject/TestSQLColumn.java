@@ -30,7 +30,6 @@ import org.apache.commons.beanutils.BeanUtils;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sql.PlDotIni;
-import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.testutil.TestUtils;
 
 
@@ -800,7 +799,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
     }
     
     public void testReverseEngineerAutoInc() throws Exception {
-        PlDotIni<SPDataSource> plini = new PlDotIni<SPDataSource>(SPDataSource.class);
+        PlDotIni plini = new PlDotIni();
 
         JDBCDataSourceType dst = new JDBCDataSourceType();
         dst.setJdbcDriver("ca.sqlpower.testutil.MockJDBCDriver");

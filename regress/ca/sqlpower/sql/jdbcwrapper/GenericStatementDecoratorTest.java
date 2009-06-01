@@ -25,17 +25,16 @@ import java.sql.Statement;
 import junit.framework.TestCase;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.PlDotIni;
-import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLDatabase;
 
 public class GenericStatementDecoratorTest extends TestCase {
 	
 	private SQLDatabase db;
-	PlDotIni<SPDataSource> plini;
+	PlDotIni plini;
 
 	@Override
 	protected void setUp() throws Exception {
-		plini = new PlDotIni<SPDataSource>(SPDataSource.class);
+		plini = new PlDotIni();
         plini.read(new File("pl.regression.ini"));
         db = new SQLDatabase(new JDBCDataSource(plini.getDataSource("regression_test", JDBCDataSource.class)));
         assertNotNull(db.getDataSource().getParentType());

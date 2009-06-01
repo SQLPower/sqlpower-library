@@ -23,7 +23,7 @@ import javax.swing.undo.UndoManager;
 import junit.framework.TestCase;
 
 public class PlDotIniListenersTest extends TestCase {
-	DataSourceCollection<SPDataSource> pld = new PlDotIni<SPDataSource>(SPDataSource.class);
+	DataSourceCollection<SPDataSource> pld = new PlDotIni();
 	JDBCDataSource dbcs = new JDBCDataSource(pld);
 	
 	@Override

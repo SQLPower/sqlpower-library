@@ -57,7 +57,7 @@ public class RefreshTablesTest extends TestCase {
         logger.debug("=====setUp=====");
         super.setUp();
         
-        DataSourceCollection<SPDataSource> dscol = new PlDotIni<SPDataSource>(SPDataSource.class);
+        DataSourceCollection<SPDataSource> dscol = new PlDotIni();
         JDBCDataSourceType dstype = new JDBCDataSourceType();
         dstype.setJdbcDriver("ca.sqlpower.testutil.MockJDBCDriver");
         JDBCDataSource ds = new JDBCDataSource(dscol);

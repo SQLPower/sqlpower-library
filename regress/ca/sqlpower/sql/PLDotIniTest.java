@@ -30,11 +30,11 @@ import junit.framework.TestCase;
 public class PLDotIniTest extends TestCase {
 
 	private static final String FUN_DATASOURCE_NAME = "broomhilda";
-	private PlDotIni<SPDataSource> target;
+	private PlDotIni target;
 
 	@Override
 	public void setUp() {
-		target = new PlDotIni<SPDataSource>(SPDataSource.class);
+		target = new PlDotIni();
 	}
 	/*
 	 * Test method for 'ca.sqlpower.architect.PlDotIni.read(File)'
@@ -232,7 +232,7 @@ public class PLDotIniTest extends TestCase {
         File tmp2 = File.createTempFile("pl.out", null);
         target.write(tmp2);
         
-        PlDotIni<SPDataSource> reread = new PlDotIni<SPDataSource>(SPDataSource.class);
+        PlDotIni reread = new PlDotIni();
         reread.read(tmp2);
         Object sect = reread.getSection(0);
         assertEquals(PlDotIni.Section.class, sect.getClass());

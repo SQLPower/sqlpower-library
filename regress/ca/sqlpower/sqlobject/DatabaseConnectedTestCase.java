@@ -39,7 +39,7 @@ import ca.sqlpower.sql.SPDataSource;
  */
 public abstract class DatabaseConnectedTestCase extends TestCase {
 
-    private DataSourceCollection<SPDataSource> plini = new PlDotIni<SPDataSource>(SPDataSource.class);
+    private DataSourceCollection<SPDataSource> plini = new PlDotIni();
     protected SQLDatabase db;
 
     public DatabaseConnectedTestCase() {
@@ -87,7 +87,7 @@ public abstract class DatabaseConnectedTestCase extends TestCase {
             db = null;
         } catch (Exception ex) {
             System.err.println("Shutdown failed. Test case probably modified the database connection! Retrying...");
-            DataSourceCollection<SPDataSource> dscol = new PlDotIni<SPDataSource>(SPDataSource.class);
+            DataSourceCollection<SPDataSource> dscol = new PlDotIni();
             dscol.read(new File("pl.regression.ini"));
             db.setDataSource(dscol.getDataSource("regression_test", JDBCDataSource.class));
             sqlx("SHUTDOWN");

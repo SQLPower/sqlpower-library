@@ -58,7 +58,7 @@ public class SQLQueryUIComponentsTest extends TestCase {
 	 * will reopen the connection.
 	 */
 	public void testClosedConnectionIsReopened() throws Exception {
-		PlDotIni<SPDataSource> plini = new PlDotIni<SPDataSource>(SPDataSource.class);
+		PlDotIni plini = new PlDotIni();
 		plini.read(new File("pl.regression.ini"));
 		StubDataSourceCollection dsCollection = new StubDataSourceCollection();
 		final SPDataSource ds = plini.getDataSource("regression_test", JDBCDataSource.class);

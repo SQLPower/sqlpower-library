@@ -28,6 +28,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.AbstractAction;
@@ -38,6 +39,7 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
@@ -51,6 +53,7 @@ import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.DatabaseListChangeEvent;
 import ca.sqlpower.sql.DatabaseListChangeListener;
 import ca.sqlpower.sql.JDBCDataSource;
+import ca.sqlpower.sql.Olap4jDataSource;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.swingui.Messages;
 import ca.sqlpower.swingui.SPSUtils;
@@ -125,20 +128,70 @@ public class DatabaseConnectionManager {
 			dsTypeDialogFactory.showDialog(DatabaseConnectionManager.this.currentOwner);
 		}
 	};
+	
+	/**
+	 * This action will create a new data source and allow the user to decide
+	 * what kind of data source to create as well as allow the user to define
+	 * data source properties.
+	 */
+	private class NewConnectionAction extends AbstractAction {
 
-    private final Action newDatabaseConnectionAction = new AbstractAction(Messages.getString("DatabaseConnectionManager.newDbConnectionActionName")) { //$NON-NLS-1$
+        /**
+         * This component is used to define the position where the popup will
+         * appear. It should be the same position where the given component is.
+         */
+        private final JComponent parentComponent;
+
+        public NewConnectionAction(String name, JComponent parentComponent) {
+	        super(name);
+            this.parentComponent = parentComponent;
+	    }
 
         public void actionPerformed(ActionEvent e) {
-            //TODO This should pop up a menu to select the type of data source the user wants to create.
-            final JDBCDataSource ds = new JDBCDataSource(getPlDotIni());
-            Runnable onOk = new Runnable() {
-                public void run() {
-                    dsCollection.addDataSource(ds);
+            if (creatableDSTypes.size() > 1) {
+                final JPopupMenu dsTypeMenu = new JPopupMenu();
+                dsTypeMenu.setLocation(parentComponent.getLocationOnScreen());
+                Iterator<Class<? extends SPDataSource>> iterator = creatableDSTypes.iterator();
+                while (iterator.hasNext()) {
+                    final Class<? extends SPDataSource> dsType = iterator.next();
+                    dsTypeMenu.add(new AbstractAction(SPDataSource.getUserFriendlyName(dsType) + "...") {
+                    
+                        public void actionPerformed(ActionEvent e) {
+                            showNewDSDialog(dsType);
+                        }
+                    });
                 }
-            };
-            dsDialogFactory.showDialog((d != null) ? d : DatabaseConnectionManager.this.currentOwner, ds, onOk);
+                dsTypeMenu.show(parentComponent, 0, 0);
+            } else {
+                Iterator<Class<? extends SPDataSource>> iterator = creatableDSTypes.iterator();
+                Class<? extends SPDataSource> dsTypeToCreate = iterator.next();
+                showNewDSDialog(dsTypeToCreate);
+            }
+            
         }
-    };
+        
+        public void showNewDSDialog(Class<? extends SPDataSource> dsTypeToCreate) {
+            if (dsTypeToCreate.equals(JDBCDataSource.class)) {
+                final JDBCDataSource ds = new JDBCDataSource(getPlDotIni());
+                Runnable onOk = new Runnable() {
+                    public void run() {
+                        dsCollection.addDataSource(ds);
+                    }
+                };
+                dsDialogFactory.showDialog((d != null) ? d : DatabaseConnectionManager.this.currentOwner, ds, onOk);
+            } else if (dsTypeToCreate.equals(Olap4jDataSource.class)) {
+                final Olap4jDataSource ds = new Olap4jDataSource(getPlDotIni());
+                Runnable onOk = new Runnable() {
+                    public void run() {
+                        dsCollection.addDataSource(ds);
+                    }
+                };
+                dsDialogFactory.showDialog((d != null) ? d : DatabaseConnectionManager.this.currentOwner, ds, getPlDotIni(), onOk);
+            } else {
+                throw new IllegalStateException("Cannot make a new data source of type " + dsTypeToCreate);
+            }
+        }
+	}
 
 	private final Action editDatabaseConnectionAction = new AbstractAction(Messages.getString("DatabaseConnectionManager.editDbConnectionActionName")) { //$NON-NLS-1$
 
@@ -151,31 +204,41 @@ public class DatabaseConnectionManager {
 			
 			if (ds instanceof JDBCDataSource) {
 			    JDBCDataSource jdbcDS = (JDBCDataSource) ds;
-			    Runnable onOk = new Runnable() {
-			        public void run() {
-			            try {
-			                for (int i = 0; i < dsTable.getRowCount(); i++) {
-			                    if (dsTable.getValueAt(i, 0) == ds) {
-			                        dsTable.setRowSelectionInterval(i, i);
-			                        dsTable.scrollRectToVisible(dsTable.getCellRect(i, 0, true));
-			                        dsTable.repaint();
-			                        break;
-			                    }
-			                }
-			            } catch (Exception ex) {
-			                SPSUtils.showExceptionDialogNoReport(
-			                        (d != null) ? d : DatabaseConnectionManager.this.currentOwner,
-			                                "Unexpected exception while editing a database connection.", //$NON-NLS-1$
-			                                ex);
-			            }
-			        }
-			    };
+			    Runnable onOk = createOnOk(ds);
 
 			    dsDialogFactory.showDialog((d != null) ? d : DatabaseConnectionManager.this.currentOwner, jdbcDS, onOk);
+			} else if (ds instanceof Olap4jDataSource) {
+			    Olap4jDataSource jdbcDS = (Olap4jDataSource) ds;
+			    Runnable onOk = createOnOk(ds);
+
+			    dsDialogFactory.showDialog((d != null) ? d : DatabaseConnectionManager.this.currentOwner, jdbcDS, getPlDotIni(), onOk);
 			} else {
 			    throw new IllegalStateException("Unknown SPDataSource type in the connection manager. Type is " + ds.getClass());
 			}
 		}
+
+        private Runnable createOnOk(final SPDataSource ds) {
+            Runnable onOk = new Runnable() {
+                public void run() {
+                    try {
+                        for (int i = 0; i < dsTable.getRowCount(); i++) {
+                            if (dsTable.getValueAt(i, 0) == ds) {
+                                dsTable.setRowSelectionInterval(i, i);
+                                dsTable.scrollRectToVisible(dsTable.getCellRect(i, 0, true));
+                                dsTable.repaint();
+                                break;
+                            }
+                        }
+                    } catch (Exception ex) {
+                        SPSUtils.showExceptionDialogNoReport(
+                                (d != null) ? d : DatabaseConnectionManager.this.currentOwner,
+                                        "Unexpected exception while editing a database connection.", //$NON-NLS-1$
+                                        ex);
+                    }
+                }
+            };
+            return onOk;
+        }
 	};
 
 	private final Action removeDatabaseConnectionAction = new AbstractAction(Messages.getString("DatabaseConnectionManager.removeDbConnectionActionName")) { //$NON-NLS-1$
@@ -216,9 +279,15 @@ public class DatabaseConnectionManager {
      * The data source collection of the session context this connection
      * manager belongs to.
      */
-	private final DataSourceCollection dsCollection;
+	private final DataSourceCollection<SPDataSource> dsCollection;
 
 	private List<JButton> additionalActionButtons = new ArrayList<JButton>();
+
+	/**
+	 * This list contains all of the classes that are able to be created from
+	 * the new button.
+	 */
+    private List<Class<? extends SPDataSource>> creatableDSTypes;
 	
 	/**
 	 * Creates a new database connection manager with the default data source
@@ -226,7 +295,7 @@ public class DatabaseConnectionManager {
 	 * 
 	 * @param dsCollection The data source collection to manage
 	 */
-	public DatabaseConnectionManager(DataSourceCollection dsCollection) {
+	public DatabaseConnectionManager(DataSourceCollection<SPDataSource> dsCollection) {
 	    this(dsCollection,
 	            new DefaultDataSourceDialogFactory(),
 	            new DefaultDataSourceTypeDialogFactory(dsCollection),
@@ -238,21 +307,38 @@ public class DatabaseConnectionManager {
 	 * close button. The main purpose of using this constructor would be to make a db connection
 	 * manager that is to be placed in another panel.
 	 */
-	public DatabaseConnectionManager(DataSourceCollection dsCollection, DataSourceDialogFactory dsDialogFactory,
+	public DatabaseConnectionManager(DataSourceCollection<SPDataSource> dsCollection, DataSourceDialogFactory dsDialogFactory,
 			DataSourceTypeDialogFactory dsTypeDialogFactory, List<Action> additionalActions, List<JComponent> additionalComponents, Window owner, boolean showCloseButton) {
+	    this(dsCollection, dsDialogFactory, dsTypeDialogFactory, 
+	            additionalActions, additionalComponents, owner, showCloseButton,
+	            new ArrayList<Class<? extends SPDataSource>>(Collections.singleton((Class<? extends SPDataSource>) JDBCDataSource.class)));
+	}
+
+    /**
+     * Using this constructor over the other available constructors allows
+     * defining a connection manager that can create {@link SPDataSource} types
+     * other than the default {@link JDBCDataSource} type. If a constructor is
+     * used other then this one only new {@link JDBCDataSource} types will be
+     * able to be constructed although any {@link SPDataSource} type in the list
+     * will be editable.
+     */
+	public DatabaseConnectionManager(DataSourceCollection<SPDataSource> dsCollection, DataSourceDialogFactory dsDialogFactory,
+            DataSourceTypeDialogFactory dsTypeDialogFactory, List<Action> additionalActions, 
+            List<JComponent> additionalComponents, Window owner, boolean showCloseButton,
+            List<Class<? extends SPDataSource>> dsTypes) {
 		this.dsCollection = dsCollection;
 		this.dsDialogFactory = dsDialogFactory;
 		this.dsTypeDialogFactory = dsTypeDialogFactory;
 		logger.debug("Window owner is " + owner);
 		currentOwner = owner;
 		panel = createPanel(additionalActions, additionalComponents, showCloseButton);
-		
+		creatableDSTypes = new ArrayList<Class<? extends SPDataSource>>(dsTypes);
 	}
 	/**
 	 * Creates a new database connection manager with the default set of action buttons, plus
 	 * those supplied in the given list.
 	 */
-	public DatabaseConnectionManager(DataSourceCollection dsCollection, DataSourceDialogFactory dsDialogFactory,
+	public DatabaseConnectionManager(DataSourceCollection<SPDataSource> dsCollection, DataSourceDialogFactory dsDialogFactory,
 			DataSourceTypeDialogFactory dsTypeDialogFactory, List<Action> additionalActions) {
 		this(dsCollection, dsDialogFactory, dsTypeDialogFactory, additionalActions, new ArrayList<JComponent>(), null, true);
 	}
@@ -348,7 +434,10 @@ public class DatabaseConnectionManager {
 
 		ButtonStackBuilder bsb = new ButtonStackBuilder();
 
-		bsb.addGridded(new JButton(newDatabaseConnectionAction));
+		JButton newButton = new JButton();
+		AbstractAction newDatabaseConnectionAction = new NewConnectionAction(Messages.getString("DatabaseConnectionManager.newDbConnectionActionName"), newButton); //$NON-NLS-1$
+		newButton.setAction(newDatabaseConnectionAction);
+		bsb.addGridded(newButton);
 		bsb.addRelatedGap();
 		bsb.addGridded(new JButton(editDatabaseConnectionAction));
 		bsb.addRelatedGap();
@@ -460,7 +549,7 @@ public class DatabaseConnectionManager {
 
 	}
 
-	public DataSourceCollection getPlDotIni() {
+	public DataSourceCollection<SPDataSource> getPlDotIni() {
 		return dsCollection;
 	}
 

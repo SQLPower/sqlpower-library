@@ -48,6 +48,20 @@ public abstract class SPDataSource implements Comparable<SPDataSource> {
     private static final Logger logger = Logger.getLogger(SPDataSource.class);
     
     /**
+     * This will return a more user friendly name to a class type. This way we can
+     * define a more descriptive name for classes that extends SPDataSource.
+     */
+    public static String getUserFriendlyName(Class<? extends SPDataSource> dsType) {
+        if (dsType.equals(JDBCDataSource.class)) {
+            return "Database connection";
+        } else if (dsType.equals(Olap4jDataSource.class)) {
+            return "OLAP connection";
+        } else {
+            return dsType.getSimpleName();
+        }
+    }
+    
+    /**
      * This is the logical name, and also the display name, key in the map.
      */
     public static final String PL_LOGICAL = "Logical";
@@ -68,7 +82,7 @@ public abstract class SPDataSource implements Comparable<SPDataSource> {
     /**
      * The collection of data sources that this data source belongs to.
      */
-    private final DataSourceCollection parentCollection;
+    private final DataSourceCollection<SPDataSource> parentCollection;
 	
     /**
 	 * This field is transient; don't access it directly becuase it
@@ -88,7 +102,7 @@ public abstract class SPDataSource implements Comparable<SPDataSource> {
     /**
      * Creates a new SPDataSource with a blank parent type and all other properties set to null.
      */
-	public SPDataSource(DataSourceCollection parentCollection) {
+	public SPDataSource(DataSourceCollection<SPDataSource> parentCollection) {
 		properties = new LinkedHashMap<String,String>();
         this.parentCollection = parentCollection;
 	}
@@ -245,7 +259,7 @@ public abstract class SPDataSource implements Comparable<SPDataSource> {
     /**
      * Returns the data source collection that this data source belongs to.
      */
-    public DataSourceCollection getParentCollection() {
+    public DataSourceCollection<SPDataSource> getParentCollection() {
         return parentCollection;
     }
     

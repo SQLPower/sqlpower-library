@@ -239,6 +239,13 @@
             <scope>system</scope>
             <systemPath>${basedir}/lib/piccolox.jar</systemPath>
         </dependency>
+        
+        <dependency>
+            <groupId>com.miglayout</groupId>
+            <artifactId>miglayout</artifactId>
+            <version>3.7</version>
+            <classifier>swing</classifier>
+        </dependency>
 	</dependencies>
 
 	<repositories>

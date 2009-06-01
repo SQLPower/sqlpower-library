@@ -62,7 +62,7 @@ import ca.sqlpower.sqlobject.SQLIndex;
  * could result in a bare \n in the encryption...
  * @version $Id$
  */
-public class PlDotIni<T extends SPDataSource> implements DataSourceCollection<T> {
+public class PlDotIni implements DataSourceCollection<SPDataSource> {
 	
 	private class AddDSTypeUndoableEdit extends AbstractUndoableEdit {
 
@@ -142,24 +142,17 @@ public class PlDotIni<T extends SPDataSource> implements DataSourceCollection<T>
 	    }
 	};
 	
-	/**
-	 * This class type is the same value represented by T, this allows us to use the 
-	 * class type in checks at runtime
-	 */
-    private final Class<T> classType;
-
     /**
      * Construct a PL.INI object, and set an Add Listener to save
      * the file when a database is added (bugid 1032).
      */
-    public PlDotIni(Class<T> classType) {
-        this.classType = classType;
+    public PlDotIni() {
         listeners = new ArrayList<DatabaseListChangeListener>();
         listeners.add(saver);
     }
 
-    public PlDotIni(URI serverBaseURI, Class<T> classType) {
-    	this(classType);
+    public PlDotIni(URI serverBaseURI) {
+    	this();
 		this.serverBaseURI = serverBaseURI;
     }
     
@@ -342,6 +335,10 @@ public class PlDotIni<T extends SPDataSource> implements DataSourceCollection<T>
                 if (line.startsWith("[Databases_")) {
                     logger.debug("It's a new database connection spec!" +fileSections);
                     currentDS =  new JDBCDataSource(this);
+                    mode = ReadState.READ_DS;
+                } else if (line.startsWith("[OLAP_databases_")) {
+                    logger.debug("It's a new database connection spec!" +fileSections);
+                    currentDS =  new Olap4jDataSource(this);
                     mode = ReadState.READ_DS;
                 } else if (line.startsWith("[Database Types_")) {
                     logger.debug("It's a new database type!" + fileSections);
@@ -556,6 +553,7 @@ public class PlDotIni<T extends SPDataSource> implements DataSourceCollection<T>
         // counting starts at 1. Yay, VB!
         int dbNum = 1;
         int typeNum = 1;
+        int olapNum = 1;
 
         Iterator it = fileSections.iterator();
 	    while (it.hasNext()) {
@@ -563,12 +561,14 @@ public class PlDotIni<T extends SPDataSource> implements DataSourceCollection<T>
 
 	        if (next instanceof Section) {
 	            writeSection(out, ((Section) next).getName(), ((Section) next).getPropertiesMap());
-            } else if (next instanceof SPDataSource) {
-                writeSection(out, "Databases_"+dbNum, ((SPDataSource) next).getPropertiesMap());
+            } else if (next instanceof JDBCDataSource) {
+                writeSection(out, "Databases_"+dbNum, ((JDBCDataSource) next).getPropertiesMap());
                 dbNum++;
             } else if (next instanceof JDBCDataSourceType) {
                 writeSection(out, "Database Types_"+typeNum, ((JDBCDataSourceType) next).getProperties());
                 typeNum++;
+            } else if (next instanceof Olap4jDataSource) {
+                writeSection(out, "OLAP_databases_"+olapNum, ((Olap4jDataSource) next).getPropertiesMap());
 	        } else if (next == null) {
 	            logger.error("write: Null section");
 	        } else {
@@ -622,11 +622,11 @@ public class PlDotIni<T extends SPDataSource> implements DataSourceCollection<T>
 	    }
 	}
 
-    public T getDataSource(String name) {
-        return getDataSource(name, classType);
+    public SPDataSource getDataSource(String name) {
+        return getDataSource(name, SPDataSource.class);
     }
     
-    public <C extends T> C getDataSource(String name, Class<C> classType) {
+    public <C extends SPDataSource> C getDataSource(String name, Class<C> classType) {
         Iterator it = fileSections.iterator();
         while (it.hasNext()) {
             Object next = it.next();
@@ -670,8 +670,8 @@ public class PlDotIni<T extends SPDataSource> implements DataSourceCollection<T>
      * optimal, but we can defer optimising it until someone proves it's an
      * actual performance issue.
      */
-    public List<T> getConnections() {
-        return getConnections(classType);
+    public List<SPDataSource> getConnections() {
+        return getConnections(SPDataSource.class);
     }
     
     /**
@@ -680,7 +680,7 @@ public class PlDotIni<T extends SPDataSource> implements DataSourceCollection<T>
      * @param classType
      * @return
      */
-    public <C extends T> List<C> getConnections(Class<C> classType) {
+    public <C extends SPDataSource> List<C> getConnections(Class<C> classType) {
         List<C> connections = new ArrayList<C>();
 	    Iterator it = fileSections.iterator();
 	    while (it.hasNext()) {

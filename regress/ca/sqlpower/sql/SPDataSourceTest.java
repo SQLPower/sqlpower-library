@@ -30,7 +30,7 @@ public class SPDataSourceTest extends TestCase {
 	
 	protected void setUp() throws Exception {
 		super.setUp();
-		ds = new JDBCDataSource(new PlDotIni<SPDataSource>(SPDataSource.class));
+		ds = new JDBCDataSource(new PlDotIni());
 		System.out.println("NEW DATA SOURCE parent type name = "+ds.getPropertiesMap().get(JDBCDataSource.DBCS_CONNECTION_TYPE));
 		ds.setDisplayName("Regression Test");
 		ds.getParentType().setJdbcDriver("com.does.not.exist");
@@ -103,8 +103,8 @@ public class SPDataSourceTest extends TestCase {
 	 * Test method for 'ca.sqlpower.architect.SPDataSource.equals(Object)'
 	 */
 	public void testEquals() {
-		JDBCDataSource ds1 = new JDBCDataSource(new PlDotIni<SPDataSource>(SPDataSource.class));
-		JDBCDataSource ds2 = new JDBCDataSource(new PlDotIni<SPDataSource>(SPDataSource.class));
+		JDBCDataSource ds1 = new JDBCDataSource(new PlDotIni());
+		JDBCDataSource ds2 = new JDBCDataSource(new PlDotIni());
 		
 		ds1.setDisplayName("Regression Test");
 		ds2.setDisplayName("Regression Test");
@@ -269,7 +269,7 @@ public class SPDataSourceTest extends TestCase {
 
 	public void testComparator() {
 		// set up identical second data source
-		JDBCDataSource ds2 = new JDBCDataSource(new PlDotIni<SPDataSource>(SPDataSource.class));
+		JDBCDataSource ds2 = new JDBCDataSource(new PlDotIni());
         ds2.setParentType(ds.getParentType());
 		for (String key : ds.getPropertiesMap().keySet()) {
 			ds2.put(key, ds.get(key));
@@ -298,7 +298,7 @@ public class SPDataSourceTest extends TestCase {
     }
     
     public void testCopyFrom() {
-        JDBCDataSource targetDs = new JDBCDataSource(new PlDotIni<SPDataSource>(SPDataSource.class));
+        JDBCDataSource targetDs = new JDBCDataSource(new PlDotIni());
         targetDs.copyFrom(ds);
 
         // need to copy all props into a tree map so they're both sorted in the same order
@@ -312,7 +312,7 @@ public class SPDataSourceTest extends TestCase {
     public void testCopyFromFiresNameChange() {
         CountingPropertyChangeListener pcl = new CountingPropertyChangeListener();
         
-        JDBCDataSource targetDs = new JDBCDataSource(new PlDotIni<SPDataSource>(SPDataSource.class));
+        JDBCDataSource targetDs = new JDBCDataSource(new PlDotIni());
         targetDs.addPropertyChangeListener(pcl);
         targetDs.copyFrom(ds);
 

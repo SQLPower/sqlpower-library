@@ -24,7 +24,12 @@ import java.util.concurrent.Callable;
 
 import javax.swing.JDialog;
 
+import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.JDBCDataSource;
+import ca.sqlpower.sql.Olap4jDataSource;
+import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sql.SpecificDataSourceCollection;
+import ca.sqlpower.swingui.DataEntryPanel;
 import ca.sqlpower.swingui.DataEntryPanelBuilder;
 import ca.sqlpower.swingui.JDBCDataSourcePanel;
 
@@ -39,8 +44,25 @@ public class DefaultDataSourceDialogFactory implements DataSourceDialogFactory {
      * of the given data source.
      */
     public JDialog showDialog(Window parentWindow, JDBCDataSource ds, final Runnable onAccept) {
-        final JDBCDataSourcePanel dataSourcePanel = new JDBCDataSourcePanel(ds);
+        final DataEntryPanel dataSourcePanel = new JDBCDataSourcePanel(ds);
         
+        return createDataSourceDialog(parentWindow, onAccept, dataSourcePanel);
+    }
+
+    /**
+     * Helper method that takes a {@link DataEntryPanel} for editing a specific
+     * type of {@link SPDataSource} and returns a dialog containing the panel.
+     * 
+     * @param parentWindow
+     *            The parent of the dialog returned.
+     * @param onAccept
+     *            An action that can be placed on the accept/OK button.
+     * @param dataSourcePanel
+     *            The {@link DataEntryPanel} for editing an {@link SPDataSource}
+     *            .
+     */
+    private JDialog createDataSourceDialog(Window parentWindow,
+            final Runnable onAccept, final DataEntryPanel dataSourcePanel) {
         Callable<Boolean> okCall = new Callable<Boolean>() {
             public Boolean call() {
                 if (dataSourcePanel.applyChanges()) {
@@ -66,6 +88,13 @@ public class DefaultDataSourceDialogFactory implements DataSourceDialogFactory {
         d.setLocationRelativeTo(parentWindow);
         d.setVisible(true);
         return d;
+    }
+
+    public JDialog showDialog(Window parentWindow, Olap4jDataSource dataSource,
+            DataSourceCollection<? super JDBCDataSource> dsCollection,
+            Runnable onAccept) {
+        final DataEntryPanel dataSourcePanel = new Olap4jConnectionPanel(dataSource, new SpecificDataSourceCollection<JDBCDataSource>(dsCollection, JDBCDataSource.class));
+        return createDataSourceDialog(parentWindow, onAccept, dataSourcePanel);
     }
 
 }

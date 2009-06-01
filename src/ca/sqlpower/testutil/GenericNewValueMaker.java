@@ -61,10 +61,10 @@ public class GenericNewValueMaker implements NewValueMaker {
         } else if (valueType == File.class) {
             newVal = new File("temp" + System.currentTimeMillis());
         } else if (valueType == JDBCDataSource.class) {
-            newVal = new JDBCDataSource(new PlDotIni<JDBCDataSource>(JDBCDataSource.class));
+            newVal = new JDBCDataSource(new PlDotIni());
             ((SPDataSource)newVal).setName("Testing data source");
         } else if (valueType == SPDataSource.class) {
-            newVal = new JDBCDataSource(new PlDotIni<SPDataSource>(SPDataSource.class));
+            newVal = new JDBCDataSource(new PlDotIni());
             ((SPDataSource)newVal).setName("Testing data source");
         } else if (valueType == Font.class) {
             newVal = Font.decode("Dialog");
