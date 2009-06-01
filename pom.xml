@@ -26,7 +26,7 @@
 		<directory>dist</directory>
 		<sourceDirectory>src</sourceDirectory>
 		<testSourceDirectory>regress</testSourceDirectory>
-		<outputDirectory>build</outputDirectory>
+		<outputDirectory>bin</outputDirectory>
 		<testOutputDirectory>build-tests</testOutputDirectory>
 
 		<resources>
@@ -95,6 +95,8 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
+					<!-- You must set fork to true if you want to use a non-default JDK-->
+					<!--<fork>true</fork>-->
 					<!-- You MUST set this if your default JDK is not Java 5 -->
 					<!--<executable>${JAVA_5_HOME}/bin/javac</executable> -->
 					<source>1.5</source>
