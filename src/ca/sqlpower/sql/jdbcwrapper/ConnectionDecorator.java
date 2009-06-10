@@ -63,13 +63,20 @@ public abstract class ConnectionDecorator implements Connection {
 	protected ConnectionDecorator(Connection delegate) {
 		this.connection = delegate;
 	}
-	
-	/**
-	 * Creates a new ConnectionDecorator (or appropriate subclass) which delegates to the given connection.
-	 * Outside users can create a ConnectionDecorator using the public {@link #createFacade(Connection)} method.
-	 * 
-	 * @param delegate The object to which all JDBC operations will be delegated.
-	 */
+
+    /**
+     * Creates a new ConnectionDecorator (or appropriate subclass) which
+     * delegates to the given connection. Outside users can create a
+     * ConnectionDecorator using the public {@link #createFacade(Connection)}
+     * method.
+     * <p>
+     * XXX it would be far better for us to specify which wrappers to use for
+     * which connections at the DataSourceType level. Hard-coding the wrapper
+     * configuration here is slightly harmful.
+     * 
+     * @param delegate
+     *            The object to which all JDBC operations will be delegated.
+     */
 	public static Connection createFacade(Connection delegate) throws SQLException {
 	    String driverName = delegate.getMetaData().getDriverName();
 		logger.debug("static createFacade, driver class is: " + delegate.getClass().getName());
@@ -86,6 +93,8 @@ public abstract class ConnectionDecorator implements Connection {
             return new MySQLConnectionDecorator(delegate);
         } else if (driverName.equals("HSQL Database Engine Driver")) {
             return new HSQLDBConnectionDecorator(delegate);
+        } else if (driverName.equals("RBW_JDBC_Driver")) {
+            return new RedBrickConnectionDecorator(delegate);
 		} else if (driverName.equals("SQL Power Mock JDBC Database Driver")) {
 			// we don't want to decorate these at all
 			return delegate;
