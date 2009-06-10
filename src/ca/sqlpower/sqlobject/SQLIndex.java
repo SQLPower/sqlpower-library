@@ -19,7 +19,6 @@
 
 package ca.sqlpower.sqlobject;
 
-import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -642,8 +641,9 @@ public class SQLIndex extends SQLObject {
                     if (pkName == null) {
                         pkName = pkNameCheck;
                     } else if (!pkName.equals(pkNameCheck)) {
-                        throw new IllegalStateException("The PK name has changed somehow while adding indices to table");
-                    }
+                        throw new IllegalStateException(
+                                "The PK name has changed from " + pkName + " to " +
+                                pkNameCheck + " while adding indices to table");                    }
                 } else {
                     throw new SQLException("Column " + rs.getString(4) + " not found in " + targetTable);
                 }
