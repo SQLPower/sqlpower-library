@@ -20,9 +20,14 @@
 package ca.sqlpower.sql.jdbcwrapper;
 
 import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 import org.apache.log4j.Logger;
+
+import ca.sqlpower.sql.CachedRowSet;
+import ca.sqlpower.sqlobject.SQLRelationship;
 
 /**
  * Tries to ensure catalogs and schemas are understood not to be supported.
@@ -57,5 +62,73 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     @Override
     public String getSchemaTerm() throws SQLException {
         return null;
+    }
+
+    /**
+     * Returns a result set with the correct column setup for the getCatalogs()
+     * method, but with 0 rows. This is in contrast to the Red Brick driver
+     * we're wrapping, which throws an exception for the getCatalogs() method.
+     */
+    @Override
+    public ResultSet getCatalogs() throws SQLException {
+        Statement stmt = null;
+        ResultSet rs = null;
+        try {
+            stmt = getConnection().createStatement();
+            rs = stmt.executeQuery("SELECT 1 AS TABLE_CAT WHERE 1 = 0");
+            
+            CachedRowSet crs = new CachedRowSet();
+            crs.populate(rs);
+            return crs;
+        } finally {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException ex) {
+                    logger.error("Failed to close result set. Squishing this exception: ", ex);
+                }
+            }
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException ex) {
+                    logger.error("Failed to close statement. Squishing this exception: ", ex);
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns a result set with the correct column setup for the getSchemas()
+     * method, but with 0 rows. This is in contrast to the Red Brick driver
+     * we're wrapping, which throws an exception for the getSchemas() method.
+     */
+    @Override
+    public ResultSet getSchemas() throws SQLException {
+        Statement stmt = null;
+        ResultSet rs = null;
+        try {
+            stmt = getConnection().createStatement();
+            rs = stmt.executeQuery("SELECT 1 AS TABLE_SCHEM, 1 AS TABLE_CATALOG WHERE 1 = 0");
+            
+            CachedRowSet crs = new CachedRowSet();
+            crs.populate(rs);
+            return crs;
+        } finally {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException ex) {
+                    logger.error("Failed to close result set. Squishing this exception: ", ex);
+                }
+            }
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException ex) {
+                    logger.error("Failed to close statement. Squishing this exception: ", ex);
+                }
+            }
+        }
     }
 }
