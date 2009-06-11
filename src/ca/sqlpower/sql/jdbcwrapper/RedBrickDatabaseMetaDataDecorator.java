@@ -129,4 +129,164 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
             }
         }
     }
+
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getAttributes(String catalog, String schemaPattern,
+            String typeNamePattern, String attributeNamePattern)
+            throws SQLException {
+        return super.getAttributes(null, null, typeNamePattern, attributeNamePattern);
+    }
+
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getBestRowIdentifier(String catalog, String schema,
+            String table, int scope, boolean nullable) throws SQLException {
+        return super.getBestRowIdentifier(null, null, table, scope, nullable);
+    }
+    
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getColumns(String catalog, String schemaPattern,
+            String tableNamePattern, String columnNamePattern)
+            throws SQLException {
+        return super.getColumns(null, null, tableNamePattern, columnNamePattern);
+    }
+    
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getColumnPrivileges(String catalog, String schema,
+            String table, String columnNamePattern) throws SQLException {
+        return super.getColumnPrivileges(null, null, table, columnNamePattern);
+    }
+    
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getCrossReference(String primaryCatalog,
+            String primarySchema, String primaryTable, String foreignCatalog,
+            String foreignSchema, String foreignTable) throws SQLException {
+        return super.getCrossReference(
+                null, null, primaryTable,
+                null, null, foreignTable);
+    }
+    
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getExportedKeys(String catalog, String schema, String table)
+            throws SQLException {
+        return super.getExportedKeys(null, null, table);
+    }
+
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getImportedKeys(String catalog, String schema, String table)
+            throws SQLException {
+        return super.getImportedKeys(null, null, table);
+    }
+
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getIndexInfo(String catalog, String schema, String table,
+            boolean unique, boolean approximate) throws SQLException {
+        return super.getIndexInfo(null, null, table, unique, approximate);
+    }
+    
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getPrimaryKeys(String catalog, String schema, String table)
+            throws SQLException {
+        return super.getPrimaryKeys(null, null, table);
+    }
+
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getProcedureColumns(String catalog, String schemaPattern,
+            String procedureNamePattern, String columnNamePattern)
+            throws SQLException {
+        return super.getProcedureColumns(
+                null, null, procedureNamePattern, columnNamePattern);
+    }
+    
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getProcedures(String catalog, String schemaPattern,
+            String procedureNamePattern) throws SQLException {
+        return super.getProcedures(null, null, procedureNamePattern);
+    }
+
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getSuperTables(String catalog, String schemaPattern,
+            String tableNamePattern) throws SQLException {
+        return super.getSuperTables(null, null, tableNamePattern);
+    }
+    
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getSuperTypes(String catalog, String schemaPattern,
+            String typeNamePattern) throws SQLException {
+        return super.getSuperTypes(null, null, typeNamePattern);
+    }
+    
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getTables(String catalog, String schemaPattern,
+            String tableNamePattern, String[] types) throws SQLException {
+        return super.getTables(null, null, tableNamePattern, types);
+    }
+
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getTablePrivileges(String catalog, String schemaPattern,
+            String tableNamePattern) throws SQLException {
+        return super.getTablePrivileges(null, null, tableNamePattern);
+    }
+    
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getUDTs(String catalog, String schemaPattern,
+            String typeNamePattern, int[] types) throws SQLException {
+        return super.getUDTs(null, null, typeNamePattern, types);
+    }
+    
+    /**
+     * Forces the catalog and schema arguments to null before delegating the call.
+     */
+    @Override
+    public ResultSet getVersionColumns(String catalog, String schema,
+            String table) throws SQLException {
+        return super.getVersionColumns(null, null, table);
+    }
 }
