@@ -93,6 +93,8 @@ public abstract class ConnectionDecorator implements Connection {
             return new MySQLConnectionDecorator(delegate);
         } else if (driverName.equals("HSQL Database Engine Driver")) {
             return new HSQLDBConnectionDecorator(delegate);
+        } else if (driverName.equals("SQLiteJDBC")) {
+            return new SQLiteConnectionDecorator(delegate);
         } else if (driverName.equals("RBW_JDBC_Driver")) {
             return new RedBrickConnectionDecorator(delegate);
 		} else if (driverName.equals("SQL Power Mock JDBC Database Driver")) {
