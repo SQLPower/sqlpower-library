@@ -27,14 +27,12 @@ import java.sql.Statement;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.sql.CachedRowSet;
-import ca.sqlpower.sqlobject.SQLRelationship;
 
 /**
  * Tries to ensure catalogs and schemas are understood not to be supported.
  */
 public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 
-    @SuppressWarnings("unused")
 	private static final Logger logger = Logger
 			.getLogger(RedBrickDatabaseMetaDataDecorator.class);
 
@@ -75,7 +73,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
         ResultSet rs = null;
         try {
             stmt = getConnection().createStatement();
-            rs = stmt.executeQuery("SELECT 1 AS TABLE_CAT WHERE 1 = 0");
+            rs = stmt.executeQuery("SELECT 1 AS TABLE_CAT FROM rbw_tables WHERE 1 = 0");
             
             CachedRowSet crs = new CachedRowSet();
             crs.populate(rs);
@@ -109,7 +107,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
         ResultSet rs = null;
         try {
             stmt = getConnection().createStatement();
-            rs = stmt.executeQuery("SELECT 1 AS TABLE_SCHEM, 1 AS TABLE_CATALOG WHERE 1 = 0");
+            rs = stmt.executeQuery("SELECT 1 AS TABLE_SCHEM, 1 AS TABLE_CATALOG FROM rbw_tables WHERE 1 = 0");
             
             CachedRowSet crs = new CachedRowSet();
             crs.populate(rs);
