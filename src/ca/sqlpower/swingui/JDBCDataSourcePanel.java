@@ -90,6 +90,16 @@ public class JDBCDataSourcePanel implements DataEntryPanel {
 	 * client property. See {@link JComponent#putClientProperty(Object, Object)}.
 	 */
 	private List<JComponent> extraFields = new ArrayList<JComponent>();
+
+    /**
+     * Controls whether or not {@link #applyChanges()} will enforce the policy
+     * of requiring data sources to have unique names within their data source
+     * collection. You almost always want this to be true (which is the
+     * default), but in rare cases such as the "target database properties" in
+     * Power*Architect, which is actually letting you modify a copy of the
+     * original data source, this check needs to be disabled.
+     */
+    private boolean enforcingUniqueName = true;
 	
 	/**
 	 * Remembers the given data source, but does not build the GUI.  That
@@ -262,7 +272,7 @@ public class JDBCDataSourcePanel implements DataEntryPanel {
         }
         
         SPDataSource existingDSWithThisName = dbcs.getParentCollection().getDataSource(dbNameField.getText());
-        if (existingDSWithThisName != null && existingDSWithThisName != dbcs) {
+        if (enforcingUniqueName  && existingDSWithThisName != null && existingDSWithThisName != dbcs) {
             JOptionPane.showMessageDialog(panel, Messages.getString("SPDataSourcePanel.connectionAlreadyExists", dbNameField.getText())); //$NON-NLS-1$
             return false;
         }
@@ -302,4 +312,24 @@ public class JDBCDataSourcePanel implements DataEntryPanel {
 		//TODO: tell the truth
 		return true;
 	}
+	
+    /**
+     * Controls whether or not {@link #applyChanges()} will enforce the policy
+     * of requiring data sources to have unique names within their data source
+     * collection. You almost always want this to be true (which is the
+     * default), but in rare cases such as the "target database properties" in
+     * Power*Architect, which is actually letting you modify a copy of the
+     * original data source, this check needs to be disabled.
+     */
+	public void setEnforcingUniqueName(boolean enforceUniqueName) {
+        this.enforcingUniqueName = enforceUniqueName;
+    }
+
+    /**
+     * Returns the flag indicating whether or not {@link #applyChanges()} will
+     * insist that the data source's new name is unique.
+     */
+	public boolean isEnforcingUniqueName() {
+        return enforcingUniqueName;
+    }
 }
