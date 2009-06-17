@@ -22,45 +22,14 @@ package ca.sqlpower.sqlobject;
  * The SQLObjectRuntimeException is designed to wrap an
  * SQLObjectException in cases where a method which is not allowed to
  * throw checked exceptions must propogate an SQLObjectException.
- *
- * <p>This exception takes on the message and cause of the
- * SQLObjectException that it wraps, so it will rarely be necessary to
- * "unwrap" an SQLObjectException from an SQLObjectRuntimeException.
- * If you do need that (for instance, when re-throwing as a checked
- * exception), use the asSQLObjectException method.
  */
 public class SQLObjectRuntimeException extends RuntimeException {
-	protected SQLObjectException wrapped;
 
 	/**
 	 * Creates an unchecked exception wrapper for the given
 	 * ArchitectException.
 	 */
-	public SQLObjectRuntimeException(SQLObjectException wrapme) {
-		this.wrapped = wrapme;
-	}
-
-	/**
-	 * Returns the cause of the wrapped ArchitectException.  The
-	 * return value will be null if the wrapped exception has no
-	 * cause.
-	 */
-	public Throwable getCause() {
-		return wrapped.getCause();
-	}
-
-	/**
-	 * Returns the message of the wrapped ArchitectException.
-	 */
-	public String getMessage() {
-		return wrapped.getMessage();
-	}
-	
-	/**
-	 * Returns the actual ArchitectException that this exception
-	 * wraps.  It shouldn't normally be nexessary to use this method.
-	 */
-	public SQLObjectException asSQLObjectException() {
-		return wrapped;
+	public SQLObjectRuntimeException(SQLObjectException cause) {
+	    super(cause);
 	}
 }
