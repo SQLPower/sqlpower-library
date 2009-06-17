@@ -19,6 +19,7 @@
 
 package ca.sqlpower.swingui.db;
 
+import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Frame;
@@ -33,6 +34,8 @@ import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
@@ -45,6 +48,8 @@ import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 
 import org.apache.log4j.Logger;
@@ -73,6 +78,9 @@ import com.jgoodies.forms.layout.FormLayout;
 public class DatabaseConnectionManager {
 
 	private static Logger logger = Logger.getLogger(DatabaseConnectionManager.class);
+	
+	public static final Icon DB_ICON = new ImageIcon(DatabaseConnectionManager.class.getClassLoader().getResource("ca/sqlpower/swingui/db/Database16.png"));
+    public static final Icon OLAP_DB_ICON = new ImageIcon(DatabaseConnectionManager.class.getClassLoader().getResource("ca/sqlpower/swingui/db/dataSources-olap.png"));
 
 	/**
 	 * A property key that can be set with a value for any additional actions passed into the
@@ -120,7 +128,14 @@ public class DatabaseConnectionManager {
 
     private final DataSourceDialogFactory dsDialogFactory;
     
-    private final DataSourceTypeDialogFactory dsTypeDialogFactory; 
+    private final DataSourceTypeDialogFactory dsTypeDialogFactory;
+
+    /**
+     * This tracks the icon currently placed in the table of connections to the
+     * left of each database connection. Changing this icon will change the icon
+     * displayed in the table. This defaults to an orange database icon.
+     */
+    private Icon dbIcon = DB_ICON;
     
 	private final Action jdbcDriversAction = new AbstractAction(Messages.getString("DatabaseConnectionManager.jdbcDriversActionName")){ //$NON-NLS-1$
 
@@ -404,6 +419,9 @@ public class DatabaseConnectionManager {
 		}
 	}
 	
+	public void setDbIcon(Icon dbIcon) {
+        this.dbIcon = dbIcon;
+    }
 	
 	private JPanel createPanel(List<Action> additionalActions, List<JComponent> additionalComponents, boolean showCloseButton) {
 
@@ -427,6 +445,7 @@ public class DatabaseConnectionManager {
 		dsTable.setShowGrid(false);
 		dsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		dsTable.addMouseListener(new DSTableMouseListener());
+		dsTable.setDefaultRenderer(SPDataSource.class, new ConnectionTableCellRenderer());
 
 		JScrollPane sp = new JScrollPane(dsTable);
 
@@ -546,6 +565,24 @@ public class DatabaseConnectionManager {
 		public void cleanup() {
 			dsCollection.removeDatabaseListChangeListener(databaseListChangeListener);
 		}
+
+	}
+	
+	private class ConnectionTableCellRenderer implements TableCellRenderer {
+
+        public Component getTableCellRendererComponent(JTable table,
+                Object value, boolean isSelected, boolean hasFocus, int row,
+                int column) {
+            Component comp = new DefaultTableCellRenderer().getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            if (comp instanceof JLabel) {
+                if (value instanceof JDBCDataSource) {
+                    ((JLabel) comp).setIcon(dbIcon);
+                } else if (value instanceof Olap4jDataSource) {
+                    ((JLabel) comp).setIcon(OLAP_DB_ICON);
+                }
+            }
+            return comp;
+        }
 
 	}
 
