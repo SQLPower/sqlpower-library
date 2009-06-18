@@ -141,8 +141,6 @@ public class Query {
 		
 	}
 
-	
-	
 	/**
 	 * Tracks if there are groupings added to this select statement.
 	 * This will affect when columns are added to the group by collections.
@@ -359,7 +357,7 @@ public class Query {
 	 * A copy constructor for the query cache. This will not
 	 * hook up listeners.
 	 */
-	public Query(Query copy) {
+	public Query(Query copy, boolean connectListeners) {
 	    uuid = UUID.randomUUID();
 		selectedColumns = new ArrayList<Item>();
 		fromTableList = new ArrayList<Container>();
@@ -368,28 +366,80 @@ public class Query {
 		
 		dbMapping = copy.getDBMapping();
 		setName(copy.getName());
-		if (copy instanceof Query) {
-			Query query = (Query) copy;
 
-			selectedColumns.addAll(query.getSelectedColumns());
-			fromTableList.addAll(query.getFromTableList());
-			
-			for(Map.Entry<Container, List<SQLJoin>> entry : query.getJoinMapping().entrySet()) {
-			    joinMapping.put(entry.getKey(), new ArrayList<SQLJoin>(entry.getValue()));
-			}
-			
-			orderByList.addAll(query.getOrderByList());
-			globalWhereClause = query.getGlobalWhereClause();
-			groupingEnabled = query.isGroupingEnabled();
-			streaming = query.isStreaming();
-			
-			database = query.getDatabase();
-			constantsContainer = query.getConstantsContainer();
-			userModifiedQuery = query.getUserModifiedQuery();
-			
-		} else {
-			userModifiedQuery = copy.generateQuery();
-			logger.warn("Unknown query type " + copy.getClass() + " to make a cached query of.");
+		Map<Container, Container> oldToNewContainers = new HashMap<Container, Container>();
+		for (Container table : copy.getFromTableList()) {
+		    final Container tableCopy = table.createCopy();
+		    oldToNewContainers.put(table, tableCopy);
+            fromTableList.add(tableCopy);
+		}
+		
+		constantsContainer = copy.getConstantsContainer().createCopy();
+		oldToNewContainers.put(copy.getConstantsContainer(), constantsContainer);
+		
+		for (Item column : copy.getSelectedColumns()) {
+		    Container table = oldToNewContainers.get(column.getParent());
+		    Item item = table.getItem(column.getItem());
+		    selectedColumns.add(item);
+		}
+
+		Set<SQLJoin> joinSet = new HashSet<SQLJoin>();
+		for (Map.Entry<Container, List<SQLJoin>> entry : copy.getJoinMapping().entrySet()) {
+		    joinSet.addAll(entry.getValue());
+		}
+		
+		for (SQLJoin oldJoin : joinSet) {
+		    Container newLeftContainer = oldToNewContainers.get(oldJoin.getLeftColumn().getContainer());
+		    Item newLeftItem = newLeftContainer.getItem(oldJoin.getLeftColumn().getItem());
+		    Container newRightContainer = oldToNewContainers.get(oldJoin.getRightColumn().getContainer());
+		    Item newRightItem = newRightContainer.getItem(oldJoin.getRightColumn().getItem());
+		    SQLJoin newJoin = new SQLJoin(newLeftItem, newRightItem);
+		    newJoin.setComparator(oldJoin.getComparator());
+		    newJoin.setLeftColumnOuterJoin(oldJoin.isLeftColumnOuterJoin());
+		    newJoin.setRightColumnOuterJoin(oldJoin.isRightColumnOuterJoin());
+		    newJoin.setName(oldJoin.getName());
+		    
+		    List<SQLJoin> newJoinList = joinMapping.get(newLeftContainer);
+		    if (newJoinList == null) {
+		        newJoinList = new ArrayList<SQLJoin>();
+		        joinMapping.put(newLeftContainer, newJoinList);
+		    }
+		    newJoinList.add(newJoin);
+		    
+		    newJoinList = joinMapping.get(newRightContainer);
+            if (newJoinList == null) {
+                newJoinList = new ArrayList<SQLJoin>();
+                joinMapping.put(newRightContainer, newJoinList);
+            }
+            newJoinList.add(newJoin);
+		}
+
+		for (Item column : copy.getOrderByList()) {
+		    Container table = oldToNewContainers.get(column.getParent());
+		    Item item = table.getItem(column.getItem());
+		    orderByList.add(item);
+		}
+		globalWhereClause = copy.getGlobalWhereClause();
+		groupingEnabled = copy.isGroupingEnabled();
+		streaming = copy.isStreaming();
+
+		database = copy.getDatabase();
+		userModifiedQuery = copy.getUserModifiedQuery();
+		
+		if (connectListeners) {
+		    for (Container table : fromTableList) {
+		        table.addChildListener(tableChildListener);
+		        for (Item column : table.getItems()) {
+		            column.addPropertyChangeListener(itemListener);
+		        }
+		    }
+		    //XXX does the constants container not need a child listener?
+		    for (Item column : constantsContainer.getItems()) {
+		        column.addPropertyChangeListener(itemListener);
+		    }
+		    for (SQLJoin join : joinSet) {
+		        join.addJoinChangeListener(joinChangeListener);
+		    }
 		}
 	}
 	

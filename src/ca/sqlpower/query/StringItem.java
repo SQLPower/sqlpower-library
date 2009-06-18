@@ -120,4 +120,16 @@ public class StringItem extends AbstractItem {
 		return result;
 	}
 
+    public Item createCopy() {
+        StringItem copy = new StringItem(getName());
+        copy.setAlias(getAlias());
+        copy.setColumnWidth(getColumnWidth());
+        copy.setGroupBy(getGroupBy());
+        copy.setHaving(getHaving());
+        copy.setOrderBy(getOrderBy());
+        copy.setSelected(isSelected());
+        copy.setWhere(getWhere());
+        return copy;
+    }
+
 }

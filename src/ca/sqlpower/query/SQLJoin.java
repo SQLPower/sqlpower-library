@@ -205,5 +205,5 @@ public class SQLJoin {
 	public UUID getUUID() {
 	    return uuid;
 	}
-
+	
 }

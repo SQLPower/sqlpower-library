@@ -178,7 +178,7 @@ public class QueryPen implements MouseState {
 				    	model.startCompoundEdit();
 				    	DatabaseMetaDataDecorator.putHint(DatabaseMetaDataDecorator.CACHE_TYPE, CacheType.EAGER_CACHE);
     					SQLTable table = (SQLTable) draggedSQLObject;
-    					TableContainer model = new TableContainer(QueryPen.this.model, table);
+    					TableContainer model = new TableContainer(QueryPen.this.model.getDatabase(), table);
     
     					ContainerPane pane = new ContainerPane(mouseState, canvas, model);
     					pane.addQueryChangeListener(queryChangeListener);

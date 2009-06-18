@@ -136,9 +136,6 @@ public class ItemContainer implements Container {
 	 */
 	public void setAlias(String alias) {
 		String oldAlias = this.alias;
-		if (alias.equals(oldAlias)) {
-			return;
-		}
 		this.alias = alias;
 		pcs.firePropertyChange(CONTAINTER_ALIAS_CHANGED, oldAlias, alias);
 	}
@@ -188,6 +185,16 @@ public class ItemContainer implements Container {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Container createCopy() {
+        ItemContainer copy = new ItemContainer(getName());
+        copy.setAlias(getAlias());
+        copy.setPosition(new Point2D.Double(getPosition().getX(), getPosition().getY()));
+        for (Item item : getItems()) {
+            copy.addItem(item.createCopy());
+        }
+        return copy;
     }
 
 }

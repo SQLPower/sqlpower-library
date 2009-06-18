@@ -140,5 +140,17 @@ public class SQLObjectItem extends AbstractItem {
 		result = 31 * result + getUUID().hashCode();
 		return result;
 	}
+
+    public Item createCopy() {
+        SQLObjectItem copy = new SQLObjectItem(sqlObject);
+        copy.setAlias(getAlias());
+        copy.setColumnWidth(getColumnWidth());
+        copy.setGroupBy(getGroupBy());
+        copy.setHaving(getHaving());
+        copy.setOrderBy(getOrderBy());
+        copy.setSelected(isSelected());
+        copy.setWhere(getWhere());
+        return copy;
+    }
 	
 }

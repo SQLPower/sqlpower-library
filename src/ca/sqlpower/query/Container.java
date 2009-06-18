@@ -40,6 +40,13 @@ public interface Container {
 	public static final String PROPERTY_TABLE_ADDED = "TABLE_ADDED";
 	public static final String PROPERTY_TABLE_REMOVED = "TABLE_REMOVED";
 	public static final String PROPERTY_WHERE_MODIFIED = "WHERE_MODIFIED";
+
+    /**
+     * Returns a copy of this container. The items in the container will be
+     * copies as well. Listeners will not be added from the current container to
+     * the new container.
+     */
+	Container createCopy();
 	
 	/**
 	 * Gets all of the sections of the contained object.

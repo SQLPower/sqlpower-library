@@ -19,6 +19,7 @@
 
 package ca.sqlpower.query;
 
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -58,14 +59,15 @@ public class TableContainer extends ItemContainer implements Container {
 	 */
 	private final String schema;
 
-	/**
-	 * This is the cache this container is contained in.
-	 */
-	private final Query cache;
+    /**
+     * This is the database the table is stored in so we can load the table or
+     * refresh it as necessary.
+     */
+	private final SQLDatabase database;
 	
-	public TableContainer(Query cache, SQLTable t) {
+	public TableContainer(SQLDatabase db, SQLTable t) {
 	    super(t.getName());
-		this.cache = cache;
+	    database = db;
 		table = t;
 		schema = table.getSchemaName();
 		catalog = table.getCatalogName();
@@ -108,9 +110,9 @@ public class TableContainer extends ItemContainer implements Container {
 	 * to retrieve the table from the database. The items of this container will have it's object
 	 * set when the table is loaded.
 	 */
-	public TableContainer(String uuid, Query cache, String name, String schema, String catalog, List<SQLObjectItem> items) {
+	public TableContainer(String uuid, SQLDatabase db, String name, String schema, String catalog, List<SQLObjectItem> items) {
 		super(name, uuid);
-		this.cache = cache;
+		database = db;
 		if (schema != null) {
 			this.schema = schema;
 		} else {
@@ -186,7 +188,7 @@ public class TableContainer extends ItemContainer implements Container {
 	 */
 	void loadTableByQualifiedName() {
 		if (table == null) {
-			SQLDatabase db = cache.getDatabase();
+			SQLDatabase db = database;
             logger.debug("Cache has database " + db);
 			if (db == null) {
 			    logger.info("Skipping table " + super.getName() + " because its database connection is missing");
@@ -205,6 +207,24 @@ public class TableContainer extends ItemContainer implements Container {
 			
 			loadColumnsFromTable(table);
 		}
+	}
+	
+	@Override
+	public Container createCopy() {
+	    TableContainer copy = new TableContainer(database, table);
+	    for (Item item : itemList) {
+	        Item newItem = copy.getItem(item.getItem());
+	        newItem.setAlias(item.getAlias());
+	        newItem.setColumnWidth(item.getColumnWidth());
+	        newItem.setGroupBy(item.getGroupBy());
+	        newItem.setHaving(item.getHaving());
+	        newItem.setOrderBy(item.getOrderBy());
+	        newItem.setSelected(item.isSelected());
+	        newItem.setWhere(item.getWhere());
+	    }
+	    copy.setAlias(getAlias());
+        copy.setPosition(new Point2D.Double(getPosition().getX(), getPosition().getY()));
+	    return copy;
 	}
 	
 	@Override

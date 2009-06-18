@@ -113,5 +113,11 @@ public interface Item {
     public OrderByArgument getOrderBy();
     
     UUID getUUID();
+
+    /**
+     * Creates a new copy of the item. The listeners from the current item are
+     * not attached to the new item.
+     */
+    public Item createCopy();
 	
 }
