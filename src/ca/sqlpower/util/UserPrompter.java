@@ -96,16 +96,18 @@ public interface UserPrompter {
     	
     	OK_NEW_CANCEL(3),
     	
-    	OK_CANCEL(2);
+    	OK_CANCEL(2),
     	
-    	private final int buttonNum;
+    	OK(1);
     	
-    	private UserPromptOptions(int buttonNum) {
-			this.buttonNum = buttonNum;
+    	private final int buttonCount;
+    	
+    	private UserPromptOptions(int buttonCount) {
+			this.buttonCount = buttonCount;
 		}
     	 	
-    	public int getButtonNum() {
-    		return buttonNum;
+    	public int getButtonCount() {
+    		return buttonCount;
     	}
     	
         	

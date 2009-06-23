@@ -66,7 +66,13 @@ public interface UserPrompterFactory {
     	 * The file prompts can allow the selection of existing files or create
     	 * a new file 
     	 */
-    	FILE(File.class);
+    	FILE(File.class),
+    	
+    	/**
+    	 * Just an informative message that does not solicit any additional
+    	 * information from the user. Supports only the OK option type.
+    	 */
+    	MESSAGE(Void.class);
     	
     	private final Class<? extends Object> clazz;
 

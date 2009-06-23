@@ -105,8 +105,8 @@ public class DataSourceUserPrompter implements UserPrompter {
 
 	public DataSourceUserPrompter(UserPromptOptions optionType, UserPromptResponse defaultResponseType, SPDataSource defaultResponse, JFrame frame, String questionMessage,
 			DataSourceCollection collection, String ...  buttonNames) {
-		if(optionType.getButtonNum() != buttonNames.length) {
-			throw new IllegalStateException("Expecting " + optionType.getButtonNum() + 
+		if(optionType.getButtonCount() != buttonNames.length) {
+			throw new IllegalStateException("Expecting " + optionType.getButtonCount() + 
 					"arguments for the optionType " + optionType + "Recieved only " + buttonNames.length + "arguments\n" +
 					Arrays.toString(buttonNames));
 		}

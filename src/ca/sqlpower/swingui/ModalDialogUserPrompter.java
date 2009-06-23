@@ -98,8 +98,8 @@ public class ModalDialogUserPrompter implements UserPrompter {
      */
     public ModalDialogUserPrompter(UserPromptOptions optionType, UserPromptResponse defaultResponseType,
             JFrame owner, String questionMessage, String ... buttonNames) {
-    	if(optionType.getButtonNum() != buttonNames.length) {
-			throw new IllegalStateException("Expecting " + optionType.getButtonNum() + 
+    	if(optionType.getButtonCount() != buttonNames.length) {
+			throw new IllegalStateException("Expecting " + optionType.getButtonCount() + 
 					" arguments for the optionType " + optionType + "Recieved only " + buttonNames.length + "arguments\n" +
 					Arrays.toString(buttonNames));
 		}
@@ -108,7 +108,9 @@ public class ModalDialogUserPrompter implements UserPrompter {
         applyToAll = new JCheckBox(Messages.getString("ModalDialogUserPrompter.applyToAllOption")); //$NON-NLS-1$
         
         confirmDialog = new JDialog(owner);
-        confirmDialog.setTitle(Messages.getString("ModalDialogUserPrompter.promptDialogTitle")); //$NON-NLS-1$
+        
+        // FIXME the title needs to be configurable and/or set itself based on prompt type
+        confirmDialog.setTitle(""); //$NON-NLS-1$
         
         // this is just filled with the message pattern template to help with sizing
         questionField = new JTextArea(questionMessage);
@@ -134,7 +136,8 @@ public class ModalDialogUserPrompter implements UserPrompter {
         buttonBar.addGlue();
         JButton okButton = new JButton();
         if(optionType == UserPromptOptions.OK_NEW_NOTOK_CANCEL || optionType == UserPromptOptions.OK_NOTOK_CANCEL
-        		|| optionType == UserPromptOptions.OK_NEW_CANCEL || optionType == UserPromptOptions.OK_CANCEL) {
+        		|| optionType == UserPromptOptions.OK_NEW_CANCEL || optionType == UserPromptOptions.OK_CANCEL
+        		|| optionType == UserPromptOptions.OK) {
         	okButton.setText(buttonNames[0]);
         	buttonBar.addGridded(okButton);
         }
