@@ -125,4 +125,31 @@ public class MySQLDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 				stmt.close();
 		} 
 	}
+
+    /**
+     * Augments the primary key info with made-up PK names based on the name of
+     * the table they belong to. In InnoDB, all primary keys are called PRIMARY.
+     */
+	@Override
+	public ResultSet getPrimaryKeys(String catalog, String schema, String table)
+	        throws SQLException {
+	    CachedRowSet crs = new CachedRowSet();
+	    ResultSet origRS = null;
+	    try {
+	        origRS = super.getPrimaryKeys(catalog, schema, table);
+	        crs.populate(origRS);
+	    } finally {
+	        origRS.close();
+	    }
+	    
+	    while (crs.next()) {
+	        String tableName = crs.getString(3);
+	        if ("PRIMARY".equals(crs.getString(6))) {
+	            crs.updateString(6, tableName + "_PK");
+	        }
+	    }
+	    
+	    crs.beforeFirst();
+	    return crs;
+	}
 }
