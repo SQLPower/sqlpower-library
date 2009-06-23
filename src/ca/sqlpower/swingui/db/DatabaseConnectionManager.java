@@ -448,6 +448,7 @@ public class DatabaseConnectionManager {
 		dsTable.setDefaultRenderer(SPDataSource.class, new ConnectionTableCellRenderer());
 
 		JScrollPane sp = new JScrollPane(dsTable);
+		sp.getViewport().setBackground(dsTable.getBackground());
 
 		pb.add(sp, cc.xy(2, 4));
 
