@@ -65,8 +65,17 @@ public class MySQLDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	}
 
 	/**
-	 * This will augment the index type as a string to the ResultSet obtained
-	 * from the database.
+	 * This wrapper has a several functions:
+	 * <ul>
+	 *  <li>augments the result set with an SPG_INDEX_TYPE column which contains
+	 *      the native index type as a string
+     *  <li>ensures the type of column 4 (NON_UNIQUE) is <code>boolean</code> (the MySQL
+     *      driver was complaining when we called getBoolean(4))
+     *  <li>ensures the type of column 7 (TYPE) is <code>short</code> (the MySQL
+     *      driver was complaining when we called getShort(7))
+	 *  <li>Name-mangles the primary key index name in the same way as our wrapper for
+	 *      {@link #getPrimaryKeys(String, String, String)}
+	 * </ul>
 	 */
 	@Override
 	public ResultSet getIndexInfo(String catalog, String schema, String table,
@@ -84,6 +93,12 @@ public class MySQLDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 				crs.updateBoolean(4, false);
 			}
 			crs.updateShort(7, Short.valueOf(crs.getString(7)));
+			
+			if ("PRIMARY".equals(crs.getString(6))) {
+			    String tableName = crs.getString(3);
+			    crs.updateString(6, pkNameForTable(tableName));
+			}
+			
 			crs.updateString("SPG_INDEX_TYPE", indexTypes.get(crs.getString(6)));
 
 			logger.debug("Name: " + crs.getString(6));
@@ -145,11 +160,15 @@ public class MySQLDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	    while (crs.next()) {
 	        String tableName = crs.getString(3);
 	        if ("PRIMARY".equals(crs.getString(6))) {
-	            crs.updateString(6, tableName + "_PK");
+	            crs.updateString(6, pkNameForTable(tableName));
 	        }
 	    }
 	    
 	    crs.beforeFirst();
 	    return crs;
+	}
+	
+	private String pkNameForTable(String tableName) {
+	    return tableName + "_PK";
 	}
 }
