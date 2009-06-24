@@ -384,18 +384,14 @@ public class SQLObjectUtils {
      */
     public static List<SQLColumn> findColumnsSourcedFromDatabase(SQLDatabase target, SQLDatabase source) throws SQLObjectException {
     	if (logger.isDebugEnabled()) logger.debug("Searching for dependencies on "+source+" in "+target);
-    	List matches = new ArrayList();
-    	Iterator it = target.getChildren().iterator();
+    	List<SQLColumn> matches = new ArrayList<SQLColumn>();
+    	Iterator<?> it = target.getChildren().iterator();
     	while (it.hasNext()) {
     		SQLObject so = (SQLObject) it.next();
     		if (logger.isDebugEnabled()) logger.debug("-->Next target item is "+so.getClass().getName()+": "+so+" ("+so.getChildCount()+" children)");
     		if (so instanceof SQLTable) {
     			SQLTable t = (SQLTable) so;
-    			Iterator cit = t.getColumns().iterator();
-    			while (cit.hasNext()) {
-    				Object next = cit.next();
-    				if (logger.isDebugEnabled()) logger.debug("---->Next item in columns list is a "+next.getClass().getName());
-    				SQLColumn col = (SQLColumn) next;
+    			for (SQLColumn col : t.getColumns()) {
     				if (col.getSourceColumn() != null && source.equals(col.getSourceColumn().getParentTable().getParentDatabase())) {
     					matches.add(col);
     				}
