@@ -36,6 +36,7 @@ import java.io.File;
 import java.text.MessageFormat;
 
 import ca.sqlpower.sql.JDBCDataSource;
+import ca.sqlpower.sql.Olap4jDataSource;
 import ca.sqlpower.util.UserPrompter.UserPromptOptions;
 import ca.sqlpower.util.UserPrompter.UserPromptResponse;
 
@@ -60,6 +61,14 @@ public interface UserPrompterFactory {
     	 * a new DB, or not load the DB if it is not loaded in the app's context.
     	 */
     	JDBC_DATA_SOURCE(JDBCDataSource.class),
+    	
+		/**
+		 * OLAP datasource prompt types can have OK, NEW, NOT_OK, and CANCEL
+		 * options. The OLAP datasource prompt allows users to choose an
+		 * existing OLAP datasource, create a new datasource, or not load the
+		 * datasource if it is not loaded in the app's context.
+		 */
+    	OLAP_DATA_SOURCE(Olap4jDataSource.class),
     	
     	/**
     	 * File prompt types can have OK, NEW, NOT_OK, and CANCEL options.
