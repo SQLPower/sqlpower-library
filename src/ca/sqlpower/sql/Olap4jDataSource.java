@@ -118,6 +118,10 @@ public class Olap4jDataSource extends SPDataSource {
             // The only reason such an exception should happen is if
             // the user selected an in-process connection and the field
             // for XMLA server is blank. We can safely ignore.
+        } catch (IllegalArgumentException e) {
+            // The only reason such an exception should happen is if
+            // the user selected an in-process connection and the field
+            // for XMLA server is blank. We can safely ignore.
         }
     }
 
