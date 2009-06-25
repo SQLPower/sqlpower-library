@@ -57,6 +57,27 @@ public class TableUtils {
      * to have.  Nonpositive values mean "no maximum."
      */
     public static void fitColumnWidth(JTable table, int colIndex, int maxWidth, int padding) {
+        fitColumnWidths(table, -1, maxWidth, padding);
+    }
+
+    /**
+     * Sets the given column of the given table to be exactly as wide as it
+     * needs to be to fit its current contents, but not exceeding a specified
+     * maximum. The contents of each body cell in this column, as well as the
+     * header component is taken into account.
+     * 
+     * @param table
+     *            The table whose column to resize
+     * @param colIndex
+     *            The index of the column to resize
+     * @param minWidth
+     *            The minimum width, in pixels, that the column takes.
+     *            Non-positive values means no minimum.
+     * @param maxWidth
+     *            The maximum width, in pixels, that the column is allowed to
+     *            have. Nonpositive values mean "no maximum."
+     */
+    public static void fitColumnWidth(JTable table, int colIndex, int minWidth, int maxWidth, int padding) {
         TableColumn column = null;
         Component comp = null;
         int cellWidth = 0;
@@ -83,6 +104,9 @@ public class TableUtils {
                 break;
             }
         }
+        if (minWidth >= 0 && cellWidth < minWidth) {
+            cellWidth = minWidth;
+        }
         column.setPreferredWidth(cellWidth + padding);
     }
 
@@ -99,9 +123,31 @@ public class TableUtils {
      * width will be the maximum width of any value in the column, plus this padding amount)
      */
     public static void fitColumnWidths(JTable table, int maxColumnWidth, int padding) {
+        fitColumnWidths(table, -1, maxColumnWidth, padding);
+    }
+
+    /**
+     * Makes each column of the given table exactly the right size it needs but
+     * not greater than the maxColumnWidth provided and no less than the
+     * minColumnWidth provided. To have no restraints on the maximum or minimum
+     * column size, pass in a negative number for maxColumnWidth or
+     * minColumnWidth respectively. Note that this method turns the table auto
+     * resize off.
+     * 
+     * @param table
+     *            the table that will have its columns adjust to appropiate size
+     * @param maxColumnWidth
+     *            specifies the maximum width of the column, if no maximum size
+     *            are needed to be specified, pass in a negative number
+     * @param padding
+     *            the number of pixels of extra space to leave (the actual
+     *            column width will be the maximum width of any value in the
+     *            column, plus this padding amount)
+     */
+    public static void fitColumnWidths(JTable table, int minColumnWidth, int maxColumnWidth, int padding) {
         table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         for (int colIndex = 0; colIndex < table.getColumnCount(); colIndex++) {
-            fitColumnWidth(table, colIndex, maxColumnWidth, padding);
+            fitColumnWidth(table, colIndex, minColumnWidth, maxColumnWidth, padding);
         }
     }
     
