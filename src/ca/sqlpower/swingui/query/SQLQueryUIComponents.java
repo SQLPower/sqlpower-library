@@ -182,7 +182,8 @@ public class SQLQueryUIComponents {
     private class DatabaseItemListener implements ItemListener {
         
         public void itemStateChanged(ItemEvent e) {
-            if (e.getStateChange() != ItemEvent.SELECTED) {
+        	if (e.getStateChange() != ItemEvent.SELECTED) {
+        		updateStatus();
                 return;
             }
             JDBCDataSource ds = (JDBCDataSource)e.getItem();
@@ -350,8 +351,7 @@ public class SQLQueryUIComponents {
                 rowLimitSpinner.setValue(rowLimitSpinner.getValue());
             }
             
-            executeButton.setEnabled(false);
-            stopButton.setEnabled(true);
+            updateStatus();
             
             setJobSize(null);
             setProgress(0);
@@ -394,8 +394,7 @@ public class SQLQueryUIComponents {
         		}  
         	} finally {
         		logTextArea.append("\n");
-        		executeButton.setEnabled(true);
-        		stopButton.setEnabled(false);
+        		updateStatus();
         	}
         }
 
@@ -1150,13 +1149,7 @@ public class SQLQueryUIComponents {
         
         autoCommitToggleButton.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {
-                if (autoCommitToggleButton.isSelected()) {
-                    commitButton.setEnabled(false);
-                    rollbackButton.setEnabled(false);
-                } else {
-                    commitButton.setEnabled(true);
-                    rollbackButton.setEnabled(true);
-                }
+                updateStatus();
             }
         });
         
@@ -1271,11 +1264,39 @@ public class SQLQueryUIComponents {
         getPrevQueryButton().setEnabled(false);
         getNextQueryButton().setEnabled(false);
         
-         dbcsManagerButton.setText(Messages.getString("SQLQuery.manageConnections"));
-         
-         undoButton= new JButton (undoSQLStatementAction);
-         redoButton= new JButton (redoSQLStatementAction);
-         new DropTarget(queryArea, new QueryTextAreaDropListener(queryArea));
+        dbcsManagerButton.setText(Messages.getString("SQLQuery.manageConnections"));
+
+        undoButton= new JButton (undoSQLStatementAction);
+        redoButton= new JButton (redoSQLStatementAction);
+        new DropTarget(queryArea, new QueryTextAreaDropListener(queryArea));
+        
+        updateStatus();
+    }
+
+    /**
+     * Modifies the enabled/disabled state for the execute action as well as the
+     * rollback, commit, and stop buttons. The correct state for these buttons
+     * is determined by examining the state of the various components this class
+     * ties together.
+     */
+    private void updateStatus() {
+    	boolean dbSelected = databaseComboBox.getSelectedItem() != null;
+    	ConnectionAndStatementBean selectedConnection;
+    	if (dbSelected) {
+    	    JDBCDataSource selectedDS = (JDBCDataSource) databaseComboBox.getSelectedItem();
+            selectedConnection =
+    	        conMap.get(databaseMapping.getDatabase(selectedDS));
+    	} else {
+    	    selectedConnection = null;
+    	}
+        boolean executingQuery = dbSelected 
+			&& selectedConnection != null
+			&& selectedConnection.getCurrentStmt() != null;
+    	executeAction.setEnabled(!executingQuery && (stmtExecutor != null || dbSelected));
+    	boolean autoCommit = autoCommitToggleButton.isSelected();
+    	rollbackButton.setEnabled(!autoCommit && dbSelected);
+    	commitButton.setEnabled(!autoCommit && dbSelected);
+    	stopButton.setEnabled(executingQuery);
     }
     
     /**
@@ -1289,7 +1310,12 @@ public class SQLQueryUIComponents {
      */
     public synchronized void executeQuery(String sql) {
     	if (stmtExecutor == null) {
-    		executeQuery(new DefaultStatementExecutor(databaseMapping.getDatabase((JDBCDataSource) databaseComboBox.getSelectedItem()), sql, ((Integer) rowLimitSpinner.getValue()).intValue()));
+    		if (databaseComboBox.getSelectedItem() != null) {
+    			executeQuery(new DefaultStatementExecutor(
+    			        databaseMapping.getDatabase((JDBCDataSource) databaseComboBox.getSelectedItem()),
+    			        sql,
+    			        ((Integer) rowLimitSpinner.getValue()).intValue()));
+    		}
     	} else {
     		executeQuery(stmtExecutor);
     	}
@@ -1572,8 +1598,7 @@ public class SQLQueryUIComponents {
         } catch (SQLException ex) {
             SPSUtils.showExceptionDialogNoReport(dialogOwner, Messages.getString("SQLQuery.failedConnectingToDB"), ex);
         }
-        stopButton.setEnabled(conMap.get(db).getCurrentStmt() != null);
-        executeButton.setEnabled(conMap.get(db).getCurrentStmt() == null);
+        updateStatus();
         logTextArea.append("\n" + JDBCDataSource.getConnectionInfoString(db.getDataSource(), false) + "\n\n");
 	}
     
