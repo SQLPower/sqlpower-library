@@ -19,6 +19,7 @@
 
 package ca.sqlpower.sql;
 
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -36,7 +37,11 @@ import ca.sqlpower.sql.SPDataSource;
  */
 public class Olap4jDataSource extends SPDataSource {
     
-    private static final String JDBC_DATA_SOURCE_NAME = "jdbcDataSourceName";
+    public final static String XMLA_DRIVER_CLASS_NAME = "org.olap4j.driver.xmla.XmlaOlap4jDriver";
+    
+    public final static String IN_PROCESS_DRIVER_CLASS_NAME = "mondrian.olap4j.MondrianOlap4jDriver";
+	
+	private static final String JDBC_DATA_SOURCE_NAME = "jdbcDataSourceName";
     
     private static final String MONDRIAN_SCHEMA = "mondrianSchema";
     
@@ -107,7 +112,11 @@ public class Olap4jDataSource extends SPDataSource {
         }
     }
     public void setXmlaServer(URI xmlaServer) {
-        put(XMLA_SERVER, xmlaServer.getPath());
+        try {
+            put(XMLA_SERVER, xmlaServer.toURL().toExternalForm());
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("This should not happen as it should be the same URI path passed in earlier.", e);
+        }
     }
 
     public Type getType() {
