@@ -97,6 +97,8 @@ public abstract class ConnectionDecorator implements Connection {
             return new SQLiteConnectionDecorator(delegate);
         } else if (driverName.equals("RBW_JDBC_Driver")) {
             return new RedBrickConnectionDecorator(delegate);
+        } else if (driverName.equals("jConnect (TM) for JDBC (TM)")) {
+            return new SybaseConnectionDecorator(delegate);
 		} else if (driverName.equals("SQL Power Mock JDBC Database Driver")) {
 			// we don't want to decorate these at all
 			return delegate;
