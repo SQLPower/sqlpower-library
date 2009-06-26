@@ -75,7 +75,11 @@ public class Olap4jDataSource extends SPDataSource {
      */
     public Olap4jDataSource(DataSourceCollection<SPDataSource> dsCollection, URI xmlaServer) {
         super(dsCollection);
-        setXmlaServer(xmlaServer);
+        try {
+            setXmlaServer(xmlaServer.toURL().toExternalForm());
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("This exception should never happen because we convert from a URI to a URL.",e);
+        }
         setType(Type.XMLA);
     }
     
@@ -111,18 +115,8 @@ public class Olap4jDataSource extends SPDataSource {
             throw new RuntimeException("This should not happen as it should be the same URI path passed in earlier.", e);
         }
     }
-    public void setXmlaServer(URI xmlaServer) {
-        try {
-            put(XMLA_SERVER, xmlaServer.toURL().toExternalForm());
-        } catch (MalformedURLException e) {
-            // The only reason such an exception should happen is if
-            // the user selected an in-process connection and the field
-            // for XMLA server is blank. We can safely ignore.
-        } catch (IllegalArgumentException e) {
-            // The only reason such an exception should happen is if
-            // the user selected an in-process connection and the field
-            // for XMLA server is blank. We can safely ignore.
-        }
+    public void setXmlaServer(String URL) {
+        put(XMLA_SERVER, URL);
     }
 
     public Type getType() {

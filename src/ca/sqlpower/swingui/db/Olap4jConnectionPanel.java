@@ -22,8 +22,10 @@ package ca.sqlpower.swingui.db;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.InvalidParameterException;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -135,21 +137,27 @@ public class Olap4jConnectionPanel implements DataEntryPanel {
         
         if (inProcessType.isSelected()) {
             olapDataSource.setType(Type.IN_PROCESS);
+            olapDataSource.setDataSource((JDBCDataSource) dataSourceBox.getSelectedItem());
+            olapDataSource.setMondrianSchema(new File(schemaFileField.getText()).toURI());
         } else if (xmlaType.isSelected()) {
             olapDataSource.setType(Type.XMLA);
+            try {
+                // We validate through both URI and URL.
+                olapDataSource.setXmlaServer(new URI(xmlaUriField.getText()).toURL().toExternalForm());
+            } catch (MalformedURLException e) {
+                JOptionPane.showMessageDialog(panel, "XML/A Server URI is not valid.");
+                return false;
+            } catch (URISyntaxException e) {
+                JOptionPane.showMessageDialog(panel, "XML/A Server URI is not valid.");
+                return false;
+            } catch (IllegalArgumentException e) {
+                JOptionPane.showMessageDialog(panel, "XML/A Server URI is not valid.");
+                return false;
+            }
         } else {
             throw new IllegalStateException(
                     "Someone added a new connection type but forgot to" +
                     " put in the code for storing it");
-        }
-        
-        olapDataSource.setDataSource((JDBCDataSource) dataSourceBox.getSelectedItem());
-        olapDataSource.setMondrianSchema(new File(schemaFileField.getText()).toURI());
-        try {
-            olapDataSource.setXmlaServer(new URI(xmlaUriField.getText()));
-        } catch (URISyntaxException e) {
-            JOptionPane.showMessageDialog(panel, "XML/A Server URI is not valid.");
-            return false;
         }
         
         return true;
