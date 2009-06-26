@@ -125,7 +125,13 @@ public class StubDataSourceCollection<T extends SPDataSource> implements DataSou
     }
 
     public <C extends T> List<C> getConnections(Class<C> classType) {
-        return null;
+        List<C> matchingDataSources = new ArrayList<C>();
+        for (T ds : dataSources) {
+            if (classType.isInstance(ds)) {
+                matchingDataSources.add(classType.cast(ds));
+            }
+        }
+        return matchingDataSources;
     }
 
     public T getDataSource(String name) {
