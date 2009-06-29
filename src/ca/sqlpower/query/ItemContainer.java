@@ -55,7 +55,7 @@ public class ItemContainer implements Container {
 	
 	private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
 	
-	private final UUID uuid;
+	private final String uuid;
 	
 	private final List<ContainerChildListener> childListeners = new ArrayList<ContainerChildListener>();
 	
@@ -70,9 +70,9 @@ public class ItemContainer implements Container {
 	 */
 	public ItemContainer(String name, String uuid) {
 		if (uuid == null) {
-		    this.uuid = UUID.randomUUID();
+		    this.uuid = "w" + UUID.randomUUID();
 		} else {
-		    this.uuid = UUID.fromString(uuid);
+		    this.uuid = uuid;
 		}
 		this.name = name;
 		itemList = new ArrayList<Item>();
@@ -175,7 +175,7 @@ public class ItemContainer implements Container {
         pcs.addPropertyChangeListener(l);
     }
 
-    public UUID getUUID() {
+    public String getUUID() {
         return uuid;
     }
 

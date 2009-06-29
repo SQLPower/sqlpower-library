@@ -38,7 +38,7 @@ public abstract class AbstractItem implements Item {
 	 */
 	private Integer columnWidth;
 	
-	private final UUID uuid;
+	private final String uuid;
 	
 	private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
 	
@@ -56,14 +56,14 @@ public abstract class AbstractItem implements Item {
     private OrderByArgument orderBy = OrderByArgument.NONE;
 	
 	public AbstractItem() {
-	    uuid = UUID.randomUUID();
+	    uuid = "w" + UUID.randomUUID();
 	}
 	
 	public AbstractItem(String uuid) {
 	    if (uuid == null) {
-	        this.uuid = UUID.randomUUID();
+	        this.uuid = "w" + UUID.randomUUID();
 	    } else {
-	        this.uuid = UUID.fromString(uuid);
+	        this.uuid = uuid;
 	    }
 	}
 	
@@ -122,7 +122,7 @@ public abstract class AbstractItem implements Item {
         this.name = name;
     }
     
-    public UUID getUUID() {
+    public String getUUID() {
         return uuid;
     }
     

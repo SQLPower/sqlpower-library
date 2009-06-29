@@ -22,7 +22,6 @@ package ca.sqlpower.query;
 import java.awt.geom.Point2D;
 import java.beans.PropertyChangeListener;
 import java.util.List;
-import java.util.UUID;
 
 
 /**
@@ -100,6 +99,6 @@ public interface Container {
      */
     void setName(String name);
     
-    UUID getUUID();
+    String getUUID();
 
 }

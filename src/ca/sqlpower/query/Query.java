@@ -285,7 +285,7 @@ public class Query {
 	
 	private SQLDatabaseMapping dbMapping;
 	
-	private final UUID uuid;
+	private final String uuid;
 	
 	private String name;
 	
@@ -331,9 +331,9 @@ public class Query {
 	 */
 	public Query(String uuid, SQLDatabaseMapping dbMapping) {
 		if (uuid == null) {
-		    this.uuid = UUID.randomUUID();
+		    this.uuid = "w" + UUID.randomUUID().toString();
 		} else {
-		    this.uuid = UUID.fromString(uuid);
+		    this.uuid = uuid;
 		}
         this.dbMapping = dbMapping;
 		orderByList = new ArrayList<Item>();
@@ -358,7 +358,7 @@ public class Query {
 	 * hook up listeners.
 	 */
 	public Query(Query copy, boolean connectListeners) {
-	    uuid = UUID.randomUUID();
+	    uuid = "w" + UUID.randomUUID().toString();
 		selectedColumns = new ArrayList<Item>();
 		fromTableList = new ArrayList<Container>();
 		joinMapping = new HashMap<Container, List<SQLJoin>>();
@@ -1006,7 +1006,7 @@ public class Query {
 		database = db;
 	}
 
-    public UUID getUUID() {
+    public String getUUID() {
         return uuid;
     }
     

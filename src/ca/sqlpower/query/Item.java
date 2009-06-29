@@ -20,7 +20,6 @@
 package ca.sqlpower.query;
 
 import java.beans.PropertyChangeListener;
-import java.util.UUID;
 
 import ca.sqlpower.query.Query.OrderByArgument;
 
@@ -112,7 +111,7 @@ public interface Item {
 
     public OrderByArgument getOrderBy();
     
-    UUID getUUID();
+    String getUUID();
 
     /**
      * Creates a new copy of the item. The listeners from the current item are
