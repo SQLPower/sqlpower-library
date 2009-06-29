@@ -21,6 +21,8 @@ package ca.sqlpower.query;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,8 +38,10 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.graph.DepthFirstSearch;
 import ca.sqlpower.graph.GraphModel;
 import ca.sqlpower.sql.JDBCDataSource;
+import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLDatabaseMapping;
+import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLTable;
 
 /**
@@ -490,6 +494,32 @@ public class Query {
 		if (userModifiedQuery != null) {
 			return userModifiedQuery;
 		}
+		
+		String quoteString = "";
+		Connection con = null;
+		try {
+            con = database.getConnection();
+            quoteString = con.getMetaData().getIdentifierQuoteString();
+        } catch (SQLObjectException e) {
+            // Don't throw an exception for cases where we can't connect to the
+            // database but the user still wants to view or save the query. If
+            // this throws an exception going, to the SQL text tab will
+            // cause an exception.
+        } catch (SQLException e) {
+            // Don't throw an exception for cases where we can't connect to the
+            // database but the user still wants to view or save the query. If
+            // this throws an exception going, to the SQL text tab will
+            // cause an exception.
+        } finally {
+            if (con != null) {
+                try {
+                    con.close();
+                } catch (SQLException e) {
+                    logger.error(e);
+                }
+            }
+        }
+		
 		if (selectedColumns.size() ==  0) {
 			return "";
 		}
@@ -512,18 +542,18 @@ public class Query {
 			}
 			String alias = col.getContainer().getAlias();
 			if (alias != null && alias.length() > 0) {
-				query.append(alias + ".");
+				query.append(quoteString + alias + quoteString + ".");
 			} else if (fromTableList.contains(col.getContainer())) {
-				query.append(col.getContainer().getName() + ".");
+				query.append(quoteString + col.getContainer().getName() + quoteString + ".");
 			}
-			if(!(col instanceof StringCountItem)) {
-				query.append(converter.getName(col));			
+			if (!(col instanceof StringCountItem)) {
+				query.append(getColumnName(col, quoteString, converter));
 			}
 			if (groupingEnabled && !col.getGroupBy().equals(SQLGroupFunction.GROUP_BY) && !(col instanceof StringCountItem)) {
 				query.append(")");
 			}
 			if (col.getAlias() != null && col.getAlias().trim().length() > 0) {
-				query.append(" AS " + col.getAlias());
+				query.append(" AS " + quoteString + col.getAlias() + quoteString);
 			}
 		}
 		if (!fromTableList.isEmpty()) {
@@ -537,7 +567,7 @@ public class Query {
 		for (Container table : dfs.getFinishOrder()) {
 			String qualifiedName;
 			if (table.getContainedObject() instanceof SQLTable) {
-				qualifiedName = ((SQLTable)table.getContainedObject()).toQualifiedName();
+				qualifiedName = ((SQLTable)table.getContainedObject()).toQualifiedName(quoteString);
 			} else {
 				qualifiedName = table.getName();
 			}
@@ -545,6 +575,7 @@ public class Query {
 			if (alias == null || alias.length() <= 0) {
 				alias = table.getName();
 			}
+			alias = quoteString + alias + quoteString;
 			if (isFirstFrom) {
 				query.append(" " + qualifiedName + " " + alias);
 				isFirstFrom = false;
@@ -597,9 +628,9 @@ public class Query {
 								if (rightAlias == null || rightAlias.length() <= 0) {
 									rightAlias = join.getRightColumn().getContainer().getName();
 								}
-								query.append(leftAlias + "." + join.getLeftColumn().getName() + 
+								query.append(quoteString + leftAlias + quoteString + "." + getColumnName(join.getLeftColumn(), quoteString, converter) + 
 										" " + join.getComparator() + " " + 
-										rightAlias + "." + join.getRightColumn().getName());
+										quoteString + rightAlias + quoteString + "." + getColumnName(join.getRightColumn(), quoteString, converter));
 							}
 						}
 					}
@@ -635,11 +666,11 @@ public class Query {
 				}
 				String alias = entry.getKey().getContainer().getAlias();
 				if (alias != null && alias.length() > 0) {
-					query.append(alias + ".");
+					query.append(quoteString + alias + quoteString + ".");
 				} else if (fromTableList.contains(entry.getKey().getContainer())) {
-					query.append(entry.getKey().getContainer().getName() + ".");
+					query.append(quoteString + entry.getKey().getContainer().getName() + quoteString + ".");
 				}
-				query.append(entry.getKey().getName() + " " + entry.getValue());
+				query.append(getColumnName(entry.getKey(), quoteString, converter) + " " + entry.getValue());
 			}
 		}
 		if ((globalWhereClause != null && globalWhereClause.length() > 0)) {
@@ -662,11 +693,11 @@ public class Query {
 		            }
 		            String alias = col.getContainer().getAlias();
 		            if (alias != null && alias.length() > 0) {
-		                query.append(alias + ".");
+		                query.append(quoteString + alias + quoteString + ".");
 		            } else if (fromTableList.contains(col.getContainer())) {
-		                query.append(col.getContainer().getName() + ".");
+		                query.append(quoteString + col.getContainer().getName() + quoteString + ".");
 		            }
-		            query.append(col.getName());
+		            query.append(getColumnName(col, quoteString, converter));
 		        }
 		    }
 		    query.append(" ");
@@ -684,11 +715,11 @@ public class Query {
 		            }
 		            String alias = column.getContainer().getAlias();
 		            if (alias != null && alias.length() > 0) {
-		                query.append(alias + ".");
+		                query.append(quoteString + alias + quoteString + ".");
 		            } else if (fromTableList.contains(column.getContainer())) {
-		                query.append(column.getContainer().getName() + ".");
+		                query.append(quoteString + column.getContainer().getName() + quoteString + ".");
 		            }
-		            query.append(column.getName());
+		            query.append(getColumnName(column, quoteString, converter));
 		            if (column.getGroupBy() != null) {
 		                query.append(")");
 		            }
@@ -716,11 +747,11 @@ public class Query {
 				}
 				String alias = col.getContainer().getAlias();
 				if (alias != null && alias.length() > 0) {
-					query.append(alias + ".");
+					query.append(quoteString + alias + quoteString + ".");
 				} else if (fromTableList.contains(col.getContainer())) {
-					query.append(col.getContainer().getName() + ".");
+					query.append(quoteString + col.getContainer().getName() + quoteString + ".");
 				}
-				query.append(col.getName());
+				query.append(getColumnName(col, quoteString, converter));
 				if (groupingEnabled && !col.getGroupBy().equals(SQLGroupFunction.GROUP_BY)) {
 					query.append(")");
 				}
@@ -732,6 +763,31 @@ public class Query {
 		}
 		logger.debug(" Query is : " + query.toString());
 		return query.toString();
+	}
+
+    /**
+     * This is a helper method for {@link #generateQuery()} to properly return a
+     * column name. For items that represent {@link SQLColumn}s the name of the
+     * column needs to be quoted and will use the given quote string.
+     * Additionally, some columns that represent constants need to be converted
+     * to a different constant based on the database being queried. (For example
+     * current_time changes to current_timestamp in SQL Server.)
+     * 
+     * @param item
+     *            The item that represents a column in the query. The name of
+     *            the item will be returned and may be possibly modified.
+     * @param quote
+     *            The quote string to place before and after an item's name if
+     *            it needs to be quoted.
+     * @param converter
+     *            The database specific converter that will change some constant
+     *            names to a valid constant in the database.
+     */
+	private String getColumnName(Item item, String quote, ConstantConverter converter) {
+	    if (item instanceof StringCountItem) return item.getName();
+	    if (item instanceof StringItem) return converter.getName(item);
+	    if (item instanceof SQLObjectItem) return quote + item.getName() + quote;
+	    throw new IllegalArgumentException("Unknown item type " + item.getClass() + " when trying to define a name for the item " + item.getName());
 	}
 
 	public List<Item> getSelectedColumns() {

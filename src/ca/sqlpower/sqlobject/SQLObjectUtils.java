@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.sql.SQL;
 import ca.sqlpower.sqlobject.undo.CompoundEventListener;
 
 public class SQLObjectUtils {
@@ -131,6 +132,28 @@ public class SQLObjectUtils {
      *            object names up to the root of the SQLObject tree.
      */
     public static String toQualifiedName(SQLObject obj, Class<? extends SQLObject> stopAt) {
+        return toQualifiedName(obj, stopAt, "");
+    }
+
+    /**
+     * Creates a dot-separated quoted string of the name of the given SQLObject
+     * and the names of each of its ancestors, stopping at the first ancestor of
+     * the given type. The top-level ancestor's name will be the first name to
+     * appear in the string, and the given object's name will be the last.
+     * 
+     * @param obj
+     *            The object whose qualified name you wish to obtain
+     * @param stopAt
+     *            The class of ancestor to stop at. The name of this ancestor
+     *            will not be included in the returned string. If stopAt is
+     *            null, or a class which is not an ancestor of the given
+     *            SQLObject, the returned string will contain all ancestor
+     *            object names up to the root of the SQLObject tree.
+     * @param quote
+     *            The string to quote each SQLObject name with. If no quoting is
+     *            desired set this to the empty string.
+     */
+    public static String toQualifiedName(SQLObject obj, Class<? extends SQLObject> stopAt, String quote) {
         List<SQLObject> ancestors = new ArrayList<SQLObject>();
         while (obj != null && obj.getClass() != stopAt) {
             ancestors.add(obj);
@@ -138,7 +161,9 @@ public class SQLObjectUtils {
         }
         StringBuilder sb = new StringBuilder();
         for (int i = ancestors.size() - 1; i >= 0; i--) {
-            sb.append(ancestors.get(i).getName());
+            String ancestorName;
+                ancestorName = quote + ancestors.get(i).getName() + quote;
+            sb.append(ancestorName);
             if (i != 0) {
                 sb.append(".");
             }

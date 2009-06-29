@@ -1597,6 +1597,10 @@ public class SQLTable extends SQLObject {
     public String toQualifiedName() {
         return SQLObjectUtils.toQualifiedName(this, SQLDatabase.class);
     }
+    
+    public String toQualifiedName(String quote) {
+        return SQLObjectUtils.toQualifiedName(this, SQLDatabase.class, quote);
+    }
 
     /**
      * Refreshing tables only works if it is done for the whole
