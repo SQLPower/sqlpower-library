@@ -399,6 +399,34 @@ public class SQLObjectUtils {
     }
 
     /**
+     * Searches for all SQLObjects under a given starting point which are of the
+     * given type. Keep in mind that if you go after anything lower than
+     * SQLTable in a lazy-loading database, you will invoke many potentially
+     * expensive populate() methods.
+     * 
+     * @param source
+     *            the source object (usually the database)
+     * @param clazz
+     *            the type of SQLObject to look for.
+     * @param addTo
+     *            the list to accumulate the results into. This list will likely
+     *            be modified.
+     * @return the list passed in as the <code>addTo</code> argument.
+     */
+    public static <T extends SQLObject>
+    List<T> findDescendentsByClass(SQLObject so, java.lang.Class<T> clazz, List<T> addTo)
+    throws SQLObjectException {
+        if (clazz == so.getClass()) {
+            addTo.add(clazz.cast(so));
+        } else {
+            for (SQLObject child : (List<? extends SQLObject>) so.getChildren()) {
+                findDescendentsByClass(child, clazz, addTo);
+            }
+        }
+        return addTo;
+    }
+
+    /**
      * Searches for all columns in the target database which are marked as having
      * source columns in the given source database.
      *

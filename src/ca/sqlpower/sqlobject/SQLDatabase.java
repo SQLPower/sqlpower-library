@@ -25,11 +25,14 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.dbcp.ConnectionFactory;
 import org.apache.commons.dbcp.PoolableConnectionFactory;
@@ -38,8 +41,8 @@ import org.apache.commons.pool.impl.GenericObjectPool;
 import org.apache.commons.pool.impl.GenericObjectPool.Config;
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.JDBCDSConnectionFactory;
+import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
 
@@ -398,25 +401,25 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	}
 
 	// ----------------- accessors and mutators -------------------
-	
-	/**
-	 * Recursively searches this database for SQLTable descendants,
-	 * compiles a list of those that were found, and returns that
-	 * list.
-	 *
-	 * <p>WARNING: Calling this method will populate the entire
-	 * database!  Think carefully about using it on lazy-loading
-	 * source databases (it is safe to use on the playpen database).
-	 *
-	 * @return the value of tables
-	 */
+
+    /**
+     * Recursively searches this database for SQLTable descendants, compiles a
+     * list of those that were found, and returns that list.
+     * 
+     * @return a list of all the tables in this database (which may exist under
+     *         catalogs and schemas). You are free to modify the returned list,
+     *         but doing so will not affect the contents of this database.
+     */
 	public List<SQLTable> getTables() throws SQLObjectException {
 		return getTableDescendants(this);
 	}
 
-	/**
-	 * This is the recursive subroutine used by {@link #getTables}.
-	 */
+    /**
+     * This is the recursive subroutine used by {@link #getTables}. It is
+     * preferable to use this algorithm to discover all the tables rather than
+     * the generic {@link SQLObjectUtils#findDescendentsByClass(SQLObject, Class, List)}
+     * because this one does not cause all the tables in the database to populate.
+     */
 	private static List<SQLTable> getTableDescendants(SQLObject o) throws SQLObjectException {
 
 		// this seemingly redundant short-circuit is required because
@@ -679,5 +682,28 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
                 logger.warn("Failed to close connection. Squishing this exception:", ex); //$NON-NLS-1$
             }
         }
+    }
+
+    /**
+     * Returns all the relationships under this database. Beware of calling this
+     * method if this SQLDatabase instance is lazy-loading from a physical
+     * database, because it will cause all objects underneath to fully populate!
+     * 
+     * @return a collection of all the SQLRelationship objects that exist within
+     *         this database.
+     * @throws SQLObjectException
+     *             if this is a lazy-loading database and populating any of its
+     *             objects fails for any reason.
+     */
+    public Collection<SQLRelationship> getRelationships() throws SQLObjectException {
+        List<SQLRelationship> allRelationships =
+            SQLObjectUtils.findDescendentsByClass(
+                this, SQLRelationship.class, new ArrayList<SQLRelationship>());
+
+        // relationships appear in two places within the SQLObject tree, so
+        // we have to uniquify the list before returning it
+        Set<SQLRelationship> uniqueRelationships = new HashSet<SQLRelationship>(allRelationships);
+        
+        return uniqueRelationships;
     }
 }
