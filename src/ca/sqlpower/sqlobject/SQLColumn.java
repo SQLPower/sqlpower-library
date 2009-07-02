@@ -663,14 +663,27 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		fireDbObjectChanged("parent",oldParent,argParent);
 	}
 
+	/**
+     * Returns this column's nullability.
+     * 
+     * @return One of:
+     * <ul><li>DatabaseMetaData.columnNoNulls - might not allow NULL values
+     *     <li>DatabaseMetaData.columnNullable - definitely allows NULL values
+     *     <li>DatabaseMetaData.columnNullableUnknown - nullability unknown
+     * </ul>
+     */
 	public int getNullable() {
 		return nullable;
 	}
 
 	/**
-	 * Sets the value of nullable
-	 *
-	 * @param argNullable Value to assign to this.nullable
+	 * Sets this column's nullability.
+	 * 
+	 * @param argNullable One of:
+     * <ul><li>DatabaseMetaData.columnNoNulls - might not allow NULL values
+     *     <li>DatabaseMetaData.columnNullable - definitely allows NULL values
+     *     <li>DatabaseMetaData.columnNullableUnknown - nullability unknown
+     * </ul>
 	 */
 	public void setNullable(int argNullable) {
 		int oldNullable = this.nullable;
