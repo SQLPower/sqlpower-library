@@ -23,6 +23,7 @@ public class LibraryMegaTest {
         suite.addTest(ca.sqlpower.validation.swingui.AllTests.suite());
         suite.addTest(ca.sqlpower.xml.AllTests.suite());
         suite.addTest(ca.sqlpower.sqlobject.AllTests.suite());
+        suite.addTest(ca.sqlpower.query.AllTests.suite());
         //$JUnit-END$
         return suite;
     }
