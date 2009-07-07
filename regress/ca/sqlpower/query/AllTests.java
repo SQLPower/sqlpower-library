@@ -27,6 +27,7 @@ public class AllTests {
     public static Test suite() {
         TestSuite suite = new TestSuite("Test for ca.sqlpower.query");
         //$JUnit-BEGIN$
+        suite.addTestSuite(QueryTest.class);
         suite.addTestSuite(SQLJoinTest.class);
         suite.addTestSuite(TableContainerTest.class);
         //$JUnit-END$

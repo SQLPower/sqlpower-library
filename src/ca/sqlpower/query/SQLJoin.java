@@ -206,4 +206,17 @@ public class SQLJoin {
 	    return uuid;
 	}
 	
+	/**
+	 * Creates a copy of this join. The new items are the copied items to be used
+	 * by the copied join. 
+	 */
+	public SQLJoin createCopy(Item leftItemCopy, Item rightItemCopy) {
+	    SQLJoin join = new SQLJoin(leftItemCopy, rightItemCopy);
+	    join.setComparator(getComparator());
+	    join.setLeftColumnOuterJoin(isLeftColumnOuterJoin());
+	    join.setRightColumnOuterJoin(isRightColumnOuterJoin());
+	    join.setName(getName());
+	    return join;
+	}
+	
 }

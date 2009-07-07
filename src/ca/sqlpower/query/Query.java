@@ -218,6 +218,7 @@ public class Query {
      */
 	private PropertyChangeListener joinChangeListener = new PropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent e) {
+		    //XXX This if/else looks like leftovers from correcting listeners in Wabit and probably just needs to be deleted.
 			if (e.getPropertyName().equals(SQLJoin.LEFT_JOIN_CHANGED)) {
 				logger.debug("Got left join changed.");
 				SQLJoin changedJoin = (SQLJoin) e.getSource();
@@ -392,16 +393,14 @@ public class Query {
 		    joinSet.addAll(entry.getValue());
 		}
 		
+		Set<SQLJoin> newJoinSet = new HashSet<SQLJoin>();
 		for (SQLJoin oldJoin : joinSet) {
 		    Container newLeftContainer = oldToNewContainers.get(oldJoin.getLeftColumn().getContainer());
 		    Item newLeftItem = newLeftContainer.getItem(oldJoin.getLeftColumn().getItem());
 		    Container newRightContainer = oldToNewContainers.get(oldJoin.getRightColumn().getContainer());
 		    Item newRightItem = newRightContainer.getItem(oldJoin.getRightColumn().getItem());
-		    SQLJoin newJoin = new SQLJoin(newLeftItem, newRightItem);
-		    newJoin.setComparator(oldJoin.getComparator());
-		    newJoin.setLeftColumnOuterJoin(oldJoin.isLeftColumnOuterJoin());
-		    newJoin.setRightColumnOuterJoin(oldJoin.isRightColumnOuterJoin());
-		    newJoin.setName(oldJoin.getName());
+		    SQLJoin newJoin = oldJoin.createCopy(newLeftItem, newRightItem);
+		    newJoinSet.add(newJoin);
 		    
 		    List<SQLJoin> newJoinList = joinMapping.get(newLeftContainer);
 		    if (newJoinList == null) {
@@ -432,7 +431,7 @@ public class Query {
 		
 		if (connectListeners) {
 		    for (Container table : fromTableList) {
-		        table.addChildListener(tableChildListener);
+		        table.addChildListener(getTableChildListener());
 		        for (Item column : table.getItems()) {
 		            column.addPropertyChangeListener(itemListener);
 		        }
@@ -441,7 +440,7 @@ public class Query {
 		    for (Item column : constantsContainer.getItems()) {
 		        column.addPropertyChangeListener(itemListener);
 		    }
-		    for (SQLJoin join : joinSet) {
+		    for (SQLJoin join : newJoinSet) {
 		        join.addJoinChangeListener(joinChangeListener);
 		    }
 		}
@@ -809,7 +808,7 @@ public class Query {
 	
 	public void removeTable(Container table) {
 		fromTableList.remove(table);
-		table.removeChildListener(tableChildListener);
+		table.removeChildListener(getTableChildListener());
 		for (Item col : table.getItems()) {
 			removeItem(col);
 		}
@@ -820,7 +819,7 @@ public class Query {
 
 	public void addTable(Container container) {
 		fromTableList.add(container);
-		container.addChildListener(tableChildListener);
+		container.addChildListener(getTableChildListener());
 		for (Item col : container.getItems()) {
 			addItem(col);
 		}
@@ -1121,5 +1120,29 @@ public class Query {
     
     public void removeQueryChangeListener(QueryChangeListener l) {
         changeListeners.remove(l);
+    }
+
+    /**
+     * This is package private as it is only used in testing and shouldn't be
+     * used anywhere else.
+     */
+    ContainerChildListener getTableChildListener() {
+        return tableChildListener;
+    }
+    
+    /**
+     * This is package private as it is only used in testing and shouldn't be
+     * used anywhere else.
+     */
+    PropertyChangeListener getItemListener() {
+        return itemListener;
+    }
+    
+    /**
+     * This is package private as it is only used in testing and shouldn't be
+     * used anywhere else.
+     */
+    PropertyChangeListener getJoinChangeListener() {
+        return joinChangeListener;
     }
 }
