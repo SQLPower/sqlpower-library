@@ -40,8 +40,12 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.JDBCDataSource;
+import ca.sqlpower.sql.Olap4jDataSource;
 import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sql.SpecificDataSourceCollection;
+import ca.sqlpower.swingui.db.Olap4jConnectionPanel;
 import ca.sqlpower.util.UserPrompter;
+import ca.sqlpower.util.UserPrompterFactory.UserPromptType;
 
 import com.jgoodies.forms.builder.ButtonBarBuilder;
 import com.jgoodies.forms.builder.DefaultFormBuilder;
@@ -103,7 +107,7 @@ public class DataSourceUserPrompter implements UserPrompter {
 	
 	private Rectangle oldBounds;
 
-	public DataSourceUserPrompter(UserPromptOptions optionType, UserPromptResponse defaultResponseType, SPDataSource defaultResponse, JFrame frame, String questionMessage,
+	public DataSourceUserPrompter(UserPromptType responseType, UserPromptOptions optionType, UserPromptResponse defaultResponseType, SPDataSource defaultResponse, JFrame frame, String questionMessage,
 			DataSourceCollection collection, String ...  buttonNames) {
 		if(optionType.getButtonCount() != buttonNames.length) {
 			throw new IllegalStateException("Expecting " + optionType.getButtonCount() + 
@@ -113,12 +117,21 @@ public class DataSourceUserPrompter implements UserPrompter {
 		this.defaultResponseType = defaultResponseType;
 		selectedDataSource = defaultResponse;
 		this.owner = frame;
-		this.dsCollection = collection;
+		switch (responseType) {
+		case JDBC_DATA_SOURCE:
+			dsCollection = new SpecificDataSourceCollection<JDBCDataSource>(collection, JDBCDataSource.class);
+			break;
+		case OLAP_DATA_SOURCE:
+			dsCollection = new SpecificDataSourceCollection<Olap4jDataSource>(collection, Olap4jDataSource.class);
+			break;
+		default:
+			throw new IllegalStateException("DataSourceUserPrompter does not handle UserPromptType of " + responseType);
+		}
 		questionFormat = new MessageFormat(questionMessage);
 		
 		userPrompt = new JDialog(owner);
 		
-		FormLayout layout = new FormLayout("pref:grow, 4dlu, pref, 4dlu, pref");
+		FormLayout layout = new FormLayout("pref, 4dlu, max(190dlu;pref):grow, 4dlu, pref");
 		final DefaultFormBuilder builder = new DefaultFormBuilder(layout);
 		builder.setDefaultDialogBorder();
 		
@@ -126,7 +139,7 @@ public class DataSourceUserPrompter implements UserPrompter {
 		builder.append(questionLabel, 5);
 		builder.nextLine();
 		
-		dsComboBox = new JComboBox(collection.getConnections().toArray());
+		dsComboBox = new JComboBox(dsCollection.getConnections().toArray());
 		builder.append(Messages.getString("DataSourceUserPrompter.selectDataSource"), dsComboBox);
 		JButton okButton = new JButton();
 		if(optionType == UserPromptOptions.OK_NEW_NOTOK_CANCEL || optionType == UserPromptOptions.OK_NOTOK_CANCEL
@@ -193,10 +206,24 @@ public class DataSourceUserPrompter implements UserPrompter {
 		}
 		builder.append(bbBuilder.getPanel(), 5);
 		
-		final JDBCDataSource newDS = new JDBCDataSource(dsCollection);
+		final SPDataSource newDS;
+		final DataEntryPanel SPDSPanel;
 		
-		final JDBCDataSourcePanel SPDSPanel = new JDBCDataSourcePanel(newDS);
-		newDSPanel.add(SPDSPanel.getPanel(), BorderLayout.CENTER);
+		switch (responseType) {
+		case JDBC_DATA_SOURCE:
+			newDS = new JDBCDataSource(dsCollection);
+			SPDSPanel = new JDBCDataSourcePanel((JDBCDataSource) newDS);
+			newDSPanel.add(SPDSPanel.getPanel(), BorderLayout.CENTER);
+			break;
+		case OLAP_DATA_SOURCE:
+			newDS = new Olap4jDataSource(dsCollection);
+			DataSourceCollection<JDBCDataSource> jdbcDSCollection = new SpecificDataSourceCollection<JDBCDataSource>(collection, JDBCDataSource.class);
+			SPDSPanel = new Olap4jConnectionPanel((Olap4jDataSource) newDS, jdbcDSCollection);
+			newDSPanel.add(SPDSPanel.getPanel(), BorderLayout.CENTER);
+			break;
+		default:
+			throw new IllegalStateException("DataSourceUserPrompter does not handle UserPromptType of " + responseType);
+		}
 		
 		bbBuilder = new ButtonBarBuilder();
 		bbBuilder.addGlue();
