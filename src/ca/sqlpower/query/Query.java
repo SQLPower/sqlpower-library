@@ -496,29 +496,31 @@ public class Query {
 		
 		String quoteString = "";
 		Connection con = null;
-		try {
-            con = database.getConnection();
-            quoteString = con.getMetaData().getIdentifierQuoteString();
-        } catch (SQLObjectException e) {
-            // Don't throw an exception for cases where we can't connect to the
-            // database but the user still wants to view or save the query. If
-            // this throws an exception going, to the SQL text tab will
-            // cause an exception.
-        } catch (SQLException e) {
-            // Don't throw an exception for cases where we can't connect to the
-            // database but the user still wants to view or save the query. If
-            // this throws an exception going, to the SQL text tab will
-            // cause an exception.
-        } finally {
-            if (con != null) {
-                try {
-                    con.close();
-                } catch (SQLException e) {
-                    logger.error(e);
-                }
-            }
-        }
-		
+		if (database != null) {
+		    try {
+		        con = database.getConnection();
+		        quoteString = con.getMetaData().getIdentifierQuoteString();
+		    } catch (SQLObjectException e) {
+		        // Don't throw an exception for cases where we can't connect to the
+		        // database but the user still wants to view or save the query. If
+		        // this throws an exception going, to the SQL text tab will
+		        // cause an exception.
+		    } catch (SQLException e) {
+		        // Don't throw an exception for cases where we can't connect to the
+		        // database but the user still wants to view or save the query. If
+		        // this throws an exception going, to the SQL text tab will
+		        // cause an exception.
+		    } finally {
+		        if (con != null) {
+		            try {
+		                con.close();
+		            } catch (SQLException e) {
+		                logger.error(e);
+		            }
+		        }
+		    }
+		}
+
 		if (selectedColumns.size() ==  0) {
 			return "";
 		}

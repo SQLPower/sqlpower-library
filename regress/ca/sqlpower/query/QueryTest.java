@@ -216,4 +216,27 @@ public class QueryTest extends TestCase {
         }
     }
     
+    /**
+     * This is a test to confirm that a query string can be created from a Query
+     * object if the database is missing. This is for cases where the database
+     * may not be able to be connected to.
+     */
+    public void testQueryConstructionWithMissingDB() throws Exception {
+        Query query = new Query(new StubDatabaseMapping());
+        Container container = new ItemContainer("Test_Table");
+        Item item = new StringItem("column");
+        container.addItem(item);
+        query.addTable(container);
+        item.setSelected(true);
+        
+        assertEquals(1, query.getSelectedColumns().size());
+        assertTrue(query.getSelectedColumns().contains(item));
+        
+        String queryString = query.generateQuery();
+        queryString = queryString.toLowerCase();
+        
+        System.out.println(queryString);
+        assertTrue(queryString.toLowerCase().matches("select(.|\r|\n)*test_table.column(.|\r|\n)*from(.|\r|\n)*test_table(.|\r|\n)*test_table(.|\r|\n)*"));
+    }
+    
 }
