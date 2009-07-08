@@ -19,6 +19,7 @@
 
 package ca.sqlpower.swingui.db;
 
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -86,7 +87,7 @@ public class Olap4jConnectionPanel implements DataEntryPanel {
         if (olapDataSource.getDataSource() != null) {
             dataSourceBox.setSelectedItem(olapDataSource.getDataSource());
         }
-        panel.add(dataSourceBox, "grow,wrap");
+        panel.add(dataSourceBox, "grow,wrap, wmax 500");
         
         panel.add(new JLabel("Mondrian Schema"), "span 2, gapbefore 25px");
         schemaFileField = new JTextField();
@@ -94,7 +95,7 @@ public class Olap4jConnectionPanel implements DataEntryPanel {
         if (initialSchemaURI != null && initialSchemaURI.getScheme() != null && initialSchemaURI.getScheme().equals("file")) {
             schemaFileField.setText(initialSchemaURI.getSchemeSpecificPart());
         }
-        panel.add(schemaFileField, "growx");
+        panel.add(schemaFileField, "growx, wmax 500");
         JButton fileChooserButton = new JButton("...");
         panel.add(fileChooserButton, "wrap paragraph");
         fileChooserButton.addActionListener(new ActionListener() {
@@ -114,7 +115,7 @@ public class Olap4jConnectionPanel implements DataEntryPanel {
         panel.add(new JLabel("XML/A Server URL"), "span 2, gapbefore 25px");
         URI xmlaServerURI = olapDataSource.getXmlaServer();
         xmlaUriField = new JTextField(xmlaServerURI == null ? "" : xmlaServerURI.toString());
-        panel.add(xmlaUriField, "growx");
+        panel.add(xmlaUriField, "growx, wmax 500");
         
         Type type = olapDataSource.getType();
         if (type == null || type == Type.IN_PROCESS) {
