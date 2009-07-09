@@ -573,7 +573,9 @@ public class SPSUtils {
                 Throwable root;
                 for (root = throwable.getCause(); root.getCause() != null; root = root.getCause()) {
                 	if (root.getMessage() != null) {
-                		top.add(new JLabel("<html><b>Root Cause</b>: " + nlToBR(root.getMessage()))); //$NON-NLS-1$
+                		String rootCauseMessage = root.getMessage();
+                        rootCauseMessage = trimToClosestNL(rootCauseMessage, 100, 25);
+                		top.add(new JLabel("<html><b>Root Cause</b>: " + nlToBR(rootCauseMessage))); //$NON-NLS-1$
                 	}
                 }
             }
