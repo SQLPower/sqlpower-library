@@ -555,6 +555,8 @@ public class Query {
 			}
 			if (col.getAlias() != null && col.getAlias().trim().length() > 0) {
 				query.append(" AS " + quoteString + col.getAlias() + quoteString);
+			} else if (isGroupingEnabled() && col.getGroupBy() != null && col.getGroupBy() != SQLGroupFunction.GROUP_BY) {
+			    query.append(" AS " + quoteString + col.getGroupBy() + "_" + col.getName() + quoteString);
 			}
 		}
 		if (!fromTableList.isEmpty()) {
