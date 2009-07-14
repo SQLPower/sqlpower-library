@@ -103,6 +103,8 @@ public class QueryPen implements MouseState {
 	
     private static final String DELETE_ACTION = "Delete";
     
+    private static final String BACKSPACE_ACTION = "Backspace";
+    
     private static final String ZOOM_IN_ACTION = "Zoom In";
     
     private static final String ZOOM_OUT_ACTION = "Zoom Out";
@@ -649,7 +651,13 @@ public class QueryPen implements MouseState {
 		
 		canvas.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(
 	                KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), DELETE_ACTION);
-	    canvas.getActionMap().put(DELETE_ACTION, deleteAction);
+	    canvas.getActionMap().put(DELETE_ACTION, getDeleteAction());
+	    
+	    if (System.getProperty("os.name").toLowerCase().startsWith("mac os x")) {
+		    canvas.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(
+		    		KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, 0), BACKSPACE_ACTION);
+		    canvas.getActionMap().put(BACKSPACE_ACTION, getDeleteAction());
+	    }
 	    
 
         canvas.setPanEventHandler( null );
