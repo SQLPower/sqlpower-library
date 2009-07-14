@@ -110,22 +110,46 @@ public class EditablePStyledText extends PStyledText {
 	private boolean showHoverBorder;
 	
 	/**
-	 * The minimum width of this component. If the component gets resized to a smaller
-	 * amount then the width will be set to this value.
-	 */
-	private int minimumWidth;
-	
-	/**
-	 * The minimum height of this component. If the component gets resized to a smaller
-	 * amount then the height will be set to this value.
-	 */
-	private int minimumHeight;
+     * This listener will place an empty string in the where text field if there is no
+     * value in the where field. This is done to give the where field a minimum size
+     * since the field is always constrained to the text inside it.
+     */
+    private EditStyledTextListener emptyListener = new EditStyledTextListener() {
+        public void editingStopping() {
+            if (editorPane.getText() == null || editorPane.getText().length() < minCharCountSize) {
+                StringBuffer sb = new StringBuffer();
+                for (int i = 0; i < minCharCountSize - editorPane.getText().length(); i++) {
+                    sb.append(" ");
+                }
+                editorPane.setText(editorPane.getText() + sb.toString());
+                syncWithDocument();
+            }
+        }
+        public void editingStarting() {
+            editorPane.setText(editorPane.getText().trim());
+        }
+    };
+    
+    /**
+     * This is the minimum number of characters that will space out the text field. If
+     * there are fewer than this many characters in the text field white space will be
+     * appended to the view portion to give users a larger field to click on. This is
+     * used instead of defining a minimum width because Piccolo does not have minimum
+     * or maximum width values defined internally and the PStyledText recomputes the
+     * layout every time the bounds are set.
+     */
+    private final int minCharCountSize;
 	
 	public EditablePStyledText(QueryPen queryPen, PCanvas canvas) {
 		this("", queryPen, canvas);
 	}
 	
 	public EditablePStyledText(String startingText, QueryPen queryPen, PCanvas canvas) {
+	    this(startingText, queryPen, canvas, 0);
+	}
+	
+	public EditablePStyledText(String startingText, QueryPen queryPen, PCanvas canvas, int minCharCountSize) {
+	    this.minCharCountSize = minCharCountSize;
 		editorPane = new JEditorPane();
 		editingListeners = new ArrayList<EditStyledTextListener>();
 		
@@ -137,6 +161,8 @@ public class EditablePStyledText extends PStyledText {
 		editorPane.setText(startingText);
 		doc.setParagraphAttributes(0, editorPane.getText().length(), attributeSet, false);
 		setDocument(editorPane.getDocument());
+		
+		addEditStyledTextListener(emptyListener);
 		
 		styledTextEventHandler = new ExtendedStyledTextEventHandler(queryPen, canvas, editorPane) {
 			@Override

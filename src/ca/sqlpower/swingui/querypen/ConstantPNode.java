@@ -158,52 +158,34 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 		addChild(constantText);
 		
 		if (item.getAlias().trim().length() > 0) {
-			aliasText = new EditablePStyledText(item.getAlias(), mouseStates, canvas);
+			aliasText = new EditablePStyledText(item.getAlias(), mouseStates, canvas, LONG_EMPTY_STRING.length());
 		} else {
-			aliasText = new EditablePStyledText(LONG_EMPTY_STRING, mouseStates, canvas);
+			aliasText = new EditablePStyledText(LONG_EMPTY_STRING, mouseStates, canvas, LONG_EMPTY_STRING.length());
 		}
 		
 		aliasText.addEditStyledTextListener(new EditStyledTextListener() {
-			private boolean isEditing = false;
 			public void editingStopping() {
-				if (isEditing) {
-					item.setAlias(aliasText.getEditorPane().getText().trim());
-					if (aliasText.getEditorPane().getText().trim().length() <= 0) {
-						aliasText.getEditorPane().setText(LONG_EMPTY_STRING);
-						aliasText.syncWithDocument();
-					}
-				}
-				isEditing = false;
+			    item.setAlias(aliasText.getEditorPane().getText().trim());
 			}
 			public void editingStarting() {
-				isEditing = true;
-				aliasText.getEditorPane().setText(aliasText.getEditorPane().getText().trim());
+			    //do nothing
 			}
 		});
 		aliasText.translate(swingCheckbox.getFullBounds().getWidth() + constantText.getWidth() + 2 * SPACING_SIZE, yPos);
 		addChild(aliasText);
 		
 		if (item.getWhere().trim().length() > 0) {
-			whereText = new EditablePStyledTextWithOptionBox(item.getWhere(), mouseStates, canvas);
+			whereText = new EditablePStyledTextWithOptionBox(item.getWhere(), mouseStates, canvas, LONG_EMPTY_STRING.length());
 		} else {
-			whereText = new EditablePStyledTextWithOptionBox(LONG_EMPTY_STRING, mouseStates, canvas);
+			whereText = new EditablePStyledTextWithOptionBox(LONG_EMPTY_STRING, mouseStates, canvas, LONG_EMPTY_STRING.length());
 		}
 		
 		whereText.addEditStyledTextListener(new EditStyledTextListener() {
-			private boolean isEditing = false;
 			public void editingStopping() {
-				if (isEditing) {
-					item.setWhere(whereText.getEditorPane().getText().trim());
-					if (whereText.getEditorPane().getText().trim().length() <= 0) {
-						whereText.getEditorPane().setText(LONG_EMPTY_STRING);
-						whereText.syncWithDocument();
-					}
-				}
-				isEditing = false;
+			    item.setWhere(whereText.getEditorPane().getText().trim());
 			}
 			public void editingStarting() {
-				isEditing = true;
-				whereText.getEditorPane().setText(whereText.getEditorPane().getText().trim());
+			    //do nothing
 			}
 		});
 		whereText.translate(swingCheckbox.getFullBounds().getWidth() + constantText.getWidth() + aliasText.getWidth() + 3 * SPACING_SIZE, yPos);

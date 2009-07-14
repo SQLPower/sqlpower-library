@@ -127,15 +127,9 @@ public class UnmodifiableItemPNode extends PNode implements CleanupPNode {
 	private EditStyledTextListener whereTextListener = new EditStyledTextListener() {
 		public void editingStopping() {
 			item.setWhere(getWhereText());
-			if (whereText.getEditorPane().getText() == null || whereText.getEditorPane().getText().length() == 0) {
-				whereText.getEditorPane().setText(WHERE_START_TEXT);
-				whereText.syncWithDocument();
-			}
 		}
 		public void editingStarting() {
-			if (whereText.getEditorPane().getText().equals(WHERE_START_TEXT)) {
-				whereText.getEditorPane().setText("");
-			}
+		    //do nothing
 		}
 	};
 	
@@ -240,7 +234,7 @@ public class UnmodifiableItemPNode extends PNode implements CleanupPNode {
 		
 		addChild(columnText);
 		
-		whereText = new EditablePStyledTextWithOptionBox(WHERE_START_TEXT, mouseState, canvas);
+		whereText = new EditablePStyledTextWithOptionBox(WHERE_START_TEXT, mouseState, canvas, WHERE_START_TEXT.length());
 		whereText.addEditStyledTextListener(whereTextListener);
 		whereText.translate(0, textYTranslation);
 		addChild(whereText);

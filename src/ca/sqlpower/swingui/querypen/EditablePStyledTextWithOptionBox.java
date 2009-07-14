@@ -101,8 +101,8 @@ private static final Logger logger = Logger.getLogger(EditablePStyledText.class)
 	private static final String[] whereOptions = new String[]{"<", ">", 
 		"=", "<>", ">=", "<=", "BETWEEN", "LIKE", "IN", "NOT" };
 	
-	public EditablePStyledTextWithOptionBox(String startingText, QueryPen queryPen, PCanvas canvas) {
-		super(startingText, queryPen, canvas);
+	public EditablePStyledTextWithOptionBox(String startingText, QueryPen queryPen, PCanvas canvas, int minCharCountSize) {
+		super(startingText, queryPen, canvas, minCharCountSize);
 		this.queryPen = queryPen;
 		getEditorPane().removeFocusListener(getEditorFocusListener());
 		
