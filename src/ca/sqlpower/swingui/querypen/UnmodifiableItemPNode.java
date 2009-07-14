@@ -29,7 +29,7 @@ import edu.umd.cs.piccolox.pswing.PSwing;
 /**
  * This PNode represents a SQL column on a table.
  */
-public class UnmodifiableItemPNode extends PNode {
+public class UnmodifiableItemPNode extends PNode implements CleanupPNode {
 	
 	private static final Logger logger = Logger.getLogger(UnmodifiableItemPNode.class);
 
