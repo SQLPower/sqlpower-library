@@ -1560,9 +1560,17 @@ public class SQLQueryUIComponents {
     }
 
     /**
+     * Removes all of the result tables that have been created by this class.
+     * All existing table listeners will be sent a tableRemoved event.
+     * 
+     * @see #tableListeners
      * @param removeTabs
      *            If true the tabs that the result tables were in will be
-     *            removed.
+     *            removed. If false, the notification will still take place,
+     *            but the tabs (and the result set viewers associated with
+     *            them) will be left in place. In that case, a subsequent call
+     *            to this method will send the tableRemoved event to the tableListeners
+     *            notifying about the same table being removed again.
      */
 	private void clearResultTables(boolean removeTabs) {
 		tableToSQLMap.clear();
