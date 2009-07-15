@@ -22,12 +22,16 @@ package ca.sqlpower.swingui.querypen;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Insets;
 import java.awt.Paint;
 import java.awt.Stroke;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.geom.Point2D;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,16 +39,19 @@ import javax.swing.JEditorPane;
 import javax.swing.UIManager;
 import javax.swing.border.LineBorder;
 import javax.swing.text.DefaultStyledDocument;
+import javax.swing.text.JTextComponent;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.swingui.querypen.event.ExtendedStyledTextEventHandler;
+import edu.umd.cs.piccolo.PCamera;
 import edu.umd.cs.piccolo.PCanvas;
 import edu.umd.cs.piccolo.event.PBasicInputEventHandler;
 import edu.umd.cs.piccolo.event.PInputEvent;
 import edu.umd.cs.piccolo.util.PPaintContext;
+import edu.umd.cs.piccolox.event.PStyledTextEventHandler;
 import edu.umd.cs.piccolox.nodes.PStyledText;
 
 /**
@@ -139,6 +146,35 @@ public class EditablePStyledText extends PStyledText {
      * layout every time the bounds are set.
      */
     private final int minCharCountSize;
+    
+    /**
+     * This is the canvas this PStyledText node is placed on. The canvas is used to place
+     * and position an editor for the PStyledText node so the user can update the text.
+     */
+    private final PCanvas canvas;
+
+    /**
+     * This listener is placed on the camera to listen to changes in the
+     * camera's position and move the editor pane accordingly.
+     * <p>
+     * This is done in support of bug 1720 where the editor pane was not moving
+     * when the canvas was being scrolled. The editor pane is placed on the
+     * canvas to assure the editor comes in front of all of the layers and is at
+     * a size that is human readable. This code, taken from the
+     * {@link PStyledTextEventHandler#startEditing(PInputEvent, PStyledText)}
+     * method, continually repositions the editor as the camera moves.
+     */
+    private final PropertyChangeListener cameraViewChangeListener = new PropertyChangeListener() {
+        public void propertyChange(PropertyChangeEvent evt) {
+            logger.debug("Property changed for scroll, type: " + evt.getPropertyName());
+            Insets pInsets = getInsets();
+            Point2D nodePt = new Point2D.Double(getX()+pInsets.left,getY()+pInsets.top);
+            localToGlobal(nodePt);
+            canvas.getCamera().viewToLocal(nodePt);
+            Insets bInsets = editorPane.getBorder().getBorderInsets(editorPane);
+            editorPane.setLocation((int)nodePt.getX()-bInsets.left,(int)nodePt.getY()-bInsets.top);
+        }
+    };
 	
 	public EditablePStyledText(QueryPen queryPen, PCanvas canvas) {
 		this("", queryPen, canvas);
@@ -148,8 +184,9 @@ public class EditablePStyledText extends PStyledText {
 	    this(startingText, queryPen, canvas, 0);
 	}
 	
-	public EditablePStyledText(String startingText, QueryPen queryPen, PCanvas canvas, int minCharCountSize) {
+	public EditablePStyledText(String startingText, QueryPen queryPen, final PCanvas canvas, int minCharCountSize) {
 	    this.minCharCountSize = minCharCountSize;
+	    this.canvas = canvas;
 		editorPane = new JEditorPane();
 		editingListeners = new ArrayList<EditStyledTextListener>();
 		
@@ -163,8 +200,21 @@ public class EditablePStyledText extends PStyledText {
 		setDocument(editorPane.getDocument());
 		
 		addEditStyledTextListener(emptyListener);
+
+        canvas.getCamera().addPropertyChangeListener(PCamera.PROPERTY_VIEW_TRANSFORM, cameraViewChangeListener);
 		
 		styledTextEventHandler = new ExtendedStyledTextEventHandler(queryPen, canvas, editorPane) {
+		    @Override
+		    protected void initEditor(JTextComponent newEditor) {
+		        editor = newEditor;
+		        
+		        canvas.setLayout(null);
+		        canvas.add(editor);
+		        editor.setVisible(false);
+		        
+		        docListener = createDocumentListener();
+		    }
+		    
 			@Override
 			public void startEditing(PInputEvent event, PStyledText text) {
 				for (EditStyledTextListener l : editingListeners) {
