@@ -257,6 +257,11 @@ public class DataEntryPanelBuilder {
 		d.setContentPane(cp);
 
 		d.pack();
+
+		d.setBounds((int) d.getBounds().getX(), (int) d.getBounds().getY(), 
+		        (int) Math.min(d.getBounds().getWidth(), d.getToolkit().getScreenSize().getWidth()), 
+		        (int) Math.min(d.getBounds().getHeight(), d.getToolkit().getScreenSize().getHeight()));
+		
 		d.setLocationRelativeTo(dialogParent);
 		
 		return d;
