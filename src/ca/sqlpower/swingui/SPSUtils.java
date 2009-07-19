@@ -292,6 +292,9 @@ public class SPSUtils {
     public static final FileFilter XSLT_FILE_FILTER =
         new FileExtensionFilter(Messages.getString("SPSUtils.xsltFileType"), new String[] {"xsl", "xslt"}); //$NON-NLS-1$ //$NON-NLS-2$
 
+    public static final FileFilter VELOCITY_FILE_FILTER =
+        new FileExtensionFilter(Messages.getString("SPSUtils.velocityFileType"), new String[] {"vm"}); //$NON-NLS-1$ //$NON-NLS-2$
+
     public static final FileFilter XML_FILE_FILTER =
         new FileExtensionFilter(Messages.getString("SPSUtils.xmlFileType"), new String[] {"xml"}); //$NON-NLS-1$ //$NON-NLS-2$
 

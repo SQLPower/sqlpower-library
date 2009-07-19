@@ -18,8 +18,11 @@
  */
 package ca.sqlpower.util;
 
+import ca.sqlpower.architect.swingui.ArchitectSwingSession;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
 
 import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
@@ -32,38 +35,56 @@ import javax.xml.transform.stream.StreamSource;
  * format specified by the xslt stylesheet and sends the results to an
  * OutputStream.
  */
-public class XsltTransformation {
+public class XsltTransformation implements ReportTransformer {
 
 	public XsltTransformation() {
 	}
 
 	/**
-	 * Performs an XSLT transformation, sending the results
+	 * Performs an XSLT transformation using a built-in stylesheet, sending the results
 	 * to the OutputStream result.
 	 *
 	 * @param builtInXsltName the name of the built-in XSLT (part of the classpath)
 	 * @param xml The XML that should be transformed
 	 * @param result the output stream where the result of the transformation should be written to
 	 */
-	public void transform(String builtInXsltName, InputStream xml, OutputStream result) throws Exception {
+	public void transform(String builtInXsltName, File result, ArchitectSwingSession session) throws Exception {
 
 		InputStream xsltStylesheet = getClass().getResourceAsStream(builtInXsltName);
-		transform(xsltStylesheet, xml, result);
+		transform(xsltStylesheet, result, session);
 	}
 
 	/**
-	 * Performs an XSLT transformation, sending the results
+	 * Performs an external XSLT transformation, sending the results
 	 * to the OutputStream result.
 	 *
 	 * @param the XSLT that should be run
 	 * @param xml The XML that should be transformed
 	 * @param result the output stream where the result of the transformation should be written to
 	 */
-	public void transform(InputStream xsltStylesheet, InputStream xml, OutputStream result) throws Exception {
+	public void transform(File xsltStylesheet, File output, ArchitectSwingSession session) throws Exception {
+
+		InputStream xslt = new FileInputStream(xsltStylesheet);
+		transform(xslt, output, session);
+	}
+
+	/**
+	 * Performs an external XSLT transformation, sending the results
+	 * to the OutputStream result.
+	 *
+	 * @param the XSLT that should be run
+	 * @param xml The XML that should be transformed
+	 * @param result the output stream where the result of the transformation should be written to
+	 */
+	protected void transform(InputStream xsltStylesheet, File output, ArchitectSwingSession session) throws Exception {
+
+		File project = session.getProject().getFile();
+		InputStream xml = new FileInputStream(project);
 
 		Source xmlSource = new StreamSource(xml);
 		Source xsltSource = new StreamSource(xsltStylesheet);
-
+		FileOutputStream result = new FileOutputStream(output);
+		
 		TransformerFactory transFact =
 				TransformerFactory.newInstance();
 		Transformer trans = transFact.newTransformer(xsltSource);
