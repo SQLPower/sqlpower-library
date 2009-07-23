@@ -25,6 +25,12 @@ package ca.sqlpower.sqlobject;
  */
 public class SQLType {
 
+	// Constants from JDBC 4.0 which are simply copied
+	// in order to allow compilation with Java 5
+	public static final int NVARCHAR = -9;
+	public static final int NCHAR = -15;
+	public static final int NCLOB = 2011;
+
     /**
      * The official set of types.
      */
@@ -57,7 +63,11 @@ public class SQLType {
         new SQLType("TIMESTAMP", 93),
         new SQLType("TINYINT", -6),
         new SQLType("VARBINARY", -3),
-        new SQLType("VARCHAR", 12)
+        new SQLType("VARCHAR", 12),
+		// Types from JDBC 4.0
+		new SQLType("NVARCHAR", NVARCHAR),
+		new SQLType("NCHAR", NCHAR),
+		new SQLType("NCLOB", NCLOB)
     };
     
 	/**

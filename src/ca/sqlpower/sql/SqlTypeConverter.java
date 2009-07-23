@@ -1,5 +1,6 @@
 package ca.sqlpower.sql;
 
+import ca.sqlpower.sqlobject.SQLType;
 import java.sql.Connection;
 import java.sql.Types;
 
@@ -34,6 +35,9 @@ public abstract class SqlTypeConverter {
 			
 		case Types.CHAR:
 			return "CHARACTER("+precision+")";
+
+		case SQLType.NCHAR:
+			return "NCHAR("+precision+")";
 			
 		case Types.DATE:
 			return "DATE";
@@ -58,6 +62,9 @@ public abstract class SqlTypeConverter {
 
 		case Types.VARCHAR:
 			return "VARCHAR("+precision+")";
+
+		case SQLType.NVARCHAR:
+			return "NVARCHAR("+precision+")";
 
 			// we don't try to provide generic defaults for these types
 		case Types.ARRAY:

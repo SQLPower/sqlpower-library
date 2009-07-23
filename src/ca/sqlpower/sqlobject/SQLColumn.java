@@ -439,20 +439,33 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		return true;
 	}
 
-	public String getShortDisplayName() {
+	/**
+	 * Returns a "formatted" version of the datatype including
+	 * any necessary parameters e.g. length for VARCHAR or precision and scale
+	 * for numeric datatypes
+	 */
+	public String getTypeName() {
 		if (sourceDataTypeName != null) {
 			if (precision > 0 && scale > 0) {
-				return getName()+": "+sourceDataTypeName+"("+precision+","+scale+")";
+				return sourceDataTypeName+"("+precision+","+scale+")";
 			} else if (precision > 0) {
-				return  getName()+": "+sourceDataTypeName+"("+precision+")"; // XXX: should we display stuff like (18,0) for decimals?
+				return sourceDataTypeName+"("+precision+")"; // XXX: should we display stuff like (18,0) for decimals?
 			} else {
-				return  getName()+": "+sourceDataTypeName; 				
+				return sourceDataTypeName;
 			}			
 		} else {
-			return  getName()+": "
-				+SQLType.getTypeName(type) // XXX: replace with TypeDescriptor
+			return SQLType.getTypeName(type) // XXX: replace with TypeDescriptor
 				+"("+precision+")";
 		}
+	}
+
+	/**
+	 * Returns the column's name and the datatype
+	 * @see #getTypeName()
+	 * @see #getName()
+	 */
+	public String getShortDisplayName() {
+		return getName() + ": " + getTypeName();
 	}
 
 	public boolean allowsChildren() {
@@ -473,7 +486,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 
 
 	/**
-	 * Gets the value of type
+	 * Gets numeric value for the internal JDBC Type.
+	 * This value corresponds to the constants defined in java.sql.Types
 	 *
 	 * @return the value of type
 	 */
@@ -495,6 +509,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         endCompoundEdit("Type change");
 	}
 
+	/**
+	 * The data type name as obtained during reverse engineering
+	 */
 	public String getSourceDataTypeName() {
 		return sourceDataTypeName;
 	}
@@ -527,9 +544,15 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
 	/**
-	 * Gets the value of precision
+	 * Returns the precision for this column.
+	 * The precision only makes sense together with the actual datatype.
+	 * For character datatypes this defines the max. length of the column.
+	 * For numeric datatypes this needs to be combined with the scale of the column
 	 *
 	 * @return the value of precision
+	 * @see #getScale()
+	 * @see #getType()
+	 * @see #getTypeName()
 	 */
 	public int getPrecision()  {
 		return this.precision;
@@ -556,7 +579,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
 	/**
-	 * Is primaryKeySeq defined
+	 * Returns true if this column is part of the table's primary key
 	 *
 	 * @return whether or not primaryKeySeq is defined
 	 */
@@ -565,23 +588,33 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
 	/**
-	 * Indicates whether this column is a foreign key
-	 * 
-	 * @return whether this column exists as a foreign key column in any of
-	 * its parent table's imported keys
+	 * If this column is a foreign key, return the referenced table.
+	 *
+	 * @return null, if this column is not a FK column, the referenced table otherwise
 	 */
-	public boolean isForeignKey() {
-	    if (getParentTable() == null) return false;
+	public SQLTable getReferencedTable() {
+	    if (getParentTable() == null) return null;
 	    try {
 	        for (SQLRelationship r : getParentTable().getImportedKeys()) {
 	            if (r.containsFkColumn(this)) {
-	                return true;
+	                return r.getPkTable();
 	            }
 	        }
-	        return false;
+	        return null;
 	    } catch (SQLObjectException ex) {
 	        throw new SQLObjectRuntimeException(ex);
 	    }
+	}
+	/**
+	 * Indicates whether this column is a foreign key
+	 *
+	 * @return whether this column exists as a foreign key column in any of
+	 * its parent table's imported keys
+	 * 
+	 * @see #getReferencedTable()
+	 */
+	public boolean isForeignKey() {
+		return getReferencedTable() != null;
 	}
 	
 	/**
@@ -765,7 +798,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
 	/**
-	 * Gets the value of remarks
+	 * Get the comment/remark defined for this column.
 	 *
 	 * @return the value of remarks
 	 */
@@ -785,7 +818,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
 	/**
-	 * Gets the value of defaultValue
+	 * Returns the default value defined for this value
 	 *
 	 * @return the value of defaultValue
 	 */
