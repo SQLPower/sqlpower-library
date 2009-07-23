@@ -140,7 +140,7 @@ public class DatabaseConnectionManager {
 	private final Action jdbcDriversAction = new AbstractAction(Messages.getString("DatabaseConnectionManager.jdbcDriversActionName")){ //$NON-NLS-1$
 
 		public void actionPerformed(ActionEvent e) {
-			dsTypeDialogFactory.showDialog(DatabaseConnectionManager.this.currentOwner);
+			dsTypeDialogFactory.showDialog((d != null) ? d : DatabaseConnectionManager.this.currentOwner);
 		}
 	};
 	
@@ -346,7 +346,7 @@ public class DatabaseConnectionManager {
 		this.dsTypeDialogFactory = dsTypeDialogFactory;
 		logger.debug("Window owner is " + owner);
 		currentOwner = owner;
-		panel = createPanel(additionalActions, additionalComponents, showCloseButton);
+		panel = createPanel(additionalActions, additionalComponents, showCloseButton, Messages.getString("DatabaseConnectionManager.availableDbConnections"));
 		creatableDSTypes = new ArrayList<Class<? extends SPDataSource>>(dsTypes);
 	}
 	/**
@@ -423,7 +423,19 @@ public class DatabaseConnectionManager {
         this.dbIcon = dbIcon;
     }
 	
-	private JPanel createPanel(List<Action> additionalActions, List<JComponent> additionalComponents, boolean showCloseButton) {
+	/**
+	 * This method returns the main panel in the database connection manager and additionally sets the dialog to be one
+	 * that can be passed in. This is required for loading a project when a data source cannot be found. Wabit needs
+	 * to pop up a window giving the user an option to skip the datasource, select a datasource or cancel the load
+	 * and therefore this method can be used to create the proper panel and give it the proper parent so that it can
+	 * then pop up dialogs.
+	 */
+	public JPanel createPanelStandalone(List<Action> additionalActions, List<JComponent> additionalComponents, boolean showCloseButton, String message, JDialog owner) {
+		d = owner;
+		return createPanel(additionalActions, additionalComponents, showCloseButton, message);
+	}
+	
+	private JPanel createPanel(List<Action> additionalActions, List<JComponent> additionalComponents, boolean showCloseButton, String message) {
 
 		FormLayout layout = new FormLayout(
 				"6dlu, fill:min(160dlu;default):grow, 6dlu, pref, 6dlu", // columns //$NON-NLS-1$
@@ -437,7 +449,7 @@ public class DatabaseConnectionManager {
 		pb = new PanelBuilder(layout,p);
 		pb.setDefaultDialogBorder();
 
-		pb.add(new JLabel(Messages.getString("DatabaseConnectionManager.availableDbConnections")), cc.xy(2, 2)); //$NON-NLS-1$
+		pb.add(new JLabel(message), cc.xyw(2, 2, 3)); //$NON-NLS-1$
 
 		TableModel tm = new ConnectionTableModel();
 		dsTable = new EditableJTable(tm);
