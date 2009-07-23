@@ -35,7 +35,6 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.query.Container;
 import ca.sqlpower.query.Item;
-import ca.sqlpower.query.StringCountItem;
 import ca.sqlpower.query.StringItem;
 import edu.umd.cs.piccolo.PCanvas;
 import edu.umd.cs.piccolo.PNode;
@@ -199,11 +198,7 @@ public class ConstantsPane extends PNode implements CleanupPNode {
 			public void actionPerformed(ActionEvent e) {
 				for (ConstantPNode node : constantPNodeList) {
 					if(node.isInSelect() != ((JCheckBox)e.getSource()).isSelected()) {
-						if (node.getModel() instanceof StringCountItem && queryPen.getModel().isGroupingEnabled()) {
-							node.setSelected(checkbox.isSelected());
-						} else if (!(node.getModel() instanceof StringCountItem)) {
-							node.setSelected(checkbox.isSelected());
-						}
+						node.setSelected(checkbox.isSelected());
 					}
 				}
 			}

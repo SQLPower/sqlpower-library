@@ -34,7 +34,6 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.query.Item;
 import ca.sqlpower.query.Query;
-import ca.sqlpower.query.StringCountItem;
 import ca.sqlpower.query.StringItem;
 import edu.umd.cs.piccolo.PCanvas;
 import edu.umd.cs.piccolo.PNode;
@@ -74,8 +73,6 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 				removeItem();
 			} else if (item instanceof StringItem) {
 				((StringItem)item).setName(constantText.getEditorPane().getText());
-			}else if (item instanceof StringCountItem) {
-				((StringCountItem)item).setName(constantText.getEditorPane().getText());
 			}
 			for (PropertyChangeListener listener : changeListeners) {
 				listener.propertyChange(new PropertyChangeEvent(constantText, Item.PROPERTY_ITEM, oldText, constantText.getEditorPane().getText().trim()));
@@ -125,11 +122,7 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 		this.canvas = canvas;
 		item.addPropertyChangeListener(itemChangeListener);
 		
-		// We need to know when the Model does a SetName so that we can update the View Side.
-		if(item instanceof StringCountItem) {
-			logger.debug("item is an instance of StringCountItem, adding modelNameChangeListener");
-			item.addPropertyChangeListener(modelChangeListener);
-		}
+		item.addPropertyChangeListener(modelChangeListener);
 		changeListeners = new ArrayList<PropertyChangeListener>();
 		
 		selectionCheckbox = new JCheckBox();
@@ -139,15 +132,7 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 		addChild(swingCheckbox);
 		selectionCheckbox.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if(item instanceof StringCountItem) {
-					if(!((StringCountItem)item).isGroupingEnabled()) {
-						selectionCheckbox.setSelected(false);
-						JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(ConstantPNode.this.canvas), "GroupBy must be enabled to select this constant.");
-					}
-					item.setSelected(selectionCheckbox.isSelected());
-				} else {
-					item.setSelected(selectionCheckbox.isSelected());
-				}
+				item.setSelected(selectionCheckbox.isSelected());
 			}
 		});
 		

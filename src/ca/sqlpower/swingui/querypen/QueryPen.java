@@ -72,7 +72,6 @@ import ca.sqlpower.query.Query;
 import ca.sqlpower.query.QueryChangeEvent;
 import ca.sqlpower.query.QueryChangeListener;
 import ca.sqlpower.query.SQLJoin;
-import ca.sqlpower.query.StringCountItem;
 import ca.sqlpower.query.TableContainer;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator.CacheType;
@@ -216,10 +215,6 @@ public class QueryPen implements MouseState {
     					}
     					
     					topLayer.addChild(pane);
-    					if(QueryPen.this.model.getFromTableList().isEmpty()) {
-    						StringCountItem countItem = new StringCountItem(QueryPen.this.model);
-    						QueryPen.this.model.getConstantsContainer().addItem(countItem);
-    					}
     					queryChangeListener.propertyChange(new PropertyChangeEvent(canvas, Container.PROPERTY_TABLE_ADDED, null, pane.getModel()));
     					for (UnmodifiableItemPNode itemNode : pane.getContainedItems()) {
     						itemNode.setInSelected(true);

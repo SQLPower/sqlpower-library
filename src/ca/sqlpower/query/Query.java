@@ -144,6 +144,33 @@ public class Query {
 		}
 		
 	}
+	
+//	/**
+//	 * This listener is used to add and remove a StringItem that represents "count *".
+//	 */
+//	QueryChangeAdapter countStarQueryListener = new QueryChangeAdapter() {
+//	    
+//	    @Override
+//	    public void propertyChangeEvent(PropertyChangeEvent evt) {
+//	        if (evt.getPropertyName().equals(Query.GROUPING_ENABLED)) {
+//	            logger.debug("Grouping has changed to "+ evt.getNewValue());
+//	            if (evt.getNewValue().equals(false) && isSelected()) {
+//	                logger.debug("grouping is false, setting model and view's selected to false");
+//	                setSelected(false);
+//	                firePropertyChange(Query.GROUPING_ENABLED,evt.getOldValue(), evt.getNewValue());
+//	            }
+//	        }
+//	    }
+//	    
+//	    @Override
+//	    public void containerRemoved(QueryChangeEvent evt) {
+//	        logger.debug(" Table has been removed, removing constant item");
+//	        if(query.getFromTableList().isEmpty()) {
+//	            setName("");
+//	        }
+//	    }
+//
+//	};
 
 	/**
 	 * Tracks if there are groupings added to this select statement.
@@ -356,6 +383,10 @@ public class Query {
 		StringItem user = new StringItem("user");
 		constantsContainer.addItem(user);
 		addItem(user);
+		StringItem countStar = new StringItem("count(*)");
+		constantsContainer.addItem(countStar);
+		addItem(countStar);
+		
 	}
 	
 	/**
@@ -534,12 +565,10 @@ public class Query {
 			} else {
 				query.append(", ");
 			}
-			if (groupingEnabled && !col.getGroupBy().equals(SQLGroupFunction.GROUP_BY)) {
-				if(col instanceof StringCountItem) {
-					query.append(col.getName());
-				} else {
-					query.append(col.getGroupBy() + "(");
-				}
+			
+			if (groupingEnabled && !col.getGroupBy().equals(SQLGroupFunction.GROUP_BY) 
+					&& !isStringItemAggregated(col)) {
+				query.append(col.getGroupBy() + "(");
 			}
 			String alias = col.getContainer().getAlias();
 			if (alias != null && alias.length() > 0) {
@@ -547,10 +576,9 @@ public class Query {
 			} else if (fromTableList.contains(col.getContainer())) {
 				query.append(quoteString + col.getContainer().getName() + quoteString + ".");
 			}
-			if (!(col instanceof StringCountItem)) {
-				query.append(getColumnName(col, quoteString, converter));
-			}
-			if (groupingEnabled && !col.getGroupBy().equals(SQLGroupFunction.GROUP_BY) && !(col instanceof StringCountItem)) {
+			query.append(getColumnName(col, quoteString, converter));
+			if (groupingEnabled && !col.getGroupBy().equals(SQLGroupFunction.GROUP_BY) 
+					&& !isStringItemAggregated(col)) {
 				query.append(")");
 			}
 			if (col.getAlias() != null && col.getAlias().trim().length() > 0) {
@@ -687,7 +715,7 @@ public class Query {
 		if (groupingEnabled) {
 		    boolean isFirstGroupBy = true;
 		    for (Item col : selectedColumns) {
-		        if (col.getGroupBy().equals(SQLGroupFunction.GROUP_BY)) {
+		        if (col.getGroupBy().equals(SQLGroupFunction.GROUP_BY) && !isStringItemAggregated(col)) {
 		            if (isFirstGroupBy) {
 		                query.append("\nGROUP BY ");
 		                isFirstGroupBy = false;
@@ -768,6 +796,29 @@ public class Query {
 		return query.toString();
 	}
 
+	/**
+	 * If the item passed in is a {@link StringItem} and it starts with an aggregator
+	 * (like sum, count, avg) true will be returned. False will be returned otherwise.
+	 */
+	private boolean isStringItemAggregated(Item col) {
+		StringBuffer groupingRegex = new StringBuffer();
+		for (SQLGroupFunction function : SQLGroupFunction.values()) {
+			if (function != SQLGroupFunction.GROUP_BY) {
+				if (groupingRegex.length() == 0) {
+					groupingRegex.append("(");
+				} else {
+					groupingRegex.append("|");
+				}
+				groupingRegex.append(function.getGroupingName());
+			}
+		}
+		groupingRegex.append(").*");
+		boolean isStringItemAndAggregated = col instanceof StringItem 
+				&& ((String) col.getItem()).toUpperCase().matches(
+						groupingRegex.toString().toUpperCase());
+		return isStringItemAndAggregated;
+	}
+
     /**
      * This is a helper method for {@link #generateQuery()} to properly return a
      * column name. For items that represent {@link SQLColumn}s the name of the
@@ -787,7 +838,6 @@ public class Query {
      *            names to a valid constant in the database.
      */
 	private String getColumnName(Item item, String quote, ConstantConverter converter) {
-	    if (item instanceof StringCountItem) return item.getName();
 	    if (item instanceof StringItem) return converter.getName(item);
 	    if (item instanceof SQLObjectItem) return quote + item.getName() + quote;
 	    throw new IllegalArgumentException("Unknown item type " + item.getClass() + " when trying to define a name for the item " + item.getName());
