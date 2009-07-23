@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import junit.framework.TestCase;
+import ca.sqlpower.graph.DepthFirstSearch;
+import ca.sqlpower.query.Query.TableJoinGraph;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLDatabaseMapping;
@@ -237,6 +239,121 @@ public class QueryTest extends TestCase {
         
         System.out.println(queryString);
         assertTrue(queryString.toLowerCase().matches("select(.|\r|\n)*test_table.column(.|\r|\n)*from(.|\r|\n)*test_table(.|\r|\n)*test_table(.|\r|\n)*"));
+    }
+    
+    /**
+     * Simple test to confirm containers and joins can be added successfully
+     * to a query.
+     */
+    public void testContainersAndJoinsAddToQuery() throws Exception {
+        Query query = new Query(new StubDatabaseMapping());
+        ItemContainer container1 = new ItemContainer("Table 1");
+        StringItem item1 = new StringItem("Column 1");
+        container1.addItem(item1);
+        query.addTable(container1);
+        
+        ItemContainer container2 = new ItemContainer("Table 2");
+        StringItem item2 = new StringItem("Column 2");
+        container2.addItem(item2);
+        query.addTable(container2);
+        
+        ItemContainer container3 = new ItemContainer("Table 3");
+        StringItem item3 = new StringItem("Column 3");
+        container3.addItem(item3);
+        query.addTable(container3);
+
+        SQLJoin join1to2 = new SQLJoin(item1, item2);
+        SQLJoin join2to3 = new SQLJoin(item2, item3);
+        query.addJoin(join1to2);
+        query.addJoin(join2to3);
+        
+        assertEquals(3, query.getFromTableList().size());
+        assertTrue(query.getFromTableList().contains(container1));
+        assertTrue(query.getFromTableList().contains(container2));
+        assertTrue(query.getFromTableList().contains(container3));
+        assertEquals(2, query.getJoins().size());
+        assertTrue(query.getJoins().contains(join1to2));
+        assertTrue(query.getJoins().contains(join2to3));
+    }
+    
+    /**
+     * This test is to ensure that a simple graph of the query will have
+     * proper edges and nodes.
+     * @throws Exception
+     */
+    public void testGraphWithThreeTables() throws Exception {
+        Query query = new Query(new StubDatabaseMapping());
+        ItemContainer container1 = new ItemContainer("Table 1");
+        StringItem item1 = new StringItem("Column 1");
+        container1.addItem(item1);
+        query.addTable(container1);
+        
+        ItemContainer container2 = new ItemContainer("Table 2");
+        StringItem item2 = new StringItem("Column 2");
+        container2.addItem(item2);
+        query.addTable(container2);
+        
+        ItemContainer container3 = new ItemContainer("Table 3");
+        StringItem item3 = new StringItem("Column 3");
+        container3.addItem(item3);
+        query.addTable(container3);
+
+        SQLJoin join1to2 = new SQLJoin(item1, item2);
+        SQLJoin join2to3 = new SQLJoin(item2, item3);
+        query.addJoin(join1to2);
+        query.addJoin(join2to3);
+        
+        assertEquals(3, query.getFromTableList().size());
+        assertTrue(query.getFromTableList().contains(container1));
+        assertTrue(query.getFromTableList().contains(container2));
+        assertTrue(query.getFromTableList().contains(container3));
+        assertEquals(2, query.getJoins().size());
+        assertTrue(query.getJoins().contains(join1to2));
+        assertTrue(query.getJoins().contains(join2to3));
+
+        TableJoinGraph tableJoinGraph = query.new TableJoinGraph();
+        
+        //Check all containers and joins are in the graph
+        assertEquals(3, tableJoinGraph.getNodes().size());
+        assertTrue(tableJoinGraph.getNodes().contains(container1));
+        assertTrue(tableJoinGraph.getNodes().contains(container2));
+        assertTrue(tableJoinGraph.getNodes().contains(container3));
+        assertEquals(4, tableJoinGraph.getEdges().size());
+        assertTrue(tableJoinGraph.getEdges().contains(join1to2));
+        assertTrue(tableJoinGraph.getEdges().contains(join2to3));
+        
+        //Check adjacent nodes are correct
+        assertEquals(1, tableJoinGraph.getAdjacentNodes(container1).size());
+        assertTrue(tableJoinGraph.getAdjacentNodes(container1).contains(container2));
+        
+        assertEquals(2, tableJoinGraph.getAdjacentNodes(container2).size());
+        assertTrue(tableJoinGraph.getAdjacentNodes(container2).contains(container1));
+        assertTrue(tableJoinGraph.getAdjacentNodes(container2).contains(container3));
+        
+        assertEquals(1, tableJoinGraph.getAdjacentNodes(container3).size());
+        assertTrue(tableJoinGraph.getAdjacentNodes(container3).contains(container2));
+        
+        //Check inbound edges are correct
+        assertEquals(1, tableJoinGraph.getInboundEdges(container1).size());
+        assertTrue(tableJoinGraph.getInboundEdges(container1).contains(join1to2));
+        
+        assertEquals(2, tableJoinGraph.getInboundEdges(container2).size());
+        assertTrue(tableJoinGraph.getInboundEdges(container2).contains(join1to2));
+        assertTrue(tableJoinGraph.getInboundEdges(container2).contains(join2to3));
+        
+        assertEquals(1, tableJoinGraph.getInboundEdges(container3).size());
+        assertTrue(tableJoinGraph.getInboundEdges(container3).contains(join2to3));
+        
+        //Check outbound edges are correct
+        assertEquals(1, tableJoinGraph.getOutboundEdges(container1).size());
+        assertTrue(tableJoinGraph.getOutboundEdges(container1).contains(join1to2));
+        
+        assertEquals(2, tableJoinGraph.getOutboundEdges(container2).size());
+        assertTrue(tableJoinGraph.getOutboundEdges(container2).contains(join1to2));
+        assertTrue(tableJoinGraph.getOutboundEdges(container2).contains(join2to3));
+        
+        assertEquals(1, tableJoinGraph.getOutboundEdges(container3).size());
+        assertTrue(tableJoinGraph.getOutboundEdges(container3).contains(join2to3));
     }
     
 }

@@ -90,8 +90,9 @@ public class Query {
 	 * This graph represents the tables in the SQL statement. Each table in
 	 * the statement is a vertex in the graph. Each join is an edge in the 
 	 * graph coming from the left table and moving towards the right table.
+	 * This class is package private for testing.
 	 */
-	private class TableJoinGraph implements GraphModel<Container, SQLJoin> {
+	class TableJoinGraph implements GraphModel<Container, SQLJoin> {
 
 		public Collection<Container> getAdjacentNodes(Container node) {
 			List<Container> adjacencyNodes = new ArrayList<Container>();
@@ -99,6 +100,8 @@ public class Query {
 				for (SQLJoin join : joinMapping.get(node)) {
 					if (join.getLeftColumn().getContainer() == node) {
 						adjacencyNodes.add(join.getRightColumn().getContainer());
+					} else {
+					    adjacencyNodes.add(join.getLeftColumn().getContainer());
 					}
 				}
 			}
@@ -119,9 +122,7 @@ public class Query {
 			List<SQLJoin> inboundEdges = new ArrayList<SQLJoin>();
 			if (joinMapping.get(node) != null) {
 				for (SQLJoin join : joinMapping.get(node)) {
-					if (join.getRightColumn().getContainer() == node) {
-						inboundEdges.add(join);
-					}
+				    inboundEdges.add(join);
 				}
 			}
 			return inboundEdges;
@@ -135,42 +136,13 @@ public class Query {
 			List<SQLJoin> outboundEdges = new ArrayList<SQLJoin>();
 			if (joinMapping.get(node) != null) {
 				for (SQLJoin join : joinMapping.get(node)) {
-					if (join.getLeftColumn().getContainer() == node) {
-						outboundEdges.add(join);
-					}
+				    outboundEdges.add(join);
 				}
 			}
 			return outboundEdges;
 		}
 		
 	}
-	
-//	/**
-//	 * This listener is used to add and remove a StringItem that represents "count *".
-//	 */
-//	QueryChangeAdapter countStarQueryListener = new QueryChangeAdapter() {
-//	    
-//	    @Override
-//	    public void propertyChangeEvent(PropertyChangeEvent evt) {
-//	        if (evt.getPropertyName().equals(Query.GROUPING_ENABLED)) {
-//	            logger.debug("Grouping has changed to "+ evt.getNewValue());
-//	            if (evt.getNewValue().equals(false) && isSelected()) {
-//	                logger.debug("grouping is false, setting model and view's selected to false");
-//	                setSelected(false);
-//	                firePropertyChange(Query.GROUPING_ENABLED,evt.getOldValue(), evt.getNewValue());
-//	            }
-//	        }
-//	    }
-//	    
-//	    @Override
-//	    public void containerRemoved(QueryChangeEvent evt) {
-//	        logger.debug(" Table has been removed, removing constant item");
-//	        if(query.getFromTableList().isEmpty()) {
-//	            setName("");
-//	        }
-//	    }
-//
-//	};
 
 	/**
 	 * Tracks if there are groupings added to this select statement.
