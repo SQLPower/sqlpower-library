@@ -659,10 +659,10 @@ public class SQLQueryUIComponents {
     private final Map<JTable, JScrollPane> resultJTableScrollPanes = new HashMap<JTable, JScrollPane>();
     
     /**
-     * This maps the JTables to the SQL statement that created them.
+     * This maps the JTables to the SQL statement executor that created them.
      * Multiple tables can share the same string.
      */
-    private final Map<JTable, String> tableToSQLMap;
+    private final Map<JTable, StatementExecutor> tableToSQLMap;
     
     private SwingWorkerRegistry swRegistry;
     private final DataSourceCollection dsCollection;
@@ -1093,7 +1093,7 @@ public class SQLQueryUIComponents {
         resultTabPane.add(Messages.getString("SQLQuery.log"), new JScrollPane(logTextArea));
         
         resultJTables = new ArrayList<JTable>();
-        tableToSQLMap = new HashMap<JTable, String>();
+        tableToSQLMap = new HashMap<JTable, StatementExecutor>();
         tableListeners = new ArrayList<TableChangeListener>();
         dbConnectionManager = new DatabaseConnectionManager(dsCollection);
         
@@ -1546,7 +1546,7 @@ public class SQLQueryUIComponents {
     		tableAreaBuilder.append(tableScrollPane, 3);
 
     		resultJTables.add((JTable)tempTable);
-    		tableToSQLMap.put(((JTable)tempTable), executor.getStatement());
+    		tableToSQLMap.put(((JTable)tempTable), executor);
     		JPanel tempResultPanel = tableAreaBuilder.getPanel();
     		resultTabPane.add(Messages.getString("SQLQuery.result"), tempResultPanel);
     		resultTabPane.setSelectedIndex(1);
@@ -1697,7 +1697,16 @@ public class SQLQueryUIComponents {
      * results tab.
      */
     public String getQueryForJTable(JTable table) {
-    	return tableToSQLMap.get(table);
+    	return tableToSQLMap.get(table).getStatement();
+    }
+
+    /**
+     * This will return the executor that made the query that made the JTable's
+     * result set. If this returns null then the table has already been removed
+     * from the results tab.
+     */
+    public StatementExecutor getStatementExecutorForJTable(JTable table) {
+        return tableToSQLMap.get(table);
     }
     
     public void disconnectListeners() {
