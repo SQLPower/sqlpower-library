@@ -54,7 +54,7 @@ public class DataSourceUserPrompter implements UserPrompter {
 	private JDialog dialog;
 	private JFrame owner;
 	
-	public DataSourceUserPrompter(String question, UserPromptType responseType, UserPromptOptions optionType, 
+	public DataSourceUserPrompter(String question, UserPromptOptions optionType, 
 			UserPromptResponse defaultResponseType, SPDataSource defaultResponse, final JFrame owner, 
 			String questionMessage, DataSourceCollection<SPDataSource> dsCollection, 
 			List<Class<? extends SPDataSource>> dsTypes, String ...  buttonNames) {

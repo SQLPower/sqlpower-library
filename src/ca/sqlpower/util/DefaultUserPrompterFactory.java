@@ -19,6 +19,10 @@
 
 package ca.sqlpower.util;
 
+import java.util.List;
+
+import ca.sqlpower.sql.DataSourceCollection;
+import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.util.UserPrompter.UserPromptOptions;
 import ca.sqlpower.util.UserPrompter.UserPromptResponse;
 
@@ -32,7 +36,16 @@ public class DefaultUserPrompterFactory implements UserPrompterFactory {
 	public UserPrompter createUserPrompter(String question,
 			UserPromptType responseType, UserPromptOptions optionType,
 			UserPromptResponse defaultResponseType, Object defaultResponse,
-			String ... buttonNames) {
+			String... buttonNames) {
+		return new DefaultUserPrompter(optionType, defaultResponseType, defaultResponse);
+	}
+
+	public UserPrompter createDatabaseUserPrompter(String question,
+			List<Class<? extends SPDataSource>> dsTypes,
+			UserPromptOptions optionType,
+			UserPromptResponse defaultResponseType, Object defaultResponse,
+			DataSourceCollection<SPDataSource> dsCollection,
+			String... buttonNames) {
 		return new DefaultUserPrompter(optionType, defaultResponseType, defaultResponse);
 	}
 

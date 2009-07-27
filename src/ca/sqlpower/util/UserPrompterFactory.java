@@ -34,9 +34,11 @@ package ca.sqlpower.util;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.List;
 
-import ca.sqlpower.sql.JDBCDataSource;
-import ca.sqlpower.sql.Olap4jDataSource;
+import javax.swing.JFrame;
+
+import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.util.UserPrompter.UserPromptOptions;
 import ca.sqlpower.util.UserPrompter.UserPromptResponse;
@@ -55,29 +57,6 @@ public interface UserPrompterFactory {
     	 * are not allowed.
     	 */
     	BOOLEAN(Boolean.class),
-    	
-    	/**
-    	 * Database prompt types can have OK, NEW, NOT_OK, and CANCEL options.
-    	 * The database prompt allows users to choose an existing DB, create
-    	 * a new DB, or not load the DB if it is not loaded in the app's context.
-    	 */
-    	JDBC_DATA_SOURCE(JDBCDataSource.class),
-    	
-		/**
-		 * OLAP datasource prompt types can have OK, NEW, NOT_OK, and CANCEL
-		 * options. The OLAP datasource prompt allows users to choose an
-		 * existing OLAP datasource, create a new datasource, or not load the
-		 * datasource if it is not loaded in the app's context.
-		 */
-    	OLAP_DATA_SOURCE(Olap4jDataSource.class),
-    	
-    	/**
-    	 * This datasource prompt types can have OK, NEW, NOT_OK, and CANCEL
-    	 * options. The SP datasource prompt allows users to chose an existing
-    	 * SP Datasource (olap or jdbc), create a new datasource, or not load
-    	 * the datasource if it is not loaded in the app's context.
-    	 */
-    	SP_DATA_SOURCE(SPDataSource.class),
     	
     	/**
     	 * File prompt types can have OK, NEW, NOT_OK, and CANCEL options.
@@ -160,8 +139,16 @@ public interface UserPrompterFactory {
 	 *            The text to associate with response that cancels the whole
 	 *            operation.<br>
 	 */
-    public UserPrompter createUserPrompter(String question,
-            UserPromptType responseType, UserPromptOptions optionType,
-            UserPromptResponse defaultResponseType, Object defaultResponse,
-            String ... buttonNames);
+    public UserPrompter createUserPrompter(String question, UserPromptType responseType, UserPromptOptions optionType,
+			UserPromptResponse defaultResponseType, Object defaultResponse, 
+			String... buttonNames);
+
+	/**
+	 * This method is almost identical to createUserPrompter but instead it
+	 * creates a database user prompter. This is in a separate method because it
+	 * takes a collection of datasources as one of its arguments
+	 */
+    public UserPrompter createDatabaseUserPrompter(String question, List<Class<? extends SPDataSource>> dsTypes,
+    		UserPromptOptions optionType, UserPromptResponse defaultResponseType, Object defaultResponse,
+    		DataSourceCollection<SPDataSource> dsCollection, String ... buttonNames);
 }

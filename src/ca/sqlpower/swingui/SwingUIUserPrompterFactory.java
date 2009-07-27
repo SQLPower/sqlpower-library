@@ -19,6 +19,8 @@
 
 package ca.sqlpower.swingui;
 
+import java.util.List;
+
 import javax.swing.JFrame;
 
 import ca.sqlpower.sql.DataSourceCollection;
@@ -31,21 +33,30 @@ import ca.sqlpower.util.UserPrompter.UserPromptResponse;
 public class SwingUIUserPrompterFactory implements UserPrompterFactory {
     
     private JFrame owner;
-    private final DataSourceCollection<SPDataSource> dsCollection;
 
-    public SwingUIUserPrompterFactory(JFrame owner, DataSourceCollection<SPDataSource> dsCollection) {
+    public SwingUIUserPrompterFactory(JFrame owner) {
         this.owner = owner;
-        this.dsCollection = dsCollection;
     }
 
-    public UserPrompter createUserPrompter(String question, UserPromptType responseType, UserPromptOptions optionType, UserPromptResponse defaultResponseType,
-            Object defaultResponse, String ... buttonNames) {
-        return SwingPopupUserPrompter.swingPopupUserPrompter(question, responseType, optionType,
-				defaultResponseType, defaultResponse, owner, dsCollection, buttonNames);
-    }
 
     public void setParentFrame(JFrame frame) {
         owner = frame;
     }
 
+	public UserPrompter createUserPrompter(String question,
+			UserPromptType responseType, UserPromptOptions optionType,
+			UserPromptResponse defaultResponseType, Object defaultResponse,
+			String... buttonNames) {
+		return new ModalDialogUserPrompter(optionType, defaultResponseType, owner, question, buttonNames);
+	}
+
+	public UserPrompter createDatabaseUserPrompter(String question,
+			List<Class<? extends SPDataSource>> dsTypes,
+			UserPromptOptions optionType,
+			UserPromptResponse defaultResponseType, Object defaultResponse,
+			DataSourceCollection<SPDataSource> dsCollection,
+			String... buttonNames) {
+		return new DataSourceUserPrompter(question, optionType, defaultResponseType, (SPDataSource) defaultResponse, 
+				owner, question, dsCollection, dsTypes, buttonNames);
+	}
 }
