@@ -85,4 +85,15 @@ public class ColourScheme {
         new WebColour("#f781bf"),
         new WebColour("#999999")
     ));
+    
+    public static final WebColour[] HEADER_COLOURS = {
+    	new WebColour("#e2ecfa"),
+    	new WebColour("#e8e8e8"),
+    	new WebColour("#cedff7"),
+    	new WebColour("#dddddd"),
+    	new WebColour("#bbd3f4"),
+    	new WebColour("#d2d2d2"),
+    	new WebColour("#a8c6f1"),
+    	new WebColour("#c6c6c6")
+    };
 }
