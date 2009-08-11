@@ -1351,7 +1351,7 @@ public class SQLQueryUIComponents {
     	if (stmtExecutor == null) {
     		return;
     	}
-    	
+    	if (databaseComboBox.getSelectedIndex() == -1) return;
     	ConnectionAndStatementBean conBean = conMap.get(databaseMapping.getDatabase((JDBCDataSource) databaseComboBox.getSelectedItem()));
     	try {
     		if(conBean!= null) {
