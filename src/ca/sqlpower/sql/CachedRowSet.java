@@ -278,7 +278,8 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 			sortCols.add(new SortCol(columnIndex, ascending));
 		}
 
-		public int compare(Object row1, Object row2) {
+		@SuppressWarnings("unchecked")
+        public int compare(Object row1, Object row2) {
 			Object[] r1 = (Object[]) row1;
 			Object[] r2 = (Object[]) row2;
 
@@ -301,7 +302,23 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 					String s1 = ((String) r1[sc.columnIndex - 1]);
 					String s2 = ((String) r2[sc.columnIndex - 1]);
 					diff = s1.compareToIgnoreCase(s2);
-				} else diff = ((Comparable) r1[sc.columnIndex - 1]).compareTo(r2[sc.columnIndex - 1]);
+				} else if (r1[sc.columnIndex - 1] instanceof Comparable && r2[sc.columnIndex - 1] instanceof Comparable) {
+				    Comparable c1 = (Comparable) r1[sc.columnIndex - 1];
+				    Comparable c2 = (Comparable) r2[sc.columnIndex - 1];
+				    
+				    //This may throw an exception if c1 and c2 are not of mutually comparable types.
+				    //That would mean the same column contains two different types of objects
+				    //that cannot be compared to each other, which we think would be a fault in the JDBC driver.
+				    diff = c1.compareTo(c2); 
+				} else {
+				    Object r1ColVal = r1[sc.columnIndex - 1];
+                    Object r2ColVal = r2[sc.columnIndex - 1];
+				    if (r1ColVal == null && r2ColVal == null) diff = 0;
+				    else if (r1ColVal == null) diff = -1;
+				    else if (r2ColVal == null) diff = 1;
+				    else diff = 0; // relying on stability of MergeSort to keep rows in order database returned them in
+				    
+				}
 
 				if (diff != 0) {
 					if (sc.ascending) break;
