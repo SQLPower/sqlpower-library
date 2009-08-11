@@ -144,8 +144,8 @@ public class DataSourceUserPrompter implements UserPrompter {
             }
         };
     	
+        dialog.setModal(true);
         if (SwingUtilities.isEventDispatchThread()) {
-        	dialog.setModal(true);
         	promptUser.run();
         	dialog.requestFocusInWindow();
         } else {
