@@ -23,20 +23,15 @@ public class BrowserUtil {
         } else if (OS_NAME.startsWith("Mac OS")) {
             runtime.exec("open " + uri);
         } else {
-        	try {
-        		runtime.exec("xdg-open " + uri);
-        		
-        	} catch (Exception e) {
-            	String[] browsers = {"epiphany", "firefox", "mozilla", "konqueror",
-    			"netscape","opera","links","lynx"};
+        	String[] browsers = {"xdg-open ", "epiphany", "firefox", "mozilla", "konqueror",
+			"netscape","opera"};
 
-		    	// Build a command string which looks like "browser1 "url" || browser2 "url" ||..."
-		    	StringBuffer cmd = new StringBuffer();
-		    	for (int i=0; i<browsers.length; i++)
-		    		cmd.append( (i==0  ? "" : " || " ) + browsers[i] +" \"" + uri + "\" ");
-		
-		    	runtime.exec(new String[] { "sh", "-c", cmd.toString() });
-        	}
+	    	// Build a command string which looks like "browser1 "url" || browser2 "url" ||..."
+	    	StringBuffer cmd = new StringBuffer();
+	    	for (int i=0; i<browsers.length; i++)
+	    		cmd.append( (i==0  ? "" : " || " ) + browsers[i] +" \"" + uri + "\" ");
+	
+	    	runtime.exec(new String[] { "sh", "-c", cmd.toString() });
         }
     }
 }
