@@ -1,7 +1,6 @@
 package ca.sqlpower.util;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * Utility class for dealing with Web Browsers.
@@ -18,27 +17,22 @@ public class BrowserUtil {
      */
     public static void launch(String uri) throws IOException {
         Runtime runtime = Runtime.getRuntime();
-        Process p = null;
+        
         if (OS_NAME.contains("Windows")) {
-            p = runtime.exec("cmd /C \"start " + uri + "\"");
+            runtime.exec("cmd /C \"start " + uri + "\"");
         } else if (OS_NAME.startsWith("Mac OS")) {
-            p = runtime.exec("open " + uri);
+            runtime.exec("open " + uri);
         } else {
-            // XXX check PATH for mozilla OR firefox? Opera???? chrome????????? chromium??????????!??????
-            p = runtime.exec("firefox " + uri);
+        	// Build a list of browsers to try, in this order. dont know for sure on linux so lets try a bunch
+        	String[] browsers = {"epiphany", "firefox", "mozilla", "konqueror",
+        			"netscape","opera","links","lynx"};
+
+        	// Build a command string which looks like "browser1 "url" || browser2 "url" ||..."
+        	StringBuffer cmd = new StringBuffer();
+        	for (int i=0; i<browsers.length; i++)
+        		cmd.append( (i==0  ? "" : " || " ) + browsers[i] +" \"" + uri + "\" ");
+
+        	runtime.exec(new String[] { "sh", "-c", cmd.toString() });
         }
-        try {
-            p.waitFor();
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Problem waiting for browser", e);
-        }
-        final InputStream errorStream = p.getErrorStream();
-        int c = -1;
-        do {
-            if (errorStream.available() > 0) {
-                c = errorStream.read();
-                System.out.print((char)c);
-            }
-        } while (c != -1);
     }
 }
