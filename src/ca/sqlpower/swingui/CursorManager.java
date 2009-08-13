@@ -22,7 +22,6 @@ package ca.sqlpower.swingui;
 import java.awt.Cursor;
 
 import javax.swing.JComponent;
-import javax.swing.JPanel;
 
 /**
  * A simple class that encapsulates the logic for making the cursor image
@@ -34,6 +33,7 @@ public class CursorManager {
 	private boolean draggingTable = false;
     private boolean dragAllModeActive = false;
     private boolean placeModeActive = false;
+    private boolean dragLineActive = false;
     private JComponent component;
     
     public CursorManager(JComponent component){
@@ -80,6 +80,16 @@ public class CursorManager {
     	modifyCursorImage();
     }
     
+    public void dragLineStarted() {
+        dragLineActive = true;
+        modifyCursorImage();
+    }
+    
+    public void dragLineFinished() {
+        dragLineActive = false;
+        modifyCursorImage();
+    }
+    
     /**
      * Sets the appropriate cursor type based on the current
      * state of this cursor manager.
@@ -91,6 +101,8 @@ public class CursorManager {
             component.setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
         } else if (waiting) {
         	component.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        } else if (dragLineActive) {
+            component.setCursor(Cursor.getPredefinedCursor(Cursor.W_RESIZE_CURSOR));
         } else {
             component.setCursor(null);
         }
