@@ -64,17 +64,23 @@ public class ProgressWatcher implements ActionListener {
     }
 
     /**
-     * Create a ProgressWatcher with the given progress bar and Monitorable, and set the 
-     * progress bar label to the given JLabel. The label and progress bar will remain visible
-     * after the monitorable is finished by default.  
+     * Create a ProgressWatcher with the given progress bar and Monitorable, and
+     * set the progress bar label to the given JLabel. The label and progress
+     * bar will remain visible after the monitorable is finished by default.
      * <p>
-     * The progress bar will not start up at this point. You should either use the static method
-     * {@link #watchProgress(JProgressBar, Monitorable, JLabel))} or call the {@link #start()}
-     * method after calling the constructor to start the progress bar monitor.
+     * The progress bar will not start up at this point. You should either use
+     * the static method
+     * {@link #watchProgress(JProgressBar, Monitorable, JLabel))} instead of
+     * invoking this constructor directly, or call the {@link #start()} method
+     * after calling the constructor to start the progress bar monitor.
      * 
-     * @param bar The JProgressBar that is tracking the progress of the monitorable
-     * @param monitorable The monitorable object that the ProgressWatcher monitors
-     * @param label The label you want to display on the progress bar 
+     * @param bar
+     *            The JProgressBar that is tracking the progress of the
+     *            monitorable
+     * @param monitorable
+     *            The monitorable object that the ProgressWatcher monitors
+     * @param label
+     *            The label you want to display on the progress bar
      */
     public ProgressWatcher(JProgressBar bar, Monitorable monitorable, JLabel label) {
         this.bar = bar;
@@ -84,14 +90,17 @@ public class ProgressWatcher implements ActionListener {
 
     /**
      * Create a ProgressWatcher with the given ProgressMonitor and Monitorable.
-     * It will leave the progress bar label blank. 
      * <p>
-     * The progress bar will not start up at this point. You should either use the static method
-     * {@link #watchProgress(JProgressBar, Monitorable)} or call the {@link #start()}
-     * method after calling the constructor to start the progress bar monitor.
+     * The progress monitor will not start receiving updates until you call call
+     * the {@link #start()}. As an alternative to this constructor, you can use
+     * the static method {@link #watchProgress(ProgressMonitor, Monitorable)}
+     * which creates a ProgressWatcher instance and starts it.
      * 
-     * @param bar The JProgressBar that is tracking the progress of the monitorable
-     * @param monitorable The monitorable object that the ProgressWatcher monitors 
+     * @param pm
+     *            The Swing ProgressMonitor that should track the progress of
+     *            the monitorable
+     * @param monitorable
+     *            The monitorable object that the ProgressWatcher monitors
      */
     public ProgressWatcher(ProgressMonitor pm, Monitorable monitorable) {
         this.pm = pm;
@@ -146,20 +155,18 @@ public class ProgressWatcher implements ActionListener {
     	ProgressWatcher watcher = new ProgressWatcher(bar, monitorable, label);
     	watcher.start();
     }
-    
+
     /**
-     * Creates a ProgressWatcher with the given ProgressMonitor and Monitorable using the 
-     * {@link #ProgressWatcher(ProgressMonitor, Monitorable)} constructor and starts it immediately.
-     *
-     * Also, the progress bar and label will remain visible once the monitorable is finished.
-     * If you prefer to have the progress bar and label to be hidden after the monitorable is finished,
-     * then use the {@link #ProgressWatcher(ProgressMonitor, Monitorable)} constructor, followed by
-     * {@link #setHideLabelWhenFinished(boolean)} and/or {@link #setHideProgressBarWhenFinished(boolean)}
-     * method calls to hide the label and/or progress bar after the Monitorable is finished, and then 
-     * call {@link #start()} to start the ProgressWatcher.
+     * Creates a ProgressWatcher with the given ProgressMonitor and Monitorable
+     * using the {@link #ProgressWatcher(ProgressMonitor, Monitorable)}
+     * constructor and starts it immediately.
      * 
-     * @param bar The ProgressMonitor that will used to monitor the progress of the Monitorable object
-     * @param monitorable The Monitorable object that will be monitored to update the progress bar
+     * @param pm
+     *            The Swing ProgressMonitor that should track the progress of
+     *            the given Monitorable object.
+     * @param monitorable
+     *            The Monitorable object that will be monitored to update the
+     *            progress monitor.
      */
     public static void watchProgress(ProgressMonitor pm, Monitorable monitorable) {
     	ProgressWatcher watcher = new ProgressWatcher(pm, monitorable);
