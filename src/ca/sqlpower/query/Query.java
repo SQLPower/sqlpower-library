@@ -361,18 +361,22 @@ public class Query {
 		
 	}
 	
+	public Query(Query copy, boolean connectListeners) {
+		this(copy, connectListeners, copy.getDatabase());
+	}
+	
 	/**
 	 * A copy constructor for the query cache. This will not
 	 * hook up listeners.
 	 */
-	public Query(Query copy, boolean connectListeners) {
+	public Query(Query copy, boolean connectListeners, SQLDatabase database) {
 	    uuid = "w" + UUID.randomUUID().toString();
 		selectedColumns = new ArrayList<Item>();
 		fromTableList = new ArrayList<Container>();
 		joinMapping = new HashMap<Container, List<SQLJoin>>();
 		orderByList = new ArrayList<Item>();
 		
-		dbMapping = copy.getDBMapping();
+		this.dbMapping = copy.dbMapping;
 		setName(copy.getName());
 
 		Map<Container, Container> oldToNewContainers = new HashMap<Container, Container>();
@@ -429,7 +433,7 @@ public class Query {
 		groupingEnabled = copy.isGroupingEnabled();
 		streaming = copy.isStreaming();
 
-		database = copy.getDatabase();
+		this.database = database;
 		userModifiedQuery = copy.getUserModifiedQuery();
 		
 		if (connectListeners) {
@@ -447,6 +451,10 @@ public class Query {
 		        join.addJoinChangeListener(joinChangeListener);
 		    }
 		}
+	}
+	
+	public SQLDatabaseMapping getDbMapping() {
+		return dbMapping;
 	}
 	
 	public void setDBMapping(SQLDatabaseMapping dbMapping) {
@@ -1069,13 +1077,6 @@ public class Query {
 	 */
 	protected String getUserModifiedQuery() {
 		return userModifiedQuery;
-	}
-	
-	/**
-	 * Used in the copy constructor to set the database mapping.
-	 */
-	public SQLDatabaseMapping getDBMapping() {
-		return dbMapping;
 	}
 	
 	@Override
