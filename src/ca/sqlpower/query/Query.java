@@ -777,6 +777,27 @@ public class Query {
 		logger.debug(" Query is : " + query.toString());
 		return query.toString();
 	}
+	
+	/**
+	 * Returns true if the query this object represents contains a cross join between
+	 * two tables. Returns false otherwise.
+	 */
+	public boolean containsCrossJoins() {
+	    DepthFirstSearch<Container, SQLJoin> dfs = new DepthFirstSearch<Container, SQLJoin>();
+	    final TableJoinGraph graph = new TableJoinGraph();
+        dfs.performSearch(graph);
+	    for (int i = 0; i < dfs.getFinishOrder().size(); i++) {
+	        Container container = dfs.getFinishOrder().get(i);
+	        if (i > 0 && !graph.getAdjacentNodes(container).contains(dfs.getFinishOrder().get(i - 1))) {
+	            return true;
+	        }
+	        if (i < dfs.getFinishOrder().size() - 1 && 
+	                !graph.getAdjacentNodes(container).contains(dfs.getFinishOrder().get(i + 1))) {
+                return true;
+            }
+	    }
+	    return false;
+	}
 
 	/**
 	 * If the item passed in is a {@link StringItem} and it starts with an aggregator
