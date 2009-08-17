@@ -32,6 +32,8 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.table.AbstractTableModel;
 
+import net.miginfocom.swing.MigLayout;
+
 import org.apache.log4j.Logger;
 
 /**
@@ -76,14 +78,20 @@ public class AboutPanel extends AbstractNoEditDataEntryPanel {
         tabs.setSelectedIndex(0);
         add(tabs);
 	}
+	
+	private static final JLabel sqlpLabel = new JLabel(new ImageIcon(AboutPanel.class.getClassLoader().getResource("ca/sqlpower/swingui/SQLP-90x80.png")));
 
     private JComponent initAboutTab(ImageIcon icon, String productName, String versionPropertiesPath, String defaultAppVersion) {
         JPanel panel = new JPanel();
 		panel.setLayout(new FlowLayout());
 
+		
         // Include the Icon!
 		if (icon != null) {
-			panel.add(new JLabel(icon));
+			JPanel logoPanel = new JPanel(new MigLayout("", "[center]"));
+			logoPanel.add(new JLabel(icon), "wrap, gapbottom 50");
+			logoPanel.add(sqlpLabel);
+			panel.add(logoPanel);
 		}
 
         String version;
