@@ -20,5 +20,6 @@
 	<classpathentry kind="lib" path="lib/servlet-api-2.4.jar"/>
 	<classpathentry kind="lib" path="lib/xercesImpl-2.9.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging.jar"/>
+	<classpathentry kind="lib" path="lib/jsr305.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
