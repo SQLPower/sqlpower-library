@@ -422,6 +422,85 @@ public class QueryTest extends TestCase {
 	}
     
     /**
+	 * Tests that removing a column that had a sort order from the query by
+	 * un-selecting it removes it from the generated query and then selecting
+	 * it adds it back in.
+	 */
+    public void testReselectColWithSorting() throws Exception {
+    	Query q = new Query(new StubDatabaseMapping());
+    	Item col1 = new StringItem("Col 1");
+    	Item col2 = new StringItem("Col 2");
+    	Container table = new TestingItemContainer("Test container");
+    	table.addItem(col1);
+    	table.addItem(col2);
+    	q.addTable(table);
+    	col1.setSelected(true);
+    	col2.setSelected(true);
+    	col1.setOrderBy(OrderByArgument.ASC);
+    	
+    	String query = q.generateQuery().toLowerCase();
+    	System.out.println(query);
+		String selectAndSortRegex = "select(.|\n)*" + col1.getName().toLowerCase() 
+			+ "(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*order by(.|\n)*" 
+			+ col1.getName().toLowerCase() + "(.|\n)*";
+		String selectNoSortRegex = "select(.|\n)*" + col1.getName().toLowerCase() 
+			+ "(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*";
+		assertTrue(query.matches(selectAndSortRegex));		
+		
+		col1.setSelected(false);
+		query = q.generateQuery().toLowerCase();
+		assertFalse(query.matches(selectAndSortRegex));
+		assertFalse(query.matches(selectNoSortRegex));
+		System.out.println(query);
+		assertTrue(query.matches("select(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*"));
+		
+		String reselectWithSortRegex = "select(.|\n)*" + col2.getName().toLowerCase() 
+			+ "(.|\n)*" + col1.getName().toLowerCase() + "(.|\n)*order by(.|\n)*" 
+			+ col1.getName().toLowerCase() + "(.|\n)*";
+		col1.setSelected(true);
+		query = q.generateQuery().toLowerCase();
+		assertTrue(query.matches(reselectWithSortRegex));
+	}
+    
+    /**
+     * Tests adding an item with its order by set will return
+     * a query with the order by in it.
+     */
+    public void testAddingItemWithOrder() throws Exception {
+    	Query q = new Query(new StubDatabaseMapping());
+    	Item col1 = new StringItem("Col 1");
+    	Item col2 = new StringItem("Col 2");
+    	Container table = new TestingItemContainer("Test container");
+    	table.addItem(col1);
+    	table.addItem(col2);
+    	q.addTable(table);
+    	col1.setSelected(true);
+    	col2.setSelected(true);
+    	col1.setOrderBy(OrderByArgument.ASC);
+    	
+    	String query = q.generateQuery().toLowerCase();
+    	System.out.println(query);
+		String selectAndSortRegex = "select(.|\n)*" + col1.getName().toLowerCase() 
+			+ "(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*order by(.|\n)*" 
+			+ col1.getName().toLowerCase() + "(.|\n)*";
+		assertTrue(query.matches(selectAndSortRegex));
+		
+		Item col3 = new StringItem("Col 3");
+		col3.setSelected(true);
+		col3.setOrderBy(OrderByArgument.DESC);
+		table.addItem(col3);
+		query = q.generateQuery().toLowerCase();
+		String colAddedWithSort = "select(.|\n)*" + col1.getName().toLowerCase() 
+			+ "(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*" 
+			+ col3.getName().toLowerCase() + "(.|\n)*order by(.|\n)*" 
+			+ col1.getName().toLowerCase() + "(.|\n)*" + col3.getName().toLowerCase() 
+			+ "(.|\n)*";
+		query = q.generateQuery().toLowerCase();
+		System.out.println(query);
+		assertTrue(query.matches(colAddedWithSort));
+	}
+    
+    /**
      * Test to ensure a column that is selected is added to the query and
      * if it is un-selected it is removed.
      */

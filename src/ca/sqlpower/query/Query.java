@@ -191,17 +191,21 @@ public class Query {
      */
 	private PropertyChangeListener itemListener = new PropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent e) {
-		    if (e.getPropertyName().equals(Item.SELECTED)) {
+		    Item selectedItem = (Item) e.getSource();
+			if (e.getPropertyName().equals(Item.SELECTED)) {
 		        if ((Boolean) e.getNewValue()) {
-		            selectedColumns.add((Item) e.getSource());
+		            selectedColumns.add(selectedItem);
+		            if (!selectedItem.getOrderBy().equals(OrderByArgument.NONE)) {
+		            	orderByList.add(selectedItem);
+		            }
 		        } else {
-		            selectedColumns.remove((Item) e.getSource());
+		            selectedColumns.remove(selectedItem);
 		            orderByList.remove(e.getSource());
 		        }
 		    } else if (e.getPropertyName().equals(Item.ORDER_BY)) {
 		        orderByList.remove(e.getSource());
 		        if (!e.getNewValue().equals(OrderByArgument.NONE)) {
-		            orderByList.add((Item) e.getSource());
+		            orderByList.add(selectedItem);
 		        }
 		    }
 		    
@@ -956,11 +960,22 @@ public class Query {
 	
 	/**
 	 * This adds the appropriate listeners to the new Item.
+	 * <p>
+	 * XXX This method should not be public. Items should be
+	 * added to a container in the query or their container
+	 * should be added to a query. They should not be added
+	 * directly.
 	 */
 	public void addItem(Item col) {
 		col.addPropertyChangeListener(itemListener);
 		for (int i = changeListeners.size() - 1; i >= 0; i--) {
 		    changeListeners.get(i).itemAdded(new QueryChangeEvent(this, col));
+		}
+		if (col.isSelected()) {
+			selectedColumns.add(col);
+		}
+		if (col.isSelected() && !col.getOrderBy().equals(OrderByArgument.NONE)) {
+			orderByList.add(col);
 		}
 	}
 	
