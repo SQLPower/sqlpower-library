@@ -196,6 +196,7 @@ public class Query {
 		            selectedColumns.add((Item) e.getSource());
 		        } else {
 		            selectedColumns.remove((Item) e.getSource());
+		            orderByList.remove(e.getSource());
 		        }
 		    } else if (e.getPropertyName().equals(Item.ORDER_BY)) {
 		        orderByList.remove(e.getSource());
@@ -744,9 +745,6 @@ public class Query {
 		if (!orderByList.isEmpty()) {
 			boolean isFirstOrder = true;
 			for (Item col : orderByList) {
-				if (col instanceof StringItem) {
-					continue;
-				}
 				if (isFirstOrder) {
 					query.append("\nORDER BY ");
 					isFirstOrder = false;

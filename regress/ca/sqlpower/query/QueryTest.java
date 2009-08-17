@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import junit.framework.TestCase;
-import ca.sqlpower.graph.DepthFirstSearch;
+import ca.sqlpower.query.Query.OrderByArgument;
 import ca.sqlpower.query.Query.TableJoinGraph;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sqlobject.SQLDatabase;
@@ -355,5 +355,202 @@ public class QueryTest extends TestCase {
         assertEquals(1, tableJoinGraph.getOutboundEdges(container3).size());
         assertTrue(tableJoinGraph.getOutboundEdges(container3).contains(join2to3));
     }
+
+	/**
+	 * Tests adding and removing a sort order to an item in a query
+	 * updates the query appropriately.
+	 */
+    public void testRemoveSortingFromColWithSorting() throws Exception {
+    	Query q = new Query(new StubDatabaseMapping());
+    	Item col1 = new StringItem("Col 1");
+    	Item col2 = new StringItem("Col 2");
+    	Container table = new TestingItemContainer("Test container");
+    	table.addItem(col1);
+    	table.addItem(col2);
+    	q.addTable(table);
+    	col1.setSelected(true);
+    	col2.setSelected(true);
+    	col1.setOrderBy(OrderByArgument.ASC);
+    	
+    	String query = q.generateQuery().toLowerCase();
+    	System.out.println(query);
+		String selectAndSortRegex = "select(.|\n)*" + col1.getName().toLowerCase() 
+			+ "(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*order by(.|\n)*" 
+			+ col1.getName().toLowerCase() + "(.|\n)*";
+		String selectNoSortRegex = "select(.|\n)*" + col1.getName().toLowerCase() 
+			+ "(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*";
+		assertTrue(query.matches(selectAndSortRegex));
+		
+		col1.setOrderBy(OrderByArgument.NONE);
+		query = q.generateQuery().toLowerCase();
+		System.out.println(query);
+		assertFalse(query.matches(selectAndSortRegex));
+		assertTrue(query.matches(selectNoSortRegex));
+    }
+
+    /**
+	 * Tests that removing a column that had a sort order from the query by
+	 * un-selecting it removes it from the generated query.
+	 */
+    public void testUnselectColWithSorting() throws Exception {
+    	Query q = new Query(new StubDatabaseMapping());
+    	Item col1 = new StringItem("Col 1");
+    	Item col2 = new StringItem("Col 2");
+    	Container table = new TestingItemContainer("Test container");
+    	table.addItem(col1);
+    	table.addItem(col2);
+    	q.addTable(table);
+    	col1.setSelected(true);
+    	col2.setSelected(true);
+    	col1.setOrderBy(OrderByArgument.ASC);
+    	
+    	String query = q.generateQuery().toLowerCase();
+    	System.out.println(query);
+		String selectAndSortRegex = "select(.|\n)*" + col1.getName().toLowerCase() 
+			+ "(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*order by(.|\n)*" 
+			+ col1.getName().toLowerCase() + "(.|\n)*";
+		String selectNoSortRegex = "select(.|\n)*" + col1.getName().toLowerCase() 
+			+ "(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*";
+		assertTrue(query.matches(selectAndSortRegex));		
+		
+		col1.setSelected(false);
+		query = q.generateQuery().toLowerCase();
+		assertFalse(query.matches(selectAndSortRegex));
+		assertFalse(query.matches(selectNoSortRegex));
+		System.out.println(query);
+		assertTrue(query.matches("select(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*"));
+	}
     
+    /**
+     * Test to ensure a column that is selected is added to the query and
+     * if it is un-selected it is removed.
+     */
+    public void testSelectColumn() throws Exception {
+    	Query q = new Query(new StubDatabaseMapping());
+    	Item col1 = new StringItem("Col 1");
+    	Item col2 = new StringItem("Col 2");
+    	Container table = new TestingItemContainer("Test container");
+    	table.addItem(col1);
+    	table.addItem(col2);
+    	q.addTable(table);
+    	col1.setSelected(true);
+    	col2.setSelected(true);
+    	
+    	String selectRegex = "select(.|\n)*" + col1.getName().toLowerCase() +
+    		"(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*from(.|\n)*";
+    	String query = q.generateQuery().toLowerCase();
+    	assertTrue(query.matches(selectRegex));
+    	
+    	String unselectRegex = "select(.|\n)*" + col2.getName().toLowerCase() +
+    	"(.|\n)*from(.|\n)*";
+    	col1.setSelected(false);
+    	query = q.generateQuery().toLowerCase();
+    	assertFalse(query.matches(selectRegex));
+    	assertTrue(query.matches(unselectRegex));
+    	
+    	String reselectRegex = "select(.|\n)*" + col2.getName().toLowerCase() +
+			"(.|\n)*" + col1.getName().toLowerCase() + "(.|\n)*from(.|\n)*";
+    	col1.setSelected(true);
+    	query = q.generateQuery().toLowerCase();
+    	assertFalse(query.matches(selectRegex));
+    	assertTrue(query.matches(reselectRegex));
+	}
+
+	/**
+	 * Simple test to confirm that grouping is added and removed appropriately
+	 * when it is added to an item and when an item with grouping is removed
+	 * from a query.
+	 * 
+	 * @throws Exception
+	 */
+    public void testGroupingOnItem() throws Exception {
+    	Query q = new Query(new StubDatabaseMapping());
+    	Item col1 = new StringItem("Col 1");
+    	Item col2 = new StringItem("Col 2");
+    	Container table = new TestingItemContainer("Test container");
+    	table.addItem(col1);
+    	table.addItem(col2);
+    	q.addTable(table);
+    	col1.setSelected(true);
+    	col2.setSelected(true);
+    	
+    	String selectRegex = "select(.|\n)*" + col1.getName().toLowerCase() +
+    		"(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*from(.|\n)*";
+    	String query = q.generateQuery().toLowerCase();
+    	assertTrue(query.matches(selectRegex));
+    	
+    	String groupingRegex = "select(.|\n)*" + col1.getName().toLowerCase() +
+			"(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*from(.|\n)*group by(.|\n)*" +
+			"(.|\n)*" + col1.getName().toLowerCase() + "(.|\n)*";
+    	col1.setGroupBy(SQLGroupFunction.SUM);
+    	q.setGroupingEnabled(false);
+    	query = q.generateQuery().toLowerCase();
+    	assertTrue(query.matches(selectRegex));
+    	assertFalse(query.matches(groupingRegex));
+
+    	String summingRegex = "select(.|\n)*sum(.|\n)*" + col1.getName().toLowerCase() +
+			"(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*from(.|\n)*";
+    	q.setGroupingEnabled(true);
+    	col1.setGroupBy(SQLGroupFunction.SUM);
+    	query = q.generateQuery().toLowerCase();
+    	assertFalse(query.matches(groupingRegex));
+    	assertTrue(query.matches(summingRegex));
+    	
+    	col1.setGroupBy(SQLGroupFunction.GROUP_BY);
+    	query = q.generateQuery().toLowerCase();
+    	assertFalse(query.matches(summingRegex));
+    	assertTrue(query.matches(groupingRegex));
+    	
+    	String failRegex = "select(.|\n)*" + col1.getName().toLowerCase() +
+			"(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*from(.|\n)*";
+    	String col2Regex = "select(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*";
+    	col1.setSelected(false);
+    	query = q.generateQuery().toLowerCase();
+    	System.out.println(query);
+    	assertFalse(query.matches(failRegex));
+    	assertTrue(query.matches(col2Regex));
+	}
+
+    /**
+     * Test that a correct query is returned when a column that is being
+     * aggregated is removed from the query.
+     * @throws Exception
+     */
+    public void testUnselectColumnWithAggregate() throws Exception {
+    	Query q = new Query(new StubDatabaseMapping());
+    	Item col1 = new StringItem("Col 1");
+    	Item col2 = new StringItem("Col 2");
+    	Container table = new TestingItemContainer("Test container");
+    	table.addItem(col1);
+    	table.addItem(col2);
+    	q.addTable(table);
+    	col1.setSelected(true);
+    	col2.setSelected(true);
+    	
+    	String selectRegex = "select(.|\n)*" + col1.getName().toLowerCase() +
+    		"(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*from(.|\n)*";
+    	String query = q.generateQuery().toLowerCase();
+    	assertTrue(query.matches(selectRegex));
+    	
+    	String groupingRegex = "select(.|\n)*" + col1.getName().toLowerCase() +
+			"(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*from(.|\n)*group by(.|\n)*" +
+			"(.|\n)*" + col1.getName().toLowerCase() + "(.|\n)*";
+    	String summingRegex = "select(.|\n)*sum(.|\n)*" + col1.getName().toLowerCase() +
+			"(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*from(.|\n)*";
+    	q.setGroupingEnabled(true);
+    	col1.setGroupBy(SQLGroupFunction.SUM);
+    	query = q.generateQuery().toLowerCase();
+    	assertFalse(query.matches(groupingRegex));
+    	assertTrue(query.matches(summingRegex));
+    	
+    	String failRegex = "select(.|\n)*" + col1.getName().toLowerCase() +
+			"(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*from(.|\n)*";
+    	String col2Regex = "select(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*";
+    	col1.setSelected(false);
+    	query = q.generateQuery().toLowerCase();
+    	System.out.println(query);
+    	assertFalse(query.matches(failRegex));
+    	assertTrue(query.matches(col2Regex));
+	}
+
 }
