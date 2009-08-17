@@ -148,12 +148,6 @@ public class SQLQueryUIComponents {
     
     private static final Logger logger = Logger.getLogger(SQLQueryUIComponents.class);
     
-	/**
-	 * This is the frequency the ExecuteSQLWorker will notify its timer listeners
-	 * to update as the worker is still executing.
-	 */
-	private static final Integer NOTIFICATION_FREQUENCY = Integer.valueOf(12);
-    
     /**
      * The entry value in the input map that will map a key press to our
      * "Execute" action.
@@ -332,7 +326,7 @@ public class SQLQueryUIComponents {
          * given SQL statement as the string to execute on.
          */
         public ExecuteSQLWorker(SwingWorkerRegistry registry, StatementExecutor stmtExecutor) {
-        	super(registry, NOTIFICATION_FREQUENCY, stmtExecutor.getTimerListener());
+        	super(registry);
 			this.stmtExecutor = stmtExecutor;
         	if(stmtExecutor.getStatement().equals("")) {
         		logger.debug("Empty String");
@@ -461,20 +455,6 @@ public class SQLQueryUIComponents {
 		
 		private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
 		
-		/**
-		 * This listener forwards timer events to the listeners on this executor.
-		 */
-		private final ActionListener timerListener = new ActionListener() {
-			
-			private int timerTicks = 0;
-			
-			public void actionPerformed(ActionEvent e) {
-				int oldTicks = timerTicks;
-				timerTicks++;
-				pcs.firePropertyChange("timerTicks", oldTicks, timerTicks);
-			}
-		};
-
 		public DefaultStatementExecutor(SQLDatabase db, String sqlString, int rowLimit) {
 			this.rowLimit = rowLimit;
 			this.sqlString = sqlString;
@@ -551,18 +531,6 @@ public class SQLQueryUIComponents {
 			rowSetChangeListeners.remove(l);
 		}
 
-		public void addTimerListener(PropertyChangeListener l) {
-			pcs.addPropertyChangeListener(l);
-		}
-
-		public void removeTimerListener(PropertyChangeListener l) {
-			pcs.removePropertyChangeListener(l);
-		}
-
-		public ActionListener getTimerListener() {
-			return timerListener;
-		}
-    	
     }
     
     /**

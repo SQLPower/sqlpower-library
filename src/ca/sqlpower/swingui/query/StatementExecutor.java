@@ -19,8 +19,6 @@
 
 package ca.sqlpower.swingui.query;
 
-import java.awt.event.ActionListener;
-import java.beans.PropertyChangeListener;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -81,20 +79,4 @@ public interface StatementExecutor {
 	
 	void removeRowSetChangeListener(RowSetChangeListener l);
 
-	/**
-	 * Listeners added here will be notified when the timer on the worker
-	 * this executor is running in updates.
-	 */
-	void addTimerListener(PropertyChangeListener l);
-	
-	/**
-	 * Removes the listener that is notified of timer events.
-	 */
-	void removeTimerListener(PropertyChangeListener l);
-	
-	/**
-	 * This returns the listener added to the worker to forward timer
-	 * events from the worker to listeners of this statement executor.
-	 */
-	ActionListener getTimerListener();
 }

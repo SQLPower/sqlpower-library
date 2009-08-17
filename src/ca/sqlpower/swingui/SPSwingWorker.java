@@ -18,12 +18,10 @@
  */
 package ca.sqlpower.swingui;
 
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.SwingUtilities;
-import javax.swing.Timer;
 
 import org.apache.log4j.Logger;
 
@@ -41,23 +39,8 @@ public abstract class SPSwingWorker implements Runnable, Monitorable {
     private Thread thread;
 	
     private final List<TaskTerminationListener> taskTerminationListeners
-    = new ArrayList<TaskTerminationListener>();
+        = new ArrayList<TaskTerminationListener>();
     
-	/**
-	 * The number of times the timer will fire a property change in a second.
-	 * The timer in this worker will start firing events when doStuff starts
-	 * and will stop firing events when cleanup is finished.
-	 * <p>
-	 * This will be null if a timer is not needed.
-	 */
-	private Integer frequency = null;
-	
-	/**
-	 * This listener will be notified at the frequency specified starting
-	 * when doStuff starts and stopping after cleanup finishes.
-	 */
-	private final ActionListener timerListener;
-
 	private boolean started;
 	private boolean finished;
 	private int progress;
@@ -65,13 +48,7 @@ public abstract class SPSwingWorker implements Runnable, Monitorable {
 	private Integer jobSize;
     
     public SPSwingWorker(SwingWorkerRegistry registry) {
-    	this(registry, null, null);
-    }
-    
-    public SPSwingWorker(SwingWorkerRegistry registry, Integer frequency, ActionListener timerListener) {
-    	this.registry = registry;
-		this.frequency = frequency;
-		this.timerListener = timerListener;
+        this.registry = registry;
     }
     
 	/**
@@ -83,13 +60,6 @@ public abstract class SPSwingWorker implements Runnable, Monitorable {
 	
 	public final void run() {
 		try {
-			final Timer timer;
-			if (frequency != null) {
-				timer = new Timer(1000/frequency, timerListener);
-				timer.start();
-			} else {
-				timer = null;
-			}
 			setStarted(true);
 			setFinished(false);
 			
@@ -109,9 +79,6 @@ public abstract class SPSwingWorker implements Runnable, Monitorable {
             				cleanup();
             			} finally {
             				setFinished(true);
-            				if (timer != null) {
-            					timer.stop();
-            				}
             				fireTaskFinished();
             			}
             			
