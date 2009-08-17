@@ -30,15 +30,13 @@ public class SQLObjectItem extends AbstractItem {
 	
 	private String alias;
 	
-	private boolean selected;
-
 	private String where;
 	
 	public SQLObjectItem(SQLObject object) {
 		sqlObject = object;
 		this.alias = "";
 		this.where = "";
-		this.selected = false;
+		setSelected(false);
 	}
 	
 	/**
@@ -51,7 +49,7 @@ public class SQLObjectItem extends AbstractItem {
 		super.setName(name);
 		this.alias = "";
 		this.where = "";
-		this.selected = false;
+		setSelected(false);
 	}
 	
 	public String getName() {
@@ -96,19 +94,6 @@ public class SQLObjectItem extends AbstractItem {
 	
 	public String getWhere() {
 		return where;
-	}
-
-	public boolean isSelected() {
-		return selected;
-	}
-
-	public void setSelected(boolean selected) {
-		boolean oldSelect = this.selected;
-		if (oldSelect == selected) {
-			return;
-		}
-		this.selected = selected;
-		firePropertyChange(SELECTED, oldSelect, selected);
 	}
 
 	public void setWhere(String where) {

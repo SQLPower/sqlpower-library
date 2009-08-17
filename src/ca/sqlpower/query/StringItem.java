@@ -29,7 +29,6 @@ package ca.sqlpower.query;
 public class StringItem extends AbstractItem {
 	
 	private String alias;
-	private boolean selected;
 	private String where;
 
 	public StringItem(String name) {
@@ -43,7 +42,7 @@ public class StringItem extends AbstractItem {
 		super(uuid);
 		this.alias = "";
 		this.where = "";
-		this.selected = false;
+		setSelected(false);
 		setName(name);
 	}
 	
@@ -75,19 +74,6 @@ public class StringItem extends AbstractItem {
 	
 	public String getWhere() {
 		return where;
-	}
-	
-	public boolean isSelected() {
-		return selected;
-	}
-	
-	public void setSelected(boolean selected) {
-		boolean oldSelect = this.selected;
-		if (oldSelect == selected) {
-			return;
-		}
-		this.selected = selected;
-		firePropertyChange(SELECTED, oldSelect, selected);
 	}
 	
 	public void setWhere(String where) {

@@ -46,6 +46,8 @@ public abstract class AbstractItem implements Item {
 	
 	private String name;
 	
+	private boolean selected;
+	
     /**
      * This aggregate is either the toString of a SQLGroupFunction or null
      * if the item is not being aggregated on.
@@ -156,5 +158,18 @@ public abstract class AbstractItem implements Item {
     public OrderByArgument getOrderBy() {
         return orderBy;
     }
+    
+	public boolean isSelected() {
+		return selected;
+	}
+
+	public void setSelected(boolean selected) {
+		boolean oldSelect = this.selected;
+		if (oldSelect == selected) {
+			return;
+		}
+		this.selected = selected;
+		firePropertyChange(SELECTED, oldSelect, selected);
+	}
 
 }
