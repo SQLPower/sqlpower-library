@@ -32,10 +32,21 @@ import ca.sqlpower.util.Monitorable;
 public abstract class SPSwingWorker implements Runnable, Monitorable {
 	private static final Logger logger = Logger.getLogger(SPSwingWorker.class);
 	private Throwable doStuffException;
-	
+
+    private final SwingWorkerRegistry registry;
+
+    /**
+     * The core application object that is responsible for this worker. The
+     * original purpose for this property was to communicate back to the
+     * SwingWorkerRegistry which application object the work is being done for.
+     * For example, workers in the Wabit application that execute OLAP queries
+     * have this value set to the OlapQuery they're executing (similarly for SQL
+     * queries and QueryCache).
+     */
+    private final Object responsibleObject;
+    
 	private SPSwingWorker nextProcess;
 	private boolean cancelled; 
-    private SwingWorkerRegistry registry;
     private Thread thread;
 	
     private final List<TaskTerminationListener> taskTerminationListeners
@@ -46,9 +57,33 @@ public abstract class SPSwingWorker implements Runnable, Monitorable {
 	private int progress;
 	private String message;
 	private Integer jobSize;
-    
-    public SPSwingWorker(SwingWorkerRegistry registry) {
+
+    /**
+     * Creates a new worker that will register with the given registry when it
+     * starts and deregister when it finishes.
+     * 
+     * @param registry
+     *            The registry to notify of task start and completion.
+     * @param responsibleObject
+     *            The application object that the work is being done for. For
+     *            example, workers in the Wabit application would typically
+     *            provide a WabitObject and workers in the Architect would
+     *            provide a SQLObject.
+     *            <p>
+     *            This value can be specified as null, which means the work is
+     *            not being done on behalf of any particular part of the
+     *            application.
+     */
+    public SPSwingWorker(SwingWorkerRegistry registry, Object responsibleObject) {
+        if (registry == null) {
+            throw new NullPointerException("Null worker registry is not permitted");
+        }
         this.registry = registry;
+        this.responsibleObject = responsibleObject;
+    }
+
+    public SPSwingWorker(SwingWorkerRegistry registry) {
+        this(registry, null);
     }
     
 	/**
@@ -57,7 +92,7 @@ public abstract class SPSwingWorker implements Runnable, Monitorable {
 	 * subclass calling setCleanupExceptionMessage
 	 */
 	private String cleanupExceptionMessage = "A problem occurred."; //$NON-NLS-1$
-	
+
 	public final void run() {
 		try {
 			setStarted(true);
@@ -273,4 +308,14 @@ public abstract class SPSwingWorker implements Runnable, Monitorable {
 	protected final synchronized void setFinished(boolean finished) {
 		this.finished = finished;
 	}
+
+    /**
+     * Returns the application object this worker is working for, or null if
+     * that information is not available.
+     * 
+     * @return An object in the application's object model, or null.
+     */
+    public Object getResponsibleObject() {
+        return responsibleObject;
+    }
 }
