@@ -21,6 +21,7 @@ package ca.sqlpower.swingui.query;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.datatransfer.DataFlavor;
@@ -32,7 +33,6 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
@@ -42,7 +42,6 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.BufferedReader;
 import java.io.File;
@@ -1510,6 +1509,9 @@ public class SQLQueryUIComponents {
 
     		tableAreaBuilder.nextLine();
     		JScrollPane tableScrollPane = new JScrollPane(tempTable);
+    		tableScrollPane.setPreferredSize(new Dimension(
+    		        (int) tableScrollPane.getPreferredSize().getWidth(),
+    		        0));
     		resultJTableScrollPanes.put(tempTable, tableScrollPane);
     		tableAreaBuilder.append(tableScrollPane, 3);
 
