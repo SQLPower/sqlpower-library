@@ -268,8 +268,8 @@ public class ContainerPane extends PNode implements CleanupPNode {
 					queryPen.getMultipleSelectEventHandler().unselectAll();
 				}
 				queryPen.getMultipleSelectEventHandler().select(ContainerPane.this);
-			
-		}});
+			}
+		});
 		addChild(modelNameText);
 		
 		header = createColumnHeader();
@@ -320,8 +320,8 @@ public class ContainerPane extends PNode implements CleanupPNode {
 		});
 		setVisibleAliasText();
 
-		PNotificationCenter.defaultCenter().addListener(this, "setFocusColour", PSelectionEventHandler.SELECTION_CHANGED_NOTIFICATION, null);
-		setFocusColour(new PNotification(null, null, null));
+		PNotificationCenter.defaultCenter().addListener(this, "setFocusAppearance", PSelectionEventHandler.SELECTION_CHANGED_NOTIFICATION, null);
+		setFocusAppearance(new PNotification(null, null, null));
 	}
 
 	/**
@@ -426,8 +426,15 @@ public class ContainerPane extends PNode implements CleanupPNode {
 		}
 		return false;
 	}
-	
-	public void setFocusColour(PNotification notification) {
+
+    /**
+     * This method should be called when the focus of this container changes. It
+     * can be called through reflection from the {@link PNotificationCenter}.
+     * 
+     * @param notification
+     *            The notification event from the {@link PNotificationCenter}.
+     */
+	public void setFocusAppearance(PNotification notification) {
 		boolean hasFocus = queryPen.getMultipleSelectEventHandler().getSelection().contains(this);
 		if (hasFocus) {
 			outerRect.setStrokePaint(QueryPen.SELECTED_CONTAINER_COLOUR);
@@ -435,6 +442,7 @@ public class ContainerPane extends PNode implements CleanupPNode {
 				line.setStrokePaint(QueryPen.SELECTED_CONTAINER_COLOUR);
 			}
 			headerBackground.setPaint(QueryPen.SELECTED_CONTAINER_COLOUR);
+			moveToFront();
 		} else {
 			outerRect.setStrokePaint(QueryPen.UNSELECTED_CONTAINER_COLOUR);
 			for (PPath line : separatorLines) {
