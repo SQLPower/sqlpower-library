@@ -25,18 +25,47 @@ import java.util.List;
 
 import javax.swing.Icon;
 
-/**
- * Composes multiple icons into the same icon. The icons will be placed
- * on top of each other, the first being the icon in the background.
- */
-public class ComposedIcon implements Icon {
-	
-	private final List<? extends Icon> icons;
+import net.jcip.annotations.Immutable;
 
+/**
+ * An icon whose appearance is made up of one or more icons sitting on top of
+ * each other.
+ */
+@Immutable
+public final class ComposedIcon implements Icon {
+	
+	private final Icon[] icons;
+
+	/**
+	 * @deprecated use the static factory method instead
+	 */
 	public ComposedIcon(List<? extends Icon> icons) {
-		this.icons = icons;
+		this(icons.toArray(new Icon[icons.size()]));
 	}
 
+	private ComposedIcon(Icon ... icons) {
+	    this.icons = icons;
+	}
+
+    /**
+     * Returns a ComposedIcon of the given icons. When painted, the icons will
+     * be placed on top of each other, the first being the icon in the
+     * background.
+     * 
+     * @param backToFront
+     *            The icons that make up this ComposedIcon. When this icon
+     *            paints itself, it does so by painting the given icons in the
+     *            order they appear in the argument list. The first icon in the
+     *            list is painted first, so it will appear underneath the
+     *            subsequent icons.
+     * @return A ComposedIcon instance that consists of the given icons in the
+     *         given order. This method may return a cached instance, but
+     *         ComposedIcons are immutable and therefore thread safe.
+     */
+	public static ComposedIcon getInstance(Icon ... backToFront) {
+	    return new ComposedIcon(backToFront);
+	}
+	
 	public int getIconHeight() {
 		int maxHeight = 0;
 		for (Icon i : icons) {
