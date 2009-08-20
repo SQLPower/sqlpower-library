@@ -319,13 +319,20 @@ public class SQLQueryUIComponents {
 		private final SQLDatabase db;
 		private long startExecutionTime;
 		private final StatementExecutor stmtExecutor;
-        
+
         /**
-         * Constructs a new ExecuteSQLWorker that will use the
-         * given SQL statement as the string to execute on.
+         * Constructs a new ExecuteSQLWorker that will use the given SQL
+         * statement as the string to execute on.
+         * 
+         * @param registry
+         *            The registry to notify when this task begins and ends.
+         * @param stmtExecutor
+         *            The statement executor that actually executes the query.
+         *            This object will be considered this worker's
+         *            {@link #getResponsibleObject() responsible object}.
          */
         public ExecuteSQLWorker(SwingWorkerRegistry registry, StatementExecutor stmtExecutor) {
-        	super(registry);
+        	super(registry, stmtExecutor);
 			this.stmtExecutor = stmtExecutor;
         	if(stmtExecutor.getStatement().equals("")) {
         		logger.debug("Empty String");
