@@ -31,8 +31,10 @@ import java.util.Collections;
 import java.util.List;
 
 import javax.swing.AbstractAction;
+import javax.swing.ImageIcon;
 import javax.swing.JCheckBox;
 import javax.swing.JEditorPane;
+import javax.swing.JLabel;
 
 import org.apache.log4j.Logger;
 
@@ -62,6 +64,15 @@ import edu.umd.cs.piccolox.pswing.PSwing;
 public class ContainerPane extends PNode implements CleanupPNode {
 	
 	private static Logger logger = Logger.getLogger(ContainerPane.class);
+	
+	/**
+     *  Stores true when the OS is MAC
+     */
+    private static final boolean MAC_OS_X = (System.getProperty("os.name").
+            toLowerCase().startsWith("mac os x"));
+	
+	private static final ImageIcon CLOSE_ICON = new ImageIcon(
+	        ContainerPane.class.getResource("close-16.png"));
 
 	/**
 	 * The size of the border to place around the text in this container pane
@@ -247,6 +258,11 @@ public class ContainerPane extends PNode implements CleanupPNode {
 	 */
 	private PNode whereBackground;
 
+	/**
+	 * This is the close button in the corner of the panel.
+	 */
+    private final PSwing closeButton;
+    
 	public ContainerPane(QueryPen pen, PCanvas canvas, Container newModel) {
 		model = newModel;
 		logger.debug("Container alias is " + model.getAlias());
@@ -288,18 +304,34 @@ public class ContainerPane extends PNode implements CleanupPNode {
 		repositionWhereClauses();
 		
 		PBounds fullBounds = getFullBounds();
-		outerRect = PPath.createRoundRectangle((float)fullBounds.x - BORDER_SIZE, (float)fullBounds.y - BORDER_SIZE, (float)fullBounds.width + BORDER_SIZE * 2, (float)fullBounds.height + BORDER_SIZE * 2, QueryPen.CONTAINER_ROUND_CORNER_RADIUS, QueryPen.CONTAINER_ROUND_CORNER_RADIUS);
+		outerRect = PPath.createRoundRectangle(
+		        (float)fullBounds.x - BORDER_SIZE, 
+		        (float)fullBounds.y - BORDER_SIZE, 
+		        (float)fullBounds.width + BORDER_SIZE * 2, 
+		        (float)fullBounds.height + BORDER_SIZE * 2, 
+		        QueryPen.CONTAINER_ROUND_CORNER_RADIUS, 
+		        QueryPen.CONTAINER_ROUND_CORNER_RADIUS);
 		outerRect.setStroke(new BasicStroke(STROKE_SIZE));
-		headerBackground = PPath.createRoundRectangle((float)-BORDER_SIZE, (float)-BORDER_SIZE, (float)outerRect.getWidth() - 1, (float)(modelNameText.getHeight() + BORDER_SIZE) * 2 + BORDER_SIZE + QueryPen.CONTAINER_ROUND_CORNER_RADIUS, QueryPen.CONTAINER_ROUND_CORNER_RADIUS, QueryPen.CONTAINER_ROUND_CORNER_RADIUS);
+		headerBackground = PPath.createRoundRectangle(
+		        (float)-BORDER_SIZE, (float)-BORDER_SIZE, 
+		        (float)outerRect.getWidth() - 1, 
+		        (float)(modelNameText.getHeight() + BORDER_SIZE) * 2 + BORDER_SIZE 
+		            + QueryPen.CONTAINER_ROUND_CORNER_RADIUS, 
+		        QueryPen.CONTAINER_ROUND_CORNER_RADIUS, QueryPen.CONTAINER_ROUND_CORNER_RADIUS);
 		headerBackground.setStrokePaint(new Color(0x00ffffff, true));
 		headerBackClip = new PClip();
 		headerBackClip.addChild(headerBackground);
 		float headerClipHeight = (float)(modelNameText.getHeight() + BORDER_SIZE) * 2 + 2 * BORDER_SIZE;
-		headerBackClip.setPathToRectangle((float)outerRect.getX(), (float)outerRect.getY(), (float)outerRect.getWidth(), headerClipHeight);
+		headerBackClip.setPathToRectangle(
+		        (float)outerRect.getX(), (float)outerRect.getY(), 
+		        (float)outerRect.getWidth(), headerClipHeight);
 		headerBackClip.setStrokePaint(new Color(0x00ffffff, true));
 		whereBackground = new PNode();
-		whereBackground.translate(outerRect.getX() + whereHeader.getFullBounds().getX() + BORDER_SIZE, outerRect.getY() + headerClipHeight);
-		whereBackground.setWidth(outerRect.getWidth() - whereHeader.getFullBounds().getX() - STROKE_SIZE - BORDER_SIZE - 1);
+		whereBackground.translate(
+		        outerRect.getX() + whereHeader.getFullBounds().getX() + BORDER_SIZE, 
+		        outerRect.getY() + headerClipHeight);
+		whereBackground.setWidth(
+		        outerRect.getWidth() - whereHeader.getFullBounds().getX() - STROKE_SIZE - BORDER_SIZE - 1);
 		whereBackground.setHeight(outerRect.getHeight() - headerClipHeight - STROKE_SIZE - 1);
 		whereBackground.setPaint(QueryPen.WHERE_BACKGROUND_COLOUR);
 		addChild(whereBackground);
@@ -311,6 +343,23 @@ public class ContainerPane extends PNode implements CleanupPNode {
 		setBounds(outerRect.getBounds());
 		translate(-getGlobalBounds().getX(), -getGlobalBounds().getY());
 		translate(model.getPosition().getX(), model.getPosition().getY());
+		
+		closeButton = new PSwing(new JLabel(CLOSE_ICON));
+		addChild(closeButton);
+		if (MAC_OS_X) {
+		    closeButton.translate(-(BORDER_SIZE + (CLOSE_ICON.getIconWidth() / 2)), 
+		            -(BORDER_SIZE + (CLOSE_ICON.getIconHeight() / 2)));
+		} else {
+		    closeButton.translate(headerBackClip.getWidth() - BORDER_SIZE - (CLOSE_ICON.getIconWidth() / 2), 
+                    -(BORDER_SIZE + (CLOSE_ICON.getIconHeight() / 2)));
+		}
+		closeButton.addInputEventListener(new PBasicInputEventHandler() {
+		    @Override
+		    public void mousePressed(PInputEvent event) {
+		        queryPen.deleteContainer(ContainerPane.this);
+		    }
+		});
+		closeButton.setTransparency(0);
 		
 		addPropertyChangeListener(new PropertyChangeListener() {
 			public void propertyChange(PropertyChangeEvent evt) {
@@ -339,8 +388,8 @@ public class ContainerPane extends PNode implements CleanupPNode {
 	}
 	
 	private PNode createColumnHeader() {
-		
-		PNode itemHeader = new PNode();
+	    PNode itemHeader = new PNode();
+	    
 		JCheckBox allCheckBox = new JCheckBox();
 		allCheckBox.setOpaque(false);
 		allCheckBox.addActionListener(new AbstractAction(){
@@ -365,7 +414,7 @@ public class ContainerPane extends PNode implements CleanupPNode {
 		whereHeader = new EditablePStyledText("where:", queryPen, canvas);
 		whereHeader.translate(0, textYTranslation);
 		itemHeader.addChild(whereHeader);
-	
+		
 		return itemHeader;
 	}
 	
@@ -402,28 +451,38 @@ public class ContainerPane extends PNode implements CleanupPNode {
 	 * a unit but is modified to allow picking of internal components.
 	 */
 	public boolean fullPick(PPickPath pickPath) {
+	    final int animationLength = 200;
 		if (super.fullPick(pickPath)) {
-			PNode picked = pickPath.getPickedNode();
-			
-			// this code won't work with internal cameras, because it doesn't pop
-			// the cameras view transform.
-			for (PNode node : containedItems) {
-				if (node.getAllNodes().contains(picked)) {
-					return true;
-				}
+			try {
+			    PNode picked = pickPath.getPickedNode();
+			    // this code won't work with internal cameras, because it doesn't pop
+			    // the cameras view transform.
+			    for (PNode node : containedItems) {
+			        if (node.getAllNodes().contains(picked)) {
+			            return true;
+			        }
+			    }
+
+			    if (picked == swingCheckBox || picked == modelNameText
+			            || picked == closeButton) {
+			        return true;
+			    }
+			    while (picked != this) {
+			        pickPath.popTransform(picked.getTransformReference(false));
+			        pickPath.popNode(picked);
+			        picked = pickPath.getPickedNode();
+			    }
+
+			    return true;
+			} finally {
+			    if (closeButton.getTransparency() == 0) {
+			        closeButton.animateToTransparency(1, animationLength);
+			    }
 			}
-			
-			if (picked == swingCheckBox || picked == modelNameText) {
-				return true;
-			}
-			while (picked != this) {
-				pickPath.popTransform(picked.getTransformReference(false));
-				pickPath.popNode(picked);
-				picked = pickPath.getPickedNode();
-			}
-			
-			return true;
 		}
+		if (closeButton.getTransparency() == 1) {
+            closeButton.animateToTransparency(0, animationLength);
+        }
 		return false;
 	}
 

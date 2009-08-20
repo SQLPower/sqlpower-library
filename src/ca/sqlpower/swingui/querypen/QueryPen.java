@@ -54,6 +54,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
@@ -392,22 +393,15 @@ public class QueryPen implements MouseState {
 						if (pickedNode == constantsContainer) {
 							return;
 						}
-						topLayer.removeChild(pickedNode);
 						if (pickedNode instanceof ContainerPane) {
 							ContainerPane pane = ((ContainerPane)pickedNode);
-							List<UnmodifiableItemPNode> items = pane.getContainedItems();
-
-							for(UnmodifiableItemPNode item : items) {
-								List<JoinLine> joinedLines = item.getJoinedLines();
-								for(int i = joinedLines.size()-1; i >= 0 ; i--) {
-									if(joinedLines.get(i).getParent() == joinLayer) {
-										deleteJoinLine(joinedLines.get(i));
-									}
-								}
-							}
-							pane.removeQueryChangeListener(queryChangeListener);
-
-							queryChangeListener.propertyChange(new PropertyChangeEvent(canvas, Container.PROPERTY_TABLE_REMOVED, pane.getModel(), null));
+							deleteContainer(pane);
+							
+							//XXX This change listener should no longer be needed
+							queryChangeListener.propertyChange(
+							        new PropertyChangeEvent(canvas, 
+							                Container.PROPERTY_TABLE_REMOVED, 
+							                pane.getModel(), null));
 						}
 					}
 					if (pickedNode.getParent() == joinLayer) {
@@ -419,10 +413,18 @@ public class QueryPen implements MouseState {
 			}
 		}
 	};
+	
 	/**
-	 * This method will remove the Joined line from its left and right Nodes and remove it from the joinLayer
-	 * It also fires the propertyChange event to update the query
+	 * This will delete the given container from the model.
 	 */
+	public void deleteContainer(ContainerPane pickedNode) {
+	    model.removeTable(pickedNode.getModel());
+	}
+
+    /**
+     * This method will remove the Joined line from its left and right Nodes and
+     * remove it from the joinLayer.
+     */
 	public void deleteJoinLine(JoinLine pickedNode) {
 		model.removeJoin(pickedNode.getModel());
 	}
@@ -517,8 +519,24 @@ public class QueryPen implements MouseState {
         }
     
         public void containerRemoved(QueryChangeEvent evt) {
-            //TODO refactor the delete action to only delete the model component
-            //This listener should remove the view component based on the model.
+            Container removedContainer = evt.getContainerChanged();
+            ContainerPane removedPane = null;
+            for (int i = 0; i < topLayer.getChildrenCount(); i++) {
+                final PNode child = topLayer.getChild(i);
+                if (child instanceof ContainerPane &&
+                        ((ContainerPane) child).getModel().equals(removedContainer)) {
+                    removedPane = ((ContainerPane) child);
+                    break;
+                }
+            }
+            if (removedPane == null) {
+                JOptionPane.showMessageDialog(getCanvas(), "Cannot find the table " 
+                        + removedContainer.getName() + " to remove from the query pen.", 
+                        "Cannot find table.", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            topLayer.removeChild(removedPane);
+            removedPane.removeQueryChangeListener(queryChangeListener);
         }
     
         public void containerAdded(QueryChangeEvent evt) {

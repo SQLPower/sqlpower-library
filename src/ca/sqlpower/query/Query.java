@@ -869,6 +869,15 @@ public class Query {
 		for (Item col : table.getItems()) {
 			removeItem(col);
 		}
+		for (List<SQLJoin> joins : joinMapping.values()) {
+		    for (int i = joins.size() - 1; i >= 0; i--) {
+		        SQLJoin join = joins.get(i);
+		        if (join.getLeftColumn().getParent().equals(table) ||
+		                join.getRightColumn().getParent().equals(table)) {
+		            removeJoin(join);
+		        }
+		    }
+		}
 		for (int i = changeListeners.size() - 1; i >= 0; i--) {
 		    changeListeners.get(i).containerRemoved(new QueryChangeEvent(this, table));
 		}
