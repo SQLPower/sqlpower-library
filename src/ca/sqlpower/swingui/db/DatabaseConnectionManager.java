@@ -40,6 +40,7 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -79,8 +80,8 @@ public class DatabaseConnectionManager {
 
 	private static Logger logger = Logger.getLogger(DatabaseConnectionManager.class);
 	
-	public static final Icon DB_ICON = new ImageIcon(DatabaseConnectionManager.class.getClassLoader().getResource("ca/sqlpower/swingui/db/Database16.png"));
-    public static final Icon OLAP_DB_ICON = new ImageIcon(DatabaseConnectionManager.class.getClassLoader().getResource("ca/sqlpower/swingui/db/dataSources-olap.png"));
+	public static final Icon DB_ICON = new ImageIcon(DatabaseConnectionManager.class.getClassLoader().getResource("ca/sqlpower/swingui/db/connection-db-16.png"));
+    public static final Icon OLAP_DB_ICON = new ImageIcon(DatabaseConnectionManager.class.getClassLoader().getResource("ca/sqlpower/swingui/db/connection-olap-16.png"));
 
 	/**
 	 * A property key that can be set with a value for any additional actions passed into the
@@ -169,12 +170,18 @@ public class DatabaseConnectionManager {
                 Iterator<Class<? extends SPDataSource>> iterator = creatableDSTypes.iterator();
                 while (iterator.hasNext()) {
                     final Class<? extends SPDataSource> dsType = iterator.next();
-                    dsTypeMenu.add(new AbstractAction(SPDataSource.getUserFriendlyName(dsType) + "...") {
-                    
+                    AbstractAction newDSAction = new AbstractAction(SPDataSource.getUserFriendlyName(dsType) + "...") {
                         public void actionPerformed(ActionEvent e) {
                             showNewDSDialog(dsType);
                         }
-                    });
+                    };
+                    JMenuItem dsItem = new JMenuItem(newDSAction);
+                    if (dsType.equals(JDBCDataSource.class)) {
+                    	dsItem.setIcon(DB_ICON);
+                    } else if (dsType.equals(Olap4jDataSource.class)) {
+                    	dsItem.setIcon(OLAP_DB_ICON);
+                    }
+					dsTypeMenu.add(dsItem);
                 }
                 dsTypeMenu.show(parentComponent, 0, 0);
             } else {
