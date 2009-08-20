@@ -1111,4 +1111,25 @@ public class SPSUtils {
             }
         });
     }
+
+    /**
+     * Runs the given Runnable on the Swing event dispatch thread. If the
+     * calling thread <i>is</i> the event dispatch thread, doRun is run
+     * immediately (before this method returns). Otherwise, doRun is appended to
+     * the end of the Swing event queue.
+     * <p>
+     * This method should be particularly handy in event handler code that has
+     * to deal with the possibility that an event is being received on a thread
+     * other than the Swing event dispatch thread.
+     * 
+     * @param doRun
+     *            The doRun run run (the doRun run).
+     */
+    public static void runOnSwingThread(Runnable doRun) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            doRun.run();
+        } else {
+            SwingUtilities.invokeLater(doRun);
+        }
+    }
 }
