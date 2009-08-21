@@ -184,6 +184,13 @@ public class Query {
 	 */
 	private int zoomLevel;
 	
+	/**
+	 * The number times {@link #startCompoundEdit()} has been called without
+	 * {@link #endCompoundEdit()} being called. When this level goes from 1 to
+	 * 0 an end compound edit event will occur.
+	 */
+	private int compoundEditLevel = 0;
+	
 	private final List<QueryChangeListener> changeListeners = new ArrayList<QueryChangeListener>();
 
     /**
@@ -270,15 +277,6 @@ public class Query {
 	 */
 	private Container constantsContainer;
 	
-	/**
-	 * If true the query cache will be in an editing state. When in this
-	 * state the query should not be executed. When the query can be executed
-	 * again the listeners should have the {@link QueryChangeListener#canExecuteQuery()}
-	 * method called on them to let all the classes know they can execute the
-	 * query again.
-	 */
-	private boolean canExecuteQuery = true;
-
 	/**
 	 * This database instance is obtained from the session when the 
 	 * data source is called.
@@ -864,23 +862,31 @@ public class Query {
 	}
 	
 	public void removeTable(Container table) {
-		fromTableList.remove(table);
-		table.removeChildListener(getTableChildListener());
-		for (Item col : table.getItems()) {
-			removeItem(col);
-		}
-		for (List<SQLJoin> joins : joinMapping.values()) {
-		    for (int i = joins.size() - 1; i >= 0; i--) {
-		        SQLJoin join = joins.get(i);
-		        if (join.getLeftColumn().getParent().equals(table) ||
-		                join.getRightColumn().getParent().equals(table)) {
-		            removeJoin(join);
-		        }
-		    }
-		}
-		for (int i = changeListeners.size() - 1; i >= 0; i--) {
-		    changeListeners.get(i).containerRemoved(new QueryChangeEvent(this, table));
-		}
+	    try {
+	        startCompoundEdit();
+	        boolean removed = fromTableList.remove(table);
+	        if (!removed) {
+	            return;
+	        }
+	        table.removeChildListener(getTableChildListener());
+	        for (Item col : table.getItems()) {
+	            removeItem(col);
+	        }
+	        for (List<SQLJoin> joins : joinMapping.values()) {
+	            for (int i = joins.size() - 1; i >= 0; i--) {
+	                SQLJoin join = joins.get(i);
+	                if (join.getLeftColumn().getParent().equals(table) ||
+	                        join.getRightColumn().getParent().equals(table)) {
+	                    removeJoin(join);
+	                }
+	            }
+	        }
+	        for (int i = changeListeners.size() - 1; i >= 0; i--) {
+	            changeListeners.get(i).containerRemoved(new QueryChangeEvent(this, table));
+	        }
+	    } finally {
+	        endCompoundEdit();
+	    }
 	}
 
 	public void addTable(Container container) {
@@ -1018,11 +1024,22 @@ public class Query {
 	}
 	
 	public void startCompoundEdit() {
-		setCanExecuteQuery(false);
+	    int currentEditLevel = compoundEditLevel;
+	    compoundEditLevel++;
+	    if (currentEditLevel == 0) {
+	        for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).compoundEditStarted();
+            }
+	    }
 	}
 	
 	public void endCompoundEdit() {
-		setCanExecuteQuery(true);
+	    compoundEditLevel--;
+	    if (compoundEditLevel == 0) {
+	        for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).compoundEditEnded();
+            }
+	    }
 	}
 
 	public boolean isGroupingEnabled() {
@@ -1171,19 +1188,6 @@ public class Query {
         return streaming;
     }
 
-    public void setCanExecuteQuery(boolean canExecuteQuery) {
-        this.canExecuteQuery = canExecuteQuery;
-        if (canExecuteQuery) {
-            for (int i = changeListeners.size() - 1; i >= 0; i--) {
-                changeListeners.get(i).canExecuteQuery();
-            }
-        }
-    }
-
-    public boolean getCanExecuteQuery() {
-        return canExecuteQuery;
-    }
-    
     public void addQueryChangeListener(QueryChangeListener l) {
         changeListeners.add(l);
     }

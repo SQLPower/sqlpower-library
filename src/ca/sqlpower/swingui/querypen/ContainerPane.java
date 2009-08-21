@@ -395,11 +395,16 @@ public class ContainerPane extends PNode implements CleanupPNode {
 		allCheckBox.addActionListener(new AbstractAction(){
 
 			public void actionPerformed(ActionEvent e) {
-				for (UnmodifiableItemPNode itemNode : containedItems) {
-					if(itemNode.isInSelect() != ((JCheckBox)e.getSource()).isSelected()) {
-						itemNode.setInSelected(((JCheckBox)e.getSource()).isSelected());						
-					}
-				}
+			    try {
+			        queryPen.getModel().startCompoundEdit();
+			        for (UnmodifiableItemPNode itemNode : containedItems) {
+			            if(itemNode.isInSelect() != ((JCheckBox)e.getSource()).isSelected()) {
+			                itemNode.setInSelected(((JCheckBox)e.getSource()).isSelected());						
+			            }
+			        }
+			    } finally {
+			        queryPen.getModel().endCompoundEdit();
+			    }
 			} 
 		});
 		allCheckBox.setSelected(true);

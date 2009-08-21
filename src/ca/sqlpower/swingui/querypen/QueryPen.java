@@ -544,7 +544,11 @@ public class QueryPen implements MouseState {
             // the model components. This listener should create the view component
         }
     
-        public void canExecuteQuery() {
+        public void compoundEditEnded() {
+            //do nothing
+        }
+
+        public void compoundEditStarted() {
             //do nothing
         }
     };

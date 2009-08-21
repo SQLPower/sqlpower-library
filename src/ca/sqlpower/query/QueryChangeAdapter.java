@@ -27,9 +27,6 @@ import java.beans.PropertyChangeEvent;
  */
 public class QueryChangeAdapter implements QueryChangeListener {
 
-    public void canExecuteQuery() {
-    }
-
     public void containerAdded(QueryChangeEvent evt) {
     }
 
@@ -58,6 +55,12 @@ public class QueryChangeAdapter implements QueryChangeListener {
     }
 
     public void propertyChangeEvent(PropertyChangeEvent evt) {
+    }
+
+    public void compoundEditEnded() {
+    }
+
+    public void compoundEditStarted() {
     }
 
 }

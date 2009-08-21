@@ -61,16 +61,19 @@ public interface QueryChangeListener {
     void containerRemoved(QueryChangeEvent evt);
 
     /**
-     * If the query is in a state that the query cannot be executed due to
-     * a compound edit or other reasons this event will be fired when it
-     * is valid to execute the query again. This way if a listener gets an
-     * event that the query changed but cannot execute the query this method
-     * will be called once the query is valid again.
-     */
-    void canExecuteQuery();
-    
-    /**
      * This is the property change events of the {@link Query} itself.
      */
     void propertyChangeEvent(PropertyChangeEvent evt);
+
+    /**
+     * The query is now in a compound edit state. Things like executing the query
+     * should not be done until the {@link #compoundEditEnded()} event is received.
+     */
+    void compoundEditStarted();
+
+    /**
+     * The current compound edit has ended. The query can be executed again among
+     * other things.
+     */
+    void compoundEditEnded();
 }
