@@ -784,15 +784,27 @@ public class Query {
 	    DepthFirstSearch<Container, SQLJoin> dfs = new DepthFirstSearch<Container, SQLJoin>();
 	    final TableJoinGraph graph = new TableJoinGraph();
         dfs.performSearch(graph);
-	    for (int i = 0; i < dfs.getFinishOrder().size(); i++) {
+        //If each container is connected to at least one of the containers
+        //that came before it in the finish order there will be no cross joins
+        List<Container> previousContainers = new ArrayList<Container>();
+        previousContainers.add(dfs.getFinishOrder().get(0));
+	    for (int i = 1; i < dfs.getFinishOrder().size(); i++) {
 	        Container container = dfs.getFinishOrder().get(i);
-	        if (i > 0 && !graph.getAdjacentNodes(container).contains(dfs.getFinishOrder().get(i - 1))) {
+	        
+	        boolean connected = false;
+	        for (SQLJoin join : joinMapping.get(container)) {
+	            Container leftContainer = join.getLeftColumn().getParent();
+	            Container rightContainer = join.getRightColumn().getParent();
+	            if ((leftContainer == container && previousContainers.contains(rightContainer))
+	                || (rightContainer == container && previousContainers.contains(leftContainer))) {
+	                connected = true;
+	                break;
+	            }
+	        }
+	        if (!connected) {
 	            return true;
 	        }
-	        if (i < dfs.getFinishOrder().size() - 1 && 
-	                !graph.getAdjacentNodes(container).contains(dfs.getFinishOrder().get(i + 1))) {
-                return true;
-            }
+	        previousContainers.add(container);
 	    }
 	    return false;
 	}
