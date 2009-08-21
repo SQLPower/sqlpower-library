@@ -20,6 +20,7 @@
 package ca.sqlpower.swingui;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -112,6 +113,7 @@ public class SearchTextField {
 		
 		panel = new JPanel();
 		searchText = new JTextField(columns);
+		searchText.setPreferredSize(new Dimension(searchText.getPreferredSize().width, 20));
 		panel.setLayout(new BorderLayout());
 		final JLabel searchIconLabel = new JLabel(SEARCH_ICON);
 		searchIconLabel.setBackground(searchText.getBackground());
@@ -151,7 +153,7 @@ public class SearchTextField {
 		try {
 			switch (searchType) { 
 			case REG_EX:
-				p = Pattern.compile(getText());
+				p = Pattern.compile(getText(), Pattern.CASE_INSENSITIVE);
 				matchExactly = true;
 				break;
 			case SUBSTRING:
