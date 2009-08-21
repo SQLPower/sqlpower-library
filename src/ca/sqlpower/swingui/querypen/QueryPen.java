@@ -72,6 +72,7 @@ import ca.sqlpower.query.Item;
 import ca.sqlpower.query.Query;
 import ca.sqlpower.query.QueryChangeEvent;
 import ca.sqlpower.query.QueryChangeListener;
+import ca.sqlpower.query.QueryCompoundEditEvent;
 import ca.sqlpower.query.SQLJoin;
 import ca.sqlpower.query.TableContainer;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
@@ -178,9 +179,10 @@ public class QueryPen implements MouseState {
 				if (draggedSQLObject instanceof SQLTable) {
 				    try {
 				    	cursorManager.startWaitMode();
-				    	model.startCompoundEdit();
+				    	SQLTable table = (SQLTable) draggedSQLObject;
+				    	model.startCompoundEdit("Table " + table.getName() + " was dropped " +
+				    			"on the query pen, adding it to the mode.");
 				    	DatabaseMetaDataDecorator.putHint(DatabaseMetaDataDecorator.CACHE_TYPE, CacheType.EAGER_CACHE);
-    					SQLTable table = (SQLTable) draggedSQLObject;
     					TableContainer model = new TableContainer(QueryPen.this.model.getDatabase(), table);
     
     					ContainerPane pane = new ContainerPane(mouseState, canvas, model);
@@ -385,7 +387,7 @@ public class QueryPen implements MouseState {
 		public void actionPerformed(ActionEvent e) {
 
 			try {
-				model.startCompoundEdit();
+				model.startCompoundEdit("Deleting objects from the query pen.");
 				Iterator<?> selectedIter = selectionEventHandler.getSelection().iterator();
 				while(selectedIter.hasNext()) {
 					PNode pickedNode = (PNode) selectedIter.next();
@@ -544,11 +546,11 @@ public class QueryPen implements MouseState {
             // the model components. This listener should create the view component
         }
     
-        public void compoundEditEnded() {
+        public void compoundEditEnded(QueryCompoundEditEvent evt) {
             //do nothing
         }
 
-        public void compoundEditStarted() {
+        public void compoundEditStarted(QueryCompoundEditEvent evt) {
             //do nothing
         }
     };

@@ -57,10 +57,10 @@ public class QueryChangeAdapter implements QueryChangeListener {
     public void propertyChangeEvent(PropertyChangeEvent evt) {
     }
 
-    public void compoundEditEnded() {
+    public void compoundEditEnded(QueryCompoundEditEvent evt) {
     }
 
-    public void compoundEditStarted() {
+    public void compoundEditStarted(QueryCompoundEditEvent evt) {
     }
 
 }

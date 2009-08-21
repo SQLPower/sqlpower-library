@@ -390,13 +390,21 @@ public class ContainerPane extends PNode implements CleanupPNode {
 	private PNode createColumnHeader() {
 	    PNode itemHeader = new PNode();
 	    
-		JCheckBox allCheckBox = new JCheckBox();
+		final JCheckBox allCheckBox = new JCheckBox();
 		allCheckBox.setOpaque(false);
 		allCheckBox.addActionListener(new AbstractAction(){
 
 			public void actionPerformed(ActionEvent e) {
 			    try {
-			        queryPen.getModel().startCompoundEdit();
+			        String editMessage;
+			        if (allCheckBox.isSelected()) {
+			            editMessage = "Setting all columns in the table " + getModel().getName() 
+			                + " to be selected";
+			        } else {
+			            editMessage = "Setting all columns in the table " + getModel().getName() 
+                            + " to be un-selected";
+			        }
+			        queryPen.getModel().startCompoundEdit(editMessage);
 			        for (UnmodifiableItemPNode itemNode : containedItems) {
 			            if(itemNode.isInSelect() != ((JCheckBox)e.getSource()).isSelected()) {
 			                itemNode.setInSelected(((JCheckBox)e.getSource()).isSelected());						

@@ -471,7 +471,7 @@ public class Query {
 	public void setGroupingEnabled(boolean enabled) {
 		logger.debug("Setting grouping enabled to " + enabled);
 		if (!groupingEnabled && enabled) {
-			startCompoundEdit();
+			startCompoundEdit("Defining the grouping function of string items to be count.");
 			for (Item item : getSelectedColumns()) {
 				if (item instanceof StringItem) {
 					item.setGroupBy(SQLGroupFunction.COUNT);
@@ -875,7 +875,7 @@ public class Query {
 	
 	public void removeTable(Container table) {
 	    try {
-	        startCompoundEdit();
+	        startCompoundEdit("Removing table " + table.getName() + ", its columns and its joins.");
 	        boolean removed = fromTableList.remove(table);
 	        if (!removed) {
 	            return;
@@ -1034,13 +1034,18 @@ public class Query {
 		    changeListeners.get(i).itemOrderChanged(new QueryChangeEvent(this, movedColumn));
 		}
 	}
-	
-	public void startCompoundEdit() {
+
+    /**
+     * This notes that a compound edit has started. A message can be given to
+     * describe what this compound edit is doing.
+     */
+	public void startCompoundEdit(String message) {
 	    int currentEditLevel = compoundEditLevel;
 	    compoundEditLevel++;
 	    if (currentEditLevel == 0) {
 	        for (int i = changeListeners.size() - 1; i >= 0; i--) {
-                changeListeners.get(i).compoundEditStarted();
+                changeListeners.get(i).compoundEditStarted(
+                        QueryCompoundEditEvent.createStartCompoundEditEvent(this, message));
             }
 	    }
 	}
@@ -1049,7 +1054,8 @@ public class Query {
 	    compoundEditLevel--;
 	    if (compoundEditLevel == 0) {
 	        for (int i = changeListeners.size() - 1; i >= 0; i--) {
-                changeListeners.get(i).compoundEditEnded();
+                changeListeners.get(i).compoundEditEnded(
+                        QueryCompoundEditEvent.createEndCompoundEditEvent(this));
             }
 	    }
 	}

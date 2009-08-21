@@ -69,11 +69,11 @@ public interface QueryChangeListener {
      * The query is now in a compound edit state. Things like executing the query
      * should not be done until the {@link #compoundEditEnded()} event is received.
      */
-    void compoundEditStarted();
+    void compoundEditStarted(QueryCompoundEditEvent evt);
 
     /**
      * The current compound edit has ended. The query can be executed again among
      * other things.
      */
-    void compoundEditEnded();
+    void compoundEditEnded(QueryCompoundEditEvent evt);
 }
