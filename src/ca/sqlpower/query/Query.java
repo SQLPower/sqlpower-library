@@ -787,6 +787,7 @@ public class Query {
         //If each container is connected to at least one of the containers
         //that came before it in the finish order there will be no cross joins
         List<Container> previousContainers = new ArrayList<Container>();
+        if (dfs.getFinishOrder().size() == 0) return false;
         previousContainers.add(dfs.getFinishOrder().get(0));
 	    for (int i = 1; i < dfs.getFinishOrder().size(); i++) {
 	        Container container = dfs.getFinishOrder().get(i);
