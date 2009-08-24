@@ -558,26 +558,13 @@ public class QueryPen implements MouseState {
 	public JPanel createQueryPen() {
         panel.setLayout(new BorderLayout());
         panel.add(getScrollPane(), BorderLayout.CENTER);
-
-        
-        queryPenBar = new JToolBar(JToolBar.HORIZONTAL);
-        queryPenBar.setLayout(new BorderLayout());
         
     	getPlayPenExecuteButton().setToolTipText(QUERY_EXECUTE + "(Shortcut "+ getAcceleratorKeyString()+ " R)");
-    	
     	canvas.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(
                 KeyStroke.getKeyStroke(KeyEvent.VK_R, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask())
                 , QUERY_EXECUTE);
     	canvas.getActionMap().put(QUERY_EXECUTE, executeQueryAction);
         
-        JToolBar queryPenWabitBar = new JToolBar(JToolBar.HORIZONTAL);
-        queryPenWabitBar.setFloatable(false);
-        JButton forumButton = new JButton(forumAction);
-		forumButton.setBorder(new EmptyBorder(0, 0, 0, 0));
-		queryPenWabitBar.add(forumButton);
-        queryPenBar.add(getQueryPenToolBar(), BorderLayout.CENTER);
-        queryPenBar.add(queryPenWabitBar, BorderLayout.EAST);
-        panel.add(queryPenBar, BorderLayout.NORTH);
         panel.setBackground(Color.WHITE);
 		return panel;
 	}
