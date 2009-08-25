@@ -793,6 +793,8 @@ public class Query {
 	        Container container = dfs.getFinishOrder().get(i);
 	        
 	        boolean connected = false;
+	        boolean mapping = joinMapping.get(container) == null;
+			if (mapping) return true;
 	        for (SQLJoin join : joinMapping.get(container)) {
 	            Container leftContainer = join.getLeftColumn().getParent();
 	            Container rightContainer = join.getRightColumn().getParent();
