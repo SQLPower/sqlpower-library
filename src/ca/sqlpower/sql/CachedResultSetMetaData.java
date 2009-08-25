@@ -48,6 +48,16 @@ public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Seria
 	private String columnClassName[];
 
 	/**
+	 * Creates a new cached resultset metadata object with no columns.
+	 * After construction, columns can be added one at a time by calling
+	 * {@link #addColumn(boolean, boolean, boolean, boolean, int, boolean, int, String, String, String, int, int, String, String, int, String, boolean, boolean, boolean, String)}.
+	 */
+	public CachedResultSetMetaData() {
+	    columnCount = 0;
+	    createArrays(columnCount);
+	}
+	
+	/**
 	 * Works like the two-argument constructor with upcaseColumnNames set to false.
 	 */
 	public CachedResultSetMetaData(ResultSetMetaData source) throws SQLException {

@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -41,6 +40,9 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 
 	private static final Logger logger = Logger.getLogger(CachedRowSet.class);
 
+	private static final int BEFORE_FIRST_ROW = -1;
+    private static final int INSERT_ROW = -2;
+
 	/**
 	 * The current row number in the result set.  Calling next() will
 	 * increment this (if there are more rows to go).
@@ -49,7 +51,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * Collections clases and most other stuff, but is different from
 	 * JDBC which uses 1-based indexing.
 	 */
-	private int rownum = -1;
+	private int rownum = BEFORE_FIRST_ROW;
 
 	/**
 	 * The data from the original result set.  One list item per row.
@@ -246,7 +248,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		newRowSet.rsmd = rsmd;
 		if (c != null) {
 			logger.debug("CREATING NEW ARRAYLIST");
-			newRowSet.data = new ArrayList(data);
+			newRowSet.data = new ArrayList<Object[]>(data);
 			Collections.sort(newRowSet.data, c);
 		} else {
 			newRowSet.data = data;
@@ -255,22 +257,22 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		return newRowSet;
 	}
 
-	public static class RowComparator implements Comparator, java.io.Serializable {
+	public static class RowComparator implements Comparator<Object[]>, java.io.Serializable {
 
-		private ArrayList sortCols;
+		private ArrayList<SortCol> sortCols;
 
 		/**
 		 * Creates a RowComparator which returns rows in their natural
 		 * order.
 		 */
 		public RowComparator() {
-			sortCols = new ArrayList();
+			sortCols = new ArrayList<SortCol>();
 		}
 
 		/**
 		 * Adds a column to sort by (in ascending or descending
 		 * order).  If you call this method multiple times, the order
-		 * that columns are given in is sigificant: the first column
+		 * that columns are given in is significant: the first column
 		 * given is the primary sort column, the second is the
 		 * secondary, and so on.
 		 */
@@ -279,16 +281,13 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		}
 
 		@SuppressWarnings("unchecked")
-        public int compare(Object row1, Object row2) {
-			Object[] r1 = (Object[]) row1;
-			Object[] r2 = (Object[]) row2;
+        public int compare(Object[] r1, Object[] r2) {
+//			Object[] r1 = (Object[]) row1;
+//			Object[] r2 = (Object[]) row2;
 
 			int diff = 0;
 
-			Iterator it = sortCols.iterator();
-			while (it.hasNext()) {
-				SortCol sc = (SortCol) it.next();
-				
+			for (SortCol sc : sortCols) {
 				if (r1 == null && r2 == null) diff = 0;
 				else if (r1 == null) diff = -1;
 				else if (r2 == null) diff = 1;
@@ -357,7 +356,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	/**
 	 * Returns the list of rows in this result set.
 	 */
-	public List getData() {
+	public List<Object[]> getData() {
 		return data;
 	}
 
@@ -606,7 +605,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
     /**
 	 * User-defined type maps aren't supported.
 	 */
-    public Object getObject(int i, java.util.Map map) throws SQLException {
+    public Object getObject(int i, java.util.Map<String, Class<?>> map) throws SQLException {
 		throw new UnsupportedOperationException
 			("This CachedRowSet does not support user-defined type mappings.");	}
 
@@ -811,7 +810,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
     /**
 	 * User-defined type maps aren't supported.
 	 */
-    public Object getObject(String colName, java.util.Map map) throws SQLException {
+    public Object getObject(String colName, java.util.Map<String, Class<?>> map) throws SQLException {
 		return getObject(findColumn(colName), map);
 	}
 
@@ -908,7 +907,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 */
     public boolean isBeforeFirst() throws SQLException {
 		if (data == null) throw new SQLException("This CachedRowSet is not populated yet");
-		return rownum == -1;
+		return rownum == BEFORE_FIRST_ROW;
 	}
       
 	/**
@@ -1005,7 +1004,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 
 		// same as beforeFirst()
 		if (rownum < 0) {
-			rownum = -1;
+			rownum = BEFORE_FIRST_ROW;
 			return false;
 		}
 
@@ -1067,7 +1066,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		rownum += rows;
 
 		if (rownum < 0) {
-			rownum = -1;
+			rownum = BEFORE_FIRST_ROW;
 			return false;
 		}
 
@@ -1653,15 +1652,56 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	}
 	
     // ====================================
-    // UPDATE COMMIT METHODS (NOT SUPPORTED)
+    // ROW INSERTION METHODS
     // ====================================
 
-	/**
-	 * Not supported.
-	 */
+    /**
+     * The value of {@link #rownum} before {@link #insertRow()} was called.
+     * This value will be restored by {@link #moveToCurrentRow()}.
+     */
+    private int rownumBeforeInserting;
+    
+    /**
+     * Guards against inserting the same "insert row" multiple times.
+     */
+    private boolean insertRowAlreadyInserted;
+    
+    public void moveToInsertRow() throws SQLException {
+        curRow = new Object[rsmd.getColumnCount()];
+        
+        // handle the case of inserting multiple rows without an
+        // intervening call to moveToCurrentRow() by preserving
+        // original "before insert" row number
+        if (rownum != INSERT_ROW) {
+            rownumBeforeInserting = rownum;
+        }
+        
+        rownum = INSERT_ROW;
+        insertRowAlreadyInserted = false;
+    }
+
     public void insertRow() throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
-	}
+        if (rownum != INSERT_ROW) {
+            throw new SQLException("Not on insert row");
+        }
+        if (insertRowAlreadyInserted) {
+            throw new SQLException("The insert row has already been inserted");
+        }
+        data.add(curRow);
+        insertRowAlreadyInserted = true;
+    }
+
+    public void moveToCurrentRow() throws SQLException {
+        if (rownum == INSERT_ROW) {
+            rownum = rownumBeforeInserting;
+            rownumBeforeInserting = 0;
+        }
+    }
+
+
+    // ====================================
+    // UPDATE COMMIT METHODS (NOT SUPPORTED)
+    // ====================================
 
 	/**
 	 * Not supported.
@@ -1688,20 +1728,6 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * Not supported.
 	 */
 	public void cancelRowUpdates() throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
-	}
-
-	/**
-	 * Not supported.
-	 */
-    public void moveToInsertRow() throws SQLException {
-		throw new UnsupportedOperationException("Updates not supported!");
-	}
-
-	/**
-	 * Not supported.
-	 */
-    public void moveToCurrentRow() throws SQLException {
 		throw new UnsupportedOperationException("Updates not supported!");
 	}
 
