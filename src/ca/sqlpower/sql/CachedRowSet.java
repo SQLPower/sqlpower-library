@@ -18,6 +18,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.apache.log4j.Logger;
 
 /**
@@ -345,6 +347,24 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 			}
 		}
 	}
+
+    /**
+     * Returns true if the given row would pass the given filter.
+     * 
+     * @param row
+     *            The row index to test. The first row has an index of 1.
+     * @param resultSetFilter
+     *            The filter to test against. If null, this method always
+     *            returns true.
+     * @return Whether or not the given row would pass the given filter.
+     */
+    public boolean wouldPass(int row, @Nullable RowFilter resultSetFilter) throws SQLException {
+        if (resultSetFilter == null) {
+            return true;
+        } else {
+            return resultSetFilter.acceptsRow(data.get(row - 1));
+        }
+    }
 
 	/**
 	 * Tells how many rows are in this row set.
