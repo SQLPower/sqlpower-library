@@ -82,7 +82,6 @@ import ca.sqlpower.sqlobject.SQLRelationship;
 import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.SQLRelationship.ColumnMapping;
 import ca.sqlpower.swingui.CursorManager;
-import ca.sqlpower.swingui.action.ForumAction;
 import ca.sqlpower.swingui.dbtree.SQLObjectSelection;
 import ca.sqlpower.swingui.querypen.event.CreateJoinEventHandler;
 import ca.sqlpower.swingui.querypen.event.QueryPenSelectionEventHandler;
@@ -482,12 +481,6 @@ public class QueryPen implements MouseState {
     private JToolBar queryPenToolBar;
 
     /**
-     * This action will open a new browser and take the user to the
-     * SQL Power forums for support.
-     */
-    private final ForumAction forumAction;
-
-    /**
      * This listener will be attached to the query that is the model of this
      * component and handle all query changes.
      */
@@ -621,12 +614,9 @@ public class QueryPen implements MouseState {
      *            This tool bar will be the tool bar defined to be at the top of
      *            the query pen. If the tool bar given is null a default tool
      *            bar will be created.
-     * @param forumAction
-     *            This action will open a browser and take them to the SQL Power
-     *            forums.
      */
-	public QueryPen(Action executeQueryAction, Query model, ForumAction forumAction) {
-	    this(executeQueryAction, model, forumAction, true);
+	public QueryPen(Action executeQueryAction, Query model) {
+	    this(executeQueryAction, model, true);
 	}
 
     /**
@@ -642,9 +632,6 @@ public class QueryPen implements MouseState {
      *            This tool bar will be the tool bar defined to be at the top of
      *            the query pen. If the tool bar given is null a default tool
      *            bar will be created.
-     * @param forumAction
-     *            This action will open a browser and take them to the SQL Power
-     *            forums.
      * @param showConstantContainer
      *            This value should be set to true if the constants container is
      *            to be shown in the query pen. In some cases we don't want to
@@ -652,8 +639,7 @@ public class QueryPen implements MouseState {
      *            actual tables. The container still exists and gets hooked up
      *            but it is just not displayed.
      */
-	public QueryPen(Action executeQueryAction, Query model, ForumAction forumAction, boolean showConstantContainer) {
-	    this.forumAction = forumAction;
+	public QueryPen(Action executeQueryAction, Query model, boolean showConstantContainer) {
         playPenExecuteButton = new JButton(executeQueryAction);
 	    deleteButton = new JButton(getDeleteAction());
 	    resetButton = new JButton(getResetAction());
