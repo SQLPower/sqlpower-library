@@ -1,5 +1,12 @@
 package ca.sqlpower.util;
 
+import java.beans.PropertyChangeEvent;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.apache.log4j.Logger;
+
 public class SQLPowerUtils {
 	
 	public static boolean areEqual (Object o1, Object o2) {
@@ -56,4 +63,22 @@ public class SQLPowerUtils {
 		}
 		return sb.toString();
 	}
+	
+    /**
+     * Logs the given property change event at the DEBUG level. The format is:
+     * <pre>
+     *  <i>Message</i>: <i>propertyName</i> "<i>oldValue</i>" -&gt; "<i>newValue</i>"
+     * </pre>
+     * 
+     * @param logger The logger to log to
+     * @param message The message to prefix the property change information
+     * @param evt The event to print the details of
+     */
+    public static void logPropertyChange(
+            @Nonnull Logger logger, @Nullable String message, @Nonnull PropertyChangeEvent evt) {
+        if (logger.isDebugEnabled()) {
+            logger.debug(message + ": " + evt.getPropertyName() +
+                    " \"" + evt.getOldValue() + "\" -> \"" + evt.getNewValue() + "\"");
+        }
+    }
 }
