@@ -1265,7 +1265,7 @@ public class Query {
                 removeTable(getFromTableList().get(i));
             }
             resetConstantsContainer();
-            setGlobalWhereClause("");
+            setGlobalWhereClause(null);
             setGroupingEnabled(false);
             defineUserModifiedQuery("");
             setZoomLevel(0);

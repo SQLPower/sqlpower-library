@@ -632,4 +632,53 @@ public class QueryTest extends TestCase {
     	assertTrue(query.matches(col2Regex));
 	}
 
+    /**
+     * Basic reset test.
+     * @throws Exception
+     */
+    public void testResetQuery() throws Exception {
+       Query q = new Query(new StubDatabaseMapping());
+       String startingWhereClause = q.getGlobalWhereClause();
+       q.setGlobalWhereClause("something");
+       boolean startingGroupingFlag = q.isGroupingEnabled();
+       q.setGroupingEnabled(true);
+       int startingZoomLevel = q.getZoomLevel();
+       q.setZoomLevel(75);
+       Container constantsContainer = q.getConstantsContainer();
+       List<Item> constantItems = constantsContainer.getItems();
+       constantsContainer.removeItem(0);
+       constantsContainer.addItem(new StringItem("New Constant"));
+       
+       Container container1 = new ItemContainer("Container 1");
+       Item item1 = new StringItem("Item 1");
+       container1.addItem(item1);
+       q.addTable(container1);
+       Container container2 = new ItemContainer("Container 2");
+       Item item2 = new StringItem("item 2");
+       container2.addItem(item2);
+       q.addTable(container2);
+       item1.setSelected(true);
+       item2.setSelected(true);
+       item1.setOrderBy(OrderByArgument.ASC);
+       item2.setOrderBy(OrderByArgument.DESC);
+       SQLJoin join = new SQLJoin(item1, item2);
+       q.addJoin(join);
+       
+       q.reset();
+       assertEquals(startingZoomLevel, q.getZoomLevel());
+       assertEquals(startingWhereClause, q.getGlobalWhereClause());
+       assertEquals(startingGroupingFlag, q.isGroupingEnabled());
+       
+       Container resetConstants = q.getConstantsContainer();
+       assertEquals(constantItems.size(), resetConstants.getItems().size());
+       for (int i = 0; i < constantItems.size(); i++) {
+           assertEquals(constantItems.get(i).getName(), 
+                   resetConstants.getItems().get(i).getName());
+       }
+       
+       assertTrue(q.getFromTableList().isEmpty());
+       assertTrue(q.getJoins().isEmpty());
+       assertTrue(q.getOrderByList().isEmpty());
+       assertTrue(q.getSelectedColumns().isEmpty());
+    }
 }
