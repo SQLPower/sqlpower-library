@@ -101,4 +101,6 @@ public interface Container {
     
     String getUUID();
 
+    void removeItem(int i);
+
 }

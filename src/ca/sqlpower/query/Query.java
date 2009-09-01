@@ -19,6 +19,7 @@
 
 package ca.sqlpower.query;
 
+import java.awt.geom.Point2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.sql.Connection;
@@ -349,7 +350,21 @@ public class Query {
 		joinMapping = new HashMap<Container, List<SQLJoin>>();
 		
 		constantsContainer = new ItemContainer("Constants");
-		StringItem currentTime = new StringItem("current_time");
+		resetConstantsContainer();
+		
+	}
+
+    /**
+     * This method will remove all of the current items in the constants
+     * container and the add in the default constants.
+     */
+    private void resetConstantsContainer() {
+        constantsContainer.setPosition(new Point2D.Double(0, 0));
+        for (int i = constantsContainer.getItems().size() - 1; i >= 0; i--) {
+            constantsContainer.removeItem(i);
+        }
+        
+        StringItem currentTime = new StringItem("current_time");
 		constantsContainer.addItem(currentTime);
 		addItem(currentTime);
 		StringItem currentDate = new StringItem("current_date");
@@ -361,8 +376,7 @@ public class Query {
 		StringItem countStar = new StringItem("count(*)");
 		constantsContainer.addItem(countStar);
 		addItem(countStar);
-		
-	}
+    }
 	
 	public Query(Query copy, boolean connectListeners) {
 		this(copy, connectListeners, copy.getDatabase());
@@ -1239,5 +1253,25 @@ public class Query {
      */
     PropertyChangeListener getJoinChangeListener() {
         return joinChangeListener;
+    }
+    
+    /**
+     * Resets the query to be as it was when it is first created.
+     */
+    public void reset() {
+        try {
+            startCompoundEdit("Resetting query");
+            for (int i = getFromTableList().size() - 1; i >= 0; i--) {
+                removeTable(getFromTableList().get(i));
+            }
+            resetConstantsContainer();
+            setGlobalWhereClause("");
+            setGroupingEnabled(false);
+            defineUserModifiedQuery("");
+            setZoomLevel(0);
+        } finally {
+            endCompoundEdit();
+        }
+            
     }
 }

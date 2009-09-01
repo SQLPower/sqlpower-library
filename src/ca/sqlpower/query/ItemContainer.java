@@ -197,4 +197,9 @@ public class ItemContainer implements Container {
         return copy;
     }
 
+    public void removeItem(int i) {
+        Item removed = itemList.remove(i);
+        fireChildRemoved(removed, i);
+    }
+
 }

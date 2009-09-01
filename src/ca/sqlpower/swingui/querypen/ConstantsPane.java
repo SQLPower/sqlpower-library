@@ -34,6 +34,8 @@ import javax.swing.JCheckBox;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.query.Container;
+import ca.sqlpower.query.ContainerChildEvent;
+import ca.sqlpower.query.ContainerChildListener;
 import ca.sqlpower.query.Item;
 import ca.sqlpower.query.StringItem;
 import edu.umd.cs.piccolo.PCanvas;
@@ -100,38 +102,47 @@ public class ConstantsPane extends PNode implements CleanupPNode {
 	private final List<ConstantPNode> constantPNodeList;
 
 	/**
-	 * This listener adds items to this container when items are added to
-	 * the model. It also removes items from this container when they're
-	 * removed from the model.
+	 * This refires the property change event. This may no longer be necessary.
 	 */
 	private final PropertyChangeListener itemChangedListener = new PropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent evt) {
-			if (evt.getPropertyName().equals(Container.CONTAINER_ITEM_REMOVED)) {
-				int constantPosition = -1;
-				for (ConstantPNode constantNode : constantPNodeList) {
-					if (constantNode.getItem() == (Item)evt.getOldValue()) {
-						constantPosition = constantPNodeList.indexOf(constantNode);
-						constantPNodeList.remove(constantNode);
-						constantNode.removeChangeListener(resizeListener);
-						ConstantsPane.this.removeChild(constantNode);
-						break;
-					}
-				}
-				if (constantPosition != -1) {
-					for (int i = constantPosition; i < constantPNodeList.size(); i++) {
-						constantPNodeList.get(i).translate(0, -title.getHeight() - BORDER_SIZE);
-					}
-					repositionAndResize();
-				}
-			} else if (evt.getPropertyName().equals(Container.CONTAINTER_ITEM_ADDED)) {
-				addItem((Item)evt.getNewValue());
-			}
 			for (PropertyChangeListener l : changeListeners) {
 				l.propertyChange(evt);
 			}
 		}
 	};
 
+	/**
+     * This listener adds items to this container when items are added to
+     * the model. It also removes items from this container when they're
+     * removed from the model.
+     */
+	private final ContainerChildListener childListener = new ContainerChildListener() {
+    
+        public void containerChildRemoved(ContainerChildEvent evt) {
+            int constantPosition = -1;
+            for (ConstantPNode constantNode : constantPNodeList) {
+                if (constantNode.getItem() == evt.getChild()) {
+                    constantPosition = constantPNodeList.indexOf(constantNode);
+                    constantPNodeList.remove(constantNode);
+                    constantNode.removeChangeListener(resizeListener);
+                    ConstantsPane.this.removeChild(constantNode);
+                    break;
+                }
+            }
+            if (constantPosition != -1) {
+                for (int i = constantPosition; i < constantPNodeList.size(); i++) {
+                    constantPNodeList.get(i).translate(0, -title.getHeight() - BORDER_SIZE);
+                }
+                repositionAndResize();
+            }
+        }
+    
+        public void containerChildAdded(ContainerChildEvent evt) {
+            addItem((Item)evt.getChild());
+        }
+    };
+	
 	/**
 	 * The styled text that displays the title of this PNode.
 	 */
@@ -186,6 +197,7 @@ public class ConstantsPane extends PNode implements CleanupPNode {
 		constantPNodeList = new ArrayList<ConstantPNode>();
 		
 		model.addPropertyChangeListener(itemChangedListener);
+		model.addChildListener(childListener);
 		
 		title = new EditablePStyledText(TITLE_STRING, mouseState, canvas);
 		addChild(title);
@@ -401,6 +413,7 @@ public class ConstantsPane extends PNode implements CleanupPNode {
 
 	public void cleanup() {
 		model.removePropertyChangeListener(itemChangedListener);
+		model.removeChildListener(childListener);
 		for (Object o : getAllNodes()) {
 			if (o instanceof CleanupPNode && o != this) {
 				((CleanupPNode)o).cleanup();

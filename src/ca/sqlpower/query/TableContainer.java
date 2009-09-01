@@ -170,6 +170,10 @@ public class TableContainer extends ItemContainer implements Container {
 	public void removeItem(Item item) {
 		throw new IllegalStateException("Cannot remove arbitrary items from a SQLObject.");		
 	}
+	
+	public void removeItem(int i) {
+        throw new IllegalStateException("Cannot remove arbitrary items from a SQLObject.");     
+    }
 
 	public String getSchema() {
 		return schema;

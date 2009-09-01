@@ -61,7 +61,6 @@ import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
-import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -462,6 +461,22 @@ public class QueryPen implements MouseState {
     private final JButton deleteButton;
     
     /**
+     * This button resets the query editor back to how it was originally
+     * setup.
+     */
+    private final JButton resetButton;
+    
+    /**
+     * This action will reset the query.
+     */
+    private final Action resetAction = new AbstractAction() {
+    
+        public void actionPerformed(ActionEvent e) {
+            model.reset();
+        }
+    };
+    
+    /**
      * This toolbar will be placed on top of the query pen.
      */
     private JToolBar queryPenToolBar;
@@ -555,6 +570,12 @@ public class QueryPen implements MouseState {
         }
     };
 
+    /**
+     * This action will allow users to create a join between two columns in
+     * the query.
+     */
+    private final Action joinAction;
+
 	public JPanel createQueryPen() {
         panel.setLayout(new BorderLayout());
         panel.add(getScrollPane(), BorderLayout.CENTER);
@@ -576,6 +597,7 @@ public class QueryPen implements MouseState {
         
         queryPenBarChild.addSeparator();
         
+        queryPenBarChild.add(getResetButton());
         queryPenBarChild.add(getDeleteButton());
         queryPenBarChild.add(getCreateJoinButton());
         queryPenBarChild.addSeparator();
@@ -634,6 +656,7 @@ public class QueryPen implements MouseState {
 	    this.forumAction = forumAction;
         playPenExecuteButton = new JButton(executeQueryAction);
 	    deleteButton = new JButton(getDeleteAction());
+	    resetButton = new JButton(getResetAction());
         final ImageIcon deleteIcon = new ImageIcon(QueryPen.class.getClassLoader().getResource("ca/sqlpower/swingui/querypen/delete.png"));
         getDeleteButton().setToolTipText(DELETE_ACTION+ " (Shortcut Delete)");
         getDeleteButton().setIcon(deleteIcon);
@@ -717,20 +740,20 @@ public class QueryPen implements MouseState {
         panel.getActionMap().put(ZOOM_OUT_ACTION, zoomOutAction);
         
         ImageIcon joinIcon = new ImageIcon(QueryPen.class.getClassLoader().getResource("ca/sqlpower/swingui/querypen/j.png"));
-        AbstractAction joinAction = new AbstractAction() {
+        joinAction = new AbstractAction() {
         	public void actionPerformed(ActionEvent e) {
         		setMouseState(MouseStates.CREATE_JOIN);
         		cursorManager.placeModeStarted();
         	}
         };
-        createJoinButton = new JButton(joinAction);
+        createJoinButton = new JButton(getJoinAction());
         createJoinButton.setToolTipText(JOIN_ACTION + " (Shortcut "+ acceleratorKeyString+ " J)");
         createJoinButton.setIcon(joinIcon);
         canvas.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(
                 KeyStroke.getKeyStroke(KeyEvent.VK_J, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask())
                 
                 , JOIN_ACTION);
-        canvas.getActionMap().put(JOIN_ACTION, joinAction);
+        canvas.getActionMap().put(JOIN_ACTION, getJoinAction());
         
         joinCreationListener = new CreateJoinEventHandler(this, canvas, cursorManager);
 		canvas.addInputEventListener(joinCreationListener);
@@ -841,6 +864,10 @@ public class QueryPen implements MouseState {
 		return deleteAction;
 	}
 	
+	public Action getResetAction() {
+	    return resetAction;
+	}
+	
 	public JTextField getGlobalWhereText() {
 		return globalWhereText;
 	}
@@ -926,5 +953,17 @@ public class QueryPen implements MouseState {
     
     public void setExecuteIcon(ImageIcon icon) {
         getPlayPenExecuteButton().setIcon(icon);
+    }
+    
+    public JButton getResetButton() {
+        return resetButton;
+    }
+    
+    public Action getExecuteQueryAction() {
+        return executeQueryAction;
+    }
+
+    public Action getJoinAction() {
+        return joinAction;
     }
 }
