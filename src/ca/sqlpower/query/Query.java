@@ -1112,7 +1112,9 @@ public class Query {
 	}
 	
 	public void setDataSource(JDBCDataSource dataSource) {
-	    this.database = dbMapping.getDatabase(dataSource);
+	    final SQLDatabase newDatabase = dbMapping.getDatabase(dataSource);
+	    if (database != null && database == newDatabase) return;
+	    this.database = newDatabase;
 	    reset();
 	    if (dataSource != null) {
             setStreaming(dataSource.getParentType().getSupportsStreamQueries());
