@@ -1113,6 +1113,7 @@ public class Query {
 	
 	public void setDataSource(JDBCDataSource dataSource) {
 	    this.database = dbMapping.getDatabase(dataSource);
+	    reset();
 	    if (dataSource != null) {
             setStreaming(dataSource.getParentType().getSupportsStreamQueries());
         }
@@ -1177,10 +1178,6 @@ public class Query {
 	@Override
 	public String toString() {
 		return getName();
-	}
-
-	public void setDatabase(SQLDatabase db) {
-		database = db;
 	}
 
     public String getUUID() {
