@@ -1054,7 +1054,18 @@ public class SPSUtils {
     	DefaultFormBuilder treeBuilder = new DefaultFormBuilder(new FormLayout("fill:pref:grow", "fill:pref:grow, pref"), panel);
     	treeBuilder.add(tree);
     	treeBuilder.nextLine();
-    	JLabel sqlpLabel = new JLabel(new ImageIcon(SPSUtils.class.getClassLoader().getResource("ca/sqlpower/swingui/SQLP-90x80.png")));
+    	JLabel sqlpLabel = getSQLPowerLogoLabel();
+		treeBuilder.add(sqlpLabel);
+		return panel;
+    }
+
+	/**
+	 * Gets a JLabel containing the SQL Power Logo that opens up a web browser
+	 * to the SQL Power website when clicked. By default it has a
+	 * {@link Color#WHITE} background, and opaque set to true.
+	 */
+	public static JLabel getSQLPowerLogoLabel() {
+		JLabel sqlpLabel = new JLabel(new ImageIcon(SPSUtils.class.getClassLoader().getResource("ca/sqlpower/swingui/SQLP-90x80.png")));
     	sqlpLabel.setBackground(Color.WHITE);
     	sqlpLabel.setOpaque(true);
     	sqlpLabel.setHorizontalAlignment(SwingConstants.LEFT);
@@ -1068,9 +1079,8 @@ public class SPSUtils {
     			}
     		}
 		});
-		treeBuilder.add(sqlpLabel);
-		return panel;
-    }
+		return sqlpLabel;
+	}
 
 	/**
 	 * Modifies the given JSpinner so that when the textfield gains focus, the
