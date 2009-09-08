@@ -290,4 +290,11 @@
 			<layout>default</layout>
 		</repository>
 	</repositories>
+	<distributionManagement>
+		<snapshotRepository>
+			<id>pag.sqlpower.ca</id>
+			<name>pag.sqlpower.ca</name>
+			<url>http://pag.sqlpower.ca:8080/nexus/content/repositories/snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
 </project>
