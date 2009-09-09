@@ -564,13 +564,20 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 				sql.append("	all_tab_columns t,\n");
 				sql.append("	all_col_comments c\n");
 				sql.append("WHERE\n");
-				if (schemaPattern != null) sql.append("	t.owner LIKE ").append(SQL.quote(schemaPattern)).append(" ESCAPE '/'\n");
-				if (hidingRecycleBinTables) sql.append("	AND t.table_name NOT LIKE 'BIN$%' ESCAPE '/'\n");
-				if (cacheType.get() == null || cacheType.get().equals(CacheType.NO_CACHE)) {
-					sql.append("	AND t.table_name LIKE ").append(SQL.quote(tableNamePattern)).append(" ESCAPE '/'\n");
-					sql.append("	AND t.column_name LIKE ").append(SQL.quote(columnNamePattern)).append(" ESCAPE '/'\n");
+				if (schemaPattern != null) {
+					sql.append("	t.owner LIKE ").append(SQL.quote(schemaPattern)).append(" ESCAPE '/'\n");
+					sql.append("	AND");
 				}
-				sql.append("	AND t.owner=c.owner (+)\n");
+				if (hidingRecycleBinTables) {
+					sql.append("	t.table_name NOT LIKE 'BIN$%' ESCAPE '/'\n");
+					sql.append("	AND");
+				}
+				if (cacheType.get() == null || cacheType.get().equals(CacheType.NO_CACHE)) {
+					sql.append("	t.table_name LIKE ").append(SQL.quote(tableNamePattern)).append(" ESCAPE '/'\n");
+					sql.append("	AND t.column_name LIKE ").append(SQL.quote(columnNamePattern)).append(" ESCAPE '/'\n");
+					sql.append("	AND");
+				}
+				sql.append("	t.owner=c.owner (+)\n");
 				sql.append("	AND t.table_name=c.table_name (+)\n");
 				sql.append("	AND t.column_name = c.column_name (+)\n");
 				sql.append("ORDER BY\n");
@@ -592,30 +599,40 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		        }
 			}
 	        
+			final Pattern tp;
+			
+			if (tableNamePattern != null) {
+				// Here, we are simulating the behaviour of
+				// t.table_name LIKE 'tableNamePattern'
+				final String tablePattern = tableNamePattern.replaceAll("%", ".*");
+				tp = Pattern.compile(tablePattern);
+			} else {
+				tp = null;
+			}
+			
+			final Pattern cp;
+			
+			if (columnNamePattern != null) {
+				// Here, we are simulating the behaviour of
+				// t.column_name LIKE 'columnNamePattern'
+				String columnPattern = columnNamePattern.replace("%", ".*");
+				cp = Pattern.compile(columnPattern);
+			} else {
+				cp = null;
+			}
+			
 			RowFilter filter = new RowFilter() {
-			    
-			    // Here, we are simulating the behaviour of
-			    // t.table_name LIKE 'tableNamePattern'
-			    final String tablePattern = tableNamePattern.replaceAll("%", ".*");
-			    final Pattern tp = Pattern.compile(tablePattern);
-			    
-			    // Here, we are simulating the behaviour of
-			    // t.column_name LIKE 'columnNamePattern'
-			    String columnPattern = columnNamePattern.replace("%", ".*");
-			    final Pattern cp = Pattern.compile(columnPattern);
-			    
 				public boolean acceptsRow(Object[] row) {
-					// expecting row[2] to be FK_TABLE_NAME
-					
-				    return tp.matcher(row[2].toString()).matches() &&
-				            cp.matcher(row[3].toString()).matches();
+					// expecting row[2] to be FK_TABLE_NAME and row[3] to be FK_COLUMN_NAME
+				    return (tp == null || tp.matcher(row[2].toString()).matches()) &&
+				            (cp == null || cp.matcher(row[3].toString()).matches());
 				}
 			};
 			
 			logger.debug("Filtering cache...");
 			CachedRowSet filtered;
 			synchronized (cachedResult) {
-			    if (!tableNamePattern.contains("%")) {
+			    if (tableNamePattern != null && !tableNamePattern.contains("%")) {
 			        // exact match requested--we can use the index for table name
 			        // (filter still applies to column name)
 			        filtered = cachedResult.extractSingleTable(tableNamePattern);
