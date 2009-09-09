@@ -198,6 +198,7 @@ public class DatabaseConnectionManager {
                 Runnable onOk = new Runnable() {
                     public void run() {
                         dsCollection.addDataSource(ds);
+                        dsTable.updateUI();
                     }
                 };
                 dsDialogFactory.showDialog((d != null) ? d : DatabaseConnectionManager.this.currentOwner, ds, onOk);
@@ -206,6 +207,7 @@ public class DatabaseConnectionManager {
                 Runnable onOk = new Runnable() {
                     public void run() {
                         dsCollection.addDataSource(ds);
+                        dsTable.updateUI();
                     }
                 };
                 dsDialogFactory.showDialog((d != null) ? d : DatabaseConnectionManager.this.currentOwner, ds, getPlDotIni(), onOk);
@@ -279,7 +281,21 @@ public class DatabaseConnectionManager {
 			if (option != JOptionPane.YES_OPTION) {
 				return;
 			}
+			
 			dsCollection.removeDataSource(dbcs);
+			dsTable.clearSelection();
+			
+			for (JButton b : additionalActionButtons) {
+				Object disableValue = b.getAction().getValue(DISABLE_IF_NO_CONNECTION_SELECTED);
+				if (disableValue instanceof Boolean && disableValue.equals(Boolean.TRUE)) {
+					b.setEnabled(false);
+				}
+			}
+			removeDatabaseConnectionAction.setEnabled(false);
+			editDatabaseConnectionAction.setEnabled(false);
+			
+			dsTable.repaint();
+			
 		}
 	};
 
@@ -612,8 +628,11 @@ public class DatabaseConnectionManager {
 
 	private class DSTableMouseListener implements MouseListener {
 
-		public void mouseClicked(MouseEvent evt) {
-			
+		/**
+		 * Updates the state of all buttons when a database connection is clicked on
+		 * @param evt  Mouse event
+		 */
+		private void updateAllButtonStates(MouseEvent evt) {
 			for (JButton b : additionalActionButtons) {
 				Object disableValue = b.getAction().getValue(DISABLE_IF_NO_CONNECTION_SELECTED);
 				if (disableValue instanceof Boolean && disableValue.equals(Boolean.TRUE)) {
@@ -632,18 +651,20 @@ public class DatabaseConnectionManager {
 				removeDatabaseConnectionAction.setEnabled(true);
 				editDatabaseConnectionAction.setEnabled(true);
 			}
-				
+		}
+		
+		public void mouseClicked(MouseEvent evt) {
 			if (evt.getClickCount() == 2) {
             	editDatabaseConnectionAction.actionPerformed(null);
             }
         }
 
-		public void mousePressed(MouseEvent e) {
-			// we don't care
+		public void mousePressed(MouseEvent evt) {
+			updateAllButtonStates(evt);
 		}
 
-		public void mouseReleased(MouseEvent e) {
-			// we don't care
+		public void mouseReleased(MouseEvent evt) {
+			updateAllButtonStates(evt);
 		}
 
 		public void mouseEntered(MouseEvent e) {
