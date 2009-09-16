@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.log4j.Logger;
@@ -80,6 +81,13 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 */
 	protected CachedResultSetMetaData rsmd;
 
+    /**
+     * Currently-registered listeners who are interested in knowing when new
+     * rows are added.
+     */
+	private final List<RowSetChangeListener> rowSetListeners =
+	    new ArrayList<RowSetChangeListener>();
+
 	/**
 	 * Makes an empty cached rowset.
 	 */
@@ -106,7 +114,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 *            rows will be removed when necessary to make room for new rows.
 	 * @throws SQLException 
 	 */
-	public void follow(ResultSet rs, RowSetChangeListener listener, int rowLimit, String ... extraColNames) throws SQLException {
+	public void follow(ResultSet rs, int rowLimit, String ... extraColNames) throws SQLException {
 		/*
 		 * XXX: this upcases all the column names in the metadata for
 		 * the Dashboard's benefit.  We should add a switch for this
@@ -146,9 +154,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 				data.remove(0);
 			}
 			
-			if (listener != null) {
-				listener.rowAdded(new RowSetChangeEvent(this, row, rowNum));
-			}
+			fireRowAdded(row, rowNum);
 			rowNum++;
 		}
 	}
@@ -405,6 +411,53 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		return idx;
 	}
 
+    /**
+     * Adds the given listener to this row set's list of interested parties.
+     * Each listener on the list receives an event whenever a new row has been
+     * added to this row set.
+     * <p>
+     * Presently, this only works for streaming queries. However, it is likely
+     * that in the future we will also make these events happen as a result of
+     * the {@link #insertRow()} method being called.
+     * 
+     * @param listener
+     *            The listener to add (must not be null).
+     * @see #follow(ResultSet, RowSetChangeListener, int, String...)
+     */
+	public void addRowSetListener(@Nonnull RowSetChangeListener listener) {
+	    if (listener == null) {
+	        throw new NullPointerException("Null listener not allowed");
+	    }
+	    rowSetListeners.add(listener);
+	}
+
+    /**
+     * Removes the given listener from the listener list. Has no effect if the
+     * given listener was not already on the list.
+     * 
+     * @param listener The listener to remove. Nulls are ignored.
+     */
+	public void removeRowSetListener(@Nullable RowSetChangeListener listener) {
+	    rowSetListeners.remove(listener);
+	}
+
+    /**
+     * Fires an event with the given row information. This CachedRowSet is the
+     * event's source. The row should already have been inserted into the result
+     * set prior to calling this method.
+     * 
+     * @param row
+     *            The actual data in the new row
+     * @param rowNum
+     *            The row number where the new row was inserted
+     */
+	protected void fireRowAdded(Object[] row, int rowNum) {
+	    RowSetChangeEvent evt = new RowSetChangeEvent(this, row, rowNum);
+	    for (int i = rowSetListeners.size() - 1; i >= 0; i--) {
+	        rowSetListeners.get(i).rowAdded(evt);
+	    }
+	}
+	
 	// =============================================
 	// RESULTSET INTERFACE IS BELOW THIS LINE
 	// =============================================

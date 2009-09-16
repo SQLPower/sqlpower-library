@@ -899,7 +899,7 @@ public class SQLQueryUIComponents {
 		/**
 		 * The result set this listener is listening to.
 		 */
-		private final StatementExecutor stmtExecutor;
+		private final CachedRowSet rowSet;
 		
 		/**
 		 * These models will receive events of row changes when this listener receives
@@ -910,8 +910,8 @@ public class SQLQueryUIComponents {
 		/**
 		 * @param rs The result set this listener is listening to.
 		 */
-		public StreamingRowSetListener(StatementExecutor stmtExecutor, ResultSetTableModel tableModel) {
-			this.stmtExecutor = stmtExecutor;
+		public StreamingRowSetListener(CachedRowSet rowSet, ResultSetTableModel tableModel) {
+			this.rowSet = rowSet;
 			listeningTableModel = tableModel;
 		}
 		
@@ -920,7 +920,7 @@ public class SQLQueryUIComponents {
 		 * all of the tables listening to this listener.
 		 */
 		public void disconnect() {
-			stmtExecutor.removeRowSetChangeListener(this);
+			rowSet.removeRowSetListener(this);
 		}
 		
 		public void rowAdded(RowSetChangeEvent e) {
@@ -1508,8 +1508,8 @@ public class SQLQueryUIComponents {
     			tableAreaBuilder.append(searchLabel, tableFilterTextField);
     		}
     		ResultSetTableModel model = new ResultSetTableModel(r);
-    		StreamingRowSetListener rowSetListener = new StreamingRowSetListener(executor, model);
-    		executor.addRowSetChangeListener(rowSetListener);
+    		StreamingRowSetListener rowSetListener = new StreamingRowSetListener(rs, model);
+    		rs.addRowSetListener(rowSetListener);
     		rowSetListeners.add(rowSetListener);
     		
     		tempTable = new FancyExportableJTable(model, searchDocument);

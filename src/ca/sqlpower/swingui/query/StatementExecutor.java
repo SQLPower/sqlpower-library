@@ -22,8 +22,6 @@ package ca.sqlpower.swingui.query;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import ca.sqlpower.sql.RowSetChangeListener;
-
 /**
  * This interface is used to allow the SQLQueryUIComponents to have a
  * unique query execution specified when it is going to execute a
@@ -75,8 +73,4 @@ public interface StatementExecutor {
 	 */
 	String getStatement();
 	
-	void addRowSetChangeListener(RowSetChangeListener l);
-	
-	void removeRowSetChangeListener(RowSetChangeListener l);
-
 }
