@@ -293,7 +293,7 @@ public class Query {
 	
 	private SQLDatabaseMapping dbMapping;
 	
-	private final String uuid;
+	private String uuid;
 	
 	private String name;
 	
@@ -339,7 +339,7 @@ public class Query {
 	 */
 	public Query(String uuid, SQLDatabaseMapping dbMapping) {
 		if (uuid == null) {
-		    this.uuid = "w" + UUID.randomUUID().toString();
+		    generateNewUUID();
 		} else {
 		    this.uuid = uuid;
 		}
@@ -352,6 +352,14 @@ public class Query {
 		constantsContainer = new ItemContainer("Constants");
 		resetConstantsContainer();
 		
+	}
+	
+    /**
+     * Sets the UUID of this object to a newly generated UUID. This is necessary
+     * if the object is being cloned or copied.
+     */
+	public void generateNewUUID() {
+	    uuid = "w" + UUID.randomUUID().toString();
 	}
 
     /**
@@ -387,7 +395,7 @@ public class Query {
 	 * hook up listeners.
 	 */
 	public Query(Query copy, boolean connectListeners, SQLDatabase database) {
-	    uuid = "w" + UUID.randomUUID().toString();
+	    generateNewUUID();
 		selectedColumns = new ArrayList<Item>();
 		fromTableList = new ArrayList<Container>();
 		joinMapping = new HashMap<Container, List<SQLJoin>>();
