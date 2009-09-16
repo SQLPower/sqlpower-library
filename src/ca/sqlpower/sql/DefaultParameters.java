@@ -105,8 +105,7 @@ public class DefaultParameters {
 	}
 	
     public Version getPLSchemaVersion() throws VersionFormatException {
-        Version v = new Version();
-        v.setVersion(get("schema_version"));
+        Version v = new Version(get("schema_version"));
         return v;
     }
 }
