@@ -134,12 +134,13 @@ public class ResultSetTableModel extends AbstractTableModel {
 		
 	}
 
-	/**
-	 * This method should be called when a row is added to the result set in
-	 * this table model.
-	 */
-	public void rowAdded(int rowNumber) {
-		fireTableChanged(new TableModelEvent(this, rowNumber));
-	}
+    /**
+     * Hook for allowing this model to properly track streaming queries. Call
+     * this method whenever the resultset in this model has more, less, or
+     * different data than before.
+     */
+    public void dataChanged() {
+        fireTableDataChanged();
+    }
 	
 }

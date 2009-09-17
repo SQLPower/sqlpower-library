@@ -924,7 +924,7 @@ public class SQLQueryUIComponents {
 		}
 		
 		public void rowAdded(RowSetChangeEvent e) {
-			listeningTableModel.rowAdded(e.getRowNumber());
+			listeningTableModel.dataChanged();
 		}
 		
 	}

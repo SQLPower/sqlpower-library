@@ -88,13 +88,43 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	private final List<RowSetChangeListener> rowSetListeners =
 	    new ArrayList<RowSetChangeListener>();
 
+    /**
+     * The CachedRowSet this CachedRowSet was created from, or null if this
+     * CachedRowSet is standalone.
+     */
+	private final CachedRowSet parent;
+
+    /**
+     * Refires RowSet events from this CachedRowSet's parent.
+     * <p>
+     * State invariant: This listener is only attached to the parent when
+     * {@link #rowSetListeners}.size() &gt; 0. The purpose is to ensure this
+     * object can be garbage collected when it's no longer in use.
+     */
+    private final RowSetChangeListener parentRowEventHandler = new RowSetChangeListener() {
+        public void rowAdded(RowSetChangeEvent e) {
+            fireRowAdded(e.getRow(), e.getRowNumber());
+        }
+    };
+	
 	/**
 	 * Makes an empty cached rowset.
 	 */
 	public CachedRowSet() throws SQLException {
-        // Nothing to do
+        this(null);
 	}
 
+    /**
+     * For internal use by {@link #createShared()} and
+     * {@link #createSharedSorted(RowComparator)}.
+     * 
+     * @param parent
+     *            The upstream source of this instance's data list.
+     */
+	private CachedRowSet(@Nullable CachedRowSet parent) {
+	    this.parent = parent;
+	}
+	
 	/**
 	 * This is the "populate" method for streaming result sets. This method will
 	 * update the cached row set with a new row every time one is inserted into
@@ -115,6 +145,8 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * @throws SQLException 
 	 */
 	public void follow(ResultSet rs, int rowLimit, String ... extraColNames) throws SQLException {
+	    data = new ArrayList<Object[]>();
+	    logger.debug("crs@" + System.identityHashCode(this) + " starting to follow...");
 		/*
 		 * XXX: this upcases all the column names in the metadata for
 		 * the Dashboard's benefit.  We should add a switch for this
@@ -134,9 +166,10 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		}
 
 		int rowNum = 0;
-		data = new ArrayList<Object[]>();
 		while (rs.next()) {
-		    if (logger.isDebugEnabled()) logger.debug("Populating Row "+rowNum);
+		    if (logger.isDebugEnabled()) {
+		        logger.debug("crs@" + System.identityHashCode(this) + " populating Row " + rowNum);
+		    }
 			Object[] row = new Object[colCount];
 			for (int i = 0; i < rsColCount; i++) {
 				Object o = rs.getObject(i+1);
@@ -252,15 +285,17 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * returned in the order determined by the given sort qualifier.
 	 */
 	public CachedRowSet createSharedSorted(RowComparator c) throws SQLException {
-		CachedRowSet newRowSet = new CachedRowSet();
-		newRowSet.rsmd = rsmd;
+		final CachedRowSet newRowSet;
 		if (c != null) {
+		    newRowSet = new CachedRowSet();
 			logger.debug("CREATING NEW ARRAYLIST");
 			newRowSet.data = new ArrayList<Object[]>(data);
 			Collections.sort(newRowSet.data, c);
 		} else {
+		    newRowSet = new CachedRowSet(this);
 			newRowSet.data = data;
 		}
+		newRowSet.rsmd = rsmd;
 
 		return newRowSet;
 	}
@@ -429,6 +464,10 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	        throw new NullPointerException("Null listener not allowed");
 	    }
 	    rowSetListeners.add(listener);
+	    
+	    if (rowSetListeners.size() == 1 && parent != null) {
+	        parent.addRowSetListener(parentRowEventHandler );
+	    }
 	}
 
     /**
@@ -438,7 +477,16 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
      * @param listener The listener to remove. Nulls are ignored.
      */
 	public void removeRowSetListener(@Nullable RowSetChangeListener listener) {
-	    rowSetListeners.remove(listener);
+	    try {
+	        rowSetListeners.remove(listener);
+	    } finally {
+	        // the condition doesn't test if we were actually listening to the parent
+	        // (perhaps rowSetListeners was already empty to start with), but it's
+	        // safe to try this remove operation even when it's not strictly necessary
+	        if (rowSetListeners.size() == 0 && parent != null) {
+	            parent.removeRowSetListener(parentRowEventHandler);
+	        }
+	    }
 	}
 
     /**
@@ -452,9 +500,20 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
      *            The row number where the new row was inserted
      */
 	protected void fireRowAdded(Object[] row, int rowNum) {
+	    if (logger.isDebugEnabled()) {
+	        logger.debug("crs@" + System.identityHashCode(this) +
+                " firing RowAdded for " + rowSetListeners.size() + " listeners...");
+	    }
+	    
 	    RowSetChangeEvent evt = new RowSetChangeEvent(this, row, rowNum);
 	    for (int i = rowSetListeners.size() - 1; i >= 0; i--) {
-	        rowSetListeners.get(i).rowAdded(evt);
+	        RowSetChangeListener l = rowSetListeners.get(i);
+	        if (logger.isDebugEnabled()) {
+	            logger.debug("crs@" + System.identityHashCode(this) +
+	                    " delivering RowAdded to " + l.getClass().getSimpleName() +
+	                    "@" + System.identityHashCode(l));
+	        }
+            l.rowAdded(evt);
 	    }
 	}
 	
