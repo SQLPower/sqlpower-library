@@ -571,8 +571,7 @@ public class Query {
 				query.append(", ");
 			}
 			
-			if (groupingEnabled && !col.getGroupBy().equals(SQLGroupFunction.GROUP_BY) 
-					&& !isStringItemAggregated(col)) {
+			if (isColumnGrouped(col)) {
 				query.append(col.getGroupBy() + "(");
 			}
 			String alias = col.getContainer().getAlias();
@@ -582,8 +581,7 @@ public class Query {
 				query.append(quoteString + col.getContainer().getName() + quoteString + ".");
 			}
 			query.append(getColumnName(col, quoteString, converter));
-			if (groupingEnabled && !col.getGroupBy().equals(SQLGroupFunction.GROUP_BY) 
-					&& !isStringItemAggregated(col)) {
+			if (isColumnGrouped(col)) {
 				query.append(")");
 			}
 			if (col.getAlias() != null && col.getAlias().trim().length() > 0) {
@@ -744,9 +742,9 @@ public class Query {
 		                query.append("\nHAVING ");
 		                isFirstHaving = false;
 		            } else {
-		                query.append(", ");
+		                query.append(" AND ");
 		            }
-		            if (column.getGroupBy() != null) {
+                    if (isColumnGrouped(column)) {
 		                query.append(column.getGroupBy() + "(");
 		            }
 		            String alias = column.getContainer().getAlias();
@@ -756,7 +754,7 @@ public class Query {
 		                query.append(quoteString + column.getContainer().getName() + quoteString + ".");
 		            }
 		            query.append(getColumnName(column, quoteString, converter));
-		            if (column.getGroupBy() != null) {
+		            if (isColumnGrouped(column)) {
 		                query.append(")");
 		            }
 		            query.append(" ");
@@ -797,6 +795,16 @@ public class Query {
 		logger.debug(" Query is : " + query.toString());
 		return query.toString();
 	}
+
+    /**
+     * Returns true if the column given is wrapped by a grouping function and we
+     * are actually grouping. The allowed grouping functions are stored in
+     * {@link SQLGroupFunction}. Returns false otherwise.
+     */
+    private boolean isColumnGrouped(Item col) {
+        return groupingEnabled && !col.getGroupBy().equals(SQLGroupFunction.GROUP_BY) 
+        		&& !isStringItemAggregated(col);
+    }
 	
 	/**
 	 * Returns true if the query this object represents contains a cross join between
