@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import javax.annotation.concurrent.GuardedBy;
+
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.graph.DepthFirstSearch;
@@ -192,6 +194,7 @@ public class Query {
 	 */
 	private int compoundEditLevel = 0;
 	
+	@GuardedBy("changeListeners")
 	private final List<QueryChangeListener> changeListeners = new ArrayList<QueryChangeListener>();
 
     /**
@@ -217,9 +220,7 @@ public class Query {
 		        }
 		    }
 		    
-		    for (int i = changeListeners.size() - 1; i >= 0; i--) {
-		        changeListeners.get(i).itemPropertyChangeEvent(e);
-		    }
+		    fireItemPropertyChangeEvent(e);
 		}
 	};
 
@@ -257,9 +258,7 @@ public class Query {
 					}
 				}
 			}
-			for (int i = changeListeners.size() - 1; i >= 0; i--) {
-			    changeListeners.get(i).joinPropertyChangeEvent(e);
-			}
+			fireJoinPropertyChangeEvent(e);
 		}
 	};
 	
@@ -501,9 +500,7 @@ public class Query {
 			}
 			endCompoundEdit();
 		}
-		for (int i = changeListeners.size() - 1; i >= 0; i--) {
-            changeListeners.get(i).propertyChangeEvent(new PropertyChangeEvent(this, GROUPING_ENABLED, groupingEnabled, enabled));
-		}
+		firePropertyChangeEvent(new PropertyChangeEvent(this, GROUPING_ENABLED, groupingEnabled, enabled));
 		groupingEnabled = enabled;
 	}
 	
@@ -926,9 +923,7 @@ public class Query {
 	                }
 	            }
 	        }
-	        for (int i = changeListeners.size() - 1; i >= 0; i--) {
-	            changeListeners.get(i).containerRemoved(new QueryChangeEvent(this, table));
-	        }
+	        fireContainerRemoved(table);
 	    } finally {
 	        endCompoundEdit();
 	    }
@@ -940,9 +935,7 @@ public class Query {
 		for (Item col : container.getItems()) {
 			addItem(col);
 		}
-		for (int i = changeListeners.size() - 1; i >= 0; i--) {
-            changeListeners.get(i).containerAdded(new QueryChangeEvent(this, container));
-        }
+		fireContainerAdded(container);
 	}
 	
 	/**
@@ -951,9 +944,7 @@ public class Query {
 	public void setGlobalWhereClause(String whereClause) {
 		String oldWhere = globalWhereClause;
 		globalWhereClause = whereClause;
-		for (int i = changeListeners.size() - 1; i >= 0; i--) {
-		    changeListeners.get(i).propertyChangeEvent(new PropertyChangeEvent(this, GLOBAL_WHERE_CLAUSE, oldWhere, whereClause));
-		}
+		firePropertyChangeEvent(new PropertyChangeEvent(this, GLOBAL_WHERE_CLAUSE, oldWhere, whereClause));
 	}
 	
 	public void removeJoin(SQLJoin joinLine) {
@@ -976,9 +967,7 @@ public class Query {
 				break;
 			}
 		}
-		for (int i = changeListeners.size() - 1; i >= 0; i--) {
-		    changeListeners.get(i).joinRemoved(new QueryChangeEvent(this, joinLine));
-		}
+		fireJoinRemoved(joinLine);
 	}
 
 	public void addJoin(SQLJoin join) {
@@ -1021,9 +1010,7 @@ public class Query {
 			}
 			joinMapping.get(rightContainer).add(join);
 		}
-		for (int i = changeListeners.size() - 1; i >= 0; i--) {
-		    changeListeners.get(i).joinAdded(new QueryChangeEvent(this, join));
-		}
+		fireJoinAdded(join);
 	}
 	
 	/**
@@ -1034,9 +1021,7 @@ public class Query {
 		logger.debug("Item name is " + col.getName());
 		col.removePropertyChangeListener(itemListener);
 		removeColumnSelection(col);
-		for (int i = changeListeners.size() - 1; i >= 0; i--) {
-		    changeListeners.get(i).itemRemoved(new QueryChangeEvent(this, col));
-		}
+		fireItemRemoved(col);
 	}
 	
 	/**
@@ -1049,9 +1034,7 @@ public class Query {
 	 */
 	public void addItem(Item col) {
 		col.addPropertyChangeListener(itemListener);
-		for (int i = changeListeners.size() - 1; i >= 0; i--) {
-		    changeListeners.get(i).itemAdded(new QueryChangeEvent(this, col));
-		}
+		fireItemAdded(col);
 		if (col.isSelected()) {
 			selectedColumns.add(col);
 		}
@@ -1063,9 +1046,7 @@ public class Query {
 	public void moveItem(Item movedColumn, int toIndex) {
 		selectedColumns.remove(movedColumn);
 		selectedColumns.add(toIndex, movedColumn);
-		for (int i = changeListeners.size() - 1; i >= 0; i--) {
-		    changeListeners.get(i).itemOrderChanged(new QueryChangeEvent(this, movedColumn));
-		}
+		fireItemOrderChanged(movedColumn);
 	}
 
     /**
@@ -1076,20 +1057,14 @@ public class Query {
 	    int currentEditLevel = compoundEditLevel;
 	    compoundEditLevel++;
 	    if (currentEditLevel == 0) {
-	        for (int i = changeListeners.size() - 1; i >= 0; i--) {
-                changeListeners.get(i).compoundEditStarted(
-                        QueryCompoundEditEvent.createStartCompoundEditEvent(this, message));
-            }
+	        fireCompoundEditStarted(message);
 	    }
 	}
 	
 	public void endCompoundEdit() {
 	    compoundEditLevel--;
 	    if (compoundEditLevel == 0) {
-	        for (int i = changeListeners.size() - 1; i >= 0; i--) {
-                changeListeners.get(i).compoundEditEnded(
-                        QueryCompoundEditEvent.createEndCompoundEditEvent(this));
-            }
+	        fireCompoundEditEnded();
 	    }
 	}
 
@@ -1147,9 +1122,7 @@ public class Query {
 		if (generatedQuery.equals(query)) {
 			return;
 		}
-		for (int i = changeListeners.size() - 1; i >= 0; i--) {
-            changeListeners.get(i).propertyChangeEvent(new PropertyChangeEvent(this, USER_MODIFIED_QUERY, userModifiedQuery, query));
-        }
+		firePropertyChangeEvent(new PropertyChangeEvent(this, USER_MODIFIED_QUERY, userModifiedQuery, query));
 		userModifiedQuery = query;
 	}
 	
@@ -1213,9 +1186,7 @@ public class Query {
     public void setRowLimit(int rowLimit) {
         int oldLimit = this.rowLimit;
         this.rowLimit = rowLimit;
-        for (int i = changeListeners.size() - 1; i >= 0; i--) {
-            changeListeners.get(i).propertyChangeEvent(new PropertyChangeEvent(this, ROW_LIMIT, oldLimit, rowLimit));
-        }
+        firePropertyChangeEvent(new PropertyChangeEvent(this, ROW_LIMIT, oldLimit, rowLimit));
     }
 
     public int getRowLimit() {
@@ -1239,11 +1210,15 @@ public class Query {
     }
 
     public void addQueryChangeListener(QueryChangeListener l) {
-        changeListeners.add(l);
+        synchronized(changeListeners) {
+            changeListeners.add(l);
+        }
     }
     
     public void removeQueryChangeListener(QueryChangeListener l) {
-        changeListeners.remove(l);
+        synchronized(changeListeners) {
+            changeListeners.remove(l);
+        }
     }
 
     /**
@@ -1289,4 +1264,106 @@ public class Query {
         }
             
     }
+    
+//---------------------------- Protected methods to fire events -------------------
+    
+    protected void fireJoinAdded(SQLJoin joinAdded) {
+        synchronized(changeListeners) {
+            for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).joinAdded(new QueryChangeEvent(this, joinAdded));
+            }
+        }
+    }
+    
+    protected void fireJoinRemoved(SQLJoin joinRemoved) {
+        synchronized(changeListeners) {
+            for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).joinRemoved(new QueryChangeEvent(this, joinRemoved));
+            }
+        }
+    }
+    
+    protected void fireJoinPropertyChangeEvent(PropertyChangeEvent e) {
+        synchronized(changeListeners) {
+            for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).joinPropertyChangeEvent(e);
+            }
+        }
+    }
+    
+    protected void fireItemPropertyChangeEvent(PropertyChangeEvent e) {
+        synchronized(changeListeners) {
+            for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).itemPropertyChangeEvent(e);
+            }
+        }
+    }
+    
+    protected void fireItemAdded(Item itemAdded) {
+        synchronized(changeListeners) {
+            for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).itemAdded(new QueryChangeEvent(this, itemAdded));
+            }
+        }
+    }
+    
+    protected void fireItemRemoved(Item itemRemoved) {
+        synchronized(changeListeners) {
+            for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).itemRemoved(new QueryChangeEvent(this, itemRemoved));
+            }
+        }
+    }
+    
+    protected void fireItemOrderChanged(Item movedColumn) {
+        synchronized(changeListeners) {
+            for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).itemOrderChanged(new QueryChangeEvent(this, movedColumn));
+            }
+        }
+    }
+    
+    protected void fireContainerAdded(Container containerAdded) {
+        synchronized(changeListeners) {
+            for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).containerAdded(new QueryChangeEvent(this, containerAdded));
+            }
+        }
+    }
+    
+    protected void fireContainerRemoved(Container containerRemoved) {
+        synchronized(changeListeners) {
+            for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).containerRemoved(new QueryChangeEvent(this, containerRemoved));
+            }
+        }
+    }
+    
+    protected void firePropertyChangeEvent(PropertyChangeEvent e) {
+        synchronized(changeListeners) {
+            for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).propertyChangeEvent(e);
+            }
+        }
+    }
+    
+    protected void fireCompoundEditStarted(String message) {
+        synchronized(changeListeners) {
+            for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).compoundEditStarted(
+                        QueryCompoundEditEvent.createStartCompoundEditEvent(this, message));
+            }
+        }
+    }
+    
+    protected void fireCompoundEditEnded() {
+        synchronized(changeListeners) {
+            for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).compoundEditEnded(
+                        QueryCompoundEditEvent.createEndCompoundEditEvent(this));
+            }
+        }
+    }
+    
+//---------------------------- End of protected methods to fire events -------------------
 }
