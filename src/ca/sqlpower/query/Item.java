@@ -21,7 +21,7 @@ package ca.sqlpower.query;
 
 import java.beans.PropertyChangeListener;
 
-import ca.sqlpower.query.Query.OrderByArgument;
+import ca.sqlpower.query.QueryImpl.OrderByArgument;
 
 
 /**

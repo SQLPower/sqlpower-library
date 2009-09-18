@@ -53,7 +53,7 @@ public class TableContainerTest extends TestCase {
         con.close();
         
         SQLTable testTable = db.getTableByName("test_table");
-		queryCache = new Query(new StubSQLDatabaseMapping());
+		queryCache = new QueryImpl(new StubSQLDatabaseMapping());
 		
 		tableContainer = new TableContainer(queryCache.getDatabase(), testTable);
 	}
@@ -69,7 +69,7 @@ public class TableContainerTest extends TestCase {
 		
         SQLTable testTable = db.getTableByName("test_table");
         assertNotNull(testTable);
-		queryCache = new Query(new StubSQLDatabaseMapping());
+		queryCache = new QueryImpl(new StubSQLDatabaseMapping());
 		
 		tableContainer = new TableContainer(UUID.randomUUID().toString(), queryCache.getDatabase(), "test_table", "", "public", new ArrayList<SQLObjectItem>());
 		

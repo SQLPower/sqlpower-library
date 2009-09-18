@@ -33,7 +33,7 @@ import javax.swing.SwingUtilities;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.query.Item;
-import ca.sqlpower.query.Query;
+import ca.sqlpower.query.QueryImpl;
 import ca.sqlpower.query.StringItem;
 import edu.umd.cs.piccolo.PCanvas;
 import edu.umd.cs.piccolo.PNode;
@@ -110,7 +110,7 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 				logger.debug("Model Name changed, updating view");
 				constantText.syncWithDocument();
 				}
-			} else if (evt.getPropertyName().equals(Query.GROUPING_ENABLED)) {
+			} else if (evt.getPropertyName().equals(QueryImpl.GROUPING_ENABLED)) {
 			    selectionCheckbox.setSelected(false);
 			}
 			

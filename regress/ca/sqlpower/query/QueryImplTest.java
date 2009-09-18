@@ -24,13 +24,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import junit.framework.TestCase;
-import ca.sqlpower.query.Query.OrderByArgument;
-import ca.sqlpower.query.Query.TableJoinGraph;
+import ca.sqlpower.query.QueryImpl.OrderByArgument;
+import ca.sqlpower.query.QueryImpl.TableJoinGraph;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLDatabaseMapping;
 
-public class QueryTest extends TestCase {
+public class QueryImplTest extends TestCase {
 
     private class StubDatabaseMapping implements SQLDatabaseMapping {
 
@@ -118,7 +118,7 @@ public class QueryTest extends TestCase {
      * and joins.
      */
     public void testCopyConstructorWithoutListeners() throws Exception {
-        Query query = new Query(new StubDatabaseMapping());
+        QueryImpl query = new QueryImpl(new StubDatabaseMapping());
         Item leftColumn = new TestingStringItem("leftCol");
         Container leftContainer = new TestingItemContainer("leftContainer");
         leftContainer.addItem(leftColumn);
@@ -134,7 +134,7 @@ public class QueryTest extends TestCase {
         assertTrue(query.getFromTableList().contains(rightContainer));
         assertTrue(query.getJoins().contains(join));
         
-        Query copy = new Query(query, false);
+        QueryImpl copy = new QueryImpl(query, false);
         
         assertEquals(2, copy.getFromTableList().size());
         assertEquals(1, copy.getJoins().size());
@@ -168,7 +168,7 @@ public class QueryTest extends TestCase {
      * and joins.
      */
     public void testCopyConstructorWithListeners() throws Exception {
-        Query query = new Query(new StubDatabaseMapping());
+        QueryImpl query = new QueryImpl(new StubDatabaseMapping());
         Item leftColumn = new TestingStringItem("leftCol");
         Container leftContainer = new TestingItemContainer("leftContainer");
         leftContainer.addItem(leftColumn);
@@ -184,7 +184,7 @@ public class QueryTest extends TestCase {
         assertTrue(query.getFromTableList().contains(rightContainer));
         assertTrue(query.getJoins().contains(join));
         
-        Query copy = new Query(query, true);
+        QueryImpl copy = new QueryImpl(query, true);
         
         assertEquals(2, copy.getFromTableList().size());
         assertEquals(1, copy.getJoins().size());
@@ -224,7 +224,7 @@ public class QueryTest extends TestCase {
      * may not be able to be connected to.
      */
     public void testQueryConstructionWithMissingDB() throws Exception {
-        Query query = new Query(new StubDatabaseMapping());
+        Query query = new QueryImpl(new StubDatabaseMapping());
         Container container = new ItemContainer("Test_Table");
         Item item = new StringItem("column");
         container.addItem(item);
@@ -246,7 +246,7 @@ public class QueryTest extends TestCase {
      * to a query.
      */
     public void testContainersAndJoinsAddToQuery() throws Exception {
-        Query query = new Query(new StubDatabaseMapping());
+        Query query = new QueryImpl(new StubDatabaseMapping());
         ItemContainer container1 = new ItemContainer("Table 1");
         StringItem item1 = new StringItem("Column 1");
         container1.addItem(item1);
@@ -282,7 +282,7 @@ public class QueryTest extends TestCase {
      * @throws Exception
      */
     public void testGraphWithThreeTables() throws Exception {
-        Query query = new Query(new StubDatabaseMapping());
+        QueryImpl query = new QueryImpl(new StubDatabaseMapping());
         ItemContainer container1 = new ItemContainer("Table 1");
         StringItem item1 = new StringItem("Column 1");
         container1.addItem(item1);
@@ -361,7 +361,7 @@ public class QueryTest extends TestCase {
 	 * updates the query appropriately.
 	 */
     public void testRemoveSortingFromColWithSorting() throws Exception {
-    	Query q = new Query(new StubDatabaseMapping());
+    	Query q = new QueryImpl(new StubDatabaseMapping());
     	Item col1 = new StringItem("Col 1");
     	Item col2 = new StringItem("Col 2");
     	Container table = new TestingItemContainer("Test container");
@@ -393,7 +393,7 @@ public class QueryTest extends TestCase {
 	 * un-selecting it removes it from the generated query.
 	 */
     public void testUnselectColWithSorting() throws Exception {
-    	Query q = new Query(new StubDatabaseMapping());
+    	Query q = new QueryImpl(new StubDatabaseMapping());
     	Item col1 = new StringItem("Col 1");
     	Item col2 = new StringItem("Col 2");
     	Container table = new TestingItemContainer("Test container");
@@ -427,7 +427,7 @@ public class QueryTest extends TestCase {
 	 * it adds it back in.
 	 */
     public void testReselectColWithSorting() throws Exception {
-    	Query q = new Query(new StubDatabaseMapping());
+    	Query q = new QueryImpl(new StubDatabaseMapping());
     	Item col1 = new StringItem("Col 1");
     	Item col2 = new StringItem("Col 2");
     	Container table = new TestingItemContainer("Test container");
@@ -467,7 +467,7 @@ public class QueryTest extends TestCase {
      * a query with the order by in it.
      */
     public void testAddingItemWithOrder() throws Exception {
-    	Query q = new Query(new StubDatabaseMapping());
+    	Query q = new QueryImpl(new StubDatabaseMapping());
     	Item col1 = new StringItem("Col 1");
     	Item col2 = new StringItem("Col 2");
     	Container table = new TestingItemContainer("Test container");
@@ -505,7 +505,7 @@ public class QueryTest extends TestCase {
      * if it is un-selected it is removed.
      */
     public void testSelectColumn() throws Exception {
-    	Query q = new Query(new StubDatabaseMapping());
+    	Query q = new QueryImpl(new StubDatabaseMapping());
     	Item col1 = new StringItem("Col 1");
     	Item col2 = new StringItem("Col 2");
     	Container table = new TestingItemContainer("Test container");
@@ -543,7 +543,7 @@ public class QueryTest extends TestCase {
 	 * @throws Exception
 	 */
     public void testGroupingOnItem() throws Exception {
-    	Query q = new Query(new StubDatabaseMapping());
+    	Query q = new QueryImpl(new StubDatabaseMapping());
     	Item col1 = new StringItem("Col 1");
     	Item col2 = new StringItem("Col 2");
     	Container table = new TestingItemContainer("Test container");
@@ -596,7 +596,7 @@ public class QueryTest extends TestCase {
      * @throws Exception
      */
     public void testUnselectColumnWithAggregate() throws Exception {
-    	Query q = new Query(new StubDatabaseMapping());
+    	Query q = new QueryImpl(new StubDatabaseMapping());
     	Item col1 = new StringItem("Col 1");
     	Item col2 = new StringItem("Col 2");
     	Container table = new TestingItemContainer("Test container");
@@ -637,7 +637,7 @@ public class QueryTest extends TestCase {
      * @throws Exception
      */
     public void testResetQuery() throws Exception {
-       Query q = new Query(new StubDatabaseMapping());
+       Query q = new QueryImpl(new StubDatabaseMapping());
        String startingWhereClause = q.getGlobalWhereClause();
        q.setGlobalWhereClause("something");
        boolean startingGroupingFlag = q.isGroupingEnabled();

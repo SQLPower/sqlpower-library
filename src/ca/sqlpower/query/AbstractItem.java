@@ -26,7 +26,7 @@ import java.util.UUID;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.query.Query.OrderByArgument;
+import ca.sqlpower.query.QueryImpl.OrderByArgument;
 
 
 public abstract class AbstractItem implements Item {

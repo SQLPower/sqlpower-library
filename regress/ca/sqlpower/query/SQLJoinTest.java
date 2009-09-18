@@ -40,7 +40,7 @@ public class SQLJoinTest extends TestCase {
      * instead of an inner join works. 
      */
     public void testSettingJoinToOuter() throws Exception {
-        Query query = new Query(new StubDatabaseMapping());
+        QueryImpl query = new QueryImpl(new StubDatabaseMapping());
         Item leftColumn = new StringItem("leftCol");
         Container leftContainer = new ItemContainer("leftContainer");
         leftContainer.addItem(leftColumn);

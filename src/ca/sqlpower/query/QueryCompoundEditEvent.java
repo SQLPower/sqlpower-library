@@ -21,7 +21,7 @@ package ca.sqlpower.query;
 
 /**
  * This class is used to signal the change between the start and end of a
- * compound edit in a {@link Query}.
+ * compound edit in a {@link QueryImpl}.
  */
 public class QueryCompoundEditEvent {
     

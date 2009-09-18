@@ -32,7 +32,7 @@ public interface QueryChangeListener {
     void joinRemoved(QueryChangeEvent evt);
 
     /**
-     * The {@link Query} will re-send property change events on individual
+     * The {@link QueryImpl} will re-send property change events on individual
      * {@link SQLJoin}s that change that are in the query. This simplifies
      * classes that want to listen to all joins in the query so they only have
      * to listen to the query and not all of the items themselves.
@@ -40,7 +40,7 @@ public interface QueryChangeListener {
     void joinPropertyChangeEvent(PropertyChangeEvent evt);
     
     /**
-     * The {@link Query} will re-send property change events on individual
+     * The {@link QueryImpl} will re-send property change events on individual
      * items that change that are in the query. This simplifies classes that
      * want to listen to all items in the query so they only have to listen
      * to the query and not all of the items themselves.
@@ -61,7 +61,7 @@ public interface QueryChangeListener {
     void containerRemoved(QueryChangeEvent evt);
 
     /**
-     * This is the property change events of the {@link Query} itself.
+     * This is the property change events of the {@link QueryImpl} itself.
      */
     void propertyChangeEvent(PropertyChangeEvent evt);
 
