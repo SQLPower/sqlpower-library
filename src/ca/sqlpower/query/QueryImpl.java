@@ -32,7 +32,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import javax.annotation.concurrent.GuardedBy;
 
@@ -292,8 +291,6 @@ public class QueryImpl implements Query {
 	
 	private SQLDatabaseMapping dbMapping;
 	
-	private String uuid;
-	
 	private String name;
 	
     /**
@@ -329,19 +326,6 @@ public class QueryImpl implements Query {
     public static final String PROPERTY_TABLE_REMOVED = "PROPERTY_TABLE_REMOVED";
 
 	public QueryImpl(SQLDatabaseMapping dbMapping) {
-		this((String)null, dbMapping);
-	}
-	
-	/**
-	 * The uuid defines the unique id of this query cache. If null
-	 * is passed in a new UUID will be generated.
-	 */
-	public QueryImpl(String uuid, SQLDatabaseMapping dbMapping) {
-		if (uuid == null) {
-		    generateNewUUID();
-		} else {
-		    this.uuid = uuid;
-		}
         this.dbMapping = dbMapping;
 		orderByList = new ArrayList<Item>();
 		selectedColumns = new ArrayList<Item>();
@@ -353,13 +337,6 @@ public class QueryImpl implements Query {
 		
 	}
 	
-    /* (non-Javadoc)
-     * @see ca.sqlpower.query.Query#generateNewUUID()
-     */
-	public void generateNewUUID() {
-	    uuid = "w" + UUID.randomUUID().toString();
-	}
-
     /**
      * This method will remove all of the current items in the constants
      * container and the add in the default constants.
@@ -393,7 +370,6 @@ public class QueryImpl implements Query {
 	 * hook up listeners.
 	 */
 	public QueryImpl(QueryImpl copy, boolean connectListeners, SQLDatabase database) {
-	    generateNewUUID();
 		selectedColumns = new ArrayList<Item>();
 		fromTableList = new ArrayList<Container>();
 		joinMapping = new HashMap<Container, List<SQLJoin>>();
@@ -1217,13 +1193,6 @@ public class QueryImpl implements Query {
 		return getName();
 	}
 
-    /* (non-Javadoc)
-     * @see ca.sqlpower.query.Query#getUUID()
-     */
-    public String getUUID() {
-        return uuid;
-    }
-    
     /* (non-Javadoc)
      * @see ca.sqlpower.query.Query#getName()
      */

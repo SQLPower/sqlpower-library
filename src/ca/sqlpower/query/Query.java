@@ -28,12 +28,6 @@ import ca.sqlpower.sqlobject.SQLDatabaseMapping;
 
 public interface Query {
 
-    /**
-     * Sets the UUID of this object to a newly generated UUID. This is necessary
-     * if the object is being cloned or copied.
-     */
-    public abstract void generateNewUUID();
-
     public abstract SQLDatabaseMapping getDbMapping();
 
     public abstract void setDBMapping(SQLDatabaseMapping dbMapping);
@@ -146,8 +140,6 @@ public interface Query {
     public abstract int getZoomLevel();
 
     public abstract String toString();
-
-    public abstract String getUUID();
 
     public abstract String getName();
 

@@ -147,6 +147,14 @@ public abstract class SPDataSource implements Comparable<SPDataSource> {
 		return putImpl(key, value, key);
 	}
 
+    /**
+     * Returns the value associated with the given key
+     * 
+     * @param key
+     *            The key to use
+     * @return The value associated with the given key, or null if no such value
+     *         exists
+     */
 	public String get(String key) {
 		return properties.get(key);
 	}
