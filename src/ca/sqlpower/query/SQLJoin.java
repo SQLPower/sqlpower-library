@@ -114,7 +114,7 @@ public class SQLJoin {
 	
 	private String name;
 	
-	private final UUID uuid;
+	private String uuid;
 	
 	private PropertyChangeSupport pcs = new PropertyChangeSupport(this);
 
@@ -129,7 +129,7 @@ public class SQLJoin {
 		this.oldComparator = "=";
 		isLeftColumnOuterJoin = false;
 		isRightColumnOuterJoin = false;
-		uuid = UUID.randomUUID();
+		uuid = "w" + UUID.randomUUID().toString();
 	}
 
 	public Item getLeftColumn() {
@@ -202,8 +202,12 @@ public class SQLJoin {
 	    pcs.firePropertyChange("name", oldName, name);
 	}
 
-	public UUID getUUID() {
+	public String getUUID() {
 	    return uuid;
+	}
+	
+	public void setUUID(String uuid){
+		this.uuid = uuid;
 	}
 	
 	/**

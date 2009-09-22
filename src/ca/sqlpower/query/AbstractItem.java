@@ -38,7 +38,7 @@ public abstract class AbstractItem implements Item {
 	 */
 	private Integer columnWidth;
 	
-	private final String uuid;
+	private String uuid;
 	
 	private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
 	
@@ -126,6 +126,10 @@ public abstract class AbstractItem implements Item {
     
     public String getUUID() {
         return uuid;
+    }
+    
+    public void setUUID(String uuid){
+    	this.uuid = uuid;
     }
     
     public void setGroupBy(SQLGroupFunction groupBy) {
