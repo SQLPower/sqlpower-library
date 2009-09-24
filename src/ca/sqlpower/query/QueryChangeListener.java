@@ -20,6 +20,7 @@
 package ca.sqlpower.query;
 
 import java.beans.PropertyChangeEvent;
+import ca.sqlpower.util.TransactionEvent;
 
 /**
  * Classes can implement this interface to have a way to listen for changes
@@ -69,11 +70,11 @@ public interface QueryChangeListener {
      * The query is now in a compound edit state. Things like executing the query
      * should not be done until the {@link #compoundEditEnded()} event is received.
      */
-    void compoundEditStarted(QueryCompoundEditEvent evt);
+    void compoundEditStarted(TransactionEvent evt);
 
     /**
      * The current compound edit has ended. The query can be executed again among
      * other things.
      */
-    void compoundEditEnded(QueryCompoundEditEvent evt);
+    void compoundEditEnded(TransactionEvent evt);
 }

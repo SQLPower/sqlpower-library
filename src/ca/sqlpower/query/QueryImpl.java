@@ -45,6 +45,7 @@ import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLDatabaseMapping;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLTable;
+import ca.sqlpower.util.TransactionEvent;
 
 /**
  * This class will cache all of the parts of a select
@@ -1399,7 +1400,7 @@ public class QueryImpl implements Query {
         synchronized(changeListeners) {
             for (int i = changeListeners.size() - 1; i >= 0; i--) {
                 changeListeners.get(i).compoundEditStarted(
-                        QueryCompoundEditEvent.createStartCompoundEditEvent(this, message));
+                        TransactionEvent.createStartTransactionEvent(this, message));
             }
         }
     }
@@ -1408,7 +1409,7 @@ public class QueryImpl implements Query {
         synchronized(changeListeners) {
             for (int i = changeListeners.size() - 1; i >= 0; i--) {
                 changeListeners.get(i).compoundEditEnded(
-                        QueryCompoundEditEvent.createEndCompoundEditEvent(this));
+                        TransactionEvent.createEndTransactionEvent(this));
             }
         }
     }

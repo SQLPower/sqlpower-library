@@ -21,6 +21,8 @@ package ca.sqlpower.query;
 
 import java.beans.PropertyChangeEvent;
 
+import ca.sqlpower.util.TransactionEvent;
+
 /**
  * Classes can extend this adapter to create a {@link QueryChangeListener}
  * if they only want to implement one or two of the methods in the listener.
@@ -57,10 +59,10 @@ public class QueryChangeAdapter implements QueryChangeListener {
     public void propertyChangeEvent(PropertyChangeEvent evt) {
     }
 
-    public void compoundEditEnded(QueryCompoundEditEvent evt) {
+    public void compoundEditEnded(TransactionEvent evt) {
     }
 
-    public void compoundEditStarted(QueryCompoundEditEvent evt) {
+    public void compoundEditStarted(TransactionEvent evt) {
     }
 
 }

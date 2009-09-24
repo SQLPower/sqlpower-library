@@ -71,7 +71,6 @@ import ca.sqlpower.query.Item;
 import ca.sqlpower.query.Query;
 import ca.sqlpower.query.QueryChangeEvent;
 import ca.sqlpower.query.QueryChangeListener;
-import ca.sqlpower.query.QueryCompoundEditEvent;
 import ca.sqlpower.query.SQLJoin;
 import ca.sqlpower.query.TableContainer;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
@@ -85,6 +84,7 @@ import ca.sqlpower.swingui.CursorManager;
 import ca.sqlpower.swingui.dbtree.SQLObjectSelection;
 import ca.sqlpower.swingui.querypen.event.CreateJoinEventHandler;
 import ca.sqlpower.swingui.querypen.event.QueryPenSelectionEventHandler;
+import ca.sqlpower.util.TransactionEvent;
 import edu.umd.cs.piccolo.PCamera;
 import edu.umd.cs.piccolo.PLayer;
 import edu.umd.cs.piccolo.PNode;
@@ -554,11 +554,11 @@ public class QueryPen implements MouseState {
             // the model components. This listener should create the view component
         }
     
-        public void compoundEditEnded(QueryCompoundEditEvent evt) {
+        public void compoundEditEnded(TransactionEvent evt) {
             //do nothing
         }
 
-        public void compoundEditStarted(QueryCompoundEditEvent evt) {
+        public void compoundEditStarted(TransactionEvent evt) {
             //do nothing
         }
     };
