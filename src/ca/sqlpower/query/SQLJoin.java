@@ -118,10 +118,6 @@ public class SQLJoin {
 	
 	private PropertyChangeSupport pcs = new PropertyChangeSupport(this);
 
-	public static final String PROPERTY_JOIN_REMOVED = "JOIN_REMOVED";
-
-	public static final String PROPERTY_JOIN_ADDED = "JOIN_ADDED";
-
 	public SQLJoin(Item leftColumn, Item rightColumn) {
 		this.leftColumn = leftColumn;
 		this.rightColumn = rightColumn;
