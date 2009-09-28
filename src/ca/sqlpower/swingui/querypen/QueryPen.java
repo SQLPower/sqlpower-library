@@ -68,10 +68,12 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.query.Container;
 import ca.sqlpower.query.Item;
+import ca.sqlpower.query.OrderByItemEvent;
 import ca.sqlpower.query.Query;
 import ca.sqlpower.query.QueryChangeEvent;
 import ca.sqlpower.query.QueryChangeListener;
 import ca.sqlpower.query.SQLJoin;
+import ca.sqlpower.query.SelectedItemEvent;
 import ca.sqlpower.query.TableContainer;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator.CacheType;
@@ -217,9 +219,6 @@ public class QueryPen implements MouseState {
     					
     					topLayer.addChild(pane);
     					queryChangeListener.propertyChange(new PropertyChangeEvent(canvas, Container.PROPERTY_TABLE_ADDED, null, pane.getModel()));
-    					for (UnmodifiableItemPNode itemNode : pane.getContainedItems()) {
-    						itemNode.setInSelected(true);
-    					}
     					
     					try {
     						for (SQLRelationship relation : table.getExportedKeys()) {
@@ -270,6 +269,10 @@ public class QueryPen implements MouseState {
     					} catch (SQLObjectException e) {
     						throw new RuntimeException(e);
     					}
+    					
+                        for (UnmodifiableItemPNode itemNode : pane.getContainedItems()) {
+                            itemNode.setInSelected(true);
+                        }
     
     					canvas.repaint();
     					dtde.acceptDrop(dtde.getDropAction());
@@ -520,10 +523,6 @@ public class QueryPen implements MouseState {
             //do nothing
         }
     
-        public void itemOrderChanged(QueryChangeEvent evt) {
-            //do nothing
-        }
-    
         public void itemAdded(QueryChangeEvent evt) {
             //do nothing
         }
@@ -559,6 +558,22 @@ public class QueryPen implements MouseState {
         }
 
         public void compoundEditStarted(TransactionEvent evt) {
+            //do nothing
+        }
+
+		public void selectedItemAdded(SelectedItemEvent evt) {
+			//do nothing
+		}
+
+		public void selectedItemRemoved(SelectedItemEvent evt) {
+			//do nothing
+		}
+
+        public void orderByItemAdded(OrderByItemEvent orderByItemEvent) {
+            //do nothing
+        }
+
+        public void orderByItemRemoved(OrderByItemEvent orderByItemEvent) {
             //do nothing
         }
     };

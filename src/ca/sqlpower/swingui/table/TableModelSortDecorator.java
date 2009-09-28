@@ -18,9 +18,7 @@
  */
 package ca.sqlpower.swingui.table;
 
-import java.awt.Color;
 import java.awt.Component;
-import java.awt.Graphics;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -245,7 +243,7 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
 	 */
     public void setSortingStatus(LinkedHashMap<Integer, Integer> columnToStatusMap) {
     	for (Map.Entry<Integer, Integer> entry :columnToStatusMap.entrySet()) {
-    		logger.debug("Sorting status changed. Setting column number " + entry.getKey() + " to status " + entry.getValue());
+    		logger.debug("Sorting status changed. Setting column number " + entry.getKey() + " to status " + entry.getValue(), new Exception());
     		Directive directive = getDirective(entry.getKey());
     		if (directive != EMPTY_DIRECTIVE) {
     			sortingColumns.remove(directive);
@@ -485,44 +483,6 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
     	}
     }
 
-    private static class Arrow implements Icon {
-        private boolean descending;
-        private int size;
-        private int priority;
-
-        public Arrow(boolean descending, int size, int priority) {
-            this.descending = descending;
-            this.size = size;
-            this.priority = priority;
-        }
-
-        public void paintIcon(Component c, Graphics g, int x, int y) {
-        	Color color = c == null ? Color.GRAY : c.getBackground();
-        	// In a compound sort, make each succesive triangle 20%
-        	// smaller than the previous one.
-        	int dx = (int)(size/2*Math.pow(0.8, priority));
-        	int dy = descending ? dx : -dx;
-        	// Align icon (roughly) with font baseline.
-        	y = y + 5*size/6 + (descending ? -dy : 0);
-        	int shift = descending ? 1 : -1;
-        	g.translate(x, y);
-        	g.setColor(color.darker());
-        	
-        	//Create the Triangle
-        	g.fillPolygon(new int[]{dx, 0, dx/2}, new int[]{0, 0, dy+ shift}, 3);
-        	g.setColor(color);
-        	g.translate(-x, -y);
-        }
-
-        public int getIconWidth() {
-            return size;
-        }
-
-        public int getIconHeight() {
-            return size;
-        }
-    }
-    
     private class SortableHeaderRenderer implements TableCellRenderer {
         private TableCellRenderer tableCellRenderer;
 

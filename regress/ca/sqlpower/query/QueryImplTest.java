@@ -19,6 +19,7 @@
 
 package ca.sqlpower.query;
 
+import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,8 +30,11 @@ import ca.sqlpower.query.QueryImpl.TableJoinGraph;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLDatabaseMapping;
+import ca.sqlpower.util.TransactionEvent;
 
 public class QueryImplTest extends TestCase {
+	
+	
 
     private class StubDatabaseMapping implements SQLDatabaseMapping {
 
@@ -680,5 +684,77 @@ public class QueryImplTest extends TestCase {
        assertTrue(q.getJoins().isEmpty());
        assertTrue(q.getOrderByList().isEmpty());
        assertTrue(q.getSelectedColumns().isEmpty());
+    }
+
+    /**
+     * Tests that adding and removing a container will fire the correct event
+     * from the query.
+     */
+    public void testContainerFiresEvent() throws Exception {
+        CountingChangeListener listener = new CountingChangeListener();
+        QueryImpl query = new QueryImpl(new StubDatabaseMapping());
+        query.addQueryChangeListener(listener);
+        Container container = new ItemContainer("container");
+        Item item = new StringItem("name");
+        container.addItem(item);
+        
+        assertEquals(0, listener.getContainerAddedCount());
+        query.addTable(container);
+        
+        assertEquals(1, listener.getContainerAddedCount());
+        QueryChangeEvent evt = listener.getLastQueryChangeEvent();
+        assertEquals(container, evt.getContainerChanged());
+        assertEquals(query, evt.getSource());
+        
+        assertEquals(0, listener.getContainerRemovedCount());
+        query.removeTable(container);
+        
+        assertEquals(1, listener.getContainerRemovedCount());
+        evt = listener.getLastQueryChangeEvent();
+        assertEquals(container, evt.getContainerChanged());
+        assertEquals(query, evt.getSource());
+    }
+
+    /**
+     * Tests that selecting and unselecting an item fires the correct event from
+     * the query.
+     */
+    public void testSelectingItemFiresEvent() throws Exception {
+        CountingChangeListener listener = new CountingChangeListener();
+        QueryImpl query = new QueryImpl(new StubDatabaseMapping());
+        query.addQueryChangeListener(listener);
+        Container container = new ItemContainer("container");
+        Item item = new StringItem("name");
+        item.setSelected(false);
+        container.addItem(item);
+        Item item2 = new StringItem("name");
+        item2.setSelected(false);
+        container.addItem(item2);
+        Item item3 = new StringItem("name");
+        item3.setSelected(false);
+        container.addItem(item3);
+        query.addTable(container);
+        
+        assertEquals(0, listener.getSelectedItemAddedCount());
+        item2.setSelected(true);
+        
+        assertEquals(1, listener.getSelectedItemAddedCount());
+        SelectedItemEvent evt = listener.getLastSelectedItemEvent();
+        assertEquals(item2, evt.getItemSelected().getDelegate());
+        assertEquals(query, evt.getSource());
+        assertEquals(0, evt.getIndex());
+        
+        assertEquals(0, listener.getSelectedItemRemovedCount());
+        item2.setSelected(false);
+        
+        assertEquals(1, listener.getSelectedItemRemovedCount());
+        evt = listener.getLastSelectedItemEvent();
+        assertEquals(item2, evt.getItemSelected().getDelegate());
+        assertEquals(query, evt.getSource());
+        assertEquals(0, evt.getIndex());
+        
+        item2.setSelected(false);
+        assertEquals(1, listener.getSelectedItemRemovedCount());
+        
     }
 }

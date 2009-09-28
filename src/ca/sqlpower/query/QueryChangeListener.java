@@ -52,11 +52,6 @@ public interface QueryChangeListener {
     
     void itemRemoved(QueryChangeEvent evt);
     
-    /**
-     * This will be fired if the position of a column was changed.
-     */
-    void itemOrderChanged(QueryChangeEvent evt);
-    
     void containerAdded(QueryChangeEvent evt);
     
     void containerRemoved(QueryChangeEvent evt);
@@ -65,6 +60,16 @@ public interface QueryChangeListener {
      * This is the property change events of the {@link QueryImpl} itself.
      */
     void propertyChangeEvent(PropertyChangeEvent evt);
+    
+    /**
+     * Called when an item is added to a query.
+     */
+    void selectedItemAdded(SelectedItemEvent evt);
+    
+    /**
+     * Called when an item is removed from a query.
+     */
+    void selectedItemRemoved(SelectedItemEvent evt);
 
     /**
      * The query is now in a compound edit state. Things like executing the query
@@ -77,4 +82,15 @@ public interface QueryChangeListener {
      * other things.
      */
     void compoundEditEnded(TransactionEvent evt);
+
+    /**
+     * Called when an item is removed from the order by list of this query.
+     */
+    void orderByItemRemoved(OrderByItemEvent evt);
+
+    /**
+     * Called when an item is added to the order by list of this query.
+     * @param orderByItemEvent
+     */
+    void orderByItemAdded(OrderByItemEvent evt);
 }

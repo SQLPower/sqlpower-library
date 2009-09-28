@@ -47,9 +47,9 @@ public interface Query {
      */
     public abstract boolean containsCrossJoins();
 
-    public abstract List<Item> getSelectedColumns();
+    public abstract List<QueryItem> getSelectedColumns();
 
-    public abstract List<Item> getOrderByList();
+    public abstract List<QueryItem> getOrderByList();
 
     /**
      * This will move a column that is being sorted to the end of the
@@ -110,7 +110,22 @@ public interface Query {
 
     public abstract Container getConstantsContainer();
 
-    public abstract void setDataSource(JDBCDataSource dataSource);
+    /**
+     * This sets the query's data source to the given data source. As a
+     * side effect it also resets the query, removing all tables, and resetting
+     * the constants table.
+     * @return True if the data source was set, false otherwise.
+     */
+    public abstract boolean setDataSource(JDBCDataSource dataSource);
+
+    /**
+     * This sets the data source without resetting the query. This should only
+     * be called from loading code. If the user is trying to set the data source
+     * use {@link #setDataSource(JDBCDataSource)} so the tables in the query are
+     * removed as well.
+     * @return True if the data source was set, false otherwise.
+     */
+    public abstract boolean setDataSourceWithoutReset(JDBCDataSource dataSource);
 
     /**
      * If this is set then only this query string will be returned by the generateQuery method
@@ -165,5 +180,13 @@ public interface Query {
      * Resets the query to be as it was when it is first created.
      */
     public abstract void reset();
+    
+    /**
+     * Returns the index of the given item in the list of selected items.
+     * If the item is not in the list of selected items it will return -1.
+     * @param item
+     * @return
+     */
+    public abstract int indexOfSelectedItem(Item item);
 
 }

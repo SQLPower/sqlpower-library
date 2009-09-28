@@ -158,12 +158,15 @@ public class QueryImpl implements Query {
 	 * These columns are stored in the order they will be returned
 	 * in.
 	 */
-	private final List<Item> selectedColumns;
-	
-	/**
-	 * The order by list keeps track of the order that columns were selected in.
-	 */
-	private final List<Item> orderByList;
+	private final List<QueryItem> selectedColumns;
+
+    /**
+     * The order by list keeps track of the order that columns were sorted in.
+     * This may be different from the order the columns were selected in as the
+     * third column of a query can be sorted first, the first column of a query
+     * sorted second and the last column of a query sorted last.
+     */
+	private final List<QueryItem> orderByList;
 	
 	/**
 	 * The list of tables that we are selecting from.
@@ -205,19 +208,13 @@ public class QueryImpl implements Query {
 		    Item selectedItem = (Item) e.getSource();
 			if (e.getPropertyName().equals(Item.SELECTED)) {
 		        if ((Boolean) e.getNewValue()) {
-		            selectedColumns.add(selectedItem);
-		            if (!selectedItem.getOrderBy().equals(OrderByArgument.NONE)) {
-		            	orderByList.add(selectedItem);
-		            }
+		            addItemToSelectedList(selectedItem);
 		        } else {
-		            selectedColumns.remove(selectedItem);
-		            orderByList.remove(e.getSource());
+		            removeItemFromSelectedList(selectedItem);
 		        }
 		    } else if (e.getPropertyName().equals(Item.ORDER_BY)) {
-		        orderByList.remove(e.getSource());
-		        if (!e.getNewValue().equals(OrderByArgument.NONE)) {
-		            orderByList.add(selectedItem);
-		        }
+		        removeItemFromOrderByList(selectedItem);
+		        addItemToOrderByList(selectedItem);
 		    }
 		    
 		    fireItemPropertyChangeEvent(e);
@@ -328,12 +325,12 @@ public class QueryImpl implements Query {
 
 	public QueryImpl(SQLDatabaseMapping dbMapping) {
         this.dbMapping = dbMapping;
-		orderByList = new ArrayList<Item>();
-		selectedColumns = new ArrayList<Item>();
+		orderByList = new ArrayList<QueryItem>();
+		selectedColumns = new ArrayList<QueryItem>();
 		fromTableList = new ArrayList<Container>();
 		joinMapping = new HashMap<Container, List<SQLJoin>>();
 		
-		constantsContainer = new ItemContainer("Constants");
+		setConstantsContainer(new ItemContainer("Constants"));
 		resetConstantsContainer();
 		
 	}
@@ -350,16 +347,12 @@ public class QueryImpl implements Query {
         
         StringItem currentTime = new StringItem("current_time");
 		constantsContainer.addItem(currentTime);
-		addItem(currentTime);
 		StringItem currentDate = new StringItem("current_date");
 		constantsContainer.addItem(currentDate);
-		addItem(currentDate);
 		StringItem user = new StringItem("user");
 		constantsContainer.addItem(user);
-		addItem(user);
 		StringItem countStar = new StringItem("count(*)");
 		constantsContainer.addItem(countStar);
-		addItem(countStar);
     }
 	
 	public QueryImpl(QueryImpl copy, boolean connectListeners) {
@@ -371,10 +364,10 @@ public class QueryImpl implements Query {
 	 * hook up listeners.
 	 */
 	public QueryImpl(QueryImpl copy, boolean connectListeners, SQLDatabase database) {
-		selectedColumns = new ArrayList<Item>();
+		selectedColumns = new ArrayList<QueryItem>();
 		fromTableList = new ArrayList<Container>();
 		joinMapping = new HashMap<Container, List<SQLJoin>>();
-		orderByList = new ArrayList<Item>();
+		orderByList = new ArrayList<QueryItem>();
 		
 		this.dbMapping = copy.dbMapping;
 		setName(copy.getName());
@@ -389,11 +382,19 @@ public class QueryImpl implements Query {
 		constantsContainer = copy.getConstantsContainer().createCopy();
 		oldToNewContainers.put(copy.getConstantsContainer(), constantsContainer);
 		
-		for (Item column : copy.getSelectedColumns()) {
+		for (QueryItem selectedColumn : copy.getSelectedColumns()) {
+		    Item column = selectedColumn.getDelegate();
 		    Container table = oldToNewContainers.get(column.getParent());
 		    Item item = table.getItem(column.getItem());
-		    selectedColumns.add(item);
+		    addItemToSelectedList(item);
 		}
+		
+		orderByList.clear();
+		for (QueryItem column : copy.getOrderByList()) {
+            Container table = oldToNewContainers.get(column.getDelegate().getParent());
+            Item item = table.getItem(column.getDelegate().getItem());
+            addItemToOrderByList(item);
+        }
 
 		Set<SQLJoin> joinSet = new HashSet<SQLJoin>();
 		for (Map.Entry<Container, List<SQLJoin>> entry : copy.getJoinMapping().entrySet()) {
@@ -424,11 +425,6 @@ public class QueryImpl implements Query {
             newJoinList.add(newJoin);
 		}
 
-		for (Item column : copy.getOrderByList()) {
-		    Container table = oldToNewContainers.get(column.getParent());
-		    Item item = table.getItem(column.getItem());
-		    orderByList.add(item);
-		}
 		globalWhereClause = copy.getGlobalWhereClause();
 		groupingEnabled = copy.isGroupingEnabled();
 		streaming = copy.isStreaming();
@@ -443,7 +439,7 @@ public class QueryImpl implements Query {
 		            column.addPropertyChangeListener(itemListener);
 		        }
 		    }
-		    //XXX does the constants container not need a child listener?
+		    constantsContainer.addChildListener(getTableChildListener());
 		    for (Item column : constantsContainer.getItems()) {
 		        column.addPropertyChangeListener(itemListener);
 		    }
@@ -481,7 +477,8 @@ public class QueryImpl implements Query {
 		logger.debug("Setting grouping enabled to " + enabled);
 		if (!groupingEnabled && enabled) {
 			startCompoundEdit("Defining the grouping function of string items to be count.");
-			for (Item item : getSelectedColumns()) {
+			for (QueryItem selectedItem : getSelectedColumns()) {
+			    Item item = selectedItem.getDelegate();
 				if (item instanceof StringItem) {
 					item.setGroupBy(SQLGroupFunction.COUNT);
 				}
@@ -490,15 +487,6 @@ public class QueryImpl implements Query {
 		}
 		firePropertyChangeEvent(new PropertyChangeEvent(this, GROUPING_ENABLED, groupingEnabled, enabled));
 		groupingEnabled = enabled;
-	}
-	
-	/**
-	 * Removes the column from the selected columns list and all other
-	 * related lists.
-	 */
-	private void removeColumnSelection(Item column) {
-		selectedColumns.remove(column);
-		orderByList.remove(column);
 	}
 	
 	/* (non-Javadoc)
@@ -542,13 +530,14 @@ public class QueryImpl implements Query {
 		    }
 		}
 
-		if (selectedColumns.size() ==  0) {
+		if (getSelectedColumns().size() ==  0) {
 			return "";
 		}
 		StringBuffer query = new StringBuffer();
 		query.append("SELECT");
 		boolean isFirstSelect = true;
-		for (Item col : selectedColumns) {
+		for (QueryItem selectedCol : getSelectedColumns()) {
+		    Item col = selectedCol.getDelegate();
 			if (isFirstSelect) {
 				query.append(" ");
 				isFirstSelect = false;
@@ -702,7 +691,8 @@ public class QueryImpl implements Query {
 		}
 		if (groupingEnabled) {
 		    boolean isFirstGroupBy = true;
-		    for (Item col : selectedColumns) {
+		    for (QueryItem selectedCol : getSelectedColumns()) {
+		        Item col = selectedCol.getDelegate();
 		        if (col.getGroupBy().equals(SQLGroupFunction.GROUP_BY) && !isStringItemAggregated(col)) {
 		            if (isFirstGroupBy) {
 		                query.append("\nGROUP BY ");
@@ -721,7 +711,8 @@ public class QueryImpl implements Query {
 		    }
 		    query.append(" ");
 		    boolean isFirstHaving = true;
-		    for (Item column : selectedColumns) {
+		    for (QueryItem selectedColumn : getSelectedColumns()) {
+		        Item column = selectedColumn.getDelegate();
 		        if (column.getHaving() != null && column.getHaving().trim().length() > 0) {
 		            if (isFirstHaving) {
 		                query.append("\nHAVING ");
@@ -751,7 +742,8 @@ public class QueryImpl implements Query {
 		
 		if (!orderByList.isEmpty()) {
 			boolean isFirstOrder = true;
-			for (Item col : orderByList) {
+			for (QueryItem queryCol : orderByList) {
+			    Item col = queryCol.getDelegate();
 				if (isFirstOrder) {
 					query.append("\nORDER BY ");
 					isFirstOrder = false;
@@ -876,14 +868,14 @@ public class QueryImpl implements Query {
 	/* (non-Javadoc)
      * @see ca.sqlpower.query.Query#getSelectedColumns()
      */
-	public List<Item> getSelectedColumns() {
+	public List<QueryItem> getSelectedColumns() {
 		return Collections.unmodifiableList(selectedColumns);
 	}
 
 	/* (non-Javadoc)
      * @see ca.sqlpower.query.Query#getOrderByList()
      */
-	public List<Item> getOrderByList() {
+	public List<QueryItem> getOrderByList() {
 		return Collections.unmodifiableList(orderByList);
 	}
 	
@@ -891,8 +883,17 @@ public class QueryImpl implements Query {
      * @see ca.sqlpower.query.Query#moveSortedItemToEnd(ca.sqlpower.query.Item)
      */
 	public void moveSortedItemToEnd(Item item) {
-	    orderByList.remove(item);
-	    orderByList.add(item);
+	    removeItemFromOrderByList(item);
+	    addItemToOrderByList(item);
+	}
+	
+	public int indexOfOrderByItem(Item item) {
+	    for (int i = 0; i < orderByList.size(); i++) {
+	        if (orderByList.get(i).getDelegate().equals(item)) {
+	            return i;
+	        }
+	    }
+	    return -1;
 	}
 	
 	/* (non-Javadoc)
@@ -1023,7 +1024,7 @@ public class QueryImpl implements Query {
 	public void removeItem(Item col) {
 		logger.debug("Item name is " + col.getName());
 		col.removePropertyChangeListener(itemListener);
-		removeColumnSelection(col);
+		removeItemFromSelectedList(col);
 		fireItemRemoved(col);
 	}
 	
@@ -1034,22 +1035,100 @@ public class QueryImpl implements Query {
 		col.addPropertyChangeListener(itemListener);
 		fireItemAdded(col);
 		if (col.isSelected()) {
-			selectedColumns.add(col);
+		    addItemToSelectedList(col);
 		}
-		if (col.isSelected() && !col.getOrderBy().equals(OrderByArgument.NONE)) {
-			orderByList.add(col);
-		}
+	}
+
+	/**
+	 * Adds the given item to the end of the selection list.
+	 * @param item
+	 */
+	private void addItemToSelectedList(Item item) {
+	    addItemToSelectedList(item, selectedColumns.size());
+	}
+	
+	/**
+	 * Adds the given item to the given index in the selection list.
+	 */
+	private void addItemToSelectedList(Item item, int index) {
+	    addItemToSelectedList(item, index, orderByList.size());
+	}
+
+    /**
+     * Adds the item to the selected items list at the given index and defines
+     * its order by index at the same time.
+     * 
+     * @param item
+     *            The item to add to the selection list.
+     * @param index
+     *            The index in the selection list to add the item to.
+     * @param orderByIndex
+     *            The index in the order by list to add this item to. This order
+     *            can be different from the selection list.
+     */
+	private void addItemToSelectedList(Item item, int index, int orderByIndex) {
+	    QueryItem queryItem = new QueryItem(item);
+	    selectedColumns.add(index, queryItem);
+	    queryItem.setParent(this);
+	    addItemToOrderByList(item, orderByIndex);
+	    fireSelectedItemAdded(queryItem, index);
+	}
+	
+	private boolean removeItemFromSelectedList(Item item) {
+	    QueryItem itemToRemove = null;
+	    for (QueryItem selectedItem : selectedColumns) {
+	        if (selectedItem.getDelegate().equals(item)) {
+	            itemToRemove = selectedItem;
+	            break;
+	        }
+	    }
+	    if (itemToRemove == null) return false;
+	    
+	    int index = selectedColumns.indexOf(itemToRemove);
+	    selectedColumns.remove(itemToRemove);
+	    removeItemFromOrderByList(item);
+	    fireSelectedItemRemoved(itemToRemove, index);
+	    return true;
+	}
+	
+	private void addItemToOrderByList(Item item) {
+	    addItemToOrderByList(item, orderByList.size());
+	}
+	
+	/**
+	 * Adds the given item to the order by list if it has an ordering.
+	 */
+	private void addItemToOrderByList(Item item, int index) {
+	    if (item.getOrderBy().equals(OrderByArgument.NONE)) return;
+	    QueryItem newItem = new QueryItem(item);
+	    newItem.setParent(this);
+	    orderByList.add(index, newItem);
+	    fireOrderByItemAdded(newItem, index);
+	}
+	
+	/**
+	 * Removes the given item from the order by list if it exists.
+	 * @param item The item to remove.
+	 * @return True if the item was successfully removed, false otherwise.
+	 */
+	private boolean removeItemFromOrderByList(Item item) {
+	    int index = indexOfOrderByItem(item);
+	    if (index < 0) return false;
+	    
+	    QueryItem removedItem = orderByList.remove(index);
+	    fireOrderByItemRemoved(removedItem, index);
+	    return true;
 	}
 	
 	/* (non-Javadoc)
      * @see ca.sqlpower.query.Query#moveItem(ca.sqlpower.query.Item, int)
      */
 	public void moveItem(Item movedColumn, int toIndex) {
-		selectedColumns.remove(movedColumn);
-		selectedColumns.add(toIndex, movedColumn);
-		fireItemOrderChanged(movedColumn);
+	    int indexOfOrderBy = indexOfOrderByItem(movedColumn);
+		removeItemFromSelectedList(movedColumn);
+		addItemToSelectedList(movedColumn, toIndex, indexOfOrderBy);
 	}
-
+	
     /* (non-Javadoc)
      * @see ca.sqlpower.query.Query#startCompoundEdit(java.lang.String)
      */
@@ -1119,14 +1198,22 @@ public class QueryImpl implements Query {
 	/* (non-Javadoc)
      * @see ca.sqlpower.query.Query#setDataSource(ca.sqlpower.sql.JDBCDataSource)
      */
-	public void setDataSource(JDBCDataSource dataSource) {
+	public boolean setDataSource(JDBCDataSource dataSource) {
+	    boolean dsSet = setDataSourceWithoutReset(dataSource);
+	    if (dsSet) {
+	        reset();
+	    }
+	    return dsSet;
+	}
+	
+	public boolean setDataSourceWithoutReset(JDBCDataSource dataSource) {
 	    final SQLDatabase newDatabase = dbMapping.getDatabase(dataSource);
-	    if (database != null && database == newDatabase) return;
+	    if (database != null && database == newDatabase) return false;
 	    this.database = newDatabase;
-	    reset();
 	    if (dataSource != null) {
-            setStreaming(dataSource.getParentType().getSupportsStreamQueries());
-        }
+	        setStreaming(dataSource.getParentType().getSupportsStreamQueries());
+	    }
+	    return true;
 	}
 	
 	/* (non-Javadoc)
@@ -1161,8 +1248,25 @@ public class QueryImpl implements Query {
      * @see ca.sqlpower.query.Query#newConstantsContainer(java.lang.String)
      */
 	public Container newConstantsContainer(String uuid) {
-		constantsContainer = new ItemContainer("Constants", uuid);
+		setConstantsContainer(new ItemContainer("Constants", uuid));
 		return constantsContainer;
+	}
+
+    /**
+     * The constants container behaves differently from the other tables in the
+     * query. Because of this it should not be added like adding a normal
+     * container. Instead the {@link #newConstantsContainer(String)} allows
+     * users to create a new container for constants without actually letting
+     * them create it outside of the query.
+     */
+	private void setConstantsContainer(Container newContainer) {
+	    if (constantsContainer != null) {
+	        constantsContainer.removeChildListener(tableChildListener);
+	    }
+	    fireContainerRemoved(constantsContainer);
+	    constantsContainer = newContainer;
+	    constantsContainer.addChildListener(tableChildListener);
+	    fireContainerAdded(constantsContainer);
 	}
 
 	/* (non-Javadoc)
@@ -1314,6 +1418,15 @@ public class QueryImpl implements Query {
             
     }
     
+    public int indexOfSelectedItem(Item item) {
+        for (int i = 0; i < selectedColumns.size(); i++) {
+            if (selectedColumns.get(i).getDelegate().equals(item)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    
 //---------------------------- Protected methods to fire events -------------------
     
     protected void fireJoinAdded(SQLJoin joinAdded) {
@@ -1364,10 +1477,34 @@ public class QueryImpl implements Query {
         }
     }
     
-    protected void fireItemOrderChanged(Item movedColumn) {
-        synchronized(changeListeners) {
+    protected void fireSelectedItemRemoved(QueryItem item, int index) {
+    	synchronized (changeListeners) {
+			for (int i = changeListeners.size() - 1; i >= 0; i--) {
+				changeListeners.get(i).selectedItemRemoved(new SelectedItemEvent(this, item, index, false));
+			}
+		}
+    }
+    
+    protected void fireSelectedItemAdded(QueryItem item, int index) {
+    	synchronized (changeListeners) {
+			for (int i = changeListeners.size() - 1; i >= 0; i--) {
+				changeListeners.get(i).selectedItemAdded(new SelectedItemEvent(this, item, index, true));
+			}
+		}
+    }
+    
+    protected void fireOrderByItemRemoved(QueryItem item, int index) {
+        synchronized (changeListeners) {
             for (int i = changeListeners.size() - 1; i >= 0; i--) {
-                changeListeners.get(i).itemOrderChanged(new QueryChangeEvent(this, movedColumn));
+                changeListeners.get(i).orderByItemRemoved(new OrderByItemEvent(this, item, index, false));
+            }
+        }
+    }
+    
+    protected void fireOrderByItemAdded(QueryItem item, int index) {
+        synchronized (changeListeners) {
+            for (int i = changeListeners.size() - 1; i >= 0; i--) {
+                changeListeners.get(i).orderByItemAdded(new OrderByItemEvent(this, item, index, true));
             }
         }
     }

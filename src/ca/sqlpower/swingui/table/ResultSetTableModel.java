@@ -23,8 +23,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
-import javax.swing.event.TableModelEvent;
 import javax.swing.table.AbstractTableModel;
+
+import org.apache.log4j.Logger;
 
 /**
  * This is a basic table model that takes in a result set to be displayed in a
@@ -32,6 +33,8 @@ import javax.swing.table.AbstractTableModel;
  * result set is not allowed to be modified in this table.
  */
 public class ResultSetTableModel extends AbstractTableModel {
+    
+    private static final Logger logger = Logger.getLogger(ResultSetTableModel.class);
 
 	/**
 	 * This result set holds the cell entries in the table. 
@@ -44,6 +47,13 @@ public class ResultSetTableModel extends AbstractTableModel {
 	 */
 	public ResultSetTableModel(ResultSet result) {
 		this.rs = result;
+		if (logger.isDebugEnabled()) {
+		    try {
+                logger.debug("Result set has " + rs.getMetaData().getColumnCount());
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+		}
 	}
 	
 	public int getColumnCount() {
