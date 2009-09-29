@@ -485,8 +485,8 @@ public class QueryImpl implements Query {
 			}
 			endCompoundEdit();
 		}
-		firePropertyChangeEvent(new PropertyChangeEvent(this, GROUPING_ENABLED, groupingEnabled, enabled));
 		groupingEnabled = enabled;
+		firePropertyChangeEvent(new PropertyChangeEvent(this, GROUPING_ENABLED, groupingEnabled, enabled));
 	}
 	
 	/* (non-Javadoc)
