@@ -1273,7 +1273,9 @@ public class QueryImpl implements Query {
      * @see ca.sqlpower.query.Query#setZoomLevel(int)
      */
 	public void setZoomLevel(int zoomLevel) {
+	    int oldZoom = this.zoomLevel; 
 		this.zoomLevel = zoomLevel;
+		firePropertyChangeEvent(new PropertyChangeEvent(this, "zoomLevel", oldZoom, zoomLevel));
 	}
 
 	/* (non-Javadoc)
@@ -1309,7 +1311,9 @@ public class QueryImpl implements Query {
      * @see ca.sqlpower.query.Query#setName(java.lang.String)
      */
     public void setName(String name) {
+        String oldName = this.name;
         this.name = name;
+        firePropertyChangeEvent(new PropertyChangeEvent(this, "name", oldName, name));
     }
     
     /* (non-Javadoc)
@@ -1332,7 +1336,9 @@ public class QueryImpl implements Query {
      * @see ca.sqlpower.query.Query#setStreamingRowLimit(int)
      */
     public void setStreamingRowLimit(int streamingRowLimit) {
+        int oldLimit = this.streamingRowLimit;
         this.streamingRowLimit = streamingRowLimit;
+        firePropertyChangeEvent(new PropertyChangeEvent(this, "streamingRowLimit", oldLimit, streamingRowLimit));
     }
 
     /* (non-Javadoc)
@@ -1346,7 +1352,9 @@ public class QueryImpl implements Query {
      * @see ca.sqlpower.query.Query#setStreaming(boolean)
      */
     public void setStreaming(boolean streaming) {
+        boolean oldStreaming = this.streaming;
         this.streaming = streaming;
+        firePropertyChangeEvent(new PropertyChangeEvent(this, "streaming", oldStreaming, streaming));
     }
 
     /* (non-Javadoc)

@@ -20,7 +20,9 @@
 package ca.sqlpower.testutil;
 
 import java.awt.Font;
+import java.awt.Image;
 import java.awt.geom.Point2D;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -129,6 +131,8 @@ public class GenericNewValueMaker implements NewValueMaker {
 				point.setLocation(((Point2D) oldVal).getX() + 1, ((Point2D) oldVal).getY() - 1);
 			}
 			return point;
+        } else if (valueType.equals(Image.class)) {
+            return new BufferedImage(10, 10, BufferedImage.TYPE_INT_ARGB);
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +
