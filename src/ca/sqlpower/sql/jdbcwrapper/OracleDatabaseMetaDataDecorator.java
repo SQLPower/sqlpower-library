@@ -51,6 +51,13 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
      * (in which case the oldest recycle bin table is dropped).
      */
     private boolean hidingRecycleBinTables = true;
+
+    /*
+     * if true, this getTable method will omit IOT Overflow Table Segments.
+     * Tablenames starting with SYS_IOT_OVER_ followd by an object_id cannot
+     * directly acessed by select, insert, update or delete.
+     */
+    private boolean hidingSYSIOTOVERTables = true;
     
 	public OracleDatabaseMetaDataDecorator(DatabaseMetaData delegate) {
 		super(delegate);
@@ -233,19 +240,27 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
         try {
             rs = super.getTables(catalog, schemaPattern, tableNamePattern, types);
 
-            RowFilter noRecycledTablesFilter = null;
+            if (hidingRecycleBinTables || hidingSYSIOTOVERTables) {
+                RowFilter noSpecialTablesFilter = null;
 
-            if (hidingRecycleBinTables) {
-                noRecycledTablesFilter = new RowFilter() {
+                noSpecialTablesFilter = new RowFilter() {
                     public boolean acceptsRow(Object[] row) {
+                        Boolean noRecycleBinResult = true;
+                        Boolean noSYSIOTOVERResult = true;
                         String tableName = (String) row[2];
-                        return !tableName.startsWith("BIN$");
+                        if(hidingRecycleBinTables)
+                            noRecycleBinResult = !tableName.startsWith("BIN$");
+                        if(hidingSYSIOTOVERTables)
+                            noSYSIOTOVERResult = !tableName.startsWith("SYS_IOT_OVER_");
+
+                        return (noRecycleBinResult && noSYSIOTOVERResult);
                     }
                 };
+                crs.populate(rs, noSpecialTablesFilter);
+            } else {
+                crs.populate(rs);
             }
 
-            crs.populate(rs, noRecycledTablesFilter);
-            
         } finally {
             if (rs != null) {
                 rs.close();
