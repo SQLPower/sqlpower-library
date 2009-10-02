@@ -731,8 +731,15 @@ public class SQLQueryUIComponents {
     }
 
     /**
-     * Closes all of the connections in the connection mapping. If the connection being closed is not
-     * in an auto-commit state an option dialog will be displayed to roll back or commit the changes.
+     * Closes all of the connections in the connection mapping. If the
+     * connection being closed is not in an auto-commit state, a dialog will be
+     * displayed with the option to roll back or commit the changes.
+     * <p>
+     * Any SQLExceptions encountered while closing a connection are logged at
+     * the WARN level and are otherwise ignored. This is important, since
+     * applications such as Wabit call this method as part of their session
+     * termination routine. An unchecked exception at that time would abort the
+     * shutdown.
      */
 	public boolean closeConMap() {
 		boolean commitedOrRollBacked = true;
@@ -762,7 +769,7 @@ public class SQLQueryUIComponents {
                 iterator.remove();
                 
             } catch (SQLException e) {
-                throw new RuntimeException(e);
+                logger.warn("Failed to close connection " + entry.getValue() + ". Skipping it.", e);
             }
         }
 
