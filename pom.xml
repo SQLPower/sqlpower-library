@@ -152,115 +152,97 @@
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
             <version>1.8.0</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/commons-beanutils.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
             <version>1.0.3</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/commons-logging.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>commons-dbcp</groupId>
             <artifactId>commons-dbcp</artifactId>
             <version>1.2.2</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/commons-dbcp-1.2.2.jar</systemPath>
         </dependency>
 		<dependency>
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
 			<version>1.2.15</version>
-			<scope>system</scope>
-            <systemPath>${basedir}/lib/log4j-1.2.15.jar</systemPath>
+			<exclusions>
+			     <exclusion>
+			         <groupId>javax.jms</groupId>
+			         <artifactId>jms</artifactId>
+			     </exclusion>
+			     <exclusion>
+                     <groupId>com.sun.jdmk</groupId>
+                     <artifactId>jmxtools</artifactId>
+                 </exclusion>
+                 <exclusion>
+                     <groupId>com.sun.jmx</groupId>
+                     <artifactId>jmxri</artifactId>
+                 </exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.jgoodies</groupId>
 			<artifactId>forms</artifactId>
 			<version>1.2.1</version>
-			<scope>system</scope>
-            <systemPath>${basedir}/lib/forms-1.2.1.jar</systemPath>
 		</dependency>
 		
 		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>servlet-api</artifactId>
 			<version>2.4</version>
-			<scope>system</scope>
-            <systemPath>${basedir}/lib/servlet-api-2.4.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>commons-pool</groupId>
 			<artifactId>commons-pool</artifactId>
 			<version>1.5.1</version>
-			<scope>system</scope>
-            <systemPath>${basedir}/lib/commons-pool-1.5.1.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>commons-collections</groupId>
 			<artifactId>commons-collections</artifactId>
 			<version>3.2.1</version>
-			<scope>system</scope>
-            <systemPath>${basedir}/lib/commons-collections-3.2.1.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>javax.mail</groupId>
 			<artifactId>mail</artifactId>
 			<version>1.4.1</version>
-			<scope>system</scope>
-            <systemPath>${basedir}/lib/mail-1.4.1.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>3.8.2</version>
-			<scope>system</scope>
-            <systemPath>${basedir}/lib/junit-3.8.2.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>net.sf.opencsv</groupId>
 			<artifactId>opencsv</artifactId>
 			<version>1.8</version>
-			<scope>system</scope>
-            <systemPath>${basedir}/lib/opencsv-1.8.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>org.fife</groupId>
 			<artifactId>rsyntaxtextarea</artifactId>
 			<version>1.0</version>
-			<scope>system</scope>
-			<systemPath>${basedir}/lib/rsyntaxtextarea.jar</systemPath>
 		</dependency>
 		<dependency>
-			<groupId>net.sourceforge.findbugs</groupId>
+			<groupId>com.google.code.findbugs</groupId>
 			<artifactId>annotations</artifactId>
-			<version>1.3.2</version>
-			<scope>system</scope>
-            <systemPath>${basedir}/lib/annotations.jar</systemPath>
+			<version>1.3.9</version>
 		</dependency>
 		<dependency>
-			<groupId>net.sourceforge.findbugs</groupId>
+			<groupId>com.google.code.findbugs</groupId>
 			<artifactId>jsr305</artifactId>
-			<version>1.3.2</version>
-			<scope>system</scope>
-            <systemPath>${basedir}/lib/jsr305.jar</systemPath>
+			<version>1.3.9</version>
 		</dependency>
 		
         <dependency>
             <groupId>edu.umd.cs</groupId>
             <artifactId>piccolo</artifactId>
             <version>1.2.1</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/piccolo.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>edu.umd.cs</groupId>
             <artifactId>piccolox</artifactId>
             <version>1.2.1</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/piccolox.jar</systemPath>
         </dependency>
         
         <dependency>
@@ -268,16 +250,12 @@
             <artifactId>miglayout</artifactId>
             <version>3.7</version>
             <classifier>swing</classifier>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/miglayout-3.7-swing.jar</systemPath>
         </dependency>
         
          <dependency>
             <groupId>xerces</groupId>
             <artifactId>xercesImpl</artifactId>
             <version>2.9.1</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/xercesImpl-2.9.1.jar</systemPath>
         </dependency>
 	</dependencies>
 
@@ -287,6 +265,27 @@
 			<url>http://download.java.net/maven/2</url>
 			<layout>default</layout>
 		</repository>
+		<repository>
+            <id>maven-central</id>
+            <url>http://repo2.maven.org/maven2/</url>
+        </repository>
+        <repository>
+            <id>java.net</id>
+            <url>http://download.java.net/maven/2</url>
+            <layout>default</layout>
+        </repository>
+        <repository>
+            <id>pentaho-repo</id>
+            <url>http://repo.pentaho.org/artifactory/pentaho/</url>
+        </repository>
+        <repository>
+            <id>pentaho-third-party</id>
+            <url>http://repo.pentaho.org/artifactory/third-party/</url>
+        </repository>
+        <repository>
+            <id>sqlpg-thirdparty</id>
+            <url>http://pag.sqlpower.ca:8080/nexus/content/repositories/thirdparty/</url>
+        </repository>
 	</repositories>
 	<distributionManagement>
 		<snapshotRepository>
