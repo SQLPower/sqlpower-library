@@ -28,8 +28,10 @@ import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 
 import ca.sqlpower.sql.JDBCDataSource;
+import ca.sqlpower.sql.Olap4jDataSource;
 import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sql.StubDataSourceCollection;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLIndex;
 import ca.sqlpower.sqlobject.SQLObjectException;
@@ -133,6 +135,8 @@ public class GenericNewValueMaker implements NewValueMaker {
 			return point;
         } else if (valueType.equals(Image.class)) {
             return new BufferedImage(10, 10, BufferedImage.TYPE_INT_ARGB);
+        } else if (valueType.equals(Olap4jDataSource.class)) {
+            return new Olap4jDataSource(new StubDataSourceCollection<SPDataSource>());
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +
