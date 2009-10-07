@@ -64,7 +64,7 @@ public class QueryImpl implements Query {
      * If the row limit changes causing the result set cache to become empty
      * a change event will fire with this property.
      */
-    protected static final String ROW_LIMIT = "rowLimit";
+    public static final String ROW_LIMIT = "rowLimit";
 	
 	/**
 	 * A property name that is thrown in PropertyChangeListeners when part of
@@ -81,7 +81,7 @@ public class QueryImpl implements Query {
 	/**
 	 * This is the property name for the global where clause text.
 	 */
-	private static final String GLOBAL_WHERE_CLAUSE = "globalWhereClause";
+	public static final String GLOBAL_WHERE_CLAUSE = "globalWhereClause";
 	
 	/**
 	 * The arguments that can be added to a column in the 
