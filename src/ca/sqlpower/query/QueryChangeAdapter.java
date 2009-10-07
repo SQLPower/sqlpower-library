@@ -62,16 +62,4 @@ public class QueryChangeAdapter implements QueryChangeListener {
     public void compoundEditStarted(TransactionEvent evt) {
     }
 
-	public void selectedItemAdded(SelectedItemEvent evt) {
-	}
-
-	public void selectedItemRemoved(SelectedItemEvent evt) {
-	}
-
-    public void orderByItemAdded(OrderByItemEvent evt) {
-    }
-
-    public void orderByItemRemoved(OrderByItemEvent evt) {
-    }
-
 }

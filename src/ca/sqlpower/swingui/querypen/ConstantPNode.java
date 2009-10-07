@@ -27,8 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JCheckBox;
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 
 import org.apache.log4j.Logger;
 
@@ -117,8 +115,14 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 		}
 	};
 
+	/**
+	 * The query this node is attached to as its parent.
+	 */
+    private final QueryPen queryPen;
+
 	public ConstantPNode(Item source, QueryPen mouseStates, PCanvas canvas) {
 		this.item = source;
+        this.queryPen = mouseStates;
 		this.canvas = canvas;
 		item.addPropertyChangeListener(itemChangeListener);
 		
@@ -132,7 +136,11 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 		addChild(swingCheckbox);
 		selectionCheckbox.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				item.setSelected(selectionCheckbox.isSelected());
+			    if (selectionCheckbox.isSelected()) {
+			        queryPen.getModel().selectItem(item);
+			    } else {
+			        queryPen.getModel().unselectItem(item);
+			    }
 			}
 		});
 		
@@ -218,7 +226,11 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 
 	public void setSelected(boolean selected) {
 		selectionCheckbox.setSelected(selected);
-		item.setSelected(selected);
+		if (selected) {
+            queryPen.getModel().selectItem(item);
+        } else {
+            queryPen.getModel().unselectItem(item);
+        }
 	}
 	
 	public boolean isInSelect() {

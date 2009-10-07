@@ -55,7 +55,7 @@ public class ItemContainer implements Container {
 	
 	private final PropertyChangeSupport pcs = new PropertyChangeSupport(this);
 	
-	private final String uuid;
+	private String uuid;
 	
 	private final List<ContainerChildListener> childListeners = new ArrayList<ContainerChildListener>();
 	
@@ -94,12 +94,16 @@ public class ItemContainer implements Container {
 	}
 	
 	public void addItem(Item item) {
-		itemList.add(item);
+	    addItem(item, itemList.size());
+	}
+	
+	public void addItem(Item item, int index) {
+		itemList.add(index, item);
 		item.setParent(this);
 		pcs.firePropertyChange(Container.CONTAINTER_ITEM_ADDED, null, item);
-		fireChildAdded(item, itemList.indexOf(item));
+		fireChildAdded(item, index);
 	}
-
+	
     protected void fireChildAdded(Item item, int index) {
         for (int i = childListeners.size() - 1; i >= 0; i--) {
 		    childListeners.get(i).containerChildAdded(new ContainerChildEvent(this, item, index));
@@ -177,6 +181,12 @@ public class ItemContainer implements Container {
 
     public String getUUID() {
         return uuid;
+    }
+    
+    public void setUUID(String id) {
+        String oldUUID = uuid;
+        uuid = id;
+        pcs.firePropertyChange("uuid", oldUUID, id);
     }
 
     public void removePropertyChangeListener(PropertyChangeListener l) {

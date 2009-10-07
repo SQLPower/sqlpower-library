@@ -36,13 +36,8 @@ public class CountingChangeListener implements QueryChangeListener {
     private int joinPropertyChangeEventCount = 0;
     private int joinRemovedCount = 0;
     private int propertyChangeEventCount = 0;
-    private int selectedItemAddedCount = 0;
-    private int selectedItemRemovedCount = 0;
-    private int orderByItemAddedCount = 0;
-    private int orderByItemRemovedCount = 0;
     
     private QueryChangeEvent lastQueryChangeEvent;
-    private SelectedItemEvent lastSelectedItemEvent;
 
     public void compoundEditEnded(TransactionEvent evt) {
         compoundEditEndedCount++;
@@ -94,16 +89,6 @@ public class CountingChangeListener implements QueryChangeListener {
         propertyChangeEventCount++;
     }
 
-    public void selectedItemAdded(SelectedItemEvent evt) {
-        selectedItemAddedCount++;
-        lastSelectedItemEvent = evt;
-    }
-
-    public void selectedItemRemoved(SelectedItemEvent evt) {
-        selectedItemRemovedCount++;
-        lastSelectedItemEvent = evt;
-    }
-    
     public int getCompoundEditEndedCount() {
         return compoundEditEndedCount;
     }
@@ -148,36 +133,8 @@ public class CountingChangeListener implements QueryChangeListener {
         return propertyChangeEventCount;
     }
 
-    public int getSelectedItemAddedCount() {
-        return selectedItemAddedCount;
-    }
-
-    public int getSelectedItemRemovedCount() {
-        return selectedItemRemovedCount;
-    }
-
     public QueryChangeEvent getLastQueryChangeEvent() {
         return lastQueryChangeEvent;
     }
 
-    public SelectedItemEvent getLastSelectedItemEvent() {
-        return lastSelectedItemEvent;
-    }
-
-    public void orderByItemAdded(OrderByItemEvent orderByItemEvent) {
-        orderByItemAddedCount++;
-    }
-
-    public void orderByItemRemoved(OrderByItemEvent orderByItemEvent) {
-        orderByItemRemovedCount++;
-    }
-
-    public int getOrderByItemAddedCount() {
-        return orderByItemAddedCount;
-    }
-
-    public int getOrderByItemRemovedCount() {
-        return orderByItemRemovedCount;
-    }
-    
 }

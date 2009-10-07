@@ -223,7 +223,8 @@ public class TableContainer extends ItemContainer implements Container {
 	        newItem.setGroupBy(item.getGroupBy());
 	        newItem.setHaving(item.getHaving());
 	        newItem.setOrderBy(item.getOrderBy());
-	        newItem.setSelected(item.isSelected());
+	        newItem.setOrderByOrdering(item.getOrderByOrdering());
+	        newItem.setSelected(item.getSelected());
 	        newItem.setWhere(item.getWhere());
 	    }
 	    copy.setAlias(getAlias());

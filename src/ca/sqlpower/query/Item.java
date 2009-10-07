@@ -76,8 +76,32 @@ public interface Item {
 	
 	String getWhere();
 	
-	void setSelected(boolean selected);
+	/**
+	 * Sets the selected position of this item with respect to other items in
+	 * the query the item is contained in. If this value is null then the item
+	 * is not selected. The value set here cannot be the same as the selected
+	 * position of another item in the query.
+	 * <p>
+	 * The selected order of an item is set here instead of being stored on the
+	 * query itself as updating and firing appropriate events for an item list
+	 * on the query requires the items as children of the query to be wrapped.
+	 * Once the items are wrapped and events are based on the wrappers in the
+	 * query difficulties start to arise with adding and removing the wrappers
+	 * to and from a query. This becomes increasingly difficult when the item
+     * wrappers are wrapped again in places like Wabit.
+	 */
+	void setSelected(Integer selected);
+
+	/**
+	 * Gets the value set by {@link #setSelected(Integer)}.
+	 * @see #setSelected(Integer)
+	 */
+	Integer getSelected();
 	
+	/**
+	 * Returns true if the item is selected.
+	 * @see #setSelected(Integer)
+	 */
 	boolean isSelected();
 	
 	Integer getColumnWidth();
@@ -107,9 +131,43 @@ public interface Item {
 
     public String getHaving();
 
+    /**
+     * Sets this item to have the given ascending or descending ordering. The ordering
+     * will affect how the results of a query are sorted based on which selected columns
+     * are ordered and the ordering of the order by values.
+     */
     public void setOrderBy(OrderByArgument orderBy);
 
+    /**
+     * Sets this item to order its values in a query after any numbers with an
+     * integer lower than it have been ordered. For example, if this is the
+     * fourth item to be ordered the results of a query will be ordered by all
+     * of the items with a lower ordering first then the results will be ordered
+     * based on this column and finally the columns with ordering will be sorted
+     * that have a higher ordering value then this column. The value entered here
+     * cannot be the same as the ordering value of another item in the query.
+     * <p>
+     * The order by order of an item is set here instead of being stored on the
+     * query itself as updating and firing appropriate events for an item list
+     * on the query requires the items as children of the query to be wrapped.
+     * Once the items are wrapped and events are based on the wrappers in the
+     * query difficulties start to arise with adding and removing the wrappers
+     * to and from a query. This becomes increasingly difficult when the item
+     * wrappers are wrapped again in places like Wabit.
+     */
+    public void setOrderByOrdering(Integer ordering);
+
+    /**
+     * Gets the value set by {@link #setOrderBy(OrderByArgument)}.
+     * @see #setOrderBy(OrderByArgument)
+     */
     public OrderByArgument getOrderBy();
+    
+    /**
+     * Gets the value set by {@link #setOrderByOrdering(Integer)}.
+     * @see Item#setOrderByOrdering(Integer)
+     */
+    public Integer getOrderByOrdering();
     
     String getUUID();
 

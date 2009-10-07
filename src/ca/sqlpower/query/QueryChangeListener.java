@@ -62,16 +62,6 @@ public interface QueryChangeListener {
     void propertyChangeEvent(PropertyChangeEvent evt);
     
     /**
-     * Called when an item is added to a query.
-     */
-    void selectedItemAdded(SelectedItemEvent evt);
-    
-    /**
-     * Called when an item is removed from a query.
-     */
-    void selectedItemRemoved(SelectedItemEvent evt);
-
-    /**
      * The query is now in a compound edit state. Things like executing the query
      * should not be done until the {@link #compoundEditEnded()} event is received.
      */
@@ -83,14 +73,4 @@ public interface QueryChangeListener {
      */
     void compoundEditEnded(TransactionEvent evt);
 
-    /**
-     * Called when an item is removed from the order by list of this query.
-     */
-    void orderByItemRemoved(OrderByItemEvent evt);
-
-    /**
-     * Called when an item is added to the order by list of this query.
-     * @param orderByItemEvent
-     */
-    void orderByItemAdded(OrderByItemEvent evt);
 }

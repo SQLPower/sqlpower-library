@@ -46,7 +46,7 @@ public abstract class AbstractItem implements Item {
 	
 	private String name;
 	
-	private boolean selected;
+	private Integer selected;
 	
     /**
      * This aggregate is either the toString of a SQLGroupFunction or null
@@ -56,6 +56,12 @@ public abstract class AbstractItem implements Item {
     
     private String having;
     private OrderByArgument orderBy = OrderByArgument.NONE;
+
+    /**
+     * This is the order that this item will come in with respect to other 
+     * selected items in the query.
+     */
+    private Integer orderByOrdering;
 	
 	public AbstractItem() {
 	    uuid = "w" + UUID.randomUUID();
@@ -163,17 +169,28 @@ public abstract class AbstractItem implements Item {
         return orderBy;
     }
     
-	public boolean isSelected() {
+	public Integer getSelected() {
 		return selected;
 	}
+	
+	public boolean isSelected() {
+	    return selected != null;
+	}
 
-	public void setSelected(boolean selected) {
-		boolean oldSelect = this.selected;
-		if (oldSelect == selected) {
-			return;
-		}
+	public void setSelected(Integer selected) {
+		Integer oldSelect = this.selected;
 		this.selected = selected;
 		firePropertyChange(SELECTED, oldSelect, selected);
+	}
+	
+	public void setOrderByOrdering(Integer ordering) {
+	    Integer oldOrdering = orderByOrdering;
+	    orderByOrdering = ordering;
+	    firePropertyChange("orderByOrdering", oldOrdering, ordering);
+	}
+	
+	public Integer getOrderByOrdering() {
+	    return orderByOrdering;
 	}
 
 }

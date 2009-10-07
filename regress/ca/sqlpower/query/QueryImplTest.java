@@ -19,7 +19,6 @@
 
 package ca.sqlpower.query;
 
-import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +29,6 @@ import ca.sqlpower.query.QueryImpl.TableJoinGraph;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLDatabaseMapping;
-import ca.sqlpower.util.TransactionEvent;
 
 public class QueryImplTest extends TestCase {
 	
@@ -233,7 +231,7 @@ public class QueryImplTest extends TestCase {
         Item item = new StringItem("column");
         container.addItem(item);
         query.addTable(container);
-        item.setSelected(true);
+        query.selectItem(item);
         
         assertEquals(1, query.getSelectedColumns().size());
         assertTrue(query.getSelectedColumns().contains(item));
@@ -372,9 +370,9 @@ public class QueryImplTest extends TestCase {
     	table.addItem(col1);
     	table.addItem(col2);
     	q.addTable(table);
-    	col1.setSelected(true);
-    	col2.setSelected(true);
-    	col1.setOrderBy(OrderByArgument.ASC);
+    	q.selectItem(col1);
+    	q.selectItem(col2);
+    	q.orderColumn(col1, OrderByArgument.ASC);
     	
     	String query = q.generateQuery().toLowerCase();
     	System.out.println(query);
@@ -385,7 +383,7 @@ public class QueryImplTest extends TestCase {
 			+ "(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*";
 		assertTrue(query.matches(selectAndSortRegex));
 		
-		col1.setOrderBy(OrderByArgument.NONE);
+		q.orderColumn(col1, OrderByArgument.NONE);
 		query = q.generateQuery().toLowerCase();
 		System.out.println(query);
 		assertFalse(query.matches(selectAndSortRegex));
@@ -404,9 +402,9 @@ public class QueryImplTest extends TestCase {
     	table.addItem(col1);
     	table.addItem(col2);
     	q.addTable(table);
-    	col1.setSelected(true);
-    	col2.setSelected(true);
-    	col1.setOrderBy(OrderByArgument.ASC);
+    	q.selectItem(col1);
+    	q.selectItem(col2);
+    	q.orderColumn(col1, OrderByArgument.ASC);
     	
     	String query = q.generateQuery().toLowerCase();
     	System.out.println(query);
@@ -417,7 +415,7 @@ public class QueryImplTest extends TestCase {
 			+ "(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*";
 		assertTrue(query.matches(selectAndSortRegex));		
 		
-		col1.setSelected(false);
+		q.unselectItem(col1);
 		query = q.generateQuery().toLowerCase();
 		assertFalse(query.matches(selectAndSortRegex));
 		assertFalse(query.matches(selectNoSortRegex));
@@ -438,9 +436,9 @@ public class QueryImplTest extends TestCase {
     	table.addItem(col1);
     	table.addItem(col2);
     	q.addTable(table);
-    	col1.setSelected(true);
-    	col2.setSelected(true);
-    	col1.setOrderBy(OrderByArgument.ASC);
+    	q.selectItem(col1);
+    	q.selectItem(col2);
+    	q.orderColumn(col1, OrderByArgument.ASC);
     	
     	String query = q.generateQuery().toLowerCase();
     	System.out.println(query);
@@ -451,7 +449,7 @@ public class QueryImplTest extends TestCase {
 			+ "(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*";
 		assertTrue(query.matches(selectAndSortRegex));		
 		
-		col1.setSelected(false);
+		q.unselectItem(col1);
 		query = q.generateQuery().toLowerCase();
 		assertFalse(query.matches(selectAndSortRegex));
 		assertFalse(query.matches(selectNoSortRegex));
@@ -461,7 +459,7 @@ public class QueryImplTest extends TestCase {
 		String reselectWithSortRegex = "select(.|\n)*" + col2.getName().toLowerCase() 
 			+ "(.|\n)*" + col1.getName().toLowerCase() + "(.|\n)*order by(.|\n)*" 
 			+ col1.getName().toLowerCase() + "(.|\n)*";
-		col1.setSelected(true);
+		q.selectItem(col1);
 		query = q.generateQuery().toLowerCase();
 		assertTrue(query.matches(reselectWithSortRegex));
 	}
@@ -478,9 +476,9 @@ public class QueryImplTest extends TestCase {
     	table.addItem(col1);
     	table.addItem(col2);
     	q.addTable(table);
-    	col1.setSelected(true);
-    	col2.setSelected(true);
-    	col1.setOrderBy(OrderByArgument.ASC);
+    	q.selectItem(col1);
+    	q.selectItem(col2);
+    	q.orderColumn(col1, OrderByArgument.ASC);
     	
     	String query = q.generateQuery().toLowerCase();
     	System.out.println(query);
@@ -488,10 +486,11 @@ public class QueryImplTest extends TestCase {
 			+ "(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*order by(.|\n)*" 
 			+ col1.getName().toLowerCase() + "(.|\n)*";
 		assertTrue(query.matches(selectAndSortRegex));
+		assertEquals(0, col1.getOrderByOrdering().intValue());
 		
 		Item col3 = new StringItem("Col 3");
-		col3.setSelected(true);
-		col3.setOrderBy(OrderByArgument.DESC);
+		q.selectItem(col3);
+		q.orderColumn(col3, OrderByArgument.DESC);
 		table.addItem(col3);
 		query = q.generateQuery().toLowerCase();
 		String colAddedWithSort = "select(.|\n)*" + col1.getName().toLowerCase() 
@@ -502,6 +501,10 @@ public class QueryImplTest extends TestCase {
 		query = q.generateQuery().toLowerCase();
 		System.out.println(query);
 		assertTrue(query.matches(colAddedWithSort));
+		assertEquals(0, col1.getOrderByOrdering().intValue());
+		assertEquals(1, col3.getOrderByOrdering().intValue());
+		assertEquals(col1, q.getOrderByList().get(0));
+		assertEquals(col3, q.getOrderByList().get(1));
 	}
     
     /**
@@ -516,8 +519,12 @@ public class QueryImplTest extends TestCase {
     	table.addItem(col1);
     	table.addItem(col2);
     	q.addTable(table);
-    	col1.setSelected(true);
-    	col2.setSelected(true);
+    	q.selectItem(col1);
+    	q.selectItem(col2);
+    	
+    	assertEquals(2, q.getSelectedColumns().size());
+    	assertTrue(q.getSelectedColumns().contains(col1));
+    	assertTrue(q.getSelectedColumns().contains(col2));
     	
     	String selectRegex = "select(.|\n)*" + col1.getName().toLowerCase() +
     		"(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*from(.|\n)*";
@@ -526,14 +533,14 @@ public class QueryImplTest extends TestCase {
     	
     	String unselectRegex = "select(.|\n)*" + col2.getName().toLowerCase() +
     	"(.|\n)*from(.|\n)*";
-    	col1.setSelected(false);
+    	q.unselectItem(col1);
     	query = q.generateQuery().toLowerCase();
     	assertFalse(query.matches(selectRegex));
     	assertTrue(query.matches(unselectRegex));
     	
     	String reselectRegex = "select(.|\n)*" + col2.getName().toLowerCase() +
 			"(.|\n)*" + col1.getName().toLowerCase() + "(.|\n)*from(.|\n)*";
-    	col1.setSelected(true);
+    	q.selectItem(col1);
     	query = q.generateQuery().toLowerCase();
     	assertFalse(query.matches(selectRegex));
     	assertTrue(query.matches(reselectRegex));
@@ -554,8 +561,8 @@ public class QueryImplTest extends TestCase {
     	table.addItem(col1);
     	table.addItem(col2);
     	q.addTable(table);
-    	col1.setSelected(true);
-    	col2.setSelected(true);
+    	q.selectItem(col1);
+    	q.selectItem(col2);
     	
     	String selectRegex = "select(.|\n)*" + col1.getName().toLowerCase() +
     		"(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*from(.|\n)*";
@@ -587,7 +594,7 @@ public class QueryImplTest extends TestCase {
     	String failRegex = "select(.|\n)*" + col1.getName().toLowerCase() +
 			"(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*from(.|\n)*";
     	String col2Regex = "select(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*";
-    	col1.setSelected(false);
+    	q.unselectItem(col1);
     	query = q.generateQuery().toLowerCase();
     	System.out.println(query);
     	assertFalse(query.matches(failRegex));
@@ -607,8 +614,8 @@ public class QueryImplTest extends TestCase {
     	table.addItem(col1);
     	table.addItem(col2);
     	q.addTable(table);
-    	col1.setSelected(true);
-    	col2.setSelected(true);
+    	q.selectItem(col1);
+    	q.selectItem(col2);
     	
     	String selectRegex = "select(.|\n)*" + col1.getName().toLowerCase() +
     		"(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*from(.|\n)*";
@@ -629,7 +636,7 @@ public class QueryImplTest extends TestCase {
     	String failRegex = "select(.|\n)*" + col1.getName().toLowerCase() +
 			"(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*from(.|\n)*";
     	String col2Regex = "select(.|\n)*" + col2.getName().toLowerCase() + "(.|\n)*";
-    	col1.setSelected(false);
+    	q.unselectItem(col1);
     	query = q.generateQuery().toLowerCase();
     	System.out.println(query);
     	assertFalse(query.matches(failRegex));
@@ -661,10 +668,10 @@ public class QueryImplTest extends TestCase {
        Item item2 = new StringItem("item 2");
        container2.addItem(item2);
        q.addTable(container2);
-       item1.setSelected(true);
-       item2.setSelected(true);
-       item1.setOrderBy(OrderByArgument.ASC);
-       item2.setOrderBy(OrderByArgument.DESC);
+       q.selectItem(item1);
+       q.selectItem(item2);
+       q.orderColumn(item1, OrderByArgument.ASC);
+       q.orderColumn(item2, OrderByArgument.DESC);
        SQLJoin join = new SQLJoin(item1, item2);
        q.addJoin(join);
        
@@ -714,47 +721,63 @@ public class QueryImplTest extends TestCase {
         assertEquals(container, evt.getContainerChanged());
         assertEquals(query, evt.getSource());
     }
-
+    
     /**
-     * Tests that selecting and unselecting an item fires the correct event from
-     * the query.
+     * This method tests moving an Item around in the selection list
+     * of a query.
      */
-    public void testSelectingItemFiresEvent() throws Exception {
-        CountingChangeListener listener = new CountingChangeListener();
+    public void testMoveColumn() throws Exception {
         QueryImpl query = new QueryImpl(new StubDatabaseMapping());
-        query.addQueryChangeListener(listener);
-        Container container = new ItemContainer("container");
-        Item item = new StringItem("name");
-        item.setSelected(false);
-        container.addItem(item);
-        Item item2 = new StringItem("name");
-        item2.setSelected(false);
+        Container container = new ItemContainer("Container");
+        Item item1 = new StringItem("item1");
+        container.addItem(item1);
+        Item item2 = new StringItem("item2");
         container.addItem(item2);
-        Item item3 = new StringItem("name");
-        item3.setSelected(false);
-        container.addItem(item3);
+        
+        Container container2 = new ItemContainer("Container2");
+        Item item3 = new StringItem("item3");
+        container2.addItem(item3);
+        Item item4 = new StringItem("item4");
+        container2.addItem(item4);
+        
         query.addTable(container);
+        query.addTable(container2);
         
-        assertEquals(0, listener.getSelectedItemAddedCount());
-        item2.setSelected(true);
+        query.selectItem(item1);
+        query.selectItem(item2);
+        query.selectItem(item3);
+        query.selectItem(item4);
         
-        assertEquals(1, listener.getSelectedItemAddedCount());
-        SelectedItemEvent evt = listener.getLastSelectedItemEvent();
-        assertEquals(item2, evt.getItemSelected().getDelegate());
-        assertEquals(query, evt.getSource());
-        assertEquals(0, evt.getIndex());
+        assertEquals(item1, query.getSelectedColumns().get(0));
+        assertEquals(0, item1.getSelected().intValue());
+        assertEquals(item2, query.getSelectedColumns().get(1));
+        assertEquals(1, item2.getSelected().intValue());
+        assertEquals(item3, query.getSelectedColumns().get(2));
+        assertEquals(2, item3.getSelected().intValue());
+        assertEquals(item4, query.getSelectedColumns().get(3));
+        assertEquals(3, item4.getSelected().intValue());
         
-        assertEquals(0, listener.getSelectedItemRemovedCount());
-        item2.setSelected(false);
+        query.moveItem(item3, 0);
         
-        assertEquals(1, listener.getSelectedItemRemovedCount());
-        evt = listener.getLastSelectedItemEvent();
-        assertEquals(item2, evt.getItemSelected().getDelegate());
-        assertEquals(query, evt.getSource());
-        assertEquals(0, evt.getIndex());
+        assertEquals(item3, query.getSelectedColumns().get(0));
+        assertEquals(0, item3.getSelected().intValue());
+        assertEquals(item1, query.getSelectedColumns().get(1));
+        assertEquals(1, item1.getSelected().intValue());
+        assertEquals(item2, query.getSelectedColumns().get(2));
+        assertEquals(2, item2.getSelected().intValue());
+        assertEquals(item4, query.getSelectedColumns().get(3));
+        assertEquals(3, item4.getSelected().intValue());
         
-        item2.setSelected(false);
-        assertEquals(1, listener.getSelectedItemRemovedCount());
+        query.moveItem(item1, 3);
         
+        assertEquals(item3, query.getSelectedColumns().get(0));
+        assertEquals(0, item3.getSelected().intValue());
+        assertEquals(item2, query.getSelectedColumns().get(1));
+        assertEquals(1, item2.getSelected().intValue());
+        assertEquals(item4, query.getSelectedColumns().get(2));
+        assertEquals(2, item4.getSelected().intValue());
+        assertEquals(item1, query.getSelectedColumns().get(3));
+        assertEquals(3, item1.getSelected().intValue());
     }
+    
 }

@@ -66,7 +66,15 @@ public interface Container {
 
 	void removeItem(Item item);
 
+	/**
+	 * Adds an item as a child of this container to the end of the list of items.
+	 */
 	void addItem(Item item);
+	
+	/**
+	 * Adds an item as a child of this container at the specified index.
+	 */
+	void addItem(Item item, int index);
 	
 	void setAlias(String alias);
 	
@@ -100,6 +108,8 @@ public interface Container {
     void setName(String name);
     
     String getUUID();
+    
+    void setUUID(String id);
 
     void removeItem(int i);
 

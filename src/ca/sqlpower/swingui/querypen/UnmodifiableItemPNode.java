@@ -188,12 +188,12 @@ public class UnmodifiableItemPNode extends PNode implements CleanupPNode {
 	 * object.
 	 */
 	private PSwing swingCheckBox;
-	private final QueryPen mouseState;
+	private final QueryPen queryPen;
 
 	public UnmodifiableItemPNode(QueryPen mouseStates, PCanvas canvas, Item i) {
 		this.item = i;
 		item.addPropertyChangeListener(itemChangeListener);
-		mouseState = mouseStates;
+		queryPen = mouseStates;
 		queryChangeListeners = new ArrayList<PropertyChangeListener>();
 		joinedLines = new ArrayList<JoinLine>();
 		
@@ -205,11 +205,15 @@ public class UnmodifiableItemPNode extends PNode implements CleanupPNode {
 		isInSelectCheckBox.addActionListener(new ActionListener() {
 		
 			public void actionPerformed(ActionEvent e) {
-				item.setSelected(isInSelectCheckBox.isSelected());
+			    if (isInSelectCheckBox.isSelected()) {
+			        queryPen.getModel().selectItem(item);
+			    } else {
+			        queryPen.getModel().unselectItem(item);
+			    }
 			}
 		});
 		
-		columnText = new EditablePStyledText(item.getName(), mouseState, canvas);
+		columnText = new EditablePStyledText(item.getName(), queryPen, canvas);
 		columnText.addEditStyledTextListener(editingTextListener);
 		double textYTranslation = (swingCheckBox.getFullBounds().height - columnText.getFullBounds().height)/2;
 		columnText.translate(swingCheckBox.getFullBounds().width, textYTranslation);
@@ -217,7 +221,7 @@ public class UnmodifiableItemPNode extends PNode implements CleanupPNode {
 			
 			@Override
 			public void mouseEntered(PInputEvent event) {
-				if(mouseState.getMouseState().equals(MouseStates.CREATE_JOIN)) {
+				if(queryPen.getMouseState().equals(MouseStates.CREATE_JOIN)) {
 					setPaint(Color.GRAY);
 					repaint();	
 				}
@@ -234,7 +238,7 @@ public class UnmodifiableItemPNode extends PNode implements CleanupPNode {
 		
 		addChild(columnText);
 		
-		whereText = new EditablePStyledTextWithOptionBox(WHERE_START_TEXT, mouseState, canvas, WHERE_START_TEXT.length());
+		whereText = new EditablePStyledTextWithOptionBox(WHERE_START_TEXT, queryPen, canvas, WHERE_START_TEXT.length());
 		whereText.addEditStyledTextListener(whereTextListener);
 		whereText.translate(0, textYTranslation);
 		addChild(whereText);
@@ -295,7 +299,11 @@ public class UnmodifiableItemPNode extends PNode implements CleanupPNode {
 	
 	public void setInSelected(boolean selected) {
 		isInSelectCheckBox.setSelected(selected);
-		item.setSelected(selected);
+		if (selected) {
+		    queryPen.getModel().selectItem(item);
+		} else {
+		    queryPen.getModel().unselectItem(item);
+		}
 	}
 	
 	public boolean isInSelect() {

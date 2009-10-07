@@ -42,7 +42,7 @@ public class StringItem extends AbstractItem {
 		super(uuid);
 		this.alias = "";
 		this.where = "";
-		setSelected(false);
+		setSelected(null);
 		setName(name);
 	}
 	
@@ -113,7 +113,8 @@ public class StringItem extends AbstractItem {
         copy.setGroupBy(getGroupBy());
         copy.setHaving(getHaving());
         copy.setOrderBy(getOrderBy());
-        copy.setSelected(isSelected());
+        copy.setOrderByOrdering(getOrderByOrdering());
+        copy.setSelected(getSelected());
         copy.setWhere(getWhere());
         return copy;
     }

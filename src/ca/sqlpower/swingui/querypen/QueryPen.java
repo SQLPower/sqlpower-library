@@ -68,12 +68,10 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.query.Container;
 import ca.sqlpower.query.Item;
-import ca.sqlpower.query.OrderByItemEvent;
 import ca.sqlpower.query.Query;
 import ca.sqlpower.query.QueryChangeEvent;
 import ca.sqlpower.query.QueryChangeListener;
 import ca.sqlpower.query.SQLJoin;
-import ca.sqlpower.query.SelectedItemEvent;
 import ca.sqlpower.query.TableContainer;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator.CacheType;
@@ -561,21 +559,6 @@ public class QueryPen implements MouseState {
             //do nothing
         }
 
-		public void selectedItemAdded(SelectedItemEvent evt) {
-			//do nothing
-		}
-
-		public void selectedItemRemoved(SelectedItemEvent evt) {
-			//do nothing
-		}
-
-        public void orderByItemAdded(OrderByItemEvent orderByItemEvent) {
-            //do nothing
-        }
-
-        public void orderByItemRemoved(OrderByItemEvent orderByItemEvent) {
-            //do nothing
-        }
     };
 
     /**

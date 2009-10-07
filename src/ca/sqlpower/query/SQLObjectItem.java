@@ -36,7 +36,7 @@ public class SQLObjectItem extends AbstractItem {
 		sqlObject = object;
 		this.alias = "";
 		this.where = "";
-		setSelected(false);
+		setSelected(null);
 	}
 	
 	/**
@@ -49,7 +49,7 @@ public class SQLObjectItem extends AbstractItem {
 		super.setName(name);
 		this.alias = "";
 		this.where = "";
-		setSelected(false);
+		setSelected(null);
 	}
 	
 	public String getName() {
@@ -133,7 +133,8 @@ public class SQLObjectItem extends AbstractItem {
         copy.setGroupBy(getGroupBy());
         copy.setHaving(getHaving());
         copy.setOrderBy(getOrderBy());
-        copy.setSelected(isSelected());
+        copy.setOrderByOrdering(getOrderByOrdering());
+        copy.setSelected(getSelected());
         copy.setWhere(getWhere());
         return copy;
     }
