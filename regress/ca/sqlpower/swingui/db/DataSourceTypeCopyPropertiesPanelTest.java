@@ -22,7 +22,7 @@ package ca.sqlpower.swingui.db;
 import junit.framework.TestCase;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.JDBCDataSourceType;
-import ca.sqlpower.sql.StubDataSourceCollection;
+import ca.sqlpower.testutil.StubDataSourceCollection;
 
 public class DataSourceTypeCopyPropertiesPanelTest extends TestCase {
 	

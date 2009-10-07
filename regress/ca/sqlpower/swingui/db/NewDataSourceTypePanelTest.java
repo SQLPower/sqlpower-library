@@ -23,7 +23,7 @@ import junit.framework.TestCase;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.JDBCDataSourceType;
-import ca.sqlpower.sql.StubDataSourceCollection;
+import ca.sqlpower.testutil.StubDataSourceCollection;
 
 public class NewDataSourceTypePanelTest extends TestCase {
 

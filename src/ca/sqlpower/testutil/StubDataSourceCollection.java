@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-package ca.sqlpower.sql;
+package ca.sqlpower.testutil;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +29,11 @@ import java.util.Collections;
 import java.util.List;
 
 import javax.swing.event.UndoableEditListener;
+
+import ca.sqlpower.sql.DataSourceCollection;
+import ca.sqlpower.sql.DatabaseListChangeListener;
+import ca.sqlpower.sql.JDBCDataSourceType;
+import ca.sqlpower.sql.SPDataSource;
 
 public class StubDataSourceCollection<T extends SPDataSource> implements DataSourceCollection<T> {
 	
