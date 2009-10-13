@@ -157,6 +157,10 @@ public class TableContainer extends ItemContainer implements Container {
 		}
 		return null;
 	}
+	
+	public SQLDatabase getDatabase() {
+		return database;
+	}
 
 	public Object getContainedObject() {
 		loadTableByQualifiedName();
