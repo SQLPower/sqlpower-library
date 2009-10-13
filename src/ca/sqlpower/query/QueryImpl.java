@@ -209,7 +209,7 @@ public class QueryImpl implements Query {
 	private PropertyChangeListener joinChangeListener = new PropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent e) {
 		    //XXX This if/else looks like leftovers from correcting listeners in Wabit and probably just needs to be deleted.
-			if (e.getPropertyName().equals(SQLJoin.LEFT_JOIN_CHANGED)) {
+			if (e.getPropertyName().equals("leftColumnOuterJoin")) {
 				logger.debug("Got left join changed.");
 				SQLJoin changedJoin = (SQLJoin) e.getSource();
 				Container leftJoinContainer = changedJoin.getLeftColumn().getContainer();
@@ -220,7 +220,7 @@ public class QueryImpl implements Query {
 						join.setRightColumnOuterJoin((Boolean)e.getNewValue());
 					}
 				}
-			} else if (e.getPropertyName().equals(SQLJoin.RIGHT_JOIN_CHANGED)) {
+			} else if (e.getPropertyName().equals("rightColumnOuterJoin")) {
 				logger.debug("Got right join changed.");
 				SQLJoin changedJoin = (SQLJoin) e.getSource();
 				Container rightJoinContainer = changedJoin.getRightColumn().getContainer();
@@ -415,6 +415,7 @@ public class QueryImpl implements Query {
                 joinMapping.put(newRightContainer, newJoinList);
             }
             newJoinList.add(newJoin);
+            newJoin.setParent(this);
 		}
 
 		globalWhereClause = copy.getGlobalWhereClause();
@@ -444,7 +445,7 @@ public class QueryImpl implements Query {
 	/* (non-Javadoc)
      * @see ca.sqlpower.query.Query#getDbMapping()
      */
-	public SQLDatabaseMapping getDbMapping() {
+	public SQLDatabaseMapping getDBMapping() {
 		return dbMapping;
 	}
 	
@@ -1103,6 +1104,7 @@ public class QueryImpl implements Query {
 			}
 			joinMapping.get(rightContainer).add(join);
 		}
+		join.setParent(this);
 		fireJoinAdded(join);
 	}
 	
@@ -1249,10 +1251,15 @@ public class QueryImpl implements Query {
 	    return true;
 	}
 	
+	public JDBCDataSource getDataSource() {
+		if (database == null) return null;
+		return database.getDataSource();
+	};
+	
 	/* (non-Javadoc)
      * @see ca.sqlpower.query.Query#defineUserModifiedQuery(java.lang.String)
      */
-	public void defineUserModifiedQuery(String query) {
+	public void setUserModifiedQuery(String query) {
 		String generatedQuery = generateQuery();
 		logger.debug("Generated query is " + generatedQuery + " and given query is " + query);
 		if (generatedQuery.equals(query)) {
@@ -1296,7 +1303,7 @@ public class QueryImpl implements Query {
 	/**
 	 * Used for constructing copies of the query cache.
 	 */
-	protected String getUserModifiedQuery() {
+	public String getUserModifiedQuery() {
 		return userModifiedQuery;
 	}
 	
@@ -1426,7 +1433,7 @@ public class QueryImpl implements Query {
             resetConstantsContainer();
             setGlobalWhereClause(null);
             setGroupingEnabled(false);
-            defineUserModifiedQuery("");
+            setUserModifiedQuery("");
             setZoomLevel(0);
         } finally {
             endCompoundEdit();

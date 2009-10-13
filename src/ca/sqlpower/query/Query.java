@@ -29,7 +29,7 @@ import ca.sqlpower.sqlobject.SQLDatabaseMapping;
 
 public interface Query {
 
-    public abstract SQLDatabaseMapping getDbMapping();
+    public abstract SQLDatabaseMapping getDBMapping();
 
     public abstract void setDBMapping(SQLDatabaseMapping dbMapping);
 
@@ -215,12 +215,26 @@ public interface Query {
      * @return True if the data source was set, false otherwise.
      */
     public abstract boolean setDataSourceWithoutReset(JDBCDataSource dataSource);
+    
+    /**
+     * Returns the data source that the query is based on.
+     */
+    public JDBCDataSource getDataSource();
 
     /**
      * If this is set then only this query string will be returned by the generateQuery method
      * and the query cache will not accurately represent the query.
      */
-    public abstract void defineUserModifiedQuery(String query);
+    public abstract void setUserModifiedQuery(String query);
+
+    /**
+     * Returns the query defined by the user that was typed by hand instead of using tables
+     * and columns. This will be null if the user is using the query with tables and
+     * columns instead.
+     * TODO Make a parser that will convert the query defined by hand to tables and containers
+     * to keep the two in sync. This is fairly difficult so be warned.
+     */
+    public abstract String getUserModifiedQuery();
 
     /**
      * Returns true if the user manually edited the text of the query. Returns false otherwise.
