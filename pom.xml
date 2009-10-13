@@ -21,10 +21,10 @@
 	</licenses>
 
 	<build>
-		<directory>dist</directory>
+		<directory>build</directory>
 		<sourceDirectory>src</sourceDirectory>
 		<testSourceDirectory>regress</testSourceDirectory>
-		<outputDirectory>bin</outputDirectory>
+		<outputDirectory>build</outputDirectory>
 		<testOutputDirectory>build-tests</testOutputDirectory>
 
 		<resources>
