@@ -194,6 +194,11 @@ public interface Query {
      * contained only once.
      */
     public abstract Collection<SQLJoin> getJoins();
+    
+    /**
+     * Returns a unique identifier for this query.
+     */
+    public abstract String getUUID();
 
     public abstract String getGlobalWhereClause();
 

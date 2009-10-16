@@ -302,6 +302,11 @@ public class QueryImpl implements Query {
      * A property name that is thrown when the Table is removed.
      */
     public static final String PROPERTY_TABLE_REMOVED = "PROPERTY_TABLE_REMOVED";
+    
+    /**
+     * A unique identifier for this query.
+     */
+    private String uuid;
 
     /**
      * Creates a Query implementation which will populate the constants table
@@ -1562,6 +1567,14 @@ public class QueryImpl implements Query {
             }
         }
     }
+
+	public void setUUID(String uuid) {
+		this.uuid = uuid;
+	}
+
+	public String getUUID() {
+		return uuid;
+	}
 
 //---------------------------- End of protected methods to fire events -------------------
 }
