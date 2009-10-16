@@ -27,6 +27,7 @@ import java.io.File;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 
+import ca.sqlpower.query.SQLGroupFunction;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.Olap4jDataSource;
 import ca.sqlpower.sql.PlDotIni;
@@ -136,6 +137,12 @@ public class GenericNewValueMaker implements NewValueMaker {
             return new BufferedImage(10, 10, BufferedImage.TYPE_INT_ARGB);
         } else if (valueType.equals(Olap4jDataSource.class)) {
             return new Olap4jDataSource(new StubDataSourceCollection<SPDataSource>());
+        } else if (valueType.equals(SQLGroupFunction.class)) {
+        	if (oldVal.equals(SQLGroupFunction.COUNT)) {
+        		newVal = SQLGroupFunction.GROUP_BY;
+        	} else {
+        		newVal = SQLGroupFunction.COUNT;
+        	}
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +
