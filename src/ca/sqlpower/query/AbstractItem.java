@@ -76,7 +76,9 @@ public abstract class AbstractItem implements Item {
 	}
 	
 	public void setColumnWidth(Integer width) {
+		Integer oldWidth = this.columnWidth;
 		this.columnWidth = width;
+		pcs.firePropertyChange("columnWidth", oldWidth, width);
 	}
 	
 	public Integer getColumnWidth() {
