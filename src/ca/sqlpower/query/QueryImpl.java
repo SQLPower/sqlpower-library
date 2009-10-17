@@ -335,11 +335,36 @@ public class QueryImpl implements Query {
      *            empty.
      */
 	public QueryImpl(SQLDatabaseMapping dbMapping, boolean prepopulateConstants) {
+		this(dbMapping, prepopulateConstants, null);
+	}
+
+	/**
+	 * Creates a Query implementation which can optionally populate the
+	 * constants table with some handy basic constants.
+	 * 
+	 * @param dbMapping
+	 *            A mapping of {@link SPDataSource} objects that define a
+	 *            connection to {@link SQLDatabase}s that allow connecting to
+	 *            the data source and facilitates pooling of connections.
+	 * @param prepopulateConstants
+	 *            True if basic constants should be added to the query's
+	 *            constant table, false if the constants table should start
+	 *            empty.
+	 * @param consantsContainer
+	 *            The constants container to use instead of creating a new one.
+	 *            If this is null a new one will be created.
+	 */
+	public QueryImpl(SQLDatabaseMapping dbMapping, boolean prepopulateConstants, 
+			Container newConstantsContainer) {
         this.dbMapping = dbMapping;
 		fromTableList = new ArrayList<Container>();
 		joinMapping = new HashMap<Container, List<SQLJoin>>();
 		
-		constantsContainer = new ItemContainer("Constants");
+		if (newConstantsContainer != null) {
+			constantsContainer = newConstantsContainer;
+		} else {
+			constantsContainer = new ItemContainer("Constants");
+		}
 		constantsContainer.addChildListener(tableChildListener);
 		
 		if (prepopulateConstants) {
