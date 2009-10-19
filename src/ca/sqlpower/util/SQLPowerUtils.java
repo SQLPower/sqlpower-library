@@ -1,6 +1,9 @@
 package ca.sqlpower.util;
 
 import java.beans.PropertyChangeEvent;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -80,5 +83,28 @@ public class SQLPowerUtils {
             logger.debug(message + ": " + evt.getPropertyName() +
                     " \"" + evt.getOldValue() + "\" -> \"" + evt.getNewValue() + "\"");
         }
+    }
+
+	/**
+	 * Copies the contents of a given {@link InputStream} into a given
+	 * {@link OutputStream}.
+	 * 
+	 * @param source
+	 *            The {@link InputStream} to copy data from
+	 * @param output
+	 *            The {@link OutputStream} to copy the data to
+	 * @return The total number of bytes that got copied.
+	 * @throws IOException
+	 *             If an I/O error occurs
+	 */
+    public static long copyStream(InputStream source, OutputStream output) throws IOException {
+    	int next;
+    	long total = 0;
+    	while ((next = source.read()) != -1) {
+    		output.write(next);
+    		total++;
+    	}
+    	output.flush();
+    	return total;
     }
 }
