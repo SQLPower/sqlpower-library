@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -358,7 +359,7 @@ public class QueryImpl implements Query {
 			Container newConstantsContainer) {
         this.dbMapping = dbMapping;
 		fromTableList = new ArrayList<Container>();
-		joinMapping = new HashMap<Container, List<SQLJoin>>();
+		joinMapping = new LinkedHashMap<Container, List<SQLJoin>>();
 		
 		if (newConstantsContainer != null) {
 			constantsContainer = newConstantsContainer;
@@ -403,7 +404,7 @@ public class QueryImpl implements Query {
 	 */
 	public QueryImpl(QueryImpl copy, boolean connectListeners, SQLDatabase database) {
 		fromTableList = new ArrayList<Container>();
-		joinMapping = new HashMap<Container, List<SQLJoin>>();
+		joinMapping = new LinkedHashMap<Container, List<SQLJoin>>();
 		
 		this.dbMapping = copy.dbMapping;
 		setName(copy.getName());
