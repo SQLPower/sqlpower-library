@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.annotation.Nonnull;
+
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.sqlobject.SQLColumn;
@@ -65,8 +67,11 @@ public class TableContainer extends ItemContainer implements Container {
      */
 	private final SQLDatabase database;
 	
-	public TableContainer(SQLDatabase db, SQLTable t) {
+	public TableContainer(@Nonnull SQLDatabase db, @Nonnull SQLTable t) {
 	    super(t.getName());
+	    if (db == null) {
+	    	throw new NullPointerException("Database mustn't be null when providing a live SQLTable.");
+	    }
 	    database = db;
 		table = t;
 		schema = table.getSchemaName();
@@ -76,6 +81,42 @@ public class TableContainer extends ItemContainer implements Container {
 		loadColumnsFromTable(t);
 	}
 
+	/**
+	 * This constructor creates a table that will be loaded from the database when a part of the
+	 * container is accessed. To load the table the table's name, schema and catalog will be used
+	 * to retrieve the table from the database. The items of this container will have it's object
+	 * set when the table is loaded.
+	 */
+	public TableContainer(String uuid, SQLDatabase db, String name, String schema, String catalog, List<SQLObjectItem> items) {
+		super(name, uuid);
+	    if (db == null) {
+	    	logger.debug("Database connection for table " + name + " is missing. Although " +
+	    			"this is non-fatal, it should only happen if the actual database " +
+	    			"connection was unavailable at the time the workspace was loaded",
+	    			new Exception("Don't panic. Just a stack trace"));
+	    }
+		database = db;
+		if (schema != null) {
+			this.schema = schema;
+		} else {
+			this.schema = "";
+		}
+		if (catalog != null) {
+			this.catalog = catalog;
+		} else {
+			this.catalog = "";
+		}
+		setName(name);
+		table = null;
+		super.setAlias("");
+		itemList = new ArrayList<Item>();
+		for (Item item : items) {
+			item.setParent(this);
+			itemList.add(item);
+			fireChildAdded(item, itemList.indexOf(item));
+		}
+	}
+	
 	/**
 	 * This will create the items from the columns for the table. This
 	 * needs to be called right after the table gets set.
@@ -101,36 +142,6 @@ public class TableContainer extends ItemContainer implements Container {
 			}
 		} catch (SQLObjectException e) {
 			throw new RuntimeException(e);
-		}
-	}
-	
-	/**
-	 * This constructor creates a table that will be loaded from the database when a part of the
-	 * container is accessed. To load the table the table's name, schema and catalog will be used
-	 * to retrieve the table from the database. The items of this container will have it's object
-	 * set when the table is loaded.
-	 */
-	public TableContainer(String uuid, SQLDatabase db, String name, String schema, String catalog, List<SQLObjectItem> items) {
-		super(name, uuid);
-		database = db;
-		if (schema != null) {
-			this.schema = schema;
-		} else {
-			this.schema = "";
-		}
-		if (catalog != null) {
-			this.catalog = catalog;
-		} else {
-			this.catalog = "";
-		}
-		setName(name);
-		table = null;
-		super.setAlias("");
-		itemList = new ArrayList<Item>();
-		for (Item item : items) {
-			item.setParent(this);
-			itemList.add(item);
-			fireChildAdded(item, itemList.indexOf(item));
 		}
 	}
 	
