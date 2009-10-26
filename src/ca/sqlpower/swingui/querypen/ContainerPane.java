@@ -39,6 +39,8 @@ import javax.swing.JLabel;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.query.Container;
+import ca.sqlpower.query.ContainerChildEvent;
+import ca.sqlpower.query.ContainerChildListener;
 import ca.sqlpower.query.Item;
 import edu.umd.cs.piccolo.PCanvas;
 import edu.umd.cs.piccolo.PNode;
@@ -215,17 +217,25 @@ public class ContainerPane extends PNode implements CleanupPNode {
 	 */
 	private final PropertyChangeListener containerChangeListener = new PropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent evt) {
-			if (evt.getPropertyName().equals(Container.CONTAINTER_ITEM_ADDED)) {
-				addItem((Item)evt.getNewValue());
-				logger.debug("Added " + ((Item)evt.getNewValue()).getName() + " to the container pane.");
-			} else if (evt.getPropertyName().equals(Container.CONTAINER_ITEM_REMOVED)) {
-				removeItem((Item)evt.getOldValue());
-			} else if (evt.getPropertyName().equals(Container.CONTAINTER_ALIAS_CHANGED)) {
+			if (evt.getPropertyName().equals(Container.CONTAINTER_ALIAS_CHANGED)) {
 				for (PropertyChangeListener l : queryChangeListeners) {
 					l.propertyChange(evt);
 				}
 			}
 		}
+	};
+	
+	private final ContainerChildListener containerChildListener = new ContainerChildListener() {
+
+		public void containerChildAdded(ContainerChildEvent evt) {
+			addItem(evt.getChild());
+			logger.debug("Added " + (evt.getChild()).getName() + " to the container pane.");			
+		}
+
+		public void containerChildRemoved(ContainerChildEvent evt) {
+			removeItem(evt.getChild());			
+		}
+		
 	};
 	
 	private EditablePStyledText modelNameText;
@@ -267,6 +277,7 @@ public class ContainerPane extends PNode implements CleanupPNode {
 		model = newModel;
 		logger.debug("Container alias is " + model.getAlias());
 		model.addPropertyChangeListener(containerChangeListener);
+		model.addChildListener(containerChildListener);
 		queryChangeListeners = new ArrayList<PropertyChangeListener>();
 		this.queryPen = pen;
 		this.canvas = canvas;
@@ -626,6 +637,7 @@ public class ContainerPane extends PNode implements CleanupPNode {
 
 	public void cleanup() {
 		model.removePropertyChangeListener(containerChangeListener);
+		model.removeChildListener(containerChildListener);
 		for (Object o : getAllNodes()) {
 			if (o instanceof CleanupPNode && o != this) {
 				((CleanupPNode)o).cleanup();

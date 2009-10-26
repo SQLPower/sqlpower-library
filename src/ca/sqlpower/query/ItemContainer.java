@@ -100,7 +100,6 @@ public class ItemContainer implements Container {
 	public void addItem(Item item, int index) {
 		itemList.add(index, item);
 		item.setParent(this);
-		pcs.firePropertyChange(Container.CONTAINTER_ITEM_ADDED, null, item);
 		fireChildAdded(item, index);
 	}
 	
@@ -113,7 +112,6 @@ public class ItemContainer implements Container {
 	public void removeItem(Item item) {
 		int index = itemList.indexOf(item);
 		itemList.remove(item);
-		pcs.firePropertyChange(Container.CONTAINER_ITEM_REMOVED, item, null);
 		fireChildRemoved(item, index);
 	}
 
