@@ -43,7 +43,7 @@ public class JDBCDataSource extends SPDataSource {
      * JDBC driver pathname prefix that says to look for a JAR file resource on
      * the remote SQL Power Enterprise server we're attached to.
      */
-    private static final String SERVER = "server:";
+    public static final String SERVER = "server:";
     
     /*
      * constants used as keys to get into the properties
