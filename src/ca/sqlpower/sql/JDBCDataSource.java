@@ -196,7 +196,7 @@ public class JDBCDataSource extends SPDataSource {
 
     public JDBCDataSource(DataSourceCollection parentCollection) {
         super(parentCollection);
-        setParentType(new JDBCDataSourceType());
+        setParentType(new JDBCDataSourceType(parentCollection.getServerBaseURI()));
         parentSet = false;
     }
     
