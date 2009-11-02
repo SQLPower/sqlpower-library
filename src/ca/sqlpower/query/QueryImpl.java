@@ -1275,7 +1275,9 @@ public class QueryImpl implements Query {
 	public boolean setDataSourceWithoutReset(JDBCDataSource dataSource) {
 	    final SQLDatabase newDatabase = dbMapping.getDatabase(dataSource);
 	    if (database != null && database == newDatabase) return false;
+	    String oldValue = this.database == null ? "null" : this.database.getDataSource().getName();
 	    this.database = newDatabase;
+	    firePropertyChangeEvent(new PropertyChangeEvent(this, "dataSource", oldValue, this.database.getDataSource().getName()));
 	    if (dataSource != null) {
 	        setStreaming(dataSource.getParentType().getSupportsStreamQueries());
 	    }
