@@ -1264,12 +1264,11 @@ public class QueryImpl implements Query {
 	/* (non-Javadoc)
      * @see ca.sqlpower.query.Query#setDataSource(ca.sqlpower.sql.JDBCDataSource)
      */
-	public boolean setDataSource(JDBCDataSource dataSource) {
+	public void setDataSource(JDBCDataSource dataSource) {
 	    boolean dsSet = setDataSourceWithoutReset(dataSource);
 	    if (dsSet) {
 	        reset();
 	    }
-	    return dsSet;
 	}
 	
 	public boolean setDataSourceWithoutReset(JDBCDataSource dataSource) {

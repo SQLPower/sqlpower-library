@@ -210,7 +210,7 @@ public interface Query {
      * the constants table.
      * @return True if the data source was set, false otherwise.
      */
-    public abstract boolean setDataSource(JDBCDataSource dataSource);
+    public abstract void setDataSource(JDBCDataSource dataSource);
 
     /**
      * This sets the data source without resetting the query. This should only
