@@ -22,9 +22,11 @@ package ca.sqlpower.sql;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Driver;
@@ -104,14 +106,20 @@ public class JDBCDataSource extends SPDataSource {
                     " be located because no server base URI was specified");
                 }
                 String jarFilePath = jarFileName.substring(SERVER.length());
-                location = serverBaseURI.toURL();
+                
+                //Need to decode the URI to a URL to convert escaped characters to their real values, 
+                //ie spaces described as %20 will be replaced by actual spaces
+                location = new URL(URLDecoder.decode(serverBaseURI.toString(), "UTF-8"));
+                
                 location = new URL(location, jarFilePath);
             } else {
                 location = new File(jarFileName).toURL();
             }
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
-        }
+        } catch (UnsupportedEncodingException e) {
+        	throw new RuntimeException(e);
+		}
         return location;
     }
     
