@@ -136,7 +136,9 @@ public class GenericNewValueMaker implements NewValueMaker {
         } else if (valueType.equals(Image.class)) {
             return new BufferedImage(10, 10, BufferedImage.TYPE_INT_ARGB);
         } else if (valueType.equals(Olap4jDataSource.class)) {
-            return new Olap4jDataSource(new StubDataSourceCollection<SPDataSource>());
+        	Olap4jDataSource ds = new Olap4jDataSource(new StubDataSourceCollection<SPDataSource>());
+        	ds.setName("Testing OLAP data source");
+            return ds;
         } else if (valueType.equals(SQLGroupFunction.class)) {
         	if (oldVal.equals(SQLGroupFunction.COUNT)) {
         		newVal = SQLGroupFunction.GROUP_BY;
