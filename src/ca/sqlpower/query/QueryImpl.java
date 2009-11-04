@@ -1265,19 +1265,19 @@ public class QueryImpl implements Query {
      * @see ca.sqlpower.query.Query#setDataSource(ca.sqlpower.sql.JDBCDataSource)
      */
 	public void setDataSource(JDBCDataSource dataSource) {
-	    boolean dsSet = setDataSourceWithoutReset(dataSource);
+	    boolean dsSet = setDataSourceWithoutSideEffects(dataSource);
 	    if (dsSet) {
 	        reset();
+	        if (dataSource != null) {
+	        	setStreaming(dataSource.getParentType().getSupportsStreamQueries());
+	        }
 	    }
 	}
 	
-	public boolean setDataSourceWithoutReset(JDBCDataSource dataSource) {
+	public boolean setDataSourceWithoutSideEffects(JDBCDataSource dataSource) {
 	    final SQLDatabase newDatabase = dbMapping.getDatabase(dataSource);
 	    if (database != null && database == newDatabase) return false;
 	    this.database = newDatabase;
-	    if (dataSource != null) {
-	        setStreaming(dataSource.getParentType().getSupportsStreamQueries());
-	    }
 	    return true;
 	}
 	

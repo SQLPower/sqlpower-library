@@ -204,22 +204,26 @@ public interface Query {
 
     public abstract Container getConstantsContainer();
 
-    /**
-     * This sets the query's data source to the given data source. As a
-     * side effect it also resets the query, removing all tables, and resetting
-     * the constants table.
-     * @return True if the data source was set, false otherwise.
-     */
+	/**
+	 * This sets the query's data source to the given data source. As a side
+	 * effect it also resets the query, removing all tables, and resetting the
+	 * constants table. The query's streaming flag will be set to the data
+	 * source type's streaming flag as well.
+	 * 
+	 * @return True if the data source was set, false otherwise.
+	 */
     public abstract void setDataSource(JDBCDataSource dataSource);
 
-    /**
-     * This sets the data source without resetting the query. This should only
-     * be called from loading code. If the user is trying to set the data source
-     * use {@link #setDataSource(JDBCDataSource)} so the tables in the query are
-     * removed as well.
-     * @return True if the data source was set, false otherwise.
-     */
-    public abstract boolean setDataSourceWithoutReset(JDBCDataSource dataSource);
+	/**
+	 * This sets the data source without resetting the query. This should only
+	 * be called from loading code or when no side effects are desired. If the
+	 * user is trying to set the data source use
+	 * {@link #setDataSource(JDBCDataSource)} so the tables in the query are
+	 * removed as well.
+	 * 
+	 * @return True if the data source was set, false otherwise.
+	 */
+    public abstract boolean setDataSourceWithoutSideEffects(JDBCDataSource dataSource);
     
     /**
      * Returns the data source that the query is based on.
