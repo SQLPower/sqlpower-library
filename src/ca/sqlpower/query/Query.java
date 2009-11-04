@@ -270,8 +270,18 @@ public interface Query {
 
     public abstract int getStreamingRowLimit();
 
+    /**
+     * If set to true the query will act as a streaming query. Streaming queries
+     * act differently than a regular query as their results come in over time
+     * instead of in one batch.
+     */
     public abstract void setStreaming(boolean streaming);
 
+    /**
+     * If true the query will act as a streaming query. Streaming queries
+     * act differently than a regular query as their results come in over time
+     * instead of in one batch.
+     */
     public abstract boolean isStreaming();
 
     public abstract void addQueryChangeListener(QueryChangeListener l);
