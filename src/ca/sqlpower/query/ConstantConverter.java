@@ -36,7 +36,7 @@ public class ConstantConverter {
 	private static final Logger logger = Logger.getLogger(ConstantConverter.class);
 
 	public static ConstantConverter getConverter(JDBCDataSource ds) {
-		if (ds == null) {
+		if (ds == null || ds.getDriverClass() == null) {
 			return new ConstantConverter();
 		}
 		if (ds.getDriverClass().toLowerCase().contains("sqlserver")) {
