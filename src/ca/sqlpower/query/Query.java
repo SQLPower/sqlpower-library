@@ -327,5 +327,5 @@ public interface Query {
      * ordered may be shifted in their ordering if the item is moved.
      */
     public abstract void orderColumn(Item item, OrderByArgument ordering);
-
+    
 }

@@ -210,31 +210,12 @@ public class QueryImpl implements Query {
 	private PropertyChangeListener joinChangeListener = new PropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent e) {
 		    //XXX This if/else looks like leftovers from correcting listeners in Wabit and probably just needs to be deleted.
+			
+			SQLJoin join = (SQLJoin) e.getSource();
 			if (e.getPropertyName().equals("leftColumnOuterJoin")) {
-				logger.debug("Got left join changed.");
-				SQLJoin changedJoin = (SQLJoin) e.getSource();
-				Container leftJoinContainer = changedJoin.getLeftColumn().getContainer();
-				for (SQLJoin join : joinMapping.get(leftJoinContainer)) {
-					if (join.getLeftColumn().getContainer() == leftJoinContainer) {
-						join.setLeftColumnOuterJoin((Boolean)e.getNewValue());
-					} else {
-						join.setRightColumnOuterJoin((Boolean)e.getNewValue());
-					}
-				}
+				updateJoinsOnInnerOuterChange(join, (Boolean) e.getNewValue(), true);
 			} else if (e.getPropertyName().equals("rightColumnOuterJoin")) {
-				logger.debug("Got right join changed.");
-				SQLJoin changedJoin = (SQLJoin) e.getSource();
-				Container rightJoinContainer = changedJoin.getRightColumn().getContainer();
-				logger.debug("There are " + joinMapping.get(rightJoinContainer) + " joins on the table with the changed join.");
-				for (SQLJoin join : joinMapping.get(rightJoinContainer)) {
-					if (join.getLeftColumn().getContainer() == rightJoinContainer) {
-						logger.debug("Changing left side");
-						join.setLeftColumnOuterJoin((Boolean)e.getNewValue());
-					} else {
-						logger.debug("Changing right side");
-						join.setRightColumnOuterJoin((Boolean)e.getNewValue());
-					}
-				}
+				updateJoinsOnInnerOuterChange(join, (Boolean) e.getNewValue(), false);
 			}
 			fireJoinPropertyChangeEvent(e);
 		}
@@ -1602,4 +1583,37 @@ public class QueryImpl implements Query {
 	}
 
 //---------------------------- End of protected methods to fire events -------------------
+
+	/**
+	 * When one join connected to a table is changed to be an inner or outer
+	 * join all of the joins to this table must be set to the same inner or
+	 * outer join state for the query to make sense.
+	 */
+	private void updateJoinsOnInnerOuterChange(SQLJoin joinChanged, boolean isOuterJoin, boolean isLeftColumn) {
+		if (isLeftColumn) {
+			logger.debug("Got left join changed.");
+			Container leftJoinContainer = joinChanged.getLeftColumn().getContainer();
+			for (SQLJoin join : joinMapping.get(leftJoinContainer)) {
+				if (join.getLeftColumn().getContainer() == leftJoinContainer) {
+					join.setLeftColumnOuterJoin(isOuterJoin);
+				} else {
+					join.setRightColumnOuterJoin(isOuterJoin);
+				}
+			}
+		} else {
+			logger.debug("Got right join changed.");
+			Container rightJoinContainer = joinChanged.getRightColumn().getContainer();
+			logger.debug("There are " + joinMapping.get(rightJoinContainer) + " joins on the table with the changed join.");
+			for (SQLJoin join : joinMapping.get(rightJoinContainer)) {
+				if (join.getLeftColumn().getContainer() == rightJoinContainer) {
+					logger.debug("Changing left side");
+					join.setLeftColumnOuterJoin(isOuterJoin);
+				} else {
+					logger.debug("Changing right side");
+					join.setRightColumnOuterJoin(isOuterJoin);
+				}
+			}
+		}
+	}
+	
 }

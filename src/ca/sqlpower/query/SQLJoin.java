@@ -30,7 +30,7 @@ import java.util.UUID;
  * statement. This will also store how the two columns are being
  * compared. 
  */
-public class SQLJoin {
+public class SQLJoin implements Join {
 	
 	/**
 	 * This enum Comparators stores all the comparators.
@@ -89,11 +89,6 @@ public class SQLJoin {
 	 */
 	private String comparator;
 	
-	/**
-	 * This is the previous Comparator
-	 */
-	private String oldComparator;
-	
 	private String name;
 	
 	private String uuid;
@@ -104,12 +99,11 @@ public class SQLJoin {
 	 * The query this join is in.
 	 */
 	private Query parent;
-
+	
 	public SQLJoin(Item leftColumn, Item rightColumn) {
 		this.leftColumn = leftColumn;
 		this.rightColumn = rightColumn;
 		this.comparator = "=";
-		this.oldComparator = "=";
 		leftColumnOuterJoin = false;
 		rightColumnOuterJoin = false;
 		uuid = "w" + UUID.randomUUID().toString();
@@ -127,10 +121,10 @@ public class SQLJoin {
 		return comparator;
 	}
 	
-	public void setComparator(String currentComp) {
-		comparator = currentComp;
+	public void setComparator(String comparator) {
+		String oldComparator = this.comparator;
+		this.comparator = comparator;
 		pcs.firePropertyChange(new PropertyChangeEvent(this, "comparator", oldComparator, comparator));
-		oldComparator = currentComp;
 	}
 
 	public boolean isLeftColumnOuterJoin() {
@@ -140,8 +134,17 @@ public class SQLJoin {
 	public void setLeftColumnOuterJoin(boolean isLeftColumnOuterJoin) {
 		boolean oldVal = this.leftColumnOuterJoin;
 		this.leftColumnOuterJoin = isLeftColumnOuterJoin;
+		
+		if (parent != null) {
+			parent.startCompoundEdit("Changing join " + name + " for left column outer join to " + this.leftColumnOuterJoin);
+		}
+		
 		pcs.firePropertyChange(new PropertyChangeEvent(this, "leftColumnOuterJoin", 
 				oldVal, this.leftColumnOuterJoin));
+		
+		if (parent != null) {
+			parent.endCompoundEdit();
+		}
 	}
 	
 	public boolean isRightColumnOuterJoin() {
@@ -151,8 +154,17 @@ public class SQLJoin {
 	public void setRightColumnOuterJoin(boolean isRightColumnOuterJoin) {
 		boolean oldVal = this.rightColumnOuterJoin;
 		this.rightColumnOuterJoin = isRightColumnOuterJoin;
+		
+		if (parent != null) {
+			parent.startCompoundEdit("Changing join " + name + " for right column outer join to " + this.rightColumnOuterJoin);
+		}
+		
 		pcs.firePropertyChange(new PropertyChangeEvent(this, "rightColumnOuterJoin", 
 				oldVal, this.rightColumnOuterJoin));
+		
+		if (parent != null) {
+			parent.endCompoundEdit();
+		}
 	}
 	
 	public void addJoinChangeListener(PropertyChangeListener l) {
@@ -205,7 +217,7 @@ public class SQLJoin {
 	    join.setName(getName());
 	    return join;
 	}
-
+	
 	public void setParent(Query parent) {
 		this.parent = parent;
 	}
@@ -213,5 +225,5 @@ public class SQLJoin {
 	public Query getParent() {
 		return parent;
 	}
-	
+
 }
