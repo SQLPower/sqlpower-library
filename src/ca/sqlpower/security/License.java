@@ -28,6 +28,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Properties;
 
+import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -54,17 +55,18 @@ public class License implements java.io.Serializable {
 	protected Properties limits;
 
 	/**
-	 *
+	 * Creates a license object.
 	 * @param xmlStream An input stream pointing to the XML file which
 	 * describes the license.
 	 * @param dtdStream An input stream pointing to the DTD for
 	 * xmlStream's XML document, if a DTD is required.  Otherwise, use
 	 * null.
+	 * @param salt Array of short values to use as salt for hash generation. Can be null.
 	 */
-	public License(InputStream xmlStream, InputStream licenseStream)
+	public License(InputStream xmlStream, InputStream licenseStream, @Nullable short[] salt)
 	throws LicenseReadException {
 	    
-	    parseFile(xmlStream, licenseStream);
+	    parseFile(xmlStream, licenseStream, salt);
 	    
 	    if (logger.isInfoEnabled()) {
 	        logger.info("Loaded SQLPower product license.");
@@ -77,7 +79,7 @@ public class License implements java.io.Serializable {
 	    }
 	}
 	
-	protected void parseFile(InputStream xmlStream, InputStream licenseStream)
+	protected void parseFile(InputStream xmlStream, InputStream licenseStream, @Nullable short[] salt)
 		throws LicenseReadException {
 
 		DateFormat df = new SimpleDateFormat("yyyyMMdd");
@@ -85,10 +87,15 @@ public class License implements java.io.Serializable {
 
 		try {
 			// Some random salt for the hash function
-			short[] n = { 0xeb, 0x9c, 0xa5, 0xe8, 0x93, 0x6c, 0x06, 0x9c, 0x97, 
+			final short[] n = { 0xeb, 0x9c, 0xa5, 0xe8, 0x93, 0x6c, 0x06, 0x9c, 0x97, 
 						  0x9b, 0x36, 0xd0, 0x37, 0x8d, 0x43, 0xef, 0xeb, 0xf3, 
 						  0x45, 0xcf, 0x40, 0x81, 0xc8, 0xa3, 0x3f, 0x70, 0x09, 
 						  0x0b, 0x11, 0xca };
+			
+			if (salt == null) {
+				salt = n;
+			}
+			
 			MessageDigest md = MessageDigest.getInstance("MD5");
 
 			DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -99,7 +106,7 @@ public class License implements java.io.Serializable {
 			Element elem = (Element) de.getElementsByTagName("licensee").item(0);
 			licenseeName = elem.getFirstChild().getNodeValue();
 			md.update(licenseeName.getBytes());
-			md.update((byte) n[licenseeName.length() % n.length]);
+			md.update((byte) salt[licenseeName.length() % salt.length]);
 			
 			elem = (Element) de.getElementsByTagName("product").item(0);
 			productName = elem.getFirstChild().getNodeValue();
