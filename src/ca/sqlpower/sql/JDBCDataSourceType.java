@@ -145,6 +145,15 @@ public class JDBCDataSourceType {
             this.serverBaseUri = serverBaseUri;
             this.classpath = classpath;
 
+        	// sanity check
+        	for (String jarPath : classpath) {
+        		if (jarPath.startsWith(JDBCDataSource.SERVER) && serverBaseUri == null) {
+        			throw new IllegalStateException(
+        					"Found a server-based JAR file \"" + jarPath + "\" on the" +
+        					" classpath but there is no server base URI configured");
+        		}
+        	}
+        	
             logger.debug("Created new JDBC Classloader @"+System.identityHashCode(this));
             
             // classes loaded with this classloader need their own security policy,
