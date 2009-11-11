@@ -1286,7 +1286,6 @@ public class QueryImpl implements Query {
 	
 	public boolean setDataSourceWithoutSideEffects(JDBCDataSource dataSource) {
 	    final SQLDatabase newDatabase = dbMapping.getDatabase(dataSource);
-	    System.out.println("Current database is: " + database + ". Setting it to: " + newDatabase);
 	    if (database != null && database == newDatabase) return false;
 	    this.database = newDatabase;
 	    return true;
