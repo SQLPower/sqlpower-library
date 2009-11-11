@@ -133,8 +133,21 @@ public class UnmodifiableItemPNode extends PNode implements CleanupPNode {
 		}
 	};
 	
+	/**
+	 * This listener will update this view component with changes to its model.
+	 * Events will also be echoed which may not be used in the future.
+	 */
 	private PropertyChangeListener itemChangeListener = new PropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent evt) {
+			if (evt.getPropertyName().equals("selected")) {
+				isInSelectCheckBox.setSelected(item.isSelected());
+			} else if (evt.getPropertyName().equals("alias")) {
+				setVisibleAliasText();
+			} else if (evt.getPropertyName().equals("where")) {
+				whereText.getEditorPane().setText(item.getWhere());
+				whereText.syncWithDocument();
+			}
+			
 			for (PropertyChangeListener l : queryChangeListeners) {
 				l.propertyChange(evt);
 			}

@@ -132,17 +132,11 @@ public class QueryPen implements MouseState {
     
     private AbstractAction zoomInAction;
     private AbstractAction zoomOutAction;
-    private JToolBar queryPenBar;
     
 	private final class QueryPenDropTargetListener implements
 			DropTargetListener {
 		
-		private QueryPen mouseState ;
 
-		public QueryPenDropTargetListener(QueryPen mouseState) {
-			this.mouseState = mouseState;
-		}
-		
 		public void dropActionChanged(DropTargetDragEvent dtde) {
 			//no-op
 		}
@@ -171,7 +165,6 @@ public class QueryPen implements MouseState {
 				throw new RuntimeException(e);
 			}
 			
-			int tempTranslateLocation = 0;
 			for (Object draggedSQLObject : draggedObjects) {
 				
 				if (draggedSQLObject instanceof SQLTable) {
@@ -181,55 +174,49 @@ public class QueryPen implements MouseState {
 				    	model.startCompoundEdit("Table " + table.getName() + " was dropped " +
 				    			"on the query pen, adding it to the mode.");
 				    	DatabaseMetaDataDecorator.putHint(DatabaseMetaDataDecorator.CACHE_TYPE, CacheType.EAGER_CACHE);
-    					TableContainer model = new TableContainer(QueryPen.this.model.getDatabase(), table);
+    					TableContainer tableModel = new TableContainer(QueryPen.this.model.getDatabase(), table);
     
-    					ContainerPane pane = new ContainerPane(mouseState, canvas, model);
-    					pane.addQueryChangeListener(queryChangeListener);
     					Point location = dtde.getLocation();
     					Point2D movedLoc = canvas.getCamera().localToView(location);
-    					pane.translate(movedLoc.getX() + tempTranslateLocation, movedLoc.getY());
-    					tempTranslateLocation += pane.getWidth() + TABLE_SPACE;
+    					tableModel.setPosition(movedLoc);
     					
     					int aliasCounter = 0;
     					ArrayList<String> aliasNames = new ArrayList<String>();
     					
     					// This basically check if there exist a table with the same name as the one being dropped
     					// compare all the alias names to see which number it needs to not create a duplicate table name.
-    					for(Object node: topLayer.getAllNodes()) {
-    						if(node instanceof ContainerPane) {
-    							ContainerPane containerNode = (ContainerPane)node;
-    							if(containerNode.getModelTextName().equals(pane.getModelTextName())){
-    								logger.debug("Found same tableName, going to alias");
-    								aliasNames.add(containerNode.getModel().getAlias());
-    							}
+    					for (Container existingTable: model.getFromTableList()) {
+    						if (tableModel.getName().equals(existingTable.getName())){
+    							logger.debug("Found same tableName, going to alias");
+    							aliasNames.add(existingTable.getAlias());
     						}
     					}
     					Collections.sort(aliasNames);
     					for(String alias : aliasNames) {
-    						if(alias.equals(pane.getModel().getName()+ "_"+ aliasCounter)
+    						if(alias.equals(tableModel.getName()+ "_"+ aliasCounter)
     								|| alias.equals("")) {
     							aliasCounter++;
     						}
     					}
     					if(aliasCounter != 0) {
-    						pane.setContainerAlias(pane.getModel().getName()+ "_"+ aliasCounter);
+    						tableModel.setAlias(tableModel.getName()+ "_"+ aliasCounter);
     					}
     					
-    					topLayer.addChild(pane);
-    					queryChangeListener.propertyChange(new PropertyChangeEvent(canvas, Container.PROPERTY_TABLE_ADDED, null, pane.getModel()));
+    					QueryPen.this.model.addTable(tableModel);
     					
     					try {
     						for (SQLRelationship relation : table.getExportedKeys()) {
-    							List<ContainerPane> fkContainers = getContainerPane(relation.getFkTable());
-    							for (ContainerPane fkContainer : fkContainers) {
+    							List<Container> fkContainers = getContainerPane(relation.getFkTable());
+    							for (Container fkContainer : fkContainers) {
     								for (ColumnMapping mapping : relation.getMappings()) {
-    									logger.debug("PK container has model name " + pane.getModel().getName() + " looking for col named " + mapping.getPkColumn().getName());
-    									UnmodifiableItemPNode pkItemNode = pane.getItemPNode(mapping.getPkColumn());
-    									UnmodifiableItemPNode fkItemNode = fkContainer.getItemPNode(mapping.getFkColumn());
+    									logger.debug("PK container has model name " + tableModel.getName() + 
+    											" looking for col named " + mapping.getPkColumn().getName());
+    									Item pkItemNode = tableModel.getItem(mapping.getPkColumn());
+    									Item fkItemNode = fkContainer.getItem(mapping.getFkColumn());
     									logger.debug("FK item node is " + fkItemNode);
     									if (pkItemNode != null && fkItemNode != null) {
     										if (pkItemNode.getParent() != fkItemNode.getParent()) {
-    										    SQLJoin join = new SQLJoin(pkItemNode.getItem(), fkItemNode.getItem());
+    										    SQLJoin join = new SQLJoin(pkItemNode, fkItemNode);
     											join.addJoinChangeListener(queryChangeListener);
     											QueryPen.this.model.addJoin(join);
     										} else {
@@ -243,16 +230,14 @@ public class QueryPen implements MouseState {
     						}
     						
     						for (SQLRelationship relation : table.getImportedKeys()) {
-    							List<ContainerPane> pkContainers = getContainerPane(relation.getPkTable());
-    							for (ContainerPane pkContainer : pkContainers) {
+    							List<Container> pkContainers = getContainerPane(relation.getPkTable());
+    							for (Container pkContainer : pkContainers) {
     								for (ColumnMapping mapping : relation.getMappings()) {
-    									UnmodifiableItemPNode fkItemNode = pkContainer.getItemPNode(mapping.getPkColumn());
-    									UnmodifiableItemPNode pkItemNode = pane.getItemPNode(mapping.getFkColumn());
+    									Item fkItemNode = pkContainer.getItem(mapping.getPkColumn());
+    									Item pkItemNode = tableModel.getItem(mapping.getFkColumn());
     									if (pkItemNode != null && fkItemNode != null) {
     										if (pkItemNode.getParent() != fkItemNode.getParent()) {
-    											logger.debug(" pkItemNode" + ((ContainerPane)pkItemNode.getParent()).getModel().getName());
-    											logger.debug(" fkItemNode" + ((ContainerPane)fkItemNode.getParent()).getModel().getName());
-    											SQLJoin join = new SQLJoin(fkItemNode.getItem(), pkItemNode.getItem());
+    											SQLJoin join = new SQLJoin(fkItemNode, pkItemNode);
     											join.addJoinChangeListener(queryChangeListener);
     											QueryPen.this.model.addJoin(join);
     										} else {
@@ -268,11 +253,10 @@ public class QueryPen implements MouseState {
     						throw new RuntimeException(e);
     					}
     					
-                        for (UnmodifiableItemPNode itemNode : pane.getContainedItems()) {
-                            itemNode.setInSelected(true);
+                        for (Item itemNode : tableModel.getItems()) {
+                            model.selectItem(itemNode);
                         }
     
-    					canvas.repaint();
     					dtde.acceptDrop(dtde.getDropAction());
     					dtde.dropComplete(true);
     					    			    					
@@ -397,12 +381,6 @@ public class QueryPen implements MouseState {
 						if (pickedNode instanceof ContainerPane) {
 							ContainerPane pane = ((ContainerPane)pickedNode);
 							deleteContainer(pane);
-							
-							//XXX This change listener should no longer be needed
-							queryChangeListener.propertyChange(
-							        new PropertyChangeEvent(canvas, 
-							                Container.PROPERTY_TABLE_REMOVED, 
-							                pane.getModel(), null));
 						}
 					}
 					if (pickedNode.getParent() == joinLayer) {
@@ -438,6 +416,8 @@ public class QueryPen implements MouseState {
 	/**
 	 * This change listener will be invoked whenever a change is made to the query pen
 	 * that will result in a change to the SQL script.
+	 * 
+	 * XXX Does anything use this?
 	 */
 	private PropertyChangeListener queryChangeListener = new PropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent evt) {
@@ -547,8 +527,12 @@ public class QueryPen implements MouseState {
         }
     
         public void containerAdded(QueryChangeEvent evt) {
-            // TODO Refactor the DropTargetListener in this class to only create
-            // the model components. This listener should create the view component
+        	Container containerChanged = evt.getContainerChanged();
+			ContainerPane pane = new ContainerPane(QueryPen.this, canvas, containerChanged);
+			pane.addQueryChangeListener(queryChangeListener);
+			topLayer.addChild(pane);
+			
+			canvas.repaint();
         }
     
         public void compoundEditEnded(TransactionEvent evt) {
@@ -743,7 +727,7 @@ public class QueryPen implements MouseState {
 		canvas.addInputEventListener(joinCreationListener);
 		joinCreationListener.addCreateJoinListener(queryChangeListener);
         
-        new DropTarget(canvas, new QueryPenDropTargetListener(this));
+        new DropTarget(canvas, new QueryPenDropTargetListener());
         List<PLayer> layerList = new ArrayList<PLayer>();
         layerList.add(topLayer);
         layerList.add(joinLayer);
@@ -861,15 +845,15 @@ public class QueryPen implements MouseState {
 	}
 
 	/**
-	 * Returns a list of container panes, where each one wraps the same
-	 * SQLTable, in the QueryPen. If no container panes wraps the SQLTable in
-	 * the QueryPen then this will return an empty list.
+	 * Returns a list of containers, where each one wraps the same
+	 * SQLTable, in the Query model. If no containers wraps the SQLTable in
+	 * the Query model then this will return an empty list.
 	 */
-	private List<ContainerPane> getContainerPane(SQLTable table) {
-		List<ContainerPane> containerList = new ArrayList<ContainerPane>();
-		for (Object node : topLayer.getAllNodes()) {
-			if (node instanceof ContainerPane && ((ContainerPane)node).getModel().getContainedObject() == table) {
-				containerList.add((ContainerPane)node);
+	private List<Container> getContainerPane(SQLTable table) {
+		List<Container> containerList = new ArrayList<Container>();
+		for (Container node : model.getFromTableList()) {
+			if (node.getContainedObject() == table) {
+				containerList.add(node);
 			}
 		}
 		return containerList;

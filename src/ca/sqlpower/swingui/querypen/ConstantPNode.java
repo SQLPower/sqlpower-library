@@ -31,7 +31,6 @@ import javax.swing.JCheckBox;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.query.Item;
-import ca.sqlpower.query.QueryImpl;
 import ca.sqlpower.query.StringItem;
 import edu.umd.cs.piccolo.PCanvas;
 import edu.umd.cs.piccolo.PNode;
@@ -62,8 +61,6 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 	
 	private final List<PropertyChangeListener> changeListeners;
 	
-	private final PCanvas canvas;
-	
 	private EditStyledTextListener removeItemListener = new EditStyledTextListener() {
 		private String oldText;
 		public void editingStopping() {
@@ -89,18 +86,23 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 		item.getContainer().removeItem(item);
 	}
 	
+	/**
+	 * Listens to the item that backs this node and updates its fields
+	 * if the model changes.
+	 * <p>
+	 * This also re-fires events which may not be used in the future.
+	 */
 	private final PropertyChangeListener itemChangeListener = new PropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent evt) {
-			for (PropertyChangeListener l : changeListeners) {
-				l.propertyChange(evt);
-			}
-		}
-	};
-	
-	private final PropertyChangeListener modelChangeListener = new PropertyChangeListener(){
-
-		public void propertyChange(PropertyChangeEvent evt) {
-			if (evt.getPropertyName().equals(Item.PROPERTY_ITEM)) {
+			if (evt.getPropertyName().equals("selected")) {
+				selectionCheckbox.setSelected(item.isSelected());
+			} else if (evt.getPropertyName().equals("alias")) {
+				aliasText.getEditorPane().setText(item.getAlias());	
+				aliasText.syncWithDocument();
+			} else if (evt.getPropertyName().equals("where")) {
+				whereText.getEditorPane().setText(item.getWhere());	
+				whereText.syncWithDocument();
+			} else if (evt.getPropertyName().equals(Item.PROPERTY_ITEM)) {
 				constantText.getEditorPane().setText(evt.getNewValue().toString());
 				if (constantText.getEditorPane().getText().length() <= 0) {
 					removeItem();
@@ -108,13 +110,14 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 				logger.debug("Model Name changed, updating view");
 				constantText.syncWithDocument();
 				}
-			} else if (evt.getPropertyName().equals(QueryImpl.GROUPING_ENABLED)) {
-			    selectionCheckbox.setSelected(false);
 			}
 			
+			for (PropertyChangeListener l : changeListeners) {
+				l.propertyChange(evt);
+			}
 		}
 	};
-
+	
 	/**
 	 * The query this node is attached to as its parent.
 	 */
@@ -123,10 +126,8 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 	public ConstantPNode(Item source, QueryPen mouseStates, PCanvas canvas) {
 		this.item = source;
         this.queryPen = mouseStates;
-		this.canvas = canvas;
 		item.addPropertyChangeListener(itemChangeListener);
 		
-		item.addPropertyChangeListener(modelChangeListener);
 		changeListeners = new ArrayList<PropertyChangeListener>();
 		
 		selectionCheckbox = new JCheckBox();
@@ -239,7 +240,6 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 
 	public void cleanup() {
 		item.removePropertyChangeListener(itemChangeListener);
-		item.removePropertyChangeListener(modelChangeListener);
 	}
 
 	public Item getModel() {

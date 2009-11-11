@@ -36,8 +36,6 @@ public interface Container {
 	public static final String CONTAINTER_ALIAS_CHANGED = "alias";
 	public static final String CONTAINTER_ITEM_ADDED = "itemAdded";
 	public static final String CONTAINER_ITEM_REMOVED = "itemRemoved";
-	public static final String PROPERTY_TABLE_ADDED = "TABLE_ADDED";
-	public static final String PROPERTY_TABLE_REMOVED = "TABLE_REMOVED";
 	public static final String PROPERTY_WHERE_MODIFIED = "WHERE_MODIFIED";
 
     /**
