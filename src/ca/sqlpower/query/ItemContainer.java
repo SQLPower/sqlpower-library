@@ -104,9 +104,11 @@ public class ItemContainer implements Container {
 	}
 	
     protected void fireChildAdded(Item item, int index) {
-        for (int i = childListeners.size() - 1; i >= 0; i--) {
-		    childListeners.get(i).containerChildAdded(new ContainerChildEvent(this, item, index));
-		}
+    	synchronized(childListeners) {
+    		for (int i = childListeners.size() - 1; i >= 0; i--) {
+    			childListeners.get(i).containerChildAdded(new ContainerChildEvent(this, item, index));
+    		}
+    	}
     }
 	
 	public void removeItem(Item item) {
@@ -116,9 +118,11 @@ public class ItemContainer implements Container {
 	}
 
     protected void fireChildRemoved(Item item, int index) {
-        for (int i = childListeners.size() - 1; i >= 0; i--) {
-		    childListeners.get(i).containerChildRemoved(new ContainerChildEvent(this, item, index));
-		}
+    	synchronized(childListeners) {
+    		for (int i = childListeners.size() - 1; i >= 0; i--) {
+    			childListeners.get(i).containerChildRemoved(new ContainerChildEvent(this, item, index));
+    		}
+    	}
     }
 
 	public String getName() {

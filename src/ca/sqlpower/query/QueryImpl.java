@@ -338,6 +338,31 @@ public class QueryImpl implements Query {
 	 */
 	public QueryImpl(SQLDatabaseMapping dbMapping, boolean prepopulateConstants, 
 			Container newConstantsContainer) {
+        this(dbMapping, prepopulateConstants, newConstantsContainer, null);
+	}
+
+	/**
+	 * Creates a Query implementation which can set the data source and
+	 * optionally populate the constants table with some handy basic constants.
+	 * 
+	 * @param dbMapping
+	 *            A mapping of {@link SPDataSource} objects that define a
+	 *            connection to {@link SQLDatabase}s that allow connecting to
+	 *            the data source and facilitates pooling of connections.
+	 * @param prepopulateConstants
+	 *            True if basic constants should be added to the query's
+	 *            constant table, false if the constants table should start
+	 *            empty.
+	 * @param consantsContainer
+	 *            The constants container to use instead of creating a new one.
+	 *            If this is null a new one will be created.
+	 * @param dataSource
+	 *            The data source that should be used in creating and executing
+	 *            queries. If this value is null, no data source will be used
+	 *            until the user defines one.
+	 */
+	public QueryImpl(SQLDatabaseMapping dbMapping, boolean prepopulateConstants, 
+			Container newConstantsContainer, JDBCDataSource dataSource) {
         this.dbMapping = dbMapping;
 		fromTableList = new ArrayList<Container>();
 		joinMapping = new LinkedHashMap<Container, List<SQLJoin>>();
@@ -348,6 +373,10 @@ public class QueryImpl implements Query {
 			constantsContainer = new ItemContainer("Constants");
 		}
 		constantsContainer.addChildListener(tableChildListener);
+		
+		if (dataSource != null) {
+			setDataSourceWithoutSideEffects(dataSource);
+		}
 		
 		if (prepopulateConstants) {
 		    resetConstantsContainer();
@@ -1257,6 +1286,7 @@ public class QueryImpl implements Query {
 	
 	public boolean setDataSourceWithoutSideEffects(JDBCDataSource dataSource) {
 	    final SQLDatabase newDatabase = dbMapping.getDatabase(dataSource);
+	    System.out.println("Current database is: " + database + ". Setting it to: " + newDatabase);
 	    if (database != null && database == newDatabase) return false;
 	    this.database = newDatabase;
 	    return true;
@@ -1615,5 +1645,5 @@ public class QueryImpl implements Query {
 			}
 		}
 	}
-	
+
 }
