@@ -1057,7 +1057,7 @@ public class QueryImpl implements Query {
 	        throw new IllegalArgumentException("The container " + container.getName() + 
 	                " already exists in the query " + getName());
 	    try {
-	    	startCompoundEdit("Starting compound edit event from addTable in QueryImpl.");
+	    	startCompoundEdit("Add Table " + container.getName());
 	    	fromTableList.add(index, container);
 	    	container.addChildListener(getTableChildListener());
 	    	for (Item col : container.getItems()) {
