@@ -191,16 +191,16 @@ public class ContainerPane extends PNode implements CleanupPNode {
 	}
 	
 	/**
-	 * A change listener for use on items stored in this container pane.
+	 * Refiring the events may no longer be needed.
 	 */
-	private PropertyChangeListener itemChangeListener = new PropertyChangeListener() {
+	private PropertyChangeListener guiItemChangeListener = new PropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent evt) {
 			for (PropertyChangeListener l : queryChangeListeners) {
 				l.propertyChange(evt);
 			}
 		}
 	};
-	
+
 	/**
 	 * This listener will resize the bounding box of the container
 	 * when properties of components it is attached to change.
@@ -217,6 +217,14 @@ public class ContainerPane extends PNode implements CleanupPNode {
 	 */
 	private final PropertyChangeListener containerChangeListener = new PropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent evt) {
+			if (evt.getPropertyName().equals("position")) {
+				logger.error("Moving container");
+				translate(model.getPosition().getX() - getGlobalBounds().getX(), 
+						model.getPosition().getY() - getGlobalBounds().getY());
+			} else if (evt.getPropertyName().equals("alias")) {
+				setVisibleAliasText();
+			}
+			
 			if (evt.getPropertyName().equals(Container.CONTAINTER_ALIAS_CHANGED)) {
 				for (PropertyChangeListener l : queryChangeListeners) {
 					l.propertyChange(evt);
@@ -233,7 +241,7 @@ public class ContainerPane extends PNode implements CleanupPNode {
 		}
 
 		public void containerChildRemoved(ContainerChildEvent evt) {
-			removeItem(evt.getChild());			
+			removeItem(evt.getChild());		
 		}
 		
 	};
@@ -394,7 +402,7 @@ public class ContainerPane extends PNode implements CleanupPNode {
 		modelNameText = new UnmodifiableItemPNode(queryPen, canvas, item);
 		modelNameText.getItemText().addPropertyChangeListener(PNode.PROPERTY_BOUNDS, resizeOnEditChangeListener);
 		modelNameText.getWherePStyledText().addPropertyChangeListener(PNode.PROPERTY_BOUNDS, resizeOnEditChangeListener);
-		modelNameText.addQueryChangeListener(itemChangeListener);
+		modelNameText.addQueryChangeListener(guiItemChangeListener);
 		return modelNameText;
 	}
 	
@@ -580,7 +588,7 @@ public class ContainerPane extends PNode implements CleanupPNode {
 			containedItems.remove(itemNode);
 			itemNode.getItemText().removePropertyChangeListener(PNode.PROPERTY_BOUNDS, resizeOnEditChangeListener);
 			itemNode.getWherePStyledText().removePropertyChangeListener(PNode.PROPERTY_BOUNDS, resizeOnEditChangeListener);
-			itemNode.removeQueryChangeListener(itemChangeListener);
+			itemNode.removeQueryChangeListener(guiItemChangeListener);
 			for (int i = containedItemsLocation; i < containedItems.size(); i++) {
 				containedItems.get(i).translate(0, - modelNameText.getHeight() - BORDER_SIZE);
 			}
@@ -638,6 +646,7 @@ public class ContainerPane extends PNode implements CleanupPNode {
 	public void cleanup() {
 		model.removePropertyChangeListener(containerChangeListener);
 		model.removeChildListener(containerChildListener);
+		
 		for (Object o : getAllNodes()) {
 			if (o instanceof CleanupPNode && o != this) {
 				((CleanupPNode)o).cleanup();

@@ -146,6 +146,7 @@ public class UnmodifiableItemPNode extends PNode implements CleanupPNode {
 			} else if (evt.getPropertyName().equals("where")) {
 				whereText.getEditorPane().setText(item.getWhere());
 				whereText.syncWithDocument();
+				whereText.repaint();
 			}
 			
 			for (PropertyChangeListener l : queryChangeListeners) {

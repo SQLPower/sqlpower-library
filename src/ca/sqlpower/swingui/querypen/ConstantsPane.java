@@ -102,10 +102,17 @@ public class ConstantsPane extends PNode implements CleanupPNode {
 	private final List<ConstantPNode> constantPNodeList;
 
 	/**
+	 * This moves the PNode as the model's position moves.
+	 * <p>
 	 * This refires the property change event. This may no longer be necessary.
 	 */
 	private final PropertyChangeListener itemChangedListener = new PropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent evt) {
+			if (evt.getPropertyName().equals("position")) {
+				translate(model.getPosition().getX() - getGlobalBounds().getX(), 
+						model.getPosition().getY() - getGlobalBounds().getY());
+			}
+			
 			for (PropertyChangeListener l : changeListeners) {
 				l.propertyChange(evt);
 			}
