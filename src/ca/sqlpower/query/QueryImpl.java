@@ -1056,12 +1056,17 @@ public class QueryImpl implements Query {
 	    if (fromTableList.contains(container)) 
 	        throw new IllegalArgumentException("The container " + container.getName() + 
 	                " already exists in the query " + getName());
-		fromTableList.add(index, container);
-		container.addChildListener(getTableChildListener());
-		for (Item col : container.getItems()) {
-			addItem(col);
-		}
-		fireContainerAdded(container);
+	    try {
+	    	startCompoundEdit("Starting compound edit event from addTable in QueryImpl.");
+	    	fromTableList.add(index, container);
+	    	container.addChildListener(getTableChildListener());
+	    	for (Item col : container.getItems()) {
+	    		addItem(col);
+	    	}
+	    	fireContainerAdded(container);
+	    } finally {
+	    	endCompoundEdit();
+	    }
 	}
 	
 	/* (non-Javadoc)
@@ -1104,49 +1109,49 @@ public class QueryImpl implements Query {
      */
 	public void addJoin(SQLJoin join) {
 	    if (getJoins().contains(join)) 
-	        throw new IllegalArgumentException("The join " + join.getName() + 
-	                " already exists in the query " + getName());
-		join.addJoinChangeListener(joinChangeListener);
-		Item leftColumn = join.getLeftColumn();
-		Item rightColumn = join.getRightColumn();
-		Container leftContainer = leftColumn.getContainer();
-		Container rightContainer = rightColumn.getContainer();
-		if (joinMapping.get(leftContainer) == null) {
-			List<SQLJoin> joinList = new ArrayList<SQLJoin>();
-			joinList.add(join);
-			joinMapping.put(leftContainer, joinList);
-		} else {
-			if (joinMapping.get(leftContainer).size() > 0) {
-				SQLJoin prevJoin = joinMapping.get(leftContainer).get(0);
-				if (prevJoin.getLeftColumn().getContainer() == leftContainer) {
-					join.setLeftColumnOuterJoin(prevJoin.isLeftColumnOuterJoin());
-				} else if (prevJoin.getRightColumn().getContainer() == leftContainer) {
-					join.setLeftColumnOuterJoin(prevJoin.isRightColumnOuterJoin());
-				}
-			}
-				
-			joinMapping.get(leftContainer).add(join);
-		}
+	    	throw new IllegalArgumentException("The join " + join.getName() + 
+	    			" already exists in the query " + getName());
+	    join.addJoinChangeListener(joinChangeListener);
+	    Item leftColumn = join.getLeftColumn();
+	    Item rightColumn = join.getRightColumn();
+	    Container leftContainer = leftColumn.getContainer();
+	    Container rightContainer = rightColumn.getContainer();
+	    if (joinMapping.get(leftContainer) == null) {
+	    	List<SQLJoin> joinList = new ArrayList<SQLJoin>();
+	    	joinList.add(join);
+	    	joinMapping.put(leftContainer, joinList);
+	    } else {
+	    	if (joinMapping.get(leftContainer).size() > 0) {
+	    		SQLJoin prevJoin = joinMapping.get(leftContainer).get(0);
+	    		if (prevJoin.getLeftColumn().getContainer() == leftContainer) {
+	    			join.setLeftColumnOuterJoin(prevJoin.isLeftColumnOuterJoin());
+	    		} else if (prevJoin.getRightColumn().getContainer() == leftContainer) {
+	    			join.setLeftColumnOuterJoin(prevJoin.isRightColumnOuterJoin());
+	    		}
+	    	}
 
-		if (joinMapping.get(rightContainer) == null) {
-			List<SQLJoin> joinList = new ArrayList<SQLJoin>();
-			joinList.add(join);
-			joinMapping.put(rightContainer, joinList);
-		} else {
-			if (joinMapping.get(rightContainer).size() > 0) {
-				SQLJoin prevJoin = joinMapping.get(rightContainer).get(0);
-				if (prevJoin.getLeftColumn().getContainer() == rightContainer) {
-					join.setRightColumnOuterJoin(prevJoin.isLeftColumnOuterJoin());
-				} else if (prevJoin.getRightColumn().getContainer() == rightContainer) {
-					join.setRightColumnOuterJoin(prevJoin.isRightColumnOuterJoin());
-				} else {
-					throw new IllegalStateException("A table contains a join that is not connected to any of its columns in the table.");
-				}
-			}
-			joinMapping.get(rightContainer).add(join);
-		}
-		join.setParent(this);
-		fireJoinAdded(join);
+	    	joinMapping.get(leftContainer).add(join);
+	    }
+
+	    if (joinMapping.get(rightContainer) == null) {
+	    	List<SQLJoin> joinList = new ArrayList<SQLJoin>();
+	    	joinList.add(join);
+	    	joinMapping.put(rightContainer, joinList);
+	    } else {
+	    	if (joinMapping.get(rightContainer).size() > 0) {
+	    		SQLJoin prevJoin = joinMapping.get(rightContainer).get(0);
+	    		if (prevJoin.getLeftColumn().getContainer() == rightContainer) {
+	    			join.setRightColumnOuterJoin(prevJoin.isLeftColumnOuterJoin());
+	    		} else if (prevJoin.getRightColumn().getContainer() == rightContainer) {
+	    			join.setRightColumnOuterJoin(prevJoin.isRightColumnOuterJoin());
+	    		} else {
+	    			throw new IllegalStateException("A table contains a join that is not connected to any of its columns in the table.");
+	    		}
+	    	}
+	    	joinMapping.get(rightContainer).add(join);
+	    }
+	    join.setParent(this);
+	    fireJoinAdded(join);
 	}
 	
 	/* (non-Javadoc)
