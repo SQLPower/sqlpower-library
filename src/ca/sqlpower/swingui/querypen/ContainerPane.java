@@ -389,12 +389,7 @@ public class ContainerPane extends PNode implements CleanupPNode {
 				logger.debug("Setting position " + getGlobalBounds().getX() + ", " + getGlobalBounds().getY());
 			}
 		});
-//		addPropertyChangeListener(new PropertyChangeListener() {
-//			public void propertyChange(PropertyChangeEvent evt) {
-//				model.setPosition(new Point2D.Double(getGlobalBounds().getX(), getGlobalBounds().getY()));
-//				logger.debug("Setting position " + getGlobalBounds().getX() + ", " + getGlobalBounds().getY());
-//			}
-//		});
+		
 		setVisibleAliasText();
 
 		PNotificationCenter.defaultCenter().addListener(this, "setFocusAppearance", PSelectionEventHandler.SELECTION_CHANGED_NOTIFICATION, null);
