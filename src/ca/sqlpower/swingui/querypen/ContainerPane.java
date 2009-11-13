@@ -45,6 +45,7 @@ import ca.sqlpower.query.Item;
 import edu.umd.cs.piccolo.PCanvas;
 import edu.umd.cs.piccolo.PNode;
 import edu.umd.cs.piccolo.event.PBasicInputEventHandler;
+import edu.umd.cs.piccolo.event.PDragSequenceEventHandler;
 import edu.umd.cs.piccolo.event.PInputEvent;
 import edu.umd.cs.piccolo.nodes.PPath;
 import edu.umd.cs.piccolo.util.PBounds;
@@ -380,12 +381,20 @@ public class ContainerPane extends PNode implements CleanupPNode {
 		});
 		closeButton.setTransparency(0);
 		
-		addPropertyChangeListener(new PropertyChangeListener() {
-			public void propertyChange(PropertyChangeEvent evt) {
+		addInputEventListener(new PDragSequenceEventHandler() {
+			@Override
+			protected void endDrag(PInputEvent e) {
+				super.endDrag(e);
 				model.setPosition(new Point2D.Double(getGlobalBounds().getX(), getGlobalBounds().getY()));
 				logger.debug("Setting position " + getGlobalBounds().getX() + ", " + getGlobalBounds().getY());
 			}
 		});
+//		addPropertyChangeListener(new PropertyChangeListener() {
+//			public void propertyChange(PropertyChangeEvent evt) {
+//				model.setPosition(new Point2D.Double(getGlobalBounds().getX(), getGlobalBounds().getY()));
+//				logger.debug("Setting position " + getGlobalBounds().getX() + ", " + getGlobalBounds().getY());
+//			}
+//		});
 		setVisibleAliasText();
 
 		PNotificationCenter.defaultCenter().addListener(this, "setFocusAppearance", PSelectionEventHandler.SELECTION_CHANGED_NOTIFICATION, null);

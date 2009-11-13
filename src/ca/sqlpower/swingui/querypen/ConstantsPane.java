@@ -40,6 +40,8 @@ import ca.sqlpower.query.Item;
 import ca.sqlpower.query.StringItem;
 import edu.umd.cs.piccolo.PCanvas;
 import edu.umd.cs.piccolo.PNode;
+import edu.umd.cs.piccolo.event.PDragSequenceEventHandler;
+import edu.umd.cs.piccolo.event.PInputEvent;
 import edu.umd.cs.piccolo.nodes.PPath;
 import edu.umd.cs.piccolo.util.PPickPath;
 import edu.umd.cs.piccolox.event.PNotification;
@@ -284,11 +286,12 @@ public class ConstantsPane extends PNode implements CleanupPNode {
 			addItem(item);
 		}
 		
-		addPropertyChangeListener(new PropertyChangeListener() {
-			public void propertyChange(PropertyChangeEvent evt) {
-				if (evt.getPropertyName().equals(PNode.PROPERTY_FULL_BOUNDS)) {
-					model.setPosition(new Point2D.Double(getGlobalBounds().getX(), getGlobalBounds().getY()));
-				}
+		addInputEventListener(new PDragSequenceEventHandler() {
+			@Override
+			protected void endDrag(PInputEvent e) {
+				super.endDrag(e);
+				model.setPosition(new Point2D.Double(getGlobalBounds().getX(), getGlobalBounds().getY()));
+				logger.debug("Setting position " + getGlobalBounds().getX() + ", " + getGlobalBounds().getY());
 			}
 		});
 
