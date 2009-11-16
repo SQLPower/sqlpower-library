@@ -73,6 +73,19 @@ public abstract class AbstractSPObject implements SPObject {
 		addChildImpl(child, index);
 	}
 	
+    /**
+     * This is the object specific implementation of
+     * {@link #addChild(SPObject, int)}. There are checks in the
+     * {@link #addChild(SPObject, int))} method to ensure that the object given
+     * here is a valid child type of this object.
+     * <p>
+     * This method should be overwritten if children are allowed.
+     * 
+     * @param child
+     *            The child to add to this object.
+     * @param index
+     *            The index to add the child at.
+     */
 	protected void addChildImpl(SPObject child, int index) {
 		throw new UnsupportedOperationException("This SPObject item cannot have children. " +
 				"This class is " + getClass() + " and trying to add " + child.getName() + 
@@ -139,6 +152,15 @@ public abstract class AbstractSPObject implements SPObject {
 	    
 	    return false;
 	}
+	
+    /**
+     * This is the object specific implementation of removeChild. There are
+     * checks in the removeChild method to ensure the child being removed has no
+     * dependencies and is a child of this object.
+     * 
+     * @see #removeChild(SPObject)
+     */
+	protected abstract boolean removeChildImpl(SPObject child);
 
 	public void removeSPListener(SPListener l) {
         synchronized (listeners) {
