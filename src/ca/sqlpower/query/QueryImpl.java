@@ -376,6 +376,7 @@ public class QueryImpl implements Query {
 		
 		if (dataSource != null) {
 			setDataSourceWithoutSideEffects(dataSource);
+			setStreaming(dataSource.getParentType().getSupportsStreamQueries());
 		}
 		
 		if (prepopulateConstants) {
