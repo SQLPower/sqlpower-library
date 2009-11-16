@@ -79,6 +79,13 @@ public interface SQLPowerLibraryObject {
      * {@link SQLPowerLibraryObject}s can be a child to any {@link SQLPowerLibraryObject}.
      */
     boolean allowsChildren();
+
+	/**
+	 * Returns a list of allowed {@link SQLPowerLibraryObject} child class types
+	 * that this class allows. This list is empty if and only if
+	 * {@link #allowsChildren()} is false.
+	 */
+    List<Class<? extends SQLPowerLibraryObject>> allowedChildTypes();
     
     /**
      * Returns the position in the list that would be returned by getChildren()
@@ -202,5 +209,23 @@ public interface SQLPowerLibraryObject {
      * Returns a list of all children of the given type
      */
     public <T extends SQLPowerLibraryObject> List<T> getChildren(Class<T> type);
-	
+
+	/**
+	 * Compares two {@link SQLPowerLibraryObject} classes in terms of their
+	 * child position offsets defined by {@link #childPositionOffset(Class)} as
+	 * if the list of children were populated with an object of each class.
+	 * 
+	 * @param c1
+	 *            The first {@link SQLPowerLibraryObject} class to be compared.
+	 * @param c2
+	 *            The second {@link SQLPowerLibraryObject} class to be compared.
+	 * @return -1 if c1 comes before c2. 0 if c1 is the same class as c2. 1 if
+	 *         c1 comes after c2.
+	 * @throws IllegalArgumentException
+	 *             Thrown if c1 or c2 is not a valid child type which is defined
+	 *             by {@link #allowedChildTypes()}.
+	 */
+    public int compare(Class<? extends SQLPowerLibraryObject> c1, 
+    		Class<? extends SQLPowerLibraryObject> c2);
+    
 }
