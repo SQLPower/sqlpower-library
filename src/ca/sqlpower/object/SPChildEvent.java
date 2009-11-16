@@ -23,7 +23,7 @@ package ca.sqlpower.object;
  * An event that is passed to listeners when a child is added to or removed from
  * its parent.
  */
-public class SQLPowerLibraryChildEvent {
+public class SPChildEvent {
 
     /**
      * The type of event that signals if a child is being added or removed.
@@ -43,18 +43,18 @@ public class SQLPowerLibraryChildEvent {
     /**
      * The parent that gained or lost a child.
      */
-    private final SQLPowerLibraryObject source;
+    private final SPObject source;
 
 	/**
 	 * The child type for which the parent gained or lost a child (
-	 * SQLPowerLibraryObjects support multiple child types).
+	 * SPObjects support multiple child types).
 	 */
-    private final Class<? extends SQLPowerLibraryObject> childType;
+    private final Class<? extends SPObject> childType;
     
     /**
      * The child that was added or removed.
      */
-    private final SQLPowerLibraryObject child;
+    private final SPObject child;
 
     /**
      * The index of the child that was added or removed. This index is the
@@ -81,16 +81,16 @@ public class SQLPowerLibraryChildEvent {
      *            The parent that gained or lost a child.
      * @param childType
      *            The child type for which the parent gained or lost a child
-     *            (SQLPowerLibraryObjects support multiple child types).
+     *            (SPObjects support multiple child types).
      * @param child
      *            The child that was added or removed.
      * @param index
      *            The index of the child that was added or removed (this is the
      *            overall index in the parent, not the index within one child type).
      */
-    public SQLPowerLibraryChildEvent(SQLPowerLibraryObject source, 
-    		Class<? extends SQLPowerLibraryObject> childType, 
-    		SQLPowerLibraryObject child, int index, EventType type) {
+    public SPChildEvent(SPObject source, 
+    		Class<? extends SPObject> childType, 
+    		SPObject child, int index, EventType type) {
         this.source = source;
         this.childType = childType;
         this.child = child;
@@ -98,15 +98,15 @@ public class SQLPowerLibraryChildEvent {
         this.type = type;
     }
 
-    public SQLPowerLibraryObject getSource() {
+    public SPObject getSource() {
         return source;
     }
 
-    public Class<? extends SQLPowerLibraryObject> getChildType() {
+    public Class<? extends SPObject> getChildType() {
         return childType;
     }
 
-    public SQLPowerLibraryObject getChild() {
+    public SPObject getChild() {
         return child;
     }
 

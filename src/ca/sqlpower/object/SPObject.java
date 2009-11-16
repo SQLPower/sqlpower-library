@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
  * This interface represents any kind of object within this library or extending
  * projects that can have a parent and multiple children.
  */
-public interface SQLPowerLibraryObject {
+public interface SPObject {
 	
     /**
      * Adds a listener that will be notified when children are added to or
@@ -37,26 +37,26 @@ public interface SQLPowerLibraryObject {
      * 
      * @param l
      *            The listener to add.
-     * @see SQLPowerLibraryListener
+     * @see SPListener
      */
-    void addSQLPowerLibraryListener(SQLPowerLibraryListener l);
+    void addSPListener(SPListener l);
 
     /**
-     * Removes a listener that was previously attached to this {@link SQLPowerLibraryObject}.
+     * Removes a listener that was previously attached to this {@link SPObject}.
      * 
      * @param l
      *            The listener to remove.
      */
-    void removeSQLPowerLibraryListener(SQLPowerLibraryListener l);
+    void removeSPListener(SPListener l);
 
 	/**
-	 * Returns the parent of this {@link SQLPowerLibraryObject}. This will be
+	 * Returns the parent of this {@link SPObject}. This will be
 	 * null when the object is first created until it is added as a child to
 	 * another object. If this object is never added as a child to another
 	 * object this will remain null and the object may be treated as the root
-	 * node of a {@link SQLPowerLibraryObject} tree.
+	 * node of a {@link SPObject} tree.
 	 */
-	SQLPowerLibraryObject getParent();
+	SPObject getParent();
 	
     /**
      * Sets the parent of this object to the given object. This should only be
@@ -65,34 +65,34 @@ public interface SQLPowerLibraryObject {
      * @param parent
      *            The new parent of this object.
      */
-	void setParent(SQLPowerLibraryObject parent);
+	void setParent(SPObject parent);
 
 	/**
 	 * Returns an unmodifiable list of the children in this
-	 * {@link SQLPowerLibraryObject}. If there are no children in this
-	 * {@link SQLPowerLibraryObject}, an empty list should be returned.
+	 * {@link SPObject}. If there are no children in this
+	 * {@link SPObject}, an empty list should be returned.
 	 */
-    List<? extends SQLPowerLibraryObject> getChildren();
+    List<? extends SPObject> getChildren();
 
     /**
      * Returns true if this object may contain children. Not all types of
-     * {@link SQLPowerLibraryObject}s can be a child to any {@link SQLPowerLibraryObject}.
+     * {@link SPObject}s can be a child to any {@link SPObject}.
      */
     boolean allowsChildren();
 
 	/**
-	 * Returns a list of allowed {@link SQLPowerLibraryObject} child class types
+	 * Returns a list of allowed {@link SPObject} child class types
 	 * that this class allows. This list is empty if and only if
 	 * {@link #allowsChildren()} is false.
 	 */
-    List<Class<? extends SQLPowerLibraryObject>> allowedChildTypes();
+    List<Class<? extends SPObject>> allowedChildTypes();
     
     /**
      * Returns the position in the list that would be returned by getChildren()
      * that the first object of type childClass is, or where it would be if
      * there were any children of that type.
      */
-    int childPositionOffset(Class<? extends SQLPowerLibraryObject> childType);
+    int childPositionOffset(Class<? extends SPObject> childType);
 
 	/**
 	 * Removes the given child object from this object.
@@ -108,10 +108,12 @@ public interface SQLPowerLibraryObject {
 	 *             Thrown if the given child has dependencies and cannot be
 	 *             removed from this object.
 	 */
-    boolean removeChild(SQLPowerLibraryObject child) throws ObjectDependentException, IllegalArgumentException;
+    boolean removeChild(SPObject child) throws ObjectDependentException, IllegalArgumentException;
 
 	/**
-	 * Adds the given child object to this object.
+	 * Adds the given child object to this object. Throws an
+	 * {@link IllegalArgumentException} if the given object is not a valid child
+	 * of this object.
 	 * 
 	 * @param child
 	 *            The object to add as a child of this object.
@@ -121,10 +123,8 @@ public interface SQLPowerLibraryObject {
 	 *            the position of the child in the list of children of a
 	 *            specific type. The position of the child is in respect to
 	 *            children of its type.
-	 * @throws IllegalArgumentException
-	 *             If the given child is not a valid child type of the object.
 	 */
-    void addChild(SQLPowerLibraryObject child, int index) throws IllegalArgumentException;
+    void addChild(SPObject child, int index);
     
     /**
      * Returns the short name for this object.
@@ -153,16 +153,16 @@ public interface SQLPowerLibraryObject {
      * must also not be dependent on the given dependency when this method
      * returns. This may remove this object from its parent if necessary.
      */
-    void removeDependency(@Nonnull SQLPowerLibraryObject dependency);
+    void removeDependency(@Nonnull SPObject dependency);
 
     /**
-     * Returns a list of all {@link SQLPowerLibraryObject}s that this SQLPowerLibraryObject is
-     * dependent on. Children of a SQLPowerLibraryObject are not dependencies and will not
-     * be returned in this list. If there are no objects this SQLPowerLibraryObject object is
+     * Returns a list of all {@link SPObject}s that this SPObject is
+     * dependent on. Children of an SPObject are not dependencies and will not
+     * be returned in this list. If there are no objects this SPObject is
      * dependent on an empty list should be returned. These are only the
      * immediate dependencies of this object.
      */
-    List<SQLPowerLibraryObject> getDependencies();
+    List<SPObject> getDependencies();
 
     /**
      * Disconnects this object from any other objects it is listening to, closes
@@ -170,12 +170,12 @@ public interface SQLPowerLibraryObject {
      * ensure that this object can be discarded. Once this object has been
      * cleaned up none of its methods should be called. This method will only
      * cleanup this object and not its descendants. To clean up this object and
-     * its descendants see {@link SQLPowerUtils.#cleanupSQLPowerLibraryObject(SQLPowerLibraryObject)}.
+     * its descendants see {@link SQLPowerUtils.#cleanupSPObject(SPObject)}.
      * <p>
      * Calling cleanup does not mean the object must be disconnected from the
      * workspace as all objects will be cleaned up when the session is closing.
      * The object can also still have other objects dependent on it unlike
-     * {@link #removeChild(SQLPowerLibraryObject)}.
+     * {@link #removeChild(SPObject)}.
      * 
      * @return A collection of exceptions and errors that occurred during
      *         cleanup if any occurred.
@@ -208,24 +208,23 @@ public interface SQLPowerLibraryObject {
     /**
      * Returns a list of all children of the given type
      */
-    public <T extends SQLPowerLibraryObject> List<T> getChildren(Class<T> type);
+    <T extends SPObject> List<T> getChildren(Class<T> type);
 
 	/**
-	 * Compares two {@link SQLPowerLibraryObject} classes in terms of their
+	 * Compares two {@link SPObject} classes in terms of their
 	 * child position offsets defined by {@link #childPositionOffset(Class)} as
 	 * if the list of children were populated with an object of each class.
+	 * Throws an {@link IllegalArgumentException} if one of the given classes
+	 * are not in the list of {@link #allowedChildTypes()}.
 	 * 
 	 * @param c1
-	 *            The first {@link SQLPowerLibraryObject} class to be compared.
+	 *            The first {@link SPObject} class to be compared.
 	 * @param c2
-	 *            The second {@link SQLPowerLibraryObject} class to be compared.
+	 *            The second {@link SPObject} class to be compared.
 	 * @return -1 if c1 comes before c2. 0 if c1 is the same class as c2. 1 if
 	 *         c1 comes after c2.
-	 * @throws IllegalArgumentException
-	 *             Thrown if c1 or c2 is not a valid child type which is defined
-	 *             by {@link #allowedChildTypes()}.
 	 */
-    public int compare(Class<? extends SQLPowerLibraryObject> c1, 
-    		Class<? extends SQLPowerLibraryObject> c2);
+     int compare(Class<? extends SPObject> c1, 
+    		Class<? extends SPObject> c2);
     
 }

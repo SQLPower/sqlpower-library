@@ -24,10 +24,10 @@ import java.beans.PropertyChangeListener;
 import ca.sqlpower.util.TransactionEvent;
 
 /**
- * This listener can be added to any {@link SQLPowerLibraryObject}s and is notified of
+ * This listener can be added to any {@link SPObject}s and is notified of
  * property and child changes.
  */
-public interface SQLPowerLibraryListener extends PropertyChangeListener {
+public interface SPListener extends PropertyChangeListener {
 
     /**
      * Called when a child is added to an object this listener is attached to.
@@ -35,14 +35,14 @@ public interface SQLPowerLibraryListener extends PropertyChangeListener {
      * @param e
      *            An event describing the child added.
      */
-    void sqlPowerLibraryChildAdded(SQLPowerLibraryChildEvent e);
+    void sqlPowerLibraryChildAdded(SPChildEvent e);
     /**
      * Called when a child is removed from an object this listener is attached to.
      * 
      * @param e
      *            An event describing the child removed.
      */
-    void sqlPowerLibraryChildRemoved(SQLPowerLibraryChildEvent e);
+    void sqlPowerLibraryChildRemoved(SPChildEvent e);
 
     /**
      * Called when a transaction has started. The events fired after the
