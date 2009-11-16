@@ -10,6 +10,9 @@ import javax.annotation.Nullable;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.CleanupExceptions;
+import ca.sqlpower.object.SQLPowerLibraryObject;
+
 public class SQLPowerUtils {
 	
 	public static boolean areEqual (Object o1, Object o2) {
@@ -106,5 +109,23 @@ public class SQLPowerUtils {
     	}
     	output.flush();
     	return total;
+    }
+
+	/**
+	 * This method will recursively clean up a given object and all of its
+	 * descendants.
+	 * 
+	 * @param o
+	 *            The object to clean up, including its dependencies.
+	 * @return A collection of exceptions and errors that occurred during
+	 *         cleanup if any occurred.
+	 */
+    public static CleanupExceptions cleanupSQLPowerLibraryObject(SQLPowerLibraryObject o) {
+        CleanupExceptions exceptions = new CleanupExceptions();
+        exceptions.add(o.cleanup());
+        for (SQLPowerLibraryObject child : o.getChildren()) {
+            exceptions.add(cleanupSQLPowerLibraryObject(child));
+        }
+        return exceptions;
     }
 }
