@@ -11,7 +11,7 @@ import javax.annotation.Nullable;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.CleanupExceptions;
-import ca.sqlpower.object.SQLPowerLibraryObject;
+import ca.sqlpower.object.SPObject;
 
 public class SQLPowerUtils {
 	
@@ -120,11 +120,11 @@ public class SQLPowerUtils {
 	 * @return A collection of exceptions and errors that occurred during
 	 *         cleanup if any occurred.
 	 */
-    public static CleanupExceptions cleanupSQLPowerLibraryObject(SQLPowerLibraryObject o) {
+    public static CleanupExceptions cleanupSPObject(SPObject o) {
         CleanupExceptions exceptions = new CleanupExceptions();
         exceptions.add(o.cleanup());
-        for (SQLPowerLibraryObject child : o.getChildren()) {
-            exceptions.add(cleanupSQLPowerLibraryObject(child));
+        for (SPObject child : o.getChildren()) {
+            exceptions.add(cleanupSPObject(child));
         }
         return exceptions;
     }
