@@ -28,6 +28,7 @@ import java.util.UUID;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.SPChildEvent.EventType;
+import ca.sqlpower.util.SessionNotFoundException;
 import ca.sqlpower.util.TransactionEvent;
 
 public abstract class AbstractSPObject implements SPObject {
@@ -60,13 +61,13 @@ public abstract class AbstractSPObject implements SPObject {
     /**
      * This UUID is for saving and loading to allow saved files to be diff friendly.
      */
-    private String uuid;
+    protected String uuid;
 
-	public void addChild(SPObject child, int index)
+	public final void addChild(SPObject child, int index)
 			throws IllegalArgumentException {
 		if (!allowedChildTypes().contains(child.getClass())) {
 			throw new IllegalArgumentException("Cannot add child of type " + child.getClass() + 
-					" because it is not a valid child class type.");
+					" to parent of type " + this.getClass() + " because it is not a valid child class type.");
 		}
 		
 		child.setParent(this);
@@ -130,6 +131,13 @@ public abstract class AbstractSPObject implements SPObject {
 		}
 		return children;
 	}
+	
+	public int compare(Class<? extends SPObject> c1,
+			Class<? extends SPObject> c2) {
+		int p1 = childPositionOffset(c1);
+		int p2 = childPositionOffset(c2);
+		return (int) Math.signum(p2 - p1);
+	}
 
 	public String getName() {
 		return name;
@@ -143,6 +151,7 @@ public abstract class AbstractSPObject implements SPObject {
 		return uuid;
 	}
 
+
 	public boolean removeChild(SPObject child)
 			throws ObjectDependentException, IllegalArgumentException {
 	    if (!getChildren().contains(child)) {
@@ -150,7 +159,7 @@ public abstract class AbstractSPObject implements SPObject {
 	                + " is not a child of " + getName() + " of type " + getClass());
 	    }
 	    
-	    return false;
+	    return removeChildImpl(child);
 	}
 	
     /**
@@ -195,7 +204,7 @@ public abstract class AbstractSPObject implements SPObject {
 			this.uuid = uuid;
 		}
 		
-		firePropertyChange("uuid", oldUUID, this.uuid);
+		firePropertyChange("UUID", oldUUID, this.uuid);
 	}
 	
     /**
@@ -216,11 +225,10 @@ public abstract class AbstractSPObject implements SPObject {
     protected SPChildEvent fireChildAdded(Class<? extends SPObject> type, SPObject child, int index) {
     	logger.debug("Child Added: " + type + " notifying " + listeners.size() + " listeners");
     	
-    	// XXX This was taken from the AbstractWabitObject implementation of fireChildAdded and should be reworked into the library if necessary.
-//    	if (!isForegroundThread()) {
-//    		throw new IllegalStateException("Event for adding the child " + child.getName() + 
-//    				" must fired on the foreground thread.");
-//    	}
+    	if (!isForegroundThread()) {
+    		throw new IllegalStateException("Event for adding the child " + child.getName() + 
+    				" must fired on the foreground thread.");
+    	}
     	
         synchronized(listeners) {
             if (listeners.isEmpty()) return null;
@@ -229,7 +237,7 @@ public abstract class AbstractSPObject implements SPObject {
         synchronized(listeners) {
         	for (int i = listeners.size() - 1; i >= 0; i--) {
         		final SPListener listener = listeners.get(i);
-        		listener.sqlPowerLibraryChildAdded(e);
+        		listener.childAdded(e);
         	}
         }
         return e;
@@ -253,11 +261,10 @@ public abstract class AbstractSPObject implements SPObject {
     protected SPChildEvent fireChildRemoved(Class<? extends SPObject> type, SPObject child, int index) {
     	logger.debug("Child Removed: " + type + " notifying " + listeners.size() + " listeners: " + listeners);
     	
-    	// XXX This was taken from the AbstractWabitObject implementation of fireChildRemoved and should be reworked into the library if necessary.
-//    	if (!isForegroundThread()) {
-//    		throw new IllegalStateException("Event for removing the child " + child.getName() + 
-//    				" must fired on the foreground thread.");
-//    	}
+    	if (!isForegroundThread()) {
+    		throw new IllegalStateException("Event for removing the child " + child.getName() + 
+    				" must fired on the foreground thread.");
+    	}
     	
         synchronized(listeners) {
             if (listeners.isEmpty()) return null;
@@ -266,7 +273,7 @@ public abstract class AbstractSPObject implements SPObject {
         synchronized(listeners) {
         	for (int i = listeners.size() - 1; i >= 0; i--) {
         		final SPListener listener = listeners.get(i);
-        		listener.sqlPowerLibraryChildRemoved(e);
+        		listener.childRemoved(e);
         	}
         }
         return e;
@@ -283,11 +290,10 @@ public abstract class AbstractSPObject implements SPObject {
             final boolean newValue) {
     	if (oldValue == newValue) return null;
     	
-    	// XXX This was taken from the AbstractWabitObject implementation of firePropertyChange and should be reworked into the library if necessary.
-//    	if (!isForegroundThread()) {
-//    		throw new IllegalStateException("Event for property change " + propertyName + 
-//    				" must fired on the foreground thread.");
-//    	}
+    	if (!isForegroundThread()) {
+    		throw new IllegalStateException("Event for property change " + propertyName + 
+    				" must fired on the foreground thread.");
+    	}
         synchronized(listeners) {
             if (listeners.size() == 0) return null;
         }
@@ -311,11 +317,10 @@ public abstract class AbstractSPObject implements SPObject {
             final int newValue) {
     	if (oldValue == newValue) return null;
     	
-    	// XXX This was taken from the AbstractWabitObject implementation of firePropertyChange and should be reworked into the library if necessary.
-//    	if (!isForegroundThread()) {
-//    		throw new IllegalStateException("Event for property change " + propertyName + 
-//    				" must fired on the foreground thread.");
-//    	}
+    	if (!isForegroundThread()) {
+    		throw new IllegalStateException("Event for property change " + propertyName + 
+    				" must fired on the foreground thread.");
+    	}
     	
         synchronized(listeners) {
             if (listeners.size() == 0) return null;
@@ -341,11 +346,10 @@ public abstract class AbstractSPObject implements SPObject {
     	if ((oldValue == null && newValue == null)
     			|| (oldValue != null && oldValue.equals(newValue))) return null; 
     	
-    	// XXX This was taken from the AbstractWabitObject implementation of firePropertyChange and should be reworked into the library if necessary.
-//    	if (!isForegroundThread()) {
-//    		throw new IllegalStateException("Event for property change " + propertyName + 
-//    				" must fired on the foreground thread.");
-//    	}
+    	if (!isForegroundThread()) {
+    		throw new IllegalStateException("Event for property change " + propertyName + 
+    				" must fired on the foreground thread.");
+    	}
     	
         synchronized(listeners) {
             if (listeners.size() == 0) return null;
@@ -372,11 +376,10 @@ public abstract class AbstractSPObject implements SPObject {
      *         testing purposes.
      */
     protected TransactionEvent fireTransactionStarted(final String message) {
-    	// XXX This was taken from the AbstractWabitObject implementation of fireTransactionStarted and should be reworked into the library if necessary.
-//    	if (!isForegroundThread()) {
-//    		throw new IllegalStateException("Event for a transaction start" + 
-//    				" must fired on the foreground thread.");
-//    	}
+    	if (!isForegroundThread()) {
+    		throw new IllegalStateException("Event for a transaction start" + 
+    				" must fired on the foreground thread.");
+    	}
         synchronized (listeners) {
             if (listeners.size() == 0) return null;            
         }
@@ -396,11 +399,10 @@ public abstract class AbstractSPObject implements SPObject {
      *         testing purposes.
      */
     protected TransactionEvent fireTransactionEnded() {
-    	// XXX This was taken from the AbstractWabitObject implementation of fireTransactionEnded and should be reworked into the library if necessary.
-//    	if (!isForegroundThread()) {
-//    		throw new IllegalStateException("Event for a transaction end" + 
-//    				" must fired on the foreground thread.");
-//    	}
+    	if (!isForegroundThread()) {
+    		throw new IllegalStateException("Event for a transaction end" + 
+    				" must fired on the foreground thread.");
+    	}
         synchronized (listeners) {
             if (listeners.size() == 0) return null;            
         }
@@ -421,11 +423,10 @@ public abstract class AbstractSPObject implements SPObject {
      *         testing purposes.
      */
     protected TransactionEvent fireTransactionRollback(final String message) {
-    	// XXX This was taken from the AbstractWabitObject implementation of fireTransactionRollback and should be reworked into the library if necessary.
-//    	if (!isForegroundThread()) {
-//    		throw new IllegalStateException("Event for a transaction rollback" + 
-//    				" must fired on the foreground thread.");
-//    	}
+    	if (!isForegroundThread()) {
+    		throw new IllegalStateException("Event for a transaction rollback" + 
+    				" must fired on the foreground thread.");
+    	}
         synchronized (listeners) {
             if (listeners.size() == 0) return null;            
         }
@@ -437,6 +438,50 @@ public abstract class AbstractSPObject implements SPObject {
         }
         return evt;
     }
+    
+    protected boolean isForegroundThread() {
+		try {
+			return getSession().isForegroundThread();
+		} catch (SessionNotFoundException e) {
+			return true;
+		}
+	}
+    
+    /**
+     * Calls the runInBackground method on the session this object is attached
+     * to if it exists. If this object is not attached to a session, which can
+     * occur when loading, copying, or creating a new object, the runner will be
+     * run on the current thread due to not being able to run elsewhere. Any
+     * WabitObject that wants to run a runnable in the background should call to
+     * this method instead of to the session.
+     * 
+     * @see WabitSession#runInBackground(Runnable)
+     */
+	protected void runInBackground(Runnable runner) {
+	    try {
+	        getSession().runInBackground(runner);
+	    } catch (SessionNotFoundException e) {
+	        runner.run();
+	    }
+	}
+	
+	 /**
+     * Calls the runInForeground method on the session this object is attached
+     * to if it exists. If this object is not attached to a session, which can
+     * occur when loading, copying, or creating a new object, the runner will be
+     * run on the current thread due to not being able to run elsewhere. Any
+     * WabitObject that wants to run a runnable in the foreground should call to
+     * this method instead of to the session.
+     * 
+     * @see WabitSession#runInBackground(Runnable)
+     */
+	protected void runInForeground(Runnable runner) {
+	    try {
+	        getSession().runInForeground(runner);
+	    } catch (SessionNotFoundException e) {
+	        runner.run();
+	    }
+	}
     
     @Override
     public boolean equals(Object obj) {

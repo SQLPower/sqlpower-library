@@ -24,6 +24,9 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import ca.sqlpower.util.SPSession;
+import ca.sqlpower.util.SessionNotFoundException;
+
 /**
  * This interface represents any kind of object within this library or extending
  * projects that can have a parent and multiple children.
@@ -162,7 +165,7 @@ public interface SPObject {
      * dependent on an empty list should be returned. These are only the
      * immediate dependencies of this object.
      */
-    List<SPObject> getDependencies();
+    List<? extends SPObject> getDependencies();
 
     /**
      * Disconnects this object from any other objects it is listening to, closes
@@ -196,6 +199,11 @@ public interface SPObject {
      */
     void commit();
 
+    /**
+     * Gets the session that contains this SPObject
+     */
+    SPSession getSession();
+    
 	/**
 	 * Signals the roll back of a transaction. The events of the transaction
 	 * should not be acted on and/or should be undone.
@@ -209,7 +217,7 @@ public interface SPObject {
      * Returns a list of all children of the given type
      */
     <T extends SPObject> List<T> getChildren(Class<T> type);
-
+    
 	/**
 	 * Compares two {@link SPObject} classes in terms of their
 	 * child position offsets defined by {@link #childPositionOffset(Class)} as

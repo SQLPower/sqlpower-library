@@ -35,14 +35,14 @@ public interface SPListener extends PropertyChangeListener {
      * @param e
      *            An event describing the child added.
      */
-    void sqlPowerLibraryChildAdded(SPChildEvent e);
+    void childAdded(SPChildEvent e);
     /**
      * Called when a child is removed from an object this listener is attached to.
      * 
      * @param e
      *            An event describing the child removed.
      */
-    void sqlPowerLibraryChildRemoved(SPChildEvent e);
+    void childRemoved(SPChildEvent e);
 
     /**
      * Called when a transaction has started. The events fired after the

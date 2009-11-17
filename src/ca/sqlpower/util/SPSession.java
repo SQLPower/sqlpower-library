@@ -40,9 +40,9 @@ public interface SPSession {
      * called on the foreground thread then it will be run on this thread is
      * they are the same.
      * <p>
-     * If you are calling this from a {@link WabitObject} that extends
-     * {@link AbstractWabitObject} you should use the
-     * {@link AbstractWabitObject#runInForeground(Runnable)} method instead
+     * If you are calling this from a {@link SPObject} that extends
+     * {@link AbstractSPObject} you should use the
+     * {@link AbstractSPObject#runInForeground(Runnable)} method instead
      * 
      * @param runner
      *            The runnable to run in the foreground.
@@ -66,5 +66,13 @@ public interface SPSession {
      *            The runnable to run in the background.
      */
     void runInBackground(Runnable runner);
+    
+    /**
+	 * Returns true if the current thread is the thread defined as the
+	 * foreground thread.
+	 * 
+	 * @see #runInForeground(Runnable)
+	 */
+    boolean isForegroundThread();
 	
 }
