@@ -278,12 +278,6 @@
          	<scope>compile</scope>
          </dependency>
          <dependency>
-         	<groupId>org.json</groupId>
-         	<artifactId>json</artifactId>
-         	<version>20090211</version>
-         	<scope>compile</scope>
-         </dependency>
-         <dependency>
          	<groupId>commons-codec</groupId>
          	<artifactId>commons-codec</artifactId>
          	<version>20041127.091804</version>
