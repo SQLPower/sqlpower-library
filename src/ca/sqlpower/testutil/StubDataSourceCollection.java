@@ -147,5 +147,9 @@ public class StubDataSourceCollection<T extends SPDataSource> implements DataSou
         }
         return null;
     }
+    
+    public URI getMondrianServerBaseURI() {
+    	return null;
+    }
 
 }

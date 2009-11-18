@@ -41,12 +41,6 @@ public class JDBCDataSource extends SPDataSource {
     
     public static final Logger logger = Logger.getLogger(JDBCDataSource.class);
     
-    /**
-     * JDBC driver pathname prefix that says to look for a JAR file resource on
-     * the remote SQL Power Enterprise server we're attached to.
-     */
-    public static final String SERVER = "server:";
-    
     /*
      * constants used as keys to get into the properties
      * map.  the shared heritage of this class explains why
@@ -99,13 +93,13 @@ public class JDBCDataSource extends SPDataSource {
                 if (location == null) {
                     logger.warn("Couldn't find built-in system resource \""+jarName+"\". Skipping it.");
                 }
-            } else if (jarFileName.startsWith(SERVER)) {
+            } else if (jarFileName.startsWith(SPDataSource.SERVER)) {
                 if (serverBaseURI == null) {
                     throw new IllegalArgumentException(
                             "The JDBC driver at " + jarFileName + " can't" +
                     " be located because no server base URI was specified");
                 }
-                String jarFilePath = jarFileName.substring(SERVER.length());
+                String jarFilePath = jarFileName.substring(SPDataSource.SERVER.length());
                 
                 //Need to decode the URI to a URL to convert escaped characters to their real values, 
                 //ie spaces described as %20 will be replaced by actual spaces

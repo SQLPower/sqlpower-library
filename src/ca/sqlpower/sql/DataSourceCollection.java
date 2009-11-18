@@ -134,6 +134,12 @@ public interface DataSourceCollection<T extends SPDataSource> {
     public URI getServerBaseURI();
     
     /**
+     * Returns the base URI that server: type Mondrian XML schemas are resolved
+     * against. May be set to null if server-based schema lookup is not in use.
+     */
+    public URI getMondrianServerBaseURI();
+    
+    /**
      * Adds the new data source type to this collection.  See also
      * {@link #mergeDataSourceType(JDBCDataSourceType)}
      * for a method that can update an existing entry.

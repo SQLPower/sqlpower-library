@@ -123,4 +123,8 @@ public class SpecificDataSourceCollection<T extends SPDataSource> implements Dat
         delegate.write(out);
     }
 
+	public URI getMondrianServerBaseURI() {
+		return delegate.getMondrianServerBaseURI();
+	}
+
 }

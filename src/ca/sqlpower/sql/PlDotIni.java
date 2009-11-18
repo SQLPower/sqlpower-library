@@ -141,19 +141,44 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 
 	    }
 	};
+
+	/**
+	 * A URI that Mondrian XML schemas can be retrieved from.
+	 */
+	private final URI mondrianServerBaseURI;
 	
     /**
      * Construct a PL.INI object, and set an Add Listener to save
      * the file when a database is added (bugid 1032).
      */
     public PlDotIni() {
-        listeners = new ArrayList<DatabaseListChangeListener>();
-        listeners.add(saver);
+        this(null);
+    }
+    
+    /**
+     * Constructs a data source collection with a URI that defines where to retrieve
+     * JDBC drivers from the server.
+     */
+    public PlDotIni(URI serverBaseURI) {
+    	this(serverBaseURI, null);
     }
 
-    public PlDotIni(URI serverBaseURI) {
-    	this();
+	/**
+	 * Constructs a data source collection with a URI that defines where to
+	 * retrieve JDBC drivers from the server and another URI that defines where
+	 * to retrieve Mondrian schemas from the server.
+	 * 
+	 * @param serverBaseURI
+	 *            A URI that JDBC drivers can be retrieved from the server with.
+	 * @param mondrianServerBaseURI
+	 *            A URI that Mondrian XML schemas can be retrieved from the
+	 *            server with.
+	 */
+    public PlDotIni(URI serverBaseURI, URI mondrianServerBaseURI) {
+    	listeners = new ArrayList<DatabaseListChangeListener>();
+        listeners.add(saver);
 		this.serverBaseURI = serverBaseURI;
+		this.mondrianServerBaseURI = mondrianServerBaseURI;
     }
     
 	/**
@@ -928,6 +953,10 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 
 	public URI getServerBaseURI() {
 	    return serverBaseURI;
+	}
+
+	public URI getMondrianServerBaseURI() {
+		return mondrianServerBaseURI;
 	}
 
 }

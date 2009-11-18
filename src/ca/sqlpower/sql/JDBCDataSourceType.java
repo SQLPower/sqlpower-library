@@ -147,7 +147,7 @@ public class JDBCDataSourceType {
 
         	// sanity check
         	for (String jarPath : classpath) {
-        		if (jarPath.startsWith(JDBCDataSource.SERVER) && serverBaseUri == null) {
+        		if (jarPath.startsWith(SPDataSource.SERVER) && serverBaseUri == null) {
         			throw new IllegalStateException(
         					"Found a server-based JAR file \"" + jarPath + "\" on the" +
         					" classpath but there is no server base URI configured");
@@ -373,7 +373,7 @@ public class JDBCDataSourceType {
         List<String> classpath = Collections.unmodifiableList(new ArrayList<String>(getJdbcJarList()));
         JDBCClassLoader classLoader = jdbcClassloaders.get(classpath);
         if (classLoader == null) {
-            classLoader = new JDBCClassLoader(serverBaseUri, classpath);
+            classLoader = new JDBCClassLoader(getServerBaseUri(), classpath);
             jdbcClassloaders.put(classpath, classLoader);
         }
         return classLoader;
@@ -778,4 +778,8 @@ public class JDBCDataSourceType {
     public void removePropertyChangeListener(String propertyName, PropertyChangeListener listener) {
         pcs.removePropertyChangeListener(propertyName, listener);
     }
+
+	public URI getServerBaseUri() {
+		return serverBaseUri;
+	}
 }

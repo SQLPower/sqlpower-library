@@ -22,10 +22,11 @@ package ca.sqlpower.sql;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 
-import ca.sqlpower.sql.DataSourceCollection;
-import ca.sqlpower.sql.JDBCDataSource;
-import ca.sqlpower.sql.SPDataSource;
+import org.apache.log4j.Logger;
 
 /**
  * A class akin to {@link SPDataSource}, but for specifying the connection
@@ -36,6 +37,8 @@ import ca.sqlpower.sql.SPDataSource;
  * specified.
  */
 public class Olap4jDataSource extends SPDataSource {
+	
+	private static final Logger logger = Logger.getLogger(Olap4jDataSource.class);
     
     public final static String XMLA_DRIVER_CLASS_NAME = "org.olap4j.driver.xmla.XmlaOlap4jDriver";
     
@@ -48,7 +51,7 @@ public class Olap4jDataSource extends SPDataSource {
     private static final String XMLA_SERVER = "xmlaServer";
     
     private static final String TYPE = "type";
-
+    
     public static enum Type {
         IN_PROCESS, XMLA;
     }
@@ -95,6 +98,28 @@ public class Olap4jDataSource extends SPDataSource {
     
     public URI getMondrianSchema() {
         final String uriPath = get(MONDRIAN_SCHEMA);
+        URI serverBaseURI = getParentCollection().getMondrianServerBaseURI();
+        if (uriPath.startsWith(SPDataSource.SERVER)) {
+        	if (serverBaseURI == null) {
+        		throw new IllegalArgumentException(
+        				"The mondrian schema at " + uriPath + " can't" +
+        				" be located because no server base URI was specified");
+        	}
+        	String newUriPath = uriPath.substring(SPDataSource.SERVER.length());
+        	logger.debug("Looking for file " + newUriPath + " at server location " + serverBaseURI);
+
+        	//Need to decode the URI to a URL to convert escaped characters to their real values, 
+        	//ie spaces described as %20 will be replaced by actual spaces
+        	try {
+        		URL location = new URL(URLDecoder.decode(serverBaseURI.toString(), "UTF-8"));
+				location = new URL(location, newUriPath);
+				URI uri = new URI(location.toString());
+				return uri;
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+        }
+        
         if (uriPath == null || uriPath.trim().length() == 0) return null;
         try {
             return new URI(uriPath);

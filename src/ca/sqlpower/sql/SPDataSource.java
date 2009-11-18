@@ -91,6 +91,12 @@ public abstract class SPDataSource implements Comparable<SPDataSource> {
 	private transient PropertyChangeSupport pcs;
 
 	/**
+	 * JDBC driver pathname prefix that says to look for a JAR file resource on
+	 * the remote SQL Power Enterprise server we're attached to.
+	 */
+	public static final String SERVER = "server:";
+
+	/**
 	 * Returns this DataSource's property change support, creating
 	 * a new one if necessary.
 	 */
