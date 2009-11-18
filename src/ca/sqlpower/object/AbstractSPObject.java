@@ -28,6 +28,7 @@ import java.util.UUID;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.SPChildEvent.EventType;
+import ca.sqlpower.util.SPSession;
 import ca.sqlpower.util.SessionNotFoundException;
 import ca.sqlpower.util.TransactionEvent;
 
@@ -205,6 +206,14 @@ public abstract class AbstractSPObject implements SPObject {
 		}
 		
 		firePropertyChange("UUID", oldUUID, this.uuid);
+	}
+	
+	public SPSession getSession() throws SessionNotFoundException {
+		if (parent != null) {
+			return parent.getSession();
+		} else {
+			throw new SessionNotFoundException("Root object does not implement getSession()");
+		}
 	}
 	
     /**
