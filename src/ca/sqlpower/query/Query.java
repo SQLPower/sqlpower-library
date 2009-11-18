@@ -232,7 +232,8 @@ public interface Query {
 
     /**
      * If this is set then only this query string will be returned by the generateQuery method
-     * and the query cache will not accurately represent the query.
+     * and the query cache will not accurately represent the query. If the query should be generated
+     * by the objects in this class this query must be set to null.
      */
     public abstract void setUserModifiedQuery(String query);
 

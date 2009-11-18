@@ -1308,11 +1308,16 @@ public class QueryImpl implements Query {
 	public void setUserModifiedQuery(String query) {
 		String generatedQuery = generateQuery();
 		logger.debug("Generated query is " + generatedQuery + " and given query is " + query);
-		if (generatedQuery.equals(query)) {
-			return;
+		if (logger.isDebugEnabled()) {
+			try {
+				throw new RuntimeException();
+			} catch (RuntimeException e) {
+				logger.debug("Stack trace for setting user modified query is", e);
+			}
 		}
-		firePropertyChangeEvent(new PropertyChangeEvent(this, USER_MODIFIED_QUERY, userModifiedQuery, query));
+		String oldUserQuery = userModifiedQuery;
 		userModifiedQuery = query;
+		firePropertyChangeEvent(new PropertyChangeEvent(this, USER_MODIFIED_QUERY, oldUserQuery, query));
 	}
 	
 	/* (non-Javadoc)
@@ -1327,7 +1332,7 @@ public class QueryImpl implements Query {
      */
 	public void removeUserModifications() {
 		logger.debug("Removing user modified query.");
-		userModifiedQuery = null;
+		setUserModifiedQuery(null);
 	}
 
 	/* (non-Javadoc)
@@ -1479,7 +1484,7 @@ public class QueryImpl implements Query {
             resetConstantsContainer();
             setGlobalWhereClause(null);
             setGroupingEnabled(false);
-            setUserModifiedQuery("");
+            setUserModifiedQuery(null);
             setZoomLevel(0);
         } finally {
             endCompoundEdit();
