@@ -24,7 +24,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 
 import org.apache.log4j.Logger;
 
@@ -46,7 +45,7 @@ public class Olap4jDataSource extends SPDataSource {
 	
 	private static final String JDBC_DATA_SOURCE_NAME = "jdbcDataSourceName";
     
-    private static final String MONDRIAN_SCHEMA = "mondrianSchema";
+    public static final String MONDRIAN_SCHEMA = "mondrianSchema";
     
     private static final String XMLA_SERVER = "xmlaServer";
     
@@ -96,10 +95,13 @@ public class Olap4jDataSource extends SPDataSource {
         put(JDBC_DATA_SOURCE_NAME, dataSource.getName());
     }
     
+    /**
+     * Returns an absolute path URI to retrieve the Mondrian schema by.
+     */
     public URI getMondrianSchema() {
         final String uriPath = get(MONDRIAN_SCHEMA);
-        URI serverBaseURI = getParentCollection().getMondrianServerBaseURI();
-        if (uriPath.startsWith(SPDataSource.SERVER)) {
+        if (uriPath != null && uriPath.startsWith(SPDataSource.SERVER)) {
+        	URI serverBaseURI = getParentCollection().getMondrianServerBaseURI();
         	if (serverBaseURI == null) {
         		throw new IllegalArgumentException(
         				"The mondrian schema at " + uriPath + " can't" +
@@ -127,6 +129,7 @@ public class Olap4jDataSource extends SPDataSource {
             throw new RuntimeException("This should not happen as it should be the same URI path passed in earlier.", e);
         }
     }
+    
     public void setMondrianSchema(URI mondrianSchema) {
         put(MONDRIAN_SCHEMA, mondrianSchema.toString());
     }
