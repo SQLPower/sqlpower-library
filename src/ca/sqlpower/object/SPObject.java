@@ -82,13 +82,6 @@ public interface SPObject {
      */
     boolean allowsChildren();
 
-	/**
-	 * Returns a list of allowed {@link SPObject} child class types
-	 * that this class allows. This list is empty if and only if
-	 * {@link #allowsChildren()} is false.
-	 */
-    List<Class<? extends SPObject>> allowedChildTypes();
-    
     /**
      * Returns the position in the list that would be returned by getChildren()
      * that the first object of type childClass is, or where it would be if
@@ -216,22 +209,5 @@ public interface SPObject {
      * Returns a list of all children of the given type
      */
     <T extends SPObject> List<T> getChildren(Class<T> type);
-    
-	/**
-	 * Compares two {@link SPObject} classes in terms of their
-	 * child position offsets defined by {@link #childPositionOffset(Class)} as
-	 * if the list of children were populated with an object of each class.
-	 * Throws an {@link IllegalArgumentException} if one of the given classes
-	 * are not in the list of {@link #allowedChildTypes()}.
-	 * 
-	 * @param c1
-	 *            The first {@link SPObject} class to be compared.
-	 * @param c2
-	 *            The second {@link SPObject} class to be compared.
-	 * @return -1 if c1 comes before c2. 0 if c1 is the same class as c2. 1 if
-	 *         c1 comes after c2.
-	 */
-     int compare(Class<? extends SPObject> c1, 
-    		Class<? extends SPObject> c2);
     
 }

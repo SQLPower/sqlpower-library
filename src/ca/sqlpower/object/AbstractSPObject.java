@@ -66,10 +66,9 @@ public abstract class AbstractSPObject implements SPObject {
 
 	public final void addChild(SPObject child, int index)
 			throws IllegalArgumentException {
-		if (!allowedChildTypes().contains(child.getClass())) {
-			throw new IllegalArgumentException("Cannot add child of type " + child.getClass() + 
-					" to parent of type " + this.getClass() + " because it is not a valid child class type.");
-		}
+		// Check if the child is a valid child type. childPositionOffset throws
+		// an IllegalArgumentException if it is not.
+		childPositionOffset(child.getClass());
 		
 		child.setParent(this);
 		addChildImpl(child, index);
@@ -132,14 +131,8 @@ public abstract class AbstractSPObject implements SPObject {
 		}
 		return children;
 	}
-	
-	public int compare(Class<? extends SPObject> c1,
-			Class<? extends SPObject> c2) {
-		int p1 = childPositionOffset(c1);
-		int p2 = childPositionOffset(c2);
-		return (int) Math.signum(p2 - p1);
-	}
 
+	
 	public String getName() {
 		return name;
 	}
@@ -461,7 +454,7 @@ public abstract class AbstractSPObject implements SPObject {
      * to if it exists. If this object is not attached to a session, which can
      * occur when loading, copying, or creating a new object, the runner will be
      * run on the current thread due to not being able to run elsewhere. Any
-     * WabitObject that wants to run a runnable in the background should call to
+     * SPObject that wants to run a runnable in the background should call to
      * this method instead of to the session.
      * 
      * @see WabitSession#runInBackground(Runnable)
@@ -479,7 +472,7 @@ public abstract class AbstractSPObject implements SPObject {
      * to if it exists. If this object is not attached to a session, which can
      * occur when loading, copying, or creating a new object, the runner will be
      * run on the current thread due to not being able to run elsewhere. Any
-     * WabitObject that wants to run a runnable in the foreground should call to
+     * SPObject that wants to run a runnable in the foreground should call to
      * this method instead of to the session.
      * 
      * @see WabitSession#runInBackground(Runnable)

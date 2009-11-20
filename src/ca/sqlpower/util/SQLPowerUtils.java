@@ -4,6 +4,8 @@ import java.beans.PropertyChangeEvent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -127,5 +129,71 @@ public class SQLPowerUtils {
             exceptions.add(cleanupSPObject(child));
         }
         return exceptions;
+    }
+    
+    /**
+     * This method returns a list of all of the ancestors of the given
+     * {@link SPObject}. The order of the ancestors is such that the highest
+     * ancestor is at the start of the list and the parent of the object itself
+     * is at the end of the list.
+     */
+    public static List<SPObject> getAncestorList(SPObject o) {
+        List<SPObject> ancestors = new ArrayList<SPObject>();
+        SPObject parent = o.getParent();
+        while (parent != null) {
+            ancestors.add(0, parent);
+            parent = parent.getParent();
+        }
+        return ancestors;
+    }
+    
+	/**
+	 * Locates the SPObject inside the root SPObject which has the given
+	 * UUID, returning null if the item is not found. Throws ClassCastException
+	 * if in item is found, but it is not of the expected type.
+	 * 
+	 * @param <T>
+	 *            The expected type of the item
+	 * @param uuid
+	 *            The UUID of the item
+	 * @param expectedType
+	 *            The type of the item with the given UUID. If you are uncertain
+	 *            what type of object it is, or you do not want a
+	 *            ClassCastException in case the item is of the wrong type, use
+	 *            <tt>SPObject.class</tt> for this parameter.
+	 * @return The item, or null if no item with the given UUID exists in the
+	 *         descendent tree rooted at the given root object.
+	 */
+    public static <T extends SPObject> T findByUuid(SPObject root, String uuid, Class<T> expectedType) {
+        return expectedType.cast(findRecursively(root, uuid));
+    }
+    
+    /**
+     * Performs a preorder traversal of the given {@link SPObject} and its
+     * descendants, returning the first SPObject having the given UUID.
+     * Returns null if no such SPObject exists under startWith.
+     * 
+     * @param startWith
+     *            The SPObject to start the search with.
+     * @param uuid
+     *            The UUID to search for
+     * @return the first SPObject having the given UUID in a preorder
+     *         traversal of startWith and its descendants. Returns null if no
+     *         such SPObject exists.
+     */
+    private static SPObject findRecursively(SPObject startWith, String uuid) {
+    	if (startWith == null) {
+    		throw new IllegalArgumentException("Cannot search a null object for children with the uuid " + uuid);
+    	}
+        if (uuid.equals(startWith.getUUID())) {
+            return startWith;
+        }
+        for (SPObject child : startWith.getChildren()) {
+            SPObject found = findRecursively(child, uuid);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
     }
 }
