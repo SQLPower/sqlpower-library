@@ -25,7 +25,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import ca.sqlpower.util.SPSession;
-import ca.sqlpower.util.SessionNotFoundException;
 
 /**
  * This interface represents any kind of object within this library or extending
