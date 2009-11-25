@@ -218,8 +218,8 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     
     public void testLoadFromDbGetsCorrectPK() throws SQLObjectException{
         assertNotNull("No primary key loaded",dbTable.getPrimaryKeyIndex());
-        assertEquals("Wrong indices: " + dbTable.getIndicesFolder().getChildNames(),
-                1, dbTable.getIndicesFolder().getChildCount());
+        assertEquals("Wrong indices: " + dbTable.getIndices(),
+                1, dbTable.getIndices().size());
         assertEquals("Wrong primary key", "TEST3PK", dbTable.getPrimaryKeyName());
     }
     
@@ -367,7 +367,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         
         for (SQLIndex.Column icol : target.getChildren()) {
             if (icol.getColumn() != null) {
-                assertNotSame(source, icol.getColumn().getParentTable());
+                assertNotSame(source, icol.getColumn().getParent());
             }
         }
     }

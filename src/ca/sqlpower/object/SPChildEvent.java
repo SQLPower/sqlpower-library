@@ -19,11 +19,13 @@
 
 package ca.sqlpower.object;
 
+import java.util.EventObject;
+
 /**
  * An event that is passed to listeners when a child is added to or removed from
  * its parent.
  */
-public class SPChildEvent {
+public class SPChildEvent extends EventObject {
 
     /**
      * The type of event that signals if a child is being added or removed.
@@ -39,11 +41,6 @@ public class SPChildEvent {
          */
         REMOVED
     }
-
-    /**
-     * The parent that gained or lost a child.
-     */
-    private final SPObject source;
 
 	/**
 	 * The child type for which the parent gained or lost a child (
@@ -91,7 +88,7 @@ public class SPChildEvent {
     public SPChildEvent(SPObject source, 
     		Class<? extends SPObject> childType, 
     		SPObject child, int index, EventType type) {
-        this.source = source;
+    	super(source);
         this.childType = childType;
         this.child = child;
         this.index = index;
@@ -99,7 +96,7 @@ public class SPChildEvent {
     }
 
     public SPObject getSource() {
-        return source;
+        return (SPObject) source;
     }
 
     public Class<? extends SPObject> getChildType() {

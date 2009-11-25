@@ -28,8 +28,9 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.ObjectDependentException;
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.SQL;
-import ca.sqlpower.sqlobject.SQLTable.Folder;
 
 /**
  * The SQLIndex class represents an index on a table in a relational database.
@@ -146,7 +147,6 @@ public class SQLIndex extends SQLObject {
          * (such as an expression index).
          */
         public Column(String name, AscendDescend ad) {
-            children = Collections.emptyList();
             setName(name);
 
             ascendingOrDescending = ad;
@@ -187,7 +187,7 @@ public class SQLIndex extends SQLObject {
         }
 
         @Override
-        protected void setParent(SQLObject parent) {
+		public void setParent(SPObject parent) {
             if (parent != null && parent != SQLIndex.this) {
                 throw new UnsupportedOperationException("You can't change an Index.Column's parent");
             }
@@ -282,12 +282,32 @@ public class SQLIndex extends SQLObject {
                 return false;
             return true;
         }
-    }
 
-    /**
-     * The parent folder that owns this index object.
-     */
-    private SQLTable.Folder<SQLIndex> parent;
+		@Override
+		public List<? extends SQLObject> getChildren() {
+			return Collections.emptyList();
+		}
+
+		@Override
+		protected boolean removeChildImpl(SPObject child) {
+			return false;
+		}
+
+		public int childPositionOffset(Class<? extends SPObject> childType) {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		public List<? extends SPObject> getDependencies() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		public void removeDependency(SPObject dependency) {
+			// TODO Auto-generated method stub
+			
+		}
+    }
 
     /**
      * Flags whether or not this index enforces uniqueness.
@@ -321,6 +341,8 @@ public class SQLIndex extends SQLObject {
      * with the SQLColumn removed.
      */
     private SQLObjectListener removeColumnListener;
+    
+    private List<Column> columns = new ArrayList<Column>();
 
     public SQLIndex(String name, boolean unique, String qualifier, String type, String filter) {
         this();
@@ -332,7 +354,6 @@ public class SQLIndex extends SQLObject {
     }
 
     public SQLIndex() {
-        children = new ArrayList();
         primaryKeyIndex = false;
         removeColumnListener = new SQLObjectListener() {
 
@@ -361,7 +382,7 @@ public class SQLIndex extends SQLObject {
      */
     public SQLIndex(SQLIndex oldIndex) throws SQLObjectException {
         this();
-        parent = oldIndex.parent;
+        setParent(oldIndex.getParent());
         updateToMatch(oldIndex);
     }
 
@@ -384,7 +405,7 @@ public class SQLIndex extends SQLObject {
         setQualifier(sourceIdx.qualifier);
         setClustered(sourceIdx.clustered);
         
-        while (children.size() > 0) {
+        while (columns.size() > 0) {
             removeChild(0);
         }
         
@@ -425,29 +446,16 @@ public class SQLIndex extends SQLObject {
      * Overriden to narrow return type.
      */
     @Override
-    public List<Column> getChildren() throws SQLObjectException {
-        return (List<Column>) super.getChildren();
+    public List<Column> getChildren() {
+    	return Collections.unmodifiableList(columns);
     }
 
     /**
      * Returns the table folder that owns this index.
      */
     @Override
-    public SQLTable.Folder<SQLIndex> getParent() {
-        return parent;
-    }
-
-    /**
-     * Returns this index's parent table, or null if this index
-     * is not attached to a parent table.
-     */
-    public SQLTable getParentTable() {
-        SQLTable.Folder<SQLIndex> parent = getParent();
-        if (parent == null) {
-            return null;
-        } else {
-            return parent.getParent();
-        }
+    public SQLTable getParent() {
+        return (SQLTable) super.getParent();
     }
 
     @Override
@@ -480,19 +488,15 @@ public class SQLIndex extends SQLObject {
      *             parent table.
      */
     @Override
-    protected void setParent(SQLObject parent) {
-        
-        if (this.parent != null) {
-            getParentTable().getColumnsFolder().removeSQLObjectListener(removeColumnListener);
+    public void setParent(SPObject parent) {
+    	if (getParent() != null) {
+            getParent().removeSQLObjectListener(removeColumnListener);
         }
         
-        this.parent = (Folder<SQLIndex>) parent;
+        super.setParent(parent);
         
-        if (this.parent != null) {
-            if (getParentTable() == null) {
-                throw new IllegalStateException("Index folder is unparented!");
-            }
-            getParentTable().getColumnsFolder().addSQLObjectListener(removeColumnListener);
+        if (getParent() != null) {
+            getParent().addSQLObjectListener(removeColumnListener);
         }
     }
 
@@ -501,7 +505,7 @@ public class SQLIndex extends SQLObject {
      * is removed from a table, it is also removed from all the indices of that table.
      */
     private void removeColumnFromIndices(SQLObjectEvent e) {
-        if (parent != null && parent.getParent() != null && parent.getParent().getColumnsFolder().isMagicEnabled()) {
+        if (getParent() != null && getParent().isMagicEnabled()) {
             try {
                 for (int i = 0; i < e.getChildren().length; i++) {
                     for (int j = this.getChildCount() - 1; j >= 0; j--) {
@@ -516,25 +520,29 @@ public class SQLIndex extends SQLObject {
             }
         }
     }
-
+    
     /**
      * This method is used to clean up the index when it no longer has any children.
      */
     public void cleanUp() {
         try {
-            if (getChildCount() == 0 && this.parent != null) {
-                logger.debug("Removing " + getName() + " index from folder " + parent.getName());
-                parent.getParent().getColumnsFolder().removeSQLObjectListener(removeColumnListener);
-                parent.removeChild(this);
+            if (getChildCount() == 0 && getParent() != null) {
+                logger.debug("Removing " + getName() + " index from table " + getParent().getName());
+                getParent().removeSQLObjectListener(removeColumnListener);
+                getParent().removeChild(this);
             }
-        } catch (SQLObjectException e1) {
-            throw new SQLObjectRuntimeException(e1);
-        }
+        } catch (SQLObjectException e) {
+            throw new SQLObjectRuntimeException(e);
+        } catch (IllegalArgumentException e) {
+        	throw new RuntimeException(e);
+		} catch (ObjectDependentException e) {
+			throw new RuntimeException(e);
+		}
     }
 
     @Override
     protected SQLObject removeImpl(int index) {
-        Column c = (Column) children.get(index);
+        Column c = columns.get(index);
         if (c.getColumn() != null) {
             c.getColumn().removeSQLObjectListener(c.targetColumnListener);
         }
@@ -542,17 +550,23 @@ public class SQLIndex extends SQLObject {
     }
 
     @Override
-    protected void addChildImpl(int index, SQLObject newChild) throws SQLObjectException {
-        if (newChild instanceof SQLIndex.Column && primaryKeyIndex && ((Column) newChild).getColumn() == null) {
-            throw new SQLObjectException("The primary key index must consist of real columns, not expressions");
-        }
-        super.addChildImpl(index, newChild);
-        Column c = (Column) newChild;
-        if (c.getColumn() != null) {
-            // this will be redundant in some cases, but the addSQLObjectListener method
-            // checks for adding duplicate listeners and does nothing in that case
-            c.getColumn().addSQLObjectListener(c.targetColumnListener);
-        }
+    protected void addChildImpl(SPObject child, int index) {
+    	if (child instanceof SQLIndex.Column) {
+    		Column c = (Column) child;
+    		if (primaryKeyIndex && c.getColumn() == null) {
+    			throw new IllegalArgumentException("The primary key index must consist of real columns, not expressions");
+    		}
+    		addIndexColumn(c, index);
+    		if (c.getColumn() != null) {
+    			// this will be redundant in some cases, but the addSQLObjectListener method
+    			// checks for adding duplicate listeners and does nothing in that case
+    			c.getColumn().addSQLObjectListener(c.targetColumnListener);
+    		}
+    	} else {
+			throw new IllegalArgumentException("The child " + child.getName() + 
+					" of type " + child.getClass() + " is not a valid child type of " + 
+					getClass() + ".");
+    	}
     }
 
     public String getFilterCondition() {
@@ -603,10 +617,6 @@ public class SQLIndex extends SQLObject {
         boolean oldValue = this.clustered;
         this.clustered = value;
         fireDbObjectChanged("clustered", oldValue, clustered);
-    }
-
-    public void setParent(SQLTable.Folder<SQLIndex> parent) {
-        this.parent = parent;
     }
 
     /**
@@ -720,7 +730,8 @@ public class SQLIndex extends SQLObject {
                     indexCol = idx.new Column(colName, aOrD); // probably an expression like "col1+col2"
                 }
 
-                idx.children.add(indexCol); // direct access avoids possible recursive SQLObjectEvents
+//                idx.children.add(indexCol); // direct access avoids possible recursive SQLObjectEvents
+                idx.addChild(indexCol);
             }
             rs.close();
             rs = null;
@@ -755,14 +766,14 @@ public class SQLIndex extends SQLObject {
         if (oldValue == isPrimaryKey)
             return;
         try {
-            startCompoundEdit("Make index a Primary Key");
+            begin("Make index a Primary Key");
             if (isPrimaryKey) {
                 for (Column c : getChildren()) {
                     if (c.getColumn() == null) {
                         throw new SQLObjectException("A PK must only refer to Index.Columns that contain SQLColumns");
                     }
                 }
-                SQLTable parentTable = getParentTable();
+                SQLTable parentTable = getParent();
                 if (parentTable != null) {
                     SQLIndex i = parentTable.getPrimaryKeyIndex();
                     if (i != null && i != this) {
@@ -773,7 +784,7 @@ public class SQLIndex extends SQLObject {
             primaryKeyIndex = isPrimaryKey;
             fireDbObjectChanged("primaryKeyIndex", oldValue, isPrimaryKey);
         } finally {
-            endCompoundEdit("Make index a Primary Key");
+            commit();
         }
     }
 
@@ -787,12 +798,22 @@ public class SQLIndex extends SQLObject {
      */
     public void addIndexColumn(SQLColumn col1, AscendDescend aOrD) throws SQLObjectException {
         Column col = new Column(col1, aOrD);
-        addChild(col);
+        addIndexColumn(col);
     }
     
     public void addIndexColumn(String colName, AscendDescend aOrD) throws SQLObjectException {
         Column col = new Column(colName, aOrD);
-        addChild(col);
+        addIndexColumn(col);
+    }
+    
+    public void addIndexColumn(SQLIndex.Column col) {
+    	addIndexColumn(col, columns.size());
+    }
+    
+    public void addIndexColumn(SQLIndex.Column col, int index) {
+    	columns.add(index, col);
+    	col.setParent(this);
+    	fireChildAdded(SQLIndex.Column.class, col, index);
     }
 
     /**
@@ -846,8 +867,8 @@ public class SQLIndex extends SQLObject {
      * @throws SQLObjectException
      */
     public void makeColumnsLike(SQLIndex index) throws SQLObjectException {
-        for (int i = children.size() - 1; i >= 0; i--) {
-            Column c = (Column) children.get(i);
+        for (int i = columns.size() - 1; i >= 0; i--) {
+            Column c = columns.get(i);
             if (c.column != null) {
                 c.column.removeSQLObjectListener(c.targetColumnListener);
             }
@@ -860,4 +881,25 @@ public class SQLIndex extends SQLObject {
             addChild(newCol);
         }
     }
+
+	@Override
+	protected boolean removeChildImpl(SPObject child) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	public int childPositionOffset(Class<? extends SPObject> childType) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public List<? extends SPObject> getDependencies() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public void removeDependency(SPObject dependency) {
+		// TODO Auto-generated method stub
+		
+	}
 }

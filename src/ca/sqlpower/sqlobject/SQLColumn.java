@@ -29,6 +29,8 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.ObjectDependentException;
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.SQL;
 
 public class SQLColumn extends SQLObject implements java.io.Serializable {
@@ -158,7 +160,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	public SQLColumn() {
 		logger.debug("NEW COLUMN (noargs) @"+hashCode());
 		logger.debug("SQLColumn() set ref count to 1");
-		children = Collections.EMPTY_LIST;
 		referenceCount = 1;
 		setName(defaultName);
 		setPhysicalName("");
@@ -211,7 +212,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 			logger.debug("NEW COLUMN "+colName+"@"+hashCode()+" (null parent)");
 		}
         if (parentTable != null) {
-            setParent(parentTable.getColumnsFolder());
+            setParent(parentTable);
         }
 		this.setName(colName);
 		this.type = dataType;
@@ -224,7 +225,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		this.primaryKeySeq = primaryKeySeq;
 		this.autoIncrement = isAutoIncrement;
 
-		this.children = Collections.EMPTY_LIST;
 		logger.debug("SQLColumn(.....) set ref count to 1");
 		this.referenceCount = 1;
 	}
@@ -238,7 +238,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 */
 	public SQLColumn(SQLColumn col) {
 		super();
-		children = Collections.EMPTY_LIST;
 		copyProperties(this, col);
 		logger.debug("SQLColumn(SQLColumn col ["+col+" "+col.hashCode()+"]) set ref count to 1");
 		referenceCount = 1;
@@ -260,7 +259,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		logger.debug("derived instance SQLColumn constructor invocation.");
 		SQLColumn c = new SQLColumn();
 		copyProperties(c, this);
-		c.setParent(addTo.getColumnsFolder());
+		c.setParent(addTo);
 		if (SQLObjectUtils.isInSameSession(c, this)) {
 			c.sourceColumn = this;
 		} else {
@@ -282,7 +281,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		logger.debug("derived instance SQLColumn constructor invocation.");
 		SQLColumn c = new SQLColumn();
 		copyProperties(c, this);
-		c.setParent(addTo.getColumnsFolder());
+		c.setParent(addTo);
 		if (preserveSource) {
 			c.sourceColumn = getSourceColumn();
 		}
@@ -503,10 +502,10 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	public void setType(int argType) {
 		int oldType = type;
 		this.type = argType;
-        startCompoundEdit("Type change");
+        begin("Type change");
         setSourceDataTypeName(null);
 		fireDbObjectChanged("type",oldType,argType);
-        endCompoundEdit("Type change");
+        commit();
 	}
 
 	/**
@@ -593,9 +592,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * @return null, if this column is not a FK column, the referenced table otherwise
 	 */
 	public SQLTable getReferencedTable() {
-	    if (getParentTable() == null) return null;
+	    if (getParent() == null) return null;
 	    try {
-	        for (SQLRelationship r : getParentTable().getImportedKeys()) {
+	        for (SQLRelationship r : getParent().getImportedKeys()) {
 	            if (r.containsFkColumn(this)) {
 	                return r.getPkTable();
 	            }
@@ -625,9 +624,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      *         returns false.
      */
 	public boolean isExported() {
-	    if (getParentTable() == null) return false;
+	    if (getParent() == null) return false;
 	    try {
-            for (SQLRelationship r : getParentTable().getExportedKeys()) {
+            for (SQLRelationship r : getParent().getExportedKeys()) {
                 if (r.containsPkColumn(this)) {
                     return true;
                 }
@@ -642,9 +641,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * Returns whether this column is in an index 
 	 */
 	public boolean isIndexed() {
-	    if (getParentTable() == null) return false;
+	    if (getParent() == null) return false;
 	    try {
-	        for (SQLIndex ind : getParentTable().getIndices()) {
+	        for (SQLIndex ind : getParent().getIndices()) {
 	            for (SQLIndex.Column col : ind.getChildren()) {
 	                if (this.equals(col.getColumn())) {
 	                    return true;
@@ -661,9 +660,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * Returns whether this column is in an unique index.
 	 */
 	public boolean isUniqueIndexed() {
-	    if (getParentTable() == null) return false;
+	    if (getParent() == null) return false;
 	    try {
-	        for (SQLIndex ind : getParentTable().getIndices()) {
+	        for (SQLIndex ind : getParent().getIndices()) {
 	            if (!ind.isUnique()) continue;
 	            for (SQLIndex.Column col : ind.getChildren()) {
 	                if (this.equals(col.getColumn())) {
@@ -678,22 +677,10 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
 	/**
-	 * Returns the parent SQLTable object, which is actually a grandparent.
+	 * Returns the parent SQLTable object.
 	 */
-	public SQLTable getParentTable() {
-		if (getParent() == null) return null;
-		else return (SQLTable) getParent().getParent();
-	}
-
-	/**
-	 * Sets the value of parent
-	 *
-	 * @param argParent Value to assign to this.parent
-	 */
-	protected void setParent(SQLObject argParent) {
-		SQLObject oldParent = getParent();
-		super.setParent(argParent);
-		fireDbObjectChanged("parent",oldParent,argParent);
+	public SQLTable getParent() {
+		return (SQLTable) super.getParent();
 	}
 
 	/**
@@ -889,7 +876,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
             this.primaryKeySeq = argPrimaryKeySeq;
             fireDbObjectChanged("primaryKeySeq",oldPrimaryKeySeq,argPrimaryKeySeq);
         } else try {
-            startCompoundEdit("Starting PrimaryKeySeq compound edit");
+            begin("Starting PrimaryKeySeq compound edit");
  
 	        if (argPrimaryKeySeq != null && !this.autoIncrement) { // FIXME don't worry about autoIncrement
 	            setNullable(DatabaseMetaData.columnNoNulls);	
@@ -910,8 +897,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
                     int idx = 0;
                     int targetPKS = primaryKeySeq == null ? Integer.MAX_VALUE : primaryKeySeq.intValue();
                     logger.debug("Parent = "+p);
-                    logger.debug("Parent.children = "+p.children);
-                    for (SQLColumn col : (List<SQLColumn>) p.children) {
+                    logger.debug("Parent.children = "+p.getChildren());
+                    for (SQLColumn col : p.getChildren(SQLColumn.class)) {
                         if (col.getPrimaryKeySeq() == null ||
                                 col.getPrimaryKeySeq() > targetPKS) {
                             logger.debug("idx is " + idx);
@@ -919,18 +906,22 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
                         }
                         idx++;
                     }                
-                    p.addChild(idx, this);
-                } finally {
+                    p.addChild(this, idx);
+                } catch (IllegalArgumentException e) {
+                	throw new RuntimeException(e);
+				} catch (ObjectDependentException e) {
+					throw new RuntimeException(e);
+				} finally {
                     p.setMagicEnabled(true);
                 }
                 if (normalizeKey) {
-                    getParentTable().normalizePrimaryKey();
+                    getParent().normalizePrimaryKey();
                 }
             }
         } catch (SQLObjectException e) {
             throw new SQLObjectRuntimeException(e);
         } finally {
-            endCompoundEdit("Ending PrimaryKeySeq compound edit");
+            commit();
         }
 	}
 
@@ -964,12 +955,12 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
     public String getAutoIncrementSequenceName() {
         if (autoIncrementSequenceName == null) {
         	String tableName;
-        	if (getParentTable() == null) {
+        	if (getParent() == null) {
         		tableName = "";
-        	} else if (getParentTable().getPhysicalName() != null && !getPhysicalName().trim().equals("")) {
-        		tableName = getParentTable().getPhysicalName() + "_";
+        	} else if (getParent().getPhysicalName() != null && !getPhysicalName().trim().equals("")) {
+        		tableName = getParent().getPhysicalName() + "_";
         	} else {
-        		tableName = getParentTable().getName() +"_";
+        		tableName = getParent().getName() +"_";
         	}
             return tableName + getName() + "_seq";
         } else {
@@ -1006,10 +997,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * primary key columns come first in their correct order, and all
 	 * the other columns come after.
 	 */
-	public static class CompareByPKSeq implements Comparator {
-		public int compare(Object o1, Object o2) {
-			SQLColumn c1 = (SQLColumn) o1;
-			SQLColumn c2 = (SQLColumn) o2;
+	public static class CompareByPKSeq implements Comparator<SQLColumn> {
+		public int compare(SQLColumn c1, SQLColumn c2) {
 			if (c1.primaryKeySeq == null && c2.primaryKeySeq == null) {
 				return 0;
 			} else if (c1.primaryKeySeq == null && c2.primaryKeySeq != null) {
@@ -1032,14 +1021,14 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	public void removeReference() {
 		if (logger.isDebugEnabled()) {
 			String parentName = "<no parent table>";
-			if (getParent() != null && getParentTable() != null) {
-				parentName = getParentTable().getName();
+			if (getParent() != null && getParent() != null) {
+				parentName = getParent().getName();
 			}
 			logger.debug("Trying to remove reference from "+parentName+"."+getName()+" "+hashCode());
 			
 		}
 		if (referenceCount == 0) {
-		    logger.debug("Reference count of "+ this.getParentTable() +"."+this+" was already 0");
+		    logger.debug("Reference count of "+ this.getParent() +"."+this+" was already 0");
 			throw new IllegalStateException("Reference count of is already 0; can't remove any references!");
 		}
         int oldReference = referenceCount;
@@ -1049,7 +1038,13 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 			// delete from the parent (columnsFolder) 
 			if (getParent() != null){
 				logger.debug("reference count is 0, deleting column from parent.");
-				getParent().removeChild(this);
+				try {
+					getParent().removeChild(this);
+				} catch (IllegalArgumentException e) {
+					throw new RuntimeException(e);
+				} catch (ObjectDependentException e) {
+					throw new RuntimeException(e);
+				}
 			} else {
 				logger.debug("Already removed from parent");
 			}
@@ -1077,6 +1072,29 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
     @Override
 	public Class<? extends SQLObject> getChildType() {
 		return null;
+	}
+
+	@Override
+	public List<? extends SQLObject> getChildren() {
+		return Collections.emptyList();
+	}
+
+	@Override
+	protected boolean removeChildImpl(SPObject child) {
+		return false;
+	}
+
+	public int childPositionOffset(Class<? extends SPObject> childType) {
+		throw new IllegalArgumentException("Cannot retrieve the child position offset of " + 
+				childType + " but " + getClass() + " does not allow children.");
+	}
+
+	public List<? extends SPObject> getDependencies() {
+		return Collections.emptyList();
+	}
+
+	public void removeDependency(SPObject dependency) {
+		// no-op
 	}
 
 }

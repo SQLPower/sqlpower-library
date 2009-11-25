@@ -19,15 +19,20 @@
 
 package ca.sqlpower.sqlobject;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import ca.sqlpower.object.SPObject;
 
 /**
  * This is normally an invisible root node that contains
  * SQLDatabase objects.
  */
 public class SQLObjectRoot extends SQLObject {
+	private List<SQLDatabase> databases = new ArrayList<SQLDatabase>();
+	
 	public SQLObjectRoot() {
-		children = new LinkedList();
 	}
 
 	public SQLObject getParent() {
@@ -51,7 +56,7 @@ public class SQLObjectRoot extends SQLObject {
 	}
 	
 	protected void populateImpl() throws SQLObjectException {
-		return;
+		// no-op
 	}
 	
 	public boolean isPopulated() {
@@ -65,5 +70,52 @@ public class SQLObjectRoot extends SQLObject {
 	@Override
 	public Class<? extends SQLObject> getChildType() {
 		return SQLDatabase.class;
+	}
+
+	@Override
+	public List<SQLDatabase> getChildren() {
+		return Collections.unmodifiableList(databases);
+	}
+
+	@Override
+	protected boolean removeChildImpl(SPObject child) {
+		if (child instanceof SQLDatabase) {
+			return removeDatabase((SQLDatabase) child);
+		} else {
+			throw new IllegalArgumentException("Cannot remove children of type " 
+					+ child.getClass() + " from " + getName());
+		}
+	}
+	
+	public boolean removeDatabase(SQLDatabase child) {
+		if (child.getParent() != this) {
+			throw new IllegalStateException("Cannot remove child " + child.getName() + 
+					" of type " + child.getClass() + " as its parent is not " + getName());
+		}
+		int index = databases.indexOf(child);
+		if (index != -1) {
+			databases.remove(index);
+			 child.setParent(null);
+			 fireChildRemoved(SQLDatabase.class, child, index);
+			 return true;
+		}
+		return false;
+	}
+
+	public int childPositionOffset(Class<? extends SPObject> childType) {
+		if (childType == SQLDatabase.class) return 0;
+		
+		throw new IllegalArgumentException("The type " + childType + 
+				" is not a valid child type of " + getName());
+	}
+
+	public List<? extends SPObject> getDependencies() {
+		return Collections.emptyList();
+	}
+
+	public void removeDependency(SPObject dependency) {
+		for (SQLObject child : getChildren()) {
+			child.removeDependency(dependency);
+		}
 	}
 }

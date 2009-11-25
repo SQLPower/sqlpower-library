@@ -102,13 +102,12 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	
 	public void testPopulateTable() throws SQLObjectException {
 		
-		assertEquals("Table should have 4 folders as children",
-				4, table1pk.getChildCount());
 		assertFalse("Table columns should not have been populated already",
-				table1pk.getColumnsFolder().isPopulated());
-		table1pk.getColumnsFolder().populate();
+				table1pk.isColumnsPopulated());
+//		table1pk.getColumnsFolder().populate();
+		table1pk.populate();
 		assertTrue("Table columns should be populated",
-				table1pk.getColumnsFolder().isPopulated());
+				table1pk.isColumnsPopulated());
 
 		// spot-check that expected columns exist
 		assertNotNull("cow column not found", table1pk.getColumnByName("cow"));
@@ -122,9 +121,9 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		SQLColumn fooCol = table1pk.getColumnByName("foo");
 		
 		// check that all columns are owned by the correct table
-		assertEquals("column doesn't belong to correct parent!", table1pk, cowCol.getParentTable());
-		assertEquals("column doesn't belong to correct parent!", table1pk, mooCol.getParentTable());
-		assertEquals("column doesn't belong to correct parent!", table1pk, fooCol.getParentTable());
+		assertEquals("column doesn't belong to correct parent!", table1pk, cowCol.getParent());
+		assertEquals("column doesn't belong to correct parent!", table1pk, mooCol.getParent());
+		assertEquals("column doesn't belong to correct parent!", table1pk, fooCol.getParent());
 	}
 	
     public void testReferenceCountFiresEvents() {
@@ -175,7 +174,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	}
 	public void testSmallConstructor() throws Exception {
 		SQLColumn col = new SQLColumn(table0pk, "test_column", Types.INTEGER, 10, 30);
-		assertEquals(table0pk, col.getParentTable());
+		assertEquals(table0pk, col.getParent());
 		assertEquals("test_column", col.getName());
 		assertEquals(Types.INTEGER, col.getType());
 		assertEquals(10, col.getPrecision());
@@ -189,7 +188,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 				"test_column_2", Types.INTEGER, "my_test_integer",
 				44, 33, DatabaseMetaData.columnNullable, "test remarks",
 				"test default", null, true);
-		assertEquals(table0pk, col.getParentTable());
+		assertEquals(table0pk, col.getParent());
 		assertEquals("test_column_2", col.getName());
 		assertEquals(Types.INTEGER, col.getType());
 		assertEquals("my_test_integer", col.getSourceDataTypeName());
@@ -226,7 +225,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		SQLColumn derivCol = origCol.createInheritingInstance(table3pk);
 		
 		// These should be the only differences between origCol and derivCol
-		assertEquals(table3pk, derivCol.getParentTable());
+		assertEquals(table3pk, derivCol.getParent());
 		assertEquals(origCol, derivCol.getSourceColumn());
 		assertEquals("NUMERIC", derivCol.getSourceDataTypeName());
         
@@ -316,7 +315,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	 */
 	public void testAddColumnsToTable() throws Exception {
 		SQLColumn mooCol = table3pk.getColumn(1);
-		assertEquals(table3pk, mooCol.getParentTable());
+		assertEquals(table3pk, mooCol.getParent());
 		assertEquals(0, mooCol.getChildCount());
 		assertEquals("MOO", mooCol.getName());
 		assertEquals(0, mooCol.getScale());
@@ -349,7 +348,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		assertNull(cowCol.getSourceColumn());
 		
 		tmpCol = cowCol.createInheritingInstance(table3pk);
-		assertEquals(table3pk, tmpCol.getParentTable());
+		assertEquals(table3pk, tmpCol.getParent());
 		assertEquals(cowCol, tmpCol.getSourceColumn());
 		
 		tmpCol = new SQLColumn().createInheritingInstance(table3pk);
@@ -476,21 +475,21 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	 */
 	public void testGetParentTable() throws Exception {
 		SQLColumn tmpCol = new SQLColumn();
-		assertEquals(null,tmpCol.getParentTable());
+		assertEquals(null,tmpCol.getParent());
 		table0pk.addColumn(tmpCol);
-		assertEquals(table0pk,tmpCol.getParentTable());
+		assertEquals(table0pk,tmpCol.getParent());
 		table0pk.removeColumn(tmpCol);
-		assertEquals(null,tmpCol.getParentTable());
+		assertEquals(null,tmpCol.getParent());
 
 		SQLColumn cowCol = table3pk.getColumn(0);
-		assertEquals(table3pk,cowCol.getParentTable());
+		assertEquals(table3pk,cowCol.getParent());
 		table3pk.removeColumn(cowCol);
-		assertEquals(null,cowCol.getParentTable());
+		assertEquals(null,cowCol.getParent());
 		
 		table0pk.addColumn(cowCol);
-		assertEquals(table0pk,cowCol.getParentTable());
+		assertEquals(table0pk,cowCol.getParent());
 		table0pk.removeColumn(cowCol);
-		assertEquals(null,cowCol.getParentTable());
+		assertEquals(null,cowCol.getParent());
 	}
 
 	/*
@@ -675,7 +674,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		assertEquals(tmpCol.getChildren().isEmpty(),true);
 		
 		try {
-			tmpCol.addChild(1,new SQLColumn());
+			tmpCol.addChild(new SQLColumn(),1);
 			fail("SQLColumn should not have child");
 		} catch (UnsupportedOperationException e) {
 			/* it's normal */
@@ -686,7 +685,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		assertEquals(cowCol.getChildren().isEmpty(),true);
 		
 		try {
-			cowCol.addChild(1,new SQLColumn());
+			cowCol.addChild(new SQLColumn(),1);
 			fail("SQLColumn should not have child");
 		} catch (UnsupportedOperationException e) {
 			/* it's normal */
@@ -735,9 +734,9 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	public void testAddChildIntSQLObject() throws Exception {
 		SQLColumn tmpCol = new SQLColumn();
 		try {
-			tmpCol.addChild(0,table1pk);
+			tmpCol.addChild(table1pk,0);
 			fail();
-			tmpCol.addChild(2,table3pk);
+			tmpCol.addChild(table3pk,2);
 			fail();
 			
 		} catch ( UnsupportedOperationException e ) {
@@ -746,9 +745,9 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 
 		SQLColumn cowCol = table3pk.getColumn(0);
 		try {
-			cowCol.addChild(0,table1pk);
+			cowCol.addChild(table1pk,0);
 			fail();
-			cowCol.addChild(2,table3pk);
+			cowCol.addChild(table3pk,2);
 			fail();
 		} catch ( UnsupportedOperationException e ) {
 		}

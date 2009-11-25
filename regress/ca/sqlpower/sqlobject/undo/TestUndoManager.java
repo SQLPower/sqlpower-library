@@ -143,7 +143,7 @@ public class TestUndoManager extends TestCase {
         UndoTester myTester = new UndoTester();
         SQLObjectUndoableEventAdapter adapter = undoManager.getEventAdapter();
         myTester.addUndoEventListener(adapter);
-        myTester.startCompoundEdit("Test Compound undo");
+        myTester.begin("Test Compound undo");
         adapter.dbObjectChanged(
                 new SQLObjectEvent(
                         myTester, "foo", 0, 1));
@@ -153,7 +153,7 @@ public class TestUndoManager extends TestCase {
         adapter.dbObjectChanged(
                 new SQLObjectEvent(
                         myTester, "foo", 2, 3));
-        myTester.endCompoundEdit("Test Compound undo");
+        myTester.commit();
         
         undoManager.undo();
 

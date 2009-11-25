@@ -79,15 +79,15 @@ public class RefreshFKTest extends DatabaseConnectedTestCase {
     public void testRemoveFK() throws Exception {
         assertEquals(1, parent.getExportedKeys().size());
         assertEquals(1, child.getImportedKeys().size());
-        assertTrue(child.getImportedKeysFolder().isPopulated());
+        assertTrue(child.isImportedKeysPopulated());
         
         sqlx("ALTER TABLE public.child DROP CONSTRAINT parent_child_fk");
         
         db.refresh();
         
-        assertEquals("Child imported keys: " + child.getImportedKeysFolder().getChildNames(),
+        assertEquals("Child imported keys: " + child.getImportedKeys(),
                 0, child.getImportedKeys().size());
-        assertEquals("Parent exported keys: " + parent.getExportedKeysFolder().getChildNames(),
+        assertEquals("Parent exported keys: " + parent.getExportedKeys(),
                 0, parent.getExportedKeys().size());
         
     }
@@ -107,7 +107,7 @@ public class RefreshFKTest extends DatabaseConnectedTestCase {
         db.refresh();
         
         assertEquals(1, child.getImportedKeys().size());
-        assertEquals("Parent exported keys: " + parent.getExportedKeysFolder().getChildNames(),
+        assertEquals("Parent exported keys: " + parent.getExportedKeys(),
                 1, parent.getExportedKeys().size());
         
     }
@@ -130,7 +130,7 @@ public class RefreshFKTest extends DatabaseConnectedTestCase {
         db.refresh();
         
         assertEquals(1, child.getImportedKeys().size());
-        assertEquals("Parent exported keys: " + parent.getExportedKeysFolder().getChildNames(),
+        assertEquals("Parent exported keys: " + parent.getExportedKeysFolder(),
                 1, parent.getExportedKeys().size());
         
         // We're testing here that the relationship was refreshed in place, not simply replaced

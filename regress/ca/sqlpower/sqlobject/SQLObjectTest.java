@@ -23,6 +23,9 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import ca.sqlpower.object.ObjectDependentException;
+import ca.sqlpower.object.SPObject;
+
 public class SQLObjectTest extends BaseSQLObjectTestCase {
 
 	public SQLObjectTest(String name) throws Exception {
@@ -32,9 +35,9 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
     SQLObject target;
 	
 	private static class SQLObjectImpl extends SQLObject {
-	    protected boolean allowsChildren;
+		private List<SQLObject> children = new ArrayList<SQLObject>();
+	    protected boolean allowsChildren = false;
 		SQLObjectImpl() {
-			children = new ArrayList();
 		}
 		SQLObject parent = null;
 
@@ -43,8 +46,8 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
 			return parent;
 		}
 		@Override
-		protected void setParent(SQLObject parent) {
-			this.parent = parent;
+		public void setParent(SPObject parent) {
+			this.parent = (SQLObject) parent;
 		}
 		@Override
 		protected void populateImpl() throws SQLObjectException {
@@ -69,6 +72,40 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
 		@Override
 		public Class<? extends SQLObject> getChildType() {
 			return SQLObject.class;
+		}
+		@Override
+		public List<? extends SQLObject> getChildren() {
+			return Collections.unmodifiableList(children);
+		}
+		@Override
+		protected boolean removeChildImpl(SPObject child) {
+			int index = children.indexOf(child);
+			if (index != -1) {
+				children.remove(index);
+				child.setParent(null);
+				fireChildRemoved(child.getClass(), child, index);
+				return true;
+			}
+			return false;
+		}
+		public int childPositionOffset(Class<? extends SPObject> childType) {
+			return 0;
+		}
+		public List<? extends SPObject> getDependencies() {
+			return Collections.emptyList();
+		}
+		public void removeDependency(SPObject dependency) {
+			// no-op
+		}
+		@Override
+		protected void addChildImpl(SPObject child, int index) {
+			if (!allowsChildren) {
+				throw new IllegalStateException("Cannot add child as this " +
+						"SQLObjectImpl object does not allow children.");
+			}
+			children.add(index, (SQLObject) child);
+			child.setParent(this);
+			fireChildAdded(child.getClass(), child, index);
 		}
 	}
 	
@@ -102,22 +139,24 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
 	 * Note that setChildren copies elements, does not assign the list, and
 	 * getChildren returns an unmodifiable copy of the current list.
 	 */
-	public final void testAllChildHandlingMethods() throws SQLObjectException {
+	public final void testAllChildHandlingMethods() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
+		((SQLObjectImpl) target).allowsChildren = true;
 		assertEquals(0, target.getChildCount());
 
 		SQLObject x = new SQLObjectImpl();
+		
 		target.addChild(x);
 		assertEquals(1, target.getChildCount());
 		assertEquals(x, target.getChild(0));
 		
 		SQLObject y = new SQLObjectImpl();
 		
-		// Test addChild(int, SQLObject)
-		target.addChild(0, y);
+		// Test addChild(SQLObject, int)
+		target.addChild(y, 0);
 		assertEquals(y, target.getChild(0));
 		assertEquals(x, target.getChild(1));
 		
-		target.removeChild(1);
+		target.removeChild(x);
 		List<SQLObject> list2 = new LinkedList<SQLObject>();
 		list2.add(y);
 		assertEquals(list2, target.getChildren());
@@ -181,6 +220,7 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
 	}
 	
 	public void testNoMixChildTypes() throws SQLObjectException {
+		((SQLObjectImpl) target).allowsChildren = true;
 		target.addChild(new SQLColumn());
 		try {
 			target.addChild(new SQLObjectImpl());
@@ -191,6 +231,7 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
 	}
 	
 	public void testAllowMixedChildrenThatAreSubclassesOfEachOther() throws SQLObjectException {
+		((SQLObjectImpl) target).allowsChildren = true;
 		SQLObject subImpl = new SQLObjectImpl() {};
 		target.addChild(new SQLObjectImpl());
 		target.addChild(subImpl);
@@ -203,6 +244,7 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
 	}
 	
     public void testPreRemoveEventNoVeto() throws Exception {
+    	((SQLObjectImpl) target).allowsChildren = true;
         target.addChild(new SQLObjectImpl());
 
         CountingSQLObjectPreEventListener l = new CountingSQLObjectPreEventListener();
@@ -217,6 +259,7 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
     }
     
     public void testPreRemoveEventVeto() throws Exception {
+    	((SQLObjectImpl) target).allowsChildren = true;
         target.addChild(new SQLObjectImpl());
 
         CountingSQLObjectPreEventListener l = new CountingSQLObjectPreEventListener();

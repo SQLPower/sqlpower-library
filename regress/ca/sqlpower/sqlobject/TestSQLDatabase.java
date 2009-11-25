@@ -24,6 +24,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 
+import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.testutil.MockJDBCDriver;
@@ -330,16 +331,16 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 	/*
 	 * Test method for 'ca.sqlpower.sqlobject.SQLObject.getChild(int)'
 	 */
-	public void testGetChild() throws SQLObjectException {
+	public void testGetChild() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
 		SQLDatabase db1 = new SQLDatabase();
 		SQLTable t1 = new SQLTable(db1,"t1","","TABLE",true);
 		SQLTable t2 = new SQLTable(db1,"t2","","TABLE",true);
 		SQLTable t3 = new SQLTable(db1,"t3","","TABLE",true);
 		db1.addChild(t1);
-		db1.addChild(1,t2);
+		db1.addChild(t2,1);
 		assertEquals (db1.getChild(0), t1);
 		assertEquals (db1.getChild(1), t2);
-		db1.addChild(0,t3);
+		db1.addChild(t3,0);
 		assertEquals (db1.getChild(1), t1);
 		assertEquals (db1.getChild(0), t3);
 		db1.removeChild (1);
@@ -357,7 +358,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 		assertEquals("Children inserted event not fired!", 1, test1.getInsertedCount());
 	}
 	
-	public void testFireDbChildrenRemoved() throws SQLObjectException {
+	public void testFireDbChildrenRemoved() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
 	    SQLDatabase db1 = new SQLDatabase();
 	    SQLCatalog tempCatalog = new SQLCatalog();
 	    db1.addChild(tempCatalog);

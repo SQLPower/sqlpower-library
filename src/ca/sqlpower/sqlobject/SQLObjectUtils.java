@@ -29,7 +29,7 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.sql.SQL;
+import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.sqlobject.undo.CompoundEventListener;
 
 public class SQLObjectUtils {
@@ -66,9 +66,8 @@ public class SQLObjectUtils {
     	if (logger.isDebugEnabled()) logger.debug("Listening to new SQL Object "+source);
     	source.addSQLObjectListener(listener);
     	if (source.isPopulated() && source.allowsChildren()) {
-    		Iterator it = source.getChildren().iterator();
-    		while (it.hasNext()) {
-    			listenToHierarchy(listener, (SQLObject) it.next());
+    		for (SQLObject child : source.getChildren()) {
+    			listenToHierarchy(listener, child);
     		}
     	}
     
@@ -96,10 +95,8 @@ public class SQLObjectUtils {
     	source.removeSQLObjectListener(listener);
     	if (source.isPopulated() && source.allowsChildren()) {
             if (logger.isDebugEnabled()) logger.debug("        Now removing for children: "+source.getChildren());
-    		Iterator it = source.getChildren().iterator();
-    		while (it.hasNext()) {
-    			SQLObject ob = (SQLObject) it.next();
-    			unlistenToHierarchy(listener, ob);
+            for (SQLObject child : source.getChildren()) {
+    			unlistenToHierarchy(listener, child);
     		}
     	}
     }
@@ -190,9 +187,8 @@ public class SQLObjectUtils {
         if (logger.isDebugEnabled()) logger.debug("Undo Listening to new SQL Object "+source);
     	source.addUndoEventListener(listener);
     	if (source.isPopulated() && source.allowsChildren()) {
-    		Iterator it = source.getChildren().iterator();
-    		while (it.hasNext()) {
-    			addUndoListenerToHierarchy(listener, (SQLObject) it.next());
+    		for (SQLObject child : source.getChildren()) {
+    			addUndoListenerToHierarchy(listener, child);
     		}
     	}
     
@@ -219,10 +215,8 @@ public class SQLObjectUtils {
         if (logger.isDebugEnabled()) logger.debug("Unlistening to SQL Object "+source);
     	source.removeUndoEventListener(listener);
     	if (source.isPopulated() && source.allowsChildren()) {
-    		Iterator it = source.getChildren().iterator();
-    		while (it.hasNext()) {
-    			SQLObject ob = (SQLObject) it.next();
-    			undoUnlistenToHierarchy(listener, ob);
+    		for (SQLObject child : source.getChildren()) {
+    			undoUnlistenToHierarchy(listener, child);
     		}
     	}
     }
@@ -265,13 +259,18 @@ public class SQLObjectUtils {
      * @param newChildren The list of children to update from. All objects in this list
      * are expected to be of the correct child type for parent. Also, they must not be attached
      * to any parent objects to start with (this method may connect some or all of them).
+     * @param childType The type of child that this method should look for to update.
      * @throws SQLObjectException If this exercise causes any SQLObjects to populate, and that
      * populate operation fails.
      */
-    public static void refreshChildren(SQLObject parent, List<? extends SQLObject> newChildren) throws SQLObjectException {
-        Set<String> oldChildNames = parent.getChildNames();
+    public static <T extends SQLObject> void refreshChildren(SQLObject parent, List<T> newChildren, Class<T> childType) throws SQLObjectException {
+        Set<String> oldChildNames = new HashSet<String>();
+        for (T oldChild : parent.getChildren(childType)) {
+        	oldChildNames.add(oldChild.getName());
+        }
+        
         Set<String> newChildNames = new HashSet<String>(); // will populate in following loop
-        for (SQLObject newChild : newChildren) {
+        for (T newChild : newChildren) {
             newChildNames.add(newChild.getName());
             if (oldChildNames.contains(newChild.getName())) {
                 parent.getChildByName(newChild.getName()).updateToMatch(newChild);
@@ -291,10 +290,16 @@ public class SQLObjectUtils {
             SQLObject removeMe = parent.getChildByName(removedColName);
             if (removeMe instanceof SQLRelationship) {
                 SQLRelationship r = (SQLRelationship) removeMe;
-                r.getPkTable().getExportedKeysFolder().removeChild(r);
-                r.getFkTable().getImportedKeysFolder().removeChild(r);
+                r.getPkTable().removeExportedKey(r);
+                r.getFkTable().removeImportedKey(r);
             } else {
-                parent.removeChild(removeMe);
+                try {
+					parent.removeChild(removeMe);
+				} catch (IllegalArgumentException e) {
+					throw new SQLObjectException(e);
+				} catch (ObjectDependentException e) {
+					throw new SQLObjectException(e);
+				}
             }
         }
     
@@ -371,9 +376,8 @@ public class SQLObjectUtils {
     	    return 0;
     	} else {
     		int myCount = 0;
-    		Iterator it = so.getChildren().iterator();
-    		while (it.hasNext()) {
-    			myCount += countTables((SQLObject) it.next());
+    		for (SQLObject child : so.getChildren()) {
+    			myCount += countTables(child);
     		}
     		return myCount;
     	}
@@ -390,9 +394,8 @@ public class SQLObjectUtils {
     		return 1;
     	} else {
     		int count = 0;
-    		Iterator it = so.getChildren().iterator();
-    		while (it.hasNext()) {
-    			count += countTablesSnapshot((SQLObject) it.next());
+    		for (SQLObject child : so.getChildren()) {
+    			count += countTablesSnapshot(child);
     		}
     	    return count;
     	}
@@ -445,7 +448,7 @@ public class SQLObjectUtils {
     		if (so instanceof SQLTable) {
     			SQLTable t = (SQLTable) so;
     			for (SQLColumn col : t.getColumns()) {
-    				if (col.getSourceColumn() != null && source.equals(col.getSourceColumn().getParentTable().getParentDatabase())) {
+    				if (col.getSourceColumn() != null && source.equals(col.getSourceColumn().getParent().getParentDatabase())) {
     					matches.add(col);
     				}
     			}
@@ -518,7 +521,7 @@ public class SQLObjectUtils {
      */
     public static <T extends SQLObject> T getAncestor(SQLObject so, Class<T> ancestorType) {
         while (so != null) {
-            if (so.getClass().equals(ancestorType)) return (T) so;
+            if (so.getClass().equals(ancestorType)) return ancestorType.cast(so);
             so = so.getParent();
         }
         return null;

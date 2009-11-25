@@ -238,12 +238,12 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 	 */
 	public void testAddChildIntSQLObject() throws Exception {
 		for ( int i=0; i<5; i++ ) {
-			s.addChild(i,new SQLTable(s,"","","TABLE", true));
+			s.addChild(new SQLTable(s,"","","TABLE", true),i);
 			assertEquals(i+1,s.getChildren().size());
 			assertEquals(i+1,s.getChildCount());
 		}
 		SQLTable t = new SQLTable(s,"xxx","","TABLE", true);
-		s.addChild(0,t);
+		s.addChild(t,0);
 		assertEquals(6,s.getChildren().size());
 		assertEquals(6,s.getChildCount());
 		

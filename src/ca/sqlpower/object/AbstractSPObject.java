@@ -36,7 +36,7 @@ public abstract class AbstractSPObject implements SPObject {
 	
     private static final Logger logger = Logger.getLogger(SPObject.class);
 	
-    private final List<SPListener> listeners = 
+    protected final List<SPListener> listeners = 
         Collections.synchronizedList(new ArrayList<SPListener>());
     
 	private SPObject parent;

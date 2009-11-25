@@ -75,7 +75,7 @@ public abstract class SQLObjectChildren extends AbstractUndoableEdit {
 			}
 			sqlObject.setMagicEnabled(false);
 			for (int ii = 0; ii < changed.length; ii++) {
-				sqlObject.addChild(changed[ii], children[ii]);
+				sqlObject.addChild(children[ii], changed[ii]);
 				
 			}
 		}finally {

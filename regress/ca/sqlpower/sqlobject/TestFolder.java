@@ -148,7 +148,7 @@ public class TestFolder extends BaseSQLObjectTestCase {
 		assertEquals (main1.getChild(0), c1);
 		main1.addChild(c2);
 		assertEquals (main1.getChild(1), c2);
-		main1.addChild(1,c3);
+		main1.addChild(c3,1);
 		
 		List children = new ArrayList(main1.getChildren());
 		

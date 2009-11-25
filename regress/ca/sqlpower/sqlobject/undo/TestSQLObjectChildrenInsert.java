@@ -19,6 +19,7 @@
 package ca.sqlpower.sqlobject.undo;
 
 import junit.framework.TestCase;
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLDatabase;
@@ -147,8 +148,8 @@ public class TestSQLObjectChildrenInsert extends TestCase {
         StubSQLObject parent = new StubSQLObject();
         SQLIndex child = new SQLIndex() {
             @Override
-            protected void setParent(SQLObject parent) {
-                // no op!
+            public void setParent(SPObject parent) {
+            	// no-op
             }
         };
         parent.addChild(child);
@@ -197,10 +198,10 @@ public class TestSQLObjectChildrenInsert extends TestCase {
      */
     private SQLIndex makeSQLIndex() {
         return new SQLIndex() {
-            @Override
-            protected void setParent(SQLObject parent) {
-                // no op!
-            }
+        	@Override
+        	public void setParent(SPObject parent) {
+        		// no-op
+        	}
         };
     }
 

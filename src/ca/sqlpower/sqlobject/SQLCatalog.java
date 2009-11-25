@@ -23,11 +23,12 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.log4j.Logger;
+
+import ca.sqlpower.object.SPObject;
 
 /**
  * A SQLCatalog is a container for other SQLObjects.  If it is in the
@@ -36,6 +37,10 @@ import org.apache.log4j.Logger;
  */
 public class SQLCatalog extends SQLObject {
 	private static Logger logger = Logger.getLogger(SQLCatalog.class);
+	
+	private List<SQLSchema> schemas = new ArrayList<SQLSchema>();
+	
+	private List<SQLTable> tables = new ArrayList<SQLTable>();
 
 	static List<SQLCatalog> fetchCatalogs(DatabaseMetaData dbmd) throws SQLObjectException {
 	    ResultSet rs = null;
@@ -80,7 +85,6 @@ public class SQLCatalog extends SQLObject {
     public SQLCatalog(SQLDatabase parent, String name, boolean startPopulated) {
         setParent(parent);
         setName(name);
-        this.children = new LinkedList();
         this.nativeTerm = "catalog";
         this.populated = startPopulated;
     }
@@ -95,9 +99,7 @@ public class SQLCatalog extends SQLObject {
 
 	protected SQLTable getTableByName(String tableName) throws SQLObjectException {
 		populate();
-		Iterator childit = children.iterator();
-		while (childit.hasNext()) {
-			SQLObject child = (SQLObject) childit.next();
+		for (SQLObject child : getChildren()) {
 			if (child instanceof SQLTable) {
 				SQLTable table = (SQLTable) child;
 				if (table.getName().equalsIgnoreCase(tableName)) {
@@ -123,9 +125,7 @@ public class SQLCatalog extends SQLObject {
 		if (!isSchemaContainer()) {
 			return null;
 		}
-		Iterator childit = children.iterator();
-		while (childit.hasNext()) {
-			SQLSchema schema = (SQLSchema) childit.next();
+		for (SQLSchema schema : schemas) {
 			if (schema.getName().equalsIgnoreCase(schemaName)) {
 				return schema;
 			}
@@ -152,26 +152,25 @@ public class SQLCatalog extends SQLObject {
 
 		logger.debug("SQLCatalog: populate starting");
 	
-		int oldSize = children.size();
+		int oldSize = getChildrenWithoutPopulating().size();
 		synchronized (getParent()) {
 			Connection con = null;
 			try {
+				begin("Populating catalog");
 				con = ((SQLDatabase) getParent()).getConnection();
 				DatabaseMetaData dbmd = con.getMetaData();	
 				
 				// Try to find schemas in this catalog
-				List<SQLSchema> schemas = SQLSchema.fetchSchemas(dbmd, getName());
-				for (SQLSchema schema : schemas) {
-				    schema.setParent(this);
-				    children.add(schema);
+				List<SQLSchema> fetchedSchemas = SQLSchema.fetchSchemas(dbmd, getName());
+				for (SQLSchema schema : fetchedSchemas) {
+				    addSchema(schema);
 				}
 
 				// No schemas found--fall through and check for tables
-				if (oldSize == children.size()) {
-				    List<SQLTable> tables = SQLTable.fetchTablesForTableContainer(dbmd, getName(), null);
-				    for (SQLTable table : tables) {
-				        table.setParent(this);
-				        children.add(table);
+				if (oldSize == getChildren().size()) {
+				    List<SQLTable> fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, getName(), null);
+				    for (SQLTable table : fetchedTables) {
+				    	addTable(table);
 				    }
 				}
 				
@@ -179,14 +178,7 @@ public class SQLCatalog extends SQLObject {
 				throw new SQLObjectException("catalog.populate.fail", e);
 			} finally {
 				populated = true;
-				int newSize = children.size();
-				if (newSize > oldSize) {
-					int[] changedIndices = new int[newSize - oldSize];
-					for (int i = 0, n = newSize - oldSize; i < n; i++) {
-						changedIndices[i] = oldSize + i;
-					}
-					fireDbChildrenInserted(changedIndices, children.subList(oldSize, newSize));
-				}
+				commit();
 				try {
 					if (con != null) {
                         con.close();
@@ -204,11 +196,9 @@ public class SQLCatalog extends SQLObject {
 
 	// ----------------- accessors and mutators -------------------
 
-	public SQLDatabase getParentDatabase() {
-		return (SQLDatabase) getParent();
+	public SQLDatabase getParent() {
+		return (SQLDatabase) super.getParent();
 	}
-
-
 
 	/**
 	 * Gets the value of nativeTerm
@@ -233,11 +223,10 @@ public class SQLCatalog extends SQLObject {
 
 	@Override
 	public Class<? extends SQLObject> getChildType() {
-		if (children.size() == 0){
+		if (getChildren().size() == 0){
 			return null;
-		}
-		else{
-			return ((SQLObject)children.get(0)).getClass();
+		} else {
+			return (schemas.isEmpty()? SQLTable.class : SQLSchema.class);
 		}
 	}
 	
@@ -254,10 +243,108 @@ public class SQLCatalog extends SQLObject {
 	
 		// catalog has been populated
 	
-		if (children.size() == 0) {
+		if (getChildren().size() == 0) {
 			return true;
 		} else {
-			return (children.get(0) instanceof SQLSchema);
+			return !schemas.isEmpty();
 		}
 	}
+	
+	@Override
+	protected void addChildImpl(SPObject child, int index) {
+		if (child instanceof SQLSchema) {
+			addSchema((SQLSchema) child, index);
+		} else if (child instanceof SQLTable) {
+			addTable((SQLTable) child, index);
+		} else {
+			throw new IllegalArgumentException("The child " + child.getName() + 
+					" of type " + child.getClass() + " is not a valid child type of " + 
+					getClass() + ".");
+		}
+	}
+	
+	public void addSchema(SQLSchema schema) {
+		addSchema(schema, schemas.size());
+	}
+	
+	public void addSchema(SQLSchema schema, int index) {
+		schemas.add(index, schema);
+		schema.setParent(this);
+		fireChildAdded(SQLSchema.class, schema, index);
+	}
+	
+	public void addTable(SQLTable table) {
+		addTable(table, tables.size());
+	}
+	
+	public void addTable(SQLTable table, int index) {
+		tables.add(index, table);
+		table.setParent(this);
+		fireChildAdded(SQLTable.class, table, index);
+	}
+
+	@Override
+	public List<? extends SQLObject> getChildren() {
+		try {
+			populate();
+			return getChildrenWithoutPopulating();
+		} catch (SQLObjectException e) {
+			throw new SQLObjectRuntimeException(e);
+		}
+	}
+	
+	public List<? extends SQLObject> getChildrenWithoutPopulating() {
+		List<SQLObject> children = new ArrayList<SQLObject>();
+		children.addAll(schemas);
+		children.addAll(tables);
+		return Collections.unmodifiableList(children);
+	}
+
+	@Override
+	protected boolean removeChildImpl(SPObject child) {
+		if (child instanceof SQLSchema) {
+			return removeSchema((SQLSchema) child);
+		} else if (child instanceof SQLTable) {
+			return removeTable((SQLTable) child);
+		}
+		return false;
+	}
+	
+	public boolean removeSchema(SQLSchema schema) {
+		int index = schemas.indexOf(schema);
+		if (index != -1) {
+			schemas.remove(index);
+			schema.setParent(null);
+			fireChildRemoved(SQLSchema.class, schema, index);
+			return true;
+		}
+		return false;
+	}
+	
+	public boolean removeTable(SQLTable table) {
+		int index = tables.indexOf(table);
+		if (index != -1) {
+			tables.remove(index);
+			table.setParent(null);
+			fireChildRemoved(SQLTable.class, table, index);
+			return true;
+		}
+		return false;
+	}
+
+	public int childPositionOffset(Class<? extends SPObject> childType) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public List<? extends SPObject> getDependencies() {
+		return Collections.emptyList();
+	}
+
+	public void removeDependency(SPObject dependency) {
+		for (SQLObject child : getChildren()) {
+			child.removeDependency(dependency);
+		}
+	}
+	
 }
