@@ -125,7 +125,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		Connection con = null;
 		ResultSet rs = null;
 		try {
-			fireTransactionStarted("Populating Database " + this);
+			begin("Populating Database " + this);
 			con = getConnection();
 			DatabaseMetaData dbmd = con.getMetaData();
 			
@@ -143,7 +143,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			// If there were no catalogs, we should look for schemas
 			// instead (i.e. this database has no catalogs, and schemas
             // may be attached directly to the database)
-			if (catalogs.size() == oldSize) {
+			if (getChildrenWithoutPopulating().size() == oldSize) {
 				List<SQLSchema> fetchedSchemas = SQLSchema.fetchSchemas(dbmd, null);
 				for (SQLSchema schema : fetchedSchemas) {
 					addSchema(schema);
@@ -152,16 +152,16 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
             
             // Finally, look for tables directly under the database (this
             // could be a platform without catalogs or schemas at all)
-            if (tables.size() == oldSize) {
+            if (getChildrenWithoutPopulating().size() == oldSize) {
                 List<SQLTable> fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, "", ""); //$NON-NLS-1$ //$NON-NLS-2$
                 for (SQLTable table : fetchedTables) {
                 	addTable(table);
                 }
             }
-            fireTransactionEnded();
+            commit();
             
 		} catch (SQLException e) {
-			fireTransactionRollback(e.getMessage());
+			rollback(e.getMessage());
 			throw new SQLObjectException(Messages.getString("SQLDatabase.populateFailed"), e); //$NON-NLS-1$
 		} finally {
 			populated = true;
