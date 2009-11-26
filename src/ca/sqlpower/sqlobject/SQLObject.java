@@ -704,7 +704,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
                 }
             }
         } else {
-            for (SQLObject o : getChildren(SQLTable.class)) {
+            for (SQLObject o : getChildren()) {
                 o.refresh();
             }
         }
