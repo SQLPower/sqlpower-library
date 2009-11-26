@@ -33,8 +33,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import javax.mail.Folder;
-
 import org.apache.commons.beanutils.BeanUtils;
 
 import ca.sqlpower.object.AbstractSPListener;

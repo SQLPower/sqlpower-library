@@ -18,10 +18,6 @@
  */
 package ca.sqlpower.sqlobject;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import ca.sqlpower.sqlobject.SQLTable.Folder;
 
 public class TestFolder extends BaseSQLObjectTestCase {
 
@@ -75,49 +71,50 @@ public class TestFolder extends BaseSQLObjectTestCase {
 	 */
 	@Override
 	protected SQLObject getSQLObjectUnderTest() {
-        return table1pk.getColumnsFolder();
+//        return table1pk.getColumnsFolder();
+		return table1pk;
 	}
 	
-	/*
-	 * Test method for 'ca.sqlpower.sqlobject.SQLTable.Folder.getName()'
-	 */
-	public void testGetName() {
-		Folder f1;
-		f1 = new Folder(Folder.COLUMNS, true);
-		assertEquals (f1.getName(), "Columns");
-		f1 = new Folder(Folder.IMPORTED_KEYS, true);
-		assertEquals (f1.getName(), "Imported Keys");
-		f1 = new Folder(Folder.EXPORTED_KEYS, true);
-		assertEquals (f1.getName(), "Exported Keys");
-		f1.setName("xyz");
-		assertEquals (f1.getName(), "xyz");
-		f1.setName(null);
-		assertNull (f1.getName());
-	}
-
-	/*
-	 * Test method for 'ca.sqlpower.sqlobject.SQLTable.Folder.getParent()'
-	 */
-	public void testGetParent() throws SQLObjectException {
-		Folder f1 = new Folder(Folder.COLUMNS, true);
-		Folder f2 = new Folder(Folder.IMPORTED_KEYS, true);
-		Folder f3 = new Folder(Folder.EXPORTED_KEYS, true);
-		assertNull (f1.getParent());
-		SQLTable t1 = new SQLTable();
-		t1.addChild(f1);
-		t1.addChild(f2);
-		t1.addChild(f3);
-		assertEquals (f1.getParent(), t1);		
-		assertEquals (f2.getParent(), t1);	
-		assertEquals (f3.getParent(), t1);
-		t1.removeChild(1);
-		assertEquals (t1.getChild(1), f3);
-		t1.removeChild(f1);
-		assertEquals (t1.getChild(0), f3);
-		assertEquals (Folder.COLUMNS, f1.getType());
-		assertEquals (Folder.IMPORTED_KEYS, f2.getType());
-		assertEquals (Folder.EXPORTED_KEYS, f3.getType());
-	}
+//	/*
+//	 * Test method for 'ca.sqlpower.sqlobject.SQLTable.Folder.getName()'
+//	 */
+//	public void testGetName() {
+//		Folder f1;
+//		f1 = new Folder(Folder.COLUMNS, true);
+//		assertEquals (f1.getName(), "Columns");
+//		f1 = new Folder(Folder.IMPORTED_KEYS, true);
+//		assertEquals (f1.getName(), "Imported Keys");
+//		f1 = new Folder(Folder.EXPORTED_KEYS, true);
+//		assertEquals (f1.getName(), "Exported Keys");
+//		f1.setName("xyz");
+//		assertEquals (f1.getName(), "xyz");
+//		f1.setName(null);
+//		assertNull (f1.getName());
+//	}
+//
+//	/*
+//	 * Test method for 'ca.sqlpower.sqlobject.SQLTable.Folder.getParent()'
+//	 */
+//	public void testGetParent() throws SQLObjectException {
+//		Folder f1 = new Folder(Folder.COLUMNS, true);
+//		Folder f2 = new Folder(Folder.IMPORTED_KEYS, true);
+//		Folder f3 = new Folder(Folder.EXPORTED_KEYS, true);
+//		assertNull (f1.getParent());
+//		SQLTable t1 = new SQLTable();
+//		t1.addChild(f1);
+//		t1.addChild(f2);
+//		t1.addChild(f3);
+//		assertEquals (f1.getParent(), t1);		
+//		assertEquals (f2.getParent(), t1);	
+//		assertEquals (f3.getParent(), t1);
+//		t1.removeChild(1);
+//		assertEquals (t1.getChild(1), f3);
+//		t1.removeChild(f1);
+//		assertEquals (t1.getChild(0), f3);
+//		assertEquals (Folder.COLUMNS, f1.getType());
+//		assertEquals (Folder.IMPORTED_KEYS, f2.getType());
+//		assertEquals (Folder.EXPORTED_KEYS, f3.getType());
+//	}
 
 
 	/**
@@ -138,54 +135,54 @@ public class TestFolder extends BaseSQLObjectTestCase {
 	/*
 	 * Test method for 'ca.sqlpower.sqlobject.SQLTable.Folder.addChild(int, SQLObject)'
 	 */
-	public void testAddChild() throws SQLObjectException {
-		Folder main1 = new Folder(Folder.COLUMNS,true);
-		SQLColumn c1 = new SQLColumn();
-		SQLColumn c2 = new SQLColumn();
-		SQLColumn c3 = new SQLColumn();
-		
-		main1.addChild(c1);
-		assertEquals (main1.getChild(0), c1);
-		main1.addChild(c2);
-		assertEquals (main1.getChild(1), c2);
-		main1.addChild(c3,1);
-		
-		List children = new ArrayList(main1.getChildren());
-		
-		assertTrue (children.contains(c1));
-		assertTrue (children.contains(c2));
-		assertTrue (children.contains(c3));
-		assertEquals (children.size(), 3);
-		assertEquals (main1.getChildCount(),3);
-				
-		assertEquals (main1.getChild(1), c3);	
-		main1.removeChild(c3);
-		assertEquals(main1.getChild(1), c2);
-		main1.removeChild(0);
-		assertEquals(main1.getChild(0), c2);
-	}
-
-	public void testFireDbChildrenInserted() throws SQLObjectException {
-		Folder f1 = new Folder (Folder.COLUMNS, true);
-
-		TestingSQLObjectListener testListener = new TestingSQLObjectListener();
-		f1.addSPListener(testListener);
-
-		SQLColumn tmpCol = new SQLColumn();
-		f1.addChild(tmpCol);
-		assertEquals("Children inserted event not fired!", 1, testListener.getInsertedCount());
-	}
-
-	public void testFireDbChildrenRemoved() throws SQLObjectException {
-	    Folder f1 = new Folder (Folder.COLUMNS, true);
-	    
-        SQLColumn tmpCol = new SQLColumn();
-        f1.addChild(tmpCol);
-        
-        TestingSQLObjectListener testListener = new TestingSQLObjectListener();
-        f1.addSPListener(testListener);
-        f1.removeChild(tmpCol);
-        
-        assertEquals("Children removed event not fired!", 1, testListener.getRemovedCount());
-	}
+//	public void testAddChild() throws SQLObjectException {
+//		Folder main1 = new Folder(Folder.COLUMNS,true);
+//		SQLColumn c1 = new SQLColumn();
+//		SQLColumn c2 = new SQLColumn();
+//		SQLColumn c3 = new SQLColumn();
+//		
+//		main1.addChild(c1);
+//		assertEquals (main1.getChild(0), c1);
+//		main1.addChild(c2);
+//		assertEquals (main1.getChild(1), c2);
+//		main1.addChild(c3,1);
+//		
+//		List children = new ArrayList(main1.getChildren());
+//		
+//		assertTrue (children.contains(c1));
+//		assertTrue (children.contains(c2));
+//		assertTrue (children.contains(c3));
+//		assertEquals (children.size(), 3);
+//		assertEquals (main1.getChildCount(),3);
+//				
+//		assertEquals (main1.getChild(1), c3);	
+//		main1.removeChild(c3);
+//		assertEquals(main1.getChild(1), c2);
+//		main1.removeChild(0);
+//		assertEquals(main1.getChild(0), c2);
+//	}
+//
+//	public void testFireDbChildrenInserted() throws SQLObjectException {
+//		Folder f1 = new Folder (Folder.COLUMNS, true);
+//
+//		TestingSQLObjectListener testListener = new TestingSQLObjectListener();
+//		f1.addSPListener(testListener);
+//
+//		SQLColumn tmpCol = new SQLColumn();
+//		f1.addChild(tmpCol);
+//		assertEquals("Children inserted event not fired!", 1, testListener.getInsertedCount());
+//	}
+//
+//	public void testFireDbChildrenRemoved() throws SQLObjectException {
+//	    Folder f1 = new Folder (Folder.COLUMNS, true);
+//	    
+//        SQLColumn tmpCol = new SQLColumn();
+//        f1.addChild(tmpCol);
+//        
+//        TestingSQLObjectListener testListener = new TestingSQLObjectListener();
+//        f1.addSPListener(testListener);
+//        f1.removeChild(tmpCol);
+//        
+//        assertEquals("Children removed event not fired!", 1, testListener.getRemovedCount());
+//	}
 }

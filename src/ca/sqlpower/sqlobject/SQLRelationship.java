@@ -832,9 +832,10 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			startCompoundEdit("Relationship Manager Event");
 			
 			// Code from dbChildrenInserted
-			if (e.getSource() instanceof SQLTable.Folder) {
-				if (e.getSource() == pkTable.getColumnsFolder()) {
-					for (SQLColumn col : childrenAdded) {
+			if (e.getSource() == pkTable) {
+				for (SQLObject o : childrenAdded) {
+					if (o instanceof SQLColumn) {
+						SQLColumn col = (SQLColumn) o;
 						try {
 							if (col.getPrimaryKeySeq() != null) {
 								ensureInMapping(col);
@@ -850,21 +851,21 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			childrenAdded.clear();
 			
 			// Code from dbChildrenRemoved
-			if (e.getSource() instanceof SQLTable.Folder) {
-				if (e.getSource() == pkTable.getExportedKeysFolder()) {
-					for (SQLObject o : childrenRemoved) {
+			if (e.getSource() == pkTable) {
+				for (SQLObject o : childrenRemoved) {
+					if (o instanceof SQLRelationship) {
 						SQLRelationship r = (SQLRelationship) o;
-						if (r == SQLRelationship.this) {
+						if (pkTable == r.getPkTable() && r == SQLRelationship.this) {
 							try {
 								r.getFkTable().removeImportedKey(r);
 								logger.debug("Removing references for mappings: "+getChildren());
-
-                                // references to fk columns are removed in reverse order in case
-                                // this relationship is reconnected in the future. (if not removed
-                                // in reverse order, the PK sequence numbers will change as each
-                                // mapping is removed and the subsequent column indexes shift down)
-                                List<ColumnMapping> mappings = new ArrayList<ColumnMapping>(r.getChildren());
-                                Collections.sort(mappings, Collections.reverseOrder(new ColumnMappingFKColumnOrderComparator()));
+								
+								// references to fk columns are removed in reverse order in case
+								// this relationship is reconnected in the future. (if not removed
+								// in reverse order, the PK sequence numbers will change as each
+								// mapping is removed and the subsequent column indexes shift down)
+								List<ColumnMapping> mappings = new ArrayList<ColumnMapping>(r.getChildren());
+								Collections.sort(mappings, Collections.reverseOrder(new ColumnMappingFKColumnOrderComparator()));
 								for (ColumnMapping cm : mappings) {
 									logger.debug("Removing reference to fkcol "+ cm.getFkColumn());
 									cm.getFkColumn().removeReference();
@@ -873,14 +874,13 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 								detachListeners();
 							}
 						}
-					}
-				} else if (((SQLTable.Folder) e.getSource()) == pkTable.getColumnsFolder()) {
-					try {
-						for (SQLObject col : childrenRemoved) {
+					} else if (o instanceof SQLColumn) {
+						SQLColumn col = (SQLColumn) o;
+						try {
 							ensureNotInMapping((SQLColumn) col);
+						} catch (SQLObjectException ex) {
+							logger.warn("Couldn't remove mapped FK columns", ex);
 						}
-					} catch (SQLObjectException ex) {
-						logger.warn("Couldn't remove mapped FK columns", ex);
 					}
 				}
 			}
