@@ -364,7 +364,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			populate();
 		}
 		
-		return (getChildrenWithoutPopulating().size() == 0 || catalogs.size() != 0);
+		return (getChildrenWithoutPopulating().size() == 0 || catalogs.size() > 0);
 	}
 	
 	/**
@@ -379,7 +379,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		}
 	
 		// catalog has been populated
-		return (getChildrenWithoutPopulating().size() == 0 || schemas.size() != 0);
+		return (getChildrenWithoutPopulating().size() == 0 || schemas.size() > 0);
 	}
 
 	// ----------------- accessors and mutators -------------------
@@ -474,20 +474,19 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		} else {
 			// discard everything and reload (this is generally for source systems)
 			logger.debug("Resetting: " + getDataSource() ); //$NON-NLS-1$
-			fireTransactionStarted("Resetting Database " + this);
 			// tear down old connection stuff
 			try {
-				fireTransactionStarted("Resetting to remove all children");
+				begin("Resetting Database " + this);
 				for (int i = getChildren().size()-1; i >= 0; i--) {
 					removeChild(getChildren().get(i));
 				}
 				populated = false;
-				fireTransactionEnded();
+				commit();
 			} catch (IllegalArgumentException e) {
-				fireTransactionRollback(e.getMessage());
+				rollback(e.getMessage());
 				throw new RuntimeException(e);
 			} catch (ObjectDependentException e) {
-				fireTransactionRollback(e.getMessage());
+				rollback(e.getMessage());
 				throw new RuntimeException(e);
 			}
 		}

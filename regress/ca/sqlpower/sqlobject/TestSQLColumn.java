@@ -104,8 +104,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		
 		assertFalse("Table columns should not have been populated already",
 				table1pk.isColumnsPopulated());
-//		table1pk.getColumnsFolder().populate();
-		table1pk.populate();
+		table1pk.populateColumns();
 		assertTrue("Table columns should be populated",
 				table1pk.isColumnsPopulated());
 
@@ -272,7 +271,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		SQLColumn tmpCol = new SQLColumn();
 		assertEquals(tmpCol.getParent(),null);
 		table0pk.addColumn(tmpCol);
-		assertEquals(table0pk.getColumnsFolder(),tmpCol.getParent());
+		assertEquals(table0pk,tmpCol.getParent());
 	}
 
 	/*

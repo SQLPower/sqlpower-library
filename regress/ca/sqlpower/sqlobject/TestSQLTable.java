@@ -730,6 +730,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         SQLTable t = db.getTableByName("REGRESSION_TEST1_VIEW");
         
         // Should not throw an ArchitectException
+        t.populateColumns();
         t.populateIndices();
     }
     
