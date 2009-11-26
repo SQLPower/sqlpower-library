@@ -219,17 +219,6 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
 		assertEquals(0, target.getSQLObjectListeners().size());
 	}
 	
-	public void testNoMixChildTypes() throws SQLObjectException {
-		((SQLObjectImpl) target).allowsChildren = true;
-		target.addChild(new SQLColumn());
-		try {
-			target.addChild(new SQLObjectImpl());
-			fail("Target didn't throw exception for mixing child types!");
-		} catch (SQLObjectException e) {
-			// this is expected
-		}
-	}
-	
 	public void testAllowMixedChildrenThatAreSubclassesOfEachOther() throws Exception {
 		((SQLObjectImpl) target).allowsChildren = true;
 		SQLObject subImpl = new SQLObjectImpl() {};

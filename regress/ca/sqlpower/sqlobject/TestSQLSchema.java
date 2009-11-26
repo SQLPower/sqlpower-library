@@ -273,10 +273,10 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 		SQLTable t = new SQLTable(s,"xxx","","TABLE", true);
 		s.addChild(t);
 		
-		for ( int i=5; i>0; i-- ) {
+		for ( int i=4; i>=0; i-- ) {
 			s.removeChild(s.getChild(i));
-			assertEquals(i,s.getChildren().size());
-			assertEquals(i,s.getChildCount());
+			assertEquals(i+1,s.getChildren().size());
+			assertEquals(i+1,s.getChildCount());
 		}
 		
 		s.removeChild(t);

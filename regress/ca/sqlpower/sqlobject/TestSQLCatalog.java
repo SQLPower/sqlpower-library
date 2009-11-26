@@ -350,7 +350,12 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 		assertTrue(c.removeChild(t4));
 		assertEquals(c.getChildCount(),2);
 
-		assertFalse(c.removeChild(t4));
+		try {
+			c.removeChild(t4);
+			fail("SQLCatalog was able to remove a non-existent child. This is bad!");
+		} catch (IllegalArgumentException e) {
+			// Removing a non-existent child should fail.
+		}
 		assertEquals(c.getChildCount(),2);
 		
 	}
