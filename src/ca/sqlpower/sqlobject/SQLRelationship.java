@@ -728,7 +728,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				logger.debug("childAdded event! parent="+e.getSource()+";" +
 						" child="+e.getChild());
 			}
-			childrenAdded.add((SQLColumn) e.getChild());
+			if (e.getChild() instanceof SQLColumn) {
+				childrenAdded.add((SQLColumn) e.getChild());
+			}
 			SQLPowerUtils.listenToHierarchy(e.getChild(), this);
 		}
 
@@ -829,7 +831,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		
 		@Override
 		protected void transactionEndedImpl(TransactionEvent e) {
-			startCompoundEdit("Relationship Manager Event");
+			if (childrenAdded.isEmpty() && childrenRemoved.isEmpty()) return;
+			
+			begin("Relationship Manager Event");
 			
 			// Code from dbChildrenInserted
 			if (e.getSource() == pkTable) {
@@ -886,7 +890,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			}
 			childrenRemoved.clear();
 			
-			endCompoundEdit("Relationship Manager Event");
+			commit();
 		}
 		
 		@Override
@@ -997,8 +1001,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
                 if (--parentCount == 0) {
                     detachListeners();
                 }
-	        } else if ( (pkTable != null && newParent != pkTable.exportedKeys)
-	                && (fkTable != null && newParent != fkTable.importedKeys)) {
+	        } else if ( (pkTable != null && newParent != pkTable)
+	                && (fkTable != null && newParent != fkTable)) {
 	            throw new IllegalArgumentException
 	            ("You can't change the parent of a SQLRelationship this way");
 	        } else {

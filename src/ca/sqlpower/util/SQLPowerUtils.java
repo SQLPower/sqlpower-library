@@ -18,6 +18,7 @@ import ca.sqlpower.object.CleanupExceptions;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.util.UserPrompter.UserPromptOptions;
 import ca.sqlpower.util.UserPrompter.UserPromptResponse;
 import ca.sqlpower.util.UserPrompterFactory.UserPromptType;
@@ -227,8 +228,10 @@ public class SQLPowerUtils {
 	 */
     public static void listenToHierarchy(SPObject root, SPListener spcl) {
         root.addSPListener(spcl);
-        for (SPObject wob : root.getChildren()) {
-            listenToHierarchy(wob, spcl);
+        if (root.allowsChildren() && (!(root instanceof SQLObject) || ((SQLObject) root).isPopulated())) {
+        	for (SPObject wob : root.getChildren()) {
+        		listenToHierarchy(wob, spcl);
+        	}
         }
     }
 
@@ -247,8 +250,10 @@ public class SQLPowerUtils {
 	 */
     public static void unlistenToHierarchy(SPObject root, SPListener spcl) {
         root.removeSPListener(spcl);
-        for (SPObject wob : root.getChildren()) {
-            unlistenToHierarchy(wob, spcl);
+        if (root.allowsChildren() && (!(root instanceof SQLObject) || ((SQLObject) root).isPopulated())) {
+        	for (SPObject wob : root.getChildren()) {
+        		unlistenToHierarchy(wob, spcl);
+        	}
         }
     }
     

@@ -437,7 +437,10 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		SPDataSource oldDataSource = this.dataSource;
 		if (dataSource != null) {
 			dataSource.removePropertyChangeListener(this);
+			begin("Resetting Database");
+			firePropertyChange("dataSource", oldDataSource, argDataSource);
 			reset();
+			commit();
 		}
 		dataSource = argDataSource;
 		dataSource.addPropertyChangeListener(this);		

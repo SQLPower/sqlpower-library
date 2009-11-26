@@ -875,53 +875,55 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
             }
             this.primaryKeySeq = argPrimaryKeySeq;
             firePropertyChange("primaryKeySeq",oldPrimaryKeySeq,argPrimaryKeySeq);
-        } else try {
-            begin("Starting PrimaryKeySeq compound edit");
- 
-	        if (argPrimaryKeySeq != null && !this.autoIncrement) { // FIXME don't worry about autoIncrement
-	            setNullable(DatabaseMetaData.columnNoNulls);	
-	        }
-            
-	        // consider delaying this event until after the column has been put in place,
-            // because firing the event at this point causes relationship managers to update the
-            // child's PK before the parent's PK is properly formed
-            // (such a change would require thorough testing of course!)
-            this.primaryKeySeq = argPrimaryKeySeq;
-            firePropertyChange("primaryKeySeq",oldPrimaryKeySeq,argPrimaryKeySeq);
+        } else { 
+        	try {
+        		begin("Starting PrimaryKeySeq compound edit");
 
-            SQLObject p = getParent();
-            if (p != null) {
-                try {
-                    p.setMagicEnabled(false);
-                    p.removeChild(this);
-                    int idx = 0;
-                    int targetPKS = primaryKeySeq == null ? Integer.MAX_VALUE : primaryKeySeq.intValue();
-                    logger.debug("Parent = "+p);
-                    logger.debug("Parent.children = "+p.getChildren());
-                    for (SQLColumn col : p.getChildren(SQLColumn.class)) {
-                        if (col.getPrimaryKeySeq() == null ||
-                                col.getPrimaryKeySeq() > targetPKS) {
-                            logger.debug("idx is " + idx);
-                            break;
-                        }
-                        idx++;
-                    }                
-                    p.addChild(this, idx);
-                } catch (IllegalArgumentException e) {
-                	throw new RuntimeException(e);
-				} catch (ObjectDependentException e) {
-					throw new RuntimeException(e);
-				} finally {
-                    p.setMagicEnabled(true);
-                }
-                if (normalizeKey) {
-                    getParent().normalizePrimaryKey();
-                }
-            }
-        } catch (SQLObjectException e) {
-            throw new SQLObjectRuntimeException(e);
-        } finally {
-            commit();
+        		if (argPrimaryKeySeq != null && !this.autoIncrement) { // FIXME don't worry about autoIncrement
+        			setNullable(DatabaseMetaData.columnNoNulls);	
+        		}
+
+        		// consider delaying this event until after the column has been put in place,
+        		// because firing the event at this point causes relationship managers to update the
+        		// child's PK before the parent's PK is properly formed
+        		// (such a change would require thorough testing of course!)
+        		this.primaryKeySeq = argPrimaryKeySeq;
+        		firePropertyChange("primaryKeySeq",oldPrimaryKeySeq,argPrimaryKeySeq);
+
+        		SQLObject p = getParent();
+        		if (p != null) {
+        			try {
+        				p.setMagicEnabled(false);
+        				p.removeChild(this);
+        				int idx = 0;
+        				int targetPKS = primaryKeySeq == null ? Integer.MAX_VALUE : primaryKeySeq.intValue();
+        				logger.debug("Parent = "+p);
+        				logger.debug("Parent.children = "+p.getChildren());
+        				for (SQLColumn col : p.getChildren(SQLColumn.class)) {
+        					if (col.getPrimaryKeySeq() == null ||
+        							col.getPrimaryKeySeq() > targetPKS) {
+        						logger.debug("idx is " + idx);
+        						break;
+        					}
+        					idx++;
+        				}                
+        				p.addChild(this, idx);
+        			} catch (IllegalArgumentException e) {
+        				throw new RuntimeException(e);
+        			} catch (ObjectDependentException e) {
+        				throw new RuntimeException(e);
+        			} finally {
+        				p.setMagicEnabled(true);
+        			}
+        			if (normalizeKey) {
+        				getParent().normalizePrimaryKey();
+        			}
+        		}
+        	} catch (SQLObjectException e) {
+        		throw new SQLObjectRuntimeException(e);
+        	} finally {
+        		commit();
+        	}
         }
 	}
 
