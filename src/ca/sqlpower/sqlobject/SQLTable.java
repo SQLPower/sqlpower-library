@@ -652,6 +652,7 @@ public class SQLTable extends SQLObject {
 	}
 
 	public SQLColumn getColumn(int index) throws SQLObjectException {
+		populateColumns();
 		return columns.get(index);
 	}
 

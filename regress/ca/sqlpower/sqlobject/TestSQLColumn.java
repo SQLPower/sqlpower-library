@@ -675,7 +675,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		try {
 			tmpCol.addChild(new SQLColumn(),1);
 			fail("SQLColumn should not have child");
-		} catch (UnsupportedOperationException e) {
+		} catch (IllegalArgumentException e) {
 			/* it's normal */
 		}
 		assertEquals(tmpCol.getChildren().size(),0);
@@ -686,7 +686,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		try {
 			cowCol.addChild(new SQLColumn(),1);
 			fail("SQLColumn should not have child");
-		} catch (UnsupportedOperationException e) {
+		} catch (IllegalArgumentException e) {
 			/* it's normal */
 		}
 		assertEquals(cowCol.getChildren().size(),0);
@@ -738,7 +738,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 			tmpCol.addChild(table3pk,2);
 			fail();
 			
-		} catch ( UnsupportedOperationException e ) {
+		} catch ( IllegalArgumentException e ) {
 		}
 
 
@@ -748,7 +748,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 			fail();
 			cowCol.addChild(table3pk,2);
 			fail();
-		} catch ( UnsupportedOperationException e ) {
+		} catch ( IllegalArgumentException e ) {
 		}
 		
 	}
@@ -763,7 +763,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 			fail();
 			tmpCol.addChild(table3pk);
 			fail();
-		} catch ( UnsupportedOperationException e ) {
+		} catch ( IllegalArgumentException e ) {
 		}
 
 
@@ -773,7 +773,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 			fail();
 			cowCol.addChild(table3pk);
 			fail();
-		} catch ( UnsupportedOperationException e ) {
+		} catch ( IllegalArgumentException e ) {
 		}
 	}
 
