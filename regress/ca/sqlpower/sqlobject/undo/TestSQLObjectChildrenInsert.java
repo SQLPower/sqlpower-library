@@ -48,7 +48,7 @@ public class TestSQLObjectChildrenInsert extends TestCase {
 		
 	}
 	
-	public void testDatabaseInsert()throws SQLObjectException {
+	public void testDatabaseInsert() throws Exception {
 		
 		// setup a playpen like database
 		SQLDatabase db = new SQLDatabase();
@@ -62,7 +62,7 @@ public class TestSQLObjectChildrenInsert extends TestCase {
 		db.addChild(table2);
 		db.addChild(table3);
 		db.addChild(table4);
-		db.removeChild(2);
+		db.removeChild(db.getChild(2));
 		undoManager.undo();
 		assertEquals("There should be 4 children",4,db.getChildCount());
 		assertEquals("The first table is in the wrong position",table1,db.getChild(0));

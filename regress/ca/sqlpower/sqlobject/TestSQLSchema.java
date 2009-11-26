@@ -201,16 +201,16 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 		assertEquals(++cnt,s.getChildren().size());
 		assertEquals(cnt,s.getChildCount());
 		
-		s.removeChild(0);
+		s.removeChild(s.getChild(0));
 		assertEquals(--cnt,s.getChildren().size());
 		assertEquals(cnt,s.getChildCount());
-		s.removeChild(0);
+		s.removeChild(s.getChild(0));
 		assertEquals(--cnt,s.getChildren().size());
 		assertEquals(cnt,s.getChildCount());
-		s.removeChild(0);
+		s.removeChild(s.getChild(0));
 		assertEquals(--cnt,s.getChildren().size());
 		assertEquals(cnt,s.getChildCount());
-		s.removeChild(0);
+		s.removeChild(s.getChild(0));
 		assertEquals(--cnt,s.getChildren().size());
 		assertEquals(cnt,s.getChildCount());
 	}
@@ -252,7 +252,7 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 		assertEquals(5,s.getChildCount());
 		
 		for ( int i=4; i>=0; i-- ) {
-			s.removeChild(0);
+			s.removeChild(s.getChild(i));
 			assertEquals(i,s.getChildren().size());
 			assertEquals(i,s.getChildCount());
 		}
@@ -274,7 +274,7 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 		s.addChild(t);
 		
 		for ( int i=5; i>0; i-- ) {
-			s.removeChild(0);
+			s.removeChild(s.getChild(i));
 			assertEquals(i,s.getChildren().size());
 			assertEquals(i,s.getChildCount());
 		}

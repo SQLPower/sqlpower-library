@@ -613,10 +613,10 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         assertEquals(1, l.getInsertedCount());
     }
     
-    public void testRemoveMappingsFiresEvents() {
+    public void testRemoveMappingsFiresEvents() throws Exception {
         CountingSQLObjectListener l = new CountingSQLObjectListener();
         rel1.addSPListener(l);
-        rel1.removeChild(0);
+        rel1.removeChild(rel1.getChild(0));
         assertEquals(1, l.getRemovedCount());
     }
 

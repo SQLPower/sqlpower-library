@@ -343,7 +343,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 		db1.addChild(t3,0);
 		assertEquals (db1.getChild(1), t1);
 		assertEquals (db1.getChild(0), t3);
-		db1.removeChild (1);
+		db1.removeChild(db1.getChild(1));
 		assertEquals (db1.getChild(1), t2);
 		db1.removeChild(t3);
 		assertEquals (db1.getChild(0), t2);

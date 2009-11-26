@@ -31,6 +31,7 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
@@ -269,7 +270,7 @@ public class SQLTable extends SQLObject {
 			        getCatalogName(), getSchemaName(), getName(), dbmd);
 			begin("Populating columns for Table " + this);
 			for (SQLColumn col : cols) {
-			    addColumn(col);
+			    addColumnWithoutPopulating(col);
 			}
 			commit();
 		} catch (SQLException e) {
@@ -743,6 +744,22 @@ public class SQLTable extends SQLObject {
 		columns.add(pos, col);
 		fireChildAdded(SQLColumn.class, col, pos);
 	}
+	
+	/**
+	 * Adds a {@link SQLColumn} to the end of the child list without populating first.
+	 */
+	public void addColumnWithoutPopulating(SQLColumn col) {
+		addColumnWithoutPopulating(col, columns.size());
+	}
+	
+	/**
+	 * Adds a {@link SQLColumn} at a given index of the child list without populating first.
+	 */
+	public void addColumnWithoutPopulating(SQLColumn col, int index) {
+		columns.add(index, col);
+		col.setParent(this);
+		fireChildAdded(SQLColumn.class, col, index);
+	}
 
 	/**
      * Adds the given SQLIndex object to this table's index folder.
@@ -761,19 +778,10 @@ public class SQLTable extends SQLObject {
     	fireChildAdded(SQLIndex.class, sqlIndex, index);
     }
 
-	/**
-	 * Connects up the columnsFolder, exportedKeysFolder,
-	 * importedKeysFolder, and indicesFolder pointers to the
-     * children at indices 0, 1, 2, and 3 respectively.
-	 */
     @Override
     protected void addChildImpl(SPObject child, int index) {
 		if (child instanceof SQLColumn) {
-			try {
-				addColumn((SQLColumn) child, index);
-			} catch (SQLObjectException e) {
-				throw new RuntimeException("Could not add column " + child.getName() + " to table " + getName());
-			}
+			addColumnWithoutPopulating((SQLColumn) child, index);
 		} else if (child instanceof SQLRelationship) {
 			throw new IllegalArgumentException("Cannot add SQLRelationship " + child.getName() + 
 					" to table " + getName() + " as it should be called from addImportedKey" +
@@ -948,8 +956,9 @@ public class SQLTable extends SQLObject {
 
                 SQLIndex pkIndex = getPrimaryKeyIndex();
                 Map<SQLColumn, Column> oldColumnInstances = new HashMap<SQLColumn, Column>();
-                while (pkIndex.getChildCount() > 0) {
-                    Column child = (Column) pkIndex.removeChild(0);
+                for (int j = pkIndex.getChildCount()-1; j >= 0; j--) {
+                    Column child = (Column) pkIndex.getChild(j);
+                    pkIndex.removeChild(child);
                     if (child.getColumn() == null) {
                         throw new IllegalStateException(
                                 "Found a functional index column in PK." +
@@ -973,6 +982,12 @@ public class SQLTable extends SQLObject {
                 	removeIndex(pkIndex);
                 }
             } while (normalizeAgain);
+		} catch (IllegalArgumentException e) {
+			rollback("Could not remove child: " + e.getMessage());
+			throw new RuntimeException(e);
+		} catch (ObjectDependentException e) {
+			rollback("Could not remove child: " + e.getMessage());
+			throw new RuntimeException(e);
 		} finally {
 		    commit();
             normalizing = false;

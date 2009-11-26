@@ -20,6 +20,7 @@ package ca.sqlpower.sqlobject;
 
 import java.sql.Types;
 
+import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -99,8 +100,9 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     public void testReAddColumnAddsListener() throws Exception {
         System.out.println("Original listeners:       "+col1.getSQLObjectListeners());
         int origListeners = col1.getSQLObjectListeners().size();
-        SQLIndex.Column removed = (Column) index.removeChild(0);
-        index.addChild(removed);
+        SQLIndex.Column childToRemove = index.getChild(0);
+        index.removeChild(childToRemove);
+        index.addChild(childToRemove);
         System.out.println("Post-remove-add listeners: "+col1.getSQLObjectListeners());
         assertEquals(origListeners, col1.getSQLObjectListeners().size());
     }
@@ -109,10 +111,10 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
      * When you remove a column from an index, it has to unsubscribe its
      * listener from its target column.
      */
-    public void testRemoveColumnNoListenerLeak() {
+    public void testRemoveColumnNoListenerLeak() throws Exception {
         System.out.println("Original listeners:    "+col1.getSQLObjectListeners());
         int origListeners = col1.getSQLObjectListeners().size();
-        index.removeChild(0);
+        index.removeChild(index.getChild(0));
         System.out.println("Post-remove listeners: "+col1.getSQLObjectListeners());
         assertEquals(origListeners - 1, col1.getSQLObjectListeners().size());
     }
@@ -249,7 +251,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         }
     }
     
-    public void testMakeColumnsLikeOtherIndexWhichHasNoColumns() throws SQLObjectException {
+    public void testMakeColumnsLikeOtherIndexWhichHasNoColumns() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
         SQLIndex i = new SQLIndex("Index",true,"", "BTREE","");
         SQLColumn col = new SQLColumn();
         i.addChild(i.new Column("index column",AscendDescend.UNSPECIFIED));
@@ -260,7 +262,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         assertEquals("Oh no some children are left!",0,i.getChildCount());
     }
     
-    public void testMakeColumnsLikeOtherIndexWhichHasColumns() throws SQLObjectException {
+    public void testMakeColumnsLikeOtherIndexWhichHasColumns() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
         SQLIndex i = new SQLIndex("Index",true,"", "BTREE","");
         SQLColumn col = new SQLColumn();
         
@@ -273,7 +275,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         assertEquals("Oh no wrong child!",i2.getChild(1),i.getChild(1));
     }
     
-    public void testMakeColumnsLikeOtherIndexReordersColumns() throws SQLObjectException {
+    public void testMakeColumnsLikeOtherIndexReordersColumns() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
         SQLIndex i = new SQLIndex("Index",true,"", "BTREE","");
         SQLColumn col = new SQLColumn();
         i.addChild(i.new Column(col,AscendDescend.UNSPECIFIED));

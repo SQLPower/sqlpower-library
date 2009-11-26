@@ -391,26 +391,38 @@ public class SQLIndex extends SQLObject {
     @Override
     public final void updateToMatch(SQLObject source) throws SQLObjectException {
         SQLIndex sourceIdx = (SQLIndex) source;
-        setName(sourceIdx.getName());
-        setUnique(sourceIdx.unique);
-        populated = sourceIdx.populated;
-        setType(sourceIdx.type);
-        setFilterCondition(sourceIdx.filterCondition);
-        setQualifier(sourceIdx.qualifier);
-        setClustered(sourceIdx.clustered);
         
-        while (columns.size() > 0) {
-            removeChild(0);
-        }
-        
-        for (Object c : sourceIdx.getChildren()) {
-            Column oldCol = (Column) c;
-            Column newCol = new Column();
-            newCol.setAscendingOrDescending(oldCol.ascendingOrDescending);
-            newCol.setAscendingOrDescending(oldCol.ascendingOrDescending);
-            newCol.setColumn(oldCol.column);
-            newCol.setName(oldCol.getName());
-            addChild(newCol);
+        try {
+        	begin("Updating SQLIndex to match source object.");
+
+        	setName(sourceIdx.getName());
+        	setUnique(sourceIdx.unique);
+        	populated = sourceIdx.populated;
+        	setType(sourceIdx.type);
+        	setFilterCondition(sourceIdx.filterCondition);
+        	setQualifier(sourceIdx.qualifier);
+        	setClustered(sourceIdx.clustered);
+
+        	for (int i = columns.size()-1; i >= 0; i--) {
+        		removeChild(columns.get(i));
+        	}
+
+        	for (Object c : sourceIdx.getChildren()) {
+        		Column oldCol = (Column) c;
+        		Column newCol = new Column();
+        		newCol.setAscendingOrDescending(oldCol.ascendingOrDescending);
+        		newCol.setAscendingOrDescending(oldCol.ascendingOrDescending);
+        		newCol.setColumn(oldCol.column);
+        		newCol.setName(oldCol.getName());
+        		addChild(newCol);
+        	}
+        	commit();
+        } catch (IllegalArgumentException e) {
+        	rollback("Could not remove columns from SQLIndex: " + e.getMessage());
+        	throw new RuntimeException(e);
+        } catch (ObjectDependentException e) {
+        	rollback("Could not remove columns from SQLIndex: " + e.getMessage());
+        	throw new RuntimeException(e);        	
         }
     }
 
@@ -501,17 +513,27 @@ public class SQLIndex extends SQLObject {
     private void removeColumnFromIndices(SQLObjectEvent e) {
         if (getParent() != null && getParent().isMagicEnabled()) {
             try {
+            	begin("Removing column from indices");
                 for (int i = 0; i < e.getChildren().length; i++) {
                     for (int j = this.getChildCount() - 1; j >= 0; j--) {
-                        if (getChild(j).getColumn() != null && getChild(j).getColumn().equals(e.getChildren()[i])) {
-                            removeChild(j);
+                    	Column col = getChild(j);
+                        if (col.getColumn() != null && col.getColumn().equals(e.getChildren()[i])) {
+                            removeChild(col);
                         }
                     }
                 }
                 cleanUp();
+                commit();
             } catch (SQLObjectException e1) {
+            	rollback("Could not remove child: " + e1.getMessage());
                 throw new SQLObjectRuntimeException(e1);
-            }
+            } catch (IllegalArgumentException e1) {
+            	rollback("Could not remove child: " + e1.getMessage());
+                throw new RuntimeException(e1);            	
+			} catch (ObjectDependentException e1) {
+            	rollback("Could not remove child: " + e1.getMessage());
+                throw new RuntimeException(e1);
+			}
         }
     }
 
@@ -532,15 +554,6 @@ public class SQLIndex extends SQLObject {
 		} catch (ObjectDependentException e) {
 			throw new RuntimeException(e);
 		}
-    }
-
-    @Override
-    protected SQLObject removeImpl(int index) {
-        Column c = columns.get(index);
-        if (c.getColumn() != null) {
-            c.getColumn().removeSPListener(c.targetColumnListener);
-        }
-        return super.removeImpl(index);
     }
 
     @Override
@@ -859,14 +872,16 @@ public class SQLIndex extends SQLObject {
      *
      * @param index The index who's columns are what we want in this index
      * @throws SQLObjectException
+     * @throws ObjectDependentException 
+     * @throws IllegalArgumentException 
      */
-    public void makeColumnsLike(SQLIndex index) throws SQLObjectException {
+    public void makeColumnsLike(SQLIndex index) throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
         for (int i = columns.size() - 1; i >= 0; i--) {
             Column c = columns.get(i);
             if (c.column != null) {
                 c.column.removeSPListener(c.targetColumnListener);
             }
-            removeChild(i);
+            removeChild(c);
         }
 
         for (Column c : index.getChildren()) {
@@ -878,22 +893,39 @@ public class SQLIndex extends SQLObject {
 
 	@Override
 	protected boolean removeChildImpl(SPObject child) {
-		// TODO Auto-generated method stub
+		if (child instanceof SQLIndex.Column) {
+			return removeColumn((SQLIndex.Column) child);
+		} else {
+			throw new IllegalArgumentException("Cannot remove children of type " 
+					+ child.getClass() + " from " + getName());
+		}
+	}
+	
+	public boolean removeColumn(SQLIndex.Column col) {
+		int index = columns.indexOf(col);
+		if (index != -1) {
+			columns.remove(index);
+			col.setParent(null);
+			fireChildRemoved(SQLIndex.Column.class, col, index);
+			return true;
+		}
 		return false;
 	}
 
 	public int childPositionOffset(Class<? extends SPObject> childType) {
-		// TODO Auto-generated method stub
-		return 0;
+		if (childType == SQLIndex.Column.class) return 0;
+		
+		throw new IllegalArgumentException("The type " + childType + 
+				" is not a valid child type of " + getName());
 	}
 
 	public List<? extends SPObject> getDependencies() {
-		// TODO Auto-generated method stub
-		return null;
+		return Collections.emptyList();
 	}
 
 	public void removeDependency(SPObject dependency) {
-		// TODO Auto-generated method stub
-		
+        for (SQLObject child : getChildren()) {
+            child.removeDependency(dependency);
+        }
 	}
 }

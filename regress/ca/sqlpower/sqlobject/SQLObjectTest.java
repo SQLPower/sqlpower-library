@@ -230,14 +230,14 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
 		}
 	}
 	
-	public void testAllowMixedChildrenThatAreSubclassesOfEachOther() throws SQLObjectException {
+	public void testAllowMixedChildrenThatAreSubclassesOfEachOther() throws Exception {
 		((SQLObjectImpl) target).allowsChildren = true;
 		SQLObject subImpl = new SQLObjectImpl() {};
 		target.addChild(new SQLObjectImpl());
 		target.addChild(subImpl);
 		
 		// now test the other direction
-		target.removeChild(0);
+		target.removeChild(target.getChild(0));
 		target.addChild(new SQLObjectImpl());
         
         // test passes if no exceptions were thrown
@@ -252,7 +252,7 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
         
         l.setVetoing(false);
         
-        target.removeChild(0);
+        target.removeChild(target.getChild(0));
         
         assertEquals("Event fired", 1, l.getPreRemoveCount());
         assertEquals("Child removed", 0, target.getChildren().size());
@@ -267,7 +267,7 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
         
         l.setVetoing(true);
         
-        target.removeChild(0);
+        target.removeChild(target.getChild(0));
         
         assertEquals("Event fired", 1, l.getPreRemoveCount());
         assertEquals("Child not removed", 1, target.getChildren().size());

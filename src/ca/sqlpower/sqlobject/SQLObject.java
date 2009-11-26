@@ -332,37 +332,6 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 		addChild(newChild, getChildren(newChild.getClass()).size());
 	}
 	
-    /**
-     * This implementation calls {@link#removeImpl(int)}.
-     */
-	public SQLObject removeChild(int index) {
-	    return removeImpl(index);
-	}
-
-    /**
-     * The implementation that all remove methods delegate to.  If you want
-     * to override the behaviour of removeChild, override this method.
-     */
-    protected SQLObject removeImpl(int index) {
-        boolean shouldProceed = fireDbChildPreRemove(index, (SQLObject) getChildren().get(index));
-
-        if (shouldProceed) {
-            try {
-                begin("Remove child of " + getName());
-                SQLObject removedChild = (SQLObject) getChildren().remove(index);
-                if (removedChild != null) {
-                    removedChild.setParent(null);
-                    fireChildRemoved(removedChild.getClass(), removedChild, index);
-                }
-                return removedChild;
-            } finally {
-                commit();
-            }
-        } else {
-            return null;
-        }
-    }
-	
 	// ------------------- sql object event support -------------------
 	private final transient List<SQLObjectListener> sqlObjectListeners = 
 		new LinkedList<SQLObjectListener>();

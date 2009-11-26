@@ -332,15 +332,6 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 		assertEquals(c.getChildren().size(),0);
 		assertEquals(c.getChildCount(),0);
 
-		try {
-			c.removeChild(-1);
-			c.removeChild(0);
-			c.removeChild(1);
-			fail();
-		} catch ( IndexOutOfBoundsException e ) {
-			// that's what we want
-		}
-		
 		SQLTable t1 = new SQLTable(c,"","","TABLE",true);
 		SQLTable t2 = new SQLTable(c,"","","TABLE",true);
 		SQLTable t3 = new SQLTable(c,"","","TABLE",true);
@@ -351,7 +342,8 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 		c.addChild(t3);
 		c.addChild(t4);
 		assertEquals(c.getChildCount(),4);
-		SQLTable tx = (SQLTable) c.removeChild(1);
+		SQLTable tx = (SQLTable) c.getChild(1);
+		c.removeChild(tx);
 		assertEquals(tx,t2);
 		assertEquals(c.getChildCount(),3);
 		
