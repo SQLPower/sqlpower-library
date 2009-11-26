@@ -73,6 +73,8 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
 		propertiesToIgnoreForEventGeneration.add("zoomOutAction");
         propertiesToIgnoreForEventGeneration.add("magicEnabled");
         propertiesToIgnoreForEventGeneration.add("tableContainer");
+        propertiesToIgnoreForEventGeneration.add("session");
+        propertiesToIgnoreForEventGeneration.add("foregroundThread");
 		
 		if (so instanceof SQLDatabase) {
 			// should be handled in the Datasource
@@ -210,6 +212,8 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
         propertiesToIgnoreForUndo.add("deleteRule");
         propertiesToIgnoreForUndo.add("updateRule");
         propertiesToIgnoreForUndo.add("tableContainer");
+        propertiesToIgnoreForUndo.add("session");
+        propertiesToIgnoreForUndo.add("foregroundThread");
 
 		if(so instanceof SQLDatabase)
 		{
