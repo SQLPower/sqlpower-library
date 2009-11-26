@@ -684,17 +684,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
 	/**
-	 * Sets the value of parent
-	 *
-	 * @param argParent Value to assign to this.parent
-	 */
-	protected void setParent(SQLObject argParent) {
-		SQLObject oldParent = getParent();
-		super.setParent(argParent);
-		firePropertyChange("parent",oldParent,argParent);
-	}
-
-	/**
      * Returns this column's nullability.
      * 
      * @return One of:

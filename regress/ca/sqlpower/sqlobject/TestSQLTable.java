@@ -215,7 +215,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         assertEquals("refcount didn't increase", 2, col.getReferenceCount());
     }
     
-    public void tesRemoveColumnByZeroRefs() throws SQLObjectException {
+    public void testRemoveColumnByZeroRefs() throws SQLObjectException {
         SQLTable table = db.getTableByName("REGRESSION_TEST1");
         SQLColumn col = table.getColumn(0);
         table.addColumn(col);
@@ -373,18 +373,19 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     
     public void testFireDbChildrenInserted() throws Exception {
         SQLTable table1 = new SQLTable();
+        table1.setPopulated(true);
         
         TestingSQLObjectListener testListener = new TestingSQLObjectListener();
         table1.addSPListener(testListener);
         
         SQLColumn col = new SQLColumn();
-        col.setPopulated(true);
         table1.addChild(col);
         assertEquals("Children inserted event not fired!", 1, testListener.getInsertedCount());
     }
     
     public void testFireDbChildrenRemoved() throws Exception {
         SQLTable table1 = new SQLTable();
+        table1.setPopulated(true);
         SQLColumn col = new SQLColumn();
         table1.addChild(col);
         

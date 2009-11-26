@@ -252,7 +252,7 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 		assertEquals(5,s.getChildCount());
 		
 		for ( int i=4; i>=0; i-- ) {
-			s.removeChild(s.getChild(i));
+			s.removeChild(s.getChild(0));
 			assertEquals(i,s.getChildren().size());
 			assertEquals(i,s.getChildCount());
 		}

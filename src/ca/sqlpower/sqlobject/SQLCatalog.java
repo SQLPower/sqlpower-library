@@ -156,7 +156,7 @@ public class SQLCatalog extends SQLObject {
 		synchronized (getParent()) {
 			Connection con = null;
 			try {
-				fireTransactionStarted("Populating Catalog " + this);
+				begin("Populating Catalog " + this);
 				con = ((SQLDatabase) getParent()).getConnection();
 				DatabaseMetaData dbmd = con.getMetaData();	
 				
@@ -167,16 +167,16 @@ public class SQLCatalog extends SQLObject {
 				}
 
 				// No schemas found--fall through and check for tables
-				if (oldSize == getChildren().size()) {
+				if (oldSize == getChildrenWithoutPopulating().size()) {
 				    List<SQLTable> fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, getName(), null);
 				    for (SQLTable table : fetchedTables) {
 				    	addTable(table);
 				    }
 				}
 				
-				fireTransactionEnded();
+				commit();
 			} catch (SQLException e) {
-				fireTransactionRollback(e.getMessage());
+				rollback(e.getMessage());
 				throw new SQLObjectException("catalog.populate.fail", e);
 			} finally {
 				populated = true;

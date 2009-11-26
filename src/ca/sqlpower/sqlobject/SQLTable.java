@@ -867,7 +867,7 @@ public class SQLTable extends SQLObject {
 
             // If the indices are the same, then there's no point in moving the column
             if (oldIdx != newIdx) {
-            	removeColumn(oldIdx);
+            	removeColumn(col);
             	addColumn(col, newIdx);
             }
 
