@@ -382,7 +382,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 			boolean alreadyExists = false;
 			
-			for (SQLRelationship r : pkTable.getExportedKeys()) {
+			for (SQLRelationship r : pkTable.getExportedKeysWithoutPopulating()) {
 			    if (r.getFkTable().equals(fkTable)) {
 			        alreadyExists = true;
 			        break;

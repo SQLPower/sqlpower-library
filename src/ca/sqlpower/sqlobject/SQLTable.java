@@ -474,7 +474,7 @@ public class SQLTable extends SQLObject {
                     allRelationshipsAdded = false;
                     continue;
                 }
-                if (!addMe.pkTable.getExportedKeys().contains(addMe)) {
+                if (!addMe.pkTable.getExportedKeysWithoutPopulating().contains(addMe)) {
                     addMe.attachRelationship(addMe.pkTable, addMe.fkTable, false);
                 }
             }
