@@ -143,7 +143,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 	
 	public void testSetPhysicalName() {
 		CountingSQLObjectListener l = new CountingSQLObjectListener();
-		rel1.addSQLObjectListener(l);
+		rel1.addSPListener(l);
 		
 		// ensure all event counts start with 0
 		assertEquals(0, l.getInsertedCount());
@@ -605,7 +605,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
     
     public void testCreateMappingsFiresEvents() throws SQLObjectException {
         CountingSQLObjectListener l = new CountingSQLObjectListener();
-        rel1.addSQLObjectListener(l);
+        rel1.addSPListener(l);
         SQLRelationship.ColumnMapping columnMapping = new SQLRelationship.ColumnMapping();
         columnMapping.setPkColumn(parentTable.getColumn(0));
         columnMapping.setFkColumn(childTable1.getColumn(0));
@@ -615,14 +615,14 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
     
     public void testRemoveMappingsFiresEvents() {
         CountingSQLObjectListener l = new CountingSQLObjectListener();
-        rel1.addSQLObjectListener(l);
+        rel1.addSPListener(l);
         rel1.removeChild(0);
         assertEquals(1, l.getRemovedCount());
     }
 
     public void testRelationshipManagerRemoveMappingsFiresEvents() throws SQLObjectException {
         CountingSQLObjectListener l = new CountingSQLObjectListener();
-        rel1.addSQLObjectListener(l);
+        rel1.addSPListener(l);
         parentTable.removeColumn(0);
         assertEquals(1, l.getRemovedCount());
     }

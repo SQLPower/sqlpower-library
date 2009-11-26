@@ -169,7 +169,7 @@ public class TestFolder extends BaseSQLObjectTestCase {
 		Folder f1 = new Folder (Folder.COLUMNS, true);
 
 		TestingSQLObjectListener testListener = new TestingSQLObjectListener();
-		f1.addSQLObjectListener(testListener);
+		f1.addSPListener(testListener);
 
 		SQLColumn tmpCol = new SQLColumn();
 		f1.addChild(tmpCol);
@@ -183,7 +183,7 @@ public class TestFolder extends BaseSQLObjectTestCase {
         f1.addChild(tmpCol);
         
         TestingSQLObjectListener testListener = new TestingSQLObjectListener();
-        f1.addSQLObjectListener(testListener);
+        f1.addSPListener(testListener);
         f1.removeChild(tmpCol);
         
         assertEquals("Children removed event not fired!", 1, testListener.getRemovedCount());

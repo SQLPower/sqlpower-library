@@ -129,7 +129,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
     public void testReferenceCountFiresEvents() {
         SQLColumn col = new SQLColumn();
         TestingSQLObjectListener testListener = new TestingSQLObjectListener();
-        col.addSQLObjectListener(testListener);
+        col.addSPListener(testListener);
         assertEquals("Strange the test listener has recieved events",testListener.getChangedCount(),0);
         col.addReference();
         assertEquals("Incorrect number of change events!",testListener.getChangedCount(),1);

@@ -20,9 +20,11 @@ package ca.sqlpower.sqlobject.undo;
 
 import java.util.EventListener;
 
+import ca.sqlpower.util.TransactionEvent;
+
 public interface CompoundEventListener extends EventListener {
 
-	public void compoundEditStart(CompoundEvent e);
-	public void compoundEditEnd(CompoundEvent e);
+	public void transactionStarted(TransactionEvent e);
+	public void transactionEnded(TransactionEvent e);
 
 }

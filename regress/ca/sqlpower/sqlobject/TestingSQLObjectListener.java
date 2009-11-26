@@ -19,8 +19,13 @@
 
 package ca.sqlpower.sqlobject;
 
+import java.beans.PropertyChangeEvent;
 
-public class TestingSQLObjectListener implements SQLObjectListener {
+import ca.sqlpower.object.AbstractSPListener;
+import ca.sqlpower.object.SPChildEvent;
+
+
+public class TestingSQLObjectListener extends AbstractSPListener {
 
     private int insertedCount;
     private int removedCount;
@@ -33,15 +38,19 @@ public class TestingSQLObjectListener implements SQLObjectListener {
         changedCount = 0;
         lastEventName = null;
     }
-    public void dbChildrenInserted(SQLObjectEvent e) {
+    
+    @Override
+    public void childAddedImpl(SPChildEvent e) {
         insertedCount++;
     }
 
-    public void dbChildrenRemoved(SQLObjectEvent e) {
+    @Override
+    public void childRemovedImpl(SPChildEvent e) {
         removedCount++;
     }
 
-    public void dbObjectChanged(SQLObjectEvent e) {
+    @Override
+    public void propertyChangeImpl(PropertyChangeEvent e) {
         changedCount++;
         lastEventName = e.getPropertyName();
     }

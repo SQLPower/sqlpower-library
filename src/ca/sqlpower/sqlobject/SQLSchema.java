@@ -197,12 +197,13 @@ public class SQLSchema extends SQLObject {
                     	addTable(table);
                     }
 				}
+				commit();
 			}
 		} catch (SQLException e) {
+			fireTransactionRollback(e.getMessage());
 			throw new SQLObjectException("schema.populate.fail", e);
 		} finally {
 			populated = true;
-			commit();
 			try {
 				if ( rs != null ) rs.close();
 			} catch (SQLException e2) {
@@ -238,7 +239,7 @@ public class SQLSchema extends SQLObject {
 	    String oldValue = nativeTerm;
 		if (argNativeTerm != null) argNativeTerm = argNativeTerm.toLowerCase();
 		this.nativeTerm = argNativeTerm;
-		fireDbObjectChanged("nativeTerm", oldValue, argNativeTerm);
+		firePropertyChange("nativeTerm", oldValue, argNativeTerm);
 	}
 
 	@Override

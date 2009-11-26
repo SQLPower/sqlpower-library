@@ -23,26 +23,25 @@ import javax.swing.undo.CannotUndoException;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLIndex;
-import ca.sqlpower.sqlobject.SQLObject;
+import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLRelationship;
 import ca.sqlpower.sqlobject.SQLTable;
 
-public class SQLObjectInsertChildren extends SQLObjectChildren {
+public class SQLObjectInsertChildren extends SQLObjectChildEdit {
 	private static final Logger logger = Logger.getLogger(SQLObjectInsertChildren.class);
 	
 	
 	@Override
 	public void undo() throws CannotUndoException {
-		removeChildren();
+		removeChild();
 	}
 	
 	@Override
 	public void redo() throws CannotRedoException {
 		try {
-			addChildren();
+			addChild();
 		} catch (SQLObjectException e) {
 			logger.error("redo: caught exception", e);
 			throw new CannotRedoException();
@@ -51,39 +50,21 @@ public class SQLObjectInsertChildren extends SQLObjectChildren {
 
 	@Override
 	public void createToolTip() {
-		if (e.getChildren().length > 0) {
-		    String pluralSuffix;
-            if (e.getChildren()[0] instanceof SQLTable) {
-                toolTip = "Add table";
-                pluralSuffix = "s";
-            } else if (e.getChildren()[0] instanceof SQLColumn) {
-                toolTip = "Add column";
-                pluralSuffix = "s";
-            } else if (e.getChildren()[0] instanceof SQLRelationship) {
-                toolTip = "Add relationship";
-                pluralSuffix = "s";
-            } else if (e.getChildren()[0] instanceof SQLIndex) {
-                toolTip = "Add index";
-                pluralSuffix = "es";
-            } else {
-                toolTip = "Add child";
-                pluralSuffix = "ren";
-            }
-            
-            if (e.getChildren().length > 1) {
-                toolTip += pluralSuffix;
-            }
-        }
+		if (e.getChild() instanceof SQLTable) {
+			toolTip = "Add table";
+		} else if (e.getChild() instanceof SQLColumn) {
+			toolTip = "Add column";
+		} else if (e.getChild() instanceof SQLRelationship) {
+			toolTip = "Add relationship";
+		} else if (e.getChild() instanceof SQLIndex) {
+			toolTip = "Add index";
+		} else {
+			toolTip = "Add child";
+		}
 	}
 	
 	@Override
 	public String toString() {
-		StringBuffer childList = new StringBuffer();
-		childList.append("{");
-		for (SQLObject child : e.getChildren()) {
-			childList.append(child).append(", ");
-		}
-		childList.append("}");
-		return "Insert "+childList+" into "+e.getSource();
+		return "Insert "+e.getChild()+" into "+e.getSource();
 	}
 }

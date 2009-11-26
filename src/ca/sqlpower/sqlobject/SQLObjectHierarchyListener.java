@@ -21,6 +21,10 @@ package ca.sqlpower.sqlobject;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.AbstractSPListener;
+import ca.sqlpower.object.SPChildEvent;
+import ca.sqlpower.util.SQLPowerUtils;
+
 
 /**
  * This hierarchy listener will add and remove itself to children added to and
@@ -32,35 +36,16 @@ import org.apache.log4j.Logger;
  * This class is meant to be extended by listeners that wish to listen to the
  * hierarchy of SQLObjects.
  */
-public class SQLObjectHierarchyListener implements SQLObjectListener {
+public class SQLObjectHierarchyListener extends AbstractSPListener {
     private static final Logger logger = Logger.getLogger(SQLObjectHierarchyListener.class);
 
-    public void dbChildrenInserted(SQLObjectEvent e) {
-        try {
-            SQLObject[] newEventSources = e.getChildren();
-            for (int i = 0; i < newEventSources.length; i++) {
-                SQLObjectUtils.listenToHierarchy(this, newEventSources[i]);
-                logger.debug("Adding listener to " + newEventSources[i] + " of type " + newEventSources[i].getClass());
-            }
-        } catch (SQLObjectException ex) {
-            logger.error("Error listening to added object", ex); //$NON-NLS-1$
-        }
+    public void childAddedImpl(SPChildEvent e) {
+    	SQLPowerUtils.listenToHierarchy(e.getChild(), this);
+    	logger.debug("Adding listener to " + e.getChild() + " of type " + e.getType());
     }
 
-    public void dbChildrenRemoved(SQLObjectEvent e) {
-        try {
-            SQLObject[] oldEventSources = e.getChildren();
-            for (int i = 0; i < oldEventSources.length; i++) {
-                SQLObjectUtils.unlistenToHierarchy(this, oldEventSources[i]);
-                logger.debug("Removing listener from " + oldEventSources[i]);
-            }
-        } catch (SQLObjectException ex) {
-            logger.error("Error unlistening to removed object", ex); //$NON-NLS-1$
-        }
+    public void childRemovedImpl(SPChildEvent e) {
+    	SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
+    	logger.debug("Removing listener from " + e.getChild());
     }
-
-    public void dbObjectChanged(SQLObjectEvent e) {
-        // Object changes do not affect hierarchy.
-    }
-
 }

@@ -20,42 +20,42 @@ package ca.sqlpower.sqlobject.undo;
 
 import javax.swing.undo.AbstractUndoableEdit;
 
-import ca.sqlpower.sqlobject.SQLObjectException;
+import ca.sqlpower.object.ObjectDependentException;
+import ca.sqlpower.object.SPChildEvent;
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.sqlobject.SQLObjectEvent;
+import ca.sqlpower.sqlobject.SQLObjectException;
 
-public abstract class SQLObjectChildren extends AbstractUndoableEdit {
+public abstract class SQLObjectChildEdit extends AbstractUndoableEdit {
 
-	protected SQLObjectEvent e;
+	protected SPChildEvent e;
 	protected String toolTip;
 	
-	public SQLObjectChildren() {
+	public SQLObjectChildEdit() {
 		super();
 	}
 	
-	public void createEditFromEvent(SQLObjectEvent event){
-		
+	public void createEditFromEvent(SPChildEvent event){
 		e = event;
 		createToolTip();
-		
 	}
 	public abstract void createToolTip();
 	
-	public void removeChildren(){
-		int changed[] =e.getChangedIndices();
-		SQLObject sqlObject= e.getSQLSource();
-		SQLObject parent = sqlObject.getParent();
+	public void removeChild(){
+		SQLObject source = (SQLObject) e.getSource();
+		SQLObject parent = (SQLObject) source.getParent();
 		try {
 			if (parent != null) {
 				parent.setMagicEnabled(false);
 			}
-			sqlObject.setMagicEnabled(false);
-			for (int ii = changed.length - 1; ii >= 0; ii--)
-			{
-				sqlObject.removeChild(changed[ii]);
+			source.setMagicEnabled(false);
+			try {
+				source.removeChild(e.getChild());
+			} catch (ObjectDependentException e) {
+				throw new RuntimeException("Could not undo because added object is depended on by another object");
 			}
 		}finally {
-			sqlObject.setMagicEnabled(true);
+			source.setMagicEnabled(true);
 			if (parent != null) {
 				parent.setMagicEnabled(true);
 			}
@@ -63,26 +63,21 @@ public abstract class SQLObjectChildren extends AbstractUndoableEdit {
 	}
 	
 	
-	public void addChildren() throws SQLObjectException {
+	public void addChild() throws SQLObjectException {
 	
-		int changed[] = e.getChangedIndices();
-		SQLObject sqlObject= e.getSQLSource();
-		SQLObject children[] = e.getChildren();
-		SQLObject parent = sqlObject.getParent();
+		SQLObject source = (SQLObject) e.getSource();
+		SQLObject parent = source.getParent();
 		try{
 			if (parent != null) {
 				parent.setMagicEnabled(false);
 			}
-			sqlObject.setMagicEnabled(false);
-			for (int ii = 0; ii < changed.length; ii++) {
-				sqlObject.addChild(children[ii], changed[ii]);
-				
-			}
+			source.setMagicEnabled(false);
+			source.addChild(e.getChild(), e.getIndex());
 		}finally {
 			if (parent != null) {
 				parent.setMagicEnabled(true);
 			}
-			sqlObject.setMagicEnabled(true);
+			source.setMagicEnabled(true);
 		}
 	}
 	

@@ -30,7 +30,6 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.ObjectDependentException;
-import ca.sqlpower.sqlobject.undo.CompoundEventListener;
 
 public class SQLObjectUtils {
     
@@ -176,61 +175,6 @@ public class SQLObjectUtils {
      */
     public static String toQualifiedName(SQLObject obj) {
         return toQualifiedName(obj, null);
-    }
-
-    /**
-     * Adds listener to source's listener list and all of source's
-     * children's listener lists recursively.
-     */
-    public static void addUndoListenerToHierarchy(CompoundEventListener listener, SQLObject source)
-    throws SQLObjectException {
-        if (logger.isDebugEnabled()) logger.debug("Undo Listening to new SQL Object "+source);
-    	source.addUndoEventListener(listener);
-    	if (source.isPopulated() && source.allowsChildren()) {
-    		for (SQLObject child : source.getChildren()) {
-    			addUndoListenerToHierarchy(listener, child);
-    		}
-    	}
-    
-    }
-
-    /**
-     * Calls listenToHierarchy on each element in the sources array.
-     * Does nothing if sources is null.
-     */
-    public static void addUndoListenerToHierarchy(CompoundEventListener listener, SQLObject[] sources)
-    throws SQLObjectException {
-    	if (sources == null) return;
-    	for (int i = 0; i < sources.length; i++) {
-    		addUndoListenerToHierarchy(listener, sources[i]);
-    	}
-    }
-
-    /**
-     * Removes listener from source's listener list and all of source's
-     * children's listener lists recursively.
-     */
-    public static void undoUnlistenToHierarchy(CompoundEventListener listener, SQLObject source)
-    throws SQLObjectException {
-        if (logger.isDebugEnabled()) logger.debug("Unlistening to SQL Object "+source);
-    	source.removeUndoEventListener(listener);
-    	if (source.isPopulated() && source.allowsChildren()) {
-    		for (SQLObject child : source.getChildren()) {
-    			undoUnlistenToHierarchy(listener, child);
-    		}
-    	}
-    }
-
-    /**
-     * Calls unlistenToHierarchy on each element in the sources array.
-     * Does nothing if sources is null.
-     */
-    public static void undoUnlistenToHierarchy(CompoundEventListener listener, SQLObject[] sources)
-    throws SQLObjectException {
-    	if (sources == null) return;
-    	for (int i = 0; i < sources.length; i++) {
-    		undoUnlistenToHierarchy(listener, sources[i]);
-    	}
     }
 
     /**

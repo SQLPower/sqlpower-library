@@ -480,7 +480,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	public void setSourceColumn(SQLColumn col) {
 		SQLColumn oldCol = this.sourceColumn;
 		sourceColumn = col;
-		fireDbObjectChanged("sourceColumn",oldCol,col);
+		firePropertyChange("sourceColumn",oldCol,col);
 	}
 
 
@@ -504,8 +504,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		this.type = argType;
         begin("Type change");
         setSourceDataTypeName(null);
-		fireDbObjectChanged("type",oldType,argType);
-        commit();
+		firePropertyChange("type",oldType,argType);
+        endCompoundEdit("Type change");
 	}
 
 	/**
@@ -518,7 +518,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	public void setSourceDataTypeName(String n) {
 		String oldSourceDataTypeName =  sourceDataTypeName;
 		sourceDataTypeName = n;
-		fireDbObjectChanged("sourceDataTypeName",oldSourceDataTypeName,n);
+		firePropertyChange("sourceDataTypeName",oldSourceDataTypeName,n);
 	}
 
 	/**
@@ -539,7 +539,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		int oldScale = this.scale;
 		logger.debug("scale changed from "+scale+" to "+argScale);
 		this.scale = argScale;
-		fireDbObjectChanged("scale",oldScale,argScale);
+		firePropertyChange("scale",oldScale,argScale);
 	}
 
 	/**
@@ -565,7 +565,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	public void setPrecision(int argPrecision) {
 		int oldPrecision = this.precision;
 		this.precision = argPrecision;
-		fireDbObjectChanged("precision",oldPrecision,argPrecision);
+		firePropertyChange("precision",oldPrecision,argPrecision);
 	}
 
 	/**
@@ -684,6 +684,17 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
 	/**
+	 * Sets the value of parent
+	 *
+	 * @param argParent Value to assign to this.parent
+	 */
+	protected void setParent(SQLObject argParent) {
+		SQLObject oldParent = getParent();
+		super.setParent(argParent);
+		firePropertyChange("parent",oldParent,argParent);
+	}
+
+	/**
      * Returns this column's nullability.
      * 
      * @return One of:
@@ -709,7 +720,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		int oldNullable = this.nullable;
 		logger.debug("Changing nullable "+oldNullable+" -> "+argNullable);
 		this.nullable = argNullable;
-		fireDbObjectChanged("nullable",oldNullable,argNullable);
+		firePropertyChange("nullable",oldNullable,argNullable);
 	}
     	
     public static String getDefaultName() {
@@ -801,7 +812,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	public void setRemarks(String argRemarks) {
 		String oldRemarks = this.remarks;
 		this.remarks = argRemarks;
-		fireDbObjectChanged("remarks",oldRemarks,argRemarks);
+		firePropertyChange("remarks",oldRemarks,argRemarks);
 	}
 
 	/**
@@ -821,7 +832,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	public void setDefaultValue(String argDefaultValue) {
 		String oldDefaultValue = this.defaultValue;
 		this.defaultValue = argDefaultValue;
-		fireDbObjectChanged("defaultValue",oldDefaultValue,argDefaultValue);
+		firePropertyChange("defaultValue",oldDefaultValue,argDefaultValue);
 	}
 
 	/**
@@ -874,7 +885,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
                 setNullable(DatabaseMetaData.columnNoNulls);    
             }
             this.primaryKeySeq = argPrimaryKeySeq;
-            fireDbObjectChanged("primaryKeySeq",oldPrimaryKeySeq,argPrimaryKeySeq);
+            firePropertyChange("primaryKeySeq",oldPrimaryKeySeq,argPrimaryKeySeq);
         } else try {
             begin("Starting PrimaryKeySeq compound edit");
  
@@ -887,7 +898,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
             // child's PK before the parent's PK is properly formed
             // (such a change would require thorough testing of course!)
             this.primaryKeySeq = argPrimaryKeySeq;
-            fireDbObjectChanged("primaryKeySeq",oldPrimaryKeySeq,argPrimaryKeySeq);
+            firePropertyChange("primaryKeySeq",oldPrimaryKeySeq,argPrimaryKeySeq);
 
             SQLObject p = getParent();
             if (p != null) {
@@ -942,7 +953,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	public void setAutoIncrement(boolean argAutoIncrement) {
 	    boolean oldAutoIncrement = autoIncrement;
 	    this.autoIncrement = argAutoIncrement;
-	    fireDbObjectChanged("autoIncrement",oldAutoIncrement,argAutoIncrement);
+	    firePropertyChange("autoIncrement",oldAutoIncrement,argAutoIncrement);
 	}
     
     /**
@@ -979,7 +990,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         
         if (!oldName.equals(autoIncrementSequenceName)) {
             this.autoIncrementSequenceName = autoIncrementSequenceName;
-            fireDbObjectChanged("autoIncrementSequenceName", oldName, autoIncrementSequenceName);
+            firePropertyChange("autoIncrementSequenceName", oldName, autoIncrementSequenceName);
         }
     }
 
@@ -1015,7 +1026,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         int oldReference = referenceCount;
 		referenceCount++;
 		logger.debug("incremented reference count to: " + referenceCount);
-        fireDbObjectChanged("referenceCount", oldReference, referenceCount);
+        firePropertyChange("referenceCount", oldReference, referenceCount);
 	}
 	
 	public void removeReference() {
@@ -1049,7 +1060,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 				logger.debug("Already removed from parent");
 			}
 		}
-        fireDbObjectChanged("referenceCount", oldReference, referenceCount);
+        firePropertyChange("referenceCount", oldReference, referenceCount);
 	}
 	
 	/**

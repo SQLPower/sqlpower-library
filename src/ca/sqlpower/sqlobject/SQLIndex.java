@@ -19,6 +19,7 @@
 
 package ca.sqlpower.sqlobject;
 
+import java.beans.PropertyChangeEvent;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -28,6 +29,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.AbstractSPListener;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.SQL;
@@ -77,15 +79,7 @@ public class SQLIndex extends SQLObject {
          * Small class for reacting to changes in this index columns's
          * target SQLColumn (if it has one at all).
          */
-        private class TargetColumnListener implements SQLObjectListener {
-
-            public void dbChildrenInserted(SQLObjectEvent e) {
-                // won't happen to a column
-            }
-
-            public void dbChildrenRemoved(SQLObjectEvent e) {
-                // won't happen to a column
-            }
+        private class TargetColumnListener extends AbstractSPListener {
 
             /**
              * Updates the index column name to match the new value in this
@@ -93,7 +87,7 @@ public class SQLIndex extends SQLObject {
              * The process of doing the update will cause the SQLIndex.Column
              * object to fire an event of its own.
              */
-            public void dbObjectChanged(SQLObjectEvent e) {
+            public void propertyChangeImpl(PropertyChangeEvent e) {
                 if ("name".equals(e.getPropertyName())) {
                     setName((String) e.getNewValue());
                 }
@@ -203,14 +197,14 @@ public class SQLIndex extends SQLObject {
 
         public void setColumn(SQLColumn column) {
             if (this.column != null) {
-                this.column.removeSQLObjectListener(targetColumnListener);
+                this.column.removeSPListener(targetColumnListener);
             }
             SQLColumn oldValue = this.column;
             this.column = column;
             if (this.column != null) {
-                this.column.addSQLObjectListener(targetColumnListener);
+                this.column.addSPListener(targetColumnListener);
             }
-            fireDbObjectChanged("column", oldValue, column);
+            firePropertyChange("column", oldValue, column);
         }
 
         public AscendDescend getAscendingOrDescending() {
@@ -230,7 +224,7 @@ public class SQLIndex extends SQLObject {
             } else {
                 throw new IllegalStateException("Invalid ascending or descending object on an index column.");
             }
-            fireDbObjectChanged("ascendingOrDescending", oldValue, ascendingOrDescending);
+            firePropertyChange("ascendingOrDescending", oldValue, ascendingOrDescending);
         }
 
         public void setAscending(boolean ascending) {
@@ -238,7 +232,7 @@ public class SQLIndex extends SQLObject {
             if (ascending) {
                 this.ascendingOrDescending = AscendDescend.ASCENDING;
             }
-            fireDbObjectChanged("ascending", oldValue, ascendingOrDescending);
+            firePropertyChange("ascending", oldValue, ascendingOrDescending);
         }
 
         public void setDescending(boolean descending) {
@@ -246,7 +240,7 @@ public class SQLIndex extends SQLObject {
             if (descending) {
                 this.ascendingOrDescending = AscendDescend.DESCENDING;
             }
-            fireDbObjectChanged("descending", oldValue, descending);
+            firePropertyChange("descending", oldValue, descending);
         }
 
         @Override
@@ -520,7 +514,7 @@ public class SQLIndex extends SQLObject {
             }
         }
     }
-    
+
     /**
      * This method is used to clean up the index when it no longer has any children.
      */
@@ -544,13 +538,13 @@ public class SQLIndex extends SQLObject {
     protected SQLObject removeImpl(int index) {
         Column c = columns.get(index);
         if (c.getColumn() != null) {
-            c.getColumn().removeSQLObjectListener(c.targetColumnListener);
+            c.getColumn().removeSPListener(c.targetColumnListener);
         }
         return super.removeImpl(index);
     }
 
     @Override
-    protected void addChildImpl(SPObject child, int index) {
+        protected void addChildImpl(SPObject child, int index) {
     	if (child instanceof SQLIndex.Column) {
     		Column c = (Column) child;
     		if (primaryKeyIndex && c.getColumn() == null) {
@@ -560,7 +554,7 @@ public class SQLIndex extends SQLObject {
     		if (c.getColumn() != null) {
     			// this will be redundant in some cases, but the addSQLObjectListener method
     			// checks for adding duplicate listeners and does nothing in that case
-    			c.getColumn().addSQLObjectListener(c.targetColumnListener);
+    			c.getColumn().addSPListener(c.targetColumnListener);
     		}
     	} else {
 			throw new IllegalArgumentException("The child " + child.getName() + 
@@ -576,7 +570,7 @@ public class SQLIndex extends SQLObject {
     public void setFilterCondition(String filterCondition) {
         String oldValue = this.filterCondition;
         this.filterCondition = filterCondition;
-        fireDbObjectChanged("filterCondition", oldValue, filterCondition);
+        firePropertyChange("filterCondition", oldValue, filterCondition);
     }
 
     public String getQualifier() {
@@ -586,7 +580,7 @@ public class SQLIndex extends SQLObject {
     public void setQualifier(String qualifier) {
         String oldValue = this.qualifier;
         this.qualifier = qualifier;
-        fireDbObjectChanged("qualifier", oldValue, qualifier);
+        firePropertyChange("qualifier", oldValue, qualifier);
     }
 
     public String getType() {
@@ -596,7 +590,7 @@ public class SQLIndex extends SQLObject {
     public void setType(String type) {
         String oldValue = this.type;
         this.type = type;
-        fireDbObjectChanged("type", oldValue, type);
+        firePropertyChange("type", oldValue, type);
     }
 
     public boolean isUnique() {
@@ -610,13 +604,13 @@ public class SQLIndex extends SQLObject {
     public void setUnique(boolean unique) {
         boolean oldValue = this.unique;
         this.unique = unique;
-        fireDbObjectChanged("unique", oldValue, unique);
+        firePropertyChange("unique", oldValue, unique);
     }
 
     public void setClustered(boolean value) {
         boolean oldValue = this.clustered;
         this.clustered = value;
-        fireDbObjectChanged("clustered", oldValue, clustered);
+        firePropertyChange("clustered", oldValue, clustered);
     }
 
     /**
@@ -782,7 +776,7 @@ public class SQLIndex extends SQLObject {
                 }
             }
             primaryKeyIndex = isPrimaryKey;
-            fireDbObjectChanged("primaryKeyIndex", oldValue, isPrimaryKey);
+            firePropertyChange("primaryKeyIndex", oldValue, isPrimaryKey);
         } finally {
             commit();
         }
@@ -870,7 +864,7 @@ public class SQLIndex extends SQLObject {
         for (int i = columns.size() - 1; i >= 0; i--) {
             Column c = columns.get(i);
             if (c.column != null) {
-                c.column.removeSQLObjectListener(c.targetColumnListener);
+                c.column.removeSPListener(c.targetColumnListener);
             }
             removeChild(i);
         }

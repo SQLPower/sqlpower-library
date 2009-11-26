@@ -180,7 +180,7 @@ public class ArchitectPropertyChangeUndoableEditTest extends TestCase {
 		public void setBar(String bar) {
 			String oldBar = this.bar;
 			this.bar = bar;
-			fireDbObjectChanged("bar",oldBar,bar);
+			firePropertyChange("bar",oldBar,bar);
 		}
 
 		public int getFoo() {
@@ -190,7 +190,7 @@ public class ArchitectPropertyChangeUndoableEditTest extends TestCase {
 		public void setFoo(int foo) {
 			int oldFoo = this.foo;
 			this.foo = foo;
-			fireDbObjectChanged("foo",oldFoo,foo);
+			firePropertyChange("foo",oldFoo,foo);
 		}
 	}
 	

@@ -18,6 +18,7 @@
  */
 package ca.sqlpower.sqlobject;
 
+import java.beans.PropertyChangeEvent;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
@@ -79,7 +80,7 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
 		}
 		
 		CountingSQLObjectListener listener = new CountingSQLObjectListener();
-		so.addSQLObjectListener(listener);
+		so.addSPListener(listener);
 
 		List<PropertyDescriptor> settableProperties;
 		
@@ -166,10 +167,10 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
 				if (listener.getChangedCount() == oldChangeCount + 1) {
 					assertEquals("Property name mismatch for "+property.getName()+ " in "+so.getClass(),
 							property.getName(),
-							listener.getLastEvent().getPropertyName());
+							((PropertyChangeEvent) listener.getLastEvent()).getPropertyName());
 					assertEquals("New value for "+property.getName()+" was wrong",
 					        newVal,
-					        listener.getLastEvent().getNewValue());  
+					        ((PropertyChangeEvent) listener.getLastEvent()).getNewValue());  
 				}
 			} catch (InvocationTargetException e) {
 				System.out.println("(non-fatal) Failed to write property '"+property.getName()+" to type "+so.getClass().getName());

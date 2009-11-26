@@ -286,7 +286,7 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 
 	public void testFireDbChildrenInserted() throws Exception {
 		TestingSQLObjectListener test1 = new TestingSQLObjectListener();
-		s.addSQLObjectListener(test1);
+		s.addSPListener(test1);
 		
 		s.addChild(new SQLTable(s,"","","TABLE", true));
 		assertEquals("Children inserted event not fired!", 1, test1.getInsertedCount());
@@ -297,7 +297,7 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
         s.addChild(tempTable);
 	    
 	    TestingSQLObjectListener test1 = new TestingSQLObjectListener();
-	    s.addSQLObjectListener(test1);
+	    s.addSPListener(test1);
 
 	    s.removeChild(tempTable);
 	    assertEquals("Children removed event not fired!", 1, test1.getRemovedCount());

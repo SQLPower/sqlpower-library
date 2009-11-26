@@ -18,6 +18,12 @@
  */
 package ca.sqlpower.sqlobject;
 
+import java.beans.PropertyChangeEvent;
+import java.util.EventObject;
+
+import ca.sqlpower.object.AbstractSPListener;
+import ca.sqlpower.object.SPChildEvent;
+
 
 
 /**
@@ -25,7 +31,7 @@ package ca.sqlpower.sqlobject;
  * 
  * @version $Id: CountingSQLObjectListener.java 2909 2009-01-08 20:38:27Z thomasobrien95 $
  */
-public class CountingSQLObjectListener implements SQLObjectListener {
+public class CountingSQLObjectListener extends AbstractSPListener {
 	
 	/**
 	 * The number of times dbChildredInserted has been called.
@@ -50,14 +56,16 @@ public class CountingSQLObjectListener implements SQLObjectListener {
 	/**
 	 * The last SQLObjectEvent that was received by this listener
 	 */
-	private SQLObjectEvent lastEvent;
+	private EventObject lastEvent;
 	
 	// ============= SQLObjectListener Implementation ==============
 	
 	/**
 	 * Increments the insertedCount.
 	 */
-	public void dbChildrenInserted(SQLObjectEvent e) {
+	
+	@Override
+	public void childAddedImpl(SPChildEvent e) {
 		lastEvent=e;
 		insertedCount++;
 	}
@@ -65,7 +73,8 @@ public class CountingSQLObjectListener implements SQLObjectListener {
 	/**
 	 * Increments the removedCount.
 	 */
-	public void dbChildrenRemoved(SQLObjectEvent e) {
+	@Override
+	public void childRemovedImpl(SPChildEvent e) {
 		lastEvent=e;
 		removedCount++;
 	}
@@ -73,7 +82,8 @@ public class CountingSQLObjectListener implements SQLObjectListener {
 	/**
 	 * Increments the changedCount.
 	 */
-	public void dbObjectChanged(SQLObjectEvent e) {
+	@Override
+	public void propertyChangeImpl(PropertyChangeEvent e) {
 		lastEvent=e;
 		changedCount++;
 	}
@@ -111,7 +121,7 @@ public class CountingSQLObjectListener implements SQLObjectListener {
 	/**
 	 * See {@link #lastEvent}
 	 */
-	public SQLObjectEvent getLastEvent() {
+	public EventObject getLastEvent() {
 		return lastEvent;
 	}
 	

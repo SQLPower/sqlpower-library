@@ -102,20 +102,12 @@ public abstract class AbstractSPObject implements SPObject {
     	}
 	}
 
-	public void begin(String message) {
-		fireTransactionStarted(message);
-	}
-
 	/**
 	 * Default cleanup method that does nothing. Override and implement this
 	 * method if cleanup is necessary.
 	 */
 	public CleanupExceptions cleanup() {
 	    return new CleanupExceptions();
-	}
-
-	public void commit() {
-		fireTransactionEnded();
 	}
 
 	public void generateNewUUID() {
@@ -439,6 +431,14 @@ public abstract class AbstractSPObject implements SPObject {
         	}
         }
         return evt;
+    }
+    
+    public void begin(String message) {
+    	fireTransactionStarted(message);
+    }
+    
+    public void commit() {
+    	fireTransactionEnded();
     }
     
     protected boolean isForegroundThread() {

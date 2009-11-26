@@ -66,7 +66,7 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
 		// manually call fireDbObjecChanged, so it can be tested.
 		public void fakeObjectChanged(String string,Object oldValue, Object newValue) {
 			
-			fireDbObjectChanged(string,oldValue,newValue);
+			firePropertyChange(string,oldValue,newValue);
 		}
 		
 		@Override
@@ -167,7 +167,7 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
 
 	public final void testFiresAddEvent() throws SQLObjectException {
 		CountingSQLObjectListener l = new CountingSQLObjectListener();
-		target.addSQLObjectListener(l);
+		target.addSPListener(l);
 		((SQLObjectImpl) target).allowsChildren = true;
 		
 		final SQLObjectImpl objectImpl = new SQLObjectImpl();
@@ -180,7 +180,7 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
 
     public void testFireChangeEvent() throws Exception {
         CountingSQLObjectListener l = new CountingSQLObjectListener();
-        target.addSQLObjectListener(l);
+        target.addSPListener(l);
 
         ((SQLObjectImpl)target).fakeObjectChanged("fred","old value","new value");
         assertEquals(0, l.getInsertedCount());
@@ -192,7 +192,7 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
     /** make sure "change" to same value doesn't fire useless event */
     public void testDontFireChangeEvent() throws Exception {
         CountingSQLObjectListener l = new CountingSQLObjectListener();
-        target.addSQLObjectListener(l);
+        target.addSPListener(l);
 
         ((SQLObjectImpl)target).fakeObjectChanged("fred","old value","old value");
         assertEquals(0, l.getInsertedCount());
@@ -203,7 +203,7 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
 
     public void testFireStructureChangeEvent() throws Exception {
         CountingSQLObjectListener l = new CountingSQLObjectListener();
-        target.addSQLObjectListener(l);
+        target.addSPListener(l);
         assertEquals(0, l.getInsertedCount());
         assertEquals(0, l.getRemovedCount());
         assertEquals(0, l.getChangedCount());
@@ -212,10 +212,10 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
     public void testAddRemoveListener() {
         CountingSQLObjectListener l = new CountingSQLObjectListener();
         
-        target.addSQLObjectListener(l);
+        target.addSPListener(l);
         assertEquals(1, target.getSQLObjectListeners().size());
 		
-        target.removeSQLObjectListener(l);
+        target.removeSPListener(l);
 		assertEquals(0, target.getSQLObjectListeners().size());
 	}
 	
@@ -280,7 +280,7 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
     
     public void testClientPropertyFiresEvent() {
         CountingSQLObjectListener listener = new CountingSQLObjectListener();
-        target.addSQLObjectListener(listener);
+        target.addSPListener(listener);
         target.putClientProperty(this.getClass(), "testProperty", "test me");
         assertEquals(1, listener.getChangedCount());
     }

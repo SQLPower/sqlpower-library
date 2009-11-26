@@ -18,18 +18,22 @@
  */
 package ca.sqlpower.sqlobject;
 
-import ca.sqlpower.sqlobject.undo.CompoundEvent;
-import ca.sqlpower.sqlobject.undo.CompoundEventListener;
+import java.beans.PropertyChangeEvent;
 
-public class CountingCompoundEventListener implements
-		CompoundEventListener, SQLObjectListener {
+import ca.sqlpower.object.AbstractSPListener;
+import ca.sqlpower.object.SPChildEvent;
+import ca.sqlpower.sqlobject.undo.CompoundEvent;
+import ca.sqlpower.util.TransactionEvent;
+
+public class CountingCompoundEventListener extends AbstractSPListener {
 
 	// ========= Undo Compound Listener ==========
 	private int editDepth;
 	private int editsInLastGroup;
 	private int editsBeforeLastGroup;
 	
-	public void compoundEditStart(CompoundEvent e) {
+	@Override
+	public void transactionStartedImpl(TransactionEvent e) {
 		if (editDepth == 0) {
 			editsBeforeLastGroup = liveEdits;
 		}
@@ -43,7 +47,8 @@ public class CountingCompoundEventListener implements
 	 * bug in the code you're listening to, or you started listening to an
 	 * object that was already in the middle of a compound edit.
 	 */
-	public void compoundEditEnd(CompoundEvent e) {
+	@Override
+	public void transactionEndedImpl(TransactionEvent e) {
 		if (editDepth == 0) {
 			throw new IllegalStateException("Compound edit depth was already 0");
 		}
@@ -56,7 +61,7 @@ public class CountingCompoundEventListener implements
 
 	/**
 	 * Returns how many compound edits have started minus how many
-	 * compound edits have finished. Due to fail-fast check on {@link #compoundEditEnd(CompoundEvent)},
+	 * compound edits have finished. Due to fail-fast check on {@link #transactionEnded(CompoundEvent)},
 	 * this will never be less than 0.
 	 */
 	public int getEditDepth() {
@@ -86,15 +91,18 @@ public class CountingCompoundEventListener implements
 	// ========= SQL Object Listener ==========
 	private int liveEdits;
 	
-	public void dbChildrenInserted(SQLObjectEvent e) {
+	@Override
+	public void childAddedImpl(SPChildEvent e) {
 		liveEdits++;
 	}
 
-	public void dbChildrenRemoved(SQLObjectEvent e) {
+	@Override
+	public void childRemovedImpl(SPChildEvent e) {
 		liveEdits++;
 	}
 
-	public void dbObjectChanged(SQLObjectEvent e) {
+	@Override
+	public void propertyChangeImpl(PropertyChangeEvent e) {
 		liveEdits++;
 	}
 

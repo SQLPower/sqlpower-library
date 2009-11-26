@@ -20,7 +20,6 @@
 package ca.sqlpower.sqlobject.undo;
 
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,12 +33,16 @@ import javax.swing.undo.UndoableEdit;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.sqlobject.SQLObjectException;
+import ca.sqlpower.object.SPChildEvent;
+import ca.sqlpower.object.SPListener;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLObjectEvent;
+import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLObjectListener;
 import ca.sqlpower.sqlobject.SQLObjectUtils;
+import ca.sqlpower.util.SQLPowerUtils;
+import ca.sqlpower.util.TransactionEvent;
 
 public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoManager {
 
@@ -49,8 +52,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
      * Converts received SQLObjectEvents into UndoableEdits, PropertyChangeEvents
      * into specific edits and adds them to an UndoManager.
      */
-    public class SQLObjectUndoableEventAdapter implements CompoundEventListener, SQLObjectListener,
-    PropertyChangeListener {
+    public class SQLObjectUndoableEventAdapter implements SPListener {
 
         private final class CompEdit extends CompoundEdit {
 
@@ -186,7 +188,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
             }
         }
 
-        public void dbChildrenInserted(SQLObjectEvent e) {
+        public void childAdded(SPChildEvent e) {
             if (SQLObjectUndoManager.this.isUndoOrRedoing())
                 return;
 
@@ -195,17 +197,12 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
             addEdit(undoEvent);
 
             if (addListenerToChildren) {
-                try {
-                    SQLObjectUtils.listenToHierarchy(this, e.getChildren());
-                    SQLObjectUtils.addUndoListenerToHierarchy(this, e.getChildren());
-                } catch (SQLObjectException ex) {
-                    logger.error("SQLObjectUndoableEventAdapter cannot attach to new children", ex);
-                }
+            	SQLPowerUtils.listenToHierarchy(e.getChild(), this);
             }
 
         }
 
-        public void dbChildrenRemoved(SQLObjectEvent e) {
+        public void childRemoved(SPChildEvent e) {
             if (SQLObjectUndoManager.this.isUndoOrRedoing())
                 return;
 
@@ -260,18 +257,17 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
             logger.debug("Returning to regular state");
         }
 
-        public void compoundEditStart(CompoundEvent e) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("compoundEditStart with event: " + e.toString());
-            }
-            compoundGroupStart(e.getMessage());
+        public void transactionStarted(TransactionEvent e) {
+        	compoundGroupStart(e.getMessage());
         }
 
-        public void compoundEditEnd(CompoundEvent e) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("compoundEditEnd with event: " + e.toString());
-            }
-            compoundGroupEnd();
+        public void transactionEnded(TransactionEvent e) {
+        	compoundGroupEnd();
+        }
+        
+        public void transactionRollback(TransactionEvent e) {
+        	// TODO figure out what this should do. As of writing, nothing
+			// would cause a rollback, but this will probably change.
         }
     }
 
@@ -288,8 +284,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
     }
 
     private final void init(SQLObject sqlObjectRoot) throws SQLObjectException {
-        SQLObjectUtils.listenToHierarchy(eventAdapter, sqlObjectRoot);
-        SQLObjectUtils.addUndoListenerToHierarchy(eventAdapter, sqlObjectRoot);
+        SQLPowerUtils.listenToHierarchy(sqlObjectRoot, eventAdapter);
     }
 
     /**

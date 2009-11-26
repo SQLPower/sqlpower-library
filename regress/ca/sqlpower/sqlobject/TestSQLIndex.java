@@ -22,6 +22,7 @@ import java.sql.Types;
 
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
+import ca.sqlpower.util.SQLPowerUtils;
 
 public class TestSQLIndex extends BaseSQLObjectTestCase {
 
@@ -345,8 +346,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     public void testRemoveIndexWhenColsRemovedSingleUndoEvent() throws Exception {
         assertEquals(index2, table.getIndexByName("Test Index 2"));
         CountingCompoundEventListener l = new CountingCompoundEventListener();
-        SQLObjectUtils.listenToHierarchy(l, table);
-        SQLObjectUtils.addUndoListenerToHierarchy(l, table);
+        SQLPowerUtils.listenToHierarchy(table, l);
         table.removeColumn(2);
         assertEquals(0, l.getEditsBeforeLastGroup());
         table.removeColumn(0);

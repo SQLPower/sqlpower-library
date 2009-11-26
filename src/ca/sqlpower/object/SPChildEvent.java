@@ -89,6 +89,7 @@ public class SPChildEvent extends EventObject {
     		Class<? extends SPObject> childType, 
     		SPObject child, int index, EventType type) {
     	super(source);
+    	this.source = source;
         this.childType = childType;
         this.child = child;
         this.index = index;

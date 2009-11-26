@@ -18,6 +18,7 @@
  */
 package ca.sqlpower.sqlobject;
 
+import java.beans.PropertyChangeEvent;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -35,10 +36,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
-import ca.sqlpower.sqlobject.SQLRelationship.RelationshipManager;
-import ca.sqlpower.sqlobject.undo.CompoundEvent;
-import ca.sqlpower.sqlobject.undo.CompoundEventListener;
-import ca.sqlpower.sqlobject.undo.CompoundEvent.EventTypes;
+import ca.sqlpower.util.TransactionEvent;
 
 /**
  * SQLObject is the main base class of the Architect API. All objects that can
@@ -171,7 +169,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	public void setPhysicalName(String argName) {
 		String oldPhysicalName = this.physicalName;
 		this.physicalName = argName;
-		firePropertyChange("physicalName", oldPhysicalName, argName);
+		firePropertyChange("physicalName",oldPhysicalName,argName);
 	}
 
 	/**
@@ -314,29 +312,6 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
     }
 
 	/**
-	 * All other addChild() methods call this one.  If you want to override the addChild behaviour,
-	 * override this method only.
-	 * 
-	 * @param index The index that the new child will have
-	 * @param newChild The new child to add (must be same type as all other children)
-	 * @throws SQLObjectException  If you try to add a child of a different type than the existing children.
-	 */
-//	protected void addChildImpl(int index, SQLObject newChild) throws SQLObjectException {
-//		if ( children.size() > 0 && 
-//				! (children.get(0).getClass().isAssignableFrom(newChild.getClass())
-//					|| newChild.getClass().isAssignableFrom(children.get(0).getClass()))) {
-//            
-//            throw new SQLObjectException(
-//                    "You Can't mix SQL Object Types! You gave: " +
-//                    newChild.getClass().getName() +
-//                    "; I need " + children.get(0).getClass());
-//		}
-//		children.add(index, newChild);
-//		newChild.setParent(this);
-//		fireDbChildInserted(index, newChild);
-//	}
-	
-	/**
 	 * Adds the given SQLObject to this SQLObject at index. Causes a
 	 * DBChildrenInserted event.  If you want to override the
 	 * behaviour of addChild, override this method.
@@ -377,7 +352,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
                 SQLObject removedChild = (SQLObject) getChildren().remove(index);
                 if (removedChild != null) {
                     removedChild.setParent(null);
-                    fireDbChildRemoved(index, removedChild);
+                    fireChildRemoved(removedChild.getClass(), removedChild, index);
                 }
                 return removedChild;
             } finally {
@@ -418,84 +393,14 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 		}
 	}
 
-	protected void fireDbChildrenInserted(int[] newIndices, List newChildren) {
-		if (logger.isDebugEnabled()) {
-			logger.debug(getClass().getName()+" "+toString()+": " +
-					"firing dbChildrenInserted event");
-		}
-		SQLObjectEvent e = new SQLObjectEvent
-			(this,
-			 newIndices,
-			 (SQLObject[]) newChildren.toArray(new SQLObject[newChildren.size()]));
-		synchronized(sqlObjectListeners) {
-		    int count = 0;
-		    
-		    // XXX Notifying the RelationshipManager last is a workaround for an elusive bug
-		    //     we are still trying to nail down. This is not intended to be used long term,
-		    //     and is definitely not an example of good practice! See bug 1640 for details.
-		    
-            for (SQLObjectListener l : new ArrayList<SQLObjectListener>(sqlObjectListeners)) {
-                if (!(l instanceof RelationshipManager)) {
-                    count++;
-                    l.dbChildrenInserted(e);
-                }
-            }
-            for (SQLObjectListener l : new ArrayList<SQLObjectListener>(sqlObjectListeners)) {
-                if (l instanceof RelationshipManager) {
-                    count++;
-                    l.dbChildrenInserted(e);
-                }
-            }
-			logger.debug(getClass().getName()+": notified "+count+" listeners");
-		}
-	}
-
-	protected void fireDbChildInserted(int newIndex, SQLObject newChild) {
-		int[] newIndexArray = new int[1];
-		newIndexArray[0] = newIndex;
-		List newChildList = new ArrayList(1);
-		newChildList.add(newChild);
-		fireDbChildrenInserted(newIndexArray, newChildList);
-	}
-
-	protected void fireDbChildrenRemoved(int[] oldIndices, List oldChildren) {
-		if (logger.isDebugEnabled()) {
-			logger.debug(getClass().getName()+" "+toString()+": " +
-					"firing dbChildrenRemoved event");
-			logger.debug("Removing children " + oldChildren + " from " + this);
-		}
-		SQLObjectEvent e = new SQLObjectEvent
-			(this,
-			 oldIndices,
-			 (SQLObject[]) oldChildren.toArray(new SQLObject[oldChildren.size()]));
-		int count =0;
-		synchronized(sqlObjectListeners) {
-			SQLObjectListener[] listeners = sqlObjectListeners.toArray(new SQLObjectListener[0]);
-			for(int i = listeners.length-1;i>=0;i--) {
-				listeners[i].dbChildrenRemoved(e);
-				count++;
-			}
-		}
-		if (logger.isDebugEnabled()) logger.debug("Notified "+count+" listeners.");
-	}
-
-	protected void fireDbChildRemoved(int oldIndex, SQLObject oldChild) {
-		int[] oldIndexArray = new int[1];
-		oldIndexArray[0] = oldIndex;
-		List oldChildList = new ArrayList(1);
-		oldChildList.add(oldChild);
-		fireDbChildrenRemoved(oldIndexArray, oldChildList);
-		
-	}
-
-	protected void fireDbObjectChanged(String propertyName, Object oldValue, Object newValue) {
+	protected PropertyChangeEvent firePropertyChange(String propertyName, Object oldValue, Object newValue) {
 		boolean same = (oldValue == null ? oldValue == newValue : oldValue.equals(newValue));
 		if (same) {
             if (logger.isDebugEnabled()) {
                 logger.debug("Not firing property change: "+getClass().getName()+"."+propertyName+
                         " '"+oldValue+"' == '"+newValue+"'");
             }
-			return;
+			return null;
 		}
 		if (logger.isDebugEnabled()) {
 			logger.debug("Firing Property Change: "+getClass().getName()+"."+propertyName+
@@ -511,13 +416,13 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 		int count = 0;
 		synchronized(sqlObjectListeners) {
 			SQLObjectListener[] listeners = sqlObjectListeners.toArray(new SQLObjectListener[0]);
-//            for(int i = listeners.length-1;i>=0;i--) {
 			for (int i = 0; i < listeners.length; i++) {
 			    listeners[i].dbObjectChanged(e);
 			    count++;
             }
 		}
 		if (logger.isDebugEnabled()) logger.debug("Notified "+count+" listeners.");
+		return super.firePropertyChange(propertyName, oldValue, newValue);
 	}
 
     // ------------------- sql object Pre-event support -------------------
@@ -602,47 +507,12 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 * The list of SQLObject property change event listeners
 	 * used for undo
 	 */
-	protected LinkedList<CompoundEventListener> undoEventListeners = new LinkedList<CompoundEventListener>();
-
-	
-	public void addUndoEventListener(CompoundEventListener l) {
-		if (undoEventListeners.contains(l)) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("NOT Adding duplicate Undo listener "+l+" to SQLObject "+this);
-			}
-			return;
-		}
-		undoEventListeners.add(l);
-	}
-
-	public void removeUndoEventListener(CompoundEventListener l) {
-		undoEventListeners.remove(l);
+	public TransactionEvent startCompoundEdit(String message){
+		return super.fireTransactionStarted(message);
 	}
 	
-	private void fireUndoCompoundEvent(CompoundEvent e) {
-		CompoundEventListener[] listeners = undoEventListeners.toArray(new CompoundEventListener[0]);
-		if (e.getType().isStartEvent()) {
-			for(int i = listeners.length-1;i>=0;i--) {
-				listeners[i].compoundEditStart(e);
-			}
-		} else {
-			for(int i = listeners.length-1;i>=0;i--) {
-				listeners[i].compoundEditEnd(e);
-			}
-		} 
-		
-	}
-	
-	public void begin(String message){
-		fireUndoCompoundEvent(new CompoundEvent(EventTypes.COMPOUND_EDIT_START,message));
-	}
-	
-	public void commit() {
-		fireUndoCompoundEvent(new CompoundEvent(EventTypes.COMPOUND_EDIT_END,""));
-	}
-
-	public LinkedList<CompoundEventListener> getUndoEventListeners() {
-		return undoEventListeners;
+	public TransactionEvent endCompoundEdit(String message){
+		return super.fireTransactionEnded();
 	}
 
     /**
@@ -752,7 +622,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
         String key = namespace + "." + propName;
         Object oldValue = clientProperties.get(key);
         clientProperties.put(key, property);
-        fireDbObjectChanged("clientProperty." + key, oldValue, property);
+        firePropertyChange("clientProperty." + key, oldValue, property);
     }
 
     /**
@@ -800,7 +670,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
     public void setChildrenInaccessibleReason(Throwable cause, boolean rethrow) throws SQLObjectException {
         Throwable oldVal = this.childrenInaccessibleReason;
         this.childrenInaccessibleReason = cause;
-        fireDbObjectChanged("childrenInaccessibleReason", oldVal, childrenInaccessibleReason);
+        firePropertyChange("childrenInaccessibleReason", oldVal, childrenInaccessibleReason);
         if (rethrow) {
         	if (cause instanceof SQLObjectException) {
         		throw (SQLObjectException) cause;

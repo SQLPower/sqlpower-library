@@ -18,11 +18,13 @@
  */
 package ca.sqlpower.sqlobject;
 
+import java.beans.PropertyChangeEvent;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EventObject;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -35,12 +37,15 @@ import javax.mail.Folder;
 
 import org.apache.commons.beanutils.BeanUtils;
 
+import ca.sqlpower.object.AbstractSPListener;
+import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLTable.TransferStyles;
 import ca.sqlpower.sqlobject.TestSQLTable.EventLogger.SQLObjectSnapshot;
 import ca.sqlpower.sqlobject.undo.CompoundEvent;
 import ca.sqlpower.testutil.MockJDBCDriver;
+import ca.sqlpower.util.SQLPowerUtils;
 
 public class TestSQLTable extends BaseSQLObjectTestCase {
     
@@ -372,7 +377,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         SQLTable table1 = new SQLTable();
         
         TestingSQLObjectListener testListener = new TestingSQLObjectListener();
-        table1.addSQLObjectListener(testListener);
+        table1.addSPListener(testListener);
         
         SQLColumn col = new SQLColumn();
         col.setPopulated(true);
@@ -386,7 +391,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         table1.addChild(col);
         
         TestingSQLObjectListener testListener = new TestingSQLObjectListener();
-        table1.addSQLObjectListener(testListener);
+        table1.addSPListener(testListener);
         
         table1.removeChild(col);
         assertEquals("Children removed event not fired!", 1, testListener.getRemovedCount());
@@ -540,9 +545,9 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         EventLogger l = new EventLogger();
         SQLObjectSnapshot original = l.makeSQLObjectSnapshot(table);
         
-        SQLObjectUtils.listenToHierarchy(l, table);
+        SQLPowerUtils.listenToHierarchy(table, l);
         table.changeColumnIndex(4, 1, true);        
-        SQLObjectUtils.unlistenToHierarchy(l, table);
+        SQLPowerUtils.unlistenToHierarchy(table, l);
 
         assertEquals(4, table.getPkSize());
         
@@ -569,9 +574,9 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         EventLogger l = new EventLogger();
         SQLObjectSnapshot original = l.makeSQLObjectSnapshot(table);
         
-        SQLObjectUtils.listenToHierarchy(l, table);
+        SQLPowerUtils.listenToHierarchy(table, l);
         table.changeColumnIndex(4, 0, true);        
-        SQLObjectUtils.unlistenToHierarchy(l, table);
+        SQLPowerUtils.unlistenToHierarchy(table, l);
 
         assertEquals(4, table.getPkSize());
         
@@ -654,7 +659,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         assertEquals(5, table.getColumnIndex(table.getColumnByName("six")));
     }
     
-    public void testChangeForthColumnKey() throws SQLObjectException{
+    public void testChangeFourthColumnKey() throws SQLObjectException{
         SQLColumn col4 = table.getColumnByName("four");
         assertNotNull(col4);
         col4.setPrimaryKeySeq(0);
@@ -675,9 +680,9 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
 
         SQLObjectSnapshot original = l.makeSQLObjectSnapshot(table);
         
-        SQLObjectUtils.listenToHierarchy(l, table);
+        SQLPowerUtils.listenToHierarchy(table, l);
         col5.setPrimaryKeySeq(0);
-        SQLObjectUtils.unlistenToHierarchy(l, table);
+        SQLPowerUtils.unlistenToHierarchy(table, l);
 
         System.out.println("Event log:\n"+l);
 
@@ -736,11 +741,11 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
      * in any way), and compared to older snapshots.  Old snapshots can also be rolled forward
      * (like an undo manager redo operation) to test that a stream of events is fully redoable.
      */
-    public static class EventLogger implements SQLObjectListener, ca.sqlpower.sqlobject.undo.CompoundEventListener {
+    public static class EventLogger extends AbstractSPListener {
 
         /**
          * The list of events captured from the SQLObject tree.  Events are stored in the order they
-         * are recieved, oldest first.
+         * are received, oldest first.
          */
         private List<LogItem> log = new ArrayList<LogItem>();
 
@@ -751,12 +756,12 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
 
         /**
          * An item in the log.  It has a type (based on which listener method was invoked) and the
-         * event that the listener recieved.
+         * event that the listener received.
          */
         private static class LogItem {
             private LogItemType type;
-            private SQLObjectEvent event;
-            public LogItem(LogItemType type, SQLObjectEvent event) {
+            private EventObject event;
+            public LogItem(LogItemType type, EventObject event) {
                 this.type = type;
                 this.event = event;
             }
@@ -765,7 +770,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                 return type;
             }
             
-            public SQLObjectEvent getEvent() {
+            public EventObject getEvent() {
                 return event;
             }
             
@@ -781,7 +786,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
          * @param type The event type (based on which listener method was called)
          * @param e The event.  Must not be null.
          */
-        private void addToLog(LogItemType type, SQLObjectEvent e) {
+        private void addToLog(LogItemType type, EventObject e) {
             if (e == null) throw new NullPointerException("Can't add null events, dude");
             log.add(new LogItem(type, e));
         }
@@ -789,30 +794,33 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         /**
          * Listener method.  Adds the received event to the log.
          */
-        public void dbChildrenInserted(SQLObjectEvent e) {
+        @Override
+        public void childAddedImpl(SPChildEvent e) {
             addToLog(LogItemType.INSERT, e);
         }
 
         /**
          * Listener method.  Adds the received event to the log.
          */
-        public void dbChildrenRemoved(SQLObjectEvent e) {
+        @Override
+        public void childRemovedImpl(SPChildEvent e) {
             addToLog(LogItemType.REMOVE, e);
         }
 
         /**
          * Listener method.  Adds the received event to the log.
          */
-        public void dbObjectChanged(SQLObjectEvent e) {
+        @Override
+        public void propertyChangeImpl(PropertyChangeEvent e) {
             addToLog(LogItemType.CHANGE, e);
             // FIXME have to unlisten to old objects and listen to new ones
         }
 
-        public void compoundEditStart(CompoundEvent e) {
+        public void transactionStarted(CompoundEvent e) {
             // whatever
         }
 
-        public void compoundEditEnd(CompoundEvent e) {
+        public void transactionEnded(CompoundEvent e) {
             // whatever
         }
         
@@ -996,21 +1004,21 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                 return snapshottedObjectClass;
             }
 
-            public void applyChange(SQLObjectEvent e) {
+            public void applyChange(PropertyChangeEvent e) {
                 if (!properties.containsKey(e.getPropertyName())) {
                     throw new IllegalStateException("the snapshotted object does not contain this property: " +
                             e.getPropertyName());
                 }
-                checkSnapshottedObject(e.getSQLSource(), this, "applying a property modification");
+                checkSnapshottedObject((SQLObject) e.getSource(), this, "applying a property modification");
                 properties.put(e.getPropertyName(),e.getNewValue());                
             }
 
-            public void revertChange(SQLObjectEvent e) {
+            public void revertChange(PropertyChangeEvent e) {
                 if (!properties.containsKey(e.getPropertyName())) {
                     throw new IllegalStateException("this snapshotted object does not contain property: " +
                             e.getPropertyName());
                 }
-                checkSnapshottedObject(e.getSQLSource(), this, "reversing a property midification");
+                checkSnapshottedObject((SQLObject) e.getSource(), this, "reversing a property midification");
                 properties.put(e.getPropertyName(), e.getOldValue());
             }
 
@@ -1028,7 +1036,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
              * @return True if the snapshot tree rooted at this snapshot contains a snapshot
              * of the SQLObject e.getSource(); false if it does not.
              */
-            public boolean applyEvent(LogItemType type, SQLObjectEvent e, boolean rollForward) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, SQLObjectException {
+            public boolean applyEvent(LogItemType type, EventObject e, boolean rollForward) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, SQLObjectException {
                 if (System.identityHashCode(e.getSource()) != getSnapshottedObjectIdentity()) {
                     for (SQLObjectSnapshot snap : children) {
                         if (snap.applyEvent(type, e, rollForward)) return true;
@@ -1041,30 +1049,30 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                     if (rollForward) {
                         System.out.println("Rolling forward a "+type+": "+e);
                         if (type == LogItemType.INSERT) {
-                            for (int i = 0; i < e.getChangedIndices().length; i++) {
-                                insertChild(e.getChangedIndices()[i], (SQLColumn) e.getChildren()[i]);
-                            }
+                        	SPChildEvent event = (SPChildEvent) e;
+                        	insertChild(event.getIndex(), (SQLColumn) event.getChild());
+                        	
                         } else if (type == LogItemType.REMOVE) {
-                            for (int i = 0; i < e.getChangedIndices().length; i++) {
-                                removeChild(e.getChangedIndices()[i], e.getChildren()[i]);
-                            }
+                        	SPChildEvent event = (SPChildEvent) e;
+                        	removeChild(event.getIndex(), (SQLObject) event.getChild());
+                        	
                         } else if (type == LogItemType.CHANGE) {
-                            applyChange(e);
+                            applyChange((PropertyChangeEvent) e);
                         } else {
                             throw new UnsupportedOperationException("Unknown log item type "+type);
                         }
                     } else {
                         System.out.println("Rolling back a "+type+": "+e);
                         if (type == LogItemType.INSERT) {
-                            for (int i = 0; i < e.getChangedIndices().length; i++) {
-                                removeChild(e.getChangedIndices()[i], e.getChildren()[i]);
-                            }
+                        	SPChildEvent event = (SPChildEvent) e;
+                        	removeChild(event.getIndex(), (SQLObject) event.getChild());
+                        	
                         } else if (type == LogItemType.REMOVE) {
-                            for (int i = 0; i < e.getChangedIndices().length; i++) {
-                                insertChild(e.getChangedIndices()[i], e.getChildren()[i]);
-                            }
+                        	SPChildEvent event = (SPChildEvent) e;
+                        	insertChild(event.getIndex(), (SQLColumn) event.getChild());
+                        	
                         } else if (type == LogItemType.CHANGE) {
-                            revertChange(e);
+                            revertChange((PropertyChangeEvent) e);
                         } else {
                             throw new UnsupportedOperationException("Unknown log item type "+type);
                         }
@@ -1085,7 +1093,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         public void rollForward(SQLObjectSnapshot snapshot) throws Exception {
             for (LogItem li : log) {
                 LogItemType type = li.getType();
-                SQLObjectEvent e = li.getEvent();
+                EventObject e = li.getEvent();
                 snapshot.applyEvent(type, e, true);
             }
         }
@@ -1099,7 +1107,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
             Collections.reverse(revlog);
             for (LogItem li : revlog) {
                 LogItemType type = li.getType();
-                SQLObjectEvent e = li.getEvent();
+                EventObject e = li.getEvent();
                 snapshot.applyEvent(type, e, false);
             }
         }
@@ -1129,41 +1137,27 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
 //     */
 //    public void testInsertEventsConsistentWithReality() throws Exception {
 //        
-//        class InsertListener implements SQLObjectListener {
+//        class InsertListener extends AbstractSPListener {
 //
-//            public void dbChildrenInserted(SQLObjectEvent e) {
-//                
-//                for (int i = 0; i < e.getChangedIndices().length; i++) {
-//                    int idx = e.getChangedIndices()[i];
-//                    SQLObject child = e.getChildren()[i];
-//                    try {
-//                        assertTrue(idx < table.getColumns().size());
-//                        assertSame(table.getColumn(idx), child);
-//                    } catch (SQLObjectException ex) {
-//                        throw new SQLObjectRuntimeException(ex);
-//                    }
-//                }
-//            }
-//
-//            public void dbChildrenRemoved(SQLObjectEvent e) {
-//                // TODO Auto-generated method stub
-//                
-//            }
-//
-//            public void dbObjectChanged(SQLObjectEvent e) {
-//                // TODO Auto-generated method stub
-//                
-//            }
+//        	@Override
+//            public void childAddedImpl(SPChildEvent e) {
+//        		try {
+//        			assertTrue(e.getIndex() < table.getColumns().size());
+//        			assertSame(table.getColumn(e.getIndex()), e.getChild());
+//        		} catch (SQLObjectException ex) {
+//        			throw new SQLObjectRuntimeException(ex);
+//        		}
+//        	}
 //
 //        }
-//        table.getColumnsFolder().addSQLObjectListener(new InsertListener());
+//        table.getColumnsFolder().addSPListener(new InsertListener());
 //        SQLRelationship selfref = new SQLRelationship();
-//        table.getColumnsFolder().addSQLObjectListener(new InsertListener());
+//        table.getColumnsFolder().addSPListener(new InsertListener());
 //        selfref.attachRelationship(table, table, true);
 //        assertEquals(9, table.getColumns().size());
 //        assertEquals(3, selfref.getChildCount());
 //
-//        table.getColumnsFolder().addSQLObjectListener(new InsertListener());
+//        table.getColumnsFolder().addSPListener(new InsertListener());
 //        table.changeColumnIndex(2, 0, true);
 //        assertEquals(9, table.getColumns().size());
 //        assertEquals(3, selfref.getChildCount());

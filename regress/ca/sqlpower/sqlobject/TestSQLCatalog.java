@@ -365,7 +365,7 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 
 	public void testFireDbChildrenInserted() throws SQLObjectException {
 		TestingSQLObjectListener test1 = new TestingSQLObjectListener();
-		c.addSQLObjectListener(test1);
+		c.addSPListener(test1);
 		c.addChild(new SQLTable(c,"","","TABLE",true));
 		assertEquals("Children inserted not fired!", 1, test1.getInsertedCount());
 	}
@@ -375,7 +375,7 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 	    c.addChild(tempTable);
 
 	    TestingSQLObjectListener test1 = new TestingSQLObjectListener();
-        c.addSQLObjectListener(test1);
+        c.addSPListener(test1);
         
         c.removeChild(tempTable);
         assertEquals("Children removed not fired!", 1, test1.getRemovedCount());

@@ -23,11 +23,11 @@ import junit.framework.TestCase;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLObjectEvent;
 import ca.sqlpower.sqlobject.SQLTable.Folder;
-import ca.sqlpower.sqlobject.undo.SQLObjectChildren;
+import ca.sqlpower.sqlobject.undo.SQLObjectChildEdit;
 
 public class SQLObjectChildrenTest extends TestCase {
     
-    public class TestSQLObjectChildren extends SQLObjectChildren {
+    public class TestSQLObjectChildren extends SQLObjectChildEdit {
 
         public TestSQLObjectChildren() {
             super();
@@ -60,9 +60,9 @@ public class SQLObjectChildrenTest extends TestCase {
         SQLColumn[] columnArray = {column1,column2,column3,column4,column5,column6,column7};
         int[] intArray = {0,1};
         SQLObjectEvent event = new SQLObjectEvent(folder,intArray,columnArray);
-        SQLObjectChildren objectChildren = new TestSQLObjectChildren();
+        SQLObjectChildEdit objectChildren = new TestSQLObjectChildren();
         objectChildren.createEditFromEvent(event);
-        objectChildren.addChildren();
+        objectChildren.addChild();
         
         assertEquals(2, folder.getChildCount());
         assertEquals(column1, folder.getChild(0));
@@ -88,9 +88,9 @@ public class SQLObjectChildrenTest extends TestCase {
         SQLColumn[] columnArray = {column1,column2,column3,column4,column5,column6,column7};
         int[] intArray = {0,1,2,3,4};
         SQLObjectEvent event = new SQLObjectEvent(folder,intArray,columnArray);
-        SQLObjectChildren objectChildren = new TestSQLObjectChildren();
+        SQLObjectChildEdit objectChildren = new TestSQLObjectChildren();
         objectChildren.createEditFromEvent(event);
-        objectChildren.addChildren();
+        objectChildren.addChild();
         
         assertEquals(5, folder.getChildCount());
         
@@ -98,7 +98,7 @@ public class SQLObjectChildrenTest extends TestCase {
         event = new SQLObjectEvent(folder,Array,columnArray);
         objectChildren = new TestSQLObjectChildren();
         objectChildren.createEditFromEvent(event);
-        objectChildren.removeChildren();
+        objectChildren.removeChild();
         
         
         assertEquals(3,folder.getChildCount());

@@ -125,8 +125,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		Connection con = null;
 		ResultSet rs = null;
 		try {
-			begin("Populating database");
-		
+			fireTransactionStarted("Populating Database " + this);
 			con = getConnection();
 			DatabaseMetaData dbmd = con.getMetaData();
 			
@@ -159,12 +158,13 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
                 	addTable(table);
                 }
             }
+            fireTransactionEnded();
             
 		} catch (SQLException e) {
+			fireTransactionRollback(e.getMessage());
 			throw new SQLObjectException(Messages.getString("SQLDatabase.populateFailed"), e); //$NON-NLS-1$
 		} finally {
 			populated = true;
-			commit();
 			try {
 				if (rs != null ) rs.close();
 			} catch (SQLException e2) {
@@ -441,7 +441,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		}
 		dataSource = argDataSource;
 		dataSource.addPropertyChangeListener(this);		
-		fireDbObjectChanged("dataSource",oldDataSource,argDataSource); //$NON-NLS-1$
+		firePropertyChange("dataSource",oldDataSource,argDataSource); //$NON-NLS-1$
 	}
 
 	public void setPlayPenDatabase(boolean v) {
@@ -449,7 +449,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		playPenDatabase = v;
 
 		if (oldValue != v) {
-			fireDbObjectChanged("playPenDatabase", oldValue, v); //$NON-NLS-1$
+			firePropertyChange("playPenDatabase", oldValue, v); //$NON-NLS-1$
 		}
 	}
 
@@ -471,19 +471,21 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		} else {
 			// discard everything and reload (this is generally for source systems)
 			logger.debug("Resetting: " + getDataSource() ); //$NON-NLS-1$
+			fireTransactionStarted("Resetting Database " + this);
 			// tear down old connection stuff
 			try {
-				begin("Resetting to remove all children");
+				fireTransactionStarted("Resetting to remove all children");
 				for (int i = getChildren().size()-1; i >= 0; i--) {
 					removeChild(getChildren().get(i));
 				}
 				populated = false;
+				fireTransactionEnded();
 			} catch (IllegalArgumentException e) {
+				fireTransactionRollback(e.getMessage());
 				throw new RuntimeException(e);
 			} catch (ObjectDependentException e) {
+				fireTransactionRollback(e.getMessage());
 				throw new RuntimeException(e);
-			} finally {
-				commit();
 			}
 		}
 		
@@ -512,7 +514,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			if ("url".equals(pn) || "driverClass".equals(pn) || "user".equals(pn)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				reset();
 			} else if ("name".equals(pn)) {				 //$NON-NLS-1$
-				fireDbObjectChanged("shortDisplayName",e.getOldValue(),e.getNewValue()); //$NON-NLS-1$
+				firePropertyChange("shortDisplayName",e.getOldValue(),e.getNewValue()); //$NON-NLS-1$
 			}
 		}
 	}

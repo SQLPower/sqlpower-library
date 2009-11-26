@@ -37,6 +37,7 @@ import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.StubSQLObject;
 import ca.sqlpower.sqlobject.undo.CompoundEvent.EventTypes;
 import ca.sqlpower.sqlobject.undo.SQLObjectUndoManager.SQLObjectUndoableEventAdapter;
+import ca.sqlpower.util.TransactionEvent;
 
 public class TestUndoManager extends TestCase {
 
@@ -101,17 +102,17 @@ public class TestUndoManager extends TestCase {
 		pkTable.setRemarks("old");
 		fkTable.setRemarks("old");
 		
-		undoManager.getEventAdapter().compoundEditStart(
-				new CompoundEvent(EventTypes.COMPOUND_EDIT_START,"Starting compoundedit"));
+		undoManager.getEventAdapter().transactionStarted(
+				TransactionEvent.createStartTransactionEvent(this, "Starting compoundedit"));
 		pkTable.setName("one");
-		undoManager.getEventAdapter().compoundEditStart(
-				new CompoundEvent(EventTypes.COMPOUND_EDIT_START,"Starting nested compoundedit"));
+		undoManager.getEventAdapter().transactionStarted(
+				TransactionEvent.createStartTransactionEvent(this, "Starting nested compoundedit"));
 		fkTable.setName("two");
-		undoManager.getEventAdapter().compoundEditEnd(
-				new CompoundEvent(EventTypes.COMPOUND_EDIT_END,"Ending nested compoundedit"));
+		undoManager.getEventAdapter().transactionEnded(
+				TransactionEvent.createEndTransactionEvent(this));
 		pkTable.setRemarks("three");
-		undoManager.getEventAdapter().compoundEditEnd(
-				new CompoundEvent(EventTypes.COMPOUND_EDIT_END,"Ending compoundedit"));
+		undoManager.getEventAdapter().transactionEnded(
+				TransactionEvent.createEndTransactionEvent(this));
 		fkTable.setRemarks("four");
 		
 		assertEquals("one", pkTable.getName());
@@ -142,7 +143,7 @@ public class TestUndoManager extends TestCase {
     public void testCompoundEditsUndoInCorrectOrder() {
         UndoTester myTester = new UndoTester();
         SQLObjectUndoableEventAdapter adapter = undoManager.getEventAdapter();
-        myTester.addUndoEventListener(adapter);
+        myTester.addSPListener(adapter);
         myTester.begin("Test Compound undo");
         adapter.dbObjectChanged(
                 new SQLObjectEvent(

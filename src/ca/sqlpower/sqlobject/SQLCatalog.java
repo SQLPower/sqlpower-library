@@ -156,7 +156,7 @@ public class SQLCatalog extends SQLObject {
 		synchronized (getParent()) {
 			Connection con = null;
 			try {
-				begin("Populating catalog");
+				fireTransactionStarted("Populating Catalog " + this);
 				con = ((SQLDatabase) getParent()).getConnection();
 				DatabaseMetaData dbmd = con.getMetaData();	
 				
@@ -174,11 +174,12 @@ public class SQLCatalog extends SQLObject {
 				    }
 				}
 				
+				fireTransactionEnded();
 			} catch (SQLException e) {
+				fireTransactionRollback(e.getMessage());
 				throw new SQLObjectException("catalog.populate.fail", e);
 			} finally {
 				populated = true;
-				commit();
 				try {
 					if (con != null) {
                         con.close();
@@ -218,7 +219,7 @@ public class SQLCatalog extends SQLObject {
 		if (argNativeTerm != null) argNativeTerm = argNativeTerm.toLowerCase();
 		String oldValue = nativeTerm;
 		this.nativeTerm = argNativeTerm;
-		fireDbObjectChanged("nativeTerm", oldValue, nativeTerm);
+		firePropertyChange("nativeTerm", oldValue, nativeTerm);
 	}
 
 	@Override
