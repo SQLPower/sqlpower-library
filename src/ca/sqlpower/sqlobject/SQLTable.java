@@ -469,13 +469,15 @@ public class SQLTable extends SQLObject {
 			 * same relationship if it's already there). We also filter by
 			 * pkTable if that was requested.
 			 */
+			List<SQLRelationship> addedRels = new ArrayList<SQLRelationship>();
             for (SQLRelationship addMe : newKeys) {
                 if (pkTable != null && addMe.pkTable != pkTable) {
                     allRelationshipsAdded = false;
                     continue;
                 }
                 if (!addMe.pkTable.getExportedKeysWithoutPopulating().contains(addMe)) {
-                    addMe.attachRelationship(addMe.pkTable, addMe.fkTable, false);
+                    addMe.attachRelationship(addMe.pkTable, addMe.fkTable, false, false);
+                    addedRels.add(addMe);
                 }
             }
 
@@ -484,6 +486,14 @@ public class SQLTable extends SQLObject {
 			// within a transaction, so all events should be fired
 			// there.
             commit();
+            
+            // This call attaches listeners to this table. It must be called
+			// outside of all transactions, otherwise the listener would start
+			// with the wrong transaction count, and throw an exception on
+			// commit()
+            for (SQLRelationship added : addedRels) {
+            	added.attachListeners();
+            }
 		} catch (SQLObjectException e) {
 			rollback(e.getMessage());
 			throw e;
@@ -505,7 +515,7 @@ public class SQLTable extends SQLObject {
 	
 	public void addImportedKey(SQLRelationship r, int index) {
 		importedKeys.add(index, r);
-		r.setParent(this);
+		// Does not set parent because this should be done by SQLRelationship.attachRelationship()
 		fireChildAdded(SQLRelationship.class, r, index);
 	}
 
@@ -530,7 +540,7 @@ public class SQLTable extends SQLObject {
 	
 	public void addExportedKey(SQLRelationship r, int index) {
 		exportedKeys.add(index, r);
-		r.setParent(this);
+		// Does not set parent because this should be done by SQLRelationship.attachRelationship()
 		fireChildAdded(SQLRelationship.class, r, index);
 	}
 

@@ -335,7 +335,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
         return fkColumnManager;
     }
 
-	private void attachListeners() throws SQLObjectException {
+	public void attachListeners() throws SQLObjectException {
 		SQLPowerUtils.listenToHierarchy(pkTable, fkColumnManager);
 		SQLPowerUtils.listenToHierarchy(fkTable, fkColumnManager);
 
@@ -348,21 +348,28 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
             SQLPowerUtils.unlistenToHierarchy(fkTable, fkColumnManager);
 	}
 
-	/**
-     * Associates an {@link SQLRelationship} with the given {@link SQLTable}
-     * objects. Also automatically generates the PK to FK column mapping if
-     * autoGenerateMapping is set to true.
-     * 
-     * @param pkTable
-     *            The parent table in this relationship.
-     * @param fkTable
-     *            The child table in this relationship that contains the foreign
-     *            key.
-     * @param autoGenerateMapping
-     *            Automatically generates the PK to FK column mapping if true
-     * @throws SQLObjectException
-     */
 	public void attachRelationship(SQLTable pkTable, SQLTable fkTable, boolean autoGenerateMapping) throws SQLObjectException {
+		attachRelationship(pkTable, fkTable, autoGenerateMapping, true);
+	}
+
+	/**
+	 * Associates an {@link SQLRelationship} with the given {@link SQLTable}
+	 * objects. Also automatically generates the PK to FK column mapping if
+	 * autoGenerateMapping is set to true.
+	 * 
+	 * @param pkTable
+	 *            The parent table in this relationship.
+	 * @param fkTable
+	 *            The child table in this relationship that contains the foreign
+	 *            key.
+	 * @param autoGenerateMapping
+	 *            Automatically generates the PK to FK column mapping if true
+	 * @param attachListeners
+	 *            Attaches listeners to both parent tables if true. If false,
+	 *            attachListeners must be called elsewhere.
+	 * @throws SQLObjectException
+	 */
+	public void attachRelationship(SQLTable pkTable, SQLTable fkTable, boolean autoGenerateMapping, boolean attachListeners) throws SQLObjectException {
 		if(pkTable == null) throw new NullPointerException("Null pkTable not allowed");
 		if(fkTable == null) throw new NullPointerException("Null fkTable not allowed");
 
@@ -441,7 +448,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
                 fkTable.normalizePrimaryKey();
             }
             
-			this.attachListeners();
+            if (attachListeners) {
+            	this.attachListeners();
+            }
 		} finally {
 			if ( fkTable != null ) {
 				fkTable.setMagicEnabled(true);

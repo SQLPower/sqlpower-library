@@ -435,16 +435,17 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 */
 	public void setDataSource(JDBCDataSource argDataSource) {
 		SPDataSource oldDataSource = this.dataSource;
+		begin("Resetting Database");
 		if (dataSource != null) {
 			dataSource.removePropertyChangeListener(this);
-			begin("Resetting Database");
-			firePropertyChange("dataSource", oldDataSource, argDataSource);
-			reset();
-			commit();
+			if (isMagicEnabled()) {
+				reset();
+			}
 		}
 		dataSource = argDataSource;
 		dataSource.addPropertyChangeListener(this);		
 		firePropertyChange("dataSource",oldDataSource,argDataSource); //$NON-NLS-1$
+		commit();
 	}
 
 	public void setPlayPenDatabase(boolean v) {
