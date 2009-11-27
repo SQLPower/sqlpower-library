@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.List;
 
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.util.SPSession;
+import ca.sqlpower.util.StubSPSession;
 
 /**
  * The StubSQLObject is a general-purpose SQLObject that you can use for testing
@@ -32,6 +34,8 @@ import ca.sqlpower.object.SPObject;
 public class StubSQLObject extends SQLObject {
 	
 	private List<SQLObject> children = new ArrayList<SQLObject>();
+	
+	private SPSession session = new StubSPSession();
 
     /**
      * Keeps track of how many times populate() has been called.
@@ -113,5 +117,9 @@ public class StubSQLObject extends SQLObject {
 		children.add(index, (SQLObject) child);
 		child.setParent(this);
 		fireChildAdded(child.getClass(), child, index);
+	}
+	
+	public SPSession getSession() {
+		return session;
 	}
 }

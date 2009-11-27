@@ -637,17 +637,17 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         
         SQLTable table1 = new SQLTable(database, "table1", null, "TABLE", true);
         SQLColumn table1PK = new SQLColumn(table1, "pkcol_1", Types.INTEGER, 10, 0);
-        table1.addColumn(table1PK);
+        table1.addChild(table1PK);
         table1PK.setPrimaryKeySeq(0);
         
         SQLTable table2 = new SQLTable(database, "table2", null, "TABLE", true);
         SQLColumn table2PK = new SQLColumn(table2, "pkcol_2", Types.INTEGER, 10, 0);
-        table2.addColumn(table2PK);
+        table2.addChild(table2PK);
         table2PK.setPrimaryKeySeq(0);
         
         SQLTable table3 = new SQLTable(database, "table3", null, "TABLE", true);
         SQLColumn table3PK = new SQLColumn(table3, "pkcol_3", Types.INTEGER, 10, 0);
-        table3.addColumn(table3PK);
+        table3.addChild(table3PK);
         table3PK.setPrimaryKeySeq(0);
         
         SQLRelationship relTable3to2 = new SQLRelationship();
@@ -679,8 +679,8 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         
         SQLTable table1 = new SQLTable(database, "table1", null, "TABLE", true);
         SQLColumn table1PK = new SQLColumn(table1, "pkcol_1", Types.INTEGER, 10, 0);
+        table1.addChild(table1PK);
         table1PK.setPrimaryKeySeq(0);
-        table1.addColumn(table1PK);
         
         SQLTable table2 = new SQLTable(database, "table2", null, "TABLE", true);
         SQLRelationship relTable1to2 = new SQLRelationship();
@@ -812,8 +812,8 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         SQLTable table = new SQLTable(database, true);
         database.addChild(table);
         SQLColumn c1 = new SQLColumn(table, "Col", Types.INTEGER, 10, 0);
+        table.addChild(c1);
         c1.setPrimaryKeySeq(0);
-        table.addColumn(c1);
         
         SQLColumn c2 = new SQLColumn(table, "Parent_Col", Types.INTEGER, 10, 0);
         table.addColumn(c2);

@@ -62,6 +62,8 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         sqlx("CREATE VIEW REGRESSION_TEST1_VIEW AS SELECT * FROM REGRESSION_TEST1");
 
         table = new SQLTable(null, true);
+        table.setParent(new StubSQLObject());
+        
         table.addColumn(new SQLColumn(table, "one", Types.INTEGER, 10, 0));
         table.addColumn(new SQLColumn(table, "two", Types.INTEGER, 10, 0));
         table.addColumn(new SQLColumn(table, "three", Types.INTEGER, 10, 0));

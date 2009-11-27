@@ -682,7 +682,13 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		return s.toString();
 	}
 
-
+	@Override
+	protected void addChildImpl(SPObject child, int index) {
+		if (child instanceof ColumnMapping) {
+			addMapping((ColumnMapping) child, index);
+		}
+	}
+	
 	/**
 	 * Convenience method for adding a SQLRelationship.ColumnMapping
 	 * child to this relationship.
@@ -859,7 +865,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			
 			// Code from dbChildrenRemoved
 			if (e.getSource() == pkTable) {
-				final LinkedList<SQLObject> oldChildren = new LinkedList<SQLObject>(childrenRemoved);
+				LinkedList<SQLObject> oldChildren = new LinkedList<SQLObject>(childrenRemoved);
 				childrenRemoved.clear();
 				for (SQLObject o : oldChildren) {
 					if (o instanceof SQLRelationship) {
