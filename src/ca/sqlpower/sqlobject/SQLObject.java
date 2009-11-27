@@ -34,6 +34,7 @@ import org.apache.log4j.Logger;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import ca.sqlpower.object.AbstractSPObject;
+import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
@@ -245,6 +246,17 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 */
 	public abstract boolean allowsChildren();
 
+	@Override
+	public boolean removeChild(SPObject child) throws ObjectDependentException,
+			IllegalArgumentException {
+		if (child instanceof SQLObject) {
+			if (!fireDbChildPreRemove(getChildren(child.getClass()).indexOf(child), (SQLObject) child)) {
+				return false;
+			}
+		}
+		return super.removeChild(child);
+	}
+	
 	/**
 	 * Returns an unmodifiable view of the child list.  All list
 	 * members will be SQLObject subclasses (SQLTable,
