@@ -18,14 +18,13 @@
  */
 package ca.sqlpower.sqlobject;
 
-import java.beans.PropertyChangeEvent;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -250,7 +249,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	public boolean removeChild(SPObject child) throws ObjectDependentException,
 			IllegalArgumentException {
 		if (child instanceof SQLObject) {
-			if (!fireDbChildPreRemove(getChildren(child.getClass()).indexOf(child), (SQLObject) child)) {
+			if (!fireDbChildPreRemove(getChildrenWithoutPopulating(child.getClass()).indexOf(child), (SQLObject) child)) {
 				return false;
 			}
 		}
@@ -263,22 +262,30 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 * SQLRelationship, SQLColumn, etc.) which are directly contained
 	 * within this SQLObject.
 	 */
-//	public List getChildren() throws SQLObjectException {
-//		if (!allowsChildren()) //never return null;
-//			return children;
-//		populate();
-//		return Collections.unmodifiableList(children);
-//	}
-	public abstract List<? extends SQLObject> getChildren();
+	public List<? extends SQLObject> getChildren() {
+		return getChildren(SQLObject.class);
+	}
 	
 	public <T extends SPObject> List<T> getChildren(Class<T> type) {
+		try {
+			populate();
+			return getChildrenWithoutPopulating(type);
+		} catch (SQLObjectException e) {
+			throw new RuntimeException("Could not populate " + getName() + 
+					": " + e.getMessage());
+		}
+	}
+	
+	public abstract List<? extends SQLObject> getChildrenWithoutPopulating();
+	
+	public <T extends SPObject> List<T> getChildrenWithoutPopulating(Class<T> type) {
 		List<T> children = new ArrayList<T>();
-		for (SQLObject child : getChildren()) {
+		for (SQLObject child : getChildrenWithoutPopulating()) {
 			if (type.isAssignableFrom(child.getClass())) {
 				children.add(type.cast(child));
 			}
 		}
-		return children;
+		return Collections.unmodifiableList(children);
 	}
 
 	public SQLObject getChild(int index) throws SQLObjectException {

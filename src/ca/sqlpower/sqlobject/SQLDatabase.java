@@ -696,20 +696,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
         
         return uniqueRelationships;
     }
-
-    @Override
-    public List<? extends SQLObject> getChildren() {
-		try {
-			populate();
-			return getChildrenWithoutPopulating();
-		} catch (SQLObjectException e) {
-			throw new RuntimeException(e);
-		}
-	}
 	
-	/**
-	 * Returns the list of children without populating first.
-	 */
 	public List<? extends SQLObject> getChildrenWithoutPopulating() {
 		List<SQLObject> children = new ArrayList<SQLObject>();
 		children.addAll(catalogs);

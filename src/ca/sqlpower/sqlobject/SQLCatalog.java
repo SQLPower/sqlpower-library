@@ -284,16 +284,6 @@ public class SQLCatalog extends SQLObject {
 		fireChildAdded(SQLTable.class, table, index);
 	}
 
-	@Override
-	public List<? extends SQLObject> getChildren() {
-		try {
-			populate();
-			return getChildrenWithoutPopulating();
-		} catch (SQLObjectException e) {
-			throw new SQLObjectRuntimeException(e);
-		}
-	}
-	
 	public List<? extends SQLObject> getChildrenWithoutPopulating() {
 		List<SQLObject> children = new ArrayList<SQLObject>();
 		children.addAll(schemas);

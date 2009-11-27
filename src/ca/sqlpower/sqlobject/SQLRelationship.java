@@ -466,7 +466,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 * @throws SQLObjectException If something goes terribly wrong
 	 */
     	private void realizeMapping() throws SQLObjectException {
-        for (ColumnMapping m : getChildren()) {
+        for (ColumnMapping m : getChildren(ColumnMapping.class)) {
             if (logger.isDebugEnabled()) {
                 logger.debug("realizeMapping: processing " + m);
             }
@@ -873,7 +873,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 								// this relationship is reconnected in the future. (if not removed
 								// in reverse order, the PK sequence numbers will change as each
 								// mapping is removed and the subsequent column indexes shift down)
-								List<ColumnMapping> mappings = new ArrayList<ColumnMapping>(r.getChildren());
+								List<ColumnMapping> mappings = new ArrayList<ColumnMapping>(r.getChildren(ColumnMapping.class));
 								Collections.sort(mappings, Collections.reverseOrder(new ColumnMappingFKColumnOrderComparator()));
 								for (ColumnMapping cm : mappings) {
 									logger.debug("Removing reference to fkcol "+ cm.getFkColumn());
@@ -1323,7 +1323,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 
 		@Override
-		public List<? extends SQLObject> getChildren() {
+		public List<? extends SQLObject> getChildrenWithoutPopulating() {
 			return Collections.emptyList();
 		}
 
@@ -1359,7 +1359,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 * @throws LockedColumnException
 	 */
 	public void checkColumnLocked(SQLColumn col) throws LockedColumnException {
-		for (SQLRelationship.ColumnMapping cm : getChildren()) {
+		for (SQLRelationship.ColumnMapping cm : getChildren(ColumnMapping.class)) {
 			if (cm.getFkColumn() == col) {
 				throw new LockedColumnException(this,col);
 			}
@@ -1385,7 +1385,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	    List<ColumnMapping> columnMappings = (List<ColumnMapping>)getChildren();
 	    SQLIndex pkTablePKIndex = getPkTable().getPrimaryKeyIndex();
 	    if (pkTablePKIndex == null) return false;
-	    List<Column> pkColumns = pkTablePKIndex.getChildren();
+	    List<Column> pkColumns = pkTablePKIndex.getChildren(Column.class);
 	    
 	    for (Column col: pkColumns) {
 	        boolean colIsInFKTablePK = false;
@@ -1481,13 +1481,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	}
 
 	@Override
-	public List<ColumnMapping> getChildren() {
-		try {
-			populate();
-			return Collections.unmodifiableList(mappings);
-		} catch (SQLObjectException e) {
-			throw new RuntimeException(e);
-		}
+	public List<ColumnMapping> getChildrenWithoutPopulating() {
+		return Collections.unmodifiableList(mappings);
 	}
 
 	@Override

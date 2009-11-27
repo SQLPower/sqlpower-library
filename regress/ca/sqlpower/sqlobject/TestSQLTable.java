@@ -415,7 +415,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         
         try {
             SQLColumn inheritedCol = childTable1.getColumnByName("child_pkcol_1");
-            childTable1.removeColumn(inheritedCol);
+            childTable1.removeChild(inheritedCol);
             fail("Remove should have thrown LockedColumnException");
         } catch (LockedColumnException ex) {
             // good
@@ -442,7 +442,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         
     }
     
-    public void testRemoveFKColumn() throws SQLObjectException{
+    public void testRemoveFKColumn() throws Exception {
         assertEquals("There should be 6 columns to start",6, 
                 table.getColumns().size());
         table.removeColumn(table.getColumnIndex(table.getColumnByName("five")));

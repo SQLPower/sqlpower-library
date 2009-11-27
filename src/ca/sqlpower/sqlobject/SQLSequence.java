@@ -95,7 +95,7 @@ public class SQLSequence extends SQLObject {
     }
 
 	@Override
-	public List<? extends SQLObject> getChildren() {
+	public List<? extends SQLObject> getChildrenWithoutPopulating() {
 		return Collections.emptyList();
 	}
 

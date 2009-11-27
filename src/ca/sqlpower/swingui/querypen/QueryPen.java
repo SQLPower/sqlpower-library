@@ -208,7 +208,7 @@ public class QueryPen implements MouseState {
     						for (SQLRelationship relation : table.getExportedKeys()) {
     							List<Container> fkContainers = getContainerPane(relation.getFkTable());
     							for (Container fkContainer : fkContainers) {
-    								for (ColumnMapping mapping : relation.getChildren()) {
+    								for (ColumnMapping mapping : relation.getChildren(ColumnMapping.class)) {
     									logger.debug("PK container has model name " + tableModel.getName() + 
     											" looking for col named " + mapping.getPkColumn().getName());
     									Item pkItemNode = tableModel.getItem(mapping.getPkColumn());
@@ -232,7 +232,7 @@ public class QueryPen implements MouseState {
     						for (SQLRelationship relation : table.getImportedKeys()) {
     							List<Container> pkContainers = getContainerPane(relation.getPkTable());
     							for (Container pkContainer : pkContainers) {
-    								for (ColumnMapping mapping : relation.getChildren()) {
+    								for (ColumnMapping mapping : relation.getChildren(ColumnMapping.class)) {
     									Item fkItemNode = pkContainer.getItem(mapping.getPkColumn());
     									Item pkItemNode = tableModel.getItem(mapping.getFkColumn());
     									if (pkItemNode != null && fkItemNode != null) {

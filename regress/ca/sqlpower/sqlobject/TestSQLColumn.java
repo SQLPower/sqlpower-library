@@ -477,17 +477,17 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		assertEquals(null,tmpCol.getParent());
 		table0pk.addColumn(tmpCol);
 		assertEquals(table0pk,tmpCol.getParent());
-		table0pk.removeColumn(tmpCol);
+		table0pk.removeChild(tmpCol);
 		assertEquals(null,tmpCol.getParent());
 
 		SQLColumn cowCol = table3pk.getColumn(0);
 		assertEquals(table3pk,cowCol.getParent());
-		table3pk.removeColumn(cowCol);
+		table3pk.removeChild(cowCol);
 		assertEquals(null,cowCol.getParent());
 		
 		table0pk.addColumn(cowCol);
 		assertEquals(table0pk,cowCol.getParent());
-		table0pk.removeColumn(cowCol);
+		table0pk.removeChild(cowCol);
 		assertEquals(null,cowCol.getParent());
 	}
 

@@ -73,7 +73,7 @@ public class SQLObjectRoot extends SQLObject {
 	}
 
 	@Override
-	public List<SQLDatabase> getChildren() {
+	public List<SQLDatabase> getChildrenWithoutPopulating() {
 		return Collections.unmodifiableList(databases);
 	}
 

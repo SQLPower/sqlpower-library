@@ -812,7 +812,13 @@ public class SQLTable extends SQLObject {
      *             safely removed.
      */
 	public boolean removeColumn(int index) throws SQLObjectException {
-		return removeColumn(columns.get(index));
+		try {
+			return removeChild(columns.get(index));
+		} catch (IllegalArgumentException e) {
+			throw new RuntimeException(e);
+		} catch (ObjectDependentException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
     /**
@@ -998,6 +1004,7 @@ public class SQLTable extends SQLObject {
                 	removeIndex(pkIndex);
                 }
             } while (normalizeAgain);
+            commit();
 		} catch (IllegalArgumentException e) {
 			rollback("Could not remove child: " + e.getMessage());
 			throw new RuntimeException(e);
@@ -1005,7 +1012,6 @@ public class SQLTable extends SQLObject {
 			rollback("Could not remove child: " + e.getMessage());
 			throw new RuntimeException(e);
 		} finally {
-		    commit();
             normalizing = false;
             normalizeAgain = false;
 		}
@@ -1805,32 +1811,12 @@ public class SQLTable extends SQLObject {
     	return false;
     }
 
-	@Override
-	public List<? extends SQLObject> getChildren() {
-		try {
-			populate();
-			return getChildrenWithoutPopulating();
-		} catch (SQLObjectException e) {
-			throw new RuntimeException("Could not populate the table " + getName());
-		}
-	}
-	
 	public List<? extends SQLObject> getChildrenWithoutPopulating() {
 		List<SQLObject> children = new ArrayList<SQLObject>();
 		children.addAll(columns);
 		children.addAll(importedKeys);
 		children.addAll(exportedKeys);
 		children.addAll(indices);
-		return Collections.unmodifiableList(children);
-	}
-	
-	public <T extends SQLObject> List<T> getChildrenWithoutPopulating(Class<T> type) {
-		List<T> children = new ArrayList<T>();
-		for (SPObject child : getChildrenWithoutPopulating()) {
-			if (type.isAssignableFrom(child.getClass())) {
-				children.add(type.cast(child));
-			}
-		}
 		return Collections.unmodifiableList(children);
 	}
 
@@ -1874,7 +1860,8 @@ public class SQLTable extends SQLObject {
 		
 		if (childType == SQLIndex.class) return offset;
 		
-		return 0;
+		throw new IllegalArgumentException("The type " + childType + 
+				" is not a valid child type of " + getName());
 	}
 
 	public List<? extends SPObject> getDependencies() {

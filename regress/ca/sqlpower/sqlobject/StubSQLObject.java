@@ -78,13 +78,8 @@ public class StubSQLObject extends SQLObject {
     }
 
 	@Override
-	public List<? extends SQLObject> getChildren() {
-		try {
-			populate();
-			return Collections.unmodifiableList(children);
-		} catch (SQLObjectException e) {
-			throw new RuntimeException(e);
-		}
+	public List<? extends SQLObject> getChildrenWithoutPopulating() {
+		return Collections.unmodifiableList(children);
 	}
 
 	@Override

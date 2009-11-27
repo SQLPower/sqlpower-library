@@ -29,7 +29,6 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.object.AbstractSPListener;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
@@ -297,17 +296,17 @@ public class SQLIndex extends SQLObject {
         }
 
 		@Override
-		public List<? extends SQLObject> getChildren() {
+		public List<? extends SQLObject> getChildrenWithoutPopulating() {
 			return Collections.emptyList();
 		}
 
 		@Override
 		protected boolean removeChildImpl(SPObject child) {
+			// TODO Auto-generated method stub
 			return false;
 		}
 
 		public int childPositionOffset(Class<? extends SPObject> childType) {
-			// TODO Auto-generated method stub
 			return 0;
 		}
 
@@ -476,10 +475,10 @@ public class SQLIndex extends SQLObject {
      * Overriden to narrow return type.
      */
     @Override
-    public List<Column> getChildren() {
+    public List<Column> getChildrenWithoutPopulating() {
     	return Collections.unmodifiableList(columns);
     }
-
+    
     /**
      * Returns the table folder that owns this index.
      */
@@ -797,7 +796,7 @@ public class SQLIndex extends SQLObject {
         try {
             begin("Make index a Primary Key");
             if (isPrimaryKey) {
-                for (Column c : getChildren()) {
+                for (Column c : getChildren(Column.class)) {
                     if (c.getColumn() == null) {
                         throw new SQLObjectException("A PK must only refer to Index.Columns that contain SQLColumns");
                     }
@@ -870,7 +869,7 @@ public class SQLIndex extends SQLObject {
         index.setClustered(source.isClustered());
         index.setChildrenInaccessibleReason(source.getChildrenInaccessibleReason(), false);
 
-        for (Column column : source.getChildren()) {
+        for (Column column : source.getChildren(Column.class)) {
             Column newColumn;
 
             if (column.getColumn() != null) {
@@ -906,7 +905,7 @@ public class SQLIndex extends SQLObject {
             removeChild(c);
         }
 
-        for (Column c : index.getChildren()) {
+        for (Column c : index.getChildren(Column.class)) {
             Column newCol = new Column(c.getName(), c.getAscendingOrDescending());
             newCol.setColumn(c.getColumn());
             addChild(newCol);

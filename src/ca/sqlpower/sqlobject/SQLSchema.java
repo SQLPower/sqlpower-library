@@ -248,13 +248,8 @@ public class SQLSchema extends SQLObject {
 	}
 
 	@Override
-	public List<? extends SQLObject> getChildren() {
-		try {
-			populate();
-			return Collections.unmodifiableList(tables);
-		} catch (SQLObjectException e) {
-			throw new RuntimeException(e);
-		}
+	public List<SQLTable> getChildrenWithoutPopulating() {
+		return Collections.unmodifiableList(tables);
 	}
 
 	@Override

@@ -74,7 +74,7 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
 			return SQLObject.class;
 		}
 		@Override
-		public List<? extends SQLObject> getChildren() {
+		public List<? extends SQLObject> getChildrenWithoutPopulating() {
 			return Collections.unmodifiableList(children);
 		}
 		@Override

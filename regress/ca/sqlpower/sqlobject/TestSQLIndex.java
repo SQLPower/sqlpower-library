@@ -122,7 +122,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     /**
      * This functional test case comes from a post in the forum (#1670).
      */
-    public void testIndexRemovedWithPK() throws SQLObjectException {
+    public void testIndexRemovedWithPK() throws Exception {
         SQLTable testTable = new SQLTable(null,true);
         testTable.setName("Test Table");
         SQLColumn col = new SQLColumn(testTable, "pk", Types.INTEGER, 10, 0);
@@ -133,7 +133,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         
         assertTrue("The column should be added to the index", ind.getChildByName("pk") != null);
         
-        testTable.removeColumn(col);
+        testTable.removeChild(col);
         
         assertNull("The column was not removed from the index", ind.getChildByName("pk"));
         assertNull("The table should not have a PK index", testTable.getPrimaryKeyIndex());
@@ -367,7 +367,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         
         assertEquals(3, target.getChildCount()); // just to ensure we're testing something!
         
-        for (SQLIndex.Column icol : target.getChildren()) {
+        for (SQLIndex.Column icol : target.getChildren(SQLIndex.Column.class)) {
             if (icol.getColumn() != null) {
                 assertNotSame(source, icol.getColumn().getParent());
             }

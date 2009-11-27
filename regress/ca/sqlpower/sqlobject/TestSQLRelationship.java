@@ -290,10 +290,10 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 	}
 
 	/** This was a real regression */
-	public void testDeletePkColRemovesFkCol() throws SQLObjectException {
+	public void testDeletePkColRemovesFkCol() throws Exception {
 		SQLColumn pkcol = parentTable.getColumnByName("pkcol_1");
 		assertNotNull("Child col should exist to start", childTable1.getColumnByName("child_pkcol_1"));
-		parentTable.removeColumn(pkcol);
+		parentTable.removeChild(pkcol);
 		assertNull("Child col should have been removed", childTable1.getColumnByName("child_pkcol_1"));
 	}
 	
@@ -511,7 +511,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 	public void testReconnectOldRelationshipWithCustomMapping() throws SQLObjectException {
 		List<SQLColumn> origParentCols = new ArrayList<SQLColumn>(parentTable.getColumns()); 
 		List<SQLColumn> origChild1Cols = new ArrayList<SQLColumn>(childTable1.getColumns());
-        List<ColumnMapping> origMapping = new ArrayList<ColumnMapping>(rel1.getChildren());
+        List<ColumnMapping> origMapping = new ArrayList<ColumnMapping>(rel1.getChildren(ColumnMapping.class));
 
 		parentTable.removeExportedKey(rel1);
 		rel1.attachRelationship(parentTable, childTable1, false);
@@ -637,18 +637,18 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         
         SQLTable table1 = new SQLTable(database, "table1", null, "TABLE", true);
         SQLColumn table1PK = new SQLColumn(table1, "pkcol_1", Types.INTEGER, 10, 0);
-        table1PK.setPrimaryKeySeq(0);
         table1.addColumn(table1PK);
+        table1PK.setPrimaryKeySeq(0);
         
         SQLTable table2 = new SQLTable(database, "table2", null, "TABLE", true);
         SQLColumn table2PK = new SQLColumn(table2, "pkcol_2", Types.INTEGER, 10, 0);
-        table2PK.setPrimaryKeySeq(0);
         table2.addColumn(table2PK);
+        table2PK.setPrimaryKeySeq(0);
         
         SQLTable table3 = new SQLTable(database, "table3", null, "TABLE", true);
         SQLColumn table3PK = new SQLColumn(table3, "pkcol_3", Types.INTEGER, 10, 0);
-        table3PK.setPrimaryKeySeq(0);
         table3.addColumn(table3PK);
+        table3PK.setPrimaryKeySeq(0);
         
         SQLRelationship relTable3to2 = new SQLRelationship();
         relTable3to2.setIdentifying(true);
@@ -748,7 +748,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         r.attachRelationship(parentTable, parentTable, true);
         
         assertEquals(1, r.getChildren().size());
-        SQLRelationship.ColumnMapping mapping = r.getChildren().get(0);
+        SQLRelationship.ColumnMapping mapping = r.getChildren(SQLRelationship.ColumnMapping.class).get(0);
         assertNotSame(mapping.getFkColumn(), mapping.getPkColumn());
         assertEquals(oldColCount + 1, parentTable.getColumns().size());
     }
@@ -770,7 +770,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         parentCol.setPrimaryKeySeq(0);
         
         assertEquals(1, r.getChildren().size());
-        SQLRelationship.ColumnMapping mapping = r.getChildren().get(0);
+        SQLRelationship.ColumnMapping mapping = r.getChildren(SQLRelationship.ColumnMapping.class).get(0);
         assertNotSame(mapping.getFkColumn(), mapping.getPkColumn());
         assertEquals(oldColCount + 1, parentTable.getColumns().size());
         assertTrue(parentTable.getColumns().contains(mapping.getPkColumn()));
@@ -796,7 +796,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         parentCol.setPrimaryKeySeq(0);
         
         assertEquals(1, r.getChildren().size());
-        SQLRelationship.ColumnMapping mapping = r.getChildren().get(0);
+        SQLRelationship.ColumnMapping mapping = r.getChildren(SQLRelationship.ColumnMapping.class).get(0);
         assertNotSame(mapping.getFkColumn(), mapping.getPkColumn());
         assertEquals(oldColCount + 1, parentTable.getColumns().size());
         assertTrue(parentTable.getColumns().contains(mapping.getPkColumn()));
@@ -1270,7 +1270,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
     	assertEquals(1, dontConnectMe.getExportedKeysWithoutPopulating().size());
     	assertEquals(0, dontConnectMe.getImportedKeysWithoutPopulating().size());
     	assertEquals(0, anotherTable.getExportedKeysWithoutPopulating().size());
-    	assertEquals(0, anotherTable.getImportedKeysWithoutPopulating());
+    	assertEquals(0, anotherTable.getImportedKeysWithoutPopulating().size());
     	
     	try {
     		con = getDb().getConnection();

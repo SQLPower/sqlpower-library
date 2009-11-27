@@ -644,7 +644,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	    if (getParent() == null) return false;
 	    try {
 	        for (SQLIndex ind : getParent().getIndices()) {
-	            for (SQLIndex.Column col : ind.getChildren()) {
+	            for (SQLIndex.Column col : ind.getChildren(SQLIndex.Column.class)) {
 	                if (this.equals(col.getColumn())) {
 	                    return true;
 	                }
@@ -664,7 +664,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	    try {
 	        for (SQLIndex ind : getParent().getIndices()) {
 	            if (!ind.isUnique()) continue;
-	            for (SQLIndex.Column col : ind.getChildren()) {
+	            for (SQLIndex.Column col : ind.getChildren(SQLIndex.Column.class)) {
 	                if (this.equals(col.getColumn())) {
 	                    return true;
 	                }
@@ -890,7 +890,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         		this.primaryKeySeq = argPrimaryKeySeq;
         		firePropertyChange("primaryKeySeq",oldPrimaryKeySeq,argPrimaryKeySeq);
 
-        		SQLObject p = getParent();
+        		SQLTable p = getParent();
         		if (p != null) {
         			try {
         				p.setMagicEnabled(false);
@@ -898,8 +898,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         				int idx = 0;
         				int targetPKS = primaryKeySeq == null ? Integer.MAX_VALUE : primaryKeySeq.intValue();
         				logger.debug("Parent = "+p);
-        				logger.debug("Parent.children = "+p.getChildren());
-        				for (SQLColumn col : p.getChildren(SQLColumn.class)) {
+        				logger.debug("Parent.children = "+p.getChildrenWithoutPopulating());
+        				for (SQLColumn col : p.getColumnsWithoutPopulating()) {
         					if (col.getPrimaryKeySeq() == null ||
         							col.getPrimaryKeySeq() > targetPKS) {
         						logger.debug("idx is " + idx);
@@ -918,7 +918,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         				p.setMagicEnabled(true);
         			}
         			if (normalizeKey) {
-        				getParent().normalizePrimaryKey();
+        				p.normalizePrimaryKey();
         			}
         		}
         		commit();
@@ -1079,7 +1079,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
 	@Override
-	public List<? extends SQLObject> getChildren() {
+	public List<? extends SQLObject> getChildrenWithoutPopulating() {
 		return Collections.emptyList();
 	}
 
