@@ -862,7 +862,6 @@ public class SQLTable extends SQLObject {
         try {
             begin("Changing column index");
             SQLColumn col = columns.get(oldIdx);
-            Integer oldPkSeq = col.primaryKeySeq;
             Integer interimPkSeq;
             if (putInPK) {
                 interimPkSeq = new Integer(1); // will get sane value when normalized
@@ -870,8 +869,13 @@ public class SQLTable extends SQLObject {
             } else {
                 interimPkSeq = null;
             }
-            col.primaryKeySeq = interimPkSeq;
-            col.firePropertyChange("primaryKeySeq", oldPkSeq, interimPkSeq);
+            
+            try {
+            	col.setMagicEnabled(false);
+            	col.setPrimaryKeySeq(interimPkSeq);
+            } finally {
+            	col.setMagicEnabled(true);
+            }
 
             // If the indices are the same, then there's no point in moving the column
             if (oldIdx != newIdx) {
@@ -945,10 +949,13 @@ public class SQLTable extends SQLObject {
                 for (SQLColumn col : new ArrayList<SQLColumn>(getColumns())) {
                     logger.debug("*** normalize " + getName() + " phase 1/2: " + col);
                     if (col.getPrimaryKeySeq() != null) {
-                        Integer oldPkSeq = col.getPrimaryKeySeq();
                         Integer newPkSeq = new Integer(i);
-                        col.primaryKeySeq = newPkSeq;
-                        col.firePropertyChange("primaryKeySeq", oldPkSeq, newPkSeq);
+                        try {
+                        	col.setMagicEnabled(false);
+                        	col.setPrimaryKeySeq(newPkSeq);
+                        } finally {
+                        	col.setMagicEnabled(true);
+                        }
                         i++;
                     }
                 }

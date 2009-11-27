@@ -34,6 +34,7 @@ import org.apache.log4j.Logger;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import ca.sqlpower.object.AbstractSPObject;
+import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
 
@@ -332,67 +333,14 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	}
 	
 	// ------------------- sql object event support -------------------
-	private final transient List<SQLObjectListener> sqlObjectListeners = 
-		new LinkedList<SQLObjectListener>();
 
 	/*
 	 * @return An immutable copy of the list of SQLObject listeners
 	 */
-	public List<SQLObjectListener> getSQLObjectListeners() {
-			return sqlObjectListeners;
+	public List<SPListener> getSPListeners() {
+			return listeners;
 	}
 	
-	public void addSQLObjectListener(SQLObjectListener l) {
-		if (l == null) throw new NullPointerException("You can't add a null listener");
-		synchronized(sqlObjectListeners) {
-			if (sqlObjectListeners.contains(l)) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("NOT Adding duplicate listener "+l+" to SQLObject "+this);
-				}
-				return;
-			}		
-			sqlObjectListeners.add(l);
-		}
-	}
-
-	public void removeSQLObjectListener(SQLObjectListener l) {
-		synchronized(sqlObjectListeners) {
-			sqlObjectListeners.remove(l);
-		}
-	}
-
-	protected PropertyChangeEvent firePropertyChange(String propertyName, Object oldValue, Object newValue) {
-		boolean same = (oldValue == null ? oldValue == newValue : oldValue.equals(newValue));
-		if (same) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Not firing property change: "+getClass().getName()+"."+propertyName+
-                        " '"+oldValue+"' == '"+newValue+"'");
-            }
-			return null;
-		}
-		if (logger.isDebugEnabled()) {
-			logger.debug("Firing Property Change: "+getClass().getName()+"."+propertyName+
-                    " '"+oldValue+"' -> '"+newValue+"'");
-		}
-
-        SQLObjectEvent e = new SQLObjectEvent(
-                this,
-                propertyName,
-                oldValue,
-                newValue);
-
-		int count = 0;
-		synchronized(sqlObjectListeners) {
-			SQLObjectListener[] listeners = sqlObjectListeners.toArray(new SQLObjectListener[0]);
-			for (int i = 0; i < listeners.length; i++) {
-			    listeners[i].dbObjectChanged(e);
-			    count++;
-            }
-		}
-		if (logger.isDebugEnabled()) logger.debug("Notified "+count+" listeners.");
-		return super.firePropertyChange(propertyName, oldValue, newValue);
-	}
-
     // ------------------- sql object Pre-event support -------------------
     private final transient List<SQLObjectPreEventListener> sqlObjectPreEventListeners = 
         new ArrayList<SQLObjectPreEventListener>();

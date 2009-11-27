@@ -213,10 +213,10 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
         CountingSQLObjectListener l = new CountingSQLObjectListener();
         
         target.addSPListener(l);
-        assertEquals(1, target.getSQLObjectListeners().size());
+        assertEquals(1, target.getSPListeners().size());
 		
         target.removeSPListener(l);
-		assertEquals(0, target.getSQLObjectListeners().size());
+		assertEquals(0, target.getSPListeners().size());
 	}
 	
 	public void testAllowMixedChildrenThatAreSubclassesOfEachOther() throws Exception {

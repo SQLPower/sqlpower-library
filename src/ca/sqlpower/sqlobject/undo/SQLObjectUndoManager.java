@@ -37,10 +37,7 @@ import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.sqlobject.SQLObjectEvent;
 import ca.sqlpower.sqlobject.SQLObjectException;
-import ca.sqlpower.sqlobject.SQLObjectListener;
-import ca.sqlpower.sqlobject.SQLObjectUtils;
 import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.TransactionEvent;
 
@@ -209,17 +206,6 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
             SQLObjectRemoveChildren undoEvent = new SQLObjectRemoveChildren();
             undoEvent.createEditFromEvent(e);
             addEdit(undoEvent);
-        }
-
-        public void dbObjectChanged(SQLObjectEvent e) {
-            if (SQLObjectUndoManager.this.isUndoOrRedoing())
-                return;
-            if (e.getSource() instanceof SQLDatabase && e.getPropertyName().equals("shortDisplayName")) {
-                // this is not undoable at this time.
-            } else {
-                ArchitectPropertyChangeUndoableEdit undoEvent = new ArchitectPropertyChangeUndoableEdit(e);
-                addEdit(undoEvent);
-            }
         }
 
         /**

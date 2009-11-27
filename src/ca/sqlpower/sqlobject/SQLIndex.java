@@ -31,8 +31,11 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.AbstractSPListener;
 import ca.sqlpower.object.ObjectDependentException;
+import ca.sqlpower.object.SPChildEvent;
+import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.SQL;
+import ca.sqlpower.util.TransactionEvent;
 
 /**
  * The SQLIndex class represents an index on a table in a relational database.
@@ -334,7 +337,7 @@ public class SQLIndex extends SQLObject {
      * and make sure that the SQLIndex will also remove its Column object associated
      * with the SQLColumn removed.
      */
-    private SQLObjectListener removeColumnListener;
+    private SPListener removeColumnListener;
     
     private List<Column> columns = new ArrayList<Column>();
 
@@ -349,23 +352,28 @@ public class SQLIndex extends SQLObject {
 
     public SQLIndex() {
         primaryKeyIndex = false;
-        removeColumnListener = new SQLObjectListener() {
+        removeColumnListener = new SPListener() {
 
-            public void dbStructureChanged(SQLObjectEvent e) {
-            }
-
-            public void dbObjectChanged(SQLObjectEvent e) {
-            }
-
-            public void dbChildrenRemoved(SQLObjectEvent e) {
-                //FIXME: for some stupid reason, this gets called when columns
-                // are simply moved in the table
+            public void childRemoved(SPChildEvent e) {
                 removeColumnFromIndices(e);
             }
-
-            public void dbChildrenInserted(SQLObjectEvent e) {
+            
+            public void childAdded(SPChildEvent e) {
+            	// no-op
             }
-
+            public void propertyChange(PropertyChangeEvent evt) {
+            	// no-op
+            }
+            public void transactionStarted(TransactionEvent e) {
+            	// no-op
+            }
+            public void transactionEnded(TransactionEvent e) {
+            	// no-op
+            }
+            public void transactionRollback(TransactionEvent e) {
+            	// no-op
+            }
+            
         };
     }
 
@@ -496,13 +504,13 @@ public class SQLIndex extends SQLObject {
     @Override
     public void setParent(SPObject parent) {
     	if (getParent() != null) {
-            getParent().removeSQLObjectListener(removeColumnListener);
+            getParent().removeSPListener(removeColumnListener);
         }
         
         super.setParent(parent);
         
         if (getParent() != null) {
-            getParent().addSQLObjectListener(removeColumnListener);
+            getParent().addSPListener(removeColumnListener);
         }
     }
 
@@ -510,18 +518,16 @@ public class SQLIndex extends SQLObject {
      * This is used by the removeColumn method to make sure that once a column
      * is removed from a table, it is also removed from all the indices of that table.
      */
-    private void removeColumnFromIndices(SQLObjectEvent e) {
+    private void removeColumnFromIndices(SPChildEvent e) {
         if (getParent() != null && getParent().isMagicEnabled()) {
             try {
             	begin("Removing column from indices");
-                for (int i = 0; i < e.getChildren().length; i++) {
                     for (int j = this.getChildCount() - 1; j >= 0; j--) {
                     	Column col = getChild(j);
-                        if (col.getColumn() != null && col.getColumn().equals(e.getChildren()[i])) {
+                        if (col.getColumn() != null && col.getColumn().equals(e.getChild())) {
                             removeChild(col);
                         }
                     }
-                }
                 cleanUp();
                 commit();
             } catch (SQLObjectException e1) {
@@ -544,7 +550,7 @@ public class SQLIndex extends SQLObject {
         try {
             if (getChildCount() == 0 && getParent() != null) {
                 logger.debug("Removing " + getName() + " index from table " + getParent().getName());
-                getParent().removeSQLObjectListener(removeColumnListener);
+                getParent().removeSPListener(removeColumnListener);
                 getParent().removeChild(this);
             }
         } catch (SQLObjectException e) {

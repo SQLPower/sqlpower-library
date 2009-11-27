@@ -18,6 +18,7 @@
  */
 package ca.sqlpower.sqlobject.undo;
 
+import java.beans.PropertyChangeEvent;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,15 +28,13 @@ import javax.swing.undo.CompoundEdit;
 import javax.swing.undo.UndoableEdit;
 
 import junit.framework.TestCase;
-import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLDatabase;
-import ca.sqlpower.sqlobject.SQLObjectEvent;
+import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLObjectRoot;
 import ca.sqlpower.sqlobject.SQLRelationship;
 import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.StubSQLObject;
-import ca.sqlpower.sqlobject.undo.CompoundEvent.EventTypes;
 import ca.sqlpower.sqlobject.undo.SQLObjectUndoManager.SQLObjectUndoableEventAdapter;
 import ca.sqlpower.util.TransactionEvent;
 
@@ -145,14 +144,14 @@ public class TestUndoManager extends TestCase {
         SQLObjectUndoableEventAdapter adapter = undoManager.getEventAdapter();
         myTester.addSPListener(adapter);
         myTester.begin("Test Compound undo");
-        adapter.dbObjectChanged(
-                new SQLObjectEvent(
+        adapter.propertyChange(
+                new PropertyChangeEvent(
                         myTester, "foo", 0, 1));
-        adapter.dbObjectChanged(
-                new SQLObjectEvent(
+        adapter.propertyChange(
+                new PropertyChangeEvent(
                         myTester, "foo", 1, 2));
-        adapter.dbObjectChanged(
-                new SQLObjectEvent(
+        adapter.propertyChange(
+                new PropertyChangeEvent(
                         myTester, "foo", 2, 3));
         myTester.commit();
         

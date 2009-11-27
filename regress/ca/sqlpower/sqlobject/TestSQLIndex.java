@@ -98,13 +98,13 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
      * When you add an index column, it should attach a listener to its target column.
      */
     public void testReAddColumnAddsListener() throws Exception {
-        System.out.println("Original listeners:       "+col1.getSQLObjectListeners());
-        int origListeners = col1.getSQLObjectListeners().size();
+        System.out.println("Original listeners:       "+col1.getSPListeners());
+        int origListeners = col1.getSPListeners().size();
         SQLIndex.Column childToRemove = index.getChild(0);
         index.removeChild(childToRemove);
         index.addChild(childToRemove);
-        System.out.println("Post-remove-add listeners: "+col1.getSQLObjectListeners());
-        assertEquals(origListeners, col1.getSQLObjectListeners().size());
+        System.out.println("Post-remove-add listeners: "+col1.getSPListeners());
+        assertEquals(origListeners, col1.getSPListeners().size());
     }
     
     /**
@@ -112,11 +112,11 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
      * listener from its target column.
      */
     public void testRemoveColumnNoListenerLeak() throws Exception {
-        System.out.println("Original listeners:    "+col1.getSQLObjectListeners());
-        int origListeners = col1.getSQLObjectListeners().size();
+        System.out.println("Original listeners:    "+col1.getSPListeners());
+        int origListeners = col1.getSPListeners().size();
         index.removeChild(index.getChild(0));
-        System.out.println("Post-remove listeners: "+col1.getSQLObjectListeners());
-        assertEquals(origListeners - 1, col1.getSQLObjectListeners().size());
+        System.out.println("Post-remove listeners: "+col1.getSPListeners());
+        assertEquals(origListeners - 1, col1.getSPListeners().size());
     }
     
     /**

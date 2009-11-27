@@ -57,62 +57,6 @@ public class SQLObjectUtils {
     }
 
     /**
-     * Adds listener to source's listener list and all of source's
-     * children's listener lists recursively.
-     */
-    public static void listenToHierarchy(SQLObjectListener listener, SQLObject source)
-    throws SQLObjectException {
-    	if (logger.isDebugEnabled()) logger.debug("Listening to new SQL Object "+source);
-    	source.addSQLObjectListener(listener);
-    	if (source.isPopulated() && source.allowsChildren()) {
-    		for (SQLObject child : source.getChildren()) {
-    			listenToHierarchy(listener, child);
-    		}
-    	}
-    
-    }
-
-    /**
-     * Calls listenToHierarchy on each element in the sources array.
-     * Does nothing if sources is null.
-     */
-    public static void listenToHierarchy(SQLObjectListener listener, SQLObject[] sources)
-    throws SQLObjectException {
-    	if (sources == null) return;
-    	for (int i = 0; i < sources.length; i++) {
-    		listenToHierarchy(listener, sources[i]);
-    	}
-    }
-
-    /**
-     * Removes listener from source's listener list and all of source's
-     * children's listener lists recursively.
-     */
-    public static void unlistenToHierarchy(SQLObjectListener listener, SQLObject source)
-    throws SQLObjectException {
-        if (logger.isDebugEnabled()) logger.debug("Removing "+listener+" from listener list of "+source);
-    	source.removeSQLObjectListener(listener);
-    	if (source.isPopulated() && source.allowsChildren()) {
-            if (logger.isDebugEnabled()) logger.debug("        Now removing for children: "+source.getChildren());
-            for (SQLObject child : source.getChildren()) {
-    			unlistenToHierarchy(listener, child);
-    		}
-    	}
-    }
-
-    /**
-     * Calls unlistenToHierarchy on each element in the sources array.
-     * Does nothing if sources is null.
-     */
-    public static void unlistenToHierarchy(SQLObjectListener listener, SQLObject[] sources)
-    throws SQLObjectException {
-    	if (sources == null) return;
-    	for (int i = 0; i < sources.length; i++) {
-    		unlistenToHierarchy(listener, sources[i]);
-    	}
-    }
-
-    /**
      * Creates a dot-separated string of the name of the given SQLObject and the
      * names of each of its ancestors, stopping at the first ancestor of the
      * given type. The top-level ancestor's name will be the first name to
