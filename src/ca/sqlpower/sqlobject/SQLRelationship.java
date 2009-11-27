@@ -839,7 +839,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			
 			// Code from dbChildrenInserted
 			if (e.getSource() == pkTable) {
-				for (SQLObject o : childrenAdded) {
+				final LinkedList<SQLColumn> newChildren = new LinkedList<SQLColumn>(childrenAdded);
+				childrenAdded.clear();
+				for (SQLObject o : newChildren) {
 					if (o instanceof SQLColumn) {
 						SQLColumn col = (SQLColumn) o;
 						try {
@@ -854,11 +856,12 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 					}
 				}
 			}
-			childrenAdded.clear();
 			
 			// Code from dbChildrenRemoved
 			if (e.getSource() == pkTable) {
-				for (SQLObject o : childrenRemoved) {
+				final LinkedList<SQLObject> oldChildren = new LinkedList<SQLObject>(childrenRemoved);
+				childrenRemoved.clear();
+				for (SQLObject o : oldChildren) {
 					if (o instanceof SQLRelationship) {
 						SQLRelationship r = (SQLRelationship) o;
 						if (pkTable == r.getPkTable() && r == SQLRelationship.this) {
