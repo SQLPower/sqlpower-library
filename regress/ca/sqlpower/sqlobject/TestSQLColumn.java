@@ -203,7 +203,9 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	}
 	
 	public void testGetDerivedInstance() throws Exception {
+		SQLTable table = new SQLTable(new StubSQLObject(), "", "", "", true);
 		SQLColumn origCol = table1pk.getColumn(0);
+		origCol.setParent(table);
 
 		Set<String> propsToIgnore = new HashSet<String>();
 		propsToIgnore.add("parentTable");
@@ -216,12 +218,14 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
         propsToIgnore.add("uniqueIndexed");
         propsToIgnore.add("magicEnabled");
         propsToIgnore.add("referenceCount");
+        propsToIgnore.add("UUID");
 
 		TestUtils.setAllInterestingProperties(origCol, propsToIgnore);
 		origCol.setSourceDataTypeName("NUMERIC");
 		
 		origCol.setAutoIncrementSequenceName("custom_sequence_name");  // supress auto-generate behaviour
 		SQLColumn derivCol = origCol.createInheritingInstance(table3pk);
+		derivCol.setParent(table); // This is set so that it can walk up the tree to find the Session
 		
 		// These should be the only differences between origCol and derivCol
 		assertEquals(table3pk, derivCol.getParent());
@@ -234,8 +238,9 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
         origProps.keySet().removeAll(propsToIgnore);
         derivProps.keySet().removeAll(propsToIgnore);
         
-		assertEquals("Derived instance properties differ from original",
-				origProps.toString(), derivProps.toString());
+        for (Map.Entry<String, Object> property : origProps.entrySet()) {
+			assertEquals("Property \"" + property.getKey() + "\" differs", property.getValue(), derivProps.get(property.getKey()));
+		}
 	}
 	
 
@@ -589,16 +594,20 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	 */
 	public void testCopyConstructor() throws Exception {
 		SQLColumn cowCol = table1pk.getColumn(0);
+		SQLTable table = new SQLTable(new StubSQLObject(), "", "", "", true);
+		cowCol.setParent(table);
         cowCol.setAutoIncrementSequenceName("custom_sequence_name"); // supress auto-generate behaviour
 		SQLColumn tmpCol = new SQLColumn(cowCol);
+		tmpCol.setParent(table);
 		
 		Set<String> propsToIgnore = new HashSet<String>();
 		propsToIgnore.add("parentTable");
 		propsToIgnore.add("parent");
-        propsToIgnore.add("SQLObjectListeners");
+        propsToIgnore.add("SPListeners");
         propsToIgnore.add("foreignKey");
         propsToIgnore.add("indexed");
         propsToIgnore.add("uniqueIndexed");
+        propsToIgnore.add("UUID");
 		
 		Map<String,Object> origProps = (Map<String,Object>) BeanUtils.describe(cowCol);
 		Map<String,Object> derivProps = (Map<String,Object>) BeanUtils.describe(tmpCol);
@@ -606,8 +615,9 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		origProps.keySet().removeAll(propsToIgnore);
 		derivProps.keySet().removeAll(propsToIgnore);
 
-		assertEquals("clone column properties differ from original",
-				origProps.toString(), derivProps.toString());
+		for (Map.Entry<String, Object> property : origProps.entrySet()) {
+			assertEquals("Property \"" + property.getKey() + "\" differs", property.getValue(), derivProps.get(property.getKey()));
+		}
 	}
 
 	/*
