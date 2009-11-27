@@ -82,7 +82,7 @@ public class SQLIndex extends SQLObject {
          * Small class for reacting to changes in this index columns's
          * target SQLColumn (if it has one at all).
          */
-        private class TargetColumnListener extends AbstractSPListener {
+        private class TargetColumnListener implements SPListener {
 
             /**
              * Updates the index column name to match the new value in this
@@ -90,10 +90,26 @@ public class SQLIndex extends SQLObject {
              * The process of doing the update will cause the SQLIndex.Column
              * object to fire an event of its own.
              */
-            public void propertyChangeImpl(PropertyChangeEvent e) {
+            public void propertyChange(PropertyChangeEvent e) {
                 if ("name".equals(e.getPropertyName())) {
                     setName((String) e.getNewValue());
                 }
+            }
+            
+            public void childAdded(SPChildEvent e) {
+            	// no-op
+            }
+            public void childRemoved(SPChildEvent e) {
+            	// no-op
+            }
+            public void transactionStarted(TransactionEvent e) {
+            	// no-op
+            }
+            public void transactionEnded(TransactionEvent e) {
+            	// no-op
+            }
+            public void transactionRollback(TransactionEvent e) {
+            	// no-op
             }
 
             @Override

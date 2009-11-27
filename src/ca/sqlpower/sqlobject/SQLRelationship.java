@@ -771,78 +771,71 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 						"\n old=" + e.getOldValue() +
 						"\n new=" + e.getNewValue());
 			}
-			try{
-				begin("Object change");
-				if (e.getSource() instanceof SQLColumn) {
-					SQLColumn col = (SQLColumn) e.getSource();
+			if (e.getSource() instanceof SQLColumn) {
+				SQLColumn col = (SQLColumn) e.getSource();
 
-					if (col.getParent() == pkTable) {
-						if (prop.equals("primaryKeySeq")) {
-							try {
-								if (col.getPrimaryKeySeq() != null) {
-									ensureInMapping(col);
-								} else {
-									ensureNotInMapping(col);
-								}
-							} catch (SQLObjectException ae) {
-								throw new SQLObjectRuntimeException(ae);
+				if (col.getParent() == pkTable) {
+					if (prop.equals("primaryKeySeq")) {
+						try {
+							if (col.getPrimaryKeySeq() != null) {
+								ensureInMapping(col);
+							} else {
+								ensureNotInMapping(col);
 							}
-							return;
+						} catch (SQLObjectException ae) {
+							throw new SQLObjectRuntimeException(ae);
 						}
-
-						ColumnMapping m = getMappingByPkCol(col);
-						if (m == null) {
-							logger.debug("Ignoring change for column "+col+" parent "+col.getParent());
-							return;
-						}
-						if (m.getPkColumn() == null) throw new NullPointerException("Missing pk column in mapping");
-						if (m.getFkColumn() == null) throw new NullPointerException("Missing fk column in mapping");
-
-						if (prop == null
-								|| prop.equals("parent")
-								|| prop.equals("remarks")
-								|| prop.equals("autoIncrement")) {
-							// don't care
-						} else if (prop.equals("sourceColumn")) {
-							m.getFkColumn().setSourceColumn(m.getPkColumn().getSourceColumn());
-						} else if (prop.equals("name")) {
-							// only update the fkcol name if its name was the same as the old pkcol name
-							if (m.getFkColumn().getName().equalsIgnoreCase((String) e.getOldValue())) {
-							    m.getFkColumn().setName(m.getPkColumn().getName());
-							}
-						} else if (prop.equals("type")) {
-							m.getFkColumn().setType(m.getPkColumn().getType());
-						} else if (prop.equals("sourceDataTypeName")) {
-							m.getFkColumn().setSourceDataTypeName(m.getPkColumn().getSourceDataTypeName());
-						} else if (prop.equals("scale")) {
-							m.getFkColumn().setScale(m.getPkColumn().getScale());
-						} else if (prop.equals("precision")) {
-							m.getFkColumn().setPrecision(m.getPkColumn().getPrecision());
-						} else if (prop.equals("nullable")) {
-							m.getFkColumn().setNullable(m.getPkColumn().getNullable());
-						} else if (prop.equals("defaultValue")) {
-							m.getFkColumn().setDefaultValue(m.getPkColumn().getDefaultValue());
-						} else {
-							logger.warn("Warning: unknown column property "+prop
-									+" changed while monitoring pkTable");
-						}
+						return;
 					}
-				} else if (e.getSource() == fkTable || e.getSource() == pkTable) {
-					if (prop.equals("parent") && e.getNewValue() == null) {
-						// this will cause a callback to this listener which removes the imported key from fktable
-						pkTable.removeExportedKey(SQLRelationship.this);
+
+					ColumnMapping m = getMappingByPkCol(col);
+					if (m == null) {
+						logger.debug("Ignoring change for column "+col+" parent "+col.getParent());
+						return;
+					}
+					if (m.getPkColumn() == null) throw new NullPointerException("Missing pk column in mapping");
+					if (m.getFkColumn() == null) throw new NullPointerException("Missing fk column in mapping");
+
+					if (prop == null
+							|| prop.equals("parent")
+							|| prop.equals("remarks")
+							|| prop.equals("autoIncrement")) {
+						// don't care
+					} else if (prop.equals("sourceColumn")) {
+						m.getFkColumn().setSourceColumn(m.getPkColumn().getSourceColumn());
+					} else if (prop.equals("name")) {
+						// only update the fkcol name if its name was the same as the old pkcol name
+						if (m.getFkColumn().getName().equalsIgnoreCase((String) e.getOldValue())) {
+							m.getFkColumn().setName(m.getPkColumn().getName());
+						}
+					} else if (prop.equals("type")) {
+						m.getFkColumn().setType(m.getPkColumn().getType());
+					} else if (prop.equals("sourceDataTypeName")) {
+						m.getFkColumn().setSourceDataTypeName(m.getPkColumn().getSourceDataTypeName());
+					} else if (prop.equals("scale")) {
+						m.getFkColumn().setScale(m.getPkColumn().getScale());
+					} else if (prop.equals("precision")) {
+						m.getFkColumn().setPrecision(m.getPkColumn().getPrecision());
+					} else if (prop.equals("nullable")) {
+						m.getFkColumn().setNullable(m.getPkColumn().getNullable());
+					} else if (prop.equals("defaultValue")) {
+						m.getFkColumn().setDefaultValue(m.getPkColumn().getDefaultValue());
+					} else {
+						logger.warn("Warning: unknown column property "+prop
+								+" changed while monitoring pkTable");
 					}
 				}
-			} finally {
-				commit();
+			} else if (e.getSource() == fkTable || e.getSource() == pkTable) {
+				if (prop.equals("parent") && e.getNewValue() == null) {
+					// this will cause a callback to this listener which removes the imported key from fktable
+					pkTable.removeExportedKey(SQLRelationship.this);
+				}
 			}
 		}
 		
 		@Override
 		protected void transactionEndedImpl(TransactionEvent e) {
 			if (childrenAdded.isEmpty() && childrenRemoved.isEmpty()) return;
-			
-			begin("Relationship Manager Event");
 			
 			// Code from dbChildrenInserted
 			if (e.getSource() == pkTable) {
@@ -899,7 +892,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			}
 			childrenRemoved.clear();
 			
-			commit();
 		}
 		
 		@Override

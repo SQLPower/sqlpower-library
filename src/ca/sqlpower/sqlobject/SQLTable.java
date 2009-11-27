@@ -750,6 +750,7 @@ public class SQLTable extends SQLObject {
 		    }
 		}
 		columns.add(pos, col);
+		col.setParent(this);
 		fireChildAdded(SQLColumn.class, col, pos);
 	}
 	
