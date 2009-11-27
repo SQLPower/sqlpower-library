@@ -505,7 +505,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         begin("Type change");
         setSourceDataTypeName(null);
 		firePropertyChange("type",oldType,argType);
-        endCompoundEdit("Type change");
+        commit();
 	}
 
 	/**
@@ -909,8 +909,10 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         				}                
         				p.addChild(this, idx);
         			} catch (IllegalArgumentException e) {
+        				rollback(e.getMessage());
         				throw new RuntimeException(e);
         			} catch (ObjectDependentException e) {
+        				rollback(e.getMessage());
         				throw new RuntimeException(e);
         			} finally {
         				p.setMagicEnabled(true);
@@ -919,10 +921,10 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         				getParent().normalizePrimaryKey();
         			}
         		}
-        	} catch (SQLObjectException e) {
-        		throw new SQLObjectRuntimeException(e);
-        	} finally {
         		commit();
+        	} catch (SQLObjectException e) {
+        		rollback(e.getMessage());
+        		throw new SQLObjectRuntimeException(e);
         	}
         }
 	}

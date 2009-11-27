@@ -200,7 +200,7 @@ public class SQLSchema extends SQLObject {
 				commit();
 			}
 		} catch (SQLException e) {
-			fireTransactionRollback(e.getMessage());
+			rollback(e.getMessage());
 			throw new SQLObjectException("schema.populate.fail", e);
 		} finally {
 			populated = true;

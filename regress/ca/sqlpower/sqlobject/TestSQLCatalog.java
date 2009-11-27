@@ -98,7 +98,7 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 		c.addChild(new SQLTable());
 		assertFalse(c.isSchemaContainer());
 		c = new SQLCatalog();
-		c.setParent(new SQLDatabase());
+		c.setParent(new SQLDatabase(getDb().getDataSource()));
 		c.addChild(new SQLSchema(false));
 		assertTrue(c.isSchemaContainer());
 	}

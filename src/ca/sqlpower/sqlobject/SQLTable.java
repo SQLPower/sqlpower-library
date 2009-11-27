@@ -1381,18 +1381,6 @@ public class SQLTable extends SQLObject {
 		return columns;
 	}
 
-	public List<SQLRelationship> getImportedKeysFolder() {
-		return importedKeys;
-	}
-
-	public List<SQLRelationship> getExportedKeysFolder() {
-		return exportedKeys;
-	}
-
-    public List<SQLIndex> getIndicesFolder() {
-        return indices;
-    }
-
 	/**
 	 * Sets the table name, and also modifies the primary key name if
 	 * it was previously null or set to the default of

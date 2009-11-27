@@ -36,7 +36,6 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
-import ca.sqlpower.util.TransactionEvent;
 
 /**
  * SQLObject is the main base class of the Architect API. All objects that can
@@ -469,21 +468,8 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
         return fireDbChildrenPreRemove(oldIndexArray, oldChildList);
     }
 
-    
 	public abstract Class<? extends SQLObject> getChildType();
 	
-	/**
-	 * The list of SQLObject property change event listeners
-	 * used for undo
-	 */
-	public TransactionEvent startCompoundEdit(String message){
-		return super.fireTransactionStarted(message);
-	}
-	
-	public TransactionEvent endCompoundEdit(String message){
-		return super.fireTransactionEnded();
-	}
-
     /**
      * Returns the first child (in the sequence of the getChildren() list) which has the
      * given name (case sensitive).

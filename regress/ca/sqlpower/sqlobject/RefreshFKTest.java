@@ -130,7 +130,7 @@ public class RefreshFKTest extends DatabaseConnectedTestCase {
         db.refresh();
         
         assertEquals(1, child.getImportedKeys().size());
-        assertEquals("Parent exported keys: " + parent.getExportedKeysFolder(),
+        assertEquals("Parent exported keys: " + parent.getExportedKeys(),
                 1, parent.getExportedKeys().size());
         
         // We're testing here that the relationship was refreshed in place, not simply replaced

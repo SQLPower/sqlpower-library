@@ -224,7 +224,7 @@ public class SQLCatalog extends SQLObject {
 
 	@Override
 	public Class<? extends SQLObject> getChildType() {
-		if (getChildren().size() == 0){
+		if (getChildren().isEmpty()){
 			return null;
 		} else {
 			return (schemas.isEmpty()? SQLTable.class : SQLSchema.class);
@@ -244,7 +244,7 @@ public class SQLCatalog extends SQLObject {
 	
 		// catalog has been populated
 	
-		if (getChildren().size() == 0) {
+		if (getChildren().isEmpty()) {
 			return true;
 		} else {
 			return !schemas.isEmpty();

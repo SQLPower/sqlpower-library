@@ -182,10 +182,10 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	
 	public SQLCatalog getCatalogByName(String catalogName) throws SQLObjectException {
 		populate();
-		if (getChildrenWithoutPopulating().size() == 0) {
+		if (getChildrenWithoutPopulating().isEmpty()) {
 			return null;
 		}
-		if (catalogs.size() == 0) {
+		if (catalogs.isEmpty()) {
 			// this database doesn't contain catalogs!
 			return null;
 		}
@@ -211,10 +211,10 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 */
 	public SQLSchema getSchemaByName(String schemaName) throws SQLObjectException {
 		populate();
-		if (getChildrenWithoutPopulating().size() == 0) {
+		if (getChildrenWithoutPopulating().isEmpty()) {
 			return null;
 		}
-		if (schemas.size() == 0 && catalogs.size() == 0) {
+		if (schemas.isEmpty() && catalogs.isEmpty()) {
 			// this database doesn't contain schemas or catalogs!
 			return null;
 		}
@@ -364,7 +364,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			populate();
 		}
 		
-		return (getChildrenWithoutPopulating().size() == 0 || catalogs.size() > 0);
+		return (getChildrenWithoutPopulating().isEmpty() || !catalogs.isEmpty());
 	}
 	
 	/**
@@ -379,7 +379,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		}
 	
 		// catalog has been populated
-		return (getChildrenWithoutPopulating().size() == 0 || schemas.size() > 0);
+		return (getChildrenWithoutPopulating().isEmpty() || !schemas.isEmpty());
 	}
 
 	// ----------------- accessors and mutators -------------------
@@ -592,11 +592,11 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 
 	@Override
 	public Class<? extends SQLObject> getChildType() {
-		if (getChildrenWithoutPopulating().size() == 0){
+		if (getChildrenWithoutPopulating().isEmpty()){
 			return null;
-		} else if (catalogs.size() != 0) {
+		} else if (!catalogs.isEmpty()) {
 			return SQLCatalog.class;
-		} else if (schemas.size() != 0) {
+		} else if (!schemas.isEmpty()) {
 			return SQLSchema.class;
 		} else {
 			return SQLTable.class;
