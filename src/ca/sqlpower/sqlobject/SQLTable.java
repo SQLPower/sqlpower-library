@@ -357,9 +357,6 @@ public class SQLTable extends SQLObject {
 	
 	protected synchronized void populateExportedKeys() throws SQLObjectException {
 		if (exportedKeysPopulated) return;
-		if (exportedKeys.size() > 0) {
-			throw new IllegalStateException("Can't populate exported key relationships because it already contains children!");
-		}
 		
 		CachedRowSet crs = null;
 		Connection con = null;
@@ -520,7 +517,7 @@ public class SQLTable extends SQLObject {
 	}
 
 	public boolean removeImportedKey(SQLRelationship r) {
-		if (r.getParent() != this) {
+		if (r.getFkTable() != this) {
 			throw new IllegalStateException("Cannot remove child " + r.getName() + 
 					" of type " + r.getClass() + " as its parent is not " + getName());
 		}
