@@ -478,8 +478,8 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			// tear down old connection stuff
 			try {
 				begin("Resetting Database " + this);
-				for (int i = getChildren().size()-1; i >= 0; i--) {
-					removeChild(getChildren().get(i));
+				for (int i = getChildrenWithoutPopulating().size()-1; i >= 0; i--) {
+					removeChild(getChildrenWithoutPopulating().get(i));
 				}
 				populated = false;
 				commit();

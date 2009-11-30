@@ -152,11 +152,7 @@ public class SQLObjectUtils {
      * populate operation fails.
      */
     public static <T extends SQLObject> void refreshChildren(SQLObject parent, List<T> newChildren, Class<T> childType) throws SQLObjectException {
-        Set<String> oldChildNames = new HashSet<String>();
-        for (T oldChild : parent.getChildren(childType)) {
-        	oldChildNames.add(oldChild.getName());
-        }
-        
+        Set<String> oldChildNames = parent.getChildNames(childType);
         Set<String> newChildNames = new HashSet<String>(); // will populate in following loop
         for (T newChild : newChildren) {
             newChildNames.add(newChild.getName());

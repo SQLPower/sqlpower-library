@@ -26,7 +26,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -686,6 +685,10 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	protected void addChildImpl(SPObject child, int index) {
 		if (child instanceof ColumnMapping) {
 			addMapping((ColumnMapping) child, index);
+		} else {
+			throw new IllegalArgumentException("The child " + child.getName() + 
+					" of type " + child.getClass() + " is not a valid child type of " + 
+					getClass() + ".");
 		}
 	}
 	
@@ -1154,17 +1157,13 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			identifying = argIdentifying;
 			firePropertyChange("identifying",oldIdentifying,argIdentifying);
 			if (identifying) {
-				Iterator mappings = getChildren().iterator();
-				while (mappings.hasNext()) {
-					ColumnMapping m = (ColumnMapping) mappings.next();
+				for (ColumnMapping m : getChildren(ColumnMapping.class)) {
 					if (m.getFkColumn().getPrimaryKeySeq() == null) {
 						m.getFkColumn().setPrimaryKeySeq(new Integer(fkTable.getPkSize()));
 					}
 				}
 			} else {
-				Iterator mappings = getChildren().iterator();
-				while (mappings.hasNext()) {
-					ColumnMapping m = (ColumnMapping) mappings.next();
+				for (ColumnMapping m : getChildren(ColumnMapping.class)) {
 					if (m.getFkColumn().getPrimaryKeySeq() != null) {
 						m.getFkColumn().setPrimaryKeySeq(null);
 					}

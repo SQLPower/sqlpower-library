@@ -636,13 +636,13 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
                         sch == null ? null : sch.getName());
                 SQLObjectUtils.refreshChildren(this, newChildren, SQLTable.class);
 
-                for (SQLTable t : getChildren(SQLTable.class)) {
+                for (SQLTable t : getChildrenWithoutPopulating(SQLTable.class)) {
                     t.refreshColumns();
                 }
-                for (SQLTable t : getChildren(SQLTable.class)) {
+                for (SQLTable t : getChildrenWithoutPopulating(SQLTable.class)) {
                     t.refreshIndexes();
                 }
-                for (SQLTable t : getChildren(SQLTable.class)) {
+                for (SQLTable t : getChildrenWithoutPopulating(SQLTable.class)) {
                     t.refreshImportedKeys();
                 }
                 
@@ -657,7 +657,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
                 }
             }
         } else {
-            for (SQLObject o : getChildren()) {
+            for (SQLObject o : getChildrenWithoutPopulating()) {
                 o.refresh();
             }
         }
@@ -690,8 +690,8 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
     public boolean isTableContainer() throws SQLObjectException {
         
         // first, check for existing SQLTable children--this is a dead giveaway for a table container!
-        if (getChildren().size() > 0) {
-            return (getChildren(SQLTable.class).size() != 0);
+        if (getChildrenWithoutPopulating().size() > 0) {
+            return (getChildrenWithoutPopulating(SQLTable.class).size() != 0);
         }
         
         // no children. we have to do a bit of structural investigation.
