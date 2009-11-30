@@ -226,13 +226,13 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         assertEquals("Wrong primary key", "TEST3PK", dbTable.getPrimaryKeyName());
     }
     
-    public void testAddStringColumnToPKThrowsException() throws SQLObjectException{
+    public void testAddStringColumnToPKThrowsException() throws Exception {
         SQLIndex i = new SQLIndex("Index",true,"","BTREE","");
         i.setPrimaryKeyIndex(true);
         try {
             i.addChild(i.new Column("index column",AscendDescend.UNSPECIFIED));
             fail();
-        } catch (SQLObjectException e) {
+        } catch (IllegalArgumentException e) {
             assertEquals("The primary key index must consist of real columns, not expressions",e.getMessage());
             return;
         }

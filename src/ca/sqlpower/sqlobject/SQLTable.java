@@ -1689,7 +1689,7 @@ public class SQLTable extends SQLObject {
      * @throws SQLObjectException
      */
     public SQLIndex getPrimaryKeyIndex() throws SQLObjectException {
-    	for (SQLIndex i : indices) {
+    	for (SQLIndex i : getIndices()) {
     		if (i.isPrimaryKeyIndex()) return i;
     	}
         return null;
