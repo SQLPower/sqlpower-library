@@ -103,7 +103,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
         /**
          * Tracks if the listener should add itself to new children on the object it is listening to.
          */
-        private boolean addListenerToChildren = true;
+        protected boolean addListenerToChildren = true;
 
         public SQLObjectUndoableEventAdapter() {
 

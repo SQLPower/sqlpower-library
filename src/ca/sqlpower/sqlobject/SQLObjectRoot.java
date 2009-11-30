@@ -31,6 +31,7 @@ import ca.sqlpower.object.SPObject;
  */
 public class SQLObjectRoot extends SQLObject {
 	private List<SQLDatabase> databases = new ArrayList<SQLDatabase>();
+	private List<SQLTable> tables = new ArrayList<SQLTable>();
 	
 	public SQLObjectRoot() {
 	}
@@ -71,22 +72,42 @@ public class SQLObjectRoot extends SQLObject {
 	public Class<? extends SQLObject> getChildType() {
 		return SQLDatabase.class;
 	}
-
+	
 	@Override
-	public List<SQLDatabase> getChildrenWithoutPopulating() {
-		return Collections.unmodifiableList(databases);
+	public List<? extends SQLObject> getChildrenWithoutPopulating() {
+		List<SQLObject> children = new ArrayList<SQLObject>();
+		children.addAll(databases);
+		children.addAll(tables);
+		return Collections.unmodifiableList(children);
 	}
-
+	
 	@Override
 	protected boolean removeChildImpl(SPObject child) {
 		if (child instanceof SQLDatabase) {
 			return removeDatabase((SQLDatabase) child);
+		} else if (child instanceof SQLTable) {
+			return removeTable((SQLTable) child);
 		} else {
 			throw new IllegalArgumentException("Cannot remove children of type " 
 					+ child.getClass() + " from " + getName());
 		}
 	}
 	
+	public boolean removeTable(SQLTable child) {
+		if (child.getParent() != this) {
+			throw new IllegalStateException("Cannot remove child " + child.getName() + 
+					" of type " + child.getClass() + " as its parent is not " + getName());
+		}
+		int index = tables.indexOf(child);
+		if (index != -1) {
+			tables.remove(index);
+			child.setParent(null);
+			fireChildRemoved(SQLDatabase.class, child, index);
+			return true;
+		}
+		return false;
+	}
+
 	public boolean removeDatabase(SQLDatabase child) {
 		if (child.getParent() != this) {
 			throw new IllegalStateException("Cannot remove child " + child.getName() + 
@@ -95,15 +116,20 @@ public class SQLObjectRoot extends SQLObject {
 		int index = databases.indexOf(child);
 		if (index != -1) {
 			databases.remove(index);
-			 child.setParent(null);
-			 fireChildRemoved(SQLDatabase.class, child, index);
-			 return true;
+			child.setParent(null);
+			fireChildRemoved(SQLDatabase.class, child, index);
+			return true;
 		}
 		return false;
 	}
 
 	public int childPositionOffset(Class<? extends SPObject> childType) {
-		if (childType == SQLDatabase.class) return 0;
+		int offset = 0;
+		
+		if (childType == SQLDatabase.class) return offset;
+		offset += databases.size();
+		
+		if (childType == SQLTable.class) return offset;
 		
 		throw new IllegalArgumentException("The type " + childType + 
 				" is not a valid child type of " + getName());
@@ -117,5 +143,30 @@ public class SQLObjectRoot extends SQLObject {
 		for (SQLObject child : getChildren()) {
 			child.removeDependency(dependency);
 		}
+	}
+	
+	@Override
+	protected void addChildImpl(SPObject child, int index) {
+		if (child instanceof SQLDatabase) {
+			addDatabase((SQLDatabase) child, index);
+		} else if (child instanceof SQLTable) {
+			addTable((SQLTable) child, index);
+		} else {
+			throw new IllegalArgumentException("The child " + child.getName() + 
+					" of type " + child.getClass() + " is not a valid child type of " + 
+					getClass() + ".");
+		}
+	}
+	
+	public void addDatabase(SQLDatabase child, int index) {
+		databases.add(index, child);
+		child.setParent(this);
+		fireChildAdded(SQLDatabase.class, child, index);
+	}
+
+	public void addTable(SQLTable child, int index) {
+		tables.add(index, child);
+		child.setParent(this);
+		fireChildAdded(SQLTable.class, child, index);
 	}
 }
