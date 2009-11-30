@@ -29,7 +29,6 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.object.CleanupExceptions;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
@@ -371,7 +370,9 @@ public class SQLIndex extends SQLObject {
         removeColumnListener = new SPListener() {
 
             public void childRemoved(SPChildEvent e) {
-                removeColumnFromIndices(e);
+            	if (e.getChildType() == SQLColumn.class) {
+            		removeColumnFromIndices(e);
+            	}
             }
             
             public void childAdded(SPChildEvent e) {
