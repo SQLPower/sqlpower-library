@@ -35,7 +35,6 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
-import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.util.SQLPowerUtils;

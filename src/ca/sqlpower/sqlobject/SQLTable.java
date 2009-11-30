@@ -845,8 +845,8 @@ public class SQLTable extends SQLObject {
 		int index = columns.indexOf(col);
 		if (index != -1) {
 			columns.remove(index);
-			col.setParent(null);
 			fireChildRemoved(SQLColumn.class, col, index);
+			col.setParent(null);
 			return true;
 		}
 		return false;

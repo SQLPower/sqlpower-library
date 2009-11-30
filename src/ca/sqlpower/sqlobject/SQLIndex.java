@@ -29,6 +29,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.CleanupExceptions;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
@@ -543,7 +544,7 @@ public class SQLIndex extends SQLObject {
                             removeChild(col);
                         }
                     }
-                cleanUp();
+                cleanUpIfChildless();
                 commit();
             } catch (SQLObjectException e1) {
             	rollback("Could not remove child: " + e1.getMessage());
@@ -561,7 +562,7 @@ public class SQLIndex extends SQLObject {
     /**
      * This method is used to clean up the index when it no longer has any children.
      */
-    public void cleanUp() {
+    public void cleanUpIfChildless() {
         try {
             if (getChildCount() == 0 && getParent() != null) {
                 logger.debug("Removing " + getName() + " index from table " + getParent().getName());
@@ -576,9 +577,9 @@ public class SQLIndex extends SQLObject {
 			throw new RuntimeException(e);
 		}
     }
-
+    
     @Override
-        protected void addChildImpl(SPObject child, int index) {
+    protected void addChildImpl(SPObject child, int index) {
     	if (child instanceof SQLIndex.Column) {
     		Column c = (Column) child;
     		if (primaryKeyIndex && c.getColumn() == null) {
@@ -926,8 +927,13 @@ public class SQLIndex extends SQLObject {
 		int index = columns.indexOf(col);
 		if (index != -1) {
 			columns.remove(index);
-			col.setParent(null);
 			fireChildRemoved(SQLIndex.Column.class, col, index);
+			
+	        if (col.getColumn() != null) {
+	            col.getColumn().removeSPListener(col.targetColumnListener);
+	        }
+	        
+			col.setParent(null);
 			return true;
 		}
 		return false;

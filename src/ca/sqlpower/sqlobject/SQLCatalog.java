@@ -305,8 +305,8 @@ public class SQLCatalog extends SQLObject {
 		int index = schemas.indexOf(schema);
 		if (index != -1) {
 			schemas.remove(index);
-			schema.setParent(null);
 			fireChildRemoved(SQLSchema.class, schema, index);
+			schema.setParent(null);
 			return true;
 		}
 		return false;
@@ -316,8 +316,8 @@ public class SQLCatalog extends SQLObject {
 		int index = tables.indexOf(table);
 		if (index != -1) {
 			tables.remove(index);
-			table.setParent(null);
 			fireChildRemoved(SQLTable.class, table, index);
+			table.setParent(null);
 			return true;
 		}
 		return false;

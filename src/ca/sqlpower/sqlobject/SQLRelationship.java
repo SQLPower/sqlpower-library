@@ -1509,8 +1509,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		int index = mappings.indexOf(child);
 		if (index != -1) {
 			mappings.remove(index);
-			child.setParent(null);
 			fireChildRemoved(SQLTable.class, child, index);
+			child.setParent(null);
 			return true;
 		}
 		return false;
