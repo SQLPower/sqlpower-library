@@ -198,8 +198,8 @@ public abstract class AbstractSPObject implements SPObject {
 		// The root object of the tree model should have a reference back to the
 		// session (like WabitWorkspace), and should therefore override this
 		// method. If it does not, a SessionNotFoundException will be thrown.
-		if (parent != null) {
-			return parent.getSession();
+		if (getParent() != null) {
+			return getParent().getSession();
 		} else {
 			throw new SessionNotFoundException("Root object does not have a session reference");
 		}
