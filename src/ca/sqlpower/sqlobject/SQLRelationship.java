@@ -307,7 +307,30 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
         setChildrenInaccessibleReason(relationshipToCopy.getChildrenInaccessibleReason(), false);
         setTextForChildLabel(relationshipToCopy.getTextForChildLabel());
         setTextForParentLabel(relationshipToCopy.getTextForParentLabel());
-        // TODO column mappings
+        
+        List<ColumnMapping> columnsToRemove = new ArrayList<ColumnMapping>(getChildrenWithoutPopulating());
+        for (ColumnMapping newColMapping : relationshipToCopy.getChildrenWithoutPopulating()) {
+        	boolean foundColumn = false;
+        	for (int i = columnsToRemove.size() - 1; i >= 0; i--) {
+        		ColumnMapping existingMapping = columnsToRemove.get(i);
+        		if (existingMapping.getPkColumn().equals(newColMapping.getPkColumn())
+        				&& existingMapping.getFkColumn().equals(newColMapping.getFkColumn())) {
+        			columnsToRemove.remove(existingMapping);
+        			foundColumn = true;
+        			break;
+        		}
+        	}
+        	if (!foundColumn) {
+        		addChild(newColMapping);
+        	}
+        }
+        for (ColumnMapping removeMe : columnsToRemove) {
+        	try {
+				removeChild(removeMe);
+			} catch (Exception e) {
+				throw new SQLObjectException(e);
+			}
+        }
 	}
 	
 	/**

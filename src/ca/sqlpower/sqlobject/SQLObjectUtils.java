@@ -173,9 +173,12 @@ public class SQLObjectUtils {
         for (String removedColName : oldChildNames) {
             SQLObject removeMe = parent.getChildByName(removedColName);
             if (removeMe instanceof SQLRelationship) {
-                SQLRelationship r = (SQLRelationship) removeMe;
-                r.getPkTable().removeExportedKey(r);
-                r.getFkTable().removeImportedKey(r);
+            	if (parent instanceof SQLTable && 
+            			((SQLTable) parent).getImportedKeys().contains(removeMe)) {
+            		SQLRelationship r = (SQLRelationship) removeMe;
+            		r.getPkTable().removeExportedKey(r);
+            		r.getFkTable().removeImportedKey(r);
+            	}
             } else {
                 try {
 					parent.removeChild(removeMe);
