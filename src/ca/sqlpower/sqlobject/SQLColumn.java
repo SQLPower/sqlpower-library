@@ -97,6 +97,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	/**
      * This property is the sort key for this column in primary key index. If
      * the value is null, then it is not a primary key column.
+     * TODO make this private.
      */
 	protected Integer primaryKeySeq;
     

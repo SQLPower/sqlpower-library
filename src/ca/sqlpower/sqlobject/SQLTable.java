@@ -738,16 +738,32 @@ public class SQLTable extends SQLObject {
 		    if (getColumns().size() > 0 && pos < pkSize) {
 		        addToPK = true;
 		        for (int i = pos; i < pkSize; i++) {
-		            getColumns().get(i).primaryKeySeq = new Integer(i + 1);
+		        	SQLColumn changingPKCol = getColumns().get(i);
+		        	try {
+		        		changingPKCol.setMagicEnabled(false);
+		        		changingPKCol.setPrimaryKeySeq(new Integer(i + 1), false);
+		        	} finally {
+		        		changingPKCol.setMagicEnabled(true);
+		        	}
 		        }
 		    }
 
 		    col.setParent(null);
 		    if (addToPK) {
 		        col.nullable = DatabaseMetaData.columnNoNulls;
-		        col.primaryKeySeq = new Integer(pos);
+		        try {
+		        	col.setMagicEnabled(false);
+		        	col.setPrimaryKeySeq(new Integer(pos), false);
+		        } finally {
+		        	col.setMagicEnabled(true);
+		        }
 		    } else {
-		        col.primaryKeySeq = null;
+		    	try {
+		    		col.setMagicEnabled(false);
+		    		col.setPrimaryKeySeq(null, false);
+		    	} finally {
+		    		col.setMagicEnabled(true);
+		    	}
 		    }
 		}
 		columns.add(pos, col);

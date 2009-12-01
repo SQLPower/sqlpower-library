@@ -846,8 +846,13 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                 
                 Set<String> set = new HashSet<String>();
                 set.add("columns");  // tracked by the snapshot's "children" list
+                set.add("children"); // tracked by the snapshot's "children" list, is the same as the columns
+                set.add("childrenWithoutPopulating"); // the same as "children" except it does not populate the child list.
+                set.add("columnsWithoutPopulating"); // the same as "children" except it does not populate the child list.
+                set.add("columnsFolder"); // now equivalent to "columns".
                 set.add("pkSize");   // depends on number of columns with non-null PKSeq
                 set.add("SQLObjectListeners"); // interferes with EventLogger, which listens to all objects
+                set.add("SPListeners"); // interferes with EventLogger, which listens to all objects
                 ignoreProperties.put(SQLTable.class, set);
 
 //                set = new HashSet<String>();
@@ -860,6 +865,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                 set.add("definitelyNullable");  // secondary property depends on nullable
                 set.add("primaryKey");          // secondary property depends on position in parent is isInPk
                 set.add("SQLObjectListeners"); // interferes with EventLogger, which listens to all objects
+                set.add("SPListeners"); // interferes with EventLogger, which listens to all objects
                 set.add("foreignKey");         // secondary property depends on position in parent
                 set.add("indexed");            // secondary property depends on position in parent
                 set.add("uniqueIndexed");      // secondary property depends on position in parent
@@ -867,12 +873,15 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                 
                 set = new HashSet<String>();
                 set.add("children");  // tracked by the snapshot's "children" list
+                set.add("childrenWithoutPopulating");  // tracked by the snapshot's "children" list
                 set.add("childCount"); // tracked by the snapshot's "children" list
                 set.add("SQLObjectListeners"); // interferes with EventLogger, which listens to all objects
+                set.add("SPListeners"); // interferes with EventLogger, which listens to all objects
                 ignoreProperties.put(SQLIndex.class, set);
                 
                 set = new HashSet<String>();
                 set.add("SQLObjectListeners"); // interferes with EventLogger, which listens to all objects
+                set.add("SPListeners"); // interferes with EventLogger, which listens to all objects
                 ignoreProperties.put(SQLIndex.Column.class, set);
 
             }
@@ -1051,7 +1060,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                         System.out.println("Rolling forward a "+type+": "+e);
                         if (type == LogItemType.INSERT) {
                         	SPChildEvent event = (SPChildEvent) e;
-                        	insertChild(event.getIndex(), (SQLColumn) event.getChild());
+                        	insertChild(event.getIndex(), (SQLObject) event.getChild());
                         	
                         } else if (type == LogItemType.REMOVE) {
                         	SPChildEvent event = (SPChildEvent) e;
@@ -1070,7 +1079,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                         	
                         } else if (type == LogItemType.REMOVE) {
                         	SPChildEvent event = (SPChildEvent) e;
-                        	insertChild(event.getIndex(), (SQLColumn) event.getChild());
+                        	insertChild(event.getIndex(), (SQLObject) event.getChild());
                         	
                         } else if (type == LogItemType.CHANGE) {
                             revertChange((PropertyChangeEvent) e);

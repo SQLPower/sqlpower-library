@@ -176,9 +176,7 @@ public abstract class AbstractSPObject implements SPObject {
 	public void setParent(SPObject parent) {
 		SPObject oldParent = this.parent;
 		this.parent = parent;
-		if (parent != null) {
-			firePropertyChange("parent", oldParent, parent);
-		}
+		firePropertyChange("parent", oldParent, parent);
 	}
 
 	public void setUUID(String uuid) {
