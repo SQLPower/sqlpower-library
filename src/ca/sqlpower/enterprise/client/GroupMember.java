@@ -72,7 +72,7 @@ public class GroupMember extends AbstractSPObject {
 		return user;
 	}
 
-	public List<Class<? extends SPObject>> allowedChildTypes() {
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		return Collections.emptyList();
 	}
 

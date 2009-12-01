@@ -314,6 +314,10 @@ public class SQLIndex extends SQLObject {
 			// TODO Auto-generated method stub
 			
 		}
+
+		public List<Class<? extends SPObject>> getAllowedChildTypes() {
+			return Collections.emptyList();
+		}
     }
 
     /**
@@ -945,5 +949,10 @@ public class SQLIndex extends SQLObject {
         for (SQLObject child : getChildren()) {
             child.removeDependency(dependency);
         }
+	}
+
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
+		return Collections.unmodifiableList(types);
 	}
 }

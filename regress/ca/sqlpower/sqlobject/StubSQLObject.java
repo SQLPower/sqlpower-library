@@ -117,4 +117,10 @@ public class StubSQLObject extends SQLObject {
 	public SPSession getSession() {
 		return session;
 	}
+
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
+		types.add(SQLObject.class);
+		return Collections.unmodifiableList(types);
+	}
 }

@@ -100,7 +100,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
         SQLDatabase db = new SQLDatabase(ds);
         db.populate();
         assertEquals(1, db.getChildCount());
-        assertEquals(SQLTable.class, db.getChildType());
+        assertEquals(SQLTable.class, db.getChildrenWithoutPopulating().get(0).getClass());
         assertEquals(db.getChild(0).getName(), "tab1");
     }
 
@@ -114,7 +114,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
         SQLDatabase db = new SQLDatabase(ds);
         db.populate();
         assertEquals(1, db.getChildCount());
-        assertEquals(SQLSchema.class, db.getChildType());
+        assertEquals(SQLSchema.class, db.getChildrenWithoutPopulating().get(0).getClass());
         assertEquals(db.getChild(0).getName(), "sch1");
     }
 
@@ -128,7 +128,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
         SQLDatabase db = new SQLDatabase(ds);
         db.populate();
         assertEquals(1, db.getChildCount());
-        assertEquals(SQLCatalog.class, db.getChildType());
+        assertEquals(SQLCatalog.class, db.getChildrenWithoutPopulating().get(0).getClass());
         assertEquals(db.getChild(0).getName(), "cat1");
     }
 
@@ -145,7 +145,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
         SQLDatabase db = new SQLDatabase(ds);
         db.populate();
         assertEquals(1, db.getChildCount());
-        assertEquals(SQLCatalog.class, db.getChildType());
+        assertEquals(SQLCatalog.class, db.getChildrenWithoutPopulating().get(0).getClass());
         assertEquals(db.getChild(0).getName(), "cat1");
     }
 

@@ -188,7 +188,7 @@ public class User extends AbstractSPObject implements UserDetails {
 		return "Wabit User \"" + getName() + "\"";
 	}
 
-	public List<Class<? extends SPObject>> allowedChildTypes() {
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		List<Class<? extends SPObject>> childTypes = new ArrayList<Class<? extends SPObject>>();
 		childTypes.add(Grant.class);
 		return childTypes;

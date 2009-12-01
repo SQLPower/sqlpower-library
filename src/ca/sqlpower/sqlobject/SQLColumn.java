@@ -1099,4 +1099,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		// no-op
 	}
 
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		return Collections.emptyList();
+	}
+
 }

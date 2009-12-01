@@ -1943,4 +1943,12 @@ public class SQLTable extends SQLObject {
             }
         }
     }
+
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
+		types.add(SQLColumn.class);
+		types.add(SQLRelationship.class);
+		types.add(SQLIndex.class);
+		return Collections.unmodifiableList(types);
+	}
 }

@@ -820,4 +820,12 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		table.setParent(this);
 		fireChildAdded(SQLTable.class, table, index);
 	}
+
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
+		types.add(SQLCatalog.class);
+		types.add(SQLSchema.class);
+		types.add(SQLTable.class);
+		return Collections.unmodifiableList(types);
+	}
 }

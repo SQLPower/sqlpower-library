@@ -107,5 +107,9 @@ public class SQLSequence extends SQLObject {
 	public void removeDependency(SPObject dependency) {
 		// no-op
 	}
+
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		return Collections.emptyList();
+	}
     
 }

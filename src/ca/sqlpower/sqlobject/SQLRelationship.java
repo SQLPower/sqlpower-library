@@ -1349,6 +1349,10 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			// TODO
 		}
 
+		public List<Class<? extends SPObject>> getAllowedChildTypes() {
+			return Collections.emptyList();
+		}
+
 	}
 
 	/**
@@ -1526,5 +1530,11 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		for (SQLObject child : getChildren()) {
 			child.removeDependency(dependency);
 		}
+	}
+
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
+		types.add(ColumnMapping.class);
+		return Collections.unmodifiableList(types);
 	}
 }

@@ -108,7 +108,7 @@ public class Grant extends AbstractSPObject {
     	return 0;
     }
     
-    public List<Class<? extends SPObject>> allowedChildTypes() {
+    public List<Class<? extends SPObject>> getAllowedChildTypes() {
     	return Collections.emptyList();
     }
 

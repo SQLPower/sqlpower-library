@@ -163,7 +163,7 @@ public class Group extends AbstractSPObject implements GrantedAuthority {
 		}
 	}
 
-	public List<Class<? extends SPObject>> allowedChildTypes() {
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		List<Class<? extends SPObject>> childTypes = new ArrayList<Class<? extends SPObject>>();
 		childTypes.add(GroupMember.class);
 		childTypes.add(Grant.class);

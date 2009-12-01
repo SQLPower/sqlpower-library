@@ -164,4 +164,11 @@ public class SQLObjectRoot extends SQLObject {
 		child.setParent(this);
 		fireChildAdded(SQLTable.class, child, index);
 	}
+
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
+		types.add(SQLDatabase.class);
+		types.add(SQLTable.class);
+		return Collections.unmodifiableList(types);
+	}
 }

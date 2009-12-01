@@ -328,5 +328,12 @@ public class SQLCatalog extends SQLObject {
 			child.removeDependency(dependency);
 		}
 	}
+
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
+		types.add(SQLSchema.class);
+		types.add(SQLTable.class);
+		return Collections.unmodifiableList(types);
+	}
 	
 }

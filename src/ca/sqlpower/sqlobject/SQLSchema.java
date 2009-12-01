@@ -310,4 +310,10 @@ public class SQLSchema extends SQLObject {
 		fireChildAdded(SQLTable.class, table, index);
 	}
 
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
+		types.add(SQLTable.class);
+		return Collections.unmodifiableList(types);
+	}
+
 }
