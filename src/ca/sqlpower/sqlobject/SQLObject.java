@@ -253,7 +253,13 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 				return false;
 			}
 		}
-		return super.removeChild(child);
+		
+	    if (!getChildrenWithoutPopulating().contains(child)) {
+	        throw new IllegalArgumentException("Child object " + child.getName() + " of type " + child.getClass()
+	                + " is not a child of " + getName() + " of type " + getClass());
+	    }
+	    
+	    return removeChildImpl(child);
 	}
 	
 	/**
@@ -290,12 +296,12 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 
 	public SQLObject getChild(int index) throws SQLObjectException {
 		populate();
-		return (SQLObject) getChildren().get(index);
+		return (SQLObject) getChildrenWithoutPopulating().get(index);
 	}
 
 	public int getChildCount() throws SQLObjectException {
 		populate();
-		return getChildren().size();
+		return getChildrenWithoutPopulating().size();
 	}
 
 	/**
