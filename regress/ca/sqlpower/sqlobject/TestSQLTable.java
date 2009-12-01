@@ -92,25 +92,23 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         // Check to make sure it can be added to a playpen like database
         SQLDatabase pp = new SQLDatabase();
         pp.setPlayPenDatabase(true);
+        pp.setParent(new StubSQLObject());
         assertNotNull(table1 = db.getTableByName("REGRESSION_TEST1"));
         derivedTable = table1.createInheritingInstance(pp);
         
-        TreeMap derivedPropertyMap = new TreeMap(BeanUtils.describe(derivedTable));
-        TreeMap table1PropertyMap = new TreeMap(BeanUtils.describe(table1));
+        TreeMap<String, Object> derivedPropertyMap = new TreeMap<String, Object>(BeanUtils.describe(derivedTable));
+        TreeMap<String, Object> table1PropertyMap = new TreeMap<String, Object>(BeanUtils.describe(table1));
         
-        derivedPropertyMap.remove("parent");
-        derivedPropertyMap.remove("parentDatabase");
-        derivedPropertyMap.remove("schemaName");
-        derivedPropertyMap.remove("schema");
-        derivedPropertyMap.remove("shortDisplayName");
         table1PropertyMap.remove("parent");
         table1PropertyMap.remove("schemaName");
         table1PropertyMap.remove("schema");
         table1PropertyMap.remove("parentDatabase");
         table1PropertyMap.remove("shortDisplayName");
-        assertEquals("Derived table not properly copied",
-                derivedPropertyMap.toString(),
-                table1PropertyMap.toString());
+        table1PropertyMap.remove("UUID");
+        
+        for (Map.Entry<String, Object> property : table1PropertyMap.entrySet()) {
+        	assertEquals("Property \"" + property.getKey() + "\" has changed;", property.getValue(), derivedPropertyMap.get(property.getKey()));
+        }
         
     }
     

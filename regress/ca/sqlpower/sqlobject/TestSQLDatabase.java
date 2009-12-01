@@ -67,7 +67,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 	public void testGetParent() {
 		SQLDatabase db1 = new SQLDatabase();
 		assertNull(db1.getParent());
-		assertNull(db.getParent());
+		// db's parent is not null, it is StubSQLObject for testing
 	}
 	
 	public void testGoodConnect() throws SQLObjectException, SQLException, IOException {

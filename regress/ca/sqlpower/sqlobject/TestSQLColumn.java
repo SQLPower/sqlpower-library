@@ -203,16 +203,14 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	}
 	
 	public void testGetDerivedInstance() throws Exception {
-		SQLTable table = new SQLTable(new StubSQLObject(), "", "", "", true);
 		SQLColumn origCol = table1pk.getColumn(0);
-		origCol.setParent(table);
 
 		Set<String> propsToIgnore = new HashSet<String>();
 		propsToIgnore.add("parentTable");
 		propsToIgnore.add("parent");
 		propsToIgnore.add("sourceColumn");
 		propsToIgnore.add("sourceDataTypeName");
-		propsToIgnore.add("SQLObjectListeners");
+		propsToIgnore.add("SPListeners");
 		propsToIgnore.add("foreignKey");
 		propsToIgnore.add("indexed");
         propsToIgnore.add("uniqueIndexed");
@@ -225,7 +223,6 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		
 		origCol.setAutoIncrementSequenceName("custom_sequence_name");  // supress auto-generate behaviour
 		SQLColumn derivCol = origCol.createInheritingInstance(table3pk);
-		derivCol.setParent(table); // This is set so that it can walk up the tree to find the Session
 		
 		// These should be the only differences between origCol and derivCol
 		assertEquals(table3pk, derivCol.getParent());
