@@ -215,5 +215,15 @@ public interface SPObject {
      * If no children are allowed this will return an empty list.
      */
     List<Class<? extends SPObject>> getAllowedChildTypes();
+
+	/**
+	 * Returns true if this object allows children of the given type. Returns
+	 * false otherwise.
+	 * 
+	 * @param type
+	 *            The class of object that is being decided on if it can be
+	 *            added to this object as a child.
+	 */
+    boolean allowsChildType(Class<? extends SPObject> type);
     
 }
