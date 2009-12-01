@@ -67,7 +67,7 @@ public class TestUndoManager extends TestCase {
 		pkTable.setName("parent");
 		root.addChild(pkTable);
 		undoManager = new SQLObjectUndoManager(root);
-		undoManager.getEventAdapter().addListenerToChildren = false;
+		pkTable.begin("Setting up test");
 		pkTable.addColumn(new SQLColumn());
 		pkTable.addColumn(new SQLColumn());
 		pkTable.getColumn(0).setPrimaryKeySeq(1);
@@ -76,6 +76,7 @@ public class TestUndoManager extends TestCase {
 		pkTable.getColumn(1).setPrimaryKeySeq(1);
 		pkTable.getColumn(1).setName("pk2");
 		pkTable.getColumn(1).setType(Types.INTEGER);
+		pkTable.commit();
 		db.addChild(pkTable);
 		db.addChild(fkTable);
 		System.out.println("-----------------End setup for "+getName()+"----------------");

@@ -689,8 +689,8 @@ public class SQLTable extends SQLObject {
 		 */
 		if (logger.isDebugEnabled()) {
 		    logger.debug("Looking for column "+colName+" in "+columns);
+		    logger.debug("Table " + getName() + " has " + columns.size() + " columns");
 		}
-		logger.debug("Table " + getName() + " has " + columns.size() + " columns");
 		for (SQLColumn col : columns) {
 			logger.debug("Current column name is '" + col.getName() + "'");
             if (caseSensitive) {

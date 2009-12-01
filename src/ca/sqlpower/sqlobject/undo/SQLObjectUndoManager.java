@@ -205,6 +205,8 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
             SQLObjectRemoveChildren undoEvent = new SQLObjectRemoveChildren();
             undoEvent.createEditFromEvent(e);
             addEdit(undoEvent);
+            
+            SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
         }
 
         /**

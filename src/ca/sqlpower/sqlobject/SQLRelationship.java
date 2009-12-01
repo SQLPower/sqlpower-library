@@ -31,13 +31,14 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.object.AbstractSPListener;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
+import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
+import ca.sqlpower.util.TransactionEvent;
 
 /**
  * The SQLRelationship class represents a foreign key relationship between
@@ -729,14 +730,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 * and maintains the mapping from pkTable to fkTable, and even removes the
 	 * whole relationship when necessary.
 	 */
-	protected class RelationshipManager extends AbstractSPListener {
+	protected class RelationshipManager implements SPListener {
 		
-		private LinkedList<SQLColumn> childrenAdded = new LinkedList<SQLColumn>();
-		
-		private LinkedList<SQLObject> childrenRemoved = new LinkedList<SQLObject>();
-		
-		@Override
-		public void childAddedImpl(SPChildEvent e) {
+		public void childAdded(SPChildEvent e) {
 			if (!((SQLObject) e.getSource()).isMagicEnabled()){
 				logger.debug("Magic disabled; ignoring children inserted event "+e);
 				return;
@@ -744,9 +740,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			if (logger.isDebugEnabled()) {
 				logger.debug("childAdded event! parent="+e.getSource()+";" +
 						" child="+e.getChild());
-			}
-			if (e.getChild() instanceof SQLColumn) {
-				childrenAdded.add((SQLColumn) e.getChild());
 			}
 			SQLPowerUtils.listenToHierarchy(e.getChild(), this);
 			
@@ -765,8 +758,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			}
 		}
 
-		@Override
-		public void childRemovedImpl(SPChildEvent e) {
+		public void childRemoved(SPChildEvent e) {
 			if (!((SQLObject) e.getSource()).isMagicEnabled()){
 				logger.debug("Magic disabled; ignoring child removed event "+e);
 				return;
@@ -812,8 +804,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			}
 		}
 
-		@Override
-		public void propertyChangeImpl(PropertyChangeEvent e) {
+		public void propertyChange(PropertyChangeEvent e) {
 			if (!((SQLObject) e.getSource()).isMagicEnabled()){
 				logger.debug("Magic disabled; ignoring sqlobject changed event "+e);
 				return;
@@ -886,6 +877,20 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 					pkTable.removeExportedKey(SQLRelationship.this);
 				}
 			}
+		}
+		
+		public void transactionStarted(TransactionEvent e) {
+			// RelationshipManager does not respect transactions
+			
+		}
+		
+		public void transactionEnded(TransactionEvent e) {
+			// RelationshipManager does not respect transactions
+			
+		}
+		
+		public void transactionRollback(TransactionEvent e) {
+			// RelationshipManager does not respect transactions
 		}
 
         // XXX this code serves essentially the same purpose as the loop in realizeMapping().
