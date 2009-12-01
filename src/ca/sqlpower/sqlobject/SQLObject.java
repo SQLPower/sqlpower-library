@@ -441,8 +441,6 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
         return fireDbChildrenPreRemove(oldIndexArray, oldChildList);
     }
 
-	public abstract Class<? extends SQLObject> getChildType();
-	
     /**
      * Returns the first child (in the sequence of the getChildren() list) which has the
      * given name (case sensitive).
