@@ -188,9 +188,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
             if (SQLObjectUndoManager.this.isUndoOrRedoing())
                 return;
 
-            SQLObjectInsertChildren undoEvent = new SQLObjectInsertChildren();
-            undoEvent.createEditFromEvent(e);
-            addEdit(undoEvent);
+            addEdit(new SQLObjectChildEdit(e));
 
             if (addListenerToChildren) {
             	SQLPowerUtils.listenToHierarchy(e.getChild(), this);
@@ -202,9 +200,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
             if (SQLObjectUndoManager.this.isUndoOrRedoing())
                 return;
 
-            SQLObjectRemoveChildren undoEvent = new SQLObjectRemoveChildren();
-            undoEvent.createEditFromEvent(e);
-            addEdit(undoEvent);
+            addEdit(new SQLObjectChildEdit(e));
             
             SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
         }

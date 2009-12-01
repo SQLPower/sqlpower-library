@@ -26,7 +26,6 @@ import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLIndex;
 import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLRelationship;
 import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.StubSQLObject;
@@ -84,8 +83,7 @@ public class TestSQLObjectChildrenInsert extends TestCase {
         StubSQLObject child = new StubSQLObject();
         parent.addChild(child);
         SPChildEvent evt = new SPChildEvent(parent, StubSQLObject.class, child, 0, EventType.ADDED);
-        SQLObjectInsertChildren edit = new SQLObjectInsertChildren();
-        edit.createEditFromEvent(evt);
+        SQLObjectChildEdit edit = new SQLObjectChildEdit(evt);
         assertEquals("Add child", edit.getPresentationName());
     }
 
@@ -94,18 +92,17 @@ public class TestSQLObjectChildrenInsert extends TestCase {
         SQLTable child = new SQLTable();
         parent.addChild(child);
         SPChildEvent evt = new SPChildEvent(parent, SQLTable.class, child, 0, EventType.ADDED);
-        SQLObjectInsertChildren edit = new SQLObjectInsertChildren();
-        edit.createEditFromEvent(evt);
+        SQLObjectChildEdit edit = new SQLObjectChildEdit(evt);
         assertEquals("Add table", edit.getPresentationName());
     }
     
     public void testPresentationNameSQLColumn() throws Exception {
         StubSQLObject parent = new StubSQLObject();
+        SQLTable table = new SQLTable(parent, "table", "", "", true); // SQLColumns are very picky about their parents.
         SQLColumn child = new SQLColumn();
-        parent.addChild(child);
+        table.addChild(child);
         SPChildEvent evt = new SPChildEvent(parent, SQLColumn.class, child, 0, EventType.ADDED);
-        SQLObjectInsertChildren edit = new SQLObjectInsertChildren();
-        edit.createEditFromEvent(evt);
+        SQLObjectChildEdit edit = new SQLObjectChildEdit(evt);
         assertEquals("Add column", edit.getPresentationName());
     }
     
@@ -119,8 +116,7 @@ public class TestSQLObjectChildrenInsert extends TestCase {
         };
         parent.addChild(child);
         SPChildEvent evt = new SPChildEvent(parent, SQLIndex.class, child, 0, EventType.ADDED);
-        SQLObjectInsertChildren edit = new SQLObjectInsertChildren();
-        edit.createEditFromEvent(evt);
+        SQLObjectChildEdit edit = new SQLObjectChildEdit(evt);
         assertEquals("Add index", edit.getPresentationName());
     }
     
@@ -129,8 +125,7 @@ public class TestSQLObjectChildrenInsert extends TestCase {
         SQLRelationship child = makeSQLRelationship();
         parent.addChild(child);
         SPChildEvent evt = new SPChildEvent(parent, SQLRelationship.class, child, 0, EventType.ADDED);
-        SQLObjectInsertChildren edit = new SQLObjectInsertChildren();
-        edit.createEditFromEvent(evt);
+        SQLObjectChildEdit edit = new SQLObjectChildEdit(evt);
         assertEquals("Add relationship", edit.getPresentationName());
     }
     

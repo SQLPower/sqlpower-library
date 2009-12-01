@@ -19,26 +19,33 @@
 package ca.sqlpower.sqlobject.undo;
 
 import javax.swing.undo.AbstractUndoableEdit;
+import javax.swing.undo.CannotRedoException;
+
+import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
+import ca.sqlpower.object.SPChildEvent.EventType;
+import ca.sqlpower.sqlobject.SQLColumn;
+import ca.sqlpower.sqlobject.SQLIndex;
 import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLObjectException;
+import ca.sqlpower.sqlobject.SQLRelationship;
+import ca.sqlpower.sqlobject.SQLTable;
 
-public abstract class SQLObjectChildEdit extends AbstractUndoableEdit {
+public class SQLObjectChildEdit extends AbstractUndoableEdit {
 
-	protected SPChildEvent e;
+	private static final Logger logger = Logger
+			.getLogger(SQLObjectChildEdit.class);
+	
+	protected final SPChildEvent e;
 	protected String toolTip;
 	
-	public SQLObjectChildEdit() {
+	public SQLObjectChildEdit(SPChildEvent e) {
 		super();
-	}
-	
-	public void createEditFromEvent(SPChildEvent event){
-		e = event;
+		this.e = e;
 		createToolTip();
 	}
-	public abstract void createToolTip();
 	
 	public void removeChild(){
 		SQLObject source = (SQLObject) e.getSource();
@@ -80,6 +87,57 @@ public abstract class SQLObjectChildEdit extends AbstractUndoableEdit {
 		}
 	}
 	
+	@Override
+	public void redo() throws CannotRedoException {
+		try {
+			if (e.getType() == EventType.ADDED) {
+				addChild();
+			} else if (e.getType() == EventType.REMOVED) {
+				removeChild();
+			}
+		} catch (SQLObjectException e) {
+			logger.error("redo: caught exception", e);
+			throw new CannotRedoException();
+		}
+	}
+	
+	@Override
+	public void undo() throws CannotRedoException {
+		try {
+			if (e.getType() == EventType.ADDED) {
+				removeChild();
+			} else if (e.getType() == EventType.REMOVED) {
+				addChild();
+			}
+		} catch (SQLObjectException e) {
+			logger.error("redo: caught exception", e);
+			throw new CannotRedoException();
+		}
+	}
+	
+	public void createToolTip() {
+		if (e.getType() == EventType.ADDED) {
+			if (e.getChild() instanceof SQLTable) {
+				toolTip = "Add table";
+			} else if (e.getChild() instanceof SQLColumn) {
+				toolTip = "Add column";
+			} else if (e.getChild() instanceof SQLRelationship) {
+				toolTip = "Add relationship";
+			} else if (e.getChild() instanceof SQLIndex) {
+				toolTip = "Add index";
+			} else {
+				toolTip = "Add child";
+			}
+		} else if (e.getType() == EventType.REMOVED) {
+			if (e.getChild() instanceof SQLTable) {
+				toolTip = "Remove table";
+			} else if (e.getChild() instanceof SQLColumn) {
+				toolTip = "Remove column";
+			} else if (e.getChild() instanceof SQLRelationship) {
+				toolTip = "Remove relation";
+			}
+		}
+	}
 	
 	@Override
 	public boolean canRedo() {
