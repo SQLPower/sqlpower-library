@@ -894,7 +894,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         		if (p != null) {
         			try {
         				p.setMagicEnabled(false);
-        				p.removeChild(this);
+        				if (p.getChildren().contains(this)) {
+        					p.removeChild(this);
+        				}
         				int idx = 0;
         				int targetPKS = primaryKeySeq == null ? Integer.MAX_VALUE : primaryKeySeq.intValue();
         				logger.debug("Parent = "+p);
