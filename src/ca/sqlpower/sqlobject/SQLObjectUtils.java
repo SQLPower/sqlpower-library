@@ -226,12 +226,11 @@ public class SQLObjectUtils {
     
         SQLObject tableContainer;
         if (schema != null) {
-            Class<? extends SQLObject> childType = schemaContainer.getChildType();
-            if ( !(childType == null || childType == SQLSchema.class) ) {
-                throw new SQLObjectException(
+        	if (!schemaContainer.allowsChildType(SQLSchema.class)) {
+        		throw new SQLObjectException(
                         "The schema container ("+schemaContainer+
                         ") can't actually contain children of type SQLSchema.");
-            }
+        	}
             tableContainer = schemaContainer.getChildByName(schema);
             if (tableContainer == null) {
                 tableContainer = new SQLSchema(schemaContainer, schema, true);
@@ -438,13 +437,11 @@ public class SQLObjectUtils {
     
         SQLObject tableContainer;
         if (schema != null){
-            if (schemaContainer.getChildType() == SQLSchema.class){
+            if (schemaContainer.allowsChildType(SQLSchema.class)){
                 tableContainer = schemaContainer.getChildByName(schema);
                 if (tableContainer == null) {
                     return true;
                 }
-            } else if (schemaContainer.getChildType() == null) {
-                return true;
             } else {
                 return false;
             }
@@ -453,7 +450,7 @@ public class SQLObjectUtils {
         }
     
         if (name != null) {
-            if (tableContainer.getChildType() == null || tableContainer.getChildType() == SQLTable.class){
+        	if (tableContainer.allowsChildType(SQLTable.class)) {
                 return true;
             } else {
                 return false;

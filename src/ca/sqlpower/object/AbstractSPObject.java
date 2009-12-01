@@ -64,11 +64,20 @@ public abstract class AbstractSPObject implements SPObject {
      */
     protected String uuid;
 
+    public boolean allowsChildType(Class<? extends SPObject> type) {
+    	for (Class<? extends SPObject> child : getAllowedChildTypes()) {
+    		if (child.isAssignableFrom(type)) {
+    			return true;
+    		}
+    	}
+    	return false;
+    }
+    
 	public final void addChild(SPObject child, int index)
 			throws IllegalArgumentException {
-		// Check if the child is a valid child type. childPositionOffset throws
-		// an IllegalArgumentException if it is not.
-		childPositionOffset(child.getClass());
+		if (!allowsChildType(child.getClass())) {
+			throw new IllegalArgumentException(child.getClass() + " is not a valid child type of " + this.getClass());
+		}
 		
 		child.setParent(this);
 		addChildImpl(child, index);
