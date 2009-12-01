@@ -917,7 +917,18 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
              * The class of the snapshotted object.
              */
             private Class snapshottedObjectClass;
-         
+            
+    		/**
+    		 * When rolling back changes, values may be changed to one object and
+    		 * then that object may be removed and added at a different index in its
+    		 * parent. When this occurs we cannot just make a new snapshot of the
+    		 * current object as we changed values in the snapshot we want to keep.
+    		 * This list stores the removed snapshots so we can reuse them as we
+    		 * roll back. This would not happen in a normal event system as they use
+    		 * the actual objects.
+    		 */
+            private final List<SQLObjectSnapshot> removedSnapshots = new ArrayList<SQLObjectSnapshot>();
+            
             public SQLObjectSnapshot(SQLObject object) 
             throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, SQLObjectException {
                 snapshottedObjectClass = object.getClass();
@@ -934,6 +945,10 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                 for (SQLObject c : (List<SQLObject>) object.getChildren()) {
                     children.add(new SQLObjectSnapshot(c));
                 }
+            }
+            
+            public void clearRollbackSnapshots() {
+            	removedSnapshots.clear();
             }
             
             @Override
@@ -983,14 +998,28 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
             }
             
 
-            public void insertChild(int i, SQLObject object) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, SQLObjectException {
-                SQLObjectSnapshot snapshot = new SQLObjectSnapshot(object);
+            public void insertChild(int i, SQLObject object, boolean rollForward) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, SQLObjectException {
+                SQLObjectSnapshot snapshot = null;
+                for (SQLObjectSnapshot removedSnapshot : removedSnapshots) {
+                	if (removedSnapshot.getSnapshottedObjectIdentity() == 
+                		System.identityHashCode(object)) {
+                		snapshot = removedSnapshot;
+                		removedSnapshots.remove(removedSnapshot);
+                		break;
+                	}
+                }
+                if (snapshot == null) {
+                	snapshot = new SQLObjectSnapshot(object);
+                }
                 children.add(i,snapshot);
             }
 
-            public void removeChild(int i, SQLObject object) {
+            public void removeChild(int i, SQLObject object, boolean rollForward) {
                 SQLObjectSnapshot removed = children.remove(i);
                 checkSnapshottedObject(object, removed, "removing child "+i);
+                if (!rollForward) {
+                	removedSnapshots.add(removed);
+                }
             }
 
             private void checkSnapshottedObject(SQLObject object, SQLObjectSnapshot snapshot, String message) {
@@ -1070,11 +1099,11 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                         System.out.println("Rolling forward a "+type+": "+e);
                         if (type == LogItemType.INSERT) {
                         	SPChildEvent event = (SPChildEvent) e;
-                        	insertChild(event.getIndex(), (SQLObject) event.getChild());
+                        	insertChild(event.getIndex(), (SQLObject) event.getChild(), rollForward);
                         	
                         } else if (type == LogItemType.REMOVE) {
                         	SPChildEvent event = (SPChildEvent) e;
-                        	removeChild(event.getIndex(), (SQLObject) event.getChild());
+                        	removeChild(event.getIndex(), (SQLObject) event.getChild(), rollForward);
                         	
                         } else if (type == LogItemType.CHANGE) {
                             applyChange((PropertyChangeEvent) e);
@@ -1085,11 +1114,11 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                         System.out.println("Rolling back a "+type+": "+e);
                         if (type == LogItemType.INSERT) {
                         	SPChildEvent event = (SPChildEvent) e;
-                        	removeChild(event.getIndex(), (SQLObject) event.getChild());
+                        	removeChild(event.getIndex(), (SQLObject) event.getChild(), rollForward);
                         	
                         } else if (type == LogItemType.REMOVE) {
                         	SPChildEvent event = (SPChildEvent) e;
-                        	insertChild(event.getIndex(), (SQLObject) event.getChild());
+                        	insertChild(event.getIndex(), (SQLObject) event.getChild(), rollForward);
                         	
                         } else if (type == LogItemType.CHANGE) {
                             revertChange((PropertyChangeEvent) e);
@@ -1101,7 +1130,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                 }
             }
         }
-        
+
         public SQLObjectSnapshot makeSQLObjectSnapshot(SQLTable t) throws Exception {
             return new SQLObjectSnapshot(t);
         }
@@ -1123,6 +1152,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
          * @param snapshot
          */
         public void rollBack(SQLObjectSnapshot snapshot) throws Exception {
+        	snapshot.clearRollbackSnapshots();
             List<LogItem> revlog = new ArrayList(log);
             Collections.reverse(revlog);
             for (LogItem li : revlog) {
