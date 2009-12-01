@@ -480,12 +480,12 @@ public class SQLObjectUtils {
     public static SQLObject getTableContainer(SQLDatabase db, String catName, String schemaName) throws SQLObjectException {
         db.populate();
         logger.debug("Looking for catalog="+catName+", schema="+schemaName+" in db "+db);
-        if (db.getChildType() == SQLTable.class) {
+        if (db.isTableContainer()) {
             if (catName != null || schemaName != null) {
                 throw new IllegalArgumentException("Catalog or Schema name was given but neither is necessary.");
             }
             return db;
-        } else if (db.getChildType() == SQLSchema.class) {
+        } else if (db.isSchemaContainer()) {
            if (catName != null) {
                throw new IllegalArgumentException("Catalog name was given but is not necessary.");
            }
@@ -494,7 +494,7 @@ public class SQLObjectUtils {
            }
            
            return (SQLSchema) db.getChildByNameIgnoreCase(schemaName);
-        } else if (db.getChildType() == SQLCatalog.class) {
+        } else if (db.isCatalogContainer()) {
             if (catName == null) {
                 throw new IllegalArgumentException("Catalog name was expected but none was given.");
             }
@@ -504,8 +504,8 @@ public class SQLObjectUtils {
             
             tempCat.populate();
             
-            logger.debug("Found catalog "+catName+". Child Type="+tempCat.getChildType());
-            if (tempCat.getChildType() == SQLSchema.class) {
+            logger.debug("Found catalog "+catName+". Child Type="+tempCat.getChildrenWithoutPopulating().get(0).getClass());
+            if (tempCat.isSchemaContainer()) {
                 if (schemaName == null) {
                     throw new IllegalArgumentException("Schema name was expected but none was given.");
                 }
@@ -518,12 +518,12 @@ public class SQLObjectUtils {
             }
             
             return tempCat;
-        } else if (db.getChildType() == null) {
+        } else if (db.getChildrenWithoutPopulating().isEmpty()) {
             // special case: there are no children of db
             logger.debug("Database "+db+" has no children");
             return null;
         } else {
-            throw new IllegalStateException("Unknown database child type: " + db.getChildType());
+            throw new IllegalStateException("Unknown database child type: " + db.getChildrenWithoutPopulating().get(0).getClass());
         }
     }
 
