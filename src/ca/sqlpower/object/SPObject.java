@@ -210,4 +210,10 @@ public interface SPObject {
      */
     <T extends SPObject> List<T> getChildren(Class<T> type);
     
+    /**
+     * Returns a list of classes that are allowed to be children of this object.
+     * If no children are allowed this will return an empty list.
+     */
+    List<Class<? extends SPObject>> getAllowedChildTypes();
+    
 }
