@@ -60,6 +60,16 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         sqlx("CREATE TABLE REGRESSION_TEST1 (t1_c1 numeric(10), t1_c2 numeric(5))");
         sqlx("CREATE TABLE REGRESSION_TEST2 (t2_c1 char(10))");
         sqlx("CREATE VIEW REGRESSION_TEST1_VIEW AS SELECT * FROM REGRESSION_TEST1");
+        
+		sqlx("CREATE TABLE SQL_TABLE_POPULATE_TEST (\n" +
+		        " cow numeric(10) NOT NULL, \n" +
+		        " CONSTRAINT test4pk PRIMARY KEY (cow))");
+		sqlx("CREATE TABLE SQL_TABLE_1_POPULATE_TEST (\n" +
+		        " cow numeric(10) NOT NULL, \n" +
+		        " CONSTRAINT test5pk PRIMARY KEY(cow))");
+		sqlx("ALTER TABLE SQL_TABLE_1_POPULATE_TEST " +
+		        "ADD CONSTRAINT TEST_FK FOREIGN KEY (cow) " +
+		        "REFERENCES SQL_TABLE_POPULATE_TEST (cow)");
 
         table = new SQLTable(null, true);
         table.setParent(new StubSQLObject());
@@ -1132,46 +1142,62 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         }
     }
 
-//    /**
-//     * This test was intended to be a regression test for bug 1640.
-//     * Unfortunately, it doesn't fail when the problem described in bug 1640 can
-//     * be reproduced manually. We've committed this test because it's still
-//     * useful in testing an important part of the SQLObjectListener contract.
-//     * <p>
-//     * A failure in this test would happen when the InsertListener gets
-//     * notified of a child insertion at an index that no longer exists in
-//     * the parent, or that the new child is no longer at the index the event
-//     * says it was inserted at. In either case, this would likely happen
-//     * only because another listener (i.e. RelationshipManager) has modified
-//     * the child list before the other listener(s) was/were notified.
-//     */
-//    public void testInsertEventsConsistentWithReality() throws Exception {
-//        
-//        class InsertListener extends AbstractSPListener {
-//
-//        	@Override
-//            public void childAddedImpl(SPChildEvent e) {
-//        		try {
-//        			assertTrue(e.getIndex() < table.getColumns().size());
-//        			assertSame(table.getColumn(e.getIndex()), e.getChild());
-//        		} catch (SQLObjectException ex) {
-//        			throw new SQLObjectRuntimeException(ex);
-//        		}
-//        	}
-//
-//        }
-//        table.getColumnsFolder().addSPListener(new InsertListener());
-//        SQLRelationship selfref = new SQLRelationship();
-//        table.getColumnsFolder().addSPListener(new InsertListener());
-//        selfref.attachRelationship(table, table, true);
-//        assertEquals(9, table.getColumns().size());
-//        assertEquals(3, selfref.getChildCount());
-//
-//        table.getColumnsFolder().addSPListener(new InsertListener());
-//        table.changeColumnIndex(2, 0, true);
-//        assertEquals(9, table.getColumns().size());
-//        assertEquals(3, selfref.getChildCount());
-//        
-//        System.out.println(table.getSQLObjectListeners());
-//    }
+	/**
+	 * Tests for a regression case where populating a table's exported keys,
+	 * where that would cause recursive calls to populate other tables. Ideally,
+	 * only one connection should ever be opened. This test was originally
+	 * written for TestFolder, but the Folder class no longer exists.
+	 */
+	public void testPopulateActiveConnections() throws Exception{
+	    SQLDatabase db = getDb();
+	    assertEquals(0, db.getMaxActiveConnections());
+        SQLTable t = db.getTableByName("SQL_TABLE_POPULATE_TEST");
+        t.getExportedKeys();
+	    assertEquals(1, db.getMaxActiveConnections());
+	}
+
+    /**
+     * This test was intended to be a regression test for bug 1640.
+     * Unfortunately, it doesn't fail when the problem described in bug 1640 can
+     * be reproduced manually. We've committed this test because it's still
+     * useful in testing an important part of the SQLObjectListener contract.
+     * <p>
+     * A failure in this test would happen when the InsertListener gets
+     * notified of a child insertion at an index that no longer exists in
+     * the parent, or that the new child is no longer at the index the event
+     * says it was inserted at. In either case, this would likely happen
+     * only because another listener (i.e. RelationshipManager) has modified
+     * the child list before the other listener(s) was/were notified.
+     */
+    public void testInsertEventsConsistentWithReality() throws Exception {
+        
+        class InsertListener extends AbstractSPListener {
+
+        	@Override
+            public void childAddedImpl(SPChildEvent e) {
+        		if (e.getChildType() == SQLColumn.class) {
+        			try {
+        				assertTrue(e.getIndex() < table.getColumns().size());
+        				assertSame(table.getColumn(e.getIndex()), e.getChild());
+        			} catch (SQLObjectException ex) {
+        				throw new SQLObjectRuntimeException(ex);
+        			}
+        		}
+        	}
+
+        }
+        table.addSPListener(new InsertListener());
+        SQLRelationship selfref = new SQLRelationship();
+        table.addSPListener(new InsertListener());
+        selfref.attachRelationship(table, table, true);
+        assertEquals(9, table.getColumns().size());
+        assertEquals(3, selfref.getChildCount());
+
+        table.addSPListener(new InsertListener());
+        table.changeColumnIndex(2, 0, true);
+        assertEquals(9, table.getColumns().size());
+        assertEquals(3, selfref.getChildCount());
+        
+        System.out.println(table.getSPListeners());
+    }
 }
