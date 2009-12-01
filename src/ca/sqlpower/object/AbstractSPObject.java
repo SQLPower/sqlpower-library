@@ -192,12 +192,18 @@ public abstract class AbstractSPObject implements SPObject {
 		
 		firePropertyChange("UUID", oldUUID, this.uuid);
 	}
-	
+
+	/**
+	 * Gets the current session by passing the request up the tree.
+	 */
 	public SPSession getSession() throws SessionNotFoundException {
+		// The root object of the tree model should have a reference back to the
+		// session (like WabitWorkspace), and should therefore override this
+		// method. If it does not, a SessionNotFoundException will be thrown.
 		if (parent != null) {
 			return parent.getSession();
 		} else {
-			throw new SessionNotFoundException("Root object does not implement getSession()");
+			throw new SessionNotFoundException("Root object does not have a session reference");
 		}
 	}
 	

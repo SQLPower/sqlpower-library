@@ -399,6 +399,7 @@ public class SQLTable extends SQLObject {
 				fkTable.populateColumns();
 				fkTable.populateRelationships(this);
 			}
+			exportedKeysPopulated = true;
 		} catch (SQLException ex) {
 			throw new SQLObjectException("Couldn't locate related tables", ex);
 		} finally {

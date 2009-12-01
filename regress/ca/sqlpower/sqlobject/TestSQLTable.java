@@ -105,6 +105,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         table1PropertyMap.remove("parentDatabase");
         table1PropertyMap.remove("shortDisplayName");
         table1PropertyMap.remove("UUID");
+        table1PropertyMap.remove("session");
         
         for (Map.Entry<String, Object> property : table1PropertyMap.entrySet()) {
         	assertEquals("Property \"" + property.getKey() + "\" has changed;", property.getValue(), derivedPropertyMap.get(property.getKey()));
