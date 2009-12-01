@@ -69,11 +69,6 @@ public class SQLObjectRoot extends SQLObject {
 	}
 
 	@Override
-	public Class<? extends SQLObject> getChildType() {
-		return SQLDatabase.class;
-	}
-	
-	@Override
 	public List<? extends SQLObject> getChildrenWithoutPopulating() {
 		List<SQLObject> children = new ArrayList<SQLObject>();
 		children.addAll(databases);

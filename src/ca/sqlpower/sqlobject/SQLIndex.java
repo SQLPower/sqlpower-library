@@ -174,11 +174,6 @@ public class SQLIndex extends SQLObject {
         }
 
         @Override
-        public Class<? extends SQLObject> getChildType() {
-            return null;
-        }
-
-        @Override
         public SQLIndex getParent() {
             return SQLIndex.this;
         }
@@ -458,11 +453,6 @@ public class SQLIndex extends SQLObject {
     @Override
     public boolean allowsChildren() {
         return true;
-    }
-
-    @Override
-    public Class<? extends SQLObject> getChildType() {
-        return Column.class;
     }
 
     /**

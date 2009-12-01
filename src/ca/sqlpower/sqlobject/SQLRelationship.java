@@ -1309,11 +1309,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 
 		@Override
-		public Class<? extends SQLObject> getChildType() {
-			return null;
-		}
-		
-		@Override
 		public boolean equals(Object obj) {
 			if (obj instanceof ColumnMapping) {
 				ColumnMapping cmap = (ColumnMapping) obj;
@@ -1354,11 +1349,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			// TODO
 		}
 
-	}
-
-	@Override
-	public Class<? extends SQLObject> getChildType() {
-		return null;
 	}
 
 	/**

@@ -1076,11 +1076,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         this.referenceCount = referenceCount;
     }
 
-    @Override
-	public Class<? extends SQLObject> getChildType() {
-		return null;
-	}
-
 	@Override
 	public List<? extends SQLObject> getChildrenWithoutPopulating() {
 		return Collections.emptyList();

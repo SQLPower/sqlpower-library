@@ -55,14 +55,6 @@ public class SQLSequence extends SQLObject {
     }
 
     /**
-     * Returns null because this type of object doesn't allow children.
-     */
-    @Override
-    public Class<? extends SQLObject> getChildType() {
-        return null;
-    }
-
-    /**
      * Returns null because this type of object doesn't have a parent.
      */
     @Override

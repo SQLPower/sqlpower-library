@@ -590,19 +590,6 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		return connectionPool;
 	}
 
-	@Override
-	public Class<? extends SQLObject> getChildType() {
-		if (getChildrenWithoutPopulating().isEmpty()){
-			return null;
-		} else if (!catalogs.isEmpty()) {
-			return SQLCatalog.class;
-		} else if (!schemas.isEmpty()) {
-			return SQLSchema.class;
-		} else {
-			return SQLTable.class;
-		}
-	}
-
 	/**
 	 * Returns the maximum number of active connections that
 	 * this database has ever opened. 

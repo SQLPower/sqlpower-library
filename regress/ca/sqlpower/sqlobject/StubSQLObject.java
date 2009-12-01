@@ -70,11 +70,6 @@ public class StubSQLObject extends SQLObject {
         return true;
     }
 
-    @Override
-    public Class<? extends SQLObject> getChildType() {
-        return null;
-    }
-
     // ======= non-SQLObject methods below this line ==========
     
     public int getPopulateCount() {

@@ -243,11 +243,6 @@ public class SQLSchema extends SQLObject {
 	}
 
 	@Override
-	public Class<? extends SQLObject> getChildType() {
-		return SQLTable.class;
-	}
-
-	@Override
 	public List<SQLTable> getChildrenWithoutPopulating() {
 		return Collections.unmodifiableList(tables);
 	}

@@ -222,15 +222,6 @@ public class SQLCatalog extends SQLObject {
 		firePropertyChange("nativeTerm", oldValue, nativeTerm);
 	}
 
-	@Override
-	public Class<? extends SQLObject> getChildType() {
-		if (getChildren().isEmpty()){
-			return null;
-		} else {
-			return (schemas.isEmpty()? SQLTable.class : SQLSchema.class);
-		}
-	}
-	
 	/**
 	 * Determines whether this SQL object is a container for schemas
 	 *
