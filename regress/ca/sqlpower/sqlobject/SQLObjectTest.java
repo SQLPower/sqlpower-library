@@ -104,7 +104,9 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
 			fireChildAdded(child.getClass(), child, index);
 		}
 		public List<Class<? extends SPObject>> getAllowedChildTypes() {
-			return Collections.emptyList();
+			List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
+			types.add(SQLObject.class);
+			return types;
 		}
 	}
 	
