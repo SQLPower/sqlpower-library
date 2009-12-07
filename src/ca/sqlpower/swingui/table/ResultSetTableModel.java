@@ -58,6 +58,11 @@ public class ResultSetTableModel extends AbstractTableModel {
 	
 	public int getColumnCount() {
 		try {
+			if (rs.getMetaData() == null) {
+				// XXX This happens when streaming queries don't have any column info in them yet.
+				// We should handle this properly and review the whole handling of this stuff.
+				return 0;
+			}
 			return rs.getMetaData().getColumnCount();
 		} catch (SQLException e) {
 			throw new RuntimeException("Could not get the column count from the result set meta data.", e);
