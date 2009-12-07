@@ -931,7 +931,11 @@ public class SQLQueryUIComponents {
 		}
 		
 		public void rowAdded(RowSetChangeEvent e) {
-			listeningTableModel.dataChanged();
+			SwingUtilities.invokeLater(new Runnable() {
+	            public void run() {
+	            	listeningTableModel.dataChanged();
+	            }
+			});
 		}
 		
 	}

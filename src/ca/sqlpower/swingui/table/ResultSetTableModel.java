@@ -23,6 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
+import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 
 import org.apache.log4j.Logger;
@@ -58,12 +59,24 @@ public class ResultSetTableModel extends AbstractTableModel {
 	
 	public int getColumnCount() {
 		try {
-			if (rs.getMetaData() == null) {
-				// XXX This happens when streaming queries don't have any column info in them yet.
-				// We should handle this properly and review the whole handling of this stuff.
+			int i = 0;
+			while (rs.getMetaData() == null && i < 100) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					// no op
+				}
+				if (rs.getMetaData()!= null) {
+					break;
+				} else {
+					i++;
+				}
+			}
+			if (rs.getMetaData()!= null) {
+				return rs.getMetaData().getColumnCount();
+			} else {
 				return 0;
 			}
-			return rs.getMetaData().getColumnCount();
 		} catch (SQLException e) {
 			throw new RuntimeException("Could not get the column count from the result set meta data.", e);
 		}
@@ -155,6 +168,11 @@ public class ResultSetTableModel extends AbstractTableModel {
      * different data than before.
      */
     public void dataChanged() {
+    	if (!SwingUtilities.isEventDispatchThread()) {
+    		// This is a runtime verification for events dispatched to
+    		// this method from threads that are not from the vent dispatch one.
+    		throw new RuntimeException("A call to a UI update was sent from a thread other than the event dispatch thread. See ResultSetTableModel.");
+    	}
         fireTableDataChanged();
     }
 	
