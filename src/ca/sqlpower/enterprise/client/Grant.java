@@ -27,12 +27,18 @@ import javax.annotation.Nullable;
 
 import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.Persistable;
 
 /**
  * A Grant object represents a set of permissions on a single object, or class
  * of objects. Due to restrictions in the JCR, Grants should remain immutable.
  * To change a User's permissions, remove the old Grant, and create a new one.
  */
+@Persistable
 public class Grant extends AbstractSPObject {
 
     private final String type;
@@ -65,9 +71,10 @@ public class Grant extends AbstractSPObject {
      * @param execute
      * @param grant
      */
-    public Grant(@Nullable String subject, @Nonnull String type,
-            boolean create, boolean modify, boolean delete, boolean execute,
-            boolean grant) 
+    @Constructor
+    public Grant(@Nullable @ConstructorParameter(propertyName = "subject") String subject, @Nonnull @ConstructorParameter(propertyName = "type") String type,
+            @ConstructorParameter(propertyName = "createPrivilege") boolean create, @ConstructorParameter(propertyName = "modifyPrivilege") boolean modify, @ConstructorParameter(propertyName = "deletePrivilege") boolean delete, @ConstructorParameter(propertyName = "executePrivilege") boolean execute,
+            @ConstructorParameter(propertyName = "grantPrivilege") boolean grant) 
     {
         this.subject = subject;
         this.type = type;
@@ -79,11 +86,13 @@ public class Grant extends AbstractSPObject {
     }
 
     @Override
+    @Mutator
     public void setName(String name) {
     	// no op
     }
     
     @Override
+    @Accessor
     public String getName() {
         if (this.subject != null) {
             return this.subject.concat(" - ").concat(this.getPermsString());

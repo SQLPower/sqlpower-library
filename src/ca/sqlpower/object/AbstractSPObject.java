@@ -28,10 +28,15 @@ import java.util.UUID;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.SPChildEvent.EventType;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.Persistable;
 import ca.sqlpower.util.SPSession;
 import ca.sqlpower.util.SessionNotFoundException;
 import ca.sqlpower.util.TransactionEvent;
 
+@Persistable
 public abstract class AbstractSPObject implements SPObject {
 	
     private static final Logger logger = Logger.getLogger(SPObject.class);
@@ -42,6 +47,7 @@ public abstract class AbstractSPObject implements SPObject {
 	private SPObject parent;
 	private String name;
 	
+	@Constructor
 	public AbstractSPObject() {
 		this(null);
 	}
@@ -133,7 +139,7 @@ public abstract class AbstractSPObject implements SPObject {
 		return children;
 	}
 
-	
+	@Accessor
 	public String getName() {
 		return name;
 	}
@@ -142,6 +148,7 @@ public abstract class AbstractSPObject implements SPObject {
 		return parent;
 	}
 
+	@Accessor
 	public String getUUID() {
 		return uuid;
 	}
@@ -176,6 +183,7 @@ public abstract class AbstractSPObject implements SPObject {
 		fireTransactionRollback(message);
 	}
 
+	@Mutator
 	public void setName(String name) {
 		String oldName = this.name;
 		this.name = name;
@@ -188,6 +196,7 @@ public abstract class AbstractSPObject implements SPObject {
 		firePropertyChange("parent", oldParent, parent);
 	}
 
+	@Mutator
 	public void setUUID(String uuid) {
 		String oldUUID = this.uuid;
 		
