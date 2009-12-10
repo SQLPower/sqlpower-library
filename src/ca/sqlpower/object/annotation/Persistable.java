@@ -21,6 +21,7 @@ package ca.sqlpower.object.annotation;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Target;
 
 import ca.sqlpower.dao.SPPersister;
@@ -35,6 +36,7 @@ import ca.sqlpower.object.SPObject;
  * class is tagged with this annotation before proceeding to generate source
  * code for persister helpers.
  */
+@Inherited
 @Target(ElementType.TYPE)
 public @interface Persistable {
 

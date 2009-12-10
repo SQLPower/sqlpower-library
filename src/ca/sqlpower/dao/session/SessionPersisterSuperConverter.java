@@ -49,20 +49,21 @@ public class SessionPersisterSuperConverter {
 
 	/**
 	 * Converts a complex object to a basic type or reference value that can
-	 * then be passed on to other persisters. To reverse this process see
+	 * then be passed on to other persisters. To reverse this process, see
 	 * {@link #convertToComplexType}. If a basic object is given to this method
 	 * it will be returned without modification.
 	 * 
 	 * @param convertFrom
 	 *            The value to convert to a basic type
 	 * @param fromType
-	 *            the type that the basic type will be defined as
+	 *            The type that the basic type will be defined as
 	 * @param additionalInfo
-	 *            any additional information that is required by the converters
+	 *            Any additional information that is required by the converters
 	 *            for specific object types. The ONLY class that currently
 	 *            requires an additional type is the cube converter. If we can
 	 *            remove the need to pass the data source type with the cube
 	 *            then this value can go away.
+	 * @returns The basic type representation of the given object.
 	 */
 	@SuppressWarnings("unchecked")
 	public Object convertToBasicType(Object convertFrom, Object ... additionalInfo) {
@@ -93,7 +94,18 @@ public class SessionPersisterSuperConverter {
 		}
 		
 	}
-	
+
+	/**
+	 * Converts a basic type to a complex type that can then be passed to other
+	 * persisters. To reverse this process, see
+	 * {@link #convertToBasicType(Object, Object...)}.
+	 * 
+	 * @param o
+	 *            The value to convert to a complex type.
+	 * @param type
+	 *            The type that the complex type will be defined as
+	 * @return The complex type representation of the given object.
+	 */
 	public Object convertToComplexType(Object o, Class<? extends Object> type) {
 		if (o == null) {
 			return null;

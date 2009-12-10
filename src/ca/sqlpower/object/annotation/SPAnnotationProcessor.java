@@ -72,13 +72,46 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		this.environment = environment;
 	}
 
+	@SuppressWarnings("unchecked")
 	public void process() {
+		Map<Class<? extends SPObject>, SPClassVisitor> visitors = new HashMap<Class<? extends SPObject>, SPClassVisitor>();
+		
 		for (TypeDeclaration typeDecl : environment.getTypeDeclarations()) {
 			SPClassVisitor visitor = new SPClassVisitor();
 			typeDecl.accept(DeclarationVisitors.getDeclarationScanner(DeclarationVisitors.NO_OP, visitor));
 			if (visitor.getVisitedClass() != null) {
-				generatePersisterHelperFile(visitor);
+				visitors.put(visitor.getVisitedClass(), visitor);
 			}
+		}
+		
+		// This block checks if each of the classes has super classes that
+		// contain persistable properties. If so, they should inherit those
+		// persistable properties as well.
+		for (Entry<Class<? extends SPObject>, SPClassVisitor> e : visitors.entrySet()) {
+			Map<String, Class<?>> propertiesToAccess = 
+				new HashMap<String, Class<?>>(e.getValue().getPropertiesToAccess());
+			Map<String, Class<?>> propertiesToMutate = 
+				new HashMap<String, Class<?>>(e.getValue().getPropertiesToMutate());
+			Class<? extends SPObject> superClass = e.getKey();
+			
+			while ((superClass = (Class<? extends SPObject>) superClass.getSuperclass()) != null) {
+				if (visitors.containsKey(superClass)) {
+					SPClassVisitor superClassVisitor = visitors.get(superClass);
+					for (Entry<String, Class<?>> accessorEntry : superClassVisitor.getPropertiesToAccess().entrySet()) {
+						if (!propertiesToAccess.containsKey(accessorEntry.getKey())) {
+							propertiesToAccess.put(accessorEntry.getKey(), accessorEntry.getValue());
+						}
+					}
+					for (Entry<String, Class<?>> mutatorEntry : superClassVisitor.getPropertiesToMutate().entrySet()) {
+						if (!propertiesToMutate.containsKey(mutatorEntry.getKey())) {
+							propertiesToMutate.put(mutatorEntry.getKey(), mutatorEntry.getValue());
+						}
+					}
+				}
+			}
+			generatePersisterHelperFile(e.getKey(), 
+					e.getValue().getConstructorParameters(), propertiesToAccess, 
+					propertiesToMutate);
 		}
 	}
 
@@ -93,19 +126,21 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 * @param visitor
 	 *            The {@link SPClassVisitor}
 	 */
-	private void generatePersisterHelperFile(SPClassVisitor visitor) {
+	private void generatePersisterHelperFile(Class<? extends SPObject> visitedClass, 
+			LinkedHashMap<String, Class<?>> constructorParameters, 
+			Map<String, Class<?>> propertiesToAccess, 
+			Map<String, Class<?>> propertiesToMutate) {
 		try {
-			Class<? extends SPObject> visitedClass = visitor.getVisitedClass();
 			Filer f = environment.getFiler();
 			PrintWriter pw = f.createSourceFile(visitedClass.getSimpleName() + "PersisterHelper");
 			pw.print("public class " + visitedClass.getSimpleName() + 
 					"PersisterHelper extends " + 
 					AbstractSPPersisterHelper.class.getSimpleName() + 
 					"<" + visitedClass.getSimpleName() + "> {\n");
-			pw.print(generateCommitObjectMethod(visitedClass, visitor.getConstructorParameters(), 1));
-			pw.print(generateCommitPropertyMethod(visitedClass, visitor.getPropertiesToMutate(), 1));
-			pw.print(generateRetrievePropertyMethod(visitedClass, visitor.getPropertiesToAccess(), 1));
-			pw.print(generatePersistObjectMethod(visitedClass, visitor.getConstructorParameters(), visitor.getPropertiesToAccess(), 1));
+			pw.print(generateCommitObjectMethod(visitedClass, constructorParameters, 1));
+			pw.print(generateCommitPropertyMethod(visitedClass, propertiesToMutate, 1));
+			pw.print(generateRetrievePropertyMethod(visitedClass, propertiesToAccess, 1));
+			pw.print(generatePersistObjectMethod(visitedClass, constructorParameters, propertiesToAccess, 1));
 			pw.print("}\n");
 			pw.close();
 		} catch (IOException e) {
@@ -164,13 +199,13 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		for (Entry<String, Class<?>> e : constructorParameters.entrySet()) {
 			sb.append(indent(tabs));
-			sb.append(e.getValue().getCanonicalName() + " " + e.getKey() + 
+			sb.append(e.getValue().getSimpleName() + " " + e.getKey() + 
 					" = retrievePropertyAndRemove(" + persistedPropertiesField + 
-					", \"" + e.getKey() + "\")\n");
+					", \"" + e.getKey() + "\");\n");
 		}
 		
 		sb.append(indent(tabs));
-		sb.append("return new " + visitedClass.getCanonicalName() + "(");
+		sb.append("return new " + visitedClass.getSimpleName() + "(");
 		
 		boolean firstArg = true;
 		
@@ -218,7 +253,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			Class<? extends SPObject> visitedClass,
 			Map<String, Class<?>> setters, int tabs) {
 		StringBuilder sb = new StringBuilder();
-		final String objectField = "spo";
+		final String objectField = "o";
 		final String propertyNameField = "propertyName";
 		final String newValueField = "newValue";
 		final String converterField = "converter";
@@ -226,7 +261,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		boolean firstIf = true;
 		
 		sb.append(indent(tabs));
-		sb.append("public void commitProperty(" + visitedClass.getCanonicalName() + " " + 
+		sb.append("public void commitProperty(" + visitedClass.getSimpleName() + " " + 
 				objectField + ", " + String.class.getSimpleName() + " " + 
 				propertyNameField + ", " + Object.class.getSimpleName() + " " +
 				newValueField + ", " + SessionPersisterSuperConverter.class.getSimpleName() + 
@@ -307,7 +342,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			Class<? extends SPObject> visitedClass,
 			Map<String, Class<?>> accessors, int tabs) {
 		StringBuilder sb = new StringBuilder();
-		final String objectField = "spo";
+		final String objectField = "o";
 		final String propertyNameField = "propertyName";
 		final String converterField = "converter";
 		
@@ -315,7 +350,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		sb.append(indent(tabs));
 		sb.append("public " + Object.class.getSimpleName() + " retrieveProperty(" + 
-				visitedClass.getCanonicalName() + " " + objectField + ", " +
+				visitedClass.getSimpleName() + " " + objectField + ", " +
 				String.class.getSimpleName() + " " + propertyNameField + ", " +
 				SessionPersisterSuperConverter.class.getSimpleName() + " " + converterField + 
 				") " + 
@@ -404,7 +439,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			LinkedHashMap<String, Class<?>> constructorParameters,
 			Map<String, Class<?>> accessors, int tabs) {
 		StringBuilder sb = new StringBuilder();
-		final String objectField = "spo";
+		final String objectField = "o";
 		final String indexField = "index";
 		final String persisterField = "persister";
 		final String converterField = "converter";

@@ -22,7 +22,7 @@ package ca.sqlpower.object.annotation;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 
 import ca.sqlpower.object.SPObject;
 
@@ -111,6 +111,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 		return propertiesToMutate;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void visitClassDeclaration(ClassDeclaration d) {
 		if (d.getAnnotation(Persistable.class) != null) {
 			try {
@@ -164,19 +165,27 @@ public class SPClassVisitor implements DeclarationVisitor {
 					propertiesToAccess.put(d.getSimpleName(), c);
 				}
 			} else if (annotationName.equals(Mutator.class.getCanonicalName())) {
-				// Since we cannot determine the property type this setter deals with,
-				// we will iterate through the map of accessors to get that information.
-				// The maps of accessors and mutators should have a one-to-one relationship.
-				propertiesToMutate.put(d.getSimpleName(), null);
-			}
-		}
-		
-		for (Entry<String, Class<?>> e : propertiesToAccess.entrySet()) {
-			String methodName = SPAnnotationProcessor.convertMethodToProperty(e.getKey());
-			methodName = "set" + methodName.substring(0, 1).toUpperCase() + 
-					((methodName.length() > 1)? methodName.substring(1) : "");
-			if (propertiesToMutate.containsKey(methodName)) {
-				propertiesToMutate.put(methodName, e.getValue());
+				try {
+					TypeMirror type = d.getParameters().iterator().next().getType();
+					Class<?> c = null;
+
+					if (type instanceof PrimitiveType) {
+						c = convertPrimitiveToClass(((PrimitiveType) type).getKind());
+					} else {
+						c = Class.forName(type.toString());
+					}
+					
+					propertiesToMutate.put(d.getSimpleName(), c);
+					
+				} catch (NoSuchElementException e) {
+					// This exception is caught if the Mutator annotated method
+					// does not take parameters. The setter must take only one parameter
+					// which is the same type as the property type it is trying to set.
+					e.printStackTrace();
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+				}
+				
 			}
 		}
 	}

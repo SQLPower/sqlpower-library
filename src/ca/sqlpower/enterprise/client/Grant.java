@@ -31,14 +31,12 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
-import ca.sqlpower.object.annotation.Persistable;
 
 /**
  * A Grant object represents a set of permissions on a single object, or class
  * of objects. Due to restrictions in the JCR, Grants should remain immutable.
  * To change a User's permissions, remove the old Grant, and create a new one.
  */
-@Persistable
 public class Grant extends AbstractSPObject {
 
     private final String type;
