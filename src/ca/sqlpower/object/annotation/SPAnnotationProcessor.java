@@ -31,11 +31,11 @@ import java.util.Map.Entry;
 
 import ca.sqlpower.dao.AbstractSPPersisterHelper;
 import ca.sqlpower.dao.PersistedSPOProperty;
+import ca.sqlpower.dao.PersisterUtils;
 import ca.sqlpower.dao.SPPersistenceException;
 import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
-import ca.sqlpower.dao.session.SessionPersisterUtils;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.util.SPSession;
@@ -518,7 +518,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			sb.append(indent(tabs));
 			sb.append(persisterField + ".persistProperty(" + uuidField + ", \"" + 
 					e.getKey() + "\", " + DataType.class.getSimpleName() + "." + 
-					SessionPersisterUtils.getDataType(e.getValue()).getTypeName() + 
+					PersisterUtils.getDataType(e.getValue()).getTypeName() + 
 					", " + converterField + ".convertToBasicType(" + objectField + "." +
 					convertPropertyToAccessor(e.getKey(), e.getValue()) + "()));\n");
 		}
@@ -529,7 +529,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				sb.append(indent(tabs));
 				sb.append(persisterField + ".persistProperty(" + uuidField + ", \"" +
 						propertyName + "\", " + DataType.class.getSimpleName() + "." + 
-						SessionPersisterUtils.getDataType(e.getValue()).getTypeName() +
+						PersisterUtils.getDataType(e.getValue()).getTypeName() +
 						", " + converterField + ".convertToBasicType(" + objectField + "." +
 						e.getKey() + "()));\n");
 			}
