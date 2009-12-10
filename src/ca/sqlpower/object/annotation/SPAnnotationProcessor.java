@@ -22,8 +22,9 @@ package ca.sqlpower.object.annotation;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -86,17 +87,21 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		// This block checks if each of the classes has super classes that
 		// contain persistable properties. If so, they should inherit those
-		// persistable properties as well.
+		// persistable properties. Any additional packages should be
+		// imported as well.
 		for (Entry<Class<? extends SPObject>, SPClassVisitor> e : visitors.entrySet()) {
+			SPClassVisitor visitor = e.getValue();
+			Set<String> imports = new HashSet<String>(visitor.getImports());
 			Map<String, Class<?>> propertiesToAccess = 
-				new HashMap<String, Class<?>>(e.getValue().getPropertiesToAccess());
+				new HashMap<String, Class<?>>(visitor.getPropertiesToAccess());
 			Map<String, Class<?>> propertiesToMutate = 
-				new HashMap<String, Class<?>>(e.getValue().getPropertiesToMutate());
+				new HashMap<String, Class<?>>(visitor.getPropertiesToMutate());
 			Class<? extends SPObject> superClass = e.getKey();
 			
 			while ((superClass = (Class<? extends SPObject>) superClass.getSuperclass()) != null) {
 				if (visitors.containsKey(superClass)) {
 					SPClassVisitor superClassVisitor = visitors.get(superClass);
+					imports.addAll(superClassVisitor.getImports());
 					for (Entry<String, Class<?>> accessorEntry : superClassVisitor.getPropertiesToAccess().entrySet()) {
 						if (!propertiesToAccess.containsKey(accessorEntry.getKey())) {
 							propertiesToAccess.put(accessorEntry.getKey(), accessorEntry.getValue());
@@ -109,8 +114,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 					}
 				}
 			}
-			generatePersisterHelperFile(e.getKey(), 
-					e.getValue().getConstructorParameters(), propertiesToAccess, 
+			generatePersisterHelperFile(e.getKey(), imports,
+					visitor.getConstructorParameters(), propertiesToAccess, 
 					propertiesToMutate);
 		}
 	}
@@ -127,12 +132,14 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 *            The {@link SPClassVisitor}
 	 */
 	private void generatePersisterHelperFile(Class<? extends SPObject> visitedClass, 
-			LinkedHashMap<String, Class<?>> constructorParameters, 
+			Set<String> imports,
+			Map<String, Class<?>> constructorParameters, 
 			Map<String, Class<?>> propertiesToAccess, 
 			Map<String, Class<?>> propertiesToMutate) {
 		try {
 			Filer f = environment.getFiler();
 			PrintWriter pw = f.createSourceFile(visitedClass.getSimpleName() + "PersisterHelper");
+			pw.print(generateImports(imports));
 			pw.print("public class " + visitedClass.getSimpleName() + 
 					"PersisterHelper extends " + 
 					AbstractSPPersisterHelper.class.getSimpleName() + 
@@ -166,6 +173,35 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	}
 
 	/**
+	 * Generates and returns source code for importing packages that are
+	 * required by the persister helper this class is generating.
+	 * 
+	 * @param imports
+	 *            The {@link Set} of packages that the {@link SPObject} uses and
+	 *            need to be imported.
+	 * @return The source code for the generated imports.
+	 */
+	private String generateImports(Set<String> imports) {
+		Set<String> allImports = new HashSet<String>(imports);
+		StringBuilder sb = new StringBuilder();
+		
+		// XXX Need to import any additional classes this generated persister helper
+		// class requires, aside from those needed in the SPObject.
+		allImports.add(SPPersister.class.getPackage().getName());
+		allImports.add(SPPersistenceException.class.getPackage().getName());
+		allImports.add(DataType.class.getPackage().getName());
+		allImports.add(Collections.class.getPackage().getName());
+		allImports.add(PersistedSPOProperty.class.getPackage().getName());
+		allImports.add(SessionPersisterSuperConverter.class.getPackage().getName());
+		
+		for (String pkg : allImports) {
+			sb.append("import " + pkg + ";\n");
+		}
+		
+		return sb.toString();
+	}
+
+	/**
 	 * Generates and returns source code for a commitObject method based on an
 	 * {@link SPObject} annotated constructor along with its annotated
 	 * constructor arguments.
@@ -174,10 +210,10 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 *            The {@link SPObject} class that is being visited by the
 	 *            annotation processor.
 	 * @param constructorParameters
-	 *            The {@link LinkedHashMap} of the class property names to
-	 *            constructor parameter class types. This cannot be a generic
-	 *            {@link Map} or {@link HashMap} because order must be
-	 *            guaranteed for constructor arguments.
+	 *            The {@link Map} of the class property names to constructor
+	 *            parameter class types. This order of this map must absolutely
+	 *            be guaranteed as the order of constructor arguments requires
+	 *            it.
 	 * @param tabs
 	 *            The number of tab characters to use to indent the generated
 	 *            method.
@@ -186,7 +222,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 */
 	private String generateCommitObjectMethod(
 			Class<? extends SPObject> visitedClass, 
-			LinkedHashMap<String, Class<?>> constructorParameters, int tabs) {
+			Map<String, Class<?>> constructorParameters, int tabs) {
 		StringBuilder sb = new StringBuilder();
 		final String persistedPropertiesField = "persistedProperties";
 		
@@ -417,14 +453,13 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 *            The {@link SPObject} class that is being visited by the
 	 *            annotation processor.
 	 * @param constructorParameters
-	 *            The {@link LinkedHashMap} of property names to constructor
-	 *            parameters, where values passed into the constructor will set
-	 *            those respective properties. This is not a generic {@link Map}
-	 *            or {@link HashMap} because order must be guaranteed to follow
-	 *            the order of the constructor parameters. These properties may
-	 *            or may not be persistable, so it is entirely possible that not
-	 *            all of the properties in this map exists in the given
-	 *            {@link Set} of persistable properties.
+	 *            The {@link Map} of property names to constructor parameters,
+	 *            where values passed into the constructor will set those
+	 *            respective properties. The order of this map must absolutely
+	 *            be guaranteed to follow the order of the constructor
+	 *            parameters. These properties may or may not be persistable, so
+	 *            it is entirely possible that not all of the properties in this
+	 *            map exists in the given {@link Set} of persistable properties.
 	 * @param accessors
 	 *            The {@link Map} of accessor method names to their property
 	 *            types which should be persisted into an {@link SPPersister} by
@@ -436,7 +471,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 */
 	private String generatePersistObjectMethod(
 			Class<? extends SPObject> visitedClass,
-			LinkedHashMap<String, Class<?>> constructorParameters,
+			Map<String, Class<?>> constructorParameters,
 			Map<String, Class<?>> accessors, int tabs) {
 		StringBuilder sb = new StringBuilder();
 		final String objectField = "o";
@@ -481,8 +516,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		for (Entry<String, Class<?>> e : constructorParameters.entrySet()) {
 			sb.append(indent(tabs));
-			sb.append(persisterField + ".persistProperty(" + uuidField + ", " + 
-					e.getKey() + ", " + DataType.class.getSimpleName() + "." + 
+			sb.append(persisterField + ".persistProperty(" + uuidField + ", \"" + 
+					e.getKey() + "\", " + DataType.class.getSimpleName() + "." + 
 					SessionPersisterUtils.getDataType(e.getValue()).getTypeName() + 
 					", " + converterField + ".convertToBasicType(" + objectField + "." +
 					convertPropertyToAccessor(e.getKey(), e.getValue()) + "()));\n");
@@ -492,8 +527,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			String propertyName = convertMethodToProperty(e.getKey());
 			if (!constructorParameters.containsKey(propertyName)) {
 				sb.append(indent(tabs));
-				sb.append(persisterField + ".persistProperty(" + uuidField + ", " +
-						propertyName + ", " + DataType.class.getSimpleName() + "." + 
+				sb.append(persisterField + ".persistProperty(" + uuidField + ", \"" +
+						propertyName + "\", " + DataType.class.getSimpleName() + "." + 
 						SessionPersisterUtils.getDataType(e.getValue()).getTypeName() +
 						", " + converterField + ".convertToBasicType(" + objectField + "." +
 						e.getKey() + "()));\n");

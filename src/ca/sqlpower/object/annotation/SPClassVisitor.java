@@ -19,11 +19,15 @@
 
 package ca.sqlpower.object.annotation;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
+import ca.sqlpower.dao.SPPersisterHelper;
 import ca.sqlpower.object.SPObject;
 
 import com.sun.mirror.declaration.AnnotationMirror;
@@ -66,8 +70,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 	/**
 	 * @see #getConstructorParameters()
 	 */
-	private LinkedHashMap<String, Class<?>> constructorParameters = 
-		new LinkedHashMap<String, Class<?>>();
+	private Map<String, Class<?>> constructorParameters = new LinkedHashMap<String, Class<?>>();
 	
 	/**
 	 * @see #getPropertiesToAccess()
@@ -78,6 +81,11 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 * @see #getPropertiesToMutate()
 	 */
 	private Map<String, Class<?>> propertiesToMutate = new HashMap<String, Class<?>>();
+	
+	/**
+	 * @see #getImports()
+	 */
+	private Set<String> imports = new HashSet<String>();
 
 	/**
 	 * Returns the {@link SPObject} class this {@link DeclarationVisitor} is
@@ -88,11 +96,12 @@ public class SPClassVisitor implements DeclarationVisitor {
 	}
 
 	/**
-	 * Returns the {@link LinkedHashMap} of constructor arguments that are required to
-	 * create a new {@link SPObject} of type {@link #visitedClass}.
+	 * Returns the {@link Map} of constructor arguments that are required to
+	 * create a new {@link SPObject} of type {@link #visitedClass}. The order of
+	 * this map is guaranteed.
 	 */
-	public LinkedHashMap<String, Class<?>> getConstructorParameters() {
-		return constructorParameters;
+	public Map<String, Class<?>> getConstructorParameters() {
+		return Collections.unmodifiableMap(constructorParameters);
 	}
 
 	/**
@@ -100,7 +109,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 * by getters.
 	 */
 	public Map<String, Class<?>> getPropertiesToAccess() {
-		return propertiesToAccess;
+		return Collections.unmodifiableMap(propertiesToAccess);
 	}
 
 	/**
@@ -108,7 +117,18 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 * by setters.
 	 */
 	public Map<String, Class<?>> getPropertiesToMutate() {
-		return propertiesToMutate;
+		return Collections.unmodifiableMap(propertiesToMutate);
+	}
+
+	/**
+	 * Returns the {@link Set} of imports that are required for an
+	 * {@link SPPersisterHelper} to use that deals with type
+	 * {@link #visitedClass} which includes dependencies of the
+	 * {@link ConstructorParameter} annotated constructor parameters and the
+	 * getters/setters annotated with {@link Accessor} and {@link Mutator}.
+	 */
+	public Set<String> getImports() {
+		return Collections.unmodifiableSet(imports);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -116,6 +136,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 		if (d.getAnnotation(Persistable.class) != null) {
 			try {
 				visitedClass = (Class<? extends SPObject>) Class.forName(d.getQualifiedName());
+				imports.add(visitedClass.getName());
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
 			}
@@ -132,10 +153,20 @@ public class SPClassVisitor implements DeclarationVisitor {
 					if (type instanceof PrimitiveType) {
 						constructorParameters.put(cp.propertyName(), 
 								convertPrimitiveToClass(((PrimitiveType) type).getKind()));
+						// There is no need to add an import for primitive types
+						// as they rely on java.lang and are automatically imported.
+						
 					} else {
 						try {
-							constructorParameters.put(cp.propertyName(), 
-									Class.forName(pd.getType().toString()));
+							Class<?> c = Class.forName(pd.getType().toString());
+							constructorParameters.put(cp.propertyName(), c);
+							
+							String pkg = c.getPackage().getName();
+							// java.lang does not need to be imported as it is
+							// done automatically.
+							if (!pkg.equals("java.lang")) {
+								imports.add(pkg);
+							}
 						} catch (ClassNotFoundException e) {
 							e.printStackTrace();
 						}
@@ -163,6 +194,10 @@ public class SPClassVisitor implements DeclarationVisitor {
 				
 				if (c != null) {
 					propertiesToAccess.put(d.getSimpleName(), c);
+					String pkg = c.getPackage().getName();
+					if (!pkg.equals("java.lang")) {
+						imports.add(pkg);
+					}
 				}
 			} else if (annotationName.equals(Mutator.class.getCanonicalName())) {
 				try {
@@ -176,6 +211,10 @@ public class SPClassVisitor implements DeclarationVisitor {
 					}
 					
 					propertiesToMutate.put(d.getSimpleName(), c);
+					String pkg = c.getPackage().getName();
+					if (!pkg.equals("java.lang")) {
+						imports.add(pkg);
+					}
 					
 				} catch (NoSuchElementException e) {
 					// This exception is caught if the Mutator annotated method
