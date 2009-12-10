@@ -21,12 +21,14 @@ package ca.sqlpower.dao;
 
 import java.util.Collection;
 
+import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.SPAnnotationProcessorFactory;
 
 /**
  * This persister helper is used by a session {@link SPPersister} or workspace
@@ -56,7 +58,7 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *         properties.
 	 */
 	T commitObject(Collection<PersistedSPOProperty> persistedProperties);
-	
+
 	/**
 	 * Applies a property change on the given {@link SPObject} and property
 	 * name.
@@ -66,35 +68,57 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 * @param propertyName
 	 *            The JavaBean property name.
 	 * @param newValue
-	 *            The new property value.
+	 *            The new property value. This value must be converted through
+	 *            the {@link SessionPersisterSuperConverter} from simple type
+	 *            into a complex type before setting the property value.
+	 * @param converter
+	 *            The {@link SessionPersisterSuperConverter} class to use to
+	 *            convert newValue from a simple type to a complex type.
 	 * @throws SPPersistenceException
 	 *             Thrown if the property is not a persistable property. The
 	 *             setter method for this property in the {@link SPObject} class
 	 *             must be annotated with {@link Mutator}.
 	 */
-	void commitProperty(T spo, String propertyName, Object newValue) throws SPPersistenceException;
+	void commitProperty(T spo, String propertyName, Object newValue, 
+			SessionPersisterSuperConverter converter) throws SPPersistenceException;
 
 	/**
-	 * Retrieves a property value from the given {@link SPObject} and property
-	 * name.
+	 * Retrieves a property value from the given {@link SPObject} based on the
+	 * property name and converts it to something that can be passed to an
+	 * {@link SPPersister}.
 	 * 
 	 * @param spo
 	 *            The {@link SPObject} to retrieve the property from.
 	 * @param propertyName
-	 *            The JavaBean property name.
-	 * @return The property value of the given property name.
+	 *            The property name that needs to be retrieved and converted.
+	 *            This is the name of the property in the class itself based on
+	 *            the property fired by the setter for the event which is
+	 *            enforced by tests using JavaBeans methods. If changes are made
+	 *            to an {@link SPObject} class such that one or more properties
+	 *            are changed (i.e. changed name or class type), the
+	 *            {@link SPAnnotationProcessorFactory} should be executed to
+	 *            generate an updated {@link SPPersisterHelper} class.
+	 * @param converter
+	 *            The {@link SessionPersisterSuperConverter} class to use to
+	 *            convert the retrieved property value from a complex type to a
+	 *            simple type.
+	 * @return The value stored in the variable of the object we are given at
+	 *         the property name after it has been converted to a type that can
+	 *         be stored. The conversion is based on the
+	 *         {@link SessionPersisterSuperConverter}.
 	 * @throws SPPersistenceException
 	 *             Thrown if the property is not a persistable property. The
 	 *             getter method for this property in the {@link SPObject} class
 	 *             must be annotated with {@link Accessor}.
 	 */
-	Object retrieveProperty(T spo, String propertyName) throws SPPersistenceException;
+	Object retrieveProperty(T spo, String propertyName, 
+			SessionPersisterSuperConverter converter) throws SPPersistenceException;
 
 	/**
 	 * Persists an {@link SPObject} and all of its required properties into an
 	 * {@link SPPersister}. The persisted properties must either have
-	 * getter/setter methods annotated with {@link Accessor} and {@link Mutator},
-	 * or be set in a constructor annotated with {@link Constructor} where its
+	 * getter/setter methods annotated with {@link Accessor} and {@link Mutator}
+	 * , or be set in a constructor annotated with {@link Constructor} where its
 	 * parameters are annotated with {@link ConstructorParameter} with reference
 	 * to the property it will set.
 	 * 
@@ -106,7 +130,16 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *            siblings of the same type.
 	 * @param persister
 	 *            The {@link SPPersister} to persist the object onto.
+	 * @param converter
+	 *            The {@link SessionPersisterSuperConverter} class to use to
+	 *            convert the properties of the {@link SPObject} from complex
+	 *            types to simple types which will be recognized by the
+	 *            {@link SPPersister}.
+	 * @throws SPPersistenceException
+	 *             Thrown if the {@link SPPersister} cannot persist the object
+	 *             or any one of its properties.
 	 */
-	void persistObject(T spo, int index, SPPersister persister);
+	void persistObject(T spo, int index, SPPersister persister, 
+			SessionPersisterSuperConverter converter) throws SPPersistenceException;
 	
 }

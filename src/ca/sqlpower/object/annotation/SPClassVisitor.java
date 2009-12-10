@@ -19,9 +19,10 @@
 
 package ca.sqlpower.object.annotation;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.Set;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import ca.sqlpower.object.SPObject;
 
@@ -71,12 +72,12 @@ public class SPClassVisitor implements DeclarationVisitor {
 	/**
 	 * @see #getPropertiesToAccess()
 	 */
-	private Set<String> propertiesToAccess = new HashSet<String>();
+	private Map<String, Class<?>> propertiesToAccess = new HashMap<String, Class<?>>();
 	
 	/**
 	 * @see #getPropertiesToMutate()
 	 */
-	private Set<String> propertiesToMutate = new HashSet<String>();
+	private Map<String, Class<?>> propertiesToMutate = new HashMap<String, Class<?>>();
 
 	/**
 	 * Returns the {@link SPObject} class this {@link DeclarationVisitor} is
@@ -95,18 +96,18 @@ public class SPClassVisitor implements DeclarationVisitor {
 	}
 
 	/**
-	 * Returns the {@link Set} of JavaBean property names that can be
-	 * accessed by getters.
+	 * Returns the {@link Map} of JavaBean property names that can be accessed
+	 * by getters.
 	 */
-	public Set<String> getPropertiesToAccess() {
+	public Map<String, Class<?>> getPropertiesToAccess() {
 		return propertiesToAccess;
 	}
 
 	/**
-	 * Returns the {@link Set} of JavaBean property names that can be mutated
+	 * Returns the {@link Map} of JavaBean property names that can be mutated
 	 * by setters.
 	 */
-	public Set<String> getPropertiesToMutate() {
+	public Map<String, Class<?>> getPropertiesToMutate() {
 		return propertiesToMutate;
 	}
 	
@@ -128,33 +129,8 @@ public class SPClassVisitor implements DeclarationVisitor {
 					TypeMirror type = pd.getType();
 					
 					if (type instanceof PrimitiveType) {
-						Kind kind = ((PrimitiveType) type).getKind();
-						Class<?> c = null;
-						
-						if (kind.equals(Kind.BOOLEAN)) {
-							c = Boolean.class;
-						} else if (kind.equals(Kind.BYTE)) {
-							c = Byte.class;
-						} else if (kind.equals(Kind.CHAR)) {
-							c = Character.class;
-						} else if (kind.equals(Kind.DOUBLE)) {
-							c = Double.class;
-						} else if (kind.equals(Kind.FLOAT)) {
-							c = Float.class;
-						} else if (kind.equals(Kind.INT)) {
-							c = Integer.class;
-						} else if (kind.equals(Kind.LONG)) {
-							c = Long.class;
-						} else if (kind.equals(Kind.SHORT)) {
-							c = Short.class;
-						} else {
-							throw new IllegalStateException("The PrimitiveType Kind " + 
-									kind.name() + " is not recognized. This exception " +
-											"should never be thrown.");
-						}
-						
-						constructorParameters.put(cp.propertyName(), c);
-						
+						constructorParameters.put(cp.propertyName(), 
+								convertPrimitiveToClass(((PrimitiveType) type).getKind()));
 					} else {
 						try {
 							constructorParameters.put(cp.propertyName(), 
@@ -169,56 +145,40 @@ public class SPClassVisitor implements DeclarationVisitor {
 	}
 	
 	public void visitMethodDeclaration(MethodDeclaration d) {
-		String methodName = d.getSimpleName();
-		String propertyName;
-		
-		try {
-			propertyName = convertMethodToProperty(methodName);
-		} catch (IllegalArgumentException e) {
-			// Method name does not follow JavaBeans format.
-			return;
-		}
-		
 		for (AnnotationMirror am : d.getAnnotationMirrors()) {
 			String annotationName = am.getAnnotationType().getDeclaration().getQualifiedName();
 			if (annotationName.equals(Accessor.class.getCanonicalName())) {
-				propertiesToAccess.add(propertyName);
+				
+				Class<?> c = null;
+				if (d.getReturnType() instanceof PrimitiveType) {
+					c = convertPrimitiveToClass(((PrimitiveType) d.getReturnType()).getKind());
+				} else {
+					try {
+						c = Class.forName(d.getReturnType().toString());
+					} catch (ClassNotFoundException e) {
+						e.printStackTrace();
+					}
+				}
+				
+				if (c != null) {
+					propertiesToAccess.put(d.getSimpleName(), c);
+				}
 			} else if (annotationName.equals(Mutator.class.getCanonicalName())) {
-				propertiesToMutate.add(propertyName);
+				// Since we cannot determine the property type this setter deals with,
+				// we will iterate through the map of accessors to get that information.
+				// The maps of accessors and mutators should have a one-to-one relationship.
+				propertiesToMutate.put(d.getSimpleName(), null);
 			}
 		}
-	}
-
-	/**
-	 * Converts a JavaBean formatted method name to a property name.
-	 * 
-	 * @param methodName
-	 *            The JavaBean formatted method name. This method name must
-	 *            start with either "is", "get", or "set" and there must be
-	 *            characters following after it.
-	 * @return The converted property name.
-	 * @throws IllegalArgumentException
-	 *             Thrown if the given method name does not follow the JavaBean
-	 *             format.
-	 */
-	private String convertMethodToProperty(String methodName) throws IllegalArgumentException {
-		String propertyName;
-		if (methodName.length() > 2 && methodName.startsWith("is")) {
-			propertyName = methodName.substring(2);
-		} else if (methodName.length() > 3 && 
-				(methodName.startsWith("get") || methodName.startsWith("set"))) {
-			propertyName = methodName.substring(3);
-		} else {
-			throw new IllegalArgumentException("Cannot convert method name \"" + 
-					methodName + "\" to property name as it is not a valid JavaBean name.");
-		}
 		
-		if (!propertyName.equals("UUID")) {
-			propertyName = propertyName.substring(0, 1).toLowerCase() + 
-					((propertyName.length() > 1)? propertyName.substring(1) : "");
+		for (Entry<String, Class<?>> e : propertiesToAccess.entrySet()) {
+			String methodName = SPAnnotationProcessor.convertMethodToProperty(e.getKey());
+			methodName = "set" + methodName.substring(0, 1).toUpperCase() + 
+					((methodName.length() > 1)? methodName.substring(1) : "");
+			if (propertiesToMutate.containsKey(methodName)) {
+				propertiesToMutate.put(methodName, e.getValue());
+			}
 		}
-		
-		return propertyName;
 	}
 
 	public void visitAnnotationTypeDeclaration(AnnotationTypeDeclaration d) {
@@ -228,7 +188,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 	public void visitAnnotationTypeElementDeclaration(
 			AnnotationTypeElementDeclaration d) {
 		// no-op
-		
 	}
 
 	public void visitDeclaration(Declaration d) {
@@ -273,6 +232,37 @@ public class SPClassVisitor implements DeclarationVisitor {
 
 	public void visitTypeParameterDeclaration(TypeParameterDeclaration d) {
 		// no-op		
+	}
+
+	/**
+	 * Converts a primitive data type to the equivalent {@link Class} type.
+	 * 
+	 * @param kind
+	 *            The {@link PrimitiveType.Kind} to convert.
+	 * @return The equivalent {@link Class} of the primitive type.
+	 */
+	private Class<?> convertPrimitiveToClass(Kind kind) {
+		if (kind.equals(Kind.BOOLEAN)) {
+			return Boolean.class;
+		} else if (kind.equals(Kind.BYTE)) {
+			return Byte.class;
+		} else if (kind.equals(Kind.CHAR)) {
+			return Character.class;
+		} else if (kind.equals(Kind.DOUBLE)) {
+			return Double.class;
+		} else if (kind.equals(Kind.FLOAT)) {
+			return Float.class;
+		} else if (kind.equals(Kind.INT)) {
+			return Integer.class;
+		} else if (kind.equals(Kind.LONG)) {
+			return Long.class;
+		} else if (kind.equals(Kind.SHORT)) {
+			return Short.class;
+		} else {
+			throw new IllegalStateException("The PrimitiveType Kind " + 
+					kind.name() + " is not recognized. This exception " +
+							"should never be thrown.");
+		}
 	}
 
 }
