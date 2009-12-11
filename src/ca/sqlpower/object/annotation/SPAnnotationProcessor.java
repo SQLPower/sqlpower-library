@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.Map.Entry;
 
 import ca.sqlpower.dao.AbstractSPPersisterHelper;
@@ -34,12 +35,14 @@ import ca.sqlpower.dao.PersistedSPOProperty;
 import ca.sqlpower.dao.PersisterUtils;
 import ca.sqlpower.dao.SPPersistenceException;
 import ca.sqlpower.dao.SPPersister;
+import ca.sqlpower.dao.SPPersisterHelper;
 import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.util.SPSession;
 
+import com.google.common.collect.Multimap;
 import com.sun.mirror.apt.AnnotationProcessor;
 import com.sun.mirror.apt.AnnotationProcessorEnvironment;
 import com.sun.mirror.apt.Filer;
@@ -48,8 +51,8 @@ import com.sun.mirror.util.DeclarationVisitors;
 
 /**
  * This {@link AnnotationProcessor} processes the annotations in
- * {@link SPObject}s to generate persister helper methods to be used in a
- * session {@link SPPersister}.
+ * {@link SPObject}s to generate {@link SPPersisterHelper} classes to be used in
+ * a session {@link SPPersister}.
  */
 public class SPAnnotationProcessor implements AnnotationProcessor {
 
@@ -62,8 +65,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 
 	/**
 	 * Creates a new {@link SPAnnotationProcessor} that deals exclusively with
-	 * annotations used in {@link SPObject}s which can generate persister helper
-	 * methods for session {@link SPPersister}s.
+	 * annotations used in {@link SPObject}s which can generate
+	 * {@link SPPersisterHelper} classes for session {@link SPPersister}s.
 	 * 
 	 * @param environment
 	 *            The {@link AnnotationProcessorEnvironment} this processor will
@@ -116,7 +119,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			}
 			generatePersisterHelperFile(e.getKey(), imports,
 					visitor.getConstructorParameters(), propertiesToAccess, 
-					propertiesToMutate);
+					propertiesToMutate, visitor.getMutatorThrownTypes());
 		}
 	}
 
@@ -135,20 +138,26 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			Set<String> imports,
 			Map<String, Class<?>> constructorParameters, 
 			Map<String, Class<?>> propertiesToAccess, 
-			Map<String, Class<?>> propertiesToMutate) {
+			Map<String, Class<?>> propertiesToMutate,
+			Multimap<String, Class<? extends Exception>> mutatorThrownTypes) {
 		try {
 			Filer f = environment.getFiler();
 			PrintWriter pw = f.createSourceFile(visitedClass.getSimpleName() + "PersisterHelper");
 			pw.print(generateImports(imports));
+			pw.print("\n");
 			pw.print("public class " + visitedClass.getSimpleName() + 
 					"PersisterHelper extends " + 
 					AbstractSPPersisterHelper.class.getSimpleName() + 
 					"<" + visitedClass.getSimpleName() + "> {\n");
+			pw.print("\n");
 			pw.print(generateCommitObjectMethod(visitedClass, constructorParameters, 1));
-			pw.print(generateCommitPropertyMethod(visitedClass, propertiesToMutate, 1));
+			pw.print("\n");
+			pw.print(generateCommitPropertyMethod(visitedClass, propertiesToMutate, mutatorThrownTypes, 1));
+			pw.print("\n");
 			pw.print(generateRetrievePropertyMethod(visitedClass, propertiesToAccess, 1));
+			pw.print("\n");
 			pw.print(generatePersistObjectMethod(visitedClass, constructorParameters, propertiesToAccess, 1));
-			pw.print("}\n");
+			pw.print("\n}\n");
 			pw.close();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -182,8 +191,11 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 * @return The source code for the generated imports.
 	 */
 	private String generateImports(Set<String> imports) {
-		Set<String> allImports = new HashSet<String>(imports);
+		Set<String> allImports = new TreeSet<String>(imports);
 		StringBuilder sb = new StringBuilder();
+		
+		// No need to import java.lang as it is automatically imported.
+		allImports.remove("java.lang");
 		
 		// XXX Need to import any additional classes this generated persister helper
 		// class requires, aside from those needed in the SPObject.
@@ -287,12 +299,15 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 */
 	private String generateCommitPropertyMethod(
 			Class<? extends SPObject> visitedClass,
-			Map<String, Class<?>> setters, int tabs) {
+			Map<String, Class<?>> setters,
+			Multimap<String, Class<? extends Exception>> mutatorThrownTypes,
+			int tabs) {
 		StringBuilder sb = new StringBuilder();
 		final String objectField = "o";
 		final String propertyNameField = "propertyName";
 		final String newValueField = "newValue";
 		final String converterField = "converter";
+		final String exceptionField = "e";
 		
 		boolean firstIf = true;
 		
@@ -317,12 +332,42 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 					convertMethodToProperty(e.getKey()) + "\")) {\n");
 			tabs++;
 			
+			boolean throwsExceptions = mutatorThrownTypes.containsKey(e.getKey());
+			
+			if (throwsExceptions) {
+				sb.append(indent(tabs));
+				sb.append("try {\n");
+				tabs++;
+			}
+			
 			sb.append(indent(tabs));
 			sb.append(objectField + "." + e.getKey() + "((" + e.getValue().getSimpleName() + 
 					") " + converterField + ".convertToComplexType(" + newValueField + 
 					", " + e.getValue().getSimpleName() + ".class));\n");
-			
 			tabs--;
+			
+			if (throwsExceptions) {
+				for (Class<? extends Exception> thrownType : 
+					mutatorThrownTypes.get(e.getKey())) {
+					
+					sb.append(indent(tabs));
+					sb.append("} catch (" + thrownType.getSimpleName() + " " + 
+							exceptionField + ") {\n");
+					tabs++;
+					
+					sb.append(indent(tabs));
+					sb.append("throw new " + SPPersistenceException.class.getSimpleName() + 
+							"(" + objectField + ".getUUID(), " +
+									"generateSPPersistenceExceptionMessage(" + 
+									objectField + ", " + propertyNameField + ", " + 
+									exceptionField + "));\n");
+					tabs--;
+				}
+				sb.append(indent(tabs));
+				sb.append("}\n");
+				tabs--;
+			}
+			
 			firstIf = false;
 		}
 		
@@ -363,7 +408,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 * @param visitedClass
 	 *            The {@link SPObject} class that is being visited by the
 	 *            annotation processor.
-	 * @param accessors
+	 * @param getters
 	 *            The {@link Map} of accessor method names to their property
 	 *            types, where each property can be persisted by an
 	 *            {@link SPPersister} into an {@link SPSession}.
@@ -376,7 +421,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 */
 	private String generateRetrievePropertyMethod(
 			Class<? extends SPObject> visitedClass,
-			Map<String, Class<?>> accessors, int tabs) {
+			Map<String, Class<?>> getters,
+			int tabs) {
 		StringBuilder sb = new StringBuilder();
 		final String objectField = "o";
 		final String propertyNameField = "propertyName";
@@ -393,7 +439,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				"throws " + SPPersistenceException.class.getSimpleName() + " {\n");
 		tabs++;
 		
-		for (Entry<String, Class<?>> e : accessors.entrySet()) {
+		for (Entry<String, Class<?>> e : getters.entrySet()) {
 			String methodName = e.getKey();
 			
 			sb.append(indent(tabs));
@@ -472,7 +518,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	private String generatePersistObjectMethod(
 			Class<? extends SPObject> visitedClass,
 			Map<String, Class<?>> constructorParameters,
-			Map<String, Class<?>> accessors, int tabs) {
+			Map<String, Class<?>> accessors,
+			int tabs) {
 		StringBuilder sb = new StringBuilder();
 		final String objectField = "o";
 		final String indexField = "index";

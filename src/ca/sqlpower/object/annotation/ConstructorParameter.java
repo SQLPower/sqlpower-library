@@ -35,5 +35,5 @@ public @interface ConstructorParameter {
 	 * The JavaBean property that will be set to the annotated constructor
 	 * parameter value.
 	 */
-	String propertyName();
+	String value();
 }

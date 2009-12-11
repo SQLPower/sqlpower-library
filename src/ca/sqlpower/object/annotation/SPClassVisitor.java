@@ -30,6 +30,9 @@ import java.util.Set;
 import ca.sqlpower.dao.SPPersisterHelper;
 import ca.sqlpower.object.SPObject;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import com.sun.mirror.declaration.AnnotationMirror;
 import com.sun.mirror.declaration.AnnotationTypeDeclaration;
 import com.sun.mirror.declaration.AnnotationTypeElementDeclaration;
@@ -47,7 +50,10 @@ import com.sun.mirror.declaration.PackageDeclaration;
 import com.sun.mirror.declaration.ParameterDeclaration;
 import com.sun.mirror.declaration.TypeDeclaration;
 import com.sun.mirror.declaration.TypeParameterDeclaration;
+import com.sun.mirror.type.ClassType;
+import com.sun.mirror.type.InterfaceType;
 import com.sun.mirror.type.PrimitiveType;
+import com.sun.mirror.type.ReferenceType;
 import com.sun.mirror.type.TypeMirror;
 import com.sun.mirror.type.PrimitiveType.Kind;
 import com.sun.mirror.util.DeclarationVisitor;
@@ -83,6 +89,11 @@ public class SPClassVisitor implements DeclarationVisitor {
 	private Map<String, Class<?>> propertiesToMutate = new HashMap<String, Class<?>>();
 	
 	/**
+	 * @see #getMutatorThrownTypes()
+	 */
+	private Multimap<String, Class<? extends Exception>> mutatorThrownTypes = HashMultimap.create();
+	
+	/**
 	 * @see #getImports()
 	 */
 	private Set<String> imports = new HashSet<String>();
@@ -105,19 +116,27 @@ public class SPClassVisitor implements DeclarationVisitor {
 	}
 
 	/**
-	 * Returns the {@link Map} of JavaBean property names that can be accessed
-	 * by getters.
+	 * Returns the {@link Map} of JavaBean getter method names that access
+	 * persistable properties, mapped to their property types.
 	 */
 	public Map<String, Class<?>> getPropertiesToAccess() {
 		return Collections.unmodifiableMap(propertiesToAccess);
 	}
 
 	/**
-	 * Returns the {@link Map} of JavaBean property names that can be mutated
-	 * by setters.
+	 * Returns the {@link Map} of JavaBean setter method names that mutate
+	 * persistable properties, mapped to their property types.
 	 */
 	public Map<String, Class<?>> getPropertiesToMutate() {
 		return Collections.unmodifiableMap(propertiesToMutate);
+	}
+
+	/**
+	 * Returns the {@link Multimap} of JavaBean setter method names that mutate
+	 * persistable properties, mapped to the method's thrown types.
+	 */
+	public Multimap<String, Class<? extends Exception>> getMutatorThrownTypes() {
+		return Multimaps.unmodifiableMultimap(mutatorThrownTypes);
 	}
 
 	/**
@@ -151,53 +170,49 @@ public class SPClassVisitor implements DeclarationVisitor {
 					TypeMirror type = pd.getType();
 					
 					if (type instanceof PrimitiveType) {
-						constructorParameters.put(cp.propertyName(), 
+						constructorParameters.put(cp.value(), 
 								convertPrimitiveToClass(((PrimitiveType) type).getKind()));
-						// There is no need to add an import for primitive types
-						// as they rely on java.lang and are automatically imported.
 						
-					} else {
+					} else if (type instanceof ClassType || type instanceof InterfaceType) {
 						try {
 							Class<?> c = Class.forName(pd.getType().toString());
-							constructorParameters.put(cp.propertyName(), c);
-							
-							String pkg = c.getPackage().getName();
-							// java.lang does not need to be imported as it is
-							// done automatically.
-							if (!pkg.equals("java.lang")) {
-								imports.add(pkg);
-							}
+							constructorParameters.put(cp.value(), c);
+							imports.add(c.getPackage().getName());
 						} catch (ClassNotFoundException e) {
 							e.printStackTrace();
 						}
+						
 					}
 				}
 			}
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void visitMethodDeclaration(MethodDeclaration d) {
 		for (AnnotationMirror am : d.getAnnotationMirrors()) {
 			String annotationName = am.getAnnotationType().getDeclaration().getQualifiedName();
+			String methodName = d.getSimpleName();
+			
 			if (annotationName.equals(Accessor.class.getCanonicalName())) {
 				
+				TypeMirror type = d.getReturnType();
 				Class<?> c = null;
-				if (d.getReturnType() instanceof PrimitiveType) {
-					c = convertPrimitiveToClass(((PrimitiveType) d.getReturnType()).getKind());
-				} else {
-					try {
+
+				try {
+					if (type instanceof PrimitiveType) {
+						c = convertPrimitiveToClass(((PrimitiveType) d.getReturnType()).getKind());
+					} else if (type instanceof ClassType || type instanceof InterfaceType) {
 						c = Class.forName(d.getReturnType().toString());
-					} catch (ClassNotFoundException e) {
-						e.printStackTrace();
+					} else {
+						continue;
 					}
-				}
-				
-				if (c != null) {
-					propertiesToAccess.put(d.getSimpleName(), c);
-					String pkg = c.getPackage().getName();
-					if (!pkg.equals("java.lang")) {
-						imports.add(pkg);
-					}
+
+					propertiesToAccess.put(methodName, c);
+					imports.add(c.getPackage().getName());
+					
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
 				}
 			} else if (annotationName.equals(Mutator.class.getCanonicalName())) {
 				try {
@@ -206,15 +221,21 @@ public class SPClassVisitor implements DeclarationVisitor {
 
 					if (type instanceof PrimitiveType) {
 						c = convertPrimitiveToClass(((PrimitiveType) type).getKind());
-					} else {
+					} else if (type instanceof ClassType || type instanceof InterfaceType){
 						c = Class.forName(type.toString());
+					} else {
+						continue;
 					}
 					
-					propertiesToMutate.put(d.getSimpleName(), c);
-					String pkg = c.getPackage().getName();
-					if (!pkg.equals("java.lang")) {
-						imports.add(pkg);
+					for (ReferenceType refType : d.getThrownTypes()) {
+						Class<? extends Exception> thrownType = 
+							(Class<? extends Exception>) Class.forName(refType.toString());
+						mutatorThrownTypes.put(methodName, thrownType);
+						imports.add(thrownType.getPackage().getName());
 					}
+					
+					propertiesToMutate.put(methodName, c);
+					imports.add(c.getPackage().getName());
 					
 				} catch (NoSuchElementException e) {
 					// This exception is caught if the Mutator annotated method

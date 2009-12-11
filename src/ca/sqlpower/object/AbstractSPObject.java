@@ -144,6 +144,7 @@ public abstract class AbstractSPObject implements SPObject {
 		return name;
 	}
 
+	@Accessor
 	public SPObject getParent() {
 		return parent;
 	}
@@ -190,6 +191,7 @@ public abstract class AbstractSPObject implements SPObject {
 		firePropertyChange("name", oldName, name);
 	}
 
+	@Mutator
 	public void setParent(SPObject parent) {
 		SPObject oldParent = this.parent;
 		this.parent = parent;
