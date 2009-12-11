@@ -146,22 +146,31 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		try {
 			Filer f = environment.getFiler();
 			PrintWriter pw = f.createSourceFile(visitedClass.getSimpleName() + "PersisterHelper");
+			
+			pw.print("/*\n");
+			pw.print(" * This is a GENERATED class based on hand made annotations in " + 
+					SPObject.class.getSimpleName() + " classes\n");
+			pw.print(" * and should NOT be modified here. If you need to change this class, modify \n");
+			pw.print(" * " + SPAnnotationProcessor.class.getSimpleName() + " instead.\n");
+			pw.print(" */\n\n");
+			
 			pw.print(generateLicense());
 			pw.print("\n");
 			pw.print(generateImports(visitedClass, imports));
 			pw.print("\n");
-			pw.print("public class " + visitedClass.getSimpleName() + 
-					"PersisterHelper extends " + 
-					AbstractSPPersisterHelper.class.getSimpleName() + 
+			pw.print("public class " + visitedClass.getSimpleName() + "PersisterHelper" +
+					" extends " + AbstractSPPersisterHelper.class.getSimpleName() + 
 					"<" + visitedClass.getSimpleName() + "> {\n");
 			pw.print("\n");
 			pw.print(generateCommitObjectMethod(visitedClass, constructorParameters, 1));
 			pw.print("\n");
-			pw.print(generateCommitPropertyMethod(visitedClass, propertiesToMutate, mutatorThrownTypes, 1));
+			pw.print(generateCommitPropertyMethod(visitedClass, propertiesToMutate, 
+					mutatorThrownTypes, 1));
 			pw.print("\n");
 			pw.print(generateRetrievePropertyMethod(visitedClass, propertiesToAccess, 1));
 			pw.print("\n");
-			pw.print(generatePersistObjectMethod(visitedClass, constructorParameters, propertiesToAccess, 1));
+			pw.print(generatePersistObjectMethod(visitedClass, constructorParameters, 
+					propertiesToAccess, 1));
 			pw.print("\n}\n");
 			pw.close();
 		} catch (IOException e) {
