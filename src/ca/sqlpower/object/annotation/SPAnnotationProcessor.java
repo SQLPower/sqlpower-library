@@ -19,6 +19,9 @@
 
 package ca.sqlpower.object.annotation;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
@@ -143,7 +146,9 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		try {
 			Filer f = environment.getFiler();
 			PrintWriter pw = f.createSourceFile(visitedClass.getSimpleName() + "PersisterHelper");
-			pw.print(generateImports(imports));
+			pw.print(generateLicense());
+			pw.print("\n");
+			pw.print(generateImports(visitedClass, imports));
 			pw.print("\n");
 			pw.print("public class " + visitedClass.getSimpleName() + 
 					"PersisterHelper extends " + 
@@ -182,32 +187,58 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	}
 
 	/**
+	 * Generates and returns the GPL license header in a comment, as Eclipse
+	 * does whenever a new source file is created. The license is taken from
+	 * src/license_in_comment.txt.
+	 */
+	private String generateLicense() {
+		StringBuilder sb = new StringBuilder();
+		try {
+			BufferedReader br = new BufferedReader(new FileReader("src/license_in_comment.txt"));
+			String line;
+			while ((line = br.readLine()) != null) {
+				sb.append(line + "\n");
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return sb.toString();
+	}
+
+	/**
 	 * Generates and returns source code for importing packages that are
 	 * required by the persister helper this class is generating.
 	 * 
+	 * @param visitedClass
+	 *            The {@link SPObject} class that is being visited by the
+	 *            annotation processor.
 	 * @param imports
-	 *            The {@link Set} of packages that the {@link SPObject} uses and
+	 *            The {@link Set} of packages that visitedClass uses and
 	 *            need to be imported.
 	 * @return The source code for the generated imports.
 	 */
-	private String generateImports(Set<String> imports) {
+	private String generateImports(Class<? extends SPObject> visitedClass, Set<String> imports) {
+		// Using a TreeSet here to sort imports alphabetically.
 		Set<String> allImports = new TreeSet<String>(imports);
 		StringBuilder sb = new StringBuilder();
 		
-		// No need to import java.lang as it is automatically imported.
-		allImports.remove("java.lang");
-		
 		// XXX Need to import any additional classes this generated persister helper
-		// class requires, aside from those needed in the SPObject.
-		allImports.add(SPPersister.class.getPackage().getName());
-		allImports.add(SPPersistenceException.class.getPackage().getName());
-		allImports.add(DataType.class.getPackage().getName());
-		allImports.add(Collections.class.getPackage().getName());
-		allImports.add(PersistedSPOProperty.class.getPackage().getName());
-		allImports.add(SessionPersisterSuperConverter.class.getPackage().getName());
+		// class requires, aside from those needed in visitedClass.
+		allImports.add(visitedClass.getName());
+		allImports.add(AbstractSPPersisterHelper.class.getName());
+		allImports.add(PersistedSPOProperty.class.getName());
+		allImports.add(SPPersistenceException.class.getName());
+		allImports.add(SPPersister.class.getName());
+		allImports.add(SessionPersisterSuperConverter.class.getName());
+		allImports.add(Collections.class.getName());
 		
 		for (String pkg : allImports) {
-			sb.append("import " + pkg + ";\n");
+			// No need to import java.lang as it is automatically imported.
+			if (!pkg.startsWith("java.lang")) {
+				sb.append("import " + pkg + ";\n");
+			}
 		}
 		
 		return sb.toString();
@@ -565,7 +596,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			sb.append(indent(tabs));
 			sb.append(persisterField + ".persistProperty(" + uuidField + ", \"" + 
 					e.getKey() + "\", " + DataType.class.getSimpleName() + "." + 
-					PersisterUtils.getDataType(e.getValue()).getTypeName() + 
+					PersisterUtils.getDataType(e.getValue()).name() + 
 					", " + converterField + ".convertToBasicType(" + objectField + "." +
 					convertPropertyToAccessor(e.getKey(), e.getValue()) + "()));\n");
 		}
@@ -576,7 +607,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				sb.append(indent(tabs));
 				sb.append(persisterField + ".persistProperty(" + uuidField + ", \"" +
 						propertyName + "\", " + DataType.class.getSimpleName() + "." + 
-						PersisterUtils.getDataType(e.getValue()).getTypeName() +
+						PersisterUtils.getDataType(e.getValue()).name() +
 						", " + converterField + ".convertToBasicType(" + objectField + "." +
 						e.getKey() + "()));\n");
 			}

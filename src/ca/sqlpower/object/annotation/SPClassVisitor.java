@@ -155,7 +155,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 		if (d.getAnnotation(Persistable.class) != null) {
 			try {
 				visitedClass = (Class<? extends SPObject>) Class.forName(d.getQualifiedName());
-				imports.add(visitedClass.getName());
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
 			}
@@ -177,7 +176,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 						try {
 							Class<?> c = Class.forName(pd.getType().toString());
 							constructorParameters.put(cp.value(), c);
-							imports.add(c.getPackage().getName());
+							imports.add(c.getName());
 						} catch (ClassNotFoundException e) {
 							e.printStackTrace();
 						}
@@ -209,7 +208,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 					}
 
 					propertiesToAccess.put(methodName, c);
-					imports.add(c.getPackage().getName());
+					imports.add(c.getName());
 					
 				} catch (ClassNotFoundException e) {
 					e.printStackTrace();
@@ -231,11 +230,11 @@ public class SPClassVisitor implements DeclarationVisitor {
 						Class<? extends Exception> thrownType = 
 							(Class<? extends Exception>) Class.forName(refType.toString());
 						mutatorThrownTypes.put(methodName, thrownType);
-						imports.add(thrownType.getPackage().getName());
+						imports.add(thrownType.getName());
 					}
 					
 					propertiesToMutate.put(methodName, c);
-					imports.add(c.getPackage().getName());
+					imports.add(c.getName());
 					
 				} catch (NoSuchElementException e) {
 					// This exception is caught if the Mutator annotated method
