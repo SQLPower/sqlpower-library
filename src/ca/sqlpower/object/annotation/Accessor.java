@@ -42,4 +42,13 @@ import ca.sqlpower.object.SPObject;
 @Target(ElementType.METHOD)
 public @interface Accessor {
 
+	/**
+	 * Defines whether the property the annotated getter method returns should
+	 * be persisted if its value is null. A false value means the property
+	 * should not be persisted if its value is null. There may be cases where a
+	 * certain property is null and should not be persisted. For example, the
+	 * currentCube property in OlapQuery in Wabit. By default, this is true.
+	 */
+	boolean value() default true;
+	
 }

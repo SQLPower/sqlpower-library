@@ -45,6 +45,7 @@ import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.util.SPSession;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.sun.mirror.apt.AnnotationProcessor;
 import com.sun.mirror.apt.AnnotationProcessorEnvironment;
@@ -103,16 +104,33 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			Map<String, Class<?>> propertiesToMutate = 
 				new HashMap<String, Class<?>>(visitor.getPropertiesToMutate());
 			Class<? extends SPObject> superClass = e.getKey();
+			Multimap<String, Class<? extends Exception>> mutatorThrownTypes = 
+				HashMultimap.create(visitor.getMutatorThrownTypes());
+			Set<String> propertiesToPersistOnlyIfNonNull = 
+				new HashSet(visitor.getPropertiesToPersistOnlyIfNonNull());
 			
 			while ((superClass = (Class<? extends SPObject>) superClass.getSuperclass()) != null) {
 				if (visitors.containsKey(superClass)) {
 					SPClassVisitor superClassVisitor = visitors.get(superClass);
+					
+					// Add inherited imports.
 					imports.addAll(superClassVisitor.getImports());
+					
+					// Add inherited mutator thrown types.
+					mutatorThrownTypes.putAll(superClassVisitor.getMutatorThrownTypes());
+					
+					// Add inherited non-null only persistable properties.
+					propertiesToPersistOnlyIfNonNull.addAll(
+							superClassVisitor.getPropertiesToPersistOnlyIfNonNull());
+					
+					// Add inherited accessors.
 					for (Entry<String, Class<?>> accessorEntry : superClassVisitor.getPropertiesToAccess().entrySet()) {
 						if (!propertiesToAccess.containsKey(accessorEntry.getKey())) {
 							propertiesToAccess.put(accessorEntry.getKey(), accessorEntry.getValue());
 						}
 					}
+					
+					// Add inherited mutators.
 					for (Entry<String, Class<?>> mutatorEntry : superClassVisitor.getPropertiesToMutate().entrySet()) {
 						if (!propertiesToMutate.containsKey(mutatorEntry.getKey())) {
 							propertiesToMutate.put(mutatorEntry.getKey(), mutatorEntry.getValue());
@@ -120,29 +138,52 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 					}
 				}
 			}
+			
+			// Generate the persister helper file.
 			generatePersisterHelperFile(e.getKey(), imports,
 					visitor.getConstructorParameters(), propertiesToAccess, 
-					propertiesToMutate, visitor.getMutatorThrownTypes());
+					propertiesToMutate, mutatorThrownTypes, 
+					propertiesToPersistOnlyIfNonNull);
 		}
 	}
 
 	/**
-	 * Generates the Java source file for a persister helper class that is to be
-	 * used by a session {@link SPPersister} or workspace persister listener.
-	 * This generated persister helper class should deal with creating new
-	 * objects and applying persisted properties to a given {@link SPObject}, or
-	 * persisting objects and properties from an {@link SPObject} to an
-	 * {@link SPPersister}.
+	 * Generates the Java source file for an {@link SPPersisterHelper} class
+	 * that is to be used by a session {@link SPPersister} or workspace
+	 * persister listener. This generated persister helper class should deal
+	 * with creating new objects and applying persisted properties to a given
+	 * {@link SPObject}, or persisting objects and properties from an
+	 * {@link SPObject} to an {@link SPPersister}.
 	 * 
-	 * @param visitor
-	 *            The {@link SPClassVisitor}
+	 * @param visitedClass
+	 *            The {@link SPObject} class that is being visited by the
+	 *            annotation processor.
+	 * @param imports
+	 *            The {@link Set} of imports that the generated persister helper
+	 *            requires to have the class compile correctly. class require
+	 * @param constructorParameters
+	 *            The {@link Map} of constructor parameters to the property
+	 *            names it delegates to.
+	 * @param propertiesToAccess
+	 *            The {@link Map} of getter method names of persistable
+	 *            properties to its property type.
+	 * @param propertiesToMutate
+	 *            The {@link Map} of setter method names of persistable
+	 *            properties to its property type.
+	 * @param mutatorThrownTypes
+	 *            The {@link Multimap} of {@link Exception}s thrown by each
+	 *            persistable property setter.
+	 * @param propertiesToPersistOnlyIfNonNull
+	 *            The {@link Set} of persistable properties that can only be
+	 *            persisted if its value is not null.
 	 */
 	private void generatePersisterHelperFile(Class<? extends SPObject> visitedClass, 
 			Set<String> imports,
 			Map<String, Class<?>> constructorParameters, 
 			Map<String, Class<?>> propertiesToAccess, 
 			Map<String, Class<?>> propertiesToMutate,
-			Multimap<String, Class<? extends Exception>> mutatorThrownTypes) {
+			Multimap<String, Class<? extends Exception>> mutatorThrownTypes,
+			Set<String> propertiesToPersistOnlyIfNonNull) {
 		try {
 			Filer f = environment.getFiler();
 			PrintWriter pw = f.createSourceFile(visitedClass.getSimpleName() + "PersisterHelper");
@@ -170,7 +211,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			pw.print(generateRetrievePropertyMethod(visitedClass, propertiesToAccess, 1));
 			pw.print("\n");
 			pw.print(generatePersistObjectMethod(visitedClass, constructorParameters, 
-					propertiesToAccess, 1));
+					propertiesToAccess, propertiesToPersistOnlyIfNonNull, 1));
 			pw.print("\n}\n");
 			pw.close();
 		} catch (IOException e) {
@@ -278,6 +319,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		StringBuilder sb = new StringBuilder();
 		final String persistedPropertiesField = "persistedProperties";
 		
+		// commitObject method header.
 		sb.append(indent(tabs));
 		sb.append("public " + visitedClass.getSimpleName() + " commitObject(" +
 				Collection.class.getSimpleName() + "<" + 
@@ -285,6 +327,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				persistedPropertiesField + ") {\n");
 		tabs++;
 		
+		// Assign each constructor parameter property to a variable.
 		for (Entry<String, Class<?>> e : constructorParameters.entrySet()) {
 			sb.append(indent(tabs));
 			sb.append(e.getValue().getSimpleName() + " " + e.getKey() + 
@@ -292,11 +335,13 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 					", \"" + e.getKey() + "\");\n");
 		}
 		
+		// Create and return the new object.
 		sb.append(indent(tabs));
 		sb.append("return new " + visitedClass.getSimpleName() + "(");
 		
 		boolean firstArg = true;
 		
+		// Pass in all of the constructor arguments.
 		for (String propertyName : constructorParameters.keySet()) {
 			if (!firstArg) {
 				sb.append(", ");
@@ -351,6 +396,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		boolean firstIf = true;
 		
+		// commitProperty method header.
 		sb.append(indent(tabs));
 		sb.append("public void commitProperty(" + visitedClass.getSimpleName() + " " + 
 				objectField + ", " + String.class.getSimpleName() + " " + 
@@ -360,6 +406,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				SPPersistenceException.class.getSimpleName() + " {\n");
 		tabs++;
 		
+		// Search for the matching property name and set the value.
 		for (Entry<String, Class<?>> e : setters.entrySet()) {
 			
 			sb.append(indent(tabs));
@@ -386,6 +433,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 					", " + e.getValue().getSimpleName() + ".class));\n");
 			tabs--;
 			
+			// Catch any exceptions that the setter throws.
 			if (throwsExceptions) {
 				for (Class<? extends Exception> thrownType : 
 					mutatorThrownTypes.get(e.getKey())) {
@@ -417,6 +465,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			tabs++;
 		}
 		
+		// Throw an SPPersistenceException if the property is not persistable or unrecognized.
 		sb.append(indent(tabs));
 		sb.append("throw new " + SPPersistenceException.class.getSimpleName() + 
 				"(" + objectField + ".getUUID(), generateSPPersistenceExceptionMessage(" + 
@@ -470,6 +519,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		boolean firstIf = true;
 		
+		// retrieveProperty method header.
 		sb.append(indent(tabs));
 		sb.append("public " + Object.class.getSimpleName() + " retrieveProperty(" + 
 				visitedClass.getSimpleName() + " " + objectField + ", " +
@@ -479,6 +529,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				"throws " + SPPersistenceException.class.getSimpleName() + " {\n");
 		tabs++;
 		
+		// Search for the matching property name and return the value.
 		for (Entry<String, Class<?>> e : getters.entrySet()) {
 			String methodName = e.getKey();
 			
@@ -506,6 +557,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			tabs++;
 		}
 		
+		// Throw an SPPersistenceException if the property is not persistable or unrecognized.
 		sb.append(indent(tabs));
 		sb.append("throw new " + SPPersistenceException.class.getSimpleName() + 
 				"(" + objectField + ".getUUID(), generateSPPersistenceExceptionMessage(" + 
@@ -550,6 +602,9 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 *            The {@link Map} of accessor method names to their property
 	 *            types which should be persisted into an {@link SPPersister} by
 	 *            a workspace persister {@link SPListener}.
+	 * @param propertiesToPersistOnlyIfNonNull
+	 *            The {@link Set} of persistable properties that can only be
+	 *            persisted if its value is not null.
 	 * @param tabs
 	 *            The number of tab characters to use to indent this generated
 	 *            method block.
@@ -559,6 +614,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			Class<? extends SPObject> visitedClass,
 			Map<String, Class<?>> constructorParameters,
 			Map<String, Class<?>> accessors,
+			Set<String> propertiesToPersistOnlyIfNonNull,
 			int tabs) {
 		StringBuilder sb = new StringBuilder();
 		final String objectField = "o";
@@ -568,6 +624,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		final String uuidField = "uuid";
 		final String parentUUIDField = "parentUUID";
 		
+		// persistObject method header.
 		sb.append(indent(tabs));
 		sb.append("public class persistObject(" + visitedClass.getSimpleName() + " " + 
 				objectField + ", int " + indexField + ", " + 
@@ -594,13 +651,20 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		tabs--;
 		sb.append(indent(tabs));
-		sb.append("}\n");
+		sb.append("}\n\n");
 		
+		// Persist the object.
 		sb.append(indent(tabs));
 		sb.append(persisterField + ".persistObject(" + parentUUIDField + ", \"" + 
 				visitedClass.getSimpleName() + "\", " + uuidField + ", " + 
-				indexField + ");\n");
+				indexField + ");\n\n");
 		
+		if (!constructorParameters.isEmpty()) {
+			sb.append(indent(tabs));
+			sb.append("// Constructor arguments\n");
+		}
+		
+		// Persist all of its constructor argument properties.
 		for (Entry<String, Class<?>> e : constructorParameters.entrySet()) {
 			sb.append(indent(tabs));
 			sb.append(persisterField + ".persistProperty(" + uuidField + ", \"" + 
@@ -609,16 +673,50 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 					", " + converterField + ".convertToBasicType(" + objectField + "." +
 					convertPropertyToAccessor(e.getKey(), e.getValue()) + "()));\n");
 		}
+		sb.append("\n");
 		
+		boolean lastEntryInIfBlock = false;
+		
+		// Persist all of its persistable properties.
 		for (Entry<String, Class<?>> e : accessors.entrySet()) {
 			String propertyName = convertMethodToProperty(e.getKey());
+			
+			// Persist the property only if it is not null.
 			if (!constructorParameters.containsKey(propertyName)) {
+				boolean persistOnlyIfNonNull = 
+					propertiesToPersistOnlyIfNonNull.contains(propertyName);
+				String propertyField = objectField + "." + e.getKey() + "()";
+				
+				if (lastEntryInIfBlock) {
+					sb.append("\n");
+				}
+				
+				if (persistOnlyIfNonNull) {
+					sb.append(indent(tabs));
+					sb.append(e.getValue().getSimpleName() + " " + propertyName + 
+							" = " + propertyField + ";\n");
+					propertyField = propertyName;
+					
+					sb.append(indent(tabs));
+					sb.append("if (" + propertyField + " != null) {\n");
+					tabs++;
+				}
+				
 				sb.append(indent(tabs));
 				sb.append(persisterField + ".persistProperty(" + uuidField + ", \"" +
 						propertyName + "\", " + DataType.class.getSimpleName() + "." + 
 						PersisterUtils.getDataType(e.getValue()).name() +
 						", " + converterField + ".convertToBasicType(" + objectField + "." +
 						e.getKey() + "()));\n");
+				
+				if (persistOnlyIfNonNull) {
+					tabs--;
+					sb.append(indent(tabs));
+					sb.append("}\n");
+					lastEntryInIfBlock = true;
+				} else {
+					lastEntryInIfBlock = false;
+				}
 			}
 		}
 		

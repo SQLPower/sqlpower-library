@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
 import ca.sqlpower.dao.SPPersisterHelper;
@@ -33,7 +32,6 @@ import ca.sqlpower.object.SPObject;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
-import com.sun.mirror.declaration.AnnotationMirror;
 import com.sun.mirror.declaration.AnnotationTypeDeclaration;
 import com.sun.mirror.declaration.AnnotationTypeElementDeclaration;
 import com.sun.mirror.declaration.ClassDeclaration;
@@ -97,6 +95,11 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 * @see #getImports()
 	 */
 	private Set<String> imports = new HashSet<String>();
+	
+	/**
+	 * @see #propertiesToPersistOnlyIfNonNull
+	 */
+	private Set<String> propertiesToPersistOnlyIfNonNull = new HashSet<String>();
 
 	/**
 	 * Returns the {@link SPObject} class this {@link DeclarationVisitor} is
@@ -149,6 +152,14 @@ public class SPClassVisitor implements DeclarationVisitor {
 	public Set<String> getImports() {
 		return Collections.unmodifiableSet(imports);
 	}
+
+	/**
+	 * Returns the {@link Set} of persistable properties that can only be
+	 * persisted if its value is not null.
+	 */
+	public Set<String> getPropertiesToPersistOnlyIfNonNull() {
+		return Collections.unmodifiableSet(propertiesToPersistOnlyIfNonNull);
+	}
 	
 	@SuppressWarnings("unchecked")
 	public void visitClassDeclaration(ClassDeclaration d) {
@@ -189,63 +200,50 @@ public class SPClassVisitor implements DeclarationVisitor {
 	
 	@SuppressWarnings("unchecked")
 	public void visitMethodDeclaration(MethodDeclaration d) {
-		for (AnnotationMirror am : d.getAnnotationMirrors()) {
-			String annotationName = am.getAnnotationType().getDeclaration().getQualifiedName();
-			String methodName = d.getSimpleName();
-			
-			if (annotationName.equals(Accessor.class.getCanonicalName())) {
-				
-				TypeMirror type = d.getReturnType();
-				Class<?> c = null;
+		Accessor accessorAnnotation = d.getAnnotation(Accessor.class);
+		Mutator mutatorAnnotation = d.getAnnotation(Mutator.class);
+		TypeMirror type = null;
+		
+		if (accessorAnnotation != null) {
+			type = d.getReturnType();
+		} else if (mutatorAnnotation != null) {
+			type = d.getParameters().iterator().next().getType();
+		} else {
+			return;
+		}
+		
+		String methodName = d.getSimpleName();
+		Class<?> c = null;
 
-				try {
-					if (type instanceof PrimitiveType) {
-						c = convertPrimitiveToClass(((PrimitiveType) d.getReturnType()).getKind());
-					} else if (type instanceof ClassType || type instanceof InterfaceType) {
-						c = Class.forName(d.getReturnType().toString());
-					} else {
-						continue;
-					}
-
-					propertiesToAccess.put(methodName, c);
-					imports.add(c.getName());
-					
-				} catch (ClassNotFoundException e) {
-					e.printStackTrace();
-				}
-			} else if (annotationName.equals(Mutator.class.getCanonicalName())) {
-				try {
-					TypeMirror type = d.getParameters().iterator().next().getType();
-					Class<?> c = null;
-
-					if (type instanceof PrimitiveType) {
-						c = convertPrimitiveToClass(((PrimitiveType) type).getKind());
-					} else if (type instanceof ClassType || type instanceof InterfaceType){
-						c = Class.forName(type.toString());
-					} else {
-						continue;
-					}
-					
-					for (ReferenceType refType : d.getThrownTypes()) {
-						Class<? extends Exception> thrownType = 
-							(Class<? extends Exception>) Class.forName(refType.toString());
-						mutatorThrownTypes.put(methodName, thrownType);
-						imports.add(thrownType.getName());
-					}
-					
-					propertiesToMutate.put(methodName, c);
-					imports.add(c.getName());
-					
-				} catch (NoSuchElementException e) {
-					// This exception is caught if the Mutator annotated method
-					// does not take parameters. The setter must take only one parameter
-					// which is the same type as the property type it is trying to set.
-					e.printStackTrace();
-				} catch (ClassNotFoundException e) {
-					e.printStackTrace();
-				}
-				
+		try {
+			if (type instanceof PrimitiveType) {
+				c = convertPrimitiveToClass(((PrimitiveType) type).getKind());
+			} else if (type instanceof ClassType || type instanceof InterfaceType) {
+				c = Class.forName(type.toString());
 			}
+
+			if (accessorAnnotation != null) {
+				propertiesToAccess.put(methodName, c);
+				if (!accessorAnnotation.value()) {
+					propertiesToPersistOnlyIfNonNull.add(
+							SPAnnotationProcessor.convertMethodToProperty(methodName));
+				}
+				
+			} else {
+				for (ReferenceType refType : d.getThrownTypes()) {
+					Class<? extends Exception> thrownType = 
+						(Class<? extends Exception>) Class.forName(refType.toString());
+					mutatorThrownTypes.put(methodName, thrownType);
+					imports.add(thrownType.getName());
+				}
+
+				propertiesToMutate.put(methodName, c);
+			}
+			
+			imports.add(c.getName());
+			
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -253,8 +251,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 		// no-op
 	}
 
-	public void visitAnnotationTypeElementDeclaration(
-			AnnotationTypeElementDeclaration d) {
+	public void visitAnnotationTypeElementDeclaration(AnnotationTypeElementDeclaration d) {
 		// no-op
 	}
 
