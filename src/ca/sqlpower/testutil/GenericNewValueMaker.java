@@ -35,6 +35,9 @@ import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLIndex;
 import ca.sqlpower.sqlobject.SQLObjectException;
+import ca.sqlpower.sqlobject.SQLTable;
+import ca.sqlpower.sqlobject.SQLIndex.Column;
+import ca.sqlpower.sqlobject.SQLRelationship.ColumnMapping;
 import ca.sqlpower.util.DefaultUserPrompter;
 import ca.sqlpower.util.UserPrompter;
 import ca.sqlpower.util.UserPrompter.UserPromptOptions;
@@ -98,6 +101,16 @@ public class GenericNewValueMaker implements NewValueMaker {
         } else if (valueType == SQLColumn.class) {
         	newVal = new SQLColumn();
         	((SQLColumn) newVal).setName("testing!");
+        } else if (valueType.isAssignableFrom(SQLTable.class)) {
+        	newVal = new SQLTable();
+        	((SQLTable) newVal).setName("Generated testing table");
+        } else if (valueType.isAssignableFrom(Column.class)) {
+        	SQLIndex index = new SQLIndex();
+        	newVal = index.new Column();
+        	((Column) newVal).setName("Generated testing column index");
+        } else if (valueType.isAssignableFrom(ColumnMapping.class)) {
+        	newVal = new ColumnMapping();
+        	((ColumnMapping) newVal).setName("Generated testing mapping");
         } else if (valueType == SQLIndex.class) {
         	newVal = new SQLIndex();
         	((SQLIndex) newVal).setName("a new index");

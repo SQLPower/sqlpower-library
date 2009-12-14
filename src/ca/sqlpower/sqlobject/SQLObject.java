@@ -354,7 +354,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 * @throws SQLObjectException 
 	 */
 	public void addChild(SQLObject newChild) throws SQLObjectException {
-		addChild(newChild, getChildren(newChild.getClass()).size());
+		addChild(newChild, getChildrenWithoutPopulating(newChild.getClass()).size());
 	}
 	
 	// ------------------- sql object event support -------------------

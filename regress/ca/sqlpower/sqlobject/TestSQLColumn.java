@@ -91,6 +91,11 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		return table1pk.getColumn(0);
 	}
 	
+	@Override
+    protected Class<?> getChildClassType() {
+    	return null;
+    }
+	
 	// ================= Constructor ====================
 	
 	public TestSQLColumn(String name) throws Exception {

@@ -32,7 +32,9 @@ import org.apache.commons.beanutils.PropertyUtils;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.undo.SQLObjectUndoManager;
+import ca.sqlpower.testutil.GenericNewValueMaker;
 import ca.sqlpower.testutil.MockJDBCDriver;
+import ca.sqlpower.testutil.NewValueMaker;
 
 /**
  * Extends the basic database-connected test class with some test methods that
@@ -49,6 +51,14 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
 	}
 	
 	protected abstract SQLObject getSQLObjectUnderTest() throws SQLObjectException;
+	
+	/**
+	 * Returns a class that is one of the child types of the object under test. An
+	 * object of this type must be able to be added as a child to the object without
+	 * error. If the object under test does not allow children or all of the children
+	 * of the object are final so none can be added, null will be returned.
+	 */
+	protected abstract Class<?> getChildClassType();
 	
 	public void testAllSettersGenerateEvents()
 	throws IllegalArgumentException, IllegalAccessException, 
@@ -311,6 +321,26 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
      */
     public void testChildrenNotNull() throws SQLObjectException {
         assertNotNull(getSQLObjectUnderTest().getChildren());
+    }
+    
+    /**
+     * Adding a child to any SQL Object should not force the object to populate.
+     */
+    public void testAddChildDoesNotPopulate() throws Exception {
+    	SQLObject o = getSQLObjectUnderTest();
+    	
+    	if (!o.allowsChildren()) return;
+    	
+    	o.setPopulated(false);
+    	Class<?> childClassType = getChildClassType();
+    	if (childClassType == null) return;
+    	
+    	NewValueMaker valueMaker = new GenericNewValueMaker();
+    	SQLObject newChild = (SQLObject) valueMaker.makeNewValue(childClassType, null, "child");
+    	
+    	o.addChild(newChild);
+    	
+    	assertFalse(o.isPopulated());
     }
 
 }

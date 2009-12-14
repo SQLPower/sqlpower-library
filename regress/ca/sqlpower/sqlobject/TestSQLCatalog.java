@@ -44,6 +44,11 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 		return c;
 	}
 	
+	@Override
+    protected Class<?> getChildClassType() {
+    	return SQLTable.class;
+    }
+	
 	/*
 	 * Test method for 'ca.sqlpower.sqlobject.SQLCatalog.getName()'
 	 */

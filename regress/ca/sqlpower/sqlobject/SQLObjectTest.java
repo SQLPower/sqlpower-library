@@ -119,6 +119,11 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
     protected SQLObject getSQLObjectUnderTest() throws SQLObjectException {
         return target;
     }
+    
+    @Override
+    protected Class<?> getChildClassType() {
+    	return null;
+    }
 
 	/*
 	 * Test method for 'ca.sqlpower.sqlobject.SQLObject.isPopulated()'
@@ -294,5 +299,5 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
         assertEquals(e, o.getChildrenInaccessibleReason());
             
     }
-
+    
 }

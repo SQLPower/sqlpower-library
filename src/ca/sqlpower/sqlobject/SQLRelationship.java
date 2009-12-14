@@ -1277,6 +1277,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		 * Returns the table and column name of the pkColumn.
 		 */
 		public String getShortDisplayName() {
+			if (pkColumn == null || fkColumn == null) return "Incomplete mapping";
+			
 			String pkTableName = null;
 			if (pkColumn.getParent() != null) {
 				pkTableName = pkColumn.getParent().getName();

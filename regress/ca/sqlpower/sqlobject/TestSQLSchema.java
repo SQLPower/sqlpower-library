@@ -39,6 +39,11 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 		return s;
 	}
 	
+	@Override
+    protected Class<?> getChildClassType() {
+    	return SQLTable.class;
+    }
+	
 	/*
 	 * Test method for 'ca.sqlpower.sqlobject.SQLSchema.getName()'
 	 */

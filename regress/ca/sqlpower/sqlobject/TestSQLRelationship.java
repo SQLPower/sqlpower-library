@@ -141,6 +141,11 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 		return rel1;
 	}
 	
+	@Override
+    protected Class<?> getChildClassType() {
+    	return ColumnMapping.class;
+    }
+	
 	public void testSetPhysicalName() {
 		CountingSQLObjectListener l = new CountingSQLObjectListener();
 		rel1.addSPListener(l);
@@ -1377,5 +1382,10 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
     	}
 
     	
+    }
+    
+    @Override
+    public void testAddChildDoesNotPopulate() throws Exception {
+    	//skipping this test as isPopulated always returns true.
     }
 }

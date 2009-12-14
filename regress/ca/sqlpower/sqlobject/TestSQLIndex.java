@@ -93,6 +93,11 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
        
         return index;
     }
+    
+    @Override
+    protected Class<?> getChildClassType() {
+    	return Column.class;
+    }
 
     /**
      * When you add an index column, it should attach a listener to its target column.
@@ -372,5 +377,13 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
                 assertNotSame(source, icol.getColumn().getParent());
             }
         }
+    }
+    
+    /**
+     * Skipping this test as SQLIndex always returns true when asked if it is populated.
+     */
+    @Override
+    public void testAddChildDoesNotPopulate() throws Exception {
+    	//skip test
     }
 }

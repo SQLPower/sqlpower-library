@@ -92,6 +92,11 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         return table;
     }
     
+    @Override
+    protected Class<?> getChildClassType() {
+    	return SQLColumn.class;
+    }
+    
     public void testConstructor() {
         // FIXME need to test both constructors!
     }
