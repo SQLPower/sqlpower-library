@@ -235,7 +235,7 @@ public class SQLCatalog extends SQLObject {
 	
 		// catalog has been populated
 	
-		if (getChildren().isEmpty()) {
+		if (getChildrenWithoutPopulating().isEmpty()) {
 			return true;
 		} else {
 			return !schemas.isEmpty();
