@@ -83,9 +83,9 @@ public interface SPPersisterHelper<T extends SPObject> {
 			SessionPersisterSuperConverter converter) throws SPPersistenceException;
 
 	/**
-	 * Retrieves a property value from the given {@link SPObject} based on the
-	 * property name and converts it to something that can be passed to an
-	 * {@link SPPersister}.
+	 * Finds and returns a property value from the given {@link SPObject} based
+	 * on the property name and converts it to something that can be passed to
+	 * an {@link SPPersister}.
 	 * 
 	 * @param spo
 	 *            The {@link SPObject} to retrieve the property from.
@@ -111,7 +111,7 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *             getter method for this property in the {@link SPObject} class
 	 *             must be annotated with {@link Accessor}.
 	 */
-	Object retrieveProperty(T spo, String propertyName, 
+	Object findProperty(T spo, String propertyName, 
 			SessionPersisterSuperConverter converter) throws SPPersistenceException;
 
 	/**
