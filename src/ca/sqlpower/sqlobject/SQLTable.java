@@ -656,7 +656,7 @@ public class SQLTable extends SQLObject {
 		} else {
 			c.primaryKeySeq = null;
 		}
-		addColumn(c, pos);
+		addChild(c, pos);
 	}
 
 	public SQLColumn getColumn(int index) throws SQLObjectException {
@@ -726,6 +726,11 @@ public class SQLTable extends SQLObject {
 		addColumn(col, columns.size());
 	}
 
+	/**
+	 * Adds a column to the given position in the table. If magic is enabled the
+	 * primary key sequence of the column may be updated depending on the position
+	 * of the column and the number of primary keys. 
+	 */
 	public void addColumn(SQLColumn col, int pos) throws SQLObjectException {
 		if (getColumnIndex(col) != -1) {
 			col.addReference();
@@ -804,6 +809,10 @@ public class SQLTable extends SQLObject {
     	fireChildAdded(SQLIndex.class, sqlIndex, index);
     }
 
+    /**
+     * Simply tries to add the child to this object without doing any side effects like
+     * correcting index sequences.
+     */
     @Override
     protected void addChildImpl(SPObject child, int index) {
 		if (child instanceof SQLColumn) {

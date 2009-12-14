@@ -1235,4 +1235,30 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         
         System.out.println(table.getSPListeners());
     }
+
+	/**
+	 * This tests inheriting a column at the end of the primary key list and
+	 * defining the inherited column to be a primary key does indeed set the
+	 * primary key sequence number of the column to be a non-null value.
+	 */
+    public void testInheritDefinesPK() throws Exception {
+    	SQLTable t2 = new SQLTable(table.getParentDatabase(), true);
+		t2.setName("Another Test Table");
+		SQLColumn newcol = new SQLColumn(t2, "newcol", Types.INTEGER, 10, 0);
+		t2.addColumn(newcol, 0);
+		newcol.setPrimaryKeySeq(1);
+		assertNotNull("Column should start in primary key", newcol.getPrimaryKeySeq());
+		
+		List<SQLColumn> columns = new ArrayList<SQLColumn>(table.getColumns());
+		
+		//Defining the column to be a primary key
+		table.inherit(table.getPkSize(), newcol, true, TransferStyles.COPY, true);
+		
+		List<SQLColumn> newColumns = new ArrayList<SQLColumn>(table.getColumns());
+		newColumns.removeAll(columns);
+
+		assertEquals(1, newColumns.size());
+		SQLColumn copyCol = newColumns.get(0);
+		assertNotNull(copyCol.getPrimaryKeySeq());
+	}
 }
