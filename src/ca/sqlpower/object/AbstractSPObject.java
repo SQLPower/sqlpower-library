@@ -516,6 +516,16 @@ public abstract class AbstractSPObject implements SPObject {
     }
     
     @Override
+    public int hashCode() {
+    	final int prime = 31;
+    	int result = 17;
+    	
+    	result = prime * result + uuid.hashCode();
+    	
+    	return result;
+    }
+    
+    @Override
     public String toString() {
     	return super.toString() + ", " + getName() + ":" + getUUID();
     }
