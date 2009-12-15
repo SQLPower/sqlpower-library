@@ -1867,7 +1867,11 @@ public class SQLTable extends SQLObject {
                 }
             }
 		} else if (child instanceof SQLRelationship) {
-			return false;
+			if (importedKeys.contains(child)) {
+				removeImportedKey((SQLRelationship) child);
+			} else {
+				removeExportedKey((SQLRelationship) child);
+			}
 		} else if (child instanceof SQLIndex) {
 			return removeIndex((SQLIndex) child);
 		}

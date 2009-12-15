@@ -118,7 +118,7 @@ public class SPChildEvent extends EventObject {
     
     @Override
     public String toString() {
-        return "Parent: " + source + "; child: " + child + "; index " + index;
+        return (type == EventType.ADDED ? "Child Added: [" : "Child Removed: [") + "Parent: " + source + "; child: " + child + "; index " + index + "]";
     }
 
 }

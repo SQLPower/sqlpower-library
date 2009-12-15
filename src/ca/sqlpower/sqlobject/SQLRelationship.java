@@ -1525,7 +1525,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	}
 
 	public List<? extends SPObject> getDependencies() {
-		return Collections.emptyList();
+		return Collections.singletonList(fkTable);
 	}
 
 	public void removeDependency(SPObject dependency) {

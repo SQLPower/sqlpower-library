@@ -113,7 +113,11 @@ public abstract class AbstractSPObject implements SPObject {
     		throw new NullPointerException("Cannot add child listeners that are null.");
     	}
     	synchronized (listeners) {
-    	    listeners.add(l);
+    		if (listeners.contains(l)) {
+    			logger.warn("Listener " + l + " was added twice! Ignoring second add");
+    		} else {
+    			listeners.add(l);
+    		}
     	}
 	}
 
