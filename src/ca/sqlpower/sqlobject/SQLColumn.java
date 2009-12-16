@@ -860,6 +860,32 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      *      key's primary sequence.
      */
 	public void setPrimaryKeySeq(Integer argPrimaryKeySeq, boolean normalizeKey) {
+		setPrimaryKeySeq(argPrimaryKeySeq, normalizeKey, true);
+	}
+
+	/**
+	 * Sets the value of primaryKeySeq, and moves the column to the appropriate
+	 * location in the parent table's column folder. However, if magic is
+	 * disabled on this column or rearrangeColumns is false, this method simply
+	 * sets the PrimaryKeySeq property to the given value, fires the change
+	 * event, and returns without trying to re-order the columns.
+	 * 
+	 * If there is no primary key on this column's table it will create a new
+	 * key with default values.
+	 * 
+	 * @param normalizeKey
+	 *            pass in false if the key should not be normalized when setting
+	 *            this key's primary sequence.
+	 * @param rearrangeColumns
+	 *            If true and magic is enabled the columns will be rearranged to
+	 *            place the column in the correct position in the table as based
+	 *            on the key sequence values. If false then no column
+	 *            rearrangement will be done or normalization regardless of the
+	 *            normalizeKey value. This allows the primary key sequence to be
+	 *            set without needing to disable magic to get the same effect if
+	 *            we want to set the primary key with magic enabled.
+	 */
+	public void setPrimaryKeySeq(Integer argPrimaryKeySeq, boolean normalizeKey, boolean rearrangeColumns) {
 	    // do nothing if there's no change
 	    if ( (primaryKeySeq == null && argPrimaryKeySeq == null) ||
 	         (primaryKeySeq != null && primaryKeySeq.equals(argPrimaryKeySeq)) ) {
@@ -870,7 +896,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         //The check for setNullable() is not moved out is because it is
         //needed to be part of the compound edit if isMagicEnabled is true
         
-        if (!isMagicEnabled()) {
+        if (!isMagicEnabled() || !rearrangeColumns) {
             if (argPrimaryKeySeq != null && !this.autoIncrement) {
                 setNullable(DatabaseMetaData.columnNoNulls);    
             }

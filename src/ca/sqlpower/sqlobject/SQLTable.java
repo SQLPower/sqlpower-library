@@ -925,12 +925,7 @@ public class SQLTable extends SQLObject {
                 interimPkSeq = null;
             }
             
-            try {
-            	col.setMagicEnabled(false);
-            	col.setPrimaryKeySeq(interimPkSeq);
-            } finally {
-            	col.setMagicEnabled(true);
-            }
+            col.setPrimaryKeySeq(interimPkSeq, false, false);
 
             // If the indices are the same, then there's no point in moving the column
             if (oldIdx != newIdx) {
@@ -1005,12 +1000,7 @@ public class SQLTable extends SQLObject {
                     logger.debug("*** normalize " + getName() + " phase 1/2: " + col);
                     if (col.getPrimaryKeySeq() != null) {
                         Integer newPkSeq = new Integer(i);
-                        try {
-                        	col.setMagicEnabled(false);
-                        	col.setPrimaryKeySeq(newPkSeq);
-                        } finally {
-                        	col.setMagicEnabled(true);
-                        }
+                        col.setPrimaryKeySeq(newPkSeq, false, false);
                         i++;
                     }
                 }
