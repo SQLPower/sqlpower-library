@@ -19,9 +19,11 @@
 
 package ca.sqlpower.dao;
 
-import java.util.Collection;
+import java.util.List;
 
 import ca.sqlpower.object.SPObject;
+
+import com.google.common.collect.Multimap;
 
 public abstract class AbstractSPPersisterHelper<T extends SPObject> implements SPPersisterHelper<T> {
 
@@ -46,28 +48,61 @@ public abstract class AbstractSPPersisterHelper<T extends SPObject> implements S
 				+ spo.getClass() + " with name \"" + spo.getName()
 				+ "\" and UUID \"" + spo.getUUID() + "\"";
 	}
-	
+
 	/**
-	 * Finds and removes a property from a {@link Collection} of persisted
-	 * properties.
+	 * Finds and removes a property from a {@link Multimap} of persisted
+	 * properties of a given {@link SPObject}.
 	 * 
-	 * @param persistedProperties
-	 *            {@link Collection} of persisted properties to retrieve and
-	 *            remove the property from.
+	 * @param uuid
+	 *            The UUID of the {@link SPObject} to find and remove the
+	 *            property from.
 	 * @param propertyName
 	 *            The JavaBean property name.
+	 * @param persistedProperties
+	 *            {@link Multimap} of persisted properties to retrieve and
+	 *            remove the property from.
 	 * @return The value of the property.
 	 */
-	protected Object findPropertyAndRemove(Collection<PersistedSPOProperty> persistedProperties, String propertyName) {
-		for (PersistedSPOProperty property : persistedProperties) {
+	protected Object findPropertyAndRemove(
+			String uuid, 
+			String propertyName, 
+			Multimap<String, PersistedSPOProperty> persistedProperties) {
+		for (PersistedSPOProperty property : persistedProperties.get(uuid)) {
 			if (property.getPropertyName().equals(propertyName)) {
 				Object newValue = property.getNewValue();
-				persistedProperties.remove(property);
+				persistedProperties.remove(uuid, property);
 				return newValue;
 			}
 		}
 		// Property might not be persisted because it might be null. 
 		// We therefore need to return null.
+		return null;
+	}
+
+	/**
+	 * Finds the {@link PersistedSPObject} in a {@link List} that matches the
+	 * given parent UUID and class type.
+	 * 
+	 * @param parentUUID
+	 *            The {@link SPObject}'s parent UUID.
+	 * @param classType
+	 *            The simple name of the {@link SPObject} type.
+	 * @param persistedObjects
+	 *            The {@link List} of {@link PersistedSPObject}s to search
+	 *            through.
+	 * @return The matching {@link PersistedSPObject}. If it cannot be found,
+	 *         null is returned.
+	 */
+	protected PersistedSPObject findPersistedSPObject(String parentUUID, String classType, 
+			List<PersistedSPObject> persistedObjects) {
+		for (PersistedSPObject pwo : persistedObjects) {
+			if (pwo.isLoaded())
+				continue;
+			if (pwo.getType().equals(classType)
+					&& pwo.getParentUUID().equals(parentUUID)) {
+				return pwo;
+			}
+		}
 		return null;
 	}
 	

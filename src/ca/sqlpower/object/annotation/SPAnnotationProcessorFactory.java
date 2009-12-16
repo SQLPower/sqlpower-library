@@ -61,6 +61,7 @@ public class SPAnnotationProcessorFactory implements AnnotationProcessorFactory 
 		annotations.add(ConstructorParameter.class.getName());
 		annotations.add(Accessor.class.getName());
 		annotations.add(Mutator.class.getName());
+		annotations.add(MutatorParameter.class.getName());
 	}
 
 	public AnnotationProcessor getProcessorFor(

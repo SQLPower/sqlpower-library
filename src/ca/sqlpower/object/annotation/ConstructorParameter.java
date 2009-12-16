@@ -23,17 +23,44 @@ import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
+import ca.sqlpower.dao.SPPersister;
+import ca.sqlpower.dao.SPPersisterHelper;
+import ca.sqlpower.object.SPObject;
+
 /**
  * This {@link Annotation} defines a constructor parameter within a constructor
  * annotated with {@link Constructor}. This indicates which JavaBean property
- * the annotated constructor parameter applies to.
+ * the annotated constructor parameter applies to. The
+ * {@link SPAnnotationProcessor} should be able to process this annotation to
+ * generate the appropriate constructor arguments when creating the
+ * {@link SPPersisterHelper#commitObject(java.util.Collection)} method.
  */
 @Target(ElementType.PARAMETER)
 public @interface ConstructorParameter {
 
 	/**
-	 * The JavaBean property that will be set to the annotated constructor
-	 * parameter value.
+	 * Determines whether this annotated constructor parameter maps onto an
+	 * {@link SPObject} property. If this is true, the parameter does map onto a
+	 * property and the property name is defined by {@link #propertyName()}.
+	 * Otherwise, either the parameter is an SPObject or a regular primitive
+	 * type. By default, this is true.
 	 */
-	String value();
+	boolean isProperty() default true;
+
+	/**
+	 * This will be the JavaBean property that will be set to the annotated
+	 * constructor parameter value. Note that this field should only and must be
+	 * used if {@link #isProperty()} is false.
+	 */
+	String propertyName() default "";
+
+	/**
+	 * If the annotated parameter is a primitive type, this should be a
+	 * {@link String} representation of the value to be used by session
+	 * {@link SPPersister}s when passing in constructor arguments to create the
+	 * {@link SPObject}. Note that this field should only and must be used if
+	 * {@link #isProperty()} is false.
+	 */
+	String primitiveValue() default "";
+	
 }

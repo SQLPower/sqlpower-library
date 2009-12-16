@@ -23,8 +23,8 @@ import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
+import ca.sqlpower.dao.SPPersisterHelper;
 import ca.sqlpower.object.SPObject;
-
 
 /**
  * This {@link Annotation} defines a setter method in an {@link SPObject} class
@@ -37,7 +37,9 @@ import ca.sqlpower.object.SPObject;
  * {@link SPAnnotationProcessorFactory#supportedAnnotationTypes()} method. The
  * {@link SPAnnotationProcessor} needs to validate that a given method in
  * {@link SPObject} is tagged with this annotation before proceeding to generate
- * source code for the commitProperty method.
+ * source code for the
+ * {@link SPPersisterHelper#commitProperty(SPObject, String, Object, ca.sqlpower.dao.session.SessionPersisterSuperConverter)}
+ * method.
  */
 @Target(ElementType.METHOD)
 public @interface Mutator {

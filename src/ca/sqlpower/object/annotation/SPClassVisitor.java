@@ -19,17 +19,21 @@
 
 package ca.sqlpower.object.annotation;
 
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.dao.SPPersisterHelper;
 import ca.sqlpower.object.SPObject;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.sun.mirror.declaration.AnnotationTypeDeclaration;
@@ -53,7 +57,6 @@ import com.sun.mirror.type.InterfaceType;
 import com.sun.mirror.type.PrimitiveType;
 import com.sun.mirror.type.ReferenceType;
 import com.sun.mirror.type.TypeMirror;
-import com.sun.mirror.type.PrimitiveType.Kind;
 import com.sun.mirror.util.DeclarationVisitor;
 
 /**
@@ -61,8 +64,8 @@ import com.sun.mirror.util.DeclarationVisitor;
  * annotated with {@link Persistable}. For each constructor and method, this
  * visitor looks for the {@link Constructor}, {@link ConstructorParameter},
  * {@link Accessor} and {@link Mutator} annotations and keeps track of data
- * required by the {@link SPAnnotationProcessor} to generate persister helper
- * classes.
+ * required by the {@link SPAnnotationProcessor} to generate
+ * {@link SPPersisterHelper} classes.
  */
 public class SPClassVisitor implements DeclarationVisitor {
 
@@ -70,11 +73,16 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 * @see #getVisitedClass()
 	 */
 	private Class<? extends SPObject> visitedClass;
+	
+	/**
+	 * @see #isAbsClass()
+	 */
+	private boolean absClass;
 
 	/**
 	 * @see #getConstructorParameters()
 	 */
-	private Map<String, Class<?>> constructorParameters = new LinkedHashMap<String, Class<?>>();
+	private List<ConstructorParameterObject> constructorParameters = new ArrayList<ConstructorParameterObject>();
 	
 	/**
 	 * @see #getPropertiesToAccess()
@@ -85,6 +93,11 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 * @see #getPropertiesToMutate()
 	 */
 	private Map<String, Class<?>> propertiesToMutate = new HashMap<String, Class<?>>();
+	
+	/**
+	 * @see #getMutatorExtraParameters()
+	 */
+	private Multimap<String, MutatorParameterObject> mutatorExtraParameters = LinkedHashMultimap.create();
 	
 	/**
 	 * @see #getMutatorThrownTypes()
@@ -108,14 +121,21 @@ public class SPClassVisitor implements DeclarationVisitor {
 	public Class<? extends SPObject> getVisitedClass() {
 		return visitedClass;
 	}
+	
+	/**
+	 * Returns true if the visited class is an abstract class.
+	 */
+	public boolean isAbsClass() {
+		return absClass;
+	}
 
 	/**
-	 * Returns the {@link Map} of constructor arguments that are required to
+	 * Returns the {@link List} of constructor arguments that are required to
 	 * create a new {@link SPObject} of type {@link #visitedClass}. The order of
-	 * this map is guaranteed.
+	 * this list is guaranteed.
 	 */
-	public Map<String, Class<?>> getConstructorParameters() {
-		return Collections.unmodifiableMap(constructorParameters);
+	public List<ConstructorParameterObject> getConstructorParameters() {
+		return Collections.unmodifiableList(constructorParameters);
 	}
 
 	/**
@@ -132,6 +152,15 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 */
 	public Map<String, Class<?>> getPropertiesToMutate() {
 		return Collections.unmodifiableMap(propertiesToMutate);
+	}
+
+	/**
+	 * Returns the {@link Multimap} of JavaBean setter method names that mutate
+	 * persistable properties, mapped to {@link MutatorParameterObject}s that contain
+	 * values for an {@link SPPersister} to use.
+	 */
+	public Multimap<String, MutatorParameterObject> getMutatorExtraParameters() {
+		return Multimaps.unmodifiableMultimap(mutatorExtraParameters);
 	}
 
 	/**
@@ -160,12 +189,14 @@ public class SPClassVisitor implements DeclarationVisitor {
 	public Set<String> getPropertiesToPersistOnlyIfNonNull() {
 		return Collections.unmodifiableSet(propertiesToPersistOnlyIfNonNull);
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public void visitClassDeclaration(ClassDeclaration d) {
 		if (d.getAnnotation(Persistable.class) != null) {
 			try {
 				visitedClass = (Class<? extends SPObject>) Class.forName(d.getQualifiedName());
+				absClass = Modifier.isAbstract(visitedClass.getModifiers());
+				
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
 			}
@@ -177,21 +208,32 @@ public class SPClassVisitor implements DeclarationVisitor {
 			for (ParameterDeclaration pd : d.getParameters()) {
 				ConstructorParameter cp = pd.getAnnotation(ConstructorParameter.class);
 				if (cp != null) {
-					TypeMirror type = pd.getType();
-					
-					if (type instanceof PrimitiveType) {
-						constructorParameters.put(cp.value(), 
-								convertPrimitiveToClass(((PrimitiveType) type).getKind()));
+					try {
+						TypeMirror type = pd.getType();
+						Class<?> c = SPAnnotationProcessorUtils.convertTypeMirrorToClass(type);
+						String value = null;
 						
-					} else if (type instanceof ClassType || type instanceof InterfaceType) {
-						try {
-							Class<?> c = Class.forName(pd.getType().toString());
-							constructorParameters.put(cp.value(), c);
-							imports.add(c.getName());
-						} catch (ClassNotFoundException e) {
-							e.printStackTrace();
+						boolean property = cp.isProperty();
+						String name;
+						
+						if (property) {
+							name = cp.propertyName();
+						} else {
+							name = pd.getSimpleName();
+							value = cp.primitiveValue();
 						}
-						
+
+						if (type instanceof PrimitiveType) {
+							constructorParameters.add(
+									new ConstructorParameterObject(property, c, name, value));
+
+						} else if (type instanceof ClassType || type instanceof InterfaceType) {
+							constructorParameters.add(
+									new ConstructorParameterObject(property, c, name, null));
+							imports.add(c.getName());
+						}
+					} catch (ClassNotFoundException e) {
+						e.printStackTrace();
 					}
 				}
 			}
@@ -216,17 +258,13 @@ public class SPClassVisitor implements DeclarationVisitor {
 		Class<?> c = null;
 
 		try {
-			if (type instanceof PrimitiveType) {
-				c = convertPrimitiveToClass(((PrimitiveType) type).getKind());
-			} else if (type instanceof ClassType || type instanceof InterfaceType) {
-				c = Class.forName(type.toString());
-			}
+			c = SPAnnotationProcessorUtils.convertTypeMirrorToClass(type);
 
 			if (accessorAnnotation != null) {
 				propertiesToAccess.put(methodName, c);
-				if (!accessorAnnotation.value()) {
+				if (accessorAnnotation.persistOnlyIfNonNull()) {
 					propertiesToPersistOnlyIfNonNull.add(
-							SPAnnotationProcessor.convertMethodToProperty(methodName));
+							SPAnnotationProcessorUtils.convertMethodToProperty(methodName));
 				}
 				
 			} else {
@@ -238,6 +276,20 @@ public class SPClassVisitor implements DeclarationVisitor {
 				}
 
 				propertiesToMutate.put(methodName, c);
+				
+				for (ParameterDeclaration pd : d.getParameters()) {
+					MutatorParameter mutatorParameterAnnotation = 
+						pd.getAnnotation(MutatorParameter.class);
+					
+					if (mutatorParameterAnnotation != null) {
+						mutatorExtraParameters.put(methodName, 
+								new MutatorParameterObject(
+										SPAnnotationProcessorUtils.convertTypeMirrorToClass(
+												pd.getType()),
+										pd.getSimpleName(), 
+										mutatorParameterAnnotation.value()));
+					}
+				}
 			}
 			
 			imports.add(c.getName());
@@ -297,37 +349,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 
 	public void visitTypeParameterDeclaration(TypeParameterDeclaration d) {
 		// no-op		
-	}
-
-	/**
-	 * Converts a primitive data type to the equivalent {@link Class} type.
-	 * 
-	 * @param kind
-	 *            The {@link PrimitiveType.Kind} to convert.
-	 * @return The equivalent {@link Class} of the primitive type.
-	 */
-	private Class<?> convertPrimitiveToClass(Kind kind) {
-		if (kind.equals(Kind.BOOLEAN)) {
-			return Boolean.class;
-		} else if (kind.equals(Kind.BYTE)) {
-			return Byte.class;
-		} else if (kind.equals(Kind.CHAR)) {
-			return Character.class;
-		} else if (kind.equals(Kind.DOUBLE)) {
-			return Double.class;
-		} else if (kind.equals(Kind.FLOAT)) {
-			return Float.class;
-		} else if (kind.equals(Kind.INT)) {
-			return Integer.class;
-		} else if (kind.equals(Kind.LONG)) {
-			return Long.class;
-		} else if (kind.equals(Kind.SHORT)) {
-			return Short.class;
-		} else {
-			throw new IllegalStateException("The PrimitiveType Kind " + 
-					kind.name() + " is not recognized. This exception " +
-							"should never be thrown.");
-		}
 	}
 
 }
