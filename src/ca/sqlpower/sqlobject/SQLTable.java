@@ -630,7 +630,7 @@ public class SQLTable extends SQLObject {
 					c.primaryKeySeq = null;
 				}
 			}
-			addColumn(c, pos);
+			addColumn(c, pos, false);
 			pos++;
 		}
 		commit();
@@ -732,12 +732,34 @@ public class SQLTable extends SQLObject {
 	 * of the column and the number of primary keys. 
 	 */
 	public void addColumn(SQLColumn col, int pos) throws SQLObjectException {
+		addColumn(col, pos, true);
+	}
+
+	/**
+	 * Adds a column to the given position in the table. If magic is enabled and
+	 * correctPK is true the primary key sequence of the column may be updated
+	 * depending on the position of the column and the number of primary keys.
+	 * 
+	 * @param col
+	 *            The column to add.
+	 * @param pos
+	 *            The position to add the column to.
+	 * @param correctPK
+	 *            If true and magic is enabled the column will be placed in the
+	 *            primary key if it is above at least one primary key column in
+	 *            terms of position in the table. If false the primary key
+	 *            sequence of the column will be left as is and normalize will
+	 *            need to be called on the table to correct the sequence of
+	 *            columns in the primary key.
+	 * @throws SQLObjectException
+	 */
+	public void addColumn(SQLColumn col, int pos, boolean correctPK) throws SQLObjectException {
 		if (getColumnIndex(col) != -1) {
 			col.addReference();
 			return;
 		}
 
-		if (isMagicEnabled()) {
+		if (isMagicEnabled() && correctPK) {
 		    boolean addToPK = false;
 		    int pkSize = getPkSize();
 		    if (getColumns().size() > 0 && pos < pkSize) {
@@ -913,7 +935,7 @@ public class SQLTable extends SQLObject {
             // If the indices are the same, then there's no point in moving the column
             if (oldIdx != newIdx) {
             	removeColumn(col);
-            	addColumn(col, newIdx);
+            	addColumn(col, newIdx, false);
             }
 
             normalizePrimaryKey();
