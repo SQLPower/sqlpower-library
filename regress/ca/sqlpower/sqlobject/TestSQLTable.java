@@ -1261,4 +1261,21 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
 		SQLColumn copyCol = newColumns.get(0);
 		assertNotNull(copyCol.getPrimaryKeySeq());
 	}
+
+	/**
+	 * Tests if the first column in the primary key is moved to be the last
+	 * column in the primary key it actually becomes the last column in the
+	 * primary key and not the first column not inside the primary key.
+	 */
+    public void testFirstPKMovedToLastPK() throws Exception {
+    	SQLColumn col = table.getColumn(0);
+    	assertEquals(3, table.getPkSize());
+		assertNotNull(col.getPrimaryKeySeq());
+		
+		table.changeColumnIndex(0, 2, true);
+		
+		assertNotNull(col.getPrimaryKeySeq());
+		assertEquals(new Integer(2), col.getPrimaryKeySeq());
+		assertEquals(3, table.getPkSize());
+	}
 }
