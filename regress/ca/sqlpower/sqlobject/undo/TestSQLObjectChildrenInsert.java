@@ -147,7 +147,7 @@ public class TestSQLObjectChildrenInsert extends TestCase {
     private SQLRelationship makeSQLRelationship() {
         return new SQLRelationship() {
             @Override
-            protected void setParent(SQLObject parent) {
+            public void setParent(SPObject parent) {
                 // no op!
             }
         };

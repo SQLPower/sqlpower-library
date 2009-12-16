@@ -82,11 +82,13 @@ public interface SPObject {
      */
     boolean allowsChildren();
 
-    /**
-     * Returns the position in the list that would be returned by getChildren()
-     * that the first object of type childClass is, or where it would be if
-     * there were any children of that type.
-     */
+	/**
+	 * Returns the position in the list that would be returned by getChildren()
+	 * that the first object of type childClass is, or where it would be if
+	 * there were any children of that type. If this class does not contain
+	 * children of type <code>childType</code>, this throws an
+	 * IllegalArgumentException
+	 */
     int childPositionOffset(Class<? extends SPObject> childType);
 
 	/**

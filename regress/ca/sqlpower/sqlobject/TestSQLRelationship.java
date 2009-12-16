@@ -348,7 +348,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 	
 	public void testFKColManagerRemovesImportedKey() throws SQLObjectException {
 		assertTrue("Parent table should export rel1",parentTable.getExportedKeys().contains(rel1));
-		assertTrue("childTable1 should import rel1",childTable1.getImportedKeys().contains(rel1));
+		assertTrue("childTable1 should import rel1",SQLRelationship.getExportedKeys(childTable1.getImportedKeys()).contains(rel1));
 		assertEquals("Child's imported count is whacked out", 1, childTable1.getImportedKeys().size());
 		
 		assertNotNull("Missing imported key", childTable1.getColumnByName("child_pkcol_1"));
@@ -358,7 +358,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 		parentTable.removeExportedKey(rel1);
 
 		assertFalse("Parent table should not export rel1 any more", parentTable.getExportedKeys().contains(rel1));
-		assertFalse("childTable1 should not import rel1 any more", childTable1.getImportedKeys().contains(rel1));
+		assertFalse("childTable1 should not import rel1 any more", SQLRelationship.getExportedKeys(childTable1.getImportedKeys()).contains(rel1));
 				
 		// the following tests depend on FKColumnManager behaviour, not UndoManager
 		assertEquals("Relationship still attached to child", 0, childTable1.getImportedKeys().size());

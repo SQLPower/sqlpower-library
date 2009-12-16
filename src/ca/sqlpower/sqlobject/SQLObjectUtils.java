@@ -30,6 +30,7 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.ObjectDependentException;
+import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 
 public class SQLObjectUtils {
     
@@ -160,8 +161,8 @@ public class SQLObjectUtils {
                 parent.getChildByName(newChild.getName()).updateToMatch(newChild);
             } else {
                 if (newChild instanceof SQLRelationship) {
-                    SQLRelationship r = (SQLRelationship) newChild;
-                    r.attachRelationship(r.getPkTable(), r.getFkTable(), false);
+                	SQLRelationship r = (SQLRelationship) newChild;
+                	r.attachRelationship(r.getPkTable(), r.getFkTable(), false);
                 } else {
                     parent.addChild(newChild);
                 }
@@ -171,23 +172,14 @@ public class SQLObjectUtils {
         // get rid of removed children
         oldChildNames.removeAll(newChildNames);
         for (String removedColName : oldChildNames) {
-            SQLObject removeMe = parent.getChildByName(removedColName);
-            if (removeMe instanceof SQLRelationship) {
-            	if (parent instanceof SQLTable && 
-            			((SQLTable) parent).getImportedKeys().contains(removeMe)) {
-            		SQLRelationship r = (SQLRelationship) removeMe;
-            		r.getPkTable().removeExportedKey(r);
-            		r.getFkTable().removeImportedKey(r);
-            	}
-            } else {
-                try {
-					parent.removeChild(removeMe);
-				} catch (IllegalArgumentException e) {
-					throw new SQLObjectException(e);
-				} catch (ObjectDependentException e) {
-					throw new SQLObjectException(e);
-				}
-            }
+        	SQLObject removeMe = parent.getChildByName(removedColName);
+        	try {
+        		parent.removeChild(removeMe);
+        	} catch (IllegalArgumentException e) {
+        		throw new SQLObjectException(e);
+        	} catch (ObjectDependentException e) {
+        		throw new SQLObjectException(e);
+        	}
         }
     
     }

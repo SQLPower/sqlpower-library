@@ -62,6 +62,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     private static Logger logger = Logger.getLogger(SQLRelationship.class);
     
     private List<ColumnMapping> mappings = new ArrayList<ColumnMapping>();
+    
+    private SQLImportedKey foreignKey;
 
     /**
      * The enumeration of all referential integrity constraint checking
@@ -203,15 +205,20 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
             return code;
         }
     }
+
+    public static List<SQLRelationship> getExportedKeys(List<SQLImportedKey> foreignKeys) {
+    	List<SQLRelationship> primaryKeys = new ArrayList<SQLRelationship>();
+    	for (SQLImportedKey k : foreignKeys) {
+    		primaryKeys.add(k.getRelationship());
+    	}
+    	return primaryKeys;
+    }
     
 	public static final int ZERO = 1;
 	public static final int ONE = 2;
 	public static final int MANY = 4;
 	public static final int PKCOLUMN = 4;
 	public static final int FKCOLUMN = 5;
-
-	protected SQLTable pkTable;
-	protected SQLTable fkTable;
 
 	/**
 	 * The rule for what the DBMS should do to the child (imported) key value when its
@@ -358,20 +365,27 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     }
 
 	public void attachListeners() throws SQLObjectException {
-		SQLPowerUtils.listenToHierarchy(pkTable, fkColumnManager);
-		SQLPowerUtils.listenToHierarchy(fkTable, fkColumnManager);
-
+		fkColumnManager.target = getParent();
+		SQLPowerUtils.listenToHierarchy(getParent(), fkColumnManager);
+		SQLPowerUtils.listenToHierarchy(foreignKey.getParent(), fkColumnManager);
 	}
 
 	private void detachListeners(){
-        if (pkTable != null)
-            SQLPowerUtils.unlistenToHierarchy(pkTable, fkColumnManager);
-        if (fkTable != null)
-            SQLPowerUtils.unlistenToHierarchy(fkTable, fkColumnManager);
+        if (fkColumnManager.target != null)
+            SQLPowerUtils.unlistenToHierarchy(fkColumnManager.target, fkColumnManager);
+        if (foreignKey.getParent() != null)
+            SQLPowerUtils.unlistenToHierarchy(foreignKey.getParent(), fkColumnManager);
 	}
 
 	public void attachRelationship(SQLTable pkTable, SQLTable fkTable, boolean autoGenerateMapping) throws SQLObjectException {
 		attachRelationship(pkTable, fkTable, autoGenerateMapping, true);
+	}
+	
+	public void attachRelationship(SQLTable pkTable, SQLTable fkTable, boolean autoGenerateMapping, boolean attachListeners) throws SQLObjectException {
+		setParent(pkTable);
+		foreignKey = new SQLImportedKey(this);
+		foreignKey.setParent(fkTable);
+		attachRelationship(autoGenerateMapping, attachListeners);
 	}
 
 	/**
@@ -391,40 +405,38 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 *            attachListeners must be called elsewhere.
 	 * @throws SQLObjectException
 	 */
-	public void attachRelationship(SQLTable pkTable, SQLTable fkTable, boolean autoGenerateMapping, boolean attachListeners) throws SQLObjectException {
-		if(pkTable == null) throw new NullPointerException("Null pkTable not allowed");
+	private void attachRelationship(boolean autoGenerateMapping, boolean attachListeners) throws SQLObjectException {
+		if(getParent() == null) throw new NullPointerException("Null pkTable not allowed");
+		SQLTable fkTable = foreignKey.getParent();
 		if(fkTable == null) throw new NullPointerException("Null fkTable not allowed");
-
-		SQLTable oldPkt = this.pkTable;
-		SQLTable oldFkt = this.fkTable;
 
 		detachListeners();
 
-		this.pkTable = pkTable;
-		this.fkTable = fkTable;
-
-		firePropertyChange("pkTable",oldPkt,pkTable);
-		firePropertyChange("fkTable",oldFkt,fkTable);
-
+		boolean alreadyExists = false;
+		
+		for (SQLRelationship r : getParent().getExportedKeysWithoutPopulating()) {
+		    if (r.getFkTable().equals(fkTable)) {
+		        alreadyExists = true;
+		        break;
+		    }
+		}
+		
+		if (!getParent().getChildrenWithoutPopulating(SQLRelationship.class).contains(this)) {
+			getParent().addChild(this);
+		}
+		
+		if (!fkTable.getChildrenWithoutPopulating(SQLImportedKey.class).contains(foreignKey)) {
+			fkTable.addChild(foreignKey);
+		}
+		
 		try {
 			fkTable.setMagicEnabled(false);
 
-			boolean alreadyExists = false;
-			
-			for (SQLRelationship r : pkTable.getExportedKeysWithoutPopulating()) {
-			    if (r.getFkTable().equals(fkTable)) {
-			        alreadyExists = true;
-			        break;
-			    }
-			}
-			
-			pkTable.addExportedKey(this);
-			fkTable.addImportedKey(this);
 			if (autoGenerateMapping) {
 				// iterate over a copy of pktable's column list to avoid comodification
 				// when creating a self-referencing table
-				java.util.List<SQLColumn> pkColListCopy = new ArrayList<SQLColumn>(pkTable.getColumns().size());
-				pkColListCopy.addAll(pkTable.getColumns());
+				java.util.List<SQLColumn> pkColListCopy = new ArrayList<SQLColumn>(getParent().getColumns().size());
+				pkColListCopy.addAll(getParent().getColumns());
 
 				for (SQLColumn pkCol : pkColListCopy) {
 					if (pkCol.getPrimaryKeySeq() == null) break;
@@ -432,7 +444,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 					SQLColumn match = fkTable.getColumnByName(pkCol.getName());
 					SQLColumn fkCol = new SQLColumn(pkCol);
 					fkCol.setPrimaryKeySeq(null);
-                    if (pkTable == fkTable) {
+                    if (getParent().equals(fkTable)) {
                         // self-reference should never hijack the PK!
                         String colName = "Parent_" + fkCol.getName();
                         fkCol.setName(generateUniqueColumnName(colName, fkTable));
@@ -504,7 +516,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
                 if (identifying) {
                     if (fkCol.getPrimaryKeySeq() == null) {
                         logger.debug("realizeMapping: fkCol PK seq is null. Inserting at end of PK.");
-                        insertIdx = fkTable.getPkSize();
+                        insertIdx = foreignKey.getParent().getPkSize();
                     } else {
                         logger.debug("realizeMapping: using existing fkCol PK seq " + fkCol.getPrimaryKeySeq());
                         insertIdx = fkCol.getPrimaryKeySeq();
@@ -513,7 +525,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
                     if (fkCol.getPrimaryKeySeq() != null) {
                         insertIdx = fkCol.getPrimaryKeySeq();
                     } else {
-                        insertIdx = fkTable.getColumns().size();
+                        insertIdx = foreignKey.getParent().getColumns().size();
                     }
                 }
                 
@@ -521,13 +533,13 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
                 // This might bump up the reference count (which would be
                 // correct)
-                fkTable.addColumn(fkCol, insertIdx);
+                foreignKey.getParent().addColumn(fkCol, insertIdx);
                 logger.debug("realizeMapping: Added column '" + fkCol.getName() + "' at index " + insertIdx);
                 if (fkCol.getReferenceCount() <= 0)
                     throw new IllegalStateException("Created a column with 0 references!");
 
                 if (identifying && fkCol.getPrimaryKeySeq() == null) {
-                    fkCol.setPrimaryKeySeq(new Integer(fkTable.getPkSize()));
+                    fkCol.setPrimaryKeySeq(new Integer(foreignKey.getParent().getPkSize()));
                 }
 
             } finally {
@@ -558,9 +570,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
      *             if a database error occurs or if the given table's parent
      *             database is not marked as populated.
      */
-	static List<SQLRelationship> fetchImportedKeys(SQLTable table)
+	static List<SQLRelationship> fetchExportedKeys(SQLTable table)
 	throws SQLObjectException {
-		boolean allRelationshipsAdded = true;
 		SQLDatabase db = table.getParentDatabase();
 		if (!db.isPopulated()) {
 			throw new SQLObjectException("relationship.unpopulatedTargetDatabase");
@@ -572,7 +583,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		    con = table.getParentDatabase().getConnection();
 		    DatabaseMetaData dbmd = con.getMetaData();
 			crs = new CachedRowSet();
-			tempRS = dbmd.getImportedKeys(table.getCatalogName(),
+			tempRS = dbmd.getExportedKeys(table.getCatalogName(),
                         			      table.getSchemaName(),
                         			      table.getName());
             crs.populate(tempRS);
@@ -605,50 +616,59 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 					r = new SQLRelationship();
 					newKeys.add(r);
 				}
-				ColumnMapping m = new ColumnMapping();
-				r.addMapping(m);
-				String pkCat = crs.getString(1);
-				String pkSchema = crs.getString(2);
-				String pkTableName = crs.getString(3);
-				
-				r.pkTable = db.getTableByName(pkCat,  // catalog
-											  pkSchema,  // schema
-											  pkTableName); // table
-				
-				if (r.pkTable == null) {
-				    logger.error("addImportedRelationshipsToTable: Couldn't find exporting table "
-				            +pkCat+"."+pkSchema+"."+pkTableName
-				            +" in target database!");
-				    continue;
-				}
-				
-				logger.debug("Looking for pk column '"+crs.getString(4)+"' in table '"+r.pkTable+"'");
-				m.pkColumn = r.pkTable.getColumnByName(crs.getString(4));
-				if (m.pkColumn == null) {
-					throw new SQLObjectException("relationship.populate.nullPkColumn");
-				}
+				try {
+					r.setMagicEnabled(false);
+					ColumnMapping m = new ColumnMapping();
+					r.addMapping(m);
+					String pkCat = crs.getString(1);
+					String pkSchema = crs.getString(2);
+					String pkTableName = crs.getString(3);
 
-				r.fkTable = db.getTableByName(crs.getString(5),  // catalog
-											  crs.getString(6),  // schema
-											  crs.getString(7)); // table
-				if (r.fkTable != table) {
-					throw new IllegalStateException("fkTable did not match requested table");
+					r.setParent(db.getTableByName(pkCat,  // catalog
+							pkSchema,  // schema
+							pkTableName)); // table
+
+					if (r.getParent() == null) {
+						logger.error("addImportedRelationshipsToTable: Couldn't find exporting table "
+								+pkCat+"."+pkSchema+"."+pkTableName
+								+" in target database!");
+						continue;
+					}
+
+					if (r.getParent() != table) {
+						throw new IllegalStateException("fkTable did not match requested table");
+					}
+					
+					logger.debug("Looking for pk column '"+crs.getString(4)+"' in table '"+r.getParent()+"'");
+					m.pkColumn = r.getParent().getColumnByName(crs.getString(4));
+					if (m.pkColumn == null) {
+						throw new SQLObjectException("relationship.populate.nullPkColumn");
+					}
+					
+					SQLImportedKey foreignKey = new SQLImportedKey(r);
+					foreignKey.setParent(db.getTableByName(	crs.getString(5),  // catalog
+							crs.getString(6), // schema
+							crs.getString(7))); // table
+					r.setForeignKey(foreignKey);
+
+					m.fkColumn = r.getFkTable().getColumnByName(crs.getString(8));
+					if (m.fkColumn == null) {
+						throw new SQLObjectException("relationship.populate.nullFkColumn");
+					}
+					// column 9 (currentKeySeq) handled above
+					r.updateRule = UpdateDeleteRule.ruleForCode(crs.getInt(10));
+					r.deleteRule = UpdateDeleteRule.ruleForCode(crs.getInt(11));
+					r.setName(crs.getString(12));
+					try {
+						r.deferrability = Deferrability.ruleForCode(crs.getInt(14));
+					} catch (IllegalArgumentException ex) {
+						logger.warn("Invalid code when reverse engineering" +
+								" relationship. Defaulting to NOT_DEFERRABLE.", ex);
+						r.deferrability = Deferrability.NOT_DEFERRABLE;
+					}
+				} finally {
+					r.setMagicEnabled(true);
 				}
-				m.fkColumn = r.fkTable.getColumnByName(crs.getString(8));
-				if (m.fkColumn == null) {
-					throw new SQLObjectException("relationship.populate.nullFkColumn");
-				}
-				// column 9 (currentKeySeq) handled above
-				r.updateRule = UpdateDeleteRule.ruleForCode(crs.getInt(10));
-				r.deleteRule = UpdateDeleteRule.ruleForCode(crs.getInt(11));
-				r.setName(crs.getString(12));
-                try {
-                    r.deferrability = Deferrability.ruleForCode(crs.getInt(14));
-                } catch (IllegalArgumentException ex) {
-                    logger.warn("Invalid code when reverse engineering" +
-                            " relationship. Defaulting to NOT_DEFERRABLE.", ex);
-                    r.deferrability = Deferrability.NOT_DEFERRABLE;
-                }
 			}
 
 			return newKeys;
@@ -663,7 +683,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			}
 		}
 	}
-
+	
 	public ColumnMapping getMappingByPkCol(SQLColumn pkcol) {
 		for (ColumnMapping m : mappings) {
 			if (m.pkColumn == pkcol) {
@@ -755,6 +775,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 */
 	protected class RelationshipManager implements SPListener {
 		
+		private SPObject target;
+		
 		public void childAdded(SPChildEvent e) {
 			if (!((SQLObject) e.getSource()).isMagicEnabled()){
 				logger.debug("Magic disabled; ignoring children inserted event "+e);
@@ -767,7 +789,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			SQLPowerUtils.listenToHierarchy(e.getChild(), this);
 			
 			// Code from dbChildrenInserted
-			if (e.getSource() == pkTable && e.getChildType() == SQLColumn.class) {
+			if (e.getSource() == getParent() && e.getChildType() == SQLColumn.class) {
 				SQLColumn col = (SQLColumn) e.getChild();
 				try {
 					if (col.getPrimaryKeySeq() != null) {
@@ -791,38 +813,38 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 						" child="+e.getChild());
 			}
 			SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
-			
+
 			// Code from dbChildrenRemoved
-			if (e.getSource() == pkTable) {
-				if (e.getChildType() == SQLRelationship.class) {
-					SQLRelationship r = (SQLRelationship) e.getChild();
-					if (pkTable == r.getPkTable() && r == SQLRelationship.this) {
-						try {
-							r.getFkTable().removeImportedKey(r);
-							logger.debug("Removing references for mappings: "+getChildren());
-							
-							// references to fk columns are removed in reverse order in case
-							// this relationship is reconnected in the future. (if not removed
-							// in reverse order, the PK sequence numbers will change as each
-							// mapping is removed and the subsequent column indexes shift down)
-							List<ColumnMapping> mappings = new ArrayList<ColumnMapping>(r.getChildren(ColumnMapping.class));
-							Collections.sort(mappings, Collections.reverseOrder(new ColumnMappingFKColumnOrderComparator()));
-							for (ColumnMapping cm : mappings) {
-								logger.debug("Removing reference to fkcol "+ cm.getFkColumn());
-								cm.getFkColumn().removeReference();
-							}
-						} finally {
-							detachListeners();
-						}
+			if (e.getChildType() == SQLRelationship.class) {
+				if (e.getChild() == SQLRelationship.this) {
+					detachListeners();
+					try {
+						foreignKey.setRelationship(null);
+						foreignKey.getParent().removeChild(foreignKey);
+					} catch (ObjectDependentException e1) {
+						throw new RuntimeException(e1); // This should not happen
 					}
 
-				} else if (e.getChildType() == SQLColumn.class) {
-					SQLColumn col = (SQLColumn) e.getChild();
-					try {
-						ensureNotInMapping(col);
-					} catch (SQLObjectException ex) {
-						logger.warn("Couldn't remove mapped FK columns", ex);
+					logger.debug("Removing references for mappings: "+getChildren());
+
+					// references to fk columns are removed in reverse order in case
+					// this relationship is reconnected in the future. (if not removed
+					// in reverse order, the PK sequence numbers will change as each
+					// mapping is removed and the subsequent column indexes shift down)
+					List<ColumnMapping> mappings = new ArrayList<ColumnMapping>(getChildren(ColumnMapping.class));
+					Collections.sort(mappings, Collections.reverseOrder(new ColumnMappingFKColumnOrderComparator()));
+					for (ColumnMapping cm : mappings) {
+						logger.debug("Removing reference to fkcol "+ cm.getFkColumn());
+						cm.getFkColumn().removeReference();
 					}
+				}
+
+			} else if (e.getChildType() == SQLColumn.class) {
+				SQLColumn col = (SQLColumn) e.getChild();
+				try {
+					ensureNotInMapping(col);
+				} catch (SQLObjectException ex) {
+					logger.warn("Couldn't remove mapped FK columns", ex);
 				}
 			}
 		}
@@ -843,7 +865,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			if (e.getSource() instanceof SQLColumn) {
 				SQLColumn col = (SQLColumn) e.getSource();
 
-				if (col.getParent() == pkTable) {
+				if (col.getParent() != null && col.getParent().equals(getParent())) {
 					if (prop.equals("primaryKeySeq")) {
 						try {
 							if (col.getPrimaryKeySeq() != null) {
@@ -894,10 +916,10 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 								+" changed while monitoring pkTable");
 					}
 				}
-			} else if (e.getSource() == fkTable || e.getSource() == pkTable) {
+			} else if (e.getSource().equals(foreignKey.getParent()) || e.getSource().equals(getParent())) {
 				if (prop.equals("parent") && e.getNewValue() == null) {
 					// this will cause a callback to this listener which removes the imported key from fktable
-					pkTable.removeExportedKey(SQLRelationship.this);
+					getParent().removeExportedKey(SQLRelationship.this);
 				}
 			}
 		}
@@ -929,20 +951,20 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		        }
                 
                 SQLColumn fkcol;
-		        if (pkcol.getParent().equals(fkTable)) {
+		        if (pkcol.getParent().equals(foreignKey.getParent())) {
                     // self-reference! must create new column!
                     fkcol = new SQLColumn(pkcol);
                     fkcol.setName(generateUniqueColumnName("Parent_"+pkcol.getName(), pkcol.getParent()));
                 } else {
-                    fkcol = fkTable.getColumnByName(pkcol.getName());
+                    fkcol = foreignKey.getParent().getColumnByName(pkcol.getName());
                     if (fkcol == null) fkcol = new SQLColumn(pkcol);
                 }
                 
                 // this either adds the new column or bumps up the refcount on existing col
-		        fkTable.addColumn(fkcol);
+		        foreignKey.getParent().addColumn(fkcol);
                 
-		        if (identifying && pkTable != fkTable) {
-		            fkcol.setPrimaryKeySeq(new Integer(fkTable.getPkSize()));
+		        if (identifying && getParent() != foreignKey.getParent()) {
+		            fkcol.setPrimaryKeySeq(new Integer(foreignKey.getParent().getPkSize()));
 		        } else {
 		            // XXX might only want to do this if fkcol was newly created
 		            fkcol.setPrimaryKeySeq(null);
@@ -986,50 +1008,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	}
 
 	// ---------------------- SQLRelationship SQLObject support ------------------------
-
-	/**
-	 * Returns the table that holds the primary keys (the imported table).
-     * <p>
-     * XXX this should return the parent folder of the pk table!
-	 */
-	@Override
-	public SQLTable getParent() {
-		return pkTable;
-	}
-
-	/**
-	 * This method is useful, and has side effects.
-	 *
-     * setParent detaches the relation manager if newParent is null
-     * and reattaches the relation manager if newParent is not null
-     *
-	 * @param newParent If this is the same as pkTable or fkTable,
-	 * this method returns normally.  Otherwise, this method throws
-	 * IllegalArgumentException.
-	 * @throws SQLObjectException
-	 * @throws IllegalArgumentException if newParent is anything other
-	 * than this relationship's pkTable.exportedKeysFolder or
-	 * fkTable.importedKeysFolder
-	 */
-	protected void setParent(SQLObject newParent) {
-	    logger.info("Setting parent of " + this + " to "+ newParent);
-	    try {
-	        if (newParent == null) {
-                if (--parentCount == 0) {
-                    detachListeners();
-                }
-	        } else if ( (pkTable != null && newParent != pkTable)
-	                && (fkTable != null && newParent != fkTable)) {
-	            throw new IllegalArgumentException
-	            ("You can't change the parent of a SQLRelationship this way");
-	        } else {
-	            attachListeners();
-                parentCount++;
-	        }
-	    }catch (SQLObjectException ae) {
-	        throw new SQLObjectRuntimeException(ae);
-	    }
-	}
 
 	/**
 	 * Returns the foreign key name.
@@ -1163,7 +1141,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			if (identifying) {
 				for (ColumnMapping m : getChildren(ColumnMapping.class)) {
 					if (m.getFkColumn().getPrimaryKeySeq() == null) {
-						m.getFkColumn().setPrimaryKeySeq(new Integer(fkTable.getPkSize()));
+						m.getFkColumn().setPrimaryKeySeq(new Integer(foreignKey.getParent().getPkSize()));
 					}
 				}
 			} else {
@@ -1175,37 +1153,121 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			}
 		}
 	}
-
-
+	
+	public SQLTable getParent() {
+		return (SQLTable) super.getParent();
+	}
+	
 	public SQLTable getPkTable() {
-		return pkTable;
+		return getParent();
 	}
 
-	public void setPkTable(SQLTable pkt) throws SQLObjectException {
-		SQLTable oldPkt = pkTable;
-		if (pkTable != null) {
-			detachListeners();
-		}
-		pkTable = pkt;
-		attachListeners();
-		firePropertyChange("pkTable",oldPkt,pkt);
+	public SQLImportedKey getForeignKey() {
+		return foreignKey;
 	}
-
+	
+	public void setForeignKey(SQLImportedKey k) {
+		SQLImportedKey oldVal = foreignKey;
+		foreignKey = k;
+		firePropertyChange("foreignKey", oldVal, k);
+	}
+	
 	public SQLTable getFkTable() {
-		return fkTable;
-	}
-
-	public void setFkTable(SQLTable fkt) throws SQLObjectException {
-		SQLTable oldFkt = fkTable;
-		if (fkTable != null) {
-			detachListeners();
-
+		if (foreignKey != null) {
+			return foreignKey.getParent();
+		} else {
+			return null;
 		}
-		fkTable = fkt;
-		attachListeners();
-		firePropertyChange("fkTable",oldFkt,fkt);
 	}
 
+	/**
+	 * This class acts a wrapper around a SQLRelationship. It should be added to
+	 * the foreign key table as a child, and is depended on by the Relationship.
+	 */
+	public static class SQLImportedKey extends SQLObject {
+
+		private SQLRelationship relationship;
+		
+		public SQLImportedKey() {
+			super();
+		}
+		
+		public SQLImportedKey(SQLRelationship relationship) {
+			super();
+			this.relationship = relationship;
+		}
+		
+		@Override
+		public boolean allowsChildren() {
+			return false;
+		}
+		
+		@Override
+		public String getName() {
+			if (relationship != null) {
+				return relationship.getName();
+			} else {
+				return super.getName();
+			}
+		}
+		
+		@Override
+		public SQLTable getParent() {
+			return (SQLTable) super.getParent();
+		}
+
+		@Override
+		public List<? extends SQLObject> getChildrenWithoutPopulating() {
+			return Collections.emptyList();
+		}
+
+		@Override
+		public String getShortDisplayName() {
+			return relationship.getShortDisplayName();
+		}
+
+		@Override
+		protected void populateImpl() throws SQLObjectException {
+			//no-op
+		}
+
+		@Override
+		protected boolean removeChildImpl(SPObject child) {
+			return false;
+		}
+
+		public int childPositionOffset(Class<? extends SPObject> childType) {
+			throw new IllegalArgumentException("Cannot retrieve the child position offset of " + 
+					childType + " but " + getClass() + " does not allow children.");
+		}
+
+		public List<Class<? extends SPObject>> getAllowedChildTypes() {
+			return Collections.emptyList();
+		}
+
+		public List<? extends SPObject> getDependencies() {
+			return Collections.emptyList();
+		}
+
+		public void removeDependency(SPObject dependency) {
+			throw new UnsupportedOperationException("Cannot change the relationship referred to by the foreign key wrapper");
+		}
+		
+		public SQLRelationship getRelationship() {
+			return relationship;
+		}
+
+		/**
+		 * Note that this should probably not be called outside of the
+		 * persistence framework.
+		 */
+		public void setRelationship(SQLRelationship relationship) {
+			SQLRelationship oldVal = this.relationship;
+			this.relationship = relationship;
+			firePropertyChange("relationship", oldVal, relationship);
+		}
+	}
+	
 	// -------------------------- COLUMN MAPPING ------------------------
 
 	public static class ColumnMapping extends SQLObject {
@@ -1437,11 +1499,11 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     		if (deferrability == rel.deferrability &&
     				deleteRule == rel.deleteRule &&
     				fkCardinality == rel.fkCardinality &&
-    				fkTable == rel.fkTable &&
+    				foreignKey.getParent() == rel.getFkTable() &&
     				identifying == rel.identifying &&
     				physicalName == rel.physicalName &&
     				pkCardinality == rel.pkCardinality &&
-    				pkTable == rel.pkTable &&
+    				getParent() == rel.getParent() &&
     				updateRule == rel.updateRule) {
     			return getChildren().equals(rel.getChildren());
     		}
@@ -1455,11 +1517,11 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     	result = 31 * result + (deferrability == null? 0 : deferrability.hashCode());
     	result = 31 * result + (deleteRule == null? 0 : deleteRule.hashCode());
     	result = 31 * result + fkCardinality;
-    	result = 31 * result + (fkTable == null? 0 : fkTable.hashCode());
+    	result = 31 * result + (foreignKey.getParent() == null? 0 : foreignKey.getParent().hashCode());
     	result = 31 * result + (identifying?1:0);
     	result = 31 * result + (physicalName == null? 0 : physicalName.hashCode());
     	result = 31 * result + pkCardinality;
-    	result = 31 * result + (pkTable == null? 0 : pkTable.hashCode());
+    	result = 31 * result + (getParent() == null? 0 : getParent().hashCode());
     	result = 31 * result + (updateRule == null? 0 : updateRule.hashCode());
     	result = 31 * result + getChildren().hashCode();
     	return result;
@@ -1525,7 +1587,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	}
 
 	public List<? extends SPObject> getDependencies() {
-		return Collections.singletonList(fkTable);
+		return Collections.singletonList(foreignKey);
 	}
 
 	public void removeDependency(SPObject dependency) {

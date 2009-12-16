@@ -31,6 +31,7 @@ import org.apache.commons.beanutils.PropertyUtils;
 
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 import ca.sqlpower.sqlobject.undo.SQLObjectUndoManager;
 import ca.sqlpower.testutil.GenericNewValueMaker;
 import ca.sqlpower.testutil.MockJDBCDriver;
@@ -147,6 +148,8 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
                 newVal = new SQLColumn();
             } else if ( property.getPropertyType() == SQLIndex.class){
                 newVal = new SQLIndex();
+            } else if (property.getPropertyType() == SQLRelationship.SQLImportedKey.class) {
+            	newVal = new SQLImportedKey();
             } else if ( property.getPropertyType() == SQLRelationship.Deferrability.class){
                 if (oldVal == SQLRelationship.Deferrability.INITIALLY_DEFERRED) {
                     newVal = SQLRelationship.Deferrability.NOT_DEFERRABLE;
@@ -285,6 +288,8 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
                 newVal = new SQLColumn();
             } else if (property.getPropertyType() == SQLIndex.class) {
                 newVal = new SQLIndex();
+            } else if (property.getPropertyType() == SQLRelationship.SQLImportedKey.class) {
+            	newVal = new SQLImportedKey();
             } else if ( property.getPropertyType() == SQLRelationship.Deferrability.class){
                 if (oldVal == SQLRelationship.Deferrability.INITIALLY_DEFERRED) {
                     newVal = SQLRelationship.Deferrability.NOT_DEFERRABLE;

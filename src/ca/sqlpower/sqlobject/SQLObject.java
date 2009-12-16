@@ -647,7 +647,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
                     t.refreshIndexes();
                 }
                 for (SQLTable t : getChildrenWithoutPopulating(SQLTable.class)) {
-                    t.refreshImportedKeys();
+                    t.refreshExportedKeys();
                 }
                 
                 logger.debug("Table container refresh complete for " + this);

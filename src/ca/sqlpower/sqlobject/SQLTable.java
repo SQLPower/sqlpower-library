@@ -36,6 +36,7 @@ import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
+import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 
 public class SQLTable extends SQLObject {
 
@@ -74,7 +75,7 @@ public class SQLTable extends SQLObject {
 	 * table imports.  This SQLTable is the "fkTable" in its imported
 	 * keys.
 	 */
-	protected List<SQLRelationship> importedKeys = new ArrayList<SQLRelationship>();
+	protected List<SQLImportedKey> importedKeys = new ArrayList<SQLImportedKey>();
 
     /**
      * A List for SQLIndex objects that describe the various database indices
@@ -205,6 +206,7 @@ public class SQLTable extends SQLObject {
 		throws SQLObjectException {
 		populateColumns();
 		populateRelationships();
+		populateImportedKeys();
         populateIndices();
 		SQLTable t = new SQLTable(parent, true);
 		t.setName(getName());
@@ -355,8 +357,8 @@ public class SQLTable extends SQLObject {
         logger.debug("index folder populate finished");
     }
 	
-	protected synchronized void populateExportedKeys() throws SQLObjectException {
-		if (exportedKeysPopulated) return;
+	protected synchronized void populateImportedKeys() throws SQLObjectException {
+		if (importedKeysPopulated) return;
 		
 		CachedRowSet crs = null;
 		Connection con = null;
@@ -364,7 +366,7 @@ public class SQLTable extends SQLObject {
 			con = getParentDatabase().getConnection();
 			DatabaseMetaData dbmd = con.getMetaData();
 			crs = new CachedRowSet();
-			ResultSet exportedKeysRS = dbmd.getExportedKeys(getCatalogName(), getSchemaName(), getName());
+			ResultSet exportedKeysRS = dbmd.getImportedKeys(getCatalogName(), getSchemaName(), getName());
             crs.populate(exportedKeysRS);
             exportedKeysRS.close();
 		} catch (SQLException ex) {
@@ -386,20 +388,20 @@ public class SQLTable extends SQLObject {
 					continue;
 				}
 				logger.debug("Got exported key with sequence " + crs.getInt(9) + " on " + crs.getString(5) + "." + crs.getString(6) + "." + crs.getString(7) + ", populating.");
-				String cat = crs.getString(5);
-				String sch = crs.getString(6);
-				String tab = crs.getString(7);
-				SQLTable fkTable = getParentDatabase().getTableByName(cat, sch, tab);
-                if (fkTable == null) {
+				String cat = crs.getString(1);
+				String sch = crs.getString(2);
+				String tab = crs.getString(3);
+				SQLTable pkTable = getParentDatabase().getTableByName(cat, sch, tab);
+                if (pkTable == null) {
                     throw new IllegalStateException("While populating table " +
                             SQLObjectUtils.toQualifiedName(getParent()) +
                             ", I failed to find child table " +
                             "\""+cat+"\".\""+sch+"\".\""+tab+"\"");
                 }
-				fkTable.populateColumns();
-				fkTable.populateRelationships(this);
+				pkTable.populateColumns();
+				pkTable.populateRelationships(this);
 			}
-			exportedKeysPopulated = true;
+			importedKeysPopulated = true;
 		} catch (SQLException ex) {
 			throw new SQLObjectException("Couldn't locate related tables", ex);
 		} finally {
@@ -410,21 +412,21 @@ public class SQLTable extends SQLObject {
 			}
 		}
 	}
-
+	
 	/**
 	 * Populates all the imported key relationships, where it first ensures that
 	 * columns have been populated.
 	 * 
 	 * @throws SQLObjectException
 	 */
-	protected synchronized void populateImportedKeys() throws SQLObjectException {
+	protected synchronized void populateExportedKeys() throws SQLObjectException {
 		populateColumns();
 		populateRelationships();
 	}
 
 	/**
-	 * Populates all the imported key relationships.  This has the
-	 * side effect of populating the exported key side of the
+	 * Populates all the exported key relationships.  This has the
+	 * side effect of populating the imported key side of the
 	 * relationships for the exporting tables.
 	 */
     protected synchronized void populateRelationships() throws SQLObjectException {
@@ -432,8 +434,8 @@ public class SQLTable extends SQLObject {
     }
 
 	/**
-	 * Populates all the imported key relationships. This has the side effect of
-	 * populating the exported key side of the relationships for the exporting
+	 * Populates all the exported key relationships. This has the side effect of
+	 * populating the imported key side of the relationships for the exporting
 	 * tables.
 	 * 
 	 * @param pkTable
@@ -441,10 +443,10 @@ public class SQLTable extends SQLObject {
 	 *            parent will be added. If this is null than all relationships
 	 *            will be added regardless of the parent.
 	 */
-    protected synchronized void populateRelationships(SQLTable pkTable) throws SQLObjectException {
+    protected synchronized void populateRelationships(SQLTable fkTable) throws SQLObjectException {
     	if (!columnsPopulated) {
     		throw new IllegalStateException("Table must be populated before relationships are added");
-    	} else if (importedKeysPopulated) {
+    	} else if (exportedKeysPopulated) {
     		return;
     	}
 
@@ -456,10 +458,10 @@ public class SQLTable extends SQLObject {
 		 * which in turn could cause infinite recursion when listeners
 		 * query the size of the relationships folder.
 		 */
-		importedKeysPopulated = true;
-		boolean allRelationshipsAdded = false;
+		exportedKeysPopulated = true;
+		boolean allRelationshipsAdded = true;
 		try {
-			List<SQLRelationship> newKeys = SQLRelationship.fetchImportedKeys(this);
+			List<SQLRelationship> newKeys = SQLRelationship.fetchExportedKeys(this);
 			begin("Populating relationships for Table " + this);
 			
 			/* now attach the new SQLRelationship objects to their tables,
@@ -469,12 +471,12 @@ public class SQLTable extends SQLObject {
 			 */
 			List<SQLRelationship> addedRels = new ArrayList<SQLRelationship>();
             for (SQLRelationship addMe : newKeys) {
-                if (pkTable != null && addMe.pkTable != pkTable) {
+                if (fkTable != null && addMe.getFkTable() != fkTable) {
                     allRelationshipsAdded = false;
                     continue;
                 }
-                if (!addMe.pkTable.getExportedKeysWithoutPopulating().contains(addMe)) {
-                    addMe.attachRelationship(addMe.pkTable, addMe.fkTable, false, false);
+                if (!addMe.getFkTable().getImportedKeysWithoutPopulating().contains(addMe.getForeignKey())) {
+                    addMe.attachRelationship(addMe.getParent(), addMe.getFkTable(), false, false);
                     addedRels.add(addMe);
                 }
             }
@@ -498,8 +500,8 @@ public class SQLTable extends SQLObject {
 		} finally {
 			//The imported keys folder will only be guaranteed to be completely populated if
 			//any table can be the pkTable not a specific table.
-			if (pkTable != null && !allRelationshipsAdded) {
-				importedKeysPopulated = false;
+			if (fkTable != null && !allRelationshipsAdded) {
+				exportedKeysPopulated = false;
 			}
 		}
 
@@ -507,26 +509,26 @@ public class SQLTable extends SQLObject {
 
 	}
 
-	public void addImportedKey(SQLRelationship r) {
+	public void addImportedKey(SQLImportedKey r) {
 		addImportedKey(r, importedKeys.size());
 	}
 	
-	public void addImportedKey(SQLRelationship r, int index) {
-		importedKeys.add(index, r);
-		// Does not set parent because this should be done by SQLRelationship.attachRelationship()
-		fireChildAdded(SQLRelationship.class, r, index);
+	public void addImportedKey(SQLImportedKey k, int index) {
+		importedKeys.add(index, k);
+		k.setParent(this);
+		fireChildAdded(SQLImportedKey.class, k, index);
 	}
 
-	public boolean removeImportedKey(SQLRelationship r) {
-		if (r.getFkTable() != this) {
-			throw new IllegalStateException("Cannot remove child " + r.getName() + 
-					" of type " + r.getClass() + " as its parent is not " + getName());
+	public boolean removeImportedKey(SQLImportedKey k) {
+		if (k.getParent() != this) {
+			throw new IllegalStateException("Cannot remove child " + k.getName() + 
+					" of type " + k.getClass() + " as its parent is not " + getName());
 		}
-		int index = importedKeys.indexOf(r);
+		int index = importedKeys.indexOf(k);
 		if (index != -1) {
 			 importedKeys.remove(index);
-			 r.setParent(null);
-			 fireChildRemoved(SQLRelationship.class, r, index);
+			 k.setParent(null);
+			 fireChildRemoved(SQLRelationship.class, k, index);
 			 return true;
 		}
 		return false;
@@ -538,7 +540,7 @@ public class SQLTable extends SQLObject {
 	
 	public void addExportedKey(SQLRelationship r, int index) {
 		exportedKeys.add(index, r);
-		// Does not set parent because this should be done by SQLRelationship.attachRelationship()
+		r.setParent(this);
 		fireChildAdded(SQLRelationship.class, r, index);
 	}
 
@@ -840,9 +842,9 @@ public class SQLTable extends SQLObject {
 		if (child instanceof SQLColumn) {
 			addColumnWithoutPopulating((SQLColumn) child, index);
 		} else if (child instanceof SQLRelationship) {
-			throw new IllegalArgumentException("Cannot add SQLRelationship " + child.getName() + 
-					" to table " + getName() + " as it should be called from addImportedKey" +
-							" or addExportedKey instead of addChild.");
+			addExportedKey((SQLRelationship) child);
+		} else if (child instanceof SQLImportedKey) {
+			addImportedKey((SQLImportedKey) child);
 		} else if (child instanceof SQLIndex) {
 			addIndex((SQLIndex) child, index);
 		} else {
@@ -1541,9 +1543,8 @@ public class SQLTable extends SQLObject {
 	 * @return the value of importedKeys
 	 * @throws SQLObjectException
 	 */
-	public List<SQLRelationship> getImportedKeys() throws SQLObjectException {
-		populateColumns();
-		populateRelationships();
+	public List<SQLImportedKey> getImportedKeys() throws SQLObjectException {
+		populateImportedKeys();
 		return getImportedKeysWithoutPopulating();
 	}
 
@@ -1551,10 +1552,10 @@ public class SQLTable extends SQLObject {
 	 * Returns the list of imported keys without populating first. This will
 	 * allow access to the imported keys at current.
 	 */
-	public List<SQLRelationship> getImportedKeysWithoutPopulating() {
+	public List<SQLImportedKey> getImportedKeysWithoutPopulating() {
 		return Collections.unmodifiableList(importedKeys);
 	}
-
+	
 	/**
 	 * Gets the value of exportedKeys after populating. This will allow access
 	 * to the most updated list of exported keys.
@@ -1852,8 +1853,8 @@ public class SQLTable extends SQLObject {
 	public List<? extends SQLObject> getChildrenWithoutPopulating() {
 		List<SQLObject> children = new ArrayList<SQLObject>();
 		children.addAll(columns);
-		children.addAll(importedKeys);
 		children.addAll(exportedKeys);
+		children.addAll(importedKeys);
 		children.addAll(indices);
 		return Collections.unmodifiableList(children);
 	}
@@ -1864,8 +1865,8 @@ public class SQLTable extends SQLObject {
             if (isMagicEnabled()) {
                 SQLColumn col = (SQLColumn) child;
                 // a column is only locked if it is an IMPORTed key--not if it is EXPORTed.
-                for (SQLRelationship r : importedKeys) {
-                    r.checkColumnLocked(col);
+                for (SQLImportedKey k : importedKeys) {
+                    k.getRelationship().checkColumnLocked(col);
                 }
             }
             
@@ -1879,11 +1880,9 @@ public class SQLTable extends SQLObject {
                 }
             }
 		} else if (child instanceof SQLRelationship) {
-			if (importedKeys.contains(child)) {
-				removeImportedKey((SQLRelationship) child);
-			} else {
-				removeExportedKey((SQLRelationship) child);
-			}
+			removeExportedKey((SQLRelationship) child);
+		} else if (child instanceof SQLImportedKey) {
+			return removeImportedKey((SQLImportedKey) child);
 		} else if (child instanceof SQLIndex) {
 			return removeIndex((SQLIndex) child);
 		}
@@ -1930,13 +1929,13 @@ public class SQLTable extends SQLObject {
 		indicesPopulated = v;
 	}
 
-    void refreshImportedKeys() throws SQLObjectException {
-        if (!importedKeysPopulated) {
-            logger.debug("Not refreshing unpopulated imported keys of " + this);
+    void refreshExportedKeys() throws SQLObjectException {
+        if (!exportedKeysPopulated) {
+            logger.debug("Not refreshing unpopulated exported keys of " + this);
             return;
         }
 
-        List<SQLRelationship> newRels = SQLRelationship.fetchImportedKeys(this);
+        List<SQLRelationship> newRels = SQLRelationship.fetchExportedKeys(this);
         if (logger.isDebugEnabled()) {
             logger.debug("New imported keys of " + getName() + ": " + newRels);
         }
@@ -1973,6 +1972,7 @@ public class SQLTable extends SQLObject {
 		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
 		types.add(SQLColumn.class);
 		types.add(SQLRelationship.class);
+		types.add(SQLImportedKey.class);
 		types.add(SQLIndex.class);
 		return Collections.unmodifiableList(types);
 	}

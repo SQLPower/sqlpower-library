@@ -32,6 +32,7 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.SQL;
+import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 
 public class SQLColumn extends SQLObject implements java.io.Serializable {
 
@@ -595,9 +596,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	public SQLTable getReferencedTable() {
 	    if (getParent() == null) return null;
 	    try {
-	        for (SQLRelationship r : getParent().getImportedKeys()) {
-	            if (r.containsFkColumn(this)) {
-	                return r.getPkTable();
+	        for (SQLImportedKey k : getParent().getImportedKeys()) {
+	            if (k.getRelationship().containsFkColumn(this)) {
+	                return k.getRelationship().getParent();
 	            }
 	        }
 	        return null;
