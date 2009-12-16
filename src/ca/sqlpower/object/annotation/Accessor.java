@@ -58,10 +58,11 @@ public @interface Accessor {
 
 	/**
 	 * Defines the additional properties that this property depends on when
-	 * persisting to an {@link SPPersister}. For example, the OlapQuery's
-	 * currentCube property in Wabit requires olapDataSource in order to persist
-	 * correctly. Thus the getCurrentCube() method for OlapQuery should be
-	 * annotated as <code>@Accessor(additionalInfo = {"currentCube"})</code>.
+	 * persisting to an {@link SPPersister}, for converting from a complex to
+	 * basic type. For example, the OlapQuery's currentCube property in Wabit
+	 * requires olapDataSource in order to persist correctly. Thus the
+	 * getCurrentCube() method for OlapQuery should be annotated as
+	 * <code>@Accessor(additionalInfo = {"currentCube"})</code>.
 	 * 
 	 * @see SessionPersisterSuperConverter#convertToBasicType(Object, Object...)
 	 */

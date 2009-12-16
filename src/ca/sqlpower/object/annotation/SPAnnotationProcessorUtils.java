@@ -128,7 +128,7 @@ public class SPAnnotationProcessorUtils {
 	 * @param type
 	 *            The property type.
 	 * @return The JavaBean getter method name. If the property type is a
-	 *         {@link Boolean} value, than the getter method name is prefixed
+	 *         {@link Boolean} value, then the getter method name is prefixed
 	 *         with "is". Otherwise, it is prefixed with "get".
 	 */
 	public static String convertPropertyToAccessor(String propertyName, Class<?> type) {

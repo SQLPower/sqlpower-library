@@ -29,16 +29,16 @@ import ca.sqlpower.dao.SPPersister;
  * This {@link Annotation} defines a parameter of a setter method annotated with
  * {@link Mutator}. This annotation should only be used on the second parameter
  * onwards. That is, the first parameter should be the value to set the property
- * as and not be annotated. The annotated parameter must be of a primitive data
- * type.
+ * as and not be annotated. The annotated parameter must be of a primitive or
+ * {@link String} data type.
  */
 @Target(ElementType.PARAMETER)
 public @interface MutatorParameter {
 
 	/**
-	 * This should be a {@link String} representation of the primitive value to
-	 * be used by session {@link SPPersister}s when passing in setter arguments
-	 * to set the property.
+	 * This should be a {@link String} representation of the primitive or
+	 * {@link String} value to be used by session {@link SPPersister}s when
+	 * passing in setter arguments to set the property.
 	 */
 	String value() default "";
 	

@@ -42,8 +42,8 @@ public @interface ConstructorParameter {
 	 * Determines whether this annotated constructor parameter maps onto an
 	 * {@link SPObject} property. If this is true, the parameter does map onto a
 	 * property and the property name is defined by {@link #propertyName()}.
-	 * Otherwise, either the parameter is an SPObject or a regular primitive
-	 * type. By default, this is true.
+	 * Otherwise, either the parameter is an SPObject or a regular
+	 * primitive/String type. By default, this is true.
 	 */
 	boolean isProperty() default true;
 
@@ -55,12 +55,12 @@ public @interface ConstructorParameter {
 	String propertyName() default "";
 
 	/**
-	 * If the annotated parameter is a primitive type, this should be a
-	 * {@link String} representation of the value to be used by session
-	 * {@link SPPersister}s when passing in constructor arguments to create the
-	 * {@link SPObject}. Note that this field should only and must be used if
-	 * {@link #isProperty()} is false.
+	 * If the annotated parameter is a primitive or {@link String} type, this
+	 * should be a {@link String} representation of the value to be used by
+	 * session {@link SPPersister}s when passing in constructor arguments to
+	 * create the {@link SPObject}. Note that this field should only and must be
+	 * used if {@link #isProperty()} is false.
 	 */
-	String primitiveValue() default "";
+	String defaultValue() default "";
 	
 }

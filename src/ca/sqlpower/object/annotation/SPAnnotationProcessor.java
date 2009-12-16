@@ -111,6 +111,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			Set<String> imports = new HashSet<String>(visitor.getImports());
 			Map<String, Class<?>> propertiesToAccess = 
 				new HashMap<String, Class<?>>(visitor.getPropertiesToAccess());
+			Multimap<String, String> accessorAdditionalInfo = 
+				LinkedHashMultimap.create(visitor.getAccessorAdditionalInfo());
 			Map<String, Class<?>> propertiesToMutate = 
 				new HashMap<String, Class<?>>(visitor.getPropertiesToMutate());
 			Multimap<String, MutatorParameterObject> mutatorExtraParameters = 
@@ -139,6 +141,9 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 						String methodName = accessorEntry.getKey();
 						if (!propertiesToAccess.containsKey(methodName)) {
 							propertiesToAccess.put(methodName, accessorEntry.getValue());
+							
+							accessorAdditionalInfo.putAll(methodName, 
+									superClassVisitor.getAccessorAdditionalInfo().get(methodName));
 						}
 					}
 					
@@ -163,7 +168,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			if (!visitor.isAbsClass()) {
 				generatePersisterHelperFile(e.getKey(), imports,
 						visitor.getConstructorParameters(), propertiesToAccess, 
-						propertiesToMutate, mutatorExtraParameters, mutatorThrownTypes, 
+						accessorAdditionalInfo, propertiesToMutate, 
+						mutatorExtraParameters, mutatorThrownTypes, 
 						propertiesToPersistOnlyIfNonNull);
 			}
 		}
@@ -192,6 +198,11 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 * @param propertiesToAccess
 	 *            The {@link Map} of getter method names of persistable
 	 *            properties to its property type.
+	 * @param accessorAdditionalInfo
+	 *            The {@link Multimap} of getter methods mapped to additional
+	 *            properties a session {@link SPPersister} requires to convert
+	 *            the getter's returned value from a complex to basic
+	 *            persistable type.
 	 * @param propertiesToMutate
 	 *            The {@link Map} of setter method names of persistable
 	 *            properties to its property type.
@@ -210,6 +221,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			Set<String> imports,
 			List<ConstructorParameterObject> constructorParameters,
 			Map<String, Class<?>> propertiesToAccess, 
+			Multimap<String, String> accessorAdditionalInfo,
 			Map<String, Class<?>> propertiesToMutate,
 			Multimap<String, MutatorParameterObject> mutatorExtraParameters,
 			Multimap<String, Class<? extends Exception>> mutatorThrownTypes,
@@ -236,7 +248,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			pw.print(generateCommitPropertyMethod(visitedClass, propertiesToMutate, 
 					mutatorExtraParameters, mutatorThrownTypes, tabs));
 			pw.print("\n");
-			pw.print(generateFindPropertyMethod(visitedClass, propertiesToAccess, tabs));
+			pw.print(generateFindPropertyMethod(visitedClass, propertiesToAccess, 
+					accessorAdditionalInfo, tabs));
 			pw.print("\n");
 			pw.print(generatePersistObjectMethod(visitedClass, constructorParameters, 
 					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs));
@@ -633,6 +646,11 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 *            The {@link Map} of accessor method names to their property
 	 *            types, where each property can be persisted by an
 	 *            {@link SPPersister} into an {@link SPSession}.
+	 * @param accessorAdditionalInfo
+	 *            The {@link Multimap} of getter methods mapped to additional
+	 *            properties a session {@link SPPersister} requires to convert
+	 *            the getter's returned value from a complex to basic
+	 *            persistable type.
 	 * @param tabs
 	 *            The number of tab characters to use to indent this generated
 	 *            method block.
@@ -645,6 +663,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	private String generateFindPropertyMethod(
 			Class<? extends SPObject> visitedClass,
 			Map<String, Class<?>> getters,
+			Multimap<String, String> accessorAdditionalInfo,
 			int tabs) {
 		StringBuilder sb = new StringBuilder();
 		final String objectField = "o";
@@ -680,7 +699,14 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			
 			sb.append(indent(tabs));
 			sb.append("return " + converterField + ".convertToBasicType(" + 
-					objectField + "." + methodName + "());\n");
+					objectField + "." + methodName + "()");
+			
+			for (String additionalProperty : accessorAdditionalInfo.get(methodName)) {
+				sb.append(", " + objectField + "." + 
+						SPAnnotationProcessorUtils.convertPropertyToAccessor(additionalProperty, null));
+			}
+			
+			sb.append(");\n");
 			
 			tabs--;
 			firstIf = false;

@@ -21,6 +21,7 @@ package ca.sqlpower.object.annotation;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -90,6 +91,11 @@ public class SPClassVisitor implements DeclarationVisitor {
 	private Map<String, Class<?>> propertiesToAccess = new HashMap<String, Class<?>>();
 	
 	/**
+	 * @see #getAccessorAdditionalInfo()
+	 */
+	private Multimap<String, String> accessorAdditionalInfo = LinkedHashMultimap.create();
+	
+	/**
 	 * @see #getPropertiesToMutate()
 	 */
 	private Map<String, Class<?>> propertiesToMutate = new HashMap<String, Class<?>>();
@@ -147,6 +153,19 @@ public class SPClassVisitor implements DeclarationVisitor {
 	}
 
 	/**
+	 * Returns the {@link Multimap} of JavaBean getter method names that access
+	 * persistable properties, mapped to additional property names that the
+	 * session {@link SPPersister} requires to convert the accessor's returned
+	 * value into a basic persistable type. The order of this {@link Multimap}
+	 * is guaranteed.
+	 * 
+	 * @see Accessor#additionalInfo()
+	 */
+	public Multimap<String, String> getAccessorAdditionalInfo() {
+		return Multimaps.unmodifiableMultimap(accessorAdditionalInfo);
+	}
+
+	/**
 	 * Returns the {@link Map} of JavaBean setter method names that mutate
 	 * persistable properties, mapped to their property types.
 	 */
@@ -156,8 +175,9 @@ public class SPClassVisitor implements DeclarationVisitor {
 
 	/**
 	 * Returns the {@link Multimap} of JavaBean setter method names that mutate
-	 * persistable properties, mapped to {@link MutatorParameterObject}s that contain
-	 * values for an {@link SPPersister} to use.
+	 * persistable properties, mapped to {@link MutatorParameterObject}s that
+	 * contain values for an {@link SPPersister} to use. The order of this
+	 * {@link Multimap} is guaranteed.
 	 */
 	public Multimap<String, MutatorParameterObject> getMutatorExtraParameters() {
 		return Multimaps.unmodifiableMultimap(mutatorExtraParameters);
@@ -220,7 +240,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 							name = cp.propertyName();
 						} else {
 							name = pd.getSimpleName();
-							value = cp.primitiveValue();
+							value = cp.defaultValue();
 						}
 
 						if (type instanceof PrimitiveType) {
@@ -262,10 +282,13 @@ public class SPClassVisitor implements DeclarationVisitor {
 
 			if (accessorAnnotation != null) {
 				propertiesToAccess.put(methodName, c);
+				
 				if (accessorAnnotation.persistOnlyIfNonNull()) {
 					propertiesToPersistOnlyIfNonNull.add(
 							SPAnnotationProcessorUtils.convertMethodToProperty(methodName));
 				}
+				accessorAdditionalInfo.putAll(
+						methodName, Arrays.asList(accessorAnnotation.additionalInfo()));
 				
 			} else {
 				for (ReferenceType refType : d.getThrownTypes()) {
