@@ -137,43 +137,4 @@ public interface SPVariableResolver {
 	 * @return A collection of matching variables.
 	 */
 	public Collection<Object> matches(String key);
-	
-	/**
-	 * Tries to resolve a variable from a regular expression expressed
-	 * as a String object and returns a collection of partial matches. If no matches
-	 * are found, an empty {@link Collection} is returned.
-	 * This is typically used for content a assist feature.
-	 * 
-	 * <p> For example, if we supply "foo" as a key parameter,
-	 * both "foo" and "foobar" would be matched and returned in the
-	 * matches collection.
-	 *  
-	 * @param key The partial key value for which we want all matching
-	 * variables values.
-	 * @return A collection of matching variables.
-	 */
-	public Collection<Object> matches(String key, boolean isRegexp);
-	
-	/**
-	 * Because variable resolvers might be chained, this method should
-	 * return the proper variable resolver who is capable of effectively
-	 * resolving variables in the provided namespace. Most variable 
-	 * resolvers will simply return themselves.
-	 * 
-	 * <p>This is typical of large object models where you would call the
-	 * root of the model to resolve variables. For performance reasons, one might
-	 * prefer to ask directly the last delegate in the chain instead of trigerring
-	 * an object lookup each time for each delegate in the chain every time a
-	 * variable needs to be resolved. This way, you would ask the root node for the
-	 * delegate and then ask this delegate to resolve the variable.
-	 * 
-	 * <blockquote><code>root.getResolverDelegate("namespaceId").resolve("key");</code></blockquote>
-	 * 
-	 * <p>If more than one delegate can resolve the supplied namespace,
-	 * there is no guarantee whatsoever as to which will be used.
-	 * 
-	 * @param namespace The namespace for which we want the resolver delegate.
-	 * @return The resolver delegate.
-	 */
-	public SPVariableResolver getResolverDelegate(String namespace);
 }
