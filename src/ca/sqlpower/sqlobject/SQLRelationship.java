@@ -285,7 +285,12 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		fkCardinality = ZERO | ONE | MANY;
 		fkColumnManager = new RelationshipManager();
 	}
-
+	
+	public SQLRelationship(SQLImportedKey foreignKey) {
+		this();
+		this.foreignKey = foreignKey;
+	}
+	
 	/**
      * A copy constructor that returns a copy of the provided SQLRelationship
      * with the following properties copied: 
@@ -378,14 +383,10 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	}
 
 	public void attachRelationship(SQLTable pkTable, SQLTable fkTable, boolean autoGenerateMapping) throws SQLObjectException {
-		attachRelationship(pkTable, fkTable, autoGenerateMapping, true);
-	}
-	
-	public void attachRelationship(SQLTable pkTable, SQLTable fkTable, boolean autoGenerateMapping, boolean attachListeners) throws SQLObjectException {
-		setParent(pkTable);
 		foreignKey = new SQLImportedKey(this);
 		foreignKey.setParent(fkTable);
-		attachRelationship(autoGenerateMapping, attachListeners);
+		setParent(pkTable, false);
+		attachRelationship(autoGenerateMapping);
 	}
 
 	/**
@@ -405,7 +406,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 *            attachListeners must be called elsewhere.
 	 * @throws SQLObjectException
 	 */
-	private void attachRelationship(boolean autoGenerateMapping, boolean attachListeners) throws SQLObjectException {
+	private void attachRelationship(boolean autoGenerateMapping) throws SQLObjectException {
 		if(getParent() == null) throw new NullPointerException("Null pkTable not allowed");
 		SQLTable fkTable = foreignKey.getParent();
 		if(fkTable == null) throw new NullPointerException("Null fkTable not allowed");
@@ -482,9 +483,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
                 fkTable.normalizePrimaryKey();
             }
             
-            if (attachListeners) {
-            	this.attachListeners();
-            }
+            this.attachListeners();
 		} finally {
 			if ( fkTable != null ) {
 				fkTable.setMagicEnabled(true);
@@ -613,7 +612,12 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			while (crs.next()) {
 				currentKeySeq = crs.getInt(9);
 				if (currentKeySeq == 1) {
-					r = new SQLRelationship();
+					SQLImportedKey foreignKey = new SQLImportedKey(r);
+					foreignKey.setParent(db.getTableByName(	crs.getString(5),  // catalog
+							crs.getString(6), // schema
+							crs.getString(7))); // table
+					
+					r = new SQLRelationship(foreignKey);
 					newKeys.add(r);
 				}
 				try {
@@ -626,7 +630,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 					r.setParent(db.getTableByName(pkCat,  // catalog
 							pkSchema,  // schema
-							pkTableName)); // table
+							pkTableName), // table
+							false);
 
 					if (r.getParent() == null) {
 						logger.error("addImportedRelationshipsToTable: Couldn't find exporting table "
@@ -645,12 +650,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 						throw new SQLObjectException("relationship.populate.nullPkColumn");
 					}
 					
-					SQLImportedKey foreignKey = new SQLImportedKey(r);
-					foreignKey.setParent(db.getTableByName(	crs.getString(5),  // catalog
-							crs.getString(6), // schema
-							crs.getString(7))); // table
-					r.setForeignKey(foreignKey);
-
 					m.fkColumn = r.getFkTable().getColumnByName(crs.getString(8));
 					if (m.fkColumn == null) {
 						throw new SQLObjectException("relationship.populate.nullFkColumn");
@@ -1172,6 +1171,23 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		firePropertyChange("foreignKey", oldVal, k);
 	}
 	
+	@Override
+	public void setParent(SPObject parent) {
+		this.setParent(parent, true);
+	}
+	
+	public void setParent(SPObject parent, boolean attach) {
+		SPObject oldVal = getParent();
+		super.setParent(parent);
+		if (attach && parent != null && parent != oldVal) {
+			try {
+				attachRelationship(true);
+			} catch (SQLObjectException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
+	
 	public SQLTable getFkTable() {
 		if (foreignKey != null) {
 			return foreignKey.getParent();
@@ -1215,7 +1231,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		public SQLTable getParent() {
 			return (SQLTable) super.getParent();
 		}
-
+		
 		@Override
 		public List<? extends SQLObject> getChildrenWithoutPopulating() {
 			return Collections.emptyList();

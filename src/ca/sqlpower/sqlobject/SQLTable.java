@@ -476,7 +476,7 @@ public class SQLTable extends SQLObject {
                     continue;
                 }
                 if (!addMe.getFkTable().getImportedKeysWithoutPopulating().contains(addMe.getForeignKey())) {
-                    addMe.attachRelationship(addMe.getParent(), addMe.getFkTable(), false, false);
+                    addMe.attachRelationship(addMe.getParent(), addMe.getFkTable(), false);
                     addedRels.add(addMe);
                 }
             }
@@ -491,9 +491,6 @@ public class SQLTable extends SQLObject {
 			// outside of all transactions, otherwise the listener would start
 			// with the wrong transaction count, and throw an exception on
 			// commit()
-            for (SQLRelationship added : addedRels) {
-            	added.attachListeners();
-            }
 		} catch (SQLObjectException e) {
 			rollback(e.getMessage());
 			throw e;
