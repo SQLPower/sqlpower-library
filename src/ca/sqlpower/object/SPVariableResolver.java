@@ -137,4 +137,12 @@ public interface SPVariableResolver {
 	 * @return A collection of matching variable values.
 	 */
 	public Collection<Object> matches(String key, String partialValue);
+	
+	/**
+	 * This function is used to get all available variable names.
+	 * One can optionally pass a namespace scope, or null.
+	 * @param namespace Either a namespace or null.
+	 * @return A collection of available variable names.
+	 */
+	public Collection<String> keySet(String namespace);
 }

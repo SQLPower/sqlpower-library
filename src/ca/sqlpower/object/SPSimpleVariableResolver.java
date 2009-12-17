@@ -124,4 +124,11 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 			return this.namespace.equals(namespace);
 		}
 	}
+
+	public Collection<String> keySet(String namespace) {
+		if (namespace == null || (namespace != null && this.resolvesNamespace(namespace))) {
+			return this.variables.keySet();
+		}
+		return Collections.emptySet();
+	}
 }

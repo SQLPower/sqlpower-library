@@ -207,7 +207,7 @@ public class SPVariableHelper implements SPVariableResolver {
 	
 	public Collection<Object> matches(String key, String partialValue) {
 		Collection<Object> matches = new HashSet<Object>();
-		this.recursiveMatch(
+		this.upwardsRecursiveMatch(
 				matches, 
 				this.contextSource, 
 				getNamespace(key),
@@ -217,7 +217,16 @@ public class SPVariableHelper implements SPVariableResolver {
 	}
 	
 	
-	
+	public Collection<String> keySet(String namespace) {
+		Collection<String> keys = new HashSet<String>();
+		this.upwardsRecursiveKeySet(
+				this.contextSource,
+				keys, 
+				namespace);
+		return keys;
+	}
+
+
 // *******************  Private helper methods **********************************
 
 	
@@ -352,7 +361,7 @@ public class SPVariableHelper implements SPVariableResolver {
 	}
 	
 	
-	private void recursiveMatch(
+	private void upwardsRecursiveMatch(
 			Collection<Object> matches, 
 			SPObject currentNode, 
 			String namespace, 
@@ -376,12 +385,40 @@ public class SPVariableHelper implements SPVariableResolver {
 			
 		// The current node still has a parent. Let's recursively
 		// ask it to resolve the variable.
-		this.recursiveMatch(
+		this.upwardsRecursiveMatch(
 			matches,
 			currentNode.getParent(), 
 			namespace,
 			key,
 			partialValue);
+	}
+	
+	
+	private void upwardsRecursiveKeySet(
+			SPObject currentNode, 
+			Collection<String> keys,
+			String namespace) {
+		
+		// First, verify if the current node is a variable resolver implementation.
+		if (currentNode instanceof SPVariableResolverProvider) {
+			// Turns out it is. Let's ask it if it can help us.
+			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
+			if (namespace == null || (namespace != null && resolver.resolvesNamespace(namespace)))
+				keys.addAll(
+					resolver.keySet(namespace));
+		}
+		
+		// If we can't climb anymore and we still haven't found it, 
+		// we return the default value.
+		if (currentNode.getParent() == null)
+			return;
+			
+		// The current node still has a parent. Let's recursively
+		// ask it to resolve the variable.
+		this.upwardsRecursiveKeySet(
+			currentNode.getParent(), 
+			keys,
+			namespace);
 	}
 	
 	
