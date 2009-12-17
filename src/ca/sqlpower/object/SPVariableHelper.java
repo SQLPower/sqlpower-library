@@ -76,7 +76,7 @@ public class SPVariableHelper implements SPVariableResolver {
      * @return
      */
     public static String substitute(String textWithVars, SPVariableHelper variableHelper) {
-        Pattern p = Pattern.compile("\\$\\{([$a-zA-Z0-9_.]+)\\}");
+        Pattern p = Pattern.compile("\\$\\{([$a-zA-Z0-9\\:\\-_.]+)\\}");
         
         logger.debug("Performing variable substitution on " + textWithVars);
         
