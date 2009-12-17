@@ -22,6 +22,10 @@ package ca.sqlpower.object;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.log4j.Logger;
 
 /**
  * This is a helper class for resolving variables. It is a delegating
@@ -53,12 +57,53 @@ import java.util.HashSet;
  */
 public class SPVariableHelper implements SPVariableResolver {
 
+	private static final Logger logger = Logger.getLogger(SPVariableHelper.class);
+	
 	/**
 	 * Tells if this helper is supposed to walk back down the tree.
 	 */
 	private boolean walkDown = false;
 	
 	private final SPObject contextSource;
+    
+    /**
+     * Substitutes any number of variable references in the given string, returning
+     * the resultant string with all variable references replaced by the corresponding
+     * variable values.
+     * 
+     * @param textWithVars
+     * @param variableContext
+     * @return
+     */
+    public static String substitute(String textWithVars, SPVariableHelper variableHelper) {
+        Pattern p = Pattern.compile("\\$\\{([$a-zA-Z0-9_.]+)\\}");
+        
+        logger.debug("Performing variable substitution on " + textWithVars);
+        
+        StringBuilder text = new StringBuilder();
+        Matcher matcher = p.matcher(textWithVars);
+        
+        int currentIndex = 0;
+        while (!matcher.hitEnd()) {
+            if (matcher.find()) {
+                String variableName = matcher.group(1);
+                Object variableValue;
+                if (variableName.equals("$")) {
+                    variableValue = "$";
+                } else {
+                    variableValue = variableHelper.resolve(variableName, (Object) ("MISSING_VAR:" + variableName));
+                }
+                logger.debug("Found variable " + variableName + " = " + variableValue);
+                text.append(textWithVars.substring(currentIndex, matcher.start()));
+                text.append(variableValue);
+                currentIndex = matcher.end();
+            }  
+        }
+        
+        text.append(textWithVars.substring(currentIndex));
+        
+        return text.toString();
+    }
 
 	/**
 	 * This constructor is not usable. Please use 
