@@ -445,7 +445,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 					SQLColumn match = fkTable.getColumnByName(pkCol.getName());
 					SQLColumn fkCol = new SQLColumn(pkCol);
 					fkCol.setPrimaryKeySeq(null);
-                    if (getParent().equals(fkTable)) {
+                    if (getParent() == fkTable) {
                         // self-reference should never hijack the PK!
                         String colName = "Parent_" + fkCol.getName();
                         fkCol.setName(generateUniqueColumnName(colName, fkTable));
@@ -620,8 +620,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 					r = new SQLRelationship(foreignKey);
 					newKeys.add(r);
 				}
-				try {
-					r.setMagicEnabled(false);
 					ColumnMapping m = new ColumnMapping();
 					r.addMapping(m);
 					String pkCat = crs.getString(1);
@@ -665,9 +663,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 								" relationship. Defaulting to NOT_DEFERRABLE.", ex);
 						r.deferrability = Deferrability.NOT_DEFERRABLE;
 					}
-				} finally {
-					r.setMagicEnabled(true);
-				}
 			}
 
 			return newKeys;
@@ -814,30 +809,32 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
 
 			// Code from dbChildrenRemoved
-			if (e.getChildType() == SQLRelationship.class) {
-				if (e.getChild() == SQLRelationship.this) {
-					detachListeners();
-					try {
-						foreignKey.setRelationship(null);
-						foreignKey.getParent().removeChild(foreignKey);
-					} catch (ObjectDependentException e1) {
-						throw new RuntimeException(e1); // This should not happen
+			if (e.getChild() == SQLRelationship.this || e.getChild() == foreignKey) {
+				detachListeners();
+				try {
+					if (e.getChild() == SQLRelationship.this) {
+						SQLImportedKey fk = foreignKey;
+						setForeignKey(null);
+						fk.getParent().removeChild(fk);
+					} else {
+						getParent().removeChild(SQLRelationship.this);
 					}
-
-					logger.debug("Removing references for mappings: "+getChildren());
-
-					// references to fk columns are removed in reverse order in case
-					// this relationship is reconnected in the future. (if not removed
-					// in reverse order, the PK sequence numbers will change as each
-					// mapping is removed and the subsequent column indexes shift down)
-					List<ColumnMapping> mappings = new ArrayList<ColumnMapping>(getChildren(ColumnMapping.class));
-					Collections.sort(mappings, Collections.reverseOrder(new ColumnMappingFKColumnOrderComparator()));
-					for (ColumnMapping cm : mappings) {
-						logger.debug("Removing reference to fkcol "+ cm.getFkColumn());
-						cm.getFkColumn().removeReference();
-					}
+				} catch (ObjectDependentException e1) {
+					throw new RuntimeException(e1); // This should not happen
 				}
 
+				logger.debug("Removing references for mappings: "+getChildren());
+
+				// references to fk columns are removed in reverse order in case
+				// this relationship is reconnected in the future. (if not removed
+				// in reverse order, the PK sequence numbers will change as each
+				// mapping is removed and the subsequent column indexes shift down)
+				List<ColumnMapping> mappings = new ArrayList<ColumnMapping>(getChildren(ColumnMapping.class));
+				Collections.sort(mappings, Collections.reverseOrder(new ColumnMappingFKColumnOrderComparator()));
+				for (ColumnMapping cm : mappings) {
+					logger.debug("Removing reference to fkcol "+ cm.getFkColumn());
+					cm.getFkColumn().removeReference();
+				}
 			} else if (e.getChildType() == SQLColumn.class) {
 				SQLColumn col = (SQLColumn) e.getChild();
 				try {
@@ -915,7 +912,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 								+" changed while monitoring pkTable");
 					}
 				}
-			} else if (e.getSource().equals(foreignKey.getParent()) || e.getSource().equals(getParent())) {
+			} else if (e.getSource() == foreignKey.getParent() || e.getSource() == getParent()) {
 				if (prop.equals("parent") && e.getNewValue() == null) {
 					// this will cause a callback to this listener which removes the imported key from fktable
 					getParent().removeExportedKey(SQLRelationship.this);
@@ -1515,7 +1512,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     		if (deferrability == rel.deferrability &&
     				deleteRule == rel.deleteRule &&
     				fkCardinality == rel.fkCardinality &&
-    				foreignKey.getParent() == rel.getFkTable() &&
+    				getFkTable() == rel.getFkTable() &&
     				identifying == rel.identifying &&
     				physicalName == rel.physicalName &&
     				pkCardinality == rel.pkCardinality &&
@@ -1533,7 +1530,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     	result = 31 * result + (deferrability == null? 0 : deferrability.hashCode());
     	result = 31 * result + (deleteRule == null? 0 : deleteRule.hashCode());
     	result = 31 * result + fkCardinality;
-    	result = 31 * result + (foreignKey.getParent() == null? 0 : foreignKey.getParent().hashCode());
+    	result = 31 * result + ((foreignKey == null || foreignKey.getParent() == null) ? 0 : foreignKey.getParent().hashCode());
     	result = 31 * result + (identifying?1:0);
     	result = 31 * result + (physicalName == null? 0 : physicalName.hashCode());
     	result = 31 * result + pkCardinality;

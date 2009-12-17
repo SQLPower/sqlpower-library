@@ -257,8 +257,9 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final SPChildEvent e = new SPChildEvent(this, type, child, index, EventType.ADDED);
         synchronized(listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		final SPListener listener = listeners.get(i);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		final SPListener listener = staticListeners.get(i);
         		listener.childAdded(e);
         	}
         }
@@ -293,8 +294,9 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final SPChildEvent e = new SPChildEvent(this, type, child, index, EventType.REMOVED);
         synchronized(listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		final SPListener listener = listeners.get(i);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		final SPListener listener = staticListeners.get(i);
         		listener.childRemoved(e);
         	}
         }
@@ -321,8 +323,10 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final PropertyChangeEvent evt = new PropertyChangeEvent(this, propertyName, oldValue, newValue);
         synchronized(listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		listeners.get(i).propertyChange(evt);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		SPListener listener = staticListeners.get(i);
+        		listener.propertyChange(evt);
         	}
         }
         return evt;
@@ -349,8 +353,10 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final PropertyChangeEvent evt = new PropertyChangeEvent(this, propertyName, oldValue, newValue);
         synchronized(listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		listeners.get(i).propertyChange(evt);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		SPListener listener = staticListeners.get(i);
+        		listener.propertyChange(evt);
         	}
         }
         return evt;
@@ -383,8 +389,10 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final PropertyChangeEvent evt = new PropertyChangeEvent(this, propertyName, oldValue, newValue);
         synchronized(listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		listeners.get(i).propertyChange(evt);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		SPListener listener = staticListeners.get(i);
+        		listener.propertyChange(evt);
         	}
         }
         return evt;
@@ -407,8 +415,10 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final TransactionEvent evt = TransactionEvent.createStartTransactionEvent(this, message);
         synchronized (listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		listeners.get(i).transactionStarted(evt);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		final SPListener listener = staticListeners.get(i);
+        		listener.transactionStarted(evt);
         	}
         }
         return evt;
@@ -430,8 +440,10 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final TransactionEvent evt = TransactionEvent.createEndTransactionEvent(this);
         synchronized (listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		listeners.get(i).transactionEnded(evt);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		final SPListener listener = staticListeners.get(i);
+        		listener.transactionEnded(evt);
         	}
         }
         return evt;
@@ -454,8 +466,10 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final TransactionEvent evt = TransactionEvent.createRollbackTransactionEvent(this, message);
         synchronized (listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		listeners.get(i).transactionRollback(evt);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		final SPListener listener = staticListeners.get(i);
+        		listener.transactionRollback(evt);
         	}
         }
         return evt;
