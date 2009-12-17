@@ -76,11 +76,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 	private Class<? extends SPObject> visitedClass;
 	
 	/**
-	 * @see #isAbsClass()
-	 */
-	private boolean absClass;
-
-	/**
 	 * @see #getConstructorParameters()
 	 */
 	private List<ConstructorParameterObject> constructorParameters = new ArrayList<ConstructorParameterObject>();
@@ -128,13 +123,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 		return visitedClass;
 	}
 	
-	/**
-	 * Returns true if the visited class is an abstract class.
-	 */
-	public boolean isAbsClass() {
-		return absClass;
-	}
-
 	/**
 	 * Returns the {@link List} of constructor arguments that are required to
 	 * create a new {@link SPObject} of type {@link #visitedClass}. The order of
@@ -215,8 +203,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 		if (d.getAnnotation(Persistable.class) != null) {
 			try {
 				visitedClass = (Class<? extends SPObject>) Class.forName(d.getQualifiedName());
-				absClass = Modifier.isAbstract(visitedClass.getModifiers());
-				
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
 			}

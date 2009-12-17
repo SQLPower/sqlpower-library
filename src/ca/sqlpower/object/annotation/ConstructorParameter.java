@@ -33,7 +33,10 @@ import ca.sqlpower.object.SPObject;
  * the annotated constructor parameter applies to. The
  * {@link SPAnnotationProcessor} should be able to process this annotation to
  * generate the appropriate constructor arguments when creating the
- * {@link SPPersisterHelper#commitObject(java.util.Collection)} method.
+ * {@link SPPersisterHelper#commitObject(java.util.Collection)} method. The
+ * {@link SPAnnotationProcessorFactory} should recognize this annotation as a
+ * supported annotation type by
+ * {@link SPAnnotationProcessorFactory#supportedAnnotationTypes()}.
  */
 @Target(ElementType.PARAMETER)
 public @interface ConstructorParameter {

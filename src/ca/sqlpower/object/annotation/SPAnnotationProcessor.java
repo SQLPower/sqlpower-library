@@ -165,7 +165,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			}
 			
 			// Generate the persister helper file if the SPObject class is not abstract.
-			if (!visitor.isAbsClass()) {
+			if (!Modifier.isAbstract(visitor.getVisitedClass().getModifiers())) {
 				generatePersisterHelperFile(e.getKey(), imports,
 						visitor.getConstructorParameters(), propertiesToAccess, 
 						accessorAdditionalInfo, propertiesToMutate, 
@@ -305,15 +305,18 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	private String generateLicense() {
 		StringBuilder sb = new StringBuilder();
 		try {
-			BufferedReader br = new BufferedReader(new FileReader("src/license_in_comment.txt"));
+			FileReader fr = new FileReader("src/license_in_comment.txt");
+			BufferedReader br = new BufferedReader(fr);
 			String line;
 			while ((line = br.readLine()) != null) {
 				sb.append(line + "\n");
 			}
+			fr.close();
+			br.close();
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
 		return sb.toString();
 	}
@@ -966,7 +969,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			pw.print("}\n");
 			pw.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
 		
 	}

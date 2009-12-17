@@ -25,13 +25,15 @@ import java.lang.annotation.Target;
 
 import ca.sqlpower.object.SPObject;
 
-
 /**
  * This {@link Annotation} defines a constructor in an {@link SPObject} class as
  * the constructor to use when persisting a new object. This annotation must
  * only be applied to one constructor for each {@link SPObject} class. All of
  * the parameters within this annotated constructor must be annotated with
- * {@link ConstructorParameter} as well.
+ * {@link ConstructorParameter} as well. The
+ * {@link SPAnnotationProcessorFactory} should recognize this annotation as a
+ * supported annotation type by
+ * {@link SPAnnotationProcessorFactory#supportedAnnotationTypes()}.
  */
 @Target(ElementType.CONSTRUCTOR)
 public @interface Constructor {

@@ -30,7 +30,9 @@ import ca.sqlpower.dao.SPPersister;
  * {@link Mutator}. This annotation should only be used on the second parameter
  * onwards. That is, the first parameter should be the value to set the property
  * as and not be annotated. The annotated parameter must be of a primitive or
- * {@link String} data type.
+ * {@link String} data type. The {@link SPAnnotationProcessorFactory} should
+ * recognize this annotation as a supported annotation type by
+ * {@link SPAnnotationProcessorFactory#supportedAnnotationTypes()}.
  */
 @Target(ElementType.PARAMETER)
 public @interface MutatorParameter {
