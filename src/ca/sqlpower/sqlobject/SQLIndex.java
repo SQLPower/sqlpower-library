@@ -306,13 +306,13 @@ public class SQLIndex extends SQLObject {
 		}
 
 		public List<? extends SPObject> getDependencies() {
-			// TODO Auto-generated method stub
-			return null;
+			return Collections.singletonList(column);
 		}
 
 		public void removeDependency(SPObject dependency) {
-			// TODO Auto-generated method stub
-			
+			if (dependency == column) {
+				getParent().removeColumn(this);
+			}
 		}
 
 		public List<Class<? extends SPObject>> getAllowedChildTypes() {

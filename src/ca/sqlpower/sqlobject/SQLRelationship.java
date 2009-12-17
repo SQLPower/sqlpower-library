@@ -1336,7 +1336,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		/**
 		 * Returns the table that holds the primary keys (the imported table).
 		 */
-		public SQLObject getParent() {
+		public SQLRelationship getParent() {
 			return (SQLRelationship) parent;
 		}
 
@@ -1419,11 +1419,16 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 
 		public List<? extends SPObject> getDependencies() {
-			return Collections.emptyList();
+			List<SPObject> dependencies = new ArrayList<SPObject>();
+			dependencies.add(getFkColumn());
+			dependencies.add(getPkColumn());
+			return dependencies;
 		}
 
 		public void removeDependency(SPObject dependency) {
-			// TODO
+			if (dependency == getFkColumn() || dependency == getPkColumn()) {
+				getParent().removeColumnMapping(this);
+			}
 		}
 
 		public List<Class<? extends SPObject>> getAllowedChildTypes() {
