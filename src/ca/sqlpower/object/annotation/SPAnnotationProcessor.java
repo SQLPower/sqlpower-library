@@ -389,7 +389,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		final String persistedObjectsListField = "persistedObjects";
 		final String factoryField = "factory";
 		final String uuidField = "uuid";
-		final String childPersistedObjectField = "pso";
+		final String childPersistedObjectField = "childPSO";
 		
 		// commitObject method header.
 		sb.append(indent(tabs));
