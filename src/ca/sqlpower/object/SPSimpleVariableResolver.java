@@ -30,7 +30,7 @@ import org.apache.commons.collections.map.MultiValueMap;
 public class SPSimpleVariableResolver implements SPVariableResolver {
 	
 	private final MultiValueMap variables = new MultiValueMap();
-	private final String namespace;
+	private String namespace;
 	
 	public SPSimpleVariableResolver(String namespace) {
 		this.namespace = namespace;
@@ -58,6 +58,14 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 			this.variables.remove(key);
 		}
 		this.store(key, value);
+	}
+	
+	/**
+	 * Defines this variable resolver's namespace.
+	 * @param namespace The namespace to use. Can be null.
+	 */
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
 	}
 
 	public Collection<Object> matches(String key, String partialValue) {
