@@ -118,11 +118,12 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	}
 
 	public boolean resolvesNamespace(String namespace) {
-		if (this.namespace == null) {
-			return true;
-		} else {
+		if (namespace != null && this.namespace != null) {
 			return this.namespace.equals(namespace);
+		} else if (namespace != null && this.namespace == null) {
+			return false;
 		}
+		return true;
 	}
 
 	public Collection<String> keySet(String namespace) {
