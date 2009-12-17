@@ -141,7 +141,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 			} else {
 				Set keys = new HashSet();
 				for (Object key : this.variables.keySet()) {
-					keys.add(this.namespace.concat(":").concat(key.toString()));
+					keys.add(this.namespace.concat(NAMESPACE_DELIMITER).concat(key.toString()));
 				}
 				return keys;
 			}
