@@ -62,7 +62,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 
 	public Collection<Object> matches(String key, String partialValue) {
 		String namespace = SPVariableHelper.getNamespace(key);
-		if (namespace == null || (namespace != null && this.resolvesNamespace(namespace))) {
+		if (this.resolvesNamespace(namespace)) {
 			Set matches = new HashSet();
 			Collection values  = this.resolveCollection(key);
 			for (Object obj : values) {
@@ -82,7 +82,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 
 	public Object resolve(String key, Object defaultValue) {
 		String namespace = SPVariableHelper.getNamespace(key);
-		if (namespace == null || (namespace != null && this.resolvesNamespace(namespace))) {
+		if (this.resolvesNamespace(namespace)) {
 			Collection value = this.variables.getCollection(key);
 			if (value == null || value.size() == 0) {
 				return defaultValue;
@@ -100,7 +100,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 
 	public Collection<Object> resolveCollection(String key, Object defaultValue) {
 		String namespace = SPVariableHelper.getNamespace(key);
-		if (namespace == null || (namespace != null && this.resolvesNamespace(namespace))) {
+		if (this.resolvesNamespace(namespace)) {
 			Collection value = this.variables.getCollection(key);
 			if (value != null) {
 				return value;
@@ -111,7 +111,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 
 	public boolean resolves(String key) {
 		String namespace = SPVariableHelper.getNamespace(key);
-		if (namespace == null || (namespace != null && this.resolvesNamespace(namespace))) {
+		if (this.resolvesNamespace(namespace)) {
 			return this.variables.containsKey(key);
 		}
 		return false;
@@ -127,8 +127,16 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	}
 
 	public Collection<String> keySet(String namespace) {
-		if (namespace == null || (namespace != null && this.resolvesNamespace(namespace))) {
-			return this.variables.keySet();
+		if (this.resolvesNamespace(namespace)) {
+			if (this.namespace == null) {
+				return this.variables.keySet();
+			} else {
+				Set keys = new HashSet();
+				for (Object key : this.variables.keySet()) {
+					keys.add(this.namespace.concat(":").concat(key.toString()));
+				}
+				return keys;
+			}
 		}
 		return Collections.emptySet();
 	}

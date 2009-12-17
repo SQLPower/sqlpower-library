@@ -116,6 +116,20 @@ public interface SPVariableResolver {
 	/**
 	 * Verifies if this variable resolver can effectively resolve 
 	 * variables in the provided namespace value.
+	 * 
+	 * <p>The rules are as follows.
+	 * 
+	 * <ul>
+	 * <li>If this resolver's namespace is null and the namespace passed as
+	 * a parameter is null, return true.
+	 * <li>If this resolver's namespace is null but we pass a namespace as
+	 * a parameter, return false.
+	 * <li>If this resolver's namespace is defined and we pass a namespace as a parameter,
+	 * we return true IF both namespaces match.
+	 * <li>If this resolver's namespace is defined but we pass a null namespace
+	 * as a parameter, we return true;
+	 * </li>
+	 * 
 	 * @param namespace The namespace for which we want to know if this resolver
 	 * is capable of resolving variables.
 	 * @return True or false.
