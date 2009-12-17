@@ -722,7 +722,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	}
 	
 	public boolean removeSchema(SQLSchema child) {
-		if (child.getParent() != this) {
+		if (isMagicEnabled() && child.getParent() != this) {
 			throw new IllegalStateException("Cannot remove child " + child.getName() + 
 					" of type " + child.getClass() + " as its parent is not " + getName());
 		}
@@ -737,7 +737,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	}
 	
 	public boolean removeTable(SQLTable child) {
-		if (child.getParent() != this) {
+		if (isMagicEnabled() && child.getParent() != this) {
 			throw new IllegalStateException("Cannot remove child " + child.getName() + 
 					" of type " + child.getClass() + " as its parent is not " + getName());
 		}

@@ -258,7 +258,7 @@ public class SQLSchema extends SQLObject {
 	}
 	
 	public boolean removeTable(SQLTable table) {
-		if (table.getParent() != this) {
+		if (isMagicEnabled() && table.getParent() != this) {
 			throw new IllegalStateException("Cannot remove child " + table.getName() + 
 					" of type " + table.getClass() + " as its parent is not " + getName());
 		}

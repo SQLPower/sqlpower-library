@@ -517,7 +517,7 @@ public class SQLTable extends SQLObject {
 	}
 
 	public boolean removeImportedKey(SQLImportedKey k) {
-		if (k.getParent() != this) {
+		if (isMagicEnabled() && k.getParent() != this) {
 			throw new IllegalStateException("Cannot remove child " + k.getName() + 
 					" of type " + k.getClass() + " as its parent is not " + getName());
 		}
@@ -542,7 +542,7 @@ public class SQLTable extends SQLObject {
 	}
 
 	public boolean removeExportedKey(SQLRelationship r) {
-		if (r.getParent() != this) {
+		if (isMagicEnabled() && r.getParent() != this) {
 			throw new IllegalStateException("Cannot remove child " + r.getName() + 
 					" of type " + r.getClass() + " as its parent is not " + getName());
 		}
@@ -885,7 +885,7 @@ public class SQLTable extends SQLObject {
      *             safely removed.
      */
 	public boolean removeColumn(SQLColumn col) {
-		if (col.getParent() != this) {
+		if (isMagicEnabled() && col.getParent() != this) {
 			throw new IllegalStateException("Cannot remove child " + col.getName() + 
 					" of type " + col.getClass() + " as its parent is not " + getName());
 		}
@@ -1833,7 +1833,7 @@ public class SQLTable extends SQLObject {
     }
     
     public boolean removeIndex(SQLIndex sqlIndex) {
-    	if (sqlIndex.getParent() != this) {
+    	if (isMagicEnabled() && sqlIndex.getParent() != this) {
 			throw new IllegalStateException("Cannot remove child " + sqlIndex.getName() + 
 					" of type " + sqlIndex.getClass() + " as its parent is not " + getName());
     	}

@@ -385,7 +385,12 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	public void attachRelationship(SQLTable pkTable, SQLTable fkTable, boolean autoGenerateMapping) throws SQLObjectException {
 		foreignKey = new SQLImportedKey(this);
 		foreignKey.setParent(fkTable);
-		setParent(pkTable, false);
+		try {
+			setMagicEnabled(false);
+			setParent(pkTable);
+		} finally {
+			setMagicEnabled(true);
+		}
 		attachRelationship(autoGenerateMapping);
 	}
 
@@ -620,6 +625,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 					r = new SQLRelationship(foreignKey);
 					newKeys.add(r);
 				}
+				try {
+					r.setMagicEnabled(false);
 					ColumnMapping m = new ColumnMapping();
 					r.addMapping(m);
 					String pkCat = crs.getString(1);
@@ -628,8 +635,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 					r.setParent(db.getTableByName(pkCat,  // catalog
 							pkSchema,  // schema
-							pkTableName), // table
-							false);
+							pkTableName)); // table
 
 					if (r.getParent() == null) {
 						logger.error("addImportedRelationshipsToTable: Couldn't find exporting table "
@@ -663,6 +669,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 								" relationship. Defaulting to NOT_DEFERRABLE.", ex);
 						r.deferrability = Deferrability.NOT_DEFERRABLE;
 					}
+				} finally {
+					r.setMagicEnabled(true);
+				}
 			}
 
 			return newKeys;
@@ -1168,15 +1177,10 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		firePropertyChange("foreignKey", oldVal, k);
 	}
 	
-	@Override
 	public void setParent(SPObject parent) {
-		this.setParent(parent, true);
-	}
-	
-	public void setParent(SPObject parent, boolean attach) {
 		SPObject oldVal = getParent();
 		super.setParent(parent);
-		if (attach && parent != null && parent != oldVal) {
+		if (isMagicEnabled() && parent != null && parent != oldVal) {
 			try {
 				attachRelationship(true);
 			} catch (SQLObjectException e) {
@@ -1569,7 +1573,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	public List<ColumnMapping> getChildrenWithoutPopulating() {
 		return Collections.unmodifiableList(mappings);
 	}
-
+	
 	@Override
 	protected boolean removeChildImpl(SPObject child) {
 		if (child instanceof ColumnMapping) {
@@ -1581,7 +1585,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	}
 	
 	public boolean removeColumnMapping(ColumnMapping child) {
-		if (child.getParent() != this) {
+		if (isMagicEnabled() && child.getParent() != this) {
 			throw new IllegalStateException("Cannot remove child " + child.getName() + 
 					" of type " + child.getClass() + " as its parent is not " + getName());
 		}
