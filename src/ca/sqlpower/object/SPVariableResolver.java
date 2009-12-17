@@ -123,18 +123,18 @@ public interface SPVariableResolver {
 	public boolean resolvesNamespace(String namespace);
 	
 	/**
-	 * Tries to resolve a variable and returns a {@link Collection} of partial
-	 * matches which keys first characters match the supplied key.
-	 * If no matches are found, an empty {@link Collection} is returned.
-	 * This is typically used for content a assist feature.
+	 * For a given key and the first characters of a variable value,
+	 * this method returns all matches. This is a auto-complete function.
 	 * 
-	 * <p> For example, if we supply "foo" as a key parameter,
-	 * both "foo" and "foobar" would be matched and returned in the
-	 * matches collection.
+	 * For example, if the key "foo" and the values "bar" and "bar2" are 
+	 * resolved by a given variable resolver, sending to this function
+	 * "foo" as the key and "ba" as the partial match would return both
+	 * variable values.
 	 *  
-	 * @param key The partial key value for which we want all matching
-	 * variables values.
-	 * @return A collection of matching variables.
+	 * @param key The key of the variable we want all corresponding matches.
+	 * @param partialValue The first characters of a variable value to match
+	 * against all possible values.
+	 * @return A collection of matching variable values.
 	 */
-	public Collection<Object> matches(String key);
+	public Collection<Object> matches(String key, String partialValue);
 }
