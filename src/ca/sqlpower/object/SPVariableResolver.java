@@ -41,6 +41,13 @@ import java.util.Collection;
  * @author Luc Boudreau
  */
 public interface SPVariableResolver {
+	
+	/**
+	 * The delimiter to use for namespaced variable names.
+	 */
+	public static final String NAMESPACE_DELIMITER = "::";
+	
+	static final String NAMESPACE_DELIMITER_REGEXP = "\\:\\:";
 
 	/**
 	 * Resolves a variable to it's value by a String key.

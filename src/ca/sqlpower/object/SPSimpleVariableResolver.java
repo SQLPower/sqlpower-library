@@ -91,7 +91,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	public Object resolve(String key, Object defaultValue) {
 		String namespace = SPVariableHelper.getNamespace(key);
 		if (this.resolvesNamespace(namespace)) {
-			Collection value = this.variables.getCollection(key);
+			Collection value = this.variables.getCollection(SPVariableHelper.stripNamespace(key));
 			if (value == null || value.size() == 0) {
 				return defaultValue;
 			} else {
@@ -109,7 +109,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	public Collection<Object> resolveCollection(String key, Object defaultValue) {
 		String namespace = SPVariableHelper.getNamespace(key);
 		if (this.resolvesNamespace(namespace)) {
-			Collection value = this.variables.getCollection(key);
+			Collection value = this.variables.getCollection(SPVariableHelper.stripNamespace(key));
 			if (value != null) {
 				return value;
 			}
@@ -120,7 +120,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	public boolean resolves(String key) {
 		String namespace = SPVariableHelper.getNamespace(key);
 		if (this.resolvesNamespace(namespace)) {
-			return this.variables.containsKey(key);
+			return this.variables.containsKey(SPVariableHelper.stripNamespace(key));
 		}
 		return false;
 	}

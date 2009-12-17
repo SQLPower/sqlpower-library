@@ -76,7 +76,7 @@ public class SPVariableHelper implements SPVariableResolver {
      * @return
      */
     public static String substitute(String textWithVars, SPVariableHelper variableHelper) {
-        Pattern p = Pattern.compile("\\$\\{([$a-zA-Z0-9\\:\\-_.]+)\\}");
+        Pattern p = Pattern.compile("\\$\\{([$a-zA-Z0-9"+NAMESPACE_DELIMITER_REGEXP+"\\-_.]+)\\}");
         
         logger.debug("Performing variable substitution on " + textWithVars);
         
@@ -104,6 +104,35 @@ public class SPVariableHelper implements SPVariableResolver {
         
         return text.toString();
     }
+    
+    /**
+     * Returns the namespace of a variable. If there is
+     * no variable namespace, null is returned.
+     * @param key The key for which we want the namespace.
+     * @return The namespace value, or null if none.
+     */
+    public static String getNamespace(String key) {
+		int index = key.indexOf(NAMESPACE_DELIMITER);
+		if (index != -1) {
+			return key.substring(0, index);
+		}
+		return null;
+	}
+    
+    
+    /**
+     * Returns the variable name without the namespace.
+     * @param key
+     * @return
+     */
+    public static String stripNamespace(String key) {
+    	int index = key.indexOf(NAMESPACE_DELIMITER);
+		if (index != -1) {
+			return key.substring(index + NAMESPACE_DELIMITER.length(), key.length());
+		}
+		return key;
+    }
+    
 
 	/**
 	 * This constructor is not usable. Please use 
@@ -229,15 +258,6 @@ public class SPVariableHelper implements SPVariableResolver {
 
 // *******************  Private helper methods **********************************
 
-	
-	public static String getNamespace(String key) {
-		int index = key.indexOf(":");
-		if (index != -1) {
-			return key.substring(0, index);
-		}
-		return null;
-	}
-	
 	
 	private Object upwardsRecursivelyResolveSingleValue(
 				SPObject currentNode, 
@@ -420,6 +440,4 @@ public class SPVariableHelper implements SPVariableResolver {
 			keys,
 			namespace);
 	}
-	
-	
 }
