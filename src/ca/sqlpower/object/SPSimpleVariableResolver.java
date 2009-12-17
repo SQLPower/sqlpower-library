@@ -37,12 +37,27 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	}
 	
 	/**
-	 * Stores a variable value.
+	 * Stores a variable value. If a value with the same key already exists,
+	 * a new value will be added.
 	 * @param key The key to store the value under.
 	 * @param value The value to store.
 	 */
 	public void store(String key, Object value) {
 		this.variables.put(key, value);
+	}
+	
+	/**
+	 * Updates a variable value. This means that if a variable with the
+	 * same key was already stored, it will be wiped and replaced by
+	 * the new value.
+	 * @param key The key to store the value under.
+	 * @param value The value to store.
+	 */
+	public void update(String key, Object value) {
+		if (this.variables.containsKey(key)) {
+			this.variables.remove(key);
+		}
+		this.store(key, value);
 	}
 
 	public Collection<Object> matches(String key, String partialValue) {
