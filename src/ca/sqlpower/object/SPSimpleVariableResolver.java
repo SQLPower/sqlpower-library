@@ -30,9 +30,11 @@ import org.apache.commons.collections.map.MultiValueMap;
  * This is a default implementation of a variable resolver the {@link SPObject}
  * implementations can use.
  * 
- * It implements the {@link SPVariableResolver} and is able to 
+ * It implements the {@link SPVariableResolver} and you can use it to store 
+ * variables. 
  * 
- * @author luc
+ * @see {@link SPVariableResolver}
+ * @author Luc Boudreau
  *
  */
 @SuppressWarnings("unchecked")

@@ -28,6 +28,7 @@ package ca.sqlpower.object;
  * It tells other variable resolvers that this object is capable
  * of resolving variables and it can thus provide a resolver.
  * 
+ * @see {@link SPVariableResolver}
  * @author Luc Boudreau
  */
 public interface SPVariableResolverProvider {

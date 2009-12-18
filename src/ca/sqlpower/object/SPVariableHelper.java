@@ -40,11 +40,18 @@ import org.apache.log4j.Logger;
  * can resolve the variable.
  * 
  * <p>There is an option available to make this helper walk down the tree
- * once it reaches the root. It will search the whole tree for all 
- * {@link SPVariableResolver} instances and resolve with everything it finds.
+ * once it reaches the root. It will therefore iterate over all children,
+ * starting at the root, until it finds a resolver for the given variable key.
+ * 
  * <b>Be aware that this mode is very costly in computational times</b> yet
  * it might be required if the variable comes from a node that is not directly
  * in the path of the source node to the root of the tree.
+ * 
+ * <p>There is also a flag to make this helper aggregate all results in finds
+ * in the tree. This means that even if it does find a resolver for a variable,
+ * it will keep searching and add to the collections of resolved values for the 
+ * variable.  It will search the whole tree for all 
+ * {@link SPVariableResolver} instances and resolve with everything it finds.
  * 
  * <p>For example, if you have database queries which provide variables,
  * the helper will indirectly trigger the execution of each of those queries in order
@@ -53,6 +60,7 @@ import org.apache.log4j.Logger;
  * use namespaces. This will prevent effective resolution of matches if
  * the namespace is not supported by the encountered {@link SPVariableResolver}.
  * 
+ * @see {@link SPVariableResolver}
  * @author Luc Boudreau
  */
 public class SPVariableHelper implements SPVariableResolver {
@@ -70,6 +78,11 @@ public class SPVariableHelper implements SPVariableResolver {
 	 */
 	private boolean globalCollectionResolve = false;
 	
+	/**
+	 * This is the node onto which this helper is bonded. Searches will
+	 * always start at this node, go up the tree to the root, then go down if
+	 * {@link SPVariableHelper#walkDown} is true.
+	 */
 	private final SPObject contextSource;
 	
 	private class NotFoundException extends Exception {};

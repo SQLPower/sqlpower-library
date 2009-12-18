@@ -32,11 +32,28 @@ import java.util.Collection;
  * 
  * <p>For example, one might expect a lookup key to be something like:
  * 
- * <blockquote><code>w1234-1234-1234-1234:myVariableKey</code></blockquote>
+ * <blockquote><code>w1234-1234-1234-1234::myVariableKey</code></blockquote>
  * 
  * <p>For performance reasons, it is strongly suggested of using those namespaces
  * and cache a map of namespaces<->resolvers. Large object models will benefit greatly
  * of this.
+ * 
+ * <p>The usual way of using the Variables framework goes like this. {@link SPObject} that want
+ * to expose variables must implement the {@link SPVariableResolverProvider} interface.
+ * They then instanciate a variable resolver. One default implementation is available as 
+ * {@link SPSimpleVariableResolver}. 
+ * 
+ * <p>The {@link SPSimpleVariableResolver} has a dual role. It is able to store and
+ * update variables in a MultiMap. Multiple values can therefore be stored under a 
+ * same variable key. It also implements the {@link SPVariableResolver} interface,
+ * which allows it to share variable values with it's fellow objects.
+ * 
+ * <p>In order to search through the tree and resolve variables, one instanciates
+ * a {@link SPVariableHelper} object and uses a specific node of the tree as a 
+ * constructor argument. This node will serve as a starting point to resolve
+ * variables. It will walk the tree and search for implementation of 
+ * {@link SPVariableResolverProvider}. There are lots of options available to configure
+ * the helper's behavior and optimize it's search routine. Read it's javadoc for more details.
  * 
  * @author Luc Boudreau
  */
