@@ -137,6 +137,11 @@ public interface SPVariableResolver {
 	 * as a parameter, we return true;
 	 * </li>
 	 * 
+	 * <p>Some resolvers don't follow these rules. For example, the builtin
+	 * {@link SPSimpleVariableResolver} by default operates in snobby mode.
+	 * This means that if you give it a namespace and ask him for non-namespaced
+	 * variables, he won't resolve them.
+	 * 
 	 * @param namespace The namespace for which we want to know if this resolver
 	 * is capable of resolving variables.
 	 * @return True or false.
@@ -160,8 +165,11 @@ public interface SPVariableResolver {
 	public Collection<Object> matches(String key, String partialValue);
 	
 	/**
-	 * This function is used to get all available variable names.
-	 * One can optionally pass a namespace scope, or null.
+	 * This function is used to get all available variable names
+	 * for a given namespace. Passing a null value as a namespace
+	 * will make all non-snubby resolvers to append to the list of
+	 * available keys.
+	 * 
 	 * @param namespace Either a namespace or null.
 	 * @return A collection of available variable names.
 	 */

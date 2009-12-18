@@ -26,11 +26,21 @@ import java.util.Set;
 
 import org.apache.commons.collections.map.MultiValueMap;
 
+/**
+ * This is a default implementation of a variable resolver the {@link SPObject}
+ * implementations can use.
+ * 
+ * It implements the {@link SPVariableResolver} and is able to 
+ * 
+ * @author luc
+ *
+ */
 @SuppressWarnings("unchecked")
 public class SPSimpleVariableResolver implements SPVariableResolver {
 	
 	private final MultiValueMap variables = new MultiValueMap();
-	private String namespace;
+	private String namespace = null;
+	private boolean snobbyResolver = true;
 	
 	public SPSimpleVariableResolver(String namespace) {
 		this.namespace = namespace;
@@ -39,23 +49,37 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	/**
 	 * Stores a variable value. If a value with the same key already exists,
 	 * a new value will be added.
+	 * 
+	 * If you try to store a variable with a different namespace than
+	 * the one it is configured to answer to, you get an {@link IllegalStateException}
+	 * 
 	 * @param key The key to store the value under.
 	 * @param value The value to store.
 	 */
 	public void store(String key, Object value) {
-		this.variables.put(key, value);
+		if (SPVariableHelper.getNamespace(key)!=null && !this.resolvesNamespace(SPVariableHelper.getNamespace(key))) {
+			throw new IllegalStateException("Cannot store a variable of namespace '" + SPVariableHelper.getNamespace(key) + "' because this resolver is configured to operate under the namespace '" + this.namespace + "'");
+		}
+		this.variables.put(SPVariableHelper.stripNamespace(key), value);
 	}
 	
 	/**
 	 * Updates a variable value. This means that if a variable with the
 	 * same key was already stored, it will be wiped and replaced by
 	 * the new value.
+	 * 
+	 * If you try to store a variable with a different namespace than
+	 * the one it is configured to answer to, you get an {@link IllegalStateException}
+	 * 
 	 * @param key The key to store the value under.
 	 * @param value The value to store.
 	 */
 	public void update(String key, Object value) {
-		if (this.variables.containsKey(key)) {
-			this.variables.remove(key);
+		if (SPVariableHelper.getNamespace(key)!=null && !this.resolvesNamespace(SPVariableHelper.getNamespace(key))) {
+			throw new IllegalStateException("Cannot store a variable of namespace '" + SPVariableHelper.getNamespace(key) + "' because this resolver is configured to operate under the namespace '" + this.namespace + "'");
+		}
+		if (this.variables.containsKey(SPVariableHelper.stripNamespace(key))) {
+			this.variables.remove(SPVariableHelper.stripNamespace(key));
 		}
 		this.store(key, value);
 	}
@@ -66,6 +90,14 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	 */
 	public void setNamespace(String namespace) {
 		this.namespace = namespace;
+	}
+	
+	/**
+	 * 
+	 * @param snobbyResolver
+	 */
+	public void setSnobbyResolver(boolean snobbyResolver) {
+		this.snobbyResolver = snobbyResolver;
 	}
 
 	public Collection<Object> matches(String key, String partialValue) {
@@ -129,6 +161,12 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 		if (namespace != null && this.namespace != null) {
 			return this.namespace.equals(namespace);
 		} else if (namespace != null && this.namespace == null) {
+			if (this.snobbyResolver) {
+				return false;
+			} else {
+				return true;
+			}
+		} else if (namespace == null && this.namespace != null && this.snobbyResolver) {
 			return false;
 		}
 		return true;
