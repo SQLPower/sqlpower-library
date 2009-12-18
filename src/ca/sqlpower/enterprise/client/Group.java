@@ -27,13 +27,16 @@ import org.springframework.security.GrantedAuthority;
 
 import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
 
 public class Group extends AbstractSPObject implements GrantedAuthority {
 
     private final List<Grant> grants = new ArrayList<Grant>();
     private final List<GroupMember> members = new ArrayList<GroupMember>();
 
-    public Group(String name) {
+    @Constructor
+    public Group(@ConstructorParameter(propertyName = "name") String name) {
     	setName(name);
     }
     

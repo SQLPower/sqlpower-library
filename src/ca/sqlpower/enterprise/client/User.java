@@ -28,6 +28,10 @@ import org.springframework.security.userdetails.UserDetails;
 
 import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.Mutator;
 
 public class User extends AbstractSPObject implements UserDetails {
 
@@ -37,7 +41,9 @@ public class User extends AbstractSPObject implements UserDetails {
     private String fullName = null;
     private String email = null;
 
-    public User(String username, String password) {
+    @Constructor
+    public User(@ConstructorParameter(propertyName = "name") String username, 
+    		@ConstructorParameter(propertyName = "password") String password) {
     	super();
         assert username != null;
         this.grants = new ArrayList<Grant>();
@@ -87,10 +93,12 @@ public class User extends AbstractSPObject implements UserDetails {
         // no-op
     }
 
+    @Accessor
     public String getPassword() {
         return password;
     }
 
+    @Mutator
     public void setPassword(String password) {
         String oldPassword = this.password;
         this.password = password;
@@ -124,20 +132,24 @@ public class User extends AbstractSPObject implements UserDetails {
     	addGrant((Grant) child, index);
     }
     
+    @Accessor
     public String getFullName() {
 		return fullName;
 	}
 
+    @Mutator
 	public void setFullName(String fullName) {
 		String oldName = this.fullName;
 		this.fullName = fullName;
 		firePropertyChange("fullName", oldName, this.fullName);
 	}
 
+	@Accessor
 	public String getEmail() {
 		return email;
 	}
 
+	@Mutator
 	public void setEmail(String email) {
 		String oldEmail = this.email;
 		this.email = email;

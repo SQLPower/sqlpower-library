@@ -24,12 +24,16 @@ import java.util.List;
 
 import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
 
 public class GroupMember extends AbstractSPObject {
 
     private final User user;
     
-    public GroupMember(User user) {
+    @Constructor
+    public GroupMember(@ConstructorParameter(propertyName = "user") User user) {
         this.user = user;
         if (user == null) {
         	throw new NullPointerException("User is null");
@@ -37,6 +41,7 @@ public class GroupMember extends AbstractSPObject {
     }
 
     @Override
+    @Accessor
     public String getName() {
     	return user.getName();
     }

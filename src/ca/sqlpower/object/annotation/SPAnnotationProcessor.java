@@ -451,8 +451,13 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				
 			} else {
 				sb.append(cpo.getType().getSimpleName() + " " + cpo.getName() + " = " + 
-						cpo.getType().getSimpleName() + ".valueOf(\"" + 
-						cpo.getValue() + "\");\n");
+						cpo.getType().getSimpleName() + ".valueOf(");
+				
+				if (cpo.getType() == Character.class) {
+					sb.append("'" + cpo.getValue() + "');\n");
+				} else {
+					sb.append("\"" + cpo.getValue() + "\");\n");
+				}
 			}
 		}
 		sb.append("\n");

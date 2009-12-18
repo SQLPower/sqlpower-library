@@ -58,16 +58,12 @@ public abstract class SPPersisterHelperFactory {
 	public <T extends SPObject> void commitProperty(
 			T spo, 
 			String propertyName, 
-			Object newValue, 
-			SessionPersisterSuperConverter converter) throws SPPersistenceException {
+			Object newValue) throws SPPersistenceException {
 		SPPersisterHelper<T> helper = getSPPersisterHelper((Class<T>) spo.getClass());
 		helper.commitProperty(spo, propertyName, newValue, converter);
 	}
 
-	public <T extends SPObject> void findProperty(
-			T spo, 
-			String propertyName, 
-			SessionPersisterSuperConverter converter) throws SPPersistenceException {
+	public <T extends SPObject> void findProperty(T spo, String propertyName) throws SPPersistenceException {
 		SPPersisterHelper<T> helper = getSPPersisterHelper((Class<T>) spo.getClass());
 		helper.findProperty(spo, propertyName, converter);
 	}
