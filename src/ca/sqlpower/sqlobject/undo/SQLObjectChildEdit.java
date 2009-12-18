@@ -48,6 +48,7 @@ public class SQLObjectChildEdit extends AbstractUndoableEdit {
 	}
 	
 	public void removeChild(){
+		logger.debug("Removing child " + e.getChildType().getSimpleName() + " from parent " + e.getSource().getClass().getSimpleName());
 		SQLObject source = (SQLObject) e.getSource();
 		SQLObject parent = (SQLObject) source.getParent();
 		try {
@@ -70,7 +71,7 @@ public class SQLObjectChildEdit extends AbstractUndoableEdit {
 	
 	
 	public void addChild() throws SQLObjectException {
-	
+		logger.debug("Adding child " + e.getChildType().getSimpleName() + " to parent " + e.getSource().getClass().getSimpleName());
 		SQLObject source = (SQLObject) e.getSource();
 		SQLObject parent = source.getParent();
 		try{
@@ -89,6 +90,7 @@ public class SQLObjectChildEdit extends AbstractUndoableEdit {
 	
 	@Override
 	public void redo() throws CannotRedoException {
+		logger.debug("Redoing " + e);
 		try {
 			if (e.getType() == EventType.ADDED) {
 				addChild();
@@ -103,6 +105,7 @@ public class SQLObjectChildEdit extends AbstractUndoableEdit {
 	
 	@Override
 	public void undo() throws CannotRedoException {
+		logger.debug("Undoing " + e);
 		try {
 			if (e.getType() == EventType.ADDED) {
 				removeChild();
@@ -153,6 +156,11 @@ public class SQLObjectChildEdit extends AbstractUndoableEdit {
 	public String getPresentationName() {
 		
 		return toolTip;
+	}
+	
+	@Override
+	public String toString() {
+		return "Child Edit: Event=[" + e + "]";
 	}
 	
 }

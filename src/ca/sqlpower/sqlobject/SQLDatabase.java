@@ -823,9 +823,15 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
-		types.add(SQLCatalog.class);
-		types.add(SQLSchema.class);
-		types.add(SQLTable.class);
+		if (schemas.isEmpty() && tables.isEmpty()) {
+			types.add(SQLCatalog.class);
+		}
+		if (catalogs.isEmpty() && tables.isEmpty()) {
+			types.add(SQLSchema.class);
+		}
+		if (catalogs.isEmpty() && schemas.isEmpty()) {
+			types.add(SQLTable.class);
+		}
 		return Collections.unmodifiableList(types);
 	}
 }

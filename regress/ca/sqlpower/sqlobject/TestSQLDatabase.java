@@ -287,7 +287,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 			db.addChild(cat);
 			assertEquals(db.getCatalogByName("a catalog name should not exist in database"),cat);
 			assertNull(db.getCatalogByName("a catalog name should not exist in database xx2"));
-		} catch ( SQLObjectException e ) {
+		} catch ( IllegalArgumentException e ) {
 			if ( db.isCatalogContainer() ) {
 				throw e;
 			}					

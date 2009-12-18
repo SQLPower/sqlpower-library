@@ -297,6 +297,9 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
      */
     @Override
     public synchronized void undo() throws CannotUndoException {
+    	if (logger.isDebugEnabled()) {
+    		logger.debug("Undoing");
+    	}
         undoing = true;
         super.undo();
         fireStateChanged();

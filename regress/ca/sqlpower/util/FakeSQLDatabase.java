@@ -25,12 +25,12 @@ package ca.sqlpower.util;
 import java.sql.SQLException;
 import java.util.Properties;
 
-import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.testutil.MockJDBCConnection;
 import ca.sqlpower.testutil.MockJDBCDriver;
+import ca.sqlpower.testutil.StubDataSourceCollection;
 
 /**
  * A SQLDatabase instance that uses a MockJDBCConnection. This class takes care
@@ -47,7 +47,7 @@ public class FakeSQLDatabase extends SQLDatabase {
         super((JDBCDataSource) null);
         MockJDBCDriver driver = new MockJDBCDriver();
         con = (MockJDBCConnection) driver.connect(url, new Properties());
-        ds = new JDBCDataSource((DataSourceCollection)null) {
+        ds = new JDBCDataSource(new StubDataSourceCollection()) {
             
             @Override
             public String getName() {
