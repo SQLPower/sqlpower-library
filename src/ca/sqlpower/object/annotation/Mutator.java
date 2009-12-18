@@ -23,7 +23,7 @@ import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
-import ca.sqlpower.dao.SPPersisterHelper;
+import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.object.SPObject;
 
 /**

@@ -17,10 +17,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-package ca.sqlpower.dao;
+package ca.sqlpower.dao.helper;
 
 import java.util.List;
 
+import ca.sqlpower.dao.PersistedSPOProperty;
+import ca.sqlpower.dao.PersistedSPObject;
+import ca.sqlpower.dao.SPPersistenceException;
+import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
@@ -56,25 +60,29 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *            {@link PersistedSPOProperty}. Some entries within this
 	 *            {@link Multimap} will be removed if the {@link SPObject}
 	 *            constructor it calls requires arguments.
-	 * @param persistedObject
+	 * @param pso
 	 *            The {@link PersistedSPObject} that the {@link SPObject} is
 	 *            being created from. The UUID to use for the created
 	 *            {@link SPObject} is to be taken from this object and the
 	 *            loaded flag should be set the true before returning the newly
 	 *            created {@link SPObject}.
-	 * @param persistedObjectsList
+	 * @param persistedObjects
 	 *            The {@link List} of {@link PersistedSPObject}s that has been
 	 *            persisted in an {@link SPPersister}. This is to be used for
 	 *            {@link SPObject}s that take children in their constructor,
 	 *            where the {@link SPPersisterHelper} factory finds the
 	 *            appropriate {@link SPPersisterHelper} for that child type and
 	 *            calls commitObject on that as well.
+	 * @param factory
+	 *            The {@link SPPersisterHelperFactory} to use to commit child
+	 *            objects.
 	 * @return The created {@link SPObject} with the given required persisted
 	 *         properties.
 	 */
 	T commitObject(Multimap<String, PersistedSPOProperty> persistedProperties, 
-			PersistedSPObject persistedObject,
-			List<PersistedSPObject> persistedObjectsList);
+			PersistedSPObject pso,
+			List<PersistedSPObject> persistedObjects,
+			SPPersisterHelperFactory factory);
 
 	/**
 	 * Applies a property change on the given {@link SPObject} and property

@@ -19,7 +19,7 @@
 
 package ca.sqlpower.object.annotation;
 
-import ca.sqlpower.dao.SPPersisterHelper;
+import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.object.SPObject;
 
 import com.sun.mirror.type.ClassType;

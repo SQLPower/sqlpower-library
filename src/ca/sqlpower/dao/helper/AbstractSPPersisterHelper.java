@@ -17,10 +17,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-package ca.sqlpower.dao;
+package ca.sqlpower.dao.helper;
 
 import java.util.List;
 
+import ca.sqlpower.dao.PersistedSPOProperty;
+import ca.sqlpower.dao.PersistedSPObject;
 import ca.sqlpower.object.SPObject;
 
 import com.google.common.collect.Multimap;

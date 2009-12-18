@@ -25,7 +25,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Modifier;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,14 +33,15 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.Map.Entry;
 
-import ca.sqlpower.dao.AbstractSPPersisterHelper;
 import ca.sqlpower.dao.PersistedSPOProperty;
 import ca.sqlpower.dao.PersistedSPObject;
 import ca.sqlpower.dao.PersisterUtils;
 import ca.sqlpower.dao.SPPersistenceException;
 import ca.sqlpower.dao.SPPersister;
-import ca.sqlpower.dao.SPPersisterHelper;
 import ca.sqlpower.dao.SPPersister.DataType;
+import ca.sqlpower.dao.helper.AbstractSPPersisterHelper;
+import ca.sqlpower.dao.helper.SPPersisterHelper;
+import ca.sqlpower.dao.helper.SPPersisterHelperFactory;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
@@ -62,11 +62,13 @@ import com.sun.mirror.util.DeclarationVisitors;
  * a session {@link SPPersister}.
  */
 public class SPAnnotationProcessor implements AnnotationProcessor {
-	
+
 	/**
-	 * The simple name of the {@link SPPersisterHelper} factory.
+	 * The simple name of the {@link SPPersisterHelperFactory} extending class
+	 * that implements the getSPPersisterHelper method.
 	 */
-	private final String FACTORY_NAME = "SPPersisterHelperFactory";
+	private final String FACTORY_NAME = SPPersisterHelperFactory.class.getSimpleName() +
+			"Impl";
 
 	/**
 	 * The {@link AnnotationProcessorEnvironment} this
@@ -88,14 +90,13 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		this.environment = environment;
 	}
 
-	@SuppressWarnings("unchecked")
 	public void process() {
 		Map<Class<? extends SPObject>, SPClassVisitor> visitors = new HashMap<Class<? extends SPObject>, SPClassVisitor>();
 		
 		for (TypeDeclaration typeDecl : environment.getTypeDeclarations()) {
 			SPClassVisitor visitor = new SPClassVisitor();
 			typeDecl.accept(DeclarationVisitors.getDeclarationScanner(DeclarationVisitors.NO_OP, visitor));
-			if (visitor.getVisitedClass() != null) {
+			if (visitor.isValid() && visitor.getVisitedClass() != null) {
 				visitors.put(visitor.getVisitedClass(), visitor);
 			}
 		}
@@ -142,6 +143,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 						if (!propertiesToAccess.containsKey(methodName)) {
 							propertiesToAccess.put(methodName, accessorEntry.getValue());
 							
+							// Add inherited accessor required additional information.
 							accessorAdditionalInfo.putAll(methodName, 
 									superClassVisitor.getAccessorAdditionalInfo().get(methodName));
 						}
@@ -174,6 +176,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			}
 		}
 		
+		// Generate the SPPersisterHelperFactory file.
 		generateFactoryFile(visitors.keySet());
 	}
 
@@ -227,13 +230,18 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			Multimap<String, Class<? extends Exception>> mutatorThrownTypes,
 			Set<String> propertiesToPersistOnlyIfNonNull) {
 		try {
+			final String helperPackage = SPPersisterHelper.class.getPackage().getName();
 			int tabs = 0;
+			
 			Filer f = environment.getFiler();
-			PrintWriter pw = f.createSourceFile(visitedClass.getSimpleName() + "PersisterHelper");
+			PrintWriter pw = f.createSourceFile("src." + helperPackage + 
+					"." + visitedClass.getSimpleName() + "PersisterHelper");
 			
 			pw.print(generateWarning());
 			pw.print("\n");
 			pw.print(generateLicense());
+			pw.print("\n");
+			pw.print("package " + helperPackage + ";\n");
 			pw.print("\n");
 			pw.print(generateImports(visitedClass, imports));
 			pw.print("\n");
@@ -253,9 +261,10 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			pw.print("\n");
 			pw.print(generatePersistObjectMethod(visitedClass, constructorParameters, 
 					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs));
+			pw.print("\n");
 			
 			tabs--;
-			pw.print("\n}\n");
+			pw.print("}\n");
 			pw.close();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -342,20 +351,23 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		// XXX Need to import any additional classes this generated persister helper
 		// class requires, aside from those needed in visitedClass.
+		allImports.add(List.class.getName());
 		allImports.add(visitedClass.getName());
-		allImports.add(AbstractSPPersisterHelper.class.getName());
 		allImports.add(PersistedSPOProperty.class.getName());
+		allImports.add(PersistedSPObject.class.getName());
 		allImports.add(SPPersistenceException.class.getName());
 		allImports.add(SPPersister.class.getName());
+		allImports.add(DataType.class.getName());
 		allImports.add(SessionPersisterSuperConverter.class.getName());
 		allImports.add(Multimap.class.getName());
-		allImports.add(List.class.getName());
-		allImports.add(PersistedSPObject.class.getName());
 		
 		for (String pkg : allImports) {
 			// No need to import java.lang as it is automatically imported.
 			if (!pkg.startsWith("java.lang")) {
-				sb.append("import " + pkg + ";\n");
+				// Nested classes, enums, etc. will be separated by the "$"
+				// character but we need to change them to "." so it can be
+				// imported correctly.
+				sb.append("import " + pkg.replaceAll("\\$", ".") + ";\n");
 			}
 		}
 		
@@ -403,7 +415,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				PersistedSPObject.class.getSimpleName() + " " + persistedObjectField + ", " +
 				List.class.getSimpleName() + "<" + 
 						PersistedSPObject.class.getSimpleName() + "> " + persistedObjectsListField + ", " +
-				FACTORY_NAME + " " + factoryField + ") {\n");
+				SPPersisterHelperFactory.class.getSimpleName() + " " + factoryField + ") {\n");
 		tabs++;
 		
 		sb.append(indent(tabs));
@@ -420,7 +432,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			
 			if (cpo.isProperty()) {
 				sb.append(cpo.getType().getSimpleName() + " " + cpo.getName() + 
-						" = findPropertyAndRemove(" + uuidField + ", " +
+						" = (" + cpo.getType().getSimpleName() + ") " + 
+						"findPropertyAndRemove(" + uuidField + ", " +
 						"\"" + cpo.getName() + "\", " + 
 						persistedPropertiesField + ");\n");
 			} else if (SPObject.class.isAssignableFrom(cpo.getType())) {
@@ -706,7 +719,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			
 			for (String additionalProperty : accessorAdditionalInfo.get(methodName)) {
 				sb.append(", " + objectField + "." + 
-						SPAnnotationProcessorUtils.convertPropertyToAccessor(additionalProperty, null));
+						SPAnnotationProcessorUtils.convertPropertyToAccessor(additionalProperty, null) +
+						"()");
 			}
 			
 			sb.append(");\n");
@@ -790,7 +804,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		// persistObject method header.
 		sb.append(indent(tabs));
-		sb.append("public class persistObject(" + visitedClass.getSimpleName() + " " + 
+		sb.append("public void persistObject(" + visitedClass.getSimpleName() + " " + 
 				objectField + ", int " + indexField + ", " + 
 				SPPersister.class.getSimpleName() + " " + persisterField + ", " +
 				SessionPersisterSuperConverter.class.getSimpleName() + " " + 
@@ -803,7 +817,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				objectField + ".getUUID();\n");
 		
 		sb.append(indent(tabs));
-		sb.append("final " + String.class.getSimpleName() + " " + 
+		sb.append(String.class.getSimpleName() + " " + 
 				parentUUIDField + " = null;\n");
 		
 		sb.append(indent(tabs));
@@ -932,38 +946,30 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 */
 	private void generateFactoryFile(Set<Class<? extends SPObject>> persistableClasses) {
 		try {
-			final String persisterField = "persister";
-			final String converterField = "converter";
+			final String factoryPackage = 
+				SPPersisterHelperFactory.class.getPackage().getName();
 			final String getHelperMethodName = "getSPPersisterHelper";
 			int tabs = 0;
 			
 			Filer f = environment.getFiler();
-			PrintWriter pw = f.createSourceFile(FACTORY_NAME);
+			PrintWriter pw = f.createSourceFile("src." + factoryPackage + 
+					"." + FACTORY_NAME);
 			pw.print(generateWarning());
 			pw.print("\n");
 			pw.print(generateLicense());
 			pw.print("\n");
-			pw.print(generateFactoryImports());
+			pw.print("package " + factoryPackage + ";\n");
 			pw.print("\n");
-			pw.print("public class " + FACTORY_NAME + " {\n\n");
+			pw.print(generateFactoryImports(persistableClasses));
+			pw.print("\n");
+			pw.print("public class " + FACTORY_NAME + " extends " + SPPersisterHelperFactory.class.getSimpleName() + " {\n\n");
 			tabs++;
 			
-			pw.print(generateFactoryFields(persisterField, converterField, persistableClasses, 
-					tabs));
-			pw.print("\n");
-			pw.print(generateFactoryConstructor(persisterField, 
-					converterField, tabs));
+			pw.print(generateFactoryFields(persistableClasses, tabs));
+			pw.print(generateFactoryConstructor(tabs));
 			pw.print("\n");
 			pw.print(generateFactoryGetHelperMethod(getHelperMethodName, persistableClasses, tabs));
 			pw.print("\n");
-			pw.print(generateFactoryCommitObjectMethod(getHelperMethodName, tabs));
-			pw.print("\n");
-			pw.print(generateFactoryCommitPropertyMethod(converterField, getHelperMethodName, tabs));
-			pw.print("\n");
-			pw.print(generateFactoryFindPropertyMethod(converterField, getHelperMethodName, tabs));
-			pw.print("\n");
-			pw.print(generateFactoryPersistObjectMethod(persisterField, converterField, 
-					getHelperMethodName, tabs));
 			
 			tabs--;
 			pw.print("}\n");
@@ -980,32 +986,40 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 * 
 	 * @return The source code for the generated imports.
 	 */
-	private String generateFactoryImports() {
+	private String generateFactoryImports(Set<Class<? extends SPObject>> persistableClasses) {
 		Set<String> imports = new TreeSet<String>();
+		imports.add(SPPersisterHelper.class.getName());
+		imports.add(SPPersisterHelperFactory.class.getName());
 		imports.add(SPObject.class.getName());
+		imports.add(SPPersister.class.getName());
 		imports.add(SessionPersisterSuperConverter.class.getName());
-		imports.add(SPPersistenceException.class.getName());
-		imports.add(Multimap.class.getName());
-		imports.add(List.class.getName());
-		imports.add(PersistedSPObject.class.getName());
-		imports.add(PersistedSPOProperty.class.getName());
+		
+		final String helperPackage = SPPersisterHelper.class.getPackage().getName();
+		
+		for (Class<? extends SPObject> c : persistableClasses) {
+			if (!Modifier.isAbstract(c.getModifiers())) {
+				imports.add(c.getName());
+				imports.add(helperPackage + "." + c.getSimpleName() + "PersisterHelper");
+			}
+		}
 		
 		StringBuilder sb = new StringBuilder();
 		for (String pkg : imports) {
-			sb.append("import " + pkg + ";\n");
+			// No need to import java.lang as it is automatically imported.
+			if (!pkg.startsWith("java.lang")) {
+				// Nested classes, enums, etc. will be separated by the "$"
+				// character but we need to change them to "." so it can be
+				// imported correctly.
+				sb.append("import " + pkg.replaceAll("\\$", ".") + ";\n");
+			}
 		}
 		return sb.toString();
 	}
 
 	/**
 	 * Generates and returns source code for the persister helper declarations
-	 * and initializations, and the {@link SPPersister} and
-	 * {@link SessionPersisterSuperConverter} field declarations.
+	 * and initializations.
 	 * 
-	 * @param persisterField
-	 *            The name of the {@link SPPersister} field.
-	 * @param converterField
-	 *            The name of the {@link SessionPersisterSuperConverter} field.
 	 * @param persistableClasses
 	 *            The {@link Set} of {@link SPObject}s that are annotated with
 	 *            {@link Persistable}.
@@ -1014,28 +1028,24 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 * @return The source code for the generated field declarations and
 	 *         initializations.
 	 */
-	private String generateFactoryFields(String persisterField, String converterField,
-			Set<Class<? extends SPObject>> persistableClasses, int tabs) {
+	private String generateFactoryFields(
+			Set<Class<? extends SPObject>> persistableClasses, 
+			int tabs) {
 		StringBuilder sb = new StringBuilder();
 		
 		for (Class<? extends SPObject> clazz : persistableClasses) {
+			if (Modifier.isAbstract(clazz.getModifiers())) {
+				continue;
+			}
 			sb.append(indent(tabs));
 			sb.append("private final " + clazz.getSimpleName() + "PersisterHelper " + 
 					SPAnnotationProcessorUtils.convertClassToFieldName(clazz) + 
 					" = new " + clazz.getSimpleName() + "PersisterHelper();\n\n");
 		}
 		
-		sb.append(indent(tabs));
-		sb.append("private final " + SPPersister.class.getSimpleName() + " " + 
-				persisterField + ";\n\n");
-		
-		sb.append(indent(tabs));
-		sb.append("private final " + SessionPersisterSuperConverter.class.getSimpleName() + 
-				" " + converterField + ";\n");
-		
 		return sb.toString();
 	}
-
+	
 	/**
 	 * Generates and returns source code for the SPPersisterHelper factory
 	 * constructor, which initializes the {@link SPPersister} and
@@ -1052,10 +1062,9 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 *            block.
 	 * @return The source code for the generated constructor.
 	 */
-	private String generateFactoryConstructor(
-			final String persisterField, 
-			final String converterField, 
-			int tabs) {
+	private String generateFactoryConstructor(int tabs) {
+		final String persisterField = "persister";
+		final String converterField = "converter";
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append(indent(tabs));
@@ -1066,10 +1075,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		tabs++;
 		
 		sb.append(indent(tabs));
-		sb.append("this." + persisterField + " = " + persisterField + ";\n");
-		
-		sb.append(indent(tabs));
-		sb.append("this." + converterField + " = " + converterField + ";\n");
+		sb.append("super(" + persisterField + ", " + converterField + ");\n");
 		
 		tabs--;
 		sb.append(indent(tabs));
@@ -1099,12 +1105,14 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			int tabs) {
 		StringBuilder sb = new StringBuilder();
 		boolean firstIf = true;
+		final String genericTypeField = "T";
 		final String classTypeField = "clazz";
 		
 		sb.append(indent(tabs));
-		sb.append("private " + SPPersisterHelper.class.getSimpleName() + " " + 
+		sb.append("public <" + genericTypeField + " extends " + SPObject.class.getSimpleName() + "> " + 
+				SPPersisterHelper.class.getSimpleName() + "<" + genericTypeField + "> " + 
 				getHelperMethodName + "(" + Class.class.getSimpleName() + 
-				"<? extends " + SPObject.class.getSimpleName() + "> " + classTypeField + ") {\n");
+				"<" + genericTypeField + "> " + classTypeField + ") {\n");
 		tabs++;
 		
 		for (Class<? extends SPObject> clazz : persistableClasses) {
@@ -1123,7 +1131,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			tabs++;
 			
 			sb.append(indent(tabs));
-			sb.append("return " + SPAnnotationProcessorUtils.convertClassToFieldName(clazz) + 
+			sb.append("return (" + SPPersisterHelper.class.getSimpleName() + "<" + genericTypeField + ">) " + SPAnnotationProcessorUtils.convertClassToFieldName(clazz) + 
 					";\n");
 
 			tabs--;
@@ -1156,225 +1164,4 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		return sb.toString();
 	}
 
-	/**
-	 * Generates and returns source code for the {@link SPPersisterHelper}
-	 * factory commitObject method. This method determines which
-	 * {@link SPPersisterHelper} to use based on the given {@link SPObject}
-	 * class and calls the {@link SPPersisterHelper#commitObject(Collection)}
-	 * method of that helper.
-	 * 
-	 * @param getHelperMethodName
-	 *            The name of the method to use to return the appropriate
-	 *            {@link SPPersisterHelper} based on the given {@link SPObject}
-	 *            class.
-	 * @param tabs
-	 *            The number of tab characters to use to indent this method
-	 *            block.
-	 * @return The source code for this generated commitObject method.
-	 * @see SPPersisterHelper#commitObject(Collection)
-	 */
-	private String generateFactoryCommitObjectMethod(
-			final String getHelperMethodName, 
-			int tabs) {
-		StringBuilder sb = new StringBuilder();
-		
-		final String genericTypeField = "T";
-		final String classTypeField = "clazz";
-		final String persistedPropertiesField = "persistedProperties";
-		final String persistedObjectField = "pso";
-		final String persistedObjectsListField = "persistedObjects";
-		final String helperField = "helper";
-		
-		sb.append(indent(tabs));
-		sb.append("public <" + genericTypeField + " extends " + 
-						SPObject.class.getSimpleName() + "> " + genericTypeField + 
-						" commitObject(" + 
-				Class.class.getSimpleName() + "<" + genericTypeField + " extends " + 
-						SPObject.class.getSimpleName() + "> " + classTypeField + ", "+ 
-				Multimap.class.getSimpleName() + "<" + 
-						String.class.getSimpleName() + ", " +
-						PersistedSPOProperty.class.getSimpleName() + "> " + 
-						persistedPropertiesField + ", " +
-				PersistedSPObject.class.getSimpleName() + " " + persistedObjectField + ", " +
-				List.class.getSimpleName() + "<" + PersistedSPObject.class.getSimpleName() + "> " + 
-						persistedObjectsListField + ") {\n");
-		tabs++;
-		
-		sb.append(indent(tabs));
-		sb.append(SPPersisterHelper.class.getSimpleName() + " " + helperField + " = " + 
-				getHelperMethodName + "(" + classTypeField + ");\n");
-		
-		sb.append(indent(tabs));
-		sb.append("return " + helperField + ".commitObject(" + persistedPropertiesField + 
-				", " + persistedObjectField + ", " + persistedObjectsListField + ", this);\n");
-		
-		tabs--;
-		sb.append(indent(tabs));
-		sb.append("}\n");
-		
-		return sb.toString();
-	}
-
-	/**
-	 * Generates and returns source code for the {@link SPPersisterHelper}
-	 * factory commitProperty method. This method determines which
-	 * {@link SPPersisterHelper} to use based on the type of {@link SPObject}
-	 * passed in and calls the
-	 * {@link SPPersisterHelper#commitProperty(SPObject, String, Object, SessionPersisterSuperConverter)}
-	 * method of that helper.
-	 * 
-	 * @param converterField
-	 *            The name of the {@link SessionPersisterSuperConverter} field
-	 *            to pass into the commitProperty method of the helper.
-	 * @param getHelperMethodName
-	 *            The name of the method to use to return the appropriate
-	 *            {@link SPPersisterHelper} based on the given {@link SPObject}
-	 *            class.
-	 * @param tabs
-	 *            The number of tab characters to use to indent this method
-	 *            block.
-	 * @return The source code for the generated method.
-	 * @see SPPersisterHelper#commitProperty(SPObject, String, Object,
-	 *      SessionPersisterSuperConverter)
-	 */
-	private String generateFactoryCommitPropertyMethod(
-			final String converterField, 
-			final String getHelperMethodName, 
-			int tabs) {
-		StringBuilder sb = new StringBuilder();
-		
-		final String objectField = "spo";
-		final String helperField = "helper";
-		final String propertyNameField = "propertyName";
-		final String newValueField = "newValue";
-		
-		sb.append(indent(tabs));
-		sb.append("public void commitProperty(" + SPObject.class.getSimpleName() + " " + objectField + ", " + 
-				String.class.getSimpleName() + " " + propertyNameField + ", " + 
-				Object.class.getSimpleName() + " " + newValueField + ", " + 
-				SessionPersisterSuperConverter.class.getSimpleName() + " " + converterField + 
-				") throws " + SPPersistenceException.class.getSimpleName() + " {\n");
-		tabs++;
-		
-		sb.append(indent(tabs));
-		sb.append(SPPersisterHelper.class.getSimpleName() + " " + helperField + " = " + 
-				getHelperMethodName + "(" + objectField + ".getClass());\n");
-		
-		sb.append(indent(tabs));
-		sb.append(helperField + ".commitProperty(" + objectField + ", " + propertyNameField + ", " + newValueField + ", " + converterField + ");\n");
-		
-		tabs--;
-		sb.append(indent(tabs));
-		sb.append("}\n");
-		
-		return sb.toString();
-	}
-
-	/**
-	 * Generates and returns source code for the {@link SPPersisterHelper}
-	 * factory findProperty method. This method determines which
-	 * {@link SPPersisterHelper} to use based on the given {@link SPObject}
-	 * class and calls the
-	 * {@link SPPersisterHelper#findProperty(SPObject, String, SessionPersisterSuperConverter)}
-	 * method of that helper.
-	 * 
-	 * @param converterField
-	 *            The name of the {@link SessionPersisterSuperConverter} field
-	 *            to pass into the findProperty method of the helper.
-	 * @param getHelperMethodName
-	 *            The name of the method to use to return the appropriate
-	 *            {@link SPPersisterHelper} based on the given {@link SPObject}
-	 *            class.
-	 * @param tabs
-	 *            The number of tab characters to use to indent this method
-	 *            block.
-	 * @return The source code for the generated method.
-	 * @see SPPersisterHelper#findProperty(SPObject, String,
-	 *      SessionPersisterSuperConverter)
-	 */
-	private String generateFactoryFindPropertyMethod(
-			final String converterField, 
-			final String getHelperMethodName, 
-			int tabs) {
-		StringBuilder sb = new StringBuilder();
-		
-		final String objectField = "spo";
-		final String helperField = "helper";
-		final String propertyNameField = "propertyName";
-		
-		sb.append(indent(tabs));
-		sb.append("public void findProperty(" + SPObject.class.getSimpleName() + " " + objectField + ", " + 
-				String.class.getSimpleName() + " " + propertyNameField + 
-				SessionPersisterSuperConverter.class.getSimpleName() + " " + converterField + 
-				") throws " + SPPersistenceException.class.getSimpleName() + " {\n");
-		tabs++;
-		
-		sb.append(indent(tabs));
-		sb.append(SPPersisterHelper.class.getSimpleName() + " " + helperField + " = " + 
-				getHelperMethodName + "(" + objectField + ".getClass());\n");
-		
-		sb.append(indent(tabs));
-		sb.append(helperField + ".findProperty(" + objectField + ", " + propertyNameField + ", " + converterField + ");\n");
-		
-		tabs--;
-		sb.append(indent(tabs));
-		sb.append("}\n");
-		
-		return sb.toString();
-	}
-
-	/**
-	 * Generates and returns source code for the {@link SPPersisterHelper}
-	 * factory persistObject method. This method determines which
-	 * {@link SPPersisterHelper} to use based on the type of {@link SPObject}
-	 * passed in and calls the
-	 * {@link SPPersisterHelper#persistObject(SPObject, int, SPPersister, SessionPersisterSuperConverter)}
-	 * method of that helper.
-	 * 
-	 * @param persisterField
-	 *            The name of the {@link SPPersister} field to pass into the
-	 *            persistObject method of the helper.
-	 * @param converterField
-	 *            The name of the {@link SessionPersisterSuperConverter} field
-	 *            to pass into the persistObject method of the helper.
-	 * @param getHelperMethodName
-	 *            The name of the method to use to return the appropriate
-	 *            {@link SPPersisterHelper} based on the given {@link SPObject}
-	 *            class.
-	 * @param tabs
-	 *            The number of tab characters to use to indent this method
-	 *            block.
-	 * @return The source code for the generated persistObject method.
-	 * @see SPPersisterHelper#persistObject(SPObject, int, SPPersister,
-	 *      SessionPersisterSuperConverter)
-	 */
-	private String generateFactoryPersistObjectMethod(
-			final String persisterField, 
-			final String converterField, 
-			final String getHelperMethodName, 
-			int tabs) {
-		StringBuilder sb = new StringBuilder();
-		
-		final String objectField = "spo";
-		final String indexField = "index";
-		final String helperField = "helper";
-		sb.append(indent(tabs));
-		sb.append("public void persistObject(" + SPObject.class.getSimpleName() + " " + 
-				objectField + ", int " + indexField + ") {\n");
-		tabs++;
-		
-		sb.append(indent(tabs));
-		sb.append(SPPersisterHelper.class.getSimpleName() + " " + helperField + " = " + getHelperMethodName + "(" + objectField + ".getClass());\n");
-		
-		sb.append(indent(tabs));
-		sb.append(helperField + ".persistObject(" + objectField + ", " + indexField + 
-				", " + persisterField + ", " + converterField + ");\n");
-		
-		tabs--;
-		sb.append(indent(tabs));
-		sb.append("}\n");
-		
-		return sb.toString();
-	}
-	
 }

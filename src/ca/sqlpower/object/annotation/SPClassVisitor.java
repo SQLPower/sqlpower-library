@@ -19,7 +19,6 @@
 
 package ca.sqlpower.object.annotation;
 
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,7 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 import ca.sqlpower.dao.SPPersister;
-import ca.sqlpower.dao.SPPersisterHelper;
+import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.object.SPObject;
 
 import com.google.common.collect.HashMultimap;
@@ -69,6 +68,11 @@ import com.sun.mirror.util.DeclarationVisitor;
  * {@link SPPersisterHelper} classes.
  */
 public class SPClassVisitor implements DeclarationVisitor {
+	
+	/**
+	 * @see #isValid()
+	 */
+	private boolean valid = true;
 
 	/**
 	 * @see #getVisitedClass()
@@ -114,6 +118,13 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 * @see #propertiesToPersistOnlyIfNonNull
 	 */
 	private Set<String> propertiesToPersistOnlyIfNonNull = new HashSet<String>();
+	
+	/**
+	 * Returns whether the visited class along with all its annotated elements is valid.
+	 */
+	public boolean isValid() {
+		return valid;
+	}
 
 	/**
 	 * Returns the {@link SPObject} class this {@link DeclarationVisitor} is
@@ -198,12 +209,12 @@ public class SPClassVisitor implements DeclarationVisitor {
 		return Collections.unmodifiableSet(propertiesToPersistOnlyIfNonNull);
 	}
 
-	@SuppressWarnings("unchecked")
 	public void visitClassDeclaration(ClassDeclaration d) {
 		if (d.getAnnotation(Persistable.class) != null) {
 			try {
 				visitedClass = (Class<? extends SPObject>) Class.forName(d.getQualifiedName());
 			} catch (ClassNotFoundException e) {
+				valid = false;
 				e.printStackTrace();
 			}
 		}
@@ -239,6 +250,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 							imports.add(c.getName());
 						}
 					} catch (ClassNotFoundException e) {
+						valid = false;
 						e.printStackTrace();
 					}
 				}
@@ -246,7 +258,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 		}
 	}
 	
-	@SuppressWarnings("unchecked")
 	public void visitMethodDeclaration(MethodDeclaration d) {
 		Accessor accessorAnnotation = d.getAnnotation(Accessor.class);
 		Mutator mutatorAnnotation = d.getAnnotation(Mutator.class);
@@ -304,6 +315,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 			imports.add(c.getName());
 			
 		} catch (ClassNotFoundException e) {
+			valid = false;
 			e.printStackTrace();
 		}
 	}
