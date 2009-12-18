@@ -62,7 +62,7 @@ public @interface ConstructorParameter {
 	 * should be a {@link String} representation of the value to be used by
 	 * session {@link SPPersister}s when passing in constructor arguments to
 	 * create the {@link SPObject}. Note that this field should only and must be
-	 * used if {@link #isProperty()} is false.
+	 * used if {@link #isProperty()} is true.
 	 */
 	String defaultValue() default "";
 	
