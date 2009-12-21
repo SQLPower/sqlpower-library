@@ -209,7 +209,29 @@ public class SPClassVisitor implements DeclarationVisitor {
 		return Collections.unmodifiableSet(propertiesToPersistOnlyIfNonNull);
 	}
 
+	/**
+	 * Resets all the fields within this class visitor. All the information
+	 * about the visited class type, constructor, accessors and mutators will be
+	 * wiped. This is to be used when processing classes that contain nested
+	 * classes.
+	 */
+	private void reset() {
+		visitedClass = null;
+		propertiesToAccess.clear();
+		propertiesToPersistOnlyIfNonNull.clear();
+		accessorAdditionalInfo.clear();
+		propertiesToMutate.clear();
+		mutatorThrownTypes.clear();
+		mutatorExtraParameters.clear();
+		constructorParameters.clear();
+		imports.clear();
+	}
+
 	public void visitClassDeclaration(ClassDeclaration d) {
+		if (visitedClass != null) {
+			reset();
+		}
+		
 		if (d.getAnnotation(Persistable.class) != null) {
 			try {
 				String qualifiedName = 
@@ -224,12 +246,15 @@ public class SPClassVisitor implements DeclarationVisitor {
 	}
 	
 	public void visitConstructorDeclaration(ConstructorDeclaration d) {
+		
+		// If there are nested classes, we need to clear the buffer of
+		// constructor parameters as this class visitor visits all classes
+		// underneath the top level class.
+		if (visitedClass != null) {
+			reset();
+		}
+		
 		if (d.getAnnotation(Constructor.class) != null) {
-			
-			// If there are nested classes, we need to clear the buffer of
-			// constructor parameters as this class visitor visits all classes
-			// underneath the top level class.
-			constructorParameters.clear();
 			
 			for (ParameterDeclaration pd : d.getParameters()) {
 				ConstructorParameter cp = pd.getAnnotation(ConstructorParameter.class);
@@ -272,6 +297,17 @@ public class SPClassVisitor implements DeclarationVisitor {
 		Mutator mutatorAnnotation = d.getAnnotation(Mutator.class);
 		TypeMirror type = null;
 		
+		if (visitedClass != null) {
+			// Since this class visitor visits method declarations before
+			// class declarations, having visitedClass be non-null means
+			// that the method being visited actually belongs to a higher
+			// level class and not a lower nested class. Thus, we need to
+			// clear any buffer of information about accessors and mutators
+			// that belonged to nested classes first before populating them
+			// again.
+			reset();
+		}
+		
 		if (accessorAnnotation != null) {
 			type = d.getReturnType();
 		} else if (mutatorAnnotation != null) {
@@ -283,23 +319,9 @@ public class SPClassVisitor implements DeclarationVisitor {
 		String methodName = d.getSimpleName();
 		Class<?> c = null;
 		
+		System.out.println("MethodDeclaration: " + methodName);
+		
 		try {
-			if (visitedClass != null) {
-				// Since this class visitor visits method declarations before
-				// class declarations, having visitedClass be non-null means
-				// that the method being visited actually belongs to a higher
-				// level class and not a lower nested class. Thus, we need to
-				// clear any buffer of information about accessors and mutators
-				// that belonged to nested classes first before populating them
-				// again.
-				visitedClass = null;
-				propertiesToAccess.clear();
-				propertiesToPersistOnlyIfNonNull.clear();
-				accessorAdditionalInfo.clear();
-				propertiesToMutate.clear();
-				mutatorThrownTypes.clear();
-				mutatorExtraParameters.clear();
-			}
 			
 			c = SPAnnotationProcessorUtils.convertTypeMirrorToClass(type);
 

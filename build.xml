@@ -4,6 +4,7 @@
 	<property name="dist.dir" value="dist"/>
 	<property name="src" value="src"/>
 	<property name="build" value="build"/>
+	<property name="build_tmp" value="build_tmp"/>
 	<property name="build.compiler" value="modern"/>
 	<property name="dist.jar" value="sqlpower_library.jar"/>
 	<property name="tests" value="regress"/>
@@ -32,6 +33,13 @@
 			<include name="*.jar"/>
 		</fileset>
 	</path>
+	
+	<path id="apt.classpath">
+		<pathelement location="${build}"/>
+		<fileset dir="lib">
+			<include name="*.jar"/>
+		</fileset>
+	</path>
 
 	<path id="test.classpath">
 		<pathelement location="${build}"/>
@@ -43,10 +51,38 @@
 	<target name="init">
 		<tstamp/>
 		<mkdir dir="${build}"/>
+		<mkdir dir="${build_tmp}"/>
 	</target>
-
+	
 	<target name="compile" depends="init">
 		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
+		<copy tofile="${build}/ca/sqlpower/sql/default_database_types.ini"
+				     file="src/ca/sqlpower/sql/default_database_types.ini"/>
+		<copy todir="${build}">
+			<fileset dir="${src}">
+				<include name="**/*.png"/>
+			</fileset>
+		</copy>
+		<copy todir="${build}/">
+			<fileset dir="src">
+				<include name="**/messages*.properties"/>
+			</fileset>
+		</copy>
+	</target>
+	
+	<target name="process-annotations" depends="compile">
+		<apt srcdir="${src}"
+			destdir="${build_tmp}"
+			classpathref="apt.classpath"
+			debug="true"
+			compile="true"
+			factory="ca.sqlpower.object.annotation.SPAnnotationProcessorFactory">
+		</apt>
+		<delete dir="${build}"/>
+		<move todir="${build}">
+			<fileset dir="${build_tmp}"/>
+		</move>
+		
 		<copy tofile="${build}/ca/sqlpower/sql/default_database_types.ini"
 				     file="src/ca/sqlpower/sql/default_database_types.ini"/>
 		<copy todir="${build}">
@@ -101,6 +137,7 @@
 
 	<target name="clean">
 		<delete dir="${build}"/>
+		<delete dir="${build_tmp}"/>
 	</target>
 
 	<target name="dist-clean" depends="clean">
