@@ -28,10 +28,10 @@ import org.apache.commons.collections.map.MultiValueMap;
 
 /**
  * This is a default implementation of a variable resolver the {@link SPObject}
- * implementations can use.
+ * implementations can use. It implements the {@link SPVariableResolver} 
+ * and you can use it to store variables.
  * 
- * It implements the {@link SPVariableResolver} and you can use it to store 
- * variables. 
+ * <p>It is backed by a MultiMap object. Keep that in mind ;)
  * 
  * @see {@link SPVariableResolver}
  * @author Luc Boudreau
@@ -40,7 +40,7 @@ import org.apache.commons.collections.map.MultiValueMap;
 @SuppressWarnings("unchecked")
 public class SPSimpleVariableResolver implements SPVariableResolver {
 	
-	private final MultiValueMap variables = new MultiValueMap();
+	protected final MultiValueMap variables = new MultiValueMap();
 	private String namespace = null;
 	private boolean snobbyResolver = true;
 	
@@ -77,13 +77,21 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	 * @param value The value to store.
 	 */
 	public void update(String key, Object value) {
-		if (SPVariableHelper.getNamespace(key)!=null && !this.resolvesNamespace(SPVariableHelper.getNamespace(key))) {
+		if (!this.resolvesNamespace(SPVariableHelper.getNamespace(key))) {
 			throw new IllegalStateException("Cannot store a variable of namespace '" + SPVariableHelper.getNamespace(key) + "' because this resolver is configured to operate under the namespace '" + this.namespace + "'");
 		}
 		if (this.variables.containsKey(SPVariableHelper.stripNamespace(key))) {
 			this.variables.remove(SPVariableHelper.stripNamespace(key));
 		}
 		this.store(key, value);
+	}
+	
+	/**
+	 * Removes all values associated with the specified key. 
+	 * @param key The key for which we want to delete all occurences.
+	 */
+	public void delete(String key) {
+		this.variables.remove(SPVariableHelper.stripNamespace(key));
 	}
 	
 	/**
@@ -95,11 +103,25 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	}
 	
 	/**
-	 * 
-	 * @param snobbyResolver
+	 * Turns this resolver in a snobby one. This affects the namespace 
+	 * resolution decisions. When true, the resolver will ignore all requests
+	 * for variables whose key is not explicitely prefixed with the proper
+	 * namespace.
+	 * @param snobbyResolver Wether or not to be snobby.
 	 */
 	public void setSnobbyResolver(boolean snobbyResolver) {
 		this.snobbyResolver = snobbyResolver;
+	}
+	
+	/**
+	 * This tells if this resolver is in snobby mode or not.
+	 * When true, the resolver will ignore all requests
+	 * for variables whose key is not explicitely prefixed with the proper
+	 * namespace.
+	 * @return True if snobby. False otherwise.
+	 */
+	public boolean isSnobbyResolver() {
+		return snobbyResolver;
 	}
 
 	public Collection<Object> matches(String key, String partialValue) {
