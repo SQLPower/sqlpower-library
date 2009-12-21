@@ -19,15 +19,21 @@
 
 package ca.sqlpower.sqlobject;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import ca.sqlpower.object.SPObject;
 
 /**
  * This is normally an invisible root node that contains
  * SQLDatabase objects.
  */
 public class SQLObjectRoot extends SQLObject {
+	private List<SQLDatabase> databases = new ArrayList<SQLDatabase>();
+	private List<SQLTable> tables = new ArrayList<SQLTable>();
+	
 	public SQLObjectRoot() {
-		children = new LinkedList();
 	}
 
 	public SQLObject getParent() {
@@ -51,7 +57,7 @@ public class SQLObjectRoot extends SQLObject {
 	}
 	
 	protected void populateImpl() throws SQLObjectException {
-		return;
+		// no-op
 	}
 	
 	public boolean isPopulated() {
@@ -63,7 +69,106 @@ public class SQLObjectRoot extends SQLObject {
 	}
 
 	@Override
-	public Class<? extends SQLObject> getChildType() {
-		return SQLDatabase.class;
+	public List<? extends SQLObject> getChildrenWithoutPopulating() {
+		List<SQLObject> children = new ArrayList<SQLObject>();
+		children.addAll(databases);
+		children.addAll(tables);
+		return Collections.unmodifiableList(children);
+	}
+	
+	@Override
+	protected boolean removeChildImpl(SPObject child) {
+		if (child instanceof SQLDatabase) {
+			return removeDatabase((SQLDatabase) child);
+		} else if (child instanceof SQLTable) {
+			return removeTable((SQLTable) child);
+		} else {
+			throw new IllegalArgumentException("Cannot remove children of type " 
+					+ child.getClass() + " from " + getName());
+		}
+	}
+	
+	public boolean removeTable(SQLTable child) {
+		if (child.getParent() != this) {
+			throw new IllegalStateException("Cannot remove child " + child.getName() + 
+					" of type " + child.getClass() + " as its parent is not " + getName());
+		}
+		int index = tables.indexOf(child);
+		if (index != -1) {
+			tables.remove(index);
+			child.setParent(null);
+			fireChildRemoved(SQLDatabase.class, child, index);
+			return true;
+		}
+		return false;
+	}
+
+	public boolean removeDatabase(SQLDatabase child) {
+		if (child.getParent() != this) {
+			throw new IllegalStateException("Cannot remove child " + child.getName() + 
+					" of type " + child.getClass() + " as its parent is not " + getName());
+		}
+		int index = databases.indexOf(child);
+		if (index != -1) {
+			databases.remove(index);
+			child.setParent(null);
+			fireChildRemoved(SQLDatabase.class, child, index);
+			return true;
+		}
+		return false;
+	}
+
+	public int childPositionOffset(Class<? extends SPObject> childType) {
+		int offset = 0;
+		
+		if (childType == SQLDatabase.class) return offset;
+		offset += databases.size();
+		
+		if (childType == SQLTable.class) return offset;
+		
+		throw new IllegalArgumentException("The type " + childType + 
+				" is not a valid child type of " + getName());
+	}
+
+	public List<? extends SPObject> getDependencies() {
+		return Collections.emptyList();
+	}
+
+	public void removeDependency(SPObject dependency) {
+		for (SQLObject child : getChildren()) {
+			child.removeDependency(dependency);
+		}
+	}
+	
+	@Override
+	protected void addChildImpl(SPObject child, int index) {
+		if (child instanceof SQLDatabase) {
+			addDatabase((SQLDatabase) child, index);
+		} else if (child instanceof SQLTable) {
+			addTable((SQLTable) child, index);
+		} else {
+			throw new IllegalArgumentException("The child " + child.getName() + 
+					" of type " + child.getClass() + " is not a valid child type of " + 
+					getClass() + ".");
+		}
+	}
+	
+	public void addDatabase(SQLDatabase child, int index) {
+		databases.add(index, child);
+		child.setParent(this);
+		fireChildAdded(SQLDatabase.class, child, index);
+	}
+
+	public void addTable(SQLTable child, int index) {
+		tables.add(index, child);
+		child.setParent(this);
+		fireChildAdded(SQLTable.class, child, index);
+	}
+
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
+		types.add(SQLDatabase.class);
+		types.add(SQLTable.class);
+		return Collections.unmodifiableList(types);
 	}
 }

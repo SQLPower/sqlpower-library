@@ -53,7 +53,13 @@ public class TableContainerTest extends TestCase {
         con.close();
         
         SQLTable testTable = db.getTableByName("test_table");
-		queryCache = new QueryImpl(new StubSQLDatabaseMapping());
+		queryCache = new QueryImpl(new StubSQLDatabaseMapping() {
+			@Override
+			public SQLDatabase getDatabase(JDBCDataSource ds) {
+				return db;
+			}
+		});
+		queryCache.setDataSource(ds);
 		
 		tableContainer = new TableContainer(queryCache.getDatabase(), testTable);
 	}

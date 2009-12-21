@@ -20,6 +20,9 @@
 package ca.sqlpower.sqlobject;
 
 import java.util.Collections;
+import java.util.List;
+
+import ca.sqlpower.object.SPObject;
 
 /**
  * A SQLObject that represents a sequence in a database. This is not yet a
@@ -41,7 +44,6 @@ public class SQLSequence extends SQLObject {
     public SQLSequence(String name) {
         setPopulated(true);
         setName(name);
-        children = Collections.emptyList();
     }
     
     /**
@@ -50,14 +52,6 @@ public class SQLSequence extends SQLObject {
     @Override
     public boolean allowsChildren() {
         return false;
-    }
-
-    /**
-     * Returns null because this type of object doesn't allow children.
-     */
-    @Override
-    public Class<? extends SQLObject> getChildType() {
-        return null;
     }
 
     /**
@@ -72,8 +66,8 @@ public class SQLSequence extends SQLObject {
      * Does nothing because this type of object doesn't have a parent.
      */
     @Override
-    protected void setParent(SQLObject parent) {
-        // no-op
+    public void setParent(SPObject parent) {
+    	// no-op
     }
 
     /**
@@ -91,5 +85,31 @@ public class SQLSequence extends SQLObject {
     protected void populateImpl() throws SQLObjectException {
         // no op
     }
+
+	@Override
+	public List<? extends SQLObject> getChildrenWithoutPopulating() {
+		return Collections.emptyList();
+	}
+
+	@Override
+	protected boolean removeChildImpl(SPObject child) {
+		return false;
+	}
+
+	public int childPositionOffset(Class<? extends SPObject> childType) {
+		throw new IllegalStateException("SQLSequence " + getName() + " does not allow children.");
+	}
+
+	public List<? extends SPObject> getDependencies() {
+		return Collections.emptyList();
+	}
+
+	public void removeDependency(SPObject dependency) {
+		// no-op
+	}
+
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		return Collections.emptyList();
+	}
     
 }

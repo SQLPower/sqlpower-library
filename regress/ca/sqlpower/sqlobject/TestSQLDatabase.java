@@ -24,6 +24,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 
+import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.testutil.MockJDBCDriver;
@@ -44,6 +45,11 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 	protected SQLObject getSQLObjectUnderTest() {
 		return db;
 	}
+	
+	@Override
+    protected Class<?> getChildClassType() {
+    	return SQLTable.class;
+    }
 	
 	/*
 	 * Test method for 'ca.sqlpower.sqlobject.SQLDatabase.getName()'
@@ -66,7 +72,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 	public void testGetParent() {
 		SQLDatabase db1 = new SQLDatabase();
 		assertNull(db1.getParent());
-		assertNull(db.getParent());
+		// db's parent is not null, it is StubSQLObject for testing
 	}
 	
 	public void testGoodConnect() throws SQLObjectException, SQLException, IOException {
@@ -99,7 +105,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
         SQLDatabase db = new SQLDatabase(ds);
         db.populate();
         assertEquals(1, db.getChildCount());
-        assertEquals(SQLTable.class, db.getChildType());
+        assertTrue(db.allowsChildType(SQLTable.class));
         assertEquals(db.getChild(0).getName(), "tab1");
     }
 
@@ -113,7 +119,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
         SQLDatabase db = new SQLDatabase(ds);
         db.populate();
         assertEquals(1, db.getChildCount());
-        assertEquals(SQLSchema.class, db.getChildType());
+        assertTrue(db.allowsChildType(SQLSchema.class));
         assertEquals(db.getChild(0).getName(), "sch1");
     }
 
@@ -127,7 +133,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
         SQLDatabase db = new SQLDatabase(ds);
         db.populate();
         assertEquals(1, db.getChildCount());
-        assertEquals(SQLCatalog.class, db.getChildType());
+        assertTrue(db.allowsChildType(SQLCatalog.class));
         assertEquals(db.getChild(0).getName(), "cat1");
     }
 
@@ -144,7 +150,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
         SQLDatabase db = new SQLDatabase(ds);
         db.populate();
         assertEquals(1, db.getChildCount());
-        assertEquals(SQLCatalog.class, db.getChildType());
+        assertTrue(db.allowsChildType(SQLCatalog.class));
         assertEquals(db.getChild(0).getName(), "cat1");
     }
 
@@ -281,7 +287,7 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 			db.addChild(cat);
 			assertEquals(db.getCatalogByName("a catalog name should not exist in database"),cat);
 			assertNull(db.getCatalogByName("a catalog name should not exist in database xx2"));
-		} catch ( SQLObjectException e ) {
+		} catch ( IllegalArgumentException e ) {
 			if ( db.isCatalogContainer() ) {
 				throw e;
 			}					
@@ -330,19 +336,19 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 	/*
 	 * Test method for 'ca.sqlpower.sqlobject.SQLObject.getChild(int)'
 	 */
-	public void testGetChild() throws SQLObjectException {
+	public void testGetChild() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
 		SQLDatabase db1 = new SQLDatabase();
 		SQLTable t1 = new SQLTable(db1,"t1","","TABLE",true);
 		SQLTable t2 = new SQLTable(db1,"t2","","TABLE",true);
 		SQLTable t3 = new SQLTable(db1,"t3","","TABLE",true);
 		db1.addChild(t1);
-		db1.addChild(1,t2);
+		db1.addChild(t2,1);
 		assertEquals (db1.getChild(0), t1);
 		assertEquals (db1.getChild(1), t2);
-		db1.addChild(0,t3);
+		db1.addChild(t3,0);
 		assertEquals (db1.getChild(1), t1);
 		assertEquals (db1.getChild(0), t3);
-		db1.removeChild (1);
+		db1.removeChild(db1.getChild(1));
 		assertEquals (db1.getChild(1), t2);
 		db1.removeChild(t3);
 		assertEquals (db1.getChild(0), t2);
@@ -351,19 +357,19 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 	public void testFireDbChildrenInserted() throws SQLObjectException {
 		SQLDatabase db1 = new SQLDatabase();
 		TestingSQLObjectListener test1 = new TestingSQLObjectListener();		
-		db1.addSQLObjectListener(test1);		
+		db1.addSPListener(test1);		
 
 		db1.addChild(new SQLCatalog());
 		assertEquals("Children inserted event not fired!", 1, test1.getInsertedCount());
 	}
 	
-	public void testFireDbChildrenRemoved() throws SQLObjectException {
+	public void testFireDbChildrenRemoved() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
 	    SQLDatabase db1 = new SQLDatabase();
 	    SQLCatalog tempCatalog = new SQLCatalog();
 	    db1.addChild(tempCatalog);
 
 	    TestingSQLObjectListener test1 = new TestingSQLObjectListener();        
-        db1.addSQLObjectListener(test1);        
+        db1.addSPListener(test1);        
 
         db1.removeChild(tempCatalog);
         assertEquals("Children removed event not fired!", 1, test1.getRemovedCount());

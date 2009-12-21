@@ -20,8 +20,10 @@ package ca.sqlpower.sqlobject;
 
 import java.sql.Types;
 
+import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
+import ca.sqlpower.util.SQLPowerUtils;
 
 public class TestSQLIndex extends BaseSQLObjectTestCase {
 
@@ -91,35 +93,41 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
        
         return index;
     }
+    
+    @Override
+    protected Class<?> getChildClassType() {
+    	return Column.class;
+    }
 
     /**
      * When you add an index column, it should attach a listener to its target column.
      */
     public void testReAddColumnAddsListener() throws Exception {
-        System.out.println("Original listeners:       "+col1.getSQLObjectListeners());
-        int origListeners = col1.getSQLObjectListeners().size();
-        SQLIndex.Column removed = (Column) index.removeChild(0);
-        index.addChild(removed);
-        System.out.println("Post-remove-add listeners: "+col1.getSQLObjectListeners());
-        assertEquals(origListeners, col1.getSQLObjectListeners().size());
+        System.out.println("Original listeners:       "+col1.getSPListeners());
+        int origListeners = col1.getSPListeners().size();
+        SQLIndex.Column childToRemove = index.getChild(0);
+        index.removeChild(childToRemove);
+        index.addChild(childToRemove);
+        System.out.println("Post-remove-add listeners: "+col1.getSPListeners());
+        assertEquals(origListeners, col1.getSPListeners().size());
     }
     
     /**
      * When you remove a column from an index, it has to unsubscribe its
      * listener from its target column.
      */
-    public void testRemoveColumnNoListenerLeak() {
-        System.out.println("Original listeners:    "+col1.getSQLObjectListeners());
-        int origListeners = col1.getSQLObjectListeners().size();
-        index.removeChild(0);
-        System.out.println("Post-remove listeners: "+col1.getSQLObjectListeners());
-        assertEquals(origListeners - 1, col1.getSQLObjectListeners().size());
+    public void testRemoveColumnNoListenerLeak() throws Exception {
+        System.out.println("Original listeners:    "+col1.getSPListeners());
+        int origListeners = col1.getSPListeners().size();
+        index.removeChild(index.getChild(0));
+        System.out.println("Post-remove listeners: "+col1.getSPListeners());
+        assertEquals(origListeners - 1, col1.getSPListeners().size());
     }
     
     /**
      * This functional test case comes from a post in the forum (#1670).
      */
-    public void testIndexRemovedWithPK() throws SQLObjectException {
+    public void testIndexRemovedWithPK() throws Exception {
         SQLTable testTable = new SQLTable(null,true);
         testTable.setName("Test Table");
         SQLColumn col = new SQLColumn(testTable, "pk", Types.INTEGER, 10, 0);
@@ -130,7 +138,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         
         assertTrue("The column should be added to the index", ind.getChildByName("pk") != null);
         
-        testTable.removeColumn(col);
+        testTable.removeChild(col);
         
         assertNull("The column was not removed from the index", ind.getChildByName("pk"));
         assertNull("The table should not have a PK index", testTable.getPrimaryKeyIndex());
@@ -218,18 +226,18 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     
     public void testLoadFromDbGetsCorrectPK() throws SQLObjectException{
         assertNotNull("No primary key loaded",dbTable.getPrimaryKeyIndex());
-        assertEquals("Wrong indices: " + dbTable.getIndicesFolder().getChildNames(),
-                1, dbTable.getIndicesFolder().getChildCount());
+        assertEquals("Wrong indices: " + dbTable.getIndices(),
+                1, dbTable.getIndices().size());
         assertEquals("Wrong primary key", "TEST3PK", dbTable.getPrimaryKeyName());
     }
     
-    public void testAddStringColumnToPKThrowsException() throws SQLObjectException{
+    public void testAddStringColumnToPKThrowsException() throws Exception {
         SQLIndex i = new SQLIndex("Index",true,"","BTREE","");
         i.setPrimaryKeyIndex(true);
         try {
             i.addChild(i.new Column("index column",AscendDescend.UNSPECIFIED));
             fail();
-        } catch (SQLObjectException e) {
+        } catch (IllegalArgumentException e) {
             assertEquals("The primary key index must consist of real columns, not expressions",e.getMessage());
             return;
         }
@@ -248,7 +256,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         }
     }
     
-    public void testMakeColumnsLikeOtherIndexWhichHasNoColumns() throws SQLObjectException {
+    public void testMakeColumnsLikeOtherIndexWhichHasNoColumns() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
         SQLIndex i = new SQLIndex("Index",true,"", "BTREE","");
         SQLColumn col = new SQLColumn();
         i.addChild(i.new Column("index column",AscendDescend.UNSPECIFIED));
@@ -259,7 +267,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         assertEquals("Oh no some children are left!",0,i.getChildCount());
     }
     
-    public void testMakeColumnsLikeOtherIndexWhichHasColumns() throws SQLObjectException {
+    public void testMakeColumnsLikeOtherIndexWhichHasColumns() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
         SQLIndex i = new SQLIndex("Index",true,"", "BTREE","");
         SQLColumn col = new SQLColumn();
         
@@ -272,7 +280,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         assertEquals("Oh no wrong child!",i2.getChild(1),i.getChild(1));
     }
     
-    public void testMakeColumnsLikeOtherIndexReordersColumns() throws SQLObjectException {
+    public void testMakeColumnsLikeOtherIndexReordersColumns() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
         SQLIndex i = new SQLIndex("Index",true,"", "BTREE","");
         SQLColumn col = new SQLColumn();
         i.addChild(i.new Column(col,AscendDescend.UNSPECIFIED));
@@ -345,8 +353,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     public void testRemoveIndexWhenColsRemovedSingleUndoEvent() throws Exception {
         assertEquals(index2, table.getIndexByName("Test Index 2"));
         CountingCompoundEventListener l = new CountingCompoundEventListener();
-        SQLObjectUtils.listenToHierarchy(l, table);
-        SQLObjectUtils.addUndoListenerToHierarchy(l, table);
+        SQLPowerUtils.listenToHierarchy(table, l);
         table.removeColumn(2);
         assertEquals(0, l.getEditsBeforeLastGroup());
         table.removeColumn(0);
@@ -365,10 +372,18 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         
         assertEquals(3, target.getChildCount()); // just to ensure we're testing something!
         
-        for (SQLIndex.Column icol : target.getChildren()) {
+        for (SQLIndex.Column icol : target.getChildren(SQLIndex.Column.class)) {
             if (icol.getColumn() != null) {
-                assertNotSame(source, icol.getColumn().getParentTable());
+                assertNotSame(source, icol.getColumn().getParent());
             }
         }
+    }
+    
+    /**
+     * Skipping this test as SQLIndex always returns true when asked if it is populated.
+     */
+    @Override
+    public void testAddChildDoesNotPopulate() throws Exception {
+    	//skip test
     }
 }

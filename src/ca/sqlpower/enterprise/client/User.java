@@ -28,6 +28,10 @@ import org.springframework.security.userdetails.UserDetails;
 
 import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.Mutator;
 
 public class User extends AbstractSPObject implements UserDetails {
 
@@ -37,7 +41,9 @@ public class User extends AbstractSPObject implements UserDetails {
     private String fullName = null;
     private String email = null;
 
-    public User(String username, String password) {
+    @Constructor
+    public User(@ConstructorParameter(propertyName = "name") String username, 
+    		@ConstructorParameter(propertyName = "password") String password) {
     	super();
         assert username != null;
         this.grants = new ArrayList<Grant>();
@@ -87,10 +93,12 @@ public class User extends AbstractSPObject implements UserDetails {
         // no-op
     }
 
+    @Accessor
     public String getPassword() {
         return password;
     }
 
+    @Mutator
     public void setPassword(String password) {
         String oldPassword = this.password;
         this.password = password;
@@ -112,7 +120,7 @@ public class User extends AbstractSPObject implements UserDetails {
         if (this.grants.contains(grant)) {
             int index = this.grants.indexOf(grant);
             wasRemoved = this.grants.remove(grant);
-            grant.setParent(null);
+            // Do not set parent to null as Grants are immutable in the JCR
             fireChildRemoved(Grant.class, grant, index);
         }
         return wasRemoved;
@@ -124,20 +132,24 @@ public class User extends AbstractSPObject implements UserDetails {
     	addGrant((Grant) child, index);
     }
     
+    @Accessor
     public String getFullName() {
 		return fullName;
 	}
 
+    @Mutator
 	public void setFullName(String fullName) {
 		String oldName = this.fullName;
 		this.fullName = fullName;
 		firePropertyChange("fullName", oldName, this.fullName);
 	}
 
+	@Accessor
 	public String getEmail() {
 		return email;
 	}
 
+	@Mutator
 	public void setEmail(String email) {
 		String oldEmail = this.email;
 		this.email = email;
@@ -188,7 +200,7 @@ public class User extends AbstractSPObject implements UserDetails {
 		return "Wabit User \"" + getName() + "\"";
 	}
 
-	public List<Class<? extends SPObject>> allowedChildTypes() {
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		List<Class<? extends SPObject>> childTypes = new ArrayList<Class<? extends SPObject>>();
 		childTypes.add(Grant.class);
 		return childTypes;

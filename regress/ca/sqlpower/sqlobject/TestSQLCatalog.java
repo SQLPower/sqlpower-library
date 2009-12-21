@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.util.Iterator;
 
+import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.sql.JDBCDataSource;
 
 public class TestSQLCatalog extends BaseSQLObjectTestCase {
@@ -42,6 +43,11 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 	protected SQLObject getSQLObjectUnderTest() {
 		return c;
 	}
+	
+	@Override
+    protected Class<?> getChildClassType() {
+    	return SQLTable.class;
+    }
 	
 	/*
 	 * Test method for 'ca.sqlpower.sqlobject.SQLCatalog.getName()'
@@ -74,7 +80,6 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 		SQLDatabase mydb = new SQLDatabase(getDb().getDataSource());
 		c = new SQLCatalog(mydb,"aaa");
 		assertEquals(c.getParent(),mydb);
-		assertEquals(c.getParentDatabase(),mydb);
 	}
 
 	/*
@@ -98,6 +103,7 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 		c.addChild(new SQLTable());
 		assertFalse(c.isSchemaContainer());
 		c = new SQLCatalog();
+		c.setParent(new SQLDatabase(getDb().getDataSource()));
 		c.addChild(new SQLSchema(false));
 		assertTrue(c.isSchemaContainer());
 	}
@@ -178,7 +184,7 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 			SQLTable t = new SQLTable(c, name[i], "", "TABLE", true);
 			SQLSchema s = new SQLSchema(c, name[i], true);
 			c.addChild(t);
-			c2.addChild(i,s);
+			c2.addChild(s,i);
 		}
 		
 		assertNotNull(c.getChildren());
@@ -205,7 +211,7 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 			i++;
 		}
 		
-		c.addChild(2,new SQLTable());
+		c.addChild(new SQLTable(),2);
 		assertEquals(c.getChildren().size(),7);
 		assertEquals(c.getChildCount(),7);
 		assertTrue(c.getChild(2) instanceof SQLTable);
@@ -216,7 +222,7 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 		assertTrue(c.getChild(c.getChildren().size()-1) instanceof SQLTable);
 		
 		
-		c2.addChild(2,new SQLSchema(true));
+		c2.addChild(new SQLSchema(true),2);
 		assertEquals(c2.getChildren().size(),7);
 		assertEquals(c2.getChildCount(),7);
 		assertTrue(c2.getChild(2) instanceof SQLSchema);
@@ -258,8 +264,8 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 		for ( i=0; i<6; i++ ) {
 			SQLTable t = new SQLTable(c, name[i], "", "TABLE", true);
 			SQLSchema s = new SQLSchema(c, name[i], true);
-			c.addChild(i,t);
-			c2.addChild(i,s);
+			c.addChild(t,i);
+			c2.addChild(s,i);
 			
 		}
 		assertNotNull(c.getChildren());
@@ -286,7 +292,7 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 			i++;
 		}
 		
-		c.addChild(2,new SQLTable());
+		c.addChild(new SQLTable(),2);
 		assertEquals(c.getChildren().size(),7);
 		assertEquals(c.getChildCount(),7);
 		assertTrue(c.getChild(2) instanceof SQLTable);
@@ -297,7 +303,7 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 		assertTrue(c.getChild(c.getChildren().size()-1) instanceof SQLTable);
 		
 		
-		c2.addChild(2,new SQLSchema(true));
+		c2.addChild(new SQLSchema(true),2);
 		assertEquals(c2.getChildren().size(),7);
 		assertEquals(c2.getChildCount(),7);
 		assertTrue(c2.getChild(2) instanceof SQLSchema);
@@ -331,15 +337,6 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 		assertEquals(c.getChildren().size(),0);
 		assertEquals(c.getChildCount(),0);
 
-		try {
-			c.removeChild(-1);
-			c.removeChild(0);
-			c.removeChild(1);
-			fail();
-		} catch ( IndexOutOfBoundsException e ) {
-			// that's what we want
-		}
-		
 		SQLTable t1 = new SQLTable(c,"","","TABLE",true);
 		SQLTable t2 = new SQLTable(c,"","","TABLE",true);
 		SQLTable t3 = new SQLTable(c,"","","TABLE",true);
@@ -350,31 +347,37 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 		c.addChild(t3);
 		c.addChild(t4);
 		assertEquals(c.getChildCount(),4);
-		SQLTable tx = (SQLTable) c.removeChild(1);
+		SQLTable tx = (SQLTable) c.getChild(1);
+		c.removeChild(tx);
 		assertEquals(tx,t2);
 		assertEquals(c.getChildCount(),3);
 		
 		assertTrue(c.removeChild(t4));
 		assertEquals(c.getChildCount(),2);
 
-		assertFalse(c.removeChild(t4));
+		try {
+			c.removeChild(t4);
+			fail("SQLCatalog was able to remove a non-existent child. This is bad!");
+		} catch (IllegalArgumentException e) {
+			// Removing a non-existent child should fail.
+		}
 		assertEquals(c.getChildCount(),2);
 		
 	}
 
 	public void testFireDbChildrenInserted() throws SQLObjectException {
 		TestingSQLObjectListener test1 = new TestingSQLObjectListener();
-		c.addSQLObjectListener(test1);
+		c.addSPListener(test1);
 		c.addChild(new SQLTable(c,"","","TABLE",true));
 		assertEquals("Children inserted not fired!", 1, test1.getInsertedCount());
 	}
 	
-	public void testFireDbChildrenRemoved() throws SQLObjectException {
+	public void testFireDbChildrenRemoved() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
 	    SQLTable tempTable = new SQLTable(c,"","","TABLE",true);
 	    c.addChild(tempTable);
 
 	    TestingSQLObjectListener test1 = new TestingSQLObjectListener();
-        c.addSQLObjectListener(test1);
+        c.addSPListener(test1);
         
         c.removeChild(tempTable);
         assertEquals("Children removed not fired!", 1, test1.getRemovedCount());

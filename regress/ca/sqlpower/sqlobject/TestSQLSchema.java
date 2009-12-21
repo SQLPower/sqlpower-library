@@ -39,6 +39,11 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 		return s;
 	}
 	
+	@Override
+    protected Class<?> getChildClassType() {
+    	return SQLTable.class;
+    }
+	
 	/*
 	 * Test method for 'ca.sqlpower.sqlobject.SQLSchema.getName()'
 	 */
@@ -201,16 +206,16 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 		assertEquals(++cnt,s.getChildren().size());
 		assertEquals(cnt,s.getChildCount());
 		
-		s.removeChild(0);
+		s.removeChild(s.getChild(0));
 		assertEquals(--cnt,s.getChildren().size());
 		assertEquals(cnt,s.getChildCount());
-		s.removeChild(0);
+		s.removeChild(s.getChild(0));
 		assertEquals(--cnt,s.getChildren().size());
 		assertEquals(cnt,s.getChildCount());
-		s.removeChild(0);
+		s.removeChild(s.getChild(0));
 		assertEquals(--cnt,s.getChildren().size());
 		assertEquals(cnt,s.getChildCount());
-		s.removeChild(0);
+		s.removeChild(s.getChild(0));
 		assertEquals(--cnt,s.getChildren().size());
 		assertEquals(cnt,s.getChildCount());
 	}
@@ -238,12 +243,12 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 	 */
 	public void testAddChildIntSQLObject() throws Exception {
 		for ( int i=0; i<5; i++ ) {
-			s.addChild(i,new SQLTable(s,"","","TABLE", true));
+			s.addChild(new SQLTable(s,"","","TABLE", true),i);
 			assertEquals(i+1,s.getChildren().size());
 			assertEquals(i+1,s.getChildCount());
 		}
 		SQLTable t = new SQLTable(s,"xxx","","TABLE", true);
-		s.addChild(0,t);
+		s.addChild(t,0);
 		assertEquals(6,s.getChildren().size());
 		assertEquals(6,s.getChildCount());
 		
@@ -252,7 +257,7 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 		assertEquals(5,s.getChildCount());
 		
 		for ( int i=4; i>=0; i-- ) {
-			s.removeChild(0);
+			s.removeChild(s.getChild(0));
 			assertEquals(i,s.getChildren().size());
 			assertEquals(i,s.getChildCount());
 		}
@@ -273,10 +278,10 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 		SQLTable t = new SQLTable(s,"xxx","","TABLE", true);
 		s.addChild(t);
 		
-		for ( int i=5; i>0; i-- ) {
-			s.removeChild(0);
-			assertEquals(i,s.getChildren().size());
-			assertEquals(i,s.getChildCount());
+		for ( int i=4; i>=0; i-- ) {
+			s.removeChild(s.getChild(i));
+			assertEquals(i+1,s.getChildren().size());
+			assertEquals(i+1,s.getChildCount());
 		}
 		
 		s.removeChild(t);
@@ -286,7 +291,7 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 
 	public void testFireDbChildrenInserted() throws Exception {
 		TestingSQLObjectListener test1 = new TestingSQLObjectListener();
-		s.addSQLObjectListener(test1);
+		s.addSPListener(test1);
 		
 		s.addChild(new SQLTable(s,"","","TABLE", true));
 		assertEquals("Children inserted event not fired!", 1, test1.getInsertedCount());
@@ -297,7 +302,7 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
         s.addChild(tempTable);
 	    
 	    TestingSQLObjectListener test1 = new TestingSQLObjectListener();
-	    s.addSQLObjectListener(test1);
+	    s.addSPListener(test1);
 
 	    s.removeChild(tempTable);
 	    assertEquals("Children removed event not fired!", 1, test1.getRemovedCount());

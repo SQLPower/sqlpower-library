@@ -79,15 +79,15 @@ public class RefreshFKTest extends DatabaseConnectedTestCase {
     public void testRemoveFK() throws Exception {
         assertEquals(1, parent.getExportedKeys().size());
         assertEquals(1, child.getImportedKeys().size());
-        assertTrue(child.getImportedKeysFolder().isPopulated());
+        assertTrue(child.isImportedKeysPopulated());
         
         sqlx("ALTER TABLE public.child DROP CONSTRAINT parent_child_fk");
         
         db.refresh();
         
-        assertEquals("Child imported keys: " + child.getImportedKeysFolder().getChildNames(),
+        assertEquals("Child imported keys: " + child.getImportedKeys(),
                 0, child.getImportedKeys().size());
-        assertEquals("Parent exported keys: " + parent.getExportedKeysFolder().getChildNames(),
+        assertEquals("Parent exported keys: " + parent.getExportedKeys(),
                 0, parent.getExportedKeys().size());
         
     }
@@ -107,7 +107,7 @@ public class RefreshFKTest extends DatabaseConnectedTestCase {
         db.refresh();
         
         assertEquals(1, child.getImportedKeys().size());
-        assertEquals("Parent exported keys: " + parent.getExportedKeysFolder().getChildNames(),
+        assertEquals("Parent exported keys: " + parent.getExportedKeys(),
                 1, parent.getExportedKeys().size());
         
     }
@@ -116,7 +116,7 @@ public class RefreshFKTest extends DatabaseConnectedTestCase {
     public void testChangeFKMapping() throws Exception {
         assertEquals(1, parent.getExportedKeys().size());
         assertEquals(1, child.getImportedKeys().size());
-        SQLRelationship parentChildFk = child.getImportedKeys().get(0);
+        SQLRelationship parentChildFk = child.getImportedKeys().get(0).getRelationship();
         assertSame(parentChildFk, parent.getExportedKeys().get(0));
         assertEquals(1, parentChildFk.getChildCount());
 
@@ -130,11 +130,11 @@ public class RefreshFKTest extends DatabaseConnectedTestCase {
         db.refresh();
         
         assertEquals(1, child.getImportedKeys().size());
-        assertEquals("Parent exported keys: " + parent.getExportedKeysFolder().getChildNames(),
+        assertEquals("Parent exported keys: " + parent.getExportedKeys(),
                 1, parent.getExportedKeys().size());
         
         // We're testing here that the relationship was refreshed in place, not simply replaced
-        assertSame(parentChildFk, child.getImportedKeys().get(0));
+        assertSame(parentChildFk, child.getImportedKeys().get(0).getRelationship());
         assertSame(parentChildFk, parent.getExportedKeys().get(0));
         
         assertEquals(2, parentChildFk.getChildCount());
@@ -144,7 +144,7 @@ public class RefreshFKTest extends DatabaseConnectedTestCase {
 
     /** This one adds a whole new table with an FK to an existing table, in one step! */
     public void testAddTableWithFK() throws Exception {
-        assertEquals(0, parent.getImportedKeys().size());
+        assertEquals(1, parent.getExportedKeys().size());
         
         sqlx("CREATE TABLE public.grandparent (" +
              "\n grandparent_id INTEGER NOT NULL," +
@@ -159,7 +159,7 @@ public class RefreshFKTest extends DatabaseConnectedTestCase {
         SQLTable grandparent = db.getTableByName("GRANDPARENT");
         assertEquals(0, grandparent.getImportedKeys().size());
         assertEquals(1, grandparent.getExportedKeys().size());
-        assertSame(parent.getImportedKeys().get(0), grandparent.getExportedKeys().get(0));
+        assertSame(parent.getImportedKeys().get(0).getRelationship(), grandparent.getExportedKeys().get(0));
     }
 
     /** This one removes a whole table that had an FK to an existing table, in one step! */

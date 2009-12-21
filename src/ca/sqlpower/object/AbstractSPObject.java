@@ -28,20 +28,26 @@ import java.util.UUID;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.SPChildEvent.EventType;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.Persistable;
 import ca.sqlpower.util.SPSession;
 import ca.sqlpower.util.SessionNotFoundException;
 import ca.sqlpower.util.TransactionEvent;
 
+@Persistable
 public abstract class AbstractSPObject implements SPObject {
 	
     private static final Logger logger = Logger.getLogger(SPObject.class);
 	
-    private final List<SPListener> listeners = 
+    protected final List<SPListener> listeners = 
         Collections.synchronizedList(new ArrayList<SPListener>());
     
 	private SPObject parent;
 	private String name;
 	
+	@Constructor
 	public AbstractSPObject() {
 		this(null);
 	}
@@ -64,11 +70,20 @@ public abstract class AbstractSPObject implements SPObject {
      */
     protected String uuid;
 
+    public boolean allowsChildType(Class<? extends SPObject> type) {
+    	for (Class<? extends SPObject> child : getAllowedChildTypes()) {
+    		if (child.isAssignableFrom(type)) {
+    			return true;
+    		}
+    	}
+    	return false;
+    }
+    
 	public final void addChild(SPObject child, int index)
 			throws IllegalArgumentException {
-		// Check if the child is a valid child type. childPositionOffset throws
-		// an IllegalArgumentException if it is not.
-		childPositionOffset(child.getClass());
+		if (!allowsChildType(child.getClass())) {
+			throw new IllegalArgumentException(child.getClass() + " is not a valid child type of " + this.getClass());
+		}
 		
 		child.setParent(this);
 		addChildImpl(child, index);
@@ -98,12 +113,12 @@ public abstract class AbstractSPObject implements SPObject {
     		throw new NullPointerException("Cannot add child listeners that are null.");
     	}
     	synchronized (listeners) {
-    	    listeners.add(l);
+    		if (listeners.contains(l)) {
+    			logger.warn("Listener " + l + " was added twice! Ignoring second add");
+    		} else {
+    			listeners.add(l);
+    		}
     	}
-	}
-
-	public void begin(String message) {
-		fireTransactionStarted(message);
 	}
 
 	/**
@@ -112,10 +127,6 @@ public abstract class AbstractSPObject implements SPObject {
 	 */
 	public CleanupExceptions cleanup() {
 	    return new CleanupExceptions();
-	}
-
-	public void commit() {
-		fireTransactionEnded();
 	}
 
 	public void generateNewUUID() {
@@ -132,15 +143,17 @@ public abstract class AbstractSPObject implements SPObject {
 		return children;
 	}
 
-	
+	@Accessor
 	public String getName() {
 		return name;
 	}
 
+	@Accessor
 	public SPObject getParent() {
 		return parent;
 	}
 
+	@Accessor
 	public String getUUID() {
 		return uuid;
 	}
@@ -175,20 +188,21 @@ public abstract class AbstractSPObject implements SPObject {
 		fireTransactionRollback(message);
 	}
 
+	@Mutator
 	public void setName(String name) {
 		String oldName = this.name;
 		this.name = name;
 		firePropertyChange("name", oldName, name);
 	}
 
+	@Mutator
 	public void setParent(SPObject parent) {
 		SPObject oldParent = this.parent;
 		this.parent = parent;
-		if (parent != null) {
-			firePropertyChange("parent", oldParent, parent);
-		}
+		firePropertyChange("parent", oldParent, parent);
 	}
 
+	@Mutator
 	public void setUUID(String uuid) {
 		String oldUUID = this.uuid;
 		
@@ -200,12 +214,18 @@ public abstract class AbstractSPObject implements SPObject {
 		
 		firePropertyChange("UUID", oldUUID, this.uuid);
 	}
-	
+
+	/**
+	 * Gets the current session by passing the request up the tree.
+	 */
 	public SPSession getSession() throws SessionNotFoundException {
-		if (parent != null) {
-			return parent.getSession();
+		// The root object of the tree model should have a reference back to the
+		// session (like WabitWorkspace), and should therefore override this
+		// method. If it does not, a SessionNotFoundException will be thrown.
+		if (getParent() != null) {
+			return getParent().getSession();
 		} else {
-			throw new SessionNotFoundException("Root object does not implement getSession()");
+			throw new SessionNotFoundException("Root object does not have a session reference");
 		}
 	}
 	
@@ -237,8 +257,9 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final SPChildEvent e = new SPChildEvent(this, type, child, index, EventType.ADDED);
         synchronized(listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		final SPListener listener = listeners.get(i);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		final SPListener listener = staticListeners.get(i);
         		listener.childAdded(e);
         	}
         }
@@ -273,8 +294,9 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final SPChildEvent e = new SPChildEvent(this, type, child, index, EventType.REMOVED);
         synchronized(listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		final SPListener listener = listeners.get(i);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		final SPListener listener = staticListeners.get(i);
         		listener.childRemoved(e);
         	}
         }
@@ -301,8 +323,10 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final PropertyChangeEvent evt = new PropertyChangeEvent(this, propertyName, oldValue, newValue);
         synchronized(listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		listeners.get(i).propertyChange(evt);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		SPListener listener = staticListeners.get(i);
+        		listener.propertyChange(evt);
         	}
         }
         return evt;
@@ -329,8 +353,10 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final PropertyChangeEvent evt = new PropertyChangeEvent(this, propertyName, oldValue, newValue);
         synchronized(listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		listeners.get(i).propertyChange(evt);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		SPListener listener = staticListeners.get(i);
+        		listener.propertyChange(evt);
         	}
         }
         return evt;
@@ -363,8 +389,10 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final PropertyChangeEvent evt = new PropertyChangeEvent(this, propertyName, oldValue, newValue);
         synchronized(listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		listeners.get(i).propertyChange(evt);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		SPListener listener = staticListeners.get(i);
+        		listener.propertyChange(evt);
         	}
         }
         return evt;
@@ -387,8 +415,10 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final TransactionEvent evt = TransactionEvent.createStartTransactionEvent(this, message);
         synchronized (listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		listeners.get(i).transactionStarted(evt);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		final SPListener listener = staticListeners.get(i);
+        		listener.transactionStarted(evt);
         	}
         }
         return evt;
@@ -410,8 +440,10 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final TransactionEvent evt = TransactionEvent.createEndTransactionEvent(this);
         synchronized (listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		listeners.get(i).transactionEnded(evt);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		final SPListener listener = staticListeners.get(i);
+        		listener.transactionEnded(evt);
         	}
         }
         return evt;
@@ -434,11 +466,21 @@ public abstract class AbstractSPObject implements SPObject {
         }
         final TransactionEvent evt = TransactionEvent.createRollbackTransactionEvent(this, message);
         synchronized (listeners) {
-        	for (int i = listeners.size() - 1; i >= 0; i--) {
-        		listeners.get(i).transactionRollback(evt);
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		final SPListener listener = staticListeners.get(i);
+        		listener.transactionRollback(evt);
         	}
         }
         return evt;
+    }
+    
+    public void begin(String message) {
+    	fireTransactionStarted(message);
+    }
+    
+    public void commit() {
+    	fireTransactionEnded();
     }
     
     protected boolean isForegroundThread() {
@@ -489,6 +531,16 @@ public abstract class AbstractSPObject implements SPObject {
     public boolean equals(Object obj) {
     	return (obj instanceof SPObject && 
     			getUUID().equals(((SPObject) obj).getUUID()));
+    }
+    
+    @Override
+    public int hashCode() {
+    	final int prime = 31;
+    	int result = 17;
+    	
+    	result = prime * result + uuid.hashCode();
+    	
+    	return result;
     }
     
     @Override

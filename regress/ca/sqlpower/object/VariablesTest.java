@@ -61,6 +61,11 @@ public class VariablesTest extends TestCase {
 		protected void addChildImpl(SPObject child, int index) {
 			this.children.add(child);
 		}
+		public List<Class<? extends SPObject>> getAllowedChildTypes() {
+			List<Class<? extends SPObject>> types = new ArrayList<Class <? extends SPObject>>();
+			types.add(SPObject.class);
+			return types;
+		}
 	}
 	
 	protected void setUp() throws Exception {

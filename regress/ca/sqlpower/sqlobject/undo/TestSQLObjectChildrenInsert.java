@@ -19,12 +19,13 @@
 package ca.sqlpower.sqlobject.undo;
 
 import junit.framework.TestCase;
-import ca.sqlpower.sqlobject.SQLObjectException;
+import ca.sqlpower.object.SPChildEvent;
+import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.SPChildEvent.EventType;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLIndex;
 import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.sqlobject.SQLObjectEvent;
 import ca.sqlpower.sqlobject.SQLRelationship;
 import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.StubSQLObject;
@@ -46,7 +47,7 @@ public class TestSQLObjectChildrenInsert extends TestCase {
 		
 	}
 	
-	public void testDatabaseInsert()throws SQLObjectException {
+	public void testDatabaseInsert() throws Exception {
 		
 		// setup a playpen like database
 		SQLDatabase db = new SQLDatabase();
@@ -60,7 +61,7 @@ public class TestSQLObjectChildrenInsert extends TestCase {
 		db.addChild(table2);
 		db.addChild(table3);
 		db.addChild(table4);
-		db.removeChild(2);
+		db.removeChild(db.getChild(2));
 		undoManager.undo();
 		assertEquals("There should be 4 children",4,db.getChildCount());
 		assertEquals("The first table is in the wrong position",table1,db.getChild(0));
@@ -81,126 +82,62 @@ public class TestSQLObjectChildrenInsert extends TestCase {
         StubSQLObject parent = new StubSQLObject();
         StubSQLObject child = new StubSQLObject();
         parent.addChild(child);
-        SQLObjectEvent evt = new SQLObjectEvent(parent, new int[] { 0 }, new SQLObject[] { child });
-        SQLObjectInsertChildren edit = new SQLObjectInsertChildren();
-        edit.createEditFromEvent(evt);
+        SPChildEvent evt = new SPChildEvent(parent, StubSQLObject.class, child, 0, EventType.ADDED);
+        SQLObjectChildEdit edit = new SQLObjectChildEdit(evt);
         assertEquals("Add child", edit.getPresentationName());
     }
 
-    public void testPresentationNameGenericPlural() throws Exception {
-        StubSQLObject parent = new StubSQLObject();
-        StubSQLObject child = new StubSQLObject();
-        parent.addChild(child);
-        StubSQLObject child2 = new StubSQLObject();
-        parent.addChild(child2);
-        SQLObjectEvent evt = new SQLObjectEvent(parent, new int[] { 0, 1 }, new SQLObject[] { child, child2 });
-        SQLObjectInsertChildren edit = new SQLObjectInsertChildren();
-        edit.createEditFromEvent(evt);
-        assertEquals("Add children", edit.getPresentationName());
-    }
-    
     public void testPresentationNameSQLTable() throws Exception {
         StubSQLObject parent = new StubSQLObject();
         SQLTable child = new SQLTable();
         parent.addChild(child);
-        SQLObjectEvent evt = new SQLObjectEvent(parent, new int[] { 0 }, new SQLObject[] { child });
-        SQLObjectInsertChildren edit = new SQLObjectInsertChildren();
-        edit.createEditFromEvent(evt);
+        SPChildEvent evt = new SPChildEvent(parent, SQLTable.class, child, 0, EventType.ADDED);
+        SQLObjectChildEdit edit = new SQLObjectChildEdit(evt);
         assertEquals("Add table", edit.getPresentationName());
-    }
-    
-    public void testPresentationNameSQLTablePlural() throws Exception {
-        StubSQLObject parent = new StubSQLObject();
-        SQLTable child = new SQLTable();
-        parent.addChild(child);
-        SQLTable child2 = new SQLTable();
-        parent.addChild(child2);
-        SQLObjectEvent evt = new SQLObjectEvent(parent, new int[] { 0, 1 }, new SQLObject[] { child, child2 });
-        SQLObjectInsertChildren edit = new SQLObjectInsertChildren();
-        edit.createEditFromEvent(evt);
-        assertEquals("Add tables", edit.getPresentationName());
     }
     
     public void testPresentationNameSQLColumn() throws Exception {
         StubSQLObject parent = new StubSQLObject();
+        SQLTable table = new SQLTable(parent, "table", "", "", true); // SQLColumns are very picky about their parents.
         SQLColumn child = new SQLColumn();
-        parent.addChild(child);
-        SQLObjectEvent evt = new SQLObjectEvent(parent, new int[] { 0 }, new SQLObject[] { child });
-        SQLObjectInsertChildren edit = new SQLObjectInsertChildren();
-        edit.createEditFromEvent(evt);
+        table.addChild(child);
+        SPChildEvent evt = new SPChildEvent(parent, SQLColumn.class, child, 0, EventType.ADDED);
+        SQLObjectChildEdit edit = new SQLObjectChildEdit(evt);
         assertEquals("Add column", edit.getPresentationName());
     }
     
-    public void testPresentationNameSQLColumnPlural() throws Exception {
-        StubSQLObject parent = new StubSQLObject();
-        SQLColumn child = new SQLColumn();
-        parent.addChild(child);
-        SQLColumn child2 = new SQLColumn();
-        parent.addChild(child2);
-        SQLObjectEvent evt = new SQLObjectEvent(parent, new int[] { 0, 1 }, new SQLObject[] { child, child2 });
-        SQLObjectInsertChildren edit = new SQLObjectInsertChildren();
-        edit.createEditFromEvent(evt);
-        assertEquals("Add columns", edit.getPresentationName());
-    }
-
     public void testPresentationNameSQLIndex() throws Exception {
         StubSQLObject parent = new StubSQLObject();
         SQLIndex child = new SQLIndex() {
             @Override
-            protected void setParent(SQLObject parent) {
-                // no op!
+            public void setParent(SPObject parent) {
+            	// no-op
             }
         };
         parent.addChild(child);
-        SQLObjectEvent evt = new SQLObjectEvent(parent, new int[] { 0 }, new SQLObject[] { child });
-        SQLObjectInsertChildren edit = new SQLObjectInsertChildren();
-        edit.createEditFromEvent(evt);
+        SPChildEvent evt = new SPChildEvent(parent, SQLIndex.class, child, 0, EventType.ADDED);
+        SQLObjectChildEdit edit = new SQLObjectChildEdit(evt);
         assertEquals("Add index", edit.getPresentationName());
     }
     
-    public void testPresentationNameSQLIndexPlural() throws Exception {
-        StubSQLObject parent = new StubSQLObject();
-        SQLIndex child = makeSQLIndex();
-        parent.addChild(child);
-        SQLIndex child2 = makeSQLIndex();
-        parent.addChild(child2);
-        SQLObjectEvent evt = new SQLObjectEvent(parent, new int[] { 0, 1 }, new SQLObject[] { child, child2 });
-        SQLObjectInsertChildren edit = new SQLObjectInsertChildren();
-        edit.createEditFromEvent(evt);
-        assertEquals("Add indexes", edit.getPresentationName());
-    }
-
     public void testPresentationNameSQLRelationship() throws Exception {
         StubSQLObject parent = new StubSQLObject();
         SQLRelationship child = makeSQLRelationship();
         parent.addChild(child);
-        SQLObjectEvent evt = new SQLObjectEvent(parent, new int[] { 0 }, new SQLObject[] { child });
-        SQLObjectInsertChildren edit = new SQLObjectInsertChildren();
-        edit.createEditFromEvent(evt);
+        SPChildEvent evt = new SPChildEvent(parent, SQLRelationship.class, child, 0, EventType.ADDED);
+        SQLObjectChildEdit edit = new SQLObjectChildEdit(evt);
         assertEquals("Add relationship", edit.getPresentationName());
     }
     
-    public void testPresentationNameSQLRelationshipPlural() throws Exception {
-        StubSQLObject parent = new StubSQLObject();
-        SQLRelationship child = makeSQLRelationship();
-        parent.addChild(child);
-        SQLRelationship child2 = makeSQLRelationship();
-        parent.addChild(child2);
-        SQLObjectEvent evt = new SQLObjectEvent(parent, new int[] { 0, 1 }, new SQLObject[] { child, child2 });
-        SQLObjectInsertChildren edit = new SQLObjectInsertChildren();
-        edit.createEditFromEvent(evt);
-        assertEquals("Add relationships", edit.getPresentationName());
-    }
-
     /**
      * Creates a SQLIndex that doesn't care what kind of parent it belongs to.
      */
     private SQLIndex makeSQLIndex() {
         return new SQLIndex() {
-            @Override
-            protected void setParent(SQLObject parent) {
-                // no op!
-            }
+        	@Override
+        	public void setParent(SPObject parent) {
+        		// no-op
+        	}
         };
     }
 
@@ -210,7 +147,7 @@ public class TestSQLObjectChildrenInsert extends TestCase {
     private SQLRelationship makeSQLRelationship() {
         return new SQLRelationship() {
             @Override
-            protected void setParent(SQLObject parent) {
+            public void setParent(SPObject parent) {
                 // no op!
             }
         };

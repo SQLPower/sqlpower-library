@@ -38,7 +38,6 @@ import org.apache.log4j.Logger;
  */
 public class PropertyChangeEdit extends AbstractUndoableEdit {
     
-    @SuppressWarnings("unused")
     private static final Logger logger = Logger.getLogger(PropertyChangeEdit.class);
 
     private final PropertyChangeEvent sourceEvent;
@@ -52,9 +51,11 @@ public class PropertyChangeEdit extends AbstractUndoableEdit {
      */
     @Override
     public void undo() throws CannotUndoException {
+    	logger.debug("Undoing Property change: Setting " + sourceEvent.getPropertyName() + " from " + sourceEvent.getNewValue() + " to " + sourceEvent.getOldValue());
         super.undo();
         try {
             Method setter = PropertyUtils.getWriteMethod(PropertyUtils.getPropertyDescriptor(sourceEvent.getSource(), sourceEvent.getPropertyName()));
+            logger.info("Found setter: " + setter.getName());
             setter.invoke(sourceEvent.getSource(), sourceEvent.getOldValue());
 
         } catch (Exception ex) {
@@ -69,9 +70,11 @@ public class PropertyChangeEdit extends AbstractUndoableEdit {
      */
     @Override
     public void redo() throws CannotRedoException {
+    	logger.debug("Undoing Property change: Setting " + sourceEvent.getPropertyName() + " from " + sourceEvent.getOldValue() + " to " + sourceEvent.getNewValue());
         super.redo();
         try {
             Method setter = PropertyUtils.getWriteMethod(PropertyUtils.getPropertyDescriptor(sourceEvent.getSource(), sourceEvent.getPropertyName()));
+            logger.info("Found setter: " + setter.getName());
             setter.invoke(sourceEvent.getSource(), sourceEvent.getNewValue());
 
         } catch (Exception ex) {

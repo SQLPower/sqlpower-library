@@ -18,6 +18,7 @@
  */
 package ca.sqlpower.sqlobject;
 
+import java.beans.PropertyChangeEvent;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
@@ -30,8 +31,11 @@ import org.apache.commons.beanutils.PropertyUtils;
 
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 import ca.sqlpower.sqlobject.undo.SQLObjectUndoManager;
+import ca.sqlpower.testutil.GenericNewValueMaker;
 import ca.sqlpower.testutil.MockJDBCDriver;
+import ca.sqlpower.testutil.NewValueMaker;
 
 /**
  * Extends the basic database-connected test class with some test methods that
@@ -48,6 +52,14 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
 	}
 	
 	protected abstract SQLObject getSQLObjectUnderTest() throws SQLObjectException;
+	
+	/**
+	 * Returns a class that is one of the child types of the object under test. An
+	 * object of this type must be able to be added as a child to the object without
+	 * error. If the object under test does not allow children or all of the children
+	 * of the object are final so none can be added, null will be returned.
+	 */
+	protected abstract Class<?> getChildClassType();
 	
 	public void testAllSettersGenerateEvents()
 	throws IllegalArgumentException, IllegalAccessException, 
@@ -72,6 +84,8 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
 		propertiesToIgnoreForEventGeneration.add("zoomOutAction");
         propertiesToIgnoreForEventGeneration.add("magicEnabled");
         propertiesToIgnoreForEventGeneration.add("tableContainer");
+        propertiesToIgnoreForEventGeneration.add("session");
+        propertiesToIgnoreForEventGeneration.add("foregroundThread");
 		
 		if (so instanceof SQLDatabase) {
 			// should be handled in the Datasource
@@ -79,7 +93,7 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
 		}
 		
 		CountingSQLObjectListener listener = new CountingSQLObjectListener();
-		so.addSQLObjectListener(listener);
+		so.addSPListener(listener);
 
 		List<PropertyDescriptor> settableProperties;
 		
@@ -134,6 +148,8 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
                 newVal = new SQLColumn();
             } else if ( property.getPropertyType() == SQLIndex.class){
                 newVal = new SQLIndex();
+            } else if (property.getPropertyType() == SQLRelationship.SQLImportedKey.class) {
+            	newVal = new SQLImportedKey();
             } else if ( property.getPropertyType() == SQLRelationship.Deferrability.class){
                 if (oldVal == SQLRelationship.Deferrability.INITIALLY_DEFERRED) {
                     newVal = SQLRelationship.Deferrability.NOT_DEFERRABLE;
@@ -166,10 +182,10 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
 				if (listener.getChangedCount() == oldChangeCount + 1) {
 					assertEquals("Property name mismatch for "+property.getName()+ " in "+so.getClass(),
 							property.getName(),
-							listener.getLastEvent().getPropertyName());
+							((PropertyChangeEvent) listener.getLastEvent()).getPropertyName());
 					assertEquals("New value for "+property.getName()+" was wrong",
 					        newVal,
-					        listener.getLastEvent().getNewValue());  
+					        ((PropertyChangeEvent) listener.getLastEvent()).getNewValue());  
 				}
 			} catch (InvocationTargetException e) {
 				System.out.println("(non-fatal) Failed to write property '"+property.getName()+" to type "+so.getClass().getName());
@@ -209,6 +225,8 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
         propertiesToIgnoreForUndo.add("deleteRule");
         propertiesToIgnoreForUndo.add("updateRule");
         propertiesToIgnoreForUndo.add("tableContainer");
+        propertiesToIgnoreForUndo.add("session");
+        propertiesToIgnoreForUndo.add("foregroundThread");
 
 		if(so instanceof SQLDatabase)
 		{
@@ -270,6 +288,8 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
                 newVal = new SQLColumn();
             } else if (property.getPropertyType() == SQLIndex.class) {
                 newVal = new SQLIndex();
+            } else if (property.getPropertyType() == SQLRelationship.SQLImportedKey.class) {
+            	newVal = new SQLImportedKey();
             } else if ( property.getPropertyType() == SQLRelationship.Deferrability.class){
                 if (oldVal == SQLRelationship.Deferrability.INITIALLY_DEFERRED) {
                     newVal = SQLRelationship.Deferrability.NOT_DEFERRABLE;
@@ -306,6 +326,26 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
      */
     public void testChildrenNotNull() throws SQLObjectException {
         assertNotNull(getSQLObjectUnderTest().getChildren());
+    }
+    
+    /**
+     * Adding a child to any SQL Object should not force the object to populate.
+     */
+    public void testAddChildDoesNotPopulate() throws Exception {
+    	SQLObject o = getSQLObjectUnderTest();
+    	
+    	if (!o.allowsChildren()) return;
+    	
+    	o.setPopulated(false);
+    	Class<?> childClassType = getChildClassType();
+    	if (childClassType == null) return;
+    	
+    	NewValueMaker valueMaker = new GenericNewValueMaker();
+    	SQLObject newChild = (SQLObject) valueMaker.makeNewValue(childClassType, null, "child");
+    	
+    	o.addChild(newChild);
+    	
+    	assertFalse(o.isPopulated());
     }
 
 }

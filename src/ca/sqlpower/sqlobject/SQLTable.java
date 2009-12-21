@@ -25,23 +25,25 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.ObjectDependentException;
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
+import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 
 public class SQLTable extends SQLObject {
 
 	private static Logger logger = Logger.getLogger(SQLTable.class);
 
 	/**
-	 * These are the different ways of transfering an object
+	 * These are the different ways of transferring an object
 	 * to/in the play pen. An object could be copied from one 
 	 * place to another or reverse engineered. These two 
 	 * operations differ slightly in what they create and
@@ -59,27 +61,47 @@ public class SQLTable extends SQLObject {
 	 * A List of SQLColumn objects which make up all the columns of
 	 * this table.
 	 */
-	protected Folder<SQLColumn> columnsFolder;
+	protected List<SQLColumn> columns = new ArrayList<SQLColumn>();
 
 	/**
 	 * A List of SQLRelationship objects describing keys that this
 	 * table exports.  This SQLTable is the "pkTable" in its exported
 	 * keys.
 	 */
-	protected Folder<SQLRelationship> exportedKeysFolder;
+	protected List<SQLRelationship> exportedKeys = new ArrayList<SQLRelationship>();
 
 	/**
-	 * A container for SQLRelationship objects describing keys that this
+	 * A List for SQLRelationship objects describing keys that this
 	 * table imports.  This SQLTable is the "fkTable" in its imported
 	 * keys.
 	 */
-	protected Folder<SQLRelationship> importedKeysFolder;
+	protected List<SQLImportedKey> importedKeys = new ArrayList<SQLImportedKey>();
 
     /**
-     * A container for SQLIndex objects that describe the various database indices
+     * A List for SQLIndex objects that describe the various database indices
      * that exist on this table.
      */
-    private Folder<SQLIndex> indicesFolder;
+    private List<SQLIndex> indices = new ArrayList<SQLIndex>();
+    
+    /**
+     * Determinant of whether this table's {@link SQLColumn}s have been populated.
+     */
+    private boolean columnsPopulated = false;
+    
+    /**
+     * Determinant of whether this table's {@link SQLIndex}s have been populated.
+     */
+    private boolean indicesPopulated = false;
+    
+    /**
+     * Determinant of whether this table's exported keys have been populated.
+     */
+    private boolean exportedKeysPopulated = false;
+    
+    /**
+     * Determinant of whether this table's imported keys have been populated.
+     */
+    private boolean importedKeysPopulated = false;
 
 	public SQLTable(SQLObject parent, String name, String remarks, String objectType, boolean startPopulated) throws SQLObjectException {
 		logger.debug("NEW TABLE "+name+"@"+hashCode());
@@ -124,7 +146,6 @@ public class SQLTable extends SQLObject {
 	 *
 	 */
 	public SQLTable() {
-        this.children = new ArrayList();  // initFolders normally does this, but this constructor never calls it
         setup(null,null,null,"TABLE");
 	}
 
@@ -141,11 +162,11 @@ public class SQLTable extends SQLObject {
 	 * if lazy loading from a database, it should be false.
 	 */
 	public void initFolders(boolean populated) throws SQLObjectException {
-        this.children = new ArrayList();
-		addChild(new Folder(Folder.COLUMNS, populated));
-		addChild(new Folder(Folder.EXPORTED_KEYS, populated));
-        addChild(new Folder(Folder.IMPORTED_KEYS, populated));
-        addChild(new Folder(Folder.INDICES, populated));
+		this.populated = populated;
+		columnsPopulated = populated;
+		exportedKeysPopulated = populated;
+		importedKeysPopulated = populated;
+		indicesPopulated = populated;
 	}
 
 	/**
@@ -185,6 +206,7 @@ public class SQLTable extends SQLObject {
 		throws SQLObjectException {
 		populateColumns();
 		populateRelationships();
+		populateImportedKeys();
         populateIndices();
 		SQLTable t = new SQLTable(parent, true);
 		t.setName(getName());
@@ -221,7 +243,7 @@ public class SQLTable extends SQLObject {
      * @throws SQLObjectException 
      */
     private static void inheritIndices(SQLTable source, SQLTable target) throws SQLObjectException {
-        for ( SQLIndex index : (List<SQLIndex>)source.getIndicesFolder().getChildren()) {
+        for ( SQLIndex index : source.getIndices()) {
             SQLIndex index2 = SQLIndex.getDerivedInstance(index,target);
             target.addIndex(index2);
         }
@@ -233,10 +255,12 @@ public class SQLTable extends SQLObject {
      * 
      * @throws SQLObjectException
      */
-    private synchronized void populateColumns() throws SQLObjectException {
+    protected synchronized void populateColumns() throws SQLObjectException {
 
-		if (columnsFolder.isPopulated()) return;
-		if (columnsFolder.children.size() > 0) throw new IllegalStateException("Can't populate table because it already contains columns");
+		if (columnsPopulated) return;
+    	if (columns.size() > 0) {
+    		throw new IllegalStateException("Can't populate table because it already contains columns");
+    	}
 
 		logger.debug("column folder populate starting for table " + getName());
 
@@ -246,20 +270,16 @@ public class SQLTable extends SQLObject {
 		    DatabaseMetaData dbmd = con.getMetaData();
 			List<SQLColumn> cols = SQLColumn.fetchColumnsForTable(
 			        getCatalogName(), getSchemaName(), getName(), dbmd);
+			begin("Populating columns for Table " + this);
 			for (SQLColumn col : cols) {
-			    columnsFolder.children.add(col);
-			    col.setParent(columnsFolder);
+			    addColumnWithoutPopulating(col);
 			}
+			commit();
 		} catch (SQLException e) {
+			rollback(e.getMessage());
 			throw new SQLObjectException("Failed to populate columns of table "+getName(), e);
 		} finally {
-			columnsFolder.populated = true;
-			int newSize = columnsFolder.children.size();
-			int[] changedIndices = new int[newSize];
-			for (int i = 0; i < newSize; i++) {
-				changedIndices[i] = i;
-			}
-			columnsFolder.fireDbChildrenInserted(changedIndices, columnsFolder.children);
+			columnsPopulated = true;
 			if (con != null) {
 			    try {
 			        con.close();
@@ -285,15 +305,18 @@ public class SQLTable extends SQLObject {
      * @throws IllegalStateException if the columns folder is not yet populated, or if the
      * index folder is both non-empty and non-populated
      */
-	private synchronized void populateIndices() throws SQLObjectException {
-        if (indicesFolder.isPopulated()) return;
-        if (indicesFolder.children.size() > 0) throw new IllegalStateException("Can't populate indices folder because it already contains children!");
-        if (!columnsFolder.isPopulated()) throw new IllegalStateException("Columns folder must be populated");
+	protected synchronized void populateIndices() throws SQLObjectException {
+        if (indicesPopulated) return;
+		if (indices.size() > 0) {
+			throw new IllegalStateException("Can't populate indices because it already contains children!");
+		} else if (!columnsPopulated) {
+			throw new IllegalStateException("Columns must be populated");
+		}
         
         // If the SQLTable is a view, simply indicated folder is populated and then leave
         // Since Views don't have indices (and Oracle throws an error)
         if (objectType.equals("VIEW")) { 
-            indicesFolder.populated = true;
+            indicesPopulated = true;
             return;
         }
         
@@ -307,17 +330,18 @@ public class SQLTable extends SQLObject {
             
             List<SQLIndex> indexes = SQLIndex.fetchIndicesForTable(dbmd, this);
             
+            begin("Populating Indices for Table " + this);
             for (SQLIndex i : indexes) {
-                indicesFolder.children.add(i);
-                i.setParent(indicesFolder);
+            	addIndex(i);
             }
-            logger.debug("found "+indicesFolder.children.size()+" indices.");
+            commit();
+            logger.debug("found "+indices.size()+" indices.");
           
-            indicesFolder.populated = true;
         } catch (SQLException e) {
+        	rollback(e.getMessage());
             throw new SQLObjectException("Failed to populate indices of table "+getName(), e);
         } finally {
-            indicesFolder.populated = true;
+            indicesPopulated = true;
 
             try {
                 if (con != null) con.close();
@@ -326,31 +350,92 @@ public class SQLTable extends SQLObject {
             }
             
             // FIXME this might change the order of columns without firing an event
-            Collections.sort(columnsFolder.children, new SQLColumn.CompareByPKSeq());
+            Collections.sort(columns, new SQLColumn.CompareByPKSeq());
             
-            int newSize = indicesFolder.children.size();
-            int[] changedIndices = new int[newSize];
-            for (int i = 0; i < newSize; i++) {
-                changedIndices[i] = i;
-            }
-            indicesFolder.fireDbChildrenInserted(changedIndices, indicesFolder.children);
         }
         normalizePrimaryKey();
         logger.debug("index folder populate finished");
     }
+	
+	protected synchronized void populateImportedKeys() throws SQLObjectException {
+		if (importedKeysPopulated) return;
+		
+		CachedRowSet crs = null;
+		Connection con = null;
+		try {
+			con = getParentDatabase().getConnection();
+			DatabaseMetaData dbmd = con.getMetaData();
+			crs = new CachedRowSet();
+			ResultSet exportedKeysRS = dbmd.getImportedKeys(getCatalogName(), getSchemaName(), getName());
+            crs.populate(exportedKeysRS);
+            exportedKeysRS.close();
+		} catch (SQLException ex) {
+            throw new SQLObjectException("Couldn't locate related tables", ex);
+        } finally {
+            // close the connection before it makes the recursive call
+            // that could lead to opening more connections
+            try {
+                if (con != null) con.close();
+            } catch (SQLException ex) {
+                logger.warn("Couldn't close connection", ex);
+            }
+        }
+        try {
+			while (crs.next()) {
+				if (crs.getInt(9) != 1) {
+					// just another column mapping in a relationship we've already handled
+					logger.debug("Got exported key with sequence " + crs.getInt(9) + " on " + crs.getString(5) + "." + crs.getString(6) + "." + crs.getString(7) + ", continuing.");
+					continue;
+				}
+				logger.debug("Got exported key with sequence " + crs.getInt(9) + " on " + crs.getString(5) + "." + crs.getString(6) + "." + crs.getString(7) + ", populating.");
+				String cat = crs.getString(1);
+				String sch = crs.getString(2);
+				String tab = crs.getString(3);
+				SQLTable pkTable = getParentDatabase().getTableByName(cat, sch, tab);
+                if (pkTable == null) {
+                    throw new IllegalStateException("While populating table " +
+                            SQLObjectUtils.toQualifiedName(getParent()) +
+                            ", I failed to find child table " +
+                            "\""+cat+"\".\""+sch+"\".\""+tab+"\"");
+                }
+				pkTable.populateColumns();
+				pkTable.populateRelationships(this);
+			}
+			importedKeysPopulated = true;
+		} catch (SQLException ex) {
+			throw new SQLObjectException("Couldn't locate related tables", ex);
+		} finally {
+			try {
+				if (crs != null) crs.close();
+			} catch (SQLException ex) {
+				logger.warn("Couldn't close resultset", ex);
+			}
+		}
+	}
+	
+	/**
+	 * Populates all the imported key relationships, where it first ensures that
+	 * columns have been populated.
+	 * 
+	 * @throws SQLObjectException
+	 */
+	protected synchronized void populateExportedKeys() throws SQLObjectException {
+		populateColumns();
+		populateRelationships();
+	}
 
 	/**
-	 * Populates all the imported key relationships.  This has the
-	 * side effect of populating the exported key side of the
+	 * Populates all the exported key relationships.  This has the
+	 * side effect of populating the imported key side of the
 	 * relationships for the exporting tables.
 	 */
-    private synchronized void populateRelationships() throws SQLObjectException {
+    protected synchronized void populateRelationships() throws SQLObjectException {
         populateRelationships(null);
     }
 
 	/**
-	 * Populates all the imported key relationships. This has the side effect of
-	 * populating the exported key side of the relationships for the exporting
+	 * Populates all the exported key relationships. This has the side effect of
+	 * populating the imported key side of the relationships for the exporting
 	 * tables.
 	 * 
 	 * @param pkTable
@@ -358,13 +443,14 @@ public class SQLTable extends SQLObject {
 	 *            parent will be added. If this is null than all relationships
 	 *            will be added regardless of the parent.
 	 */
-    private synchronized void populateRelationships(SQLTable pkTable) throws SQLObjectException {
-		if (!columnsFolder.isPopulated()) throw new IllegalStateException("Table must be populated before relationships are added");
-		if (importedKeysFolder.isPopulated()) return;
+    protected synchronized void populateRelationships(SQLTable fkTable) throws SQLObjectException {
+    	if (!columnsPopulated) {
+    		throw new IllegalStateException("Table must be populated before relationships are added");
+    	} else if (exportedKeysPopulated) {
+    		return;
+    	}
 
 		logger.debug("SQLTable: relationship populate starting");
-
-		int oldSize = importedKeysFolder.children.size();
 
 		/* this must come before
 		 * SQLRelationship.addImportedRelationshipsToTable because
@@ -372,48 +458,47 @@ public class SQLTable extends SQLObject {
 		 * which in turn could cause infinite recursion when listeners
 		 * query the size of the relationships folder.
 		 */
-		importedKeysFolder.populated = true;
-		boolean allRelationshipsAdded = false;
+		exportedKeysPopulated = true;
+		boolean allRelationshipsAdded = true;
 		try {
-			List<SQLRelationship> newKeys = SQLRelationship.fetchImportedKeys(this);
-
+			List<SQLRelationship> newKeys = SQLRelationship.fetchExportedKeys(this);
+			begin("Populating relationships for Table " + this);
+			
 			/* now attach the new SQLRelationship objects to their tables,
              * which may already be partially populated (we avoid adding the
 			 * same relationship if it's already there). We also filter by
 			 * pkTable if that was requested.
 			 */
+			List<SQLRelationship> addedRels = new ArrayList<SQLRelationship>();
             for (SQLRelationship addMe : newKeys) {
-                if (pkTable != null && addMe.pkTable != pkTable) {
+                if (fkTable != null && addMe.getFkTable() != fkTable) {
                     allRelationshipsAdded = false;
                     continue;
                 }
-                if (!addMe.pkTable.getExportedKeysFolder().retrieveChildrenNoPopulate().contains(addMe)) {
-                    addMe.attachRelationship(addMe.pkTable, addMe.fkTable, false);
+                if (!addMe.getFkTable().getImportedKeysWithoutPopulating().contains(addMe.getForeignKey())) {
+                    addMe.attachRelationship(addMe.getParent(), addMe.getFkTable(), false);
+                    addedRels.add(addMe);
                 }
             }
 
-
+			// XXX Review above code, and make sure everything is firing
+			// events where it should be. The above block is surrounded
+			// within a transaction, so all events should be fired
+			// there.
+            commit();
+            
+            // This call attaches listeners to this table. It must be called
+			// outside of all transactions, otherwise the listener would start
+			// with the wrong transaction count, and throw an exception on
+			// commit()
+		} catch (SQLObjectException e) {
+			rollback(e.getMessage());
+			throw e;
 		} finally {
-			int newSize = importedKeysFolder.children.size();
-			if (newSize > oldSize) {
-				int[] changedIndices = new int[newSize - oldSize];
-				for (int i = 0, n = newSize - oldSize; i < n; i++) {
-					changedIndices[i] = oldSize + i;
-				}
-				try {
-					importedKeysFolder.fireDbChildrenInserted
-						(changedIndices,
-						 importedKeysFolder.children.subList(oldSize, newSize));
-				} catch (IndexOutOfBoundsException ex) {
-					logger.error("Index out of bounds while adding imported keys to table "
-								 +getName()+" where oldSize="+oldSize+"; newSize="+newSize
-								 +"; imported keys="+importedKeysFolder.children);
-				}
-			}
 			//The imported keys folder will only be guaranteed to be completely populated if
 			//any table can be the pkTable not a specific table.
-			if (pkTable != null && !allRelationshipsAdded) {
-				importedKeysFolder.populated = false;
+			if (fkTable != null && !allRelationshipsAdded) {
+				exportedKeysPopulated = false;
 			}
 		}
 
@@ -421,32 +506,54 @@ public class SQLTable extends SQLObject {
 
 	}
 
-	/**
-	 * Convenience method for getImportedKeys.addChild(r).
-	 */
-	void addImportedKey(SQLRelationship r) throws SQLObjectException {
-		importedKeysFolder.addChild(r);
+	public void addImportedKey(SQLImportedKey r) {
+		addImportedKey(r, importedKeys.size());
+	}
+	
+	public void addImportedKey(SQLImportedKey k, int index) {
+		importedKeys.add(index, k);
+		k.setParent(this);
+		fireChildAdded(SQLImportedKey.class, k, index);
 	}
 
-	/**
-	 * Convenience method for getImportedKeys.removeChild(r).
-	 */
-	public void removeImportedKey(SQLRelationship r) {
-		importedKeysFolder.removeChild(r);
+	public boolean removeImportedKey(SQLImportedKey k) {
+		if (isMagicEnabled() && k.getParent() != this) {
+			throw new IllegalStateException("Cannot remove child " + k.getName() + 
+					" of type " + k.getClass() + " as its parent is not " + getName());
+		}
+		int index = importedKeys.indexOf(k);
+		if (index != -1) {
+			 importedKeys.remove(index);
+			 k.setParent(null);
+			 fireChildRemoved(SQLRelationship.class, k, index);
+			 return true;
+		}
+		return false;
 	}
 
-	/**
-	 * Convenience method for getExportedKeys.addChild(r).
-	 */
-	void addExportedKey(SQLRelationship r) throws SQLObjectException {
-		exportedKeysFolder.addChild(r);
+	public void addExportedKey(SQLRelationship r) {
+		addExportedKey(r, exportedKeys.size());
+	}
+	
+	public void addExportedKey(SQLRelationship r, int index) {
+		exportedKeys.add(index, r);
+		r.setParent(this);
+		fireChildAdded(SQLRelationship.class, r, index);
 	}
 
-	/**
-	 * Convenience method for getExportedKeys.removeChild(r).
-	 */
-	public void removeExportedKey(SQLRelationship r) {
-		exportedKeysFolder.removeChild(r);
+	public boolean removeExportedKey(SQLRelationship r) {
+		if (isMagicEnabled() && r.getParent() != this) {
+			throw new IllegalStateException("Cannot remove child " + r.getName() + 
+					" of type " + r.getClass() + " as its parent is not " + getName());
+		}
+		int index = exportedKeys.indexOf(r);
+		if (index != -1) {
+			 exportedKeys.remove(index);
+			 r.setParent(null);
+			 fireChildRemoved(SQLRelationship.class, r, index);
+			 return true;
+		}
+		return false;
 	}
 
 	/**
@@ -454,14 +561,12 @@ public class SQLTable extends SQLObject {
 	 */
 	public int getPkSize() {
 		int size = 0;
-		Iterator it = columnsFolder.children.iterator();
-		while (it.hasNext()) {
-			SQLColumn c = (SQLColumn) it.next();
+		for (SQLColumn c : columns) {
 			if (c.getPrimaryKeySeq() != null) {
 				size++;
 			} else {
 				break;
-				}
+			}
 		}
 		return size;
 	}
@@ -471,7 +576,7 @@ public class SQLTable extends SQLObject {
 	 * this table's column list.
 	 */
 	public void inherit(SQLTable source, TransferStyles transferStyle, boolean preserveColumnSource) throws SQLObjectException {
-		inherit(columnsFolder.children.size(), source, transferStyle, preserveColumnSource);
+		inherit(columns.size(), source, transferStyle, preserveColumnSource);
 	}
 
 	/**
@@ -499,15 +604,14 @@ public class SQLTable extends SQLObject {
 		if (originalSize == 0 || pos < pkSize) {
 			addToPK = true;
 			for (int i = pos; i < pkSize; i++) {
-				((SQLColumn) columnsFolder.children.get(i)).primaryKeySeq = new Integer(i + sourceSize);
+				columns.get(i).primaryKeySeq = new Integer(i + sourceSize);
 			}
 		} else {
 			addToPK = false;
 		}
 
-		Iterator it = source.getColumns().iterator();
-		while (it.hasNext()) {
-			SQLColumn child = (SQLColumn) it.next();
+		begin("Inherting columns from source table");
+		for (SQLColumn child : source.getColumns()) {
 			switch (transferStyle) {
 			case REVERSE_ENGINEER:
 				c = child.createInheritingInstance(this);
@@ -525,9 +629,10 @@ public class SQLTable extends SQLObject {
 					c.primaryKeySeq = null;
 				}
 			}
-			columnsFolder.addChild(pos, c);
-			pos += 1;
+			addColumn(c, pos, false);
+			pos++;
 		}
+		commit();
 	}
 
 	public void inherit(int pos, SQLColumn sourceCol, boolean addToPK, TransferStyles transferStyle, boolean preserveColumnSource) throws SQLObjectException {
@@ -550,11 +655,12 @@ public class SQLTable extends SQLObject {
 		} else {
 			c.primaryKeySeq = null;
 		}
-		columnsFolder.addChild(pos, c);
+		addChild(c, pos);
 	}
 
-	public SQLColumn getColumn(int idx) throws SQLObjectException {
-		return (SQLColumn) columnsFolder.getChild(idx);
+	public SQLColumn getColumn(int index) throws SQLObjectException {
+		populateColumns();
+		return columns.get(index);
 	}
 
 	/**
@@ -581,12 +687,10 @@ public class SQLTable extends SQLObject {
 		 * getColumnsByName and addColumnsToTable
 		 */
 		if (logger.isDebugEnabled()) {
-		    logger.debug("Looking for column "+colName+" in "+columnsFolder.children);
+		    logger.debug("Looking for column "+colName+" in "+columns);
+		    logger.debug("Table " + getName() + " has " + columns.size() + " columns");
 		}
-		Iterator it = columnsFolder.children.iterator();
-		logger.debug("Table " + getName() + " has " + columnsFolder.children.size() + " columns");
-		while (it.hasNext()) {
-			SQLColumn col = (SQLColumn) it.next();
+		for (SQLColumn col : columns) {
 			logger.debug("Current column name is '" + col.getName() + "'");
             if (caseSensitive) {
                 if (col.getName().equals(colName)) {
@@ -607,88 +711,144 @@ public class SQLTable extends SQLObject {
 	public int getColumnIndex(SQLColumn col) throws SQLObjectException {
 		logger.debug("Looking for column index of: " + col);
 
-		Iterator it = getColumns().iterator();
-
-		int colIdx = 0;
-		while (it.hasNext()) {
-			if (it.next() == col) {
-				return colIdx;
-			}
-			colIdx++;
+		List<SQLColumn> columns = getColumns();
+		int index = columns.indexOf(col);
+		
+		if (index == -1) {
+			logger.debug("NOT FOUND");
 		}
-
-		logger.debug("NOT FOUND");
-		return -1;
+		
+		return index;
 	}
 
 	public void addColumn(SQLColumn col) throws SQLObjectException {
-		addColumnImpl(columnsFolder.children.size(), col);
+		addColumn(col, columns.size());
 	}
 
-	public void addColumn(int pos, SQLColumn col) throws SQLObjectException {
-		addColumnImpl(pos, col);
+	/**
+	 * Adds a column to the given position in the table. If magic is enabled the
+	 * primary key sequence of the column may be updated depending on the position
+	 * of the column and the number of primary keys. 
+	 */
+	public void addColumn(SQLColumn col, int pos) throws SQLObjectException {
+		addColumn(col, pos, true);
 	}
 
-	private void addColumnImpl(int pos, SQLColumn col) throws SQLObjectException {
+	/**
+	 * Adds a column to the given position in the table. If magic is enabled and
+	 * correctPK is true the primary key sequence of the column may be updated
+	 * depending on the position of the column and the number of primary keys.
+	 * 
+	 * @param col
+	 *            The column to add.
+	 * @param pos
+	 *            The position to add the column to.
+	 * @param correctPK
+	 *            If true and magic is enabled the column will be placed in the
+	 *            primary key if it is above at least one primary key column in
+	 *            terms of position in the table. If false the primary key
+	 *            sequence of the column will be left as is and normalize will
+	 *            need to be called on the table to correct the sequence of
+	 *            columns in the primary key.
+	 * @throws SQLObjectException
+	 */
+	public void addColumn(SQLColumn col, int pos, boolean correctPK) throws SQLObjectException {
 		if (getColumnIndex(col) != -1) {
 			col.addReference();
 			return;
 		}
 
-		if (isMagicEnabled()) {
+		if (isMagicEnabled() && correctPK) {
 		    boolean addToPK = false;
 		    int pkSize = getPkSize();
 		    if (getColumns().size() > 0 && pos < pkSize) {
 		        addToPK = true;
 		        for (int i = pos; i < pkSize; i++) {
-		            ((SQLColumn) getColumns().get(i)).primaryKeySeq = new Integer(i + 1);
+		        	SQLColumn changingPKCol = getColumns().get(i);
+		        	try {
+		        		changingPKCol.setMagicEnabled(false);
+		        		changingPKCol.setPrimaryKeySeq(new Integer(i + 1), false);
+		        	} finally {
+		        		changingPKCol.setMagicEnabled(true);
+		        	}
 		        }
 		    }
 
 		    col.setParent(null);
 		    if (addToPK) {
 		        col.nullable = DatabaseMetaData.columnNoNulls;
-		        col.primaryKeySeq = new Integer(pos);
+		        try {
+		        	col.setMagicEnabled(false);
+		        	col.setPrimaryKeySeq(new Integer(pos), false);
+		        } finally {
+		        	col.setMagicEnabled(true);
+		        }
 		    } else {
-		        col.primaryKeySeq = null;
+		    	try {
+		    		col.setMagicEnabled(false);
+		    		col.setPrimaryKeySeq(null, false);
+		    	} finally {
+		    		col.setMagicEnabled(true);
+		    	}
 		    }
 		}
-		columnsFolder.addChild(pos, col);
+		columns.add(pos, col);
+		col.setParent(this);
+		fireChildAdded(SQLColumn.class, col, pos);
+	}
+	
+	/**
+	 * Adds a {@link SQLColumn} to the end of the child list without populating first.
+	 */
+	public void addColumnWithoutPopulating(SQLColumn col) {
+		addColumnWithoutPopulating(col, columns.size());
+	}
+	
+	/**
+	 * Adds a {@link SQLColumn} at a given index of the child list without populating first.
+	 */
+	public void addColumnWithoutPopulating(SQLColumn col, int index) {
+		columns.add(index, col);
+		col.setParent(this);
+		fireChildAdded(SQLColumn.class, col, index);
 	}
 
 	/**
      * Adds the given SQLIndex object to this table's index folder.
 	 */
-    public void addIndex(SQLIndex idx) throws SQLObjectException {
-        if (idx.isPrimaryKeyIndex()) {
-            getIndicesFolder().addChild(0, idx);
-            return;
+    public void addIndex(SQLIndex sqlIndex) {
+        if (sqlIndex.isPrimaryKeyIndex()) {
+        	addIndex(sqlIndex, 0);
+        } else {
+        	addIndex(sqlIndex, indices.size());
         }
-        getIndicesFolder().addChild(idx);
+    }
+    
+    public void addIndex(SQLIndex sqlIndex, int index) {
+    	indices.add(index, sqlIndex);
+    	sqlIndex.setParent(this);
+    	fireChildAdded(SQLIndex.class, sqlIndex, index);
     }
 
-	/**
-	 * Connects up the columnsFolder, exportedKeysFolder,
-	 * importedKeysFolder, and indicesFolder pointers to the
-     * children at indices 0, 1, 2, and 3 respectively.
-	 */
-	protected void addChildImpl(int index, SQLObject child) throws SQLObjectException {
-		if (child instanceof Folder) {
-			if (children.size() == 0) {
-				columnsFolder = (Folder) child;
-			} else if (children.size() == 1) {
-				exportedKeysFolder = (Folder) child;
-            } else if (children.size() == 2) {
-                importedKeysFolder = (Folder) child;
-            } else if (children.size() == 3) {
-                indicesFolder = (Folder) child;
-			} else {
-				throw new UnsupportedOperationException("Can't add a 5th folder to SQLTable");
-			}
+    /**
+     * Simply tries to add the child to this object without doing any side effects like
+     * correcting index sequences.
+     */
+    @Override
+    protected void addChildImpl(SPObject child, int index) {
+		if (child instanceof SQLColumn) {
+			addColumnWithoutPopulating((SQLColumn) child, index);
+		} else if (child instanceof SQLRelationship) {
+			addExportedKey((SQLRelationship) child);
+		} else if (child instanceof SQLImportedKey) {
+			addImportedKey((SQLImportedKey) child);
+		} else if (child instanceof SQLIndex) {
+			addIndex((SQLIndex) child, index);
 		} else {
-			throw new UnsupportedOperationException("You can only add Folders to SQLTable");
+			throw new IllegalArgumentException("The child " + child.getName() + 
+					" of type " + child.getClass() + " is not a valid child type of " + 
+					getClass() + ".");
 		}
-		super.addChildImpl(index, child);
 	}
 
     /**
@@ -698,8 +858,14 @@ public class SQLTable extends SQLObject {
      *             If the column is "owned" by a relationship, and cannot be
      *             safely removed.
      */
-	public void removeColumn(int index) throws SQLObjectException {
-		removeColumn((SQLColumn) columnsFolder.children.get(index));
+	public boolean removeColumn(int index) throws SQLObjectException {
+		try {
+			return removeChild(columns.get(index));
+		} catch (IllegalArgumentException e) {
+			throw new RuntimeException(e);
+		} catch (ObjectDependentException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
     /**
@@ -718,8 +884,19 @@ public class SQLTable extends SQLObject {
      *             If the column is "owned" by a relationship, and cannot be
      *             safely removed.
      */
-	public void removeColumn(SQLColumn col) throws SQLObjectException {
-	    columnsFolder.removeChild(col);
+	public boolean removeColumn(SQLColumn col) {
+		if (isMagicEnabled() && col.getParent() != this) {
+			throw new IllegalStateException("Cannot remove child " + col.getName() + 
+					" of type " + col.getClass() + " as its parent is not " + getName());
+		}
+		int index = columns.indexOf(col);
+		if (index != -1) {
+			columns.remove(index);
+			fireChildRemoved(SQLColumn.class, col, index);
+			col.setParent(null);
+			return true;
+		}
+		return false;
 	}
 	
 
@@ -737,9 +914,8 @@ public class SQLTable extends SQLObject {
 		// remove and add the column directly, then manually fire the event.
 	    // This is necessary because the relationships prevent deletion of locked keys.
         try {
-            startCompoundEdit("Changing column index");
-            SQLColumn col = (SQLColumn) columnsFolder.children.get(oldIdx);
-            Integer oldPkSeq = col.primaryKeySeq;
+            begin("Changing column index");
+            SQLColumn col = columns.get(oldIdx);
             Integer interimPkSeq;
             if (putInPK) {
                 interimPkSeq = new Integer(1); // will get sane value when normalized
@@ -747,20 +923,18 @@ public class SQLTable extends SQLObject {
             } else {
                 interimPkSeq = null;
             }
-            col.primaryKeySeq = interimPkSeq;
-            col.fireDbObjectChanged("primaryKeySeq", oldPkSeq, interimPkSeq);
+            
+            col.setPrimaryKeySeq(interimPkSeq, false, false);
 
             // If the indices are the same, then there's no point in moving the column
             if (oldIdx != newIdx) {
-                columnsFolder.children.remove(oldIdx);
-                columnsFolder.fireDbChildRemoved(oldIdx, col);
-                columnsFolder.children.add(newIdx, col);
-                columnsFolder.fireDbChildInserted(newIdx, col);
+            	removeColumn(col);
+            	addColumn(col, newIdx, false);
             }
 
             normalizePrimaryKey();
         } finally {
-            endCompoundEdit("Changing column index");
+        	commit();
         }
 	}
 
@@ -807,7 +981,7 @@ public class SQLTable extends SQLObject {
 		try {
             normalizing = true;
             
-            startCompoundEdit("Normalizing Primary Key");
+            begin("Normalizing Primary Key");
 
             do {
                 normalizeAgain = false;
@@ -824,10 +998,8 @@ public class SQLTable extends SQLObject {
                 for (SQLColumn col : new ArrayList<SQLColumn>(getColumns())) {
                     logger.debug("*** normalize " + getName() + " phase 1/2: " + col);
                     if (col.getPrimaryKeySeq() != null) {
-                        Integer oldPkSeq = col.getPrimaryKeySeq();
                         Integer newPkSeq = new Integer(i);
-                        col.primaryKeySeq = newPkSeq;
-                        col.fireDbObjectChanged("primaryKeySeq", oldPkSeq, newPkSeq);
+                        col.setPrimaryKeySeq(newPkSeq, false, false);
                         i++;
                     }
                 }
@@ -843,8 +1015,9 @@ public class SQLTable extends SQLObject {
 
                 SQLIndex pkIndex = getPrimaryKeyIndex();
                 Map<SQLColumn, Column> oldColumnInstances = new HashMap<SQLColumn, Column>();
-                while (pkIndex.getChildCount() > 0) {
-                    Column child = (Column) pkIndex.removeChild(0);
+                for (int j = pkIndex.getChildCount()-1; j >= 0; j--) {
+                    Column child = (Column) pkIndex.getChild(j);
+                    pkIndex.removeChild(child);
                     if (child.getColumn() == null) {
                         throw new IllegalStateException(
                                 "Found a functional index column in PK." +
@@ -865,11 +1038,17 @@ public class SQLTable extends SQLObject {
                     }
                 }
                 if (pkIndex.getChildCount() == 0) {
-                    getIndicesFolder().removeChild(pkIndex);
+                	removeIndex(pkIndex);
                 }
             } while (normalizeAgain);
+            commit();
+		} catch (IllegalArgumentException e) {
+			rollback("Could not remove child: " + e.getMessage());
+			throw new RuntimeException(e);
+		} catch (ObjectDependentException e) {
+			rollback("Could not remove child: " + e.getMessage());
+			throw new RuntimeException(e);
 		} finally {
-		    endCompoundEdit("Normalizing Primary Key");
             normalizing = false;
             normalizeAgain = false;
 		}
@@ -883,16 +1062,12 @@ public class SQLTable extends SQLObject {
 
 	public List<SQLRelationship> keysOfColumn(SQLColumn col) throws SQLObjectException {
 		LinkedList<SQLRelationship> keys = new LinkedList<SQLRelationship>();
-		Iterator it = getExportedKeys().iterator();
-		while (it.hasNext()) {
-			SQLRelationship r = (SQLRelationship) it.next();
+		for (SQLRelationship r : exportedKeys) {
 			if (r.containsPkColumn(col)) {
 				keys.add(r);
 			}
 		}
-		it = getExportedKeys().iterator();
-		while (it.hasNext()) {
-			SQLRelationship r = (SQLRelationship) it.next();
+		for (SQLRelationship r : exportedKeys) {
 			if (r.containsFkColumn(col)) {
 				keys.add(r);
 			}
@@ -912,7 +1087,7 @@ public class SQLTable extends SQLObject {
 		if (getParent() == newParent) return;
 		SQLObject oldVal = getParent();
 		super.setParent(newParent);
-		fireDbObjectChanged("parent", oldVal, getParent());
+		firePropertyChange("parent", oldVal, getParent());
 	}
 
 
@@ -939,11 +1114,27 @@ public class SQLTable extends SQLObject {
      * by visiting the individual folders.
 	 */
 	protected void populateImpl() throws SQLObjectException {
-		// SQLTable: populate is a no-op
+		if (populated) return;
+		
+		try {
+			begin("Populating Children of Table " + this);
+			populateColumns();
+			populateRelationships();
+			populateIndices();
+			commit();
+		} catch (SQLObjectException e) {
+			rollback(e.getMessage());
+			throw e;
+		} finally {
+			populated = true;
+		}
 	}
 
 	public boolean isPopulated() {
-		return true;
+		if (!populated && isColumnsPopulated() && isImportedKeysPopulated() && isExportedKeysPopulated() && isIndicesPopulated()) {
+			populated = true;
+		}
+		return populated;
 	}
 
 	/**
@@ -954,256 +1145,229 @@ public class SQLTable extends SQLObject {
 	}
 
 	public Class<? extends SQLObject> getChildType() {
-		return Folder.class;
+		return SQLObject.class;
 	}
 
 	/**
 	 * The Folder class is a SQLObject that holds a SQLTable's child
 	 * folders (columns and relationships).
 	 */
-	public static class Folder<T extends SQLObject> extends SQLObject {
-		protected int type;
-		protected String name;
-		protected SQLTable parent;
-
-		public static final int COLUMNS = 1;
-		public static final int IMPORTED_KEYS = 2;
-        public static final int EXPORTED_KEYS = 3;
-        public static final int INDICES = 4;
-
-		public Folder(int type, boolean populated) {
-			this.populated = populated;
-			this.type = type;
-			this.children = new ArrayList<T>();
-			if (type == COLUMNS) {
-				name = "Columns";
-			} else if (type == IMPORTED_KEYS) {
-				name = "Imported Keys";
-            } else if (type == EXPORTED_KEYS) {
-                name = "Exported Keys";
-            } else if (type == INDICES) {
-                name = "Indices";
-			} else {
-				throw new IllegalArgumentException("Unknown folder type: "+type);
-			}
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public void setName(String n) {
-			String oldName = name;
-			name = n;
-			fireDbObjectChanged("name", oldName, name);
-		}
-
-		public SQLTable getParent() {
-			return parent;
-		}
-
-		/**
-		 * Sets the parent reference in this folder.
-		 *
-		 * @throws ClassCastException if newParent is not an instance of SQLTable.
-		 */
-		protected void setParent(SQLObject newParentTable) {
-			parent = (SQLTable) newParentTable;
-		}
-
-		protected void populateImpl() throws SQLObjectException {
-		    if (logger.isDebugEnabled()) {
-		        List<SQLObject> hierarchy = new ArrayList<SQLObject>();
-		        SQLObject parent = this;
-		        while (parent != null) {
-		            hierarchy.add(0, parent);
-		            parent = parent.getParent();
-		        }
-		        logger.debug("Populating folder on " + getParent().getName() + " for type " + type + " with ancestor path " + hierarchy);
-		    }
-
-		    if (populated) return;
-
-			logger.debug("SQLTable.Folder["+getName()+"]: populate starting");
-
-			
-			try {
-				if (type == COLUMNS) {
-					parent.populateColumns();
-				} else if (type == IMPORTED_KEYS) {
-					parent.populateColumns();
-					parent.populateRelationships(null);
-				} else if (type == EXPORTED_KEYS) {
-					CachedRowSet crs = null;
-					Connection con = null;
-					try {
-						con = parent.getParentDatabase().getConnection();
-						DatabaseMetaData dbmd = con.getMetaData();
-						crs = new CachedRowSet();
-						ResultSet exportedKeysRS = dbmd.getExportedKeys(parent.getCatalogName(), parent.getSchemaName(), parent.getName());
-                        crs.populate(exportedKeysRS);
-                        exportedKeysRS.close();
-					} catch (SQLException ex) {
-                        throw new SQLObjectException("Couldn't locate related tables", ex);
-                    } finally {
-                        // close the connection before it makes the recursive call
-                        // that could lead to opening more connections
-                        try {
-                            if (con != null) con.close();
-                        } catch (SQLException ex) {
-                            logger.warn("Couldn't close connection", ex);
-                        }
-                    }
-                    try {
-						while (crs.next()) {
-							if (crs.getInt(9) != 1) {
-								// just another column mapping in a relationship we've already handled
-								logger.debug("Got exported key with sequence " + crs.getInt(9) + " on " + crs.getString(5) + "." + crs.getString(6) + "." + crs.getString(7) + ", continuing.");
-								continue;
-							}
-							logger.debug("Got exported key with sequence " + crs.getInt(9) + " on " + crs.getString(5) + "." + crs.getString(6) + "." + crs.getString(7) + ", populating.");
-							String cat = crs.getString(5);
-							String sch = crs.getString(6);
-							String tab = crs.getString(7);
-							SQLTable fkTable = parent.getParentDatabase().getTableByName(cat, sch, tab);
-                            if (fkTable == null) {
-                                throw new IllegalStateException("While populating table " +
-                                        SQLObjectUtils.toQualifiedName(getParent()) +
-                                        ", I failed to find child table " +
-                                        "\""+cat+"\".\""+sch+"\".\""+tab+"\"");
-                            }
-							fkTable.populateColumns();
-							fkTable.populateRelationships(parent);
-						}
-					} catch (SQLException ex) {
-						throw new SQLObjectException("Couldn't locate related tables", ex);
-					} finally {
-						try {
-							if (crs != null) crs.close();
-						} catch (SQLException ex) {
-							logger.warn("Couldn't close resultset", ex);
-						}
-					}
-                } else if (type == INDICES) {
-                    parent.populateColumns();
-                    parent.populateIndices();
-				} else {
-					throw new IllegalArgumentException("Unknown folder type: "+type);
-				}
-			} finally {
-				populated = true;
-			}
-
-			logger.debug("SQLTable.Folder["+getName()+"]: populate finished");
-
-		}
-		
-        @Override
-		protected void addChildImpl(int index, SQLObject child) throws SQLObjectException {
-			logger.debug("Adding child "+child.getName()+" to folder "+getName());
-			super.addChildImpl(index, child);
-		}
-
-        /**
-         * Overrides default remove behaviour to normalize the primary key in
-         * the case of a removed SQLColumn and to check for locked (imported)
-         * columns. In both cases, the special checking is not performed if
-         * magic is disabled or this folder has no parent.
-         * 
-         * @throws LockedColumnException
-         *             If this is a folder of columns, and the column you
-         *             attempt to remove is "owned" by a relationship.
-         */
-        @Override
-        protected SQLObject removeImpl(int index) {
-            if (isMagicEnabled() && type == COLUMNS && getParent() != null) {
-                SQLColumn col = (SQLColumn) children.get(index);
-                // a column is only locked if it is an IMPORTed key--not if it is EXPORTed.
-                for (SQLRelationship r : (List<SQLRelationship>) parent.importedKeysFolder.children) {
-                    r.checkColumnLocked(col);
-                }
-            }
-            SQLObject removed = super.removeImpl(index);
-            if (isMagicEnabled() && type == COLUMNS && removed != null && getParent() != null) {
-                try {
-                    getParent().normalizePrimaryKey();
-                } catch (SQLObjectException e) {
-                    throw new SQLObjectRuntimeException(e);
-                }
-            }
-            return removed;
-        }
-        
-		public String getShortDisplayName() {
-			return name;
-		}
-
-		public boolean allowsChildren() {
-			return true;
-		}
-
-		public String toString() {
-			if (parent == null) {
-				return name+" folder (no parent)";
-			} else {
-				return name+" folder of "+parent.getName();
-			}
-		}
-
-		/**
-		 * Returns the type code of this folder.
-		 *
-		 * @return One of COLUMNS, IMPORTED_KEYS, or EXPORTED_KEYS.
-		 */
-		public int getType() {
-			return type;
-		}
-
-		/**
-	     * Returns an unmodifiable view of the child list.  All list
-	     * members will be SQLObject subclasses (SQLTable,
-	     * SQLRelationship, SQLColumn, etc.) which are directly contained
-	     * within this SQLObject.
-	     */
-	    public List getChildren(DatabaseMetaData dbmd) throws SQLObjectException {
-	        if (!allowsChildren()) //never return null;
-	            return children;
-	        populate();
-	        return Collections.unmodifiableList(children);
-	    }
-		
-		@Override
-		public Class<? extends SQLObject> getChildType() {
-			return SQLColumn.class;
-		}
-
-		/**
-		 * This will get the number of children currently populated. Folders
-		 * with foreign keys can be partially populated when lazy loading but
-		 * calling the SQLObject child access methods will populate all of the
-		 * children.
-		 * 
-		 * <p>This is not the standard way of getting children of a folder.
-		 * Use the getChildCount() method to get children
-		 * unless you specifically don't want the folder to populate.
-		 */
-		public int retrieveChildCountNoPopulate() {
-			return children.size();
-		}
-
-		/**
-		 * This will get the children currently populated. Folders with foreign
-		 * keys can be partially populated when lazy loading but calling the
-		 * SQLObject child access methods will populate all of the children.
-		 * 
-		 * <p>This is not the standard way of getting children of a folder.
-		 * Use the getChildren() method to get children
-		 * unless you specifically don't want the folder to populate.
-		 */
-		public List<T> retrieveChildrenNoPopulate() {
-			return children;
-		}
-	}
+//	public static class Folder<T extends SQLObject> extends SQLObject {
+//		protected int type;
+//		protected String name;
+//		protected SQLTable parent;
+//
+//		public static final int COLUMNS = 1;
+//		public static final int IMPORTED_KEYS = 2;
+//        public static final int EXPORTED_KEYS = 3;
+//        public static final int INDICES = 4;
+//
+//		public Folder(int type, boolean populated) {
+//			this.populated = populated;
+//			this.type = type;
+//			this.children = new ArrayList<T>();
+//			if (type == COLUMNS) {
+//				name = "Columns";
+//			} else if (type == IMPORTED_KEYS) {
+//				name = "Imported Keys";
+//            } else if (type == EXPORTED_KEYS) {
+//                name = "Exported Keys";
+//            } else if (type == INDICES) {
+//                name = "Indices";
+//			} else {
+//				throw new IllegalArgumentException("Unknown folder type: "+type);
+//			}
+//		}
+//
+//		public String getName() {
+//			return name;
+//		}
+//
+//		public void setName(String n) {
+//			String oldName = name;
+//			name = n;
+//			firePropertyChange("name", oldName, name);
+//		}
+//
+//		public SQLTable getParent() {
+//			return parent;
+//		}
+//
+//		/**
+//		 * Sets the parent reference in this folder.
+//		 *
+//		 * @throws ClassCastException if newParent is not an instance of SQLTable.
+//		 */
+//		protected void setParent(SQLObject newParentTable) {
+//			parent = (SQLTable) newParentTable;
+//		}
+//
+//		protected void populateImpl() throws SQLObjectException {
+//		    if (logger.isDebugEnabled()) {
+//		        List<SQLObject> hierarchy = new ArrayList<SQLObject>();
+//		        SQLObject parent = this;
+//		        while (parent != null) {
+//		            hierarchy.add(0, parent);
+//		            parent = parent.getParent();
+//		        }
+//		        logger.debug("Populating folder on " + getParent().getName() + " for type " + type + " with ancestor path " + hierarchy);
+//		    }
+//
+//		    if (populated) return;
+//
+//			logger.debug("SQLTable.Folder["+getName()+"]: populate starting");
+//
+//			
+//			try {
+//				if (type == COLUMNS) {
+//					parent.populateColumns();
+//				} else if (type == IMPORTED_KEYS) {
+//					parent.populateColumns();
+//					parent.populateRelationships(null);
+//				} else if (type == EXPORTED_KEYS) {
+//					CachedRowSet crs = null;
+//					Connection con = null;
+//					try {
+//						con = parent.getParentDatabase().getConnection();
+//						DatabaseMetaData dbmd = con.getMetaData();
+//						crs = new CachedRowSet();
+//						ResultSet exportedKeysRS = dbmd.getExportedKeys(parent.getCatalogName(), parent.getSchemaName(), parent.getName());
+//                        crs.populate(exportedKeysRS);
+//                        exportedKeysRS.close();
+//					} catch (SQLException ex) {
+//                        throw new SQLObjectException("Couldn't locate related tables", ex);
+//                    } finally {
+//                        // close the connection before it makes the recursive call
+//                        // that could lead to opening more connections
+//                        try {
+//                            if (con != null) con.close();
+//                        } catch (SQLException ex) {
+//                            logger.warn("Couldn't close connection", ex);
+//                        }
+//                    }
+//                    try {
+//						while (crs.next()) {
+//							if (crs.getInt(9) != 1) {
+//								// just another column mapping in a relationship we've already handled
+//								logger.debug("Got exported key with sequence " + crs.getInt(9) + " on " + crs.getString(5) + "." + crs.getString(6) + "." + crs.getString(7) + ", continuing.");
+//								continue;
+//							}
+//							logger.debug("Got exported key with sequence " + crs.getInt(9) + " on " + crs.getString(5) + "." + crs.getString(6) + "." + crs.getString(7) + ", populating.");
+//							String cat = crs.getString(5);
+//							String sch = crs.getString(6);
+//							String tab = crs.getString(7);
+//							SQLTable fkTable = parent.getParentDatabase().getTableByName(cat, sch, tab);
+//                            if (fkTable == null) {
+//                                throw new IllegalStateException("While populating table " +
+//                                        SQLObjectUtils.toQualifiedName(getParent()) +
+//                                        ", I failed to find child table " +
+//                                        "\""+cat+"\".\""+sch+"\".\""+tab+"\"");
+//                            }
+//							fkTable.populateColumns();
+//							fkTable.populateRelationships(parent);
+//						}
+//					} catch (SQLException ex) {
+//						throw new SQLObjectException("Couldn't locate related tables", ex);
+//					} finally {
+//						try {
+//							if (crs != null) crs.close();
+//						} catch (SQLException ex) {
+//							logger.warn("Couldn't close resultset", ex);
+//						}
+//					}
+//                } else if (type == INDICES) {
+//                    parent.populateColumns();
+//                    parent.populateIndices();
+//				} else {
+//					throw new IllegalArgumentException("Unknown folder type: "+type);
+//				}
+//			} finally {
+//				populated = true;
+//			}
+//
+//			logger.debug("SQLTable.Folder["+getName()+"]: populate finished");
+//
+//		}
+//		
+//        @Override
+//		protected void addChildImpl(int index, SQLObject child) throws SQLObjectException {
+//			logger.debug("Adding child "+child.getName()+" to folder "+getName());
+//			super.addChildImpl(index, child);
+//		}
+//
+//        /**
+//         * Overrides default remove behaviour to normalize the primary key in
+//         * the case of a removed SQLColumn and to check for locked (imported)
+//         * columns. In both cases, the special checking is not performed if
+//         * magic is disabled or this folder has no parent.
+//         * 
+//         * @throws LockedColumnException
+//         *             If this is a folder of columns, and the column you
+//         *             attempt to remove is "owned" by a relationship.
+//         */
+//        @Override
+//        protected SQLObject removeImpl(int index) {
+//            if (isMagicEnabled() && type == COLUMNS && getParent() != null) {
+//                SQLColumn col = (SQLColumn) children.get(index);
+//                // a column is only locked if it is an IMPORTed key--not if it is EXPORTed.
+//                for (SQLRelationship r : (List<SQLRelationship>) parent.importedKeysFolder.children) {
+//                    r.checkColumnLocked(col);
+//                }
+//            }
+//            SQLObject removed = super.removeImpl(index);
+//            if (isMagicEnabled() && type == COLUMNS && removed != null && getParent() != null) {
+//                try {
+//                    getParent().normalizePrimaryKey();
+//                } catch (SQLObjectException e) {
+//                    throw new SQLObjectRuntimeException(e);
+//                }
+//            }
+//            return removed;
+//        }
+//        
+//		public String getShortDisplayName() {
+//			return name;
+//		}
+//
+//		public boolean allowsChildren() {
+//			return true;
+//		}
+//
+//		public String toString() {
+//			if (parent == null) {
+//				return name+" folder (no parent)";
+//			} else {
+//				return name+" folder of "+parent.getName();
+//			}
+//		}
+//
+//		/**
+//		 * Returns the type code of this folder.
+//		 *
+//		 * @return One of COLUMNS, IMPORTED_KEYS, or EXPORTED_KEYS.
+//		 */
+//		public int getType() {
+//			return type;
+//		}
+//
+//		/**
+//	     * Returns an unmodifiable view of the child list.  All list
+//	     * members will be SQLObject subclasses (SQLTable,
+//	     * SQLRelationship, SQLColumn, etc.) which are directly contained
+//	     * within this SQLObject.
+//	     */
+//	    public List getChildren(DatabaseMetaData dbmd) throws SQLObjectException {
+//	        if (!allowsChildren()) //never return null;
+//	            return children;
+//	        populate();
+//	        return Collections.unmodifiableList(children);
+//	    }
+//		
+//		@Override
+//		public Class<? extends SQLObject> getChildType() {
+//			return SQLColumn.class;
+//		}
+//	}
 
 	// ------------------ Accessors and mutators below this line ------------------------
 
@@ -1264,21 +1428,9 @@ public class SQLTable extends SQLObject {
 		return (SQLSchema) o;
 	}
 
-	public Folder<SQLColumn> getColumnsFolder() {
-		return columnsFolder;
+	public List<SQLColumn> getColumnsFolder() {
+		return columns;
 	}
-
-	public Folder<SQLRelationship> getImportedKeysFolder() {
-		return importedKeysFolder;
-	}
-
-	public Folder<SQLRelationship> getExportedKeysFolder() {
-		return exportedKeysFolder;
-	}
-
-    public Folder<SQLIndex> getIndicesFolder() {
-        return indicesFolder;
-    }
 
 	/**
 	 * Sets the table name, and also modifies the primary key name if
@@ -1297,7 +1449,7 @@ public class SQLTable extends SQLObject {
         // before its folders exist.  Therefore, we have to
         // be careful not to look up the primary key before one exists.
 
-        if ( (!isMagicEnabled()) || (indicesFolder == null) || (columnsFolder == null) ) {
+        if ( (!isMagicEnabled()) || (indices == null) || (columns == null) ) {
             super.setPhysicalName(argName);
         } else try {
         	logger.info("The physical name of the table is: " + getPhysicalName());
@@ -1308,16 +1460,16 @@ public class SQLTable extends SQLObject {
         		oldName = getName();
         	}
             
-            startCompoundEdit("Table Name Change");
+            begin("Table Name Change");
             super.setPhysicalName(argName);
             
             if (isIndicesPopulated()) {
                 SQLIndex primaryKeyIndex = getPrimaryKeyIndex();
                 if (argName != null &&
                         primaryKeyIndex != null && 
-                        (getPrimaryKeyName() == null
-                                || "".equals(getPrimaryKeyName().trim())
-                                || (oldName + "_pk").equals(getPrimaryKeyName())) ) {
+                        (primaryKeyIndex.getName() == null
+                                || "".equals(primaryKeyIndex.getName().trim())
+                                || (oldName + "_pk").equals(primaryKeyIndex.getName())) ) {
                     // if the physical name is still null when forward engineer,
                     // the DDLGenerator will generate the physical name from the 
                     // logic name and this index will be updated.
@@ -1338,7 +1490,7 @@ public class SQLTable extends SQLObject {
         } catch (SQLObjectException e) {
             throw new SQLObjectRuntimeException(e);
         } finally {
-            endCompoundEdit("Ending table name compound edit");
+            commit();
         }
 	}
 
@@ -1359,35 +1511,66 @@ public class SQLTable extends SQLObject {
 	public void setRemarks(String argRemarks) {
 		String oldRemarks = this.remarks;
 		this.remarks = argRemarks;
-		fireDbObjectChanged("remarks",oldRemarks,argRemarks);
+		firePropertyChange("remarks",oldRemarks,argRemarks);
 	}
 
 	/**
-	 * Gets the value of columns
-	 *
+	 * Gets the value of columns after populating. This will allow access to the
+	 * most up to date list of columns.
+	 * 
 	 * @return the value of columns
 	 */
 	public synchronized List<SQLColumn> getColumns() throws SQLObjectException {
 		populateColumns();
-		return columnsFolder.getChildren();
+		return getColumnsWithoutPopulating();
 	}
 
 	/**
-	 * Gets the value of importedKeys
-	 *
-	 * @return the value of importedKeys
+	 * Returns the list of columns without populating first. This will allow
+	 * access to the columns at current.
 	 */
-	public List<SQLRelationship> getImportedKeys() throws SQLObjectException {
-		return this.importedKeysFolder.getChildren();
+	public synchronized List<SQLColumn> getColumnsWithoutPopulating() {
+		return Collections.unmodifiableList(columns);
 	}
 
 	/**
-	 * Gets the value of exportedKeys
-	 *
+	 * Gets the value of importedKeys after populating. This will allow access
+	 * to the most up to date list of imported keys.
+	 * 
+	 * @return the value of importedKeys
+	 * @throws SQLObjectException
+	 */
+	public List<SQLImportedKey> getImportedKeys() throws SQLObjectException {
+		populateImportedKeys();
+		return getImportedKeysWithoutPopulating();
+	}
+
+	/**
+	 * Returns the list of imported keys without populating first. This will
+	 * allow access to the imported keys at current.
+	 */
+	public List<SQLImportedKey> getImportedKeysWithoutPopulating() {
+		return Collections.unmodifiableList(importedKeys);
+	}
+	
+	/**
+	 * Gets the value of exportedKeys after populating. This will allow access
+	 * to the most updated list of exported keys.
+	 * 
 	 * @return the value of exportedKeys
+	 * @throws SQLObjectException
 	 */
 	public List<SQLRelationship> getExportedKeys() throws SQLObjectException {
-		return this.exportedKeysFolder.getChildren();
+		populateExportedKeys();
+		return getExportedKeysWithoutPopulating();
+	}
+
+	/**
+	 * Returns the list of exported keys without populating first. This will
+	 * allow access to the exported keys at current.
+	 */
+	public List<SQLRelationship> getExportedKeysWithoutPopulating() {
+		return Collections.unmodifiableList(exportedKeys);
 	}
 
     /**
@@ -1407,14 +1590,12 @@ public class SQLTable extends SQLObject {
     public SQLRelationship getExportedKeyByName(String name,
             boolean populate ) throws SQLObjectException {
         if (populate) populateRelationships();
-        logger.debug("Looking for Exported Key ["+name+"] in "+exportedKeysFolder.getChildren() );
-        Iterator it = exportedKeysFolder.children.iterator();
-        while (it.hasNext()) {
-            SQLRelationship r = (SQLRelationship) it.next();
-            if (r.getName().equalsIgnoreCase(name)) {
-                logger.debug("FOUND");
-                return r;
-            }
+        logger.debug("Looking for Exported Key ["+name+"] in "+exportedKeys );
+        for (SQLRelationship r : exportedKeys) {
+        	if (r.getName().equalsIgnoreCase(name)) {
+        		logger.debug("FOUND");
+        		return r;
+        	}
         }
         logger.debug("NOT FOUND");
         return null;
@@ -1427,12 +1608,10 @@ public class SQLTable extends SQLObject {
         populateColumns();
         populateIndices();
         List<SQLIndex> list = new ArrayList<SQLIndex>();
-        Iterator it = getIndicesFolder().children.iterator();
-        while (it.hasNext()) {
-            SQLIndex idx = (SQLIndex) it.next();
-            if (idx.isUnique() ) {
-                list.add(idx);
-            }
+        for (SQLIndex index : indices) {
+        	if (index.isUnique()) {
+        		list.add(index);
+        	}
         }
         return list;
     }
@@ -1457,14 +1636,12 @@ public class SQLTable extends SQLObject {
             populateColumns();
             populateIndices();
         }
-        logger.debug("Looking for Index ["+name+"] in "+getIndicesFolder().children);
-        Iterator it = getIndicesFolder().children.iterator();
-        while (it.hasNext()) {
-            SQLIndex idx = (SQLIndex) it.next();
-            if (idx.getName().equalsIgnoreCase(name)) {
-                logger.debug("FOUND");
-                return idx;
-            }
+        logger.debug("Looking for Index ["+name+"] in "+indices);
+        for (SQLIndex index : indices) {
+        	if (index.getName().equalsIgnoreCase(name)) {
+        		logger.debug("FOUND");
+        		return index;
+        	}
         }
         logger.debug("NOT FOUND");
         return null;
@@ -1474,22 +1651,36 @@ public class SQLTable extends SQLObject {
      * Returns true if this table's columns folder says it's populated.
 	 */
 	public boolean isColumnsPopulated()  {
-		return columnsFolder.isPopulated();
+		return columnsPopulated;
 	}
 
 	/**
-	 * Returns true if this table's imported keys folder and exported
-     * keys folders both say they're populated.
+	 * Returns true if this table's imported keys and exported
+     * keys both say are populated.
 	 */
 	public boolean isRelationshipsPopulated()  {
-		return importedKeysFolder.isPopulated() && exportedKeysFolder.isPopulated();
+		return importedKeysPopulated && exportedKeysPopulated;
+	}
+	
+	/**
+	 * Returns true if this table's imported keys have been populated.
+	 */
+	public boolean isImportedKeysPopulated() {
+		return importedKeysPopulated;
+	}
+	
+	/**
+	 * Returns true if this table's exported keys have been populated. 
+	 */
+	public boolean isExportedKeysPopulated() {
+		return exportedKeysPopulated;
 	}
 
     /**
      * Returns true if this table's indices folder says it's populated.
      */
     public boolean isIndicesPopulated()  {
-        return indicesFolder.isPopulated();
+        return indicesPopulated;
     }
 
     /**
@@ -1525,7 +1716,7 @@ public class SQLTable extends SQLObject {
 		String oldObjectType = this.objectType;
 		this.objectType = argObjectType;
         if (this.objectType == null) throw new NullPointerException();
-		fireDbObjectChanged("objectType",oldObjectType, argObjectType);
+		firePropertyChange("objectType",oldObjectType, argObjectType);
 	}
 
     /**
@@ -1534,9 +1725,9 @@ public class SQLTable extends SQLObject {
      * @throws SQLObjectException
      */
     public SQLIndex getPrimaryKeyIndex() throws SQLObjectException {
-        for (SQLIndex i : (List<SQLIndex>)getIndicesFolder().getChildren()){
-            if (i.isPrimaryKeyIndex()) return i;
-        }
+    	for (SQLIndex i : getIndices()) {
+    		if (i.isPrimaryKeyIndex()) return i;
+    	}
         return null;
     }
 
@@ -1590,7 +1781,8 @@ public class SQLTable extends SQLObject {
      * @throws SQLObjectException If there is a problem populating the indices folder
      */
     public List<SQLIndex> getIndices() throws SQLObjectException {
-        List<SQLIndex> indices = getIndicesFolder().getChildren();
+    	populateColumns();
+    	populateIndices();
         return Collections.unmodifiableList(indices);
     }
     
@@ -1623,7 +1815,7 @@ public class SQLTable extends SQLObject {
             con = getParentDatabase().getConnection();
             DatabaseMetaData dbmd = con.getMetaData();
             List<SQLColumn> newCols = SQLColumn.fetchColumnsForTable(getCatalogName(), getSchemaName(), getName(), dbmd);
-            SQLObjectUtils.refreshChildren(columnsFolder, newCols);
+            SQLObjectUtils.refreshChildren(this, newCols, SQLColumn.class);
             
             normalizePrimaryKey();
             
@@ -1638,20 +1830,113 @@ public class SQLTable extends SQLObject {
                 }
             }
         }
-
     }
     
-    void refreshImportedKeys() throws SQLObjectException {
-        if (!getImportedKeysFolder().isPopulated()) {
-            logger.debug("Not refreshing unpopulated imported keys of " + this);
+    public boolean removeIndex(SQLIndex sqlIndex) {
+    	if (isMagicEnabled() && sqlIndex.getParent() != this) {
+			throw new IllegalStateException("Cannot remove child " + sqlIndex.getName() + 
+					" of type " + sqlIndex.getClass() + " as its parent is not " + getName());
+    	}
+    	int index = indices.indexOf(sqlIndex);
+    	if (index != -1) {
+    		indices.remove(index);
+    		sqlIndex.setParent(null);
+    		fireChildRemoved(SQLIndex.class, sqlIndex, index);
+    		return true;
+    	}
+    	return false;
+    }
+
+	public List<? extends SQLObject> getChildrenWithoutPopulating() {
+		List<SQLObject> children = new ArrayList<SQLObject>();
+		children.addAll(columns);
+		children.addAll(exportedKeys);
+		children.addAll(importedKeys);
+		children.addAll(indices);
+		return Collections.unmodifiableList(children);
+	}
+
+	@Override
+	protected boolean removeChildImpl(SPObject child) {
+		if (child instanceof SQLColumn) {
+            if (isMagicEnabled()) {
+                SQLColumn col = (SQLColumn) child;
+                // a column is only locked if it is an IMPORTed key--not if it is EXPORTed.
+                for (SQLImportedKey k : importedKeys) {
+                    k.getRelationship().checkColumnLocked(col);
+                }
+            }
+            
+            boolean removed = removeColumn((SQLColumn) child);
+            
+            if (isMagicEnabled() && removed && getParent() != null) {
+                try {
+                    normalizePrimaryKey();
+                } catch (SQLObjectException e) {
+                    throw new SQLObjectRuntimeException(e);
+                }
+            }
+		} else if (child instanceof SQLRelationship) {
+			removeExportedKey((SQLRelationship) child);
+		} else if (child instanceof SQLImportedKey) {
+			return removeImportedKey((SQLImportedKey) child);
+		} else if (child instanceof SQLIndex) {
+			return removeIndex((SQLIndex) child);
+		}
+		return false;
+	}
+	
+	public int childPositionOffset(Class<? extends SPObject> childType) {
+		int offset = 0;
+		
+		if (childType == SQLColumn.class) return offset;
+		offset += columns.size();
+		
+		if (childType == SQLRelationship.class) return offset;
+		offset += importedKeys.size();
+		offset += exportedKeys.size();
+		
+		if (childType == SQLIndex.class) return offset;
+		
+		throw new IllegalArgumentException("The type " + childType + 
+				" is not a valid child type of " + getName());
+	}
+
+	public List<? extends SPObject> getDependencies() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public void removeDependency(SPObject dependency) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	/**
+	 * Overridden so that when you set the populated flag, the populated flag
+	 * for columns, imported keys, exported keys and indices are updated
+	 * accordingly as well.
+	 */
+	@Override
+	public void setPopulated(boolean v) {
+		populated = v;
+		columnsPopulated = v;
+		importedKeysPopulated = v;
+		exportedKeysPopulated = v;
+		indicesPopulated = v;
+	}
+
+    void refreshExportedKeys() throws SQLObjectException {
+        if (!exportedKeysPopulated) {
+            logger.debug("Not refreshing unpopulated exported keys of " + this);
             return;
         }
 
-        List<SQLRelationship> newRels = SQLRelationship.fetchImportedKeys(this);
+        List<SQLRelationship> newRels = SQLRelationship.fetchExportedKeys(this);
         if (logger.isDebugEnabled()) {
             logger.debug("New imported keys of " + getName() + ": " + newRels);
         }
-        SQLObjectUtils.refreshChildren(importedKeysFolder, newRels);
+        SQLObjectUtils.refreshChildren(this, newRels, SQLRelationship.class);
     }
 
     void refreshIndexes() throws SQLObjectException {
@@ -1663,7 +1948,7 @@ public class SQLTable extends SQLObject {
             
             // indexes (incl. PK)
             List<SQLIndex> newIndexes = SQLIndex.fetchIndicesForTable(dbmd, this);
-            SQLObjectUtils.refreshChildren(indicesFolder, newIndexes);
+            SQLObjectUtils.refreshChildren(this, newIndexes, SQLIndex.class);
             
             normalizePrimaryKey();
             
@@ -1680,4 +1965,12 @@ public class SQLTable extends SQLObject {
         }
     }
 
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
+		types.add(SQLColumn.class);
+		types.add(SQLRelationship.class);
+		types.add(SQLImportedKey.class);
+		types.add(SQLIndex.class);
+		return Collections.unmodifiableList(types);
+	}
 }

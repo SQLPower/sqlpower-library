@@ -29,8 +29,8 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.sql.SQL;
-import ca.sqlpower.sqlobject.undo.CompoundEventListener;
+import ca.sqlpower.object.ObjectDependentException;
+import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 
 public class SQLObjectUtils {
     
@@ -55,65 +55,6 @@ public class SQLObjectUtils {
         
         logger.debug("Parent of " + o1 + " is " + o1Parent + ", parent of " + o2 + " is " + o2Parent);
         return o1Parent == o2Parent;
-    }
-
-    /**
-     * Adds listener to source's listener list and all of source's
-     * children's listener lists recursively.
-     */
-    public static void listenToHierarchy(SQLObjectListener listener, SQLObject source)
-    throws SQLObjectException {
-    	if (logger.isDebugEnabled()) logger.debug("Listening to new SQL Object "+source);
-    	source.addSQLObjectListener(listener);
-    	if (source.isPopulated() && source.allowsChildren()) {
-    		Iterator it = source.getChildren().iterator();
-    		while (it.hasNext()) {
-    			listenToHierarchy(listener, (SQLObject) it.next());
-    		}
-    	}
-    
-    }
-
-    /**
-     * Calls listenToHierarchy on each element in the sources array.
-     * Does nothing if sources is null.
-     */
-    public static void listenToHierarchy(SQLObjectListener listener, SQLObject[] sources)
-    throws SQLObjectException {
-    	if (sources == null) return;
-    	for (int i = 0; i < sources.length; i++) {
-    		listenToHierarchy(listener, sources[i]);
-    	}
-    }
-
-    /**
-     * Removes listener from source's listener list and all of source's
-     * children's listener lists recursively.
-     */
-    public static void unlistenToHierarchy(SQLObjectListener listener, SQLObject source)
-    throws SQLObjectException {
-        if (logger.isDebugEnabled()) logger.debug("Removing "+listener+" from listener list of "+source);
-    	source.removeSQLObjectListener(listener);
-    	if (source.isPopulated() && source.allowsChildren()) {
-            if (logger.isDebugEnabled()) logger.debug("        Now removing for children: "+source.getChildren());
-    		Iterator it = source.getChildren().iterator();
-    		while (it.hasNext()) {
-    			SQLObject ob = (SQLObject) it.next();
-    			unlistenToHierarchy(listener, ob);
-    		}
-    	}
-    }
-
-    /**
-     * Calls unlistenToHierarchy on each element in the sources array.
-     * Does nothing if sources is null.
-     */
-    public static void unlistenToHierarchy(SQLObjectListener listener, SQLObject[] sources)
-    throws SQLObjectException {
-    	if (sources == null) return;
-    	for (int i = 0; i < sources.length; i++) {
-    		unlistenToHierarchy(listener, sources[i]);
-    	}
     }
 
     /**
@@ -182,64 +123,6 @@ public class SQLObjectUtils {
     }
 
     /**
-     * Adds listener to source's listener list and all of source's
-     * children's listener lists recursively.
-     */
-    public static void addUndoListenerToHierarchy(CompoundEventListener listener, SQLObject source)
-    throws SQLObjectException {
-        if (logger.isDebugEnabled()) logger.debug("Undo Listening to new SQL Object "+source);
-    	source.addUndoEventListener(listener);
-    	if (source.isPopulated() && source.allowsChildren()) {
-    		Iterator it = source.getChildren().iterator();
-    		while (it.hasNext()) {
-    			addUndoListenerToHierarchy(listener, (SQLObject) it.next());
-    		}
-    	}
-    
-    }
-
-    /**
-     * Calls listenToHierarchy on each element in the sources array.
-     * Does nothing if sources is null.
-     */
-    public static void addUndoListenerToHierarchy(CompoundEventListener listener, SQLObject[] sources)
-    throws SQLObjectException {
-    	if (sources == null) return;
-    	for (int i = 0; i < sources.length; i++) {
-    		addUndoListenerToHierarchy(listener, sources[i]);
-    	}
-    }
-
-    /**
-     * Removes listener from source's listener list and all of source's
-     * children's listener lists recursively.
-     */
-    public static void undoUnlistenToHierarchy(CompoundEventListener listener, SQLObject source)
-    throws SQLObjectException {
-        if (logger.isDebugEnabled()) logger.debug("Unlistening to SQL Object "+source);
-    	source.removeUndoEventListener(listener);
-    	if (source.isPopulated() && source.allowsChildren()) {
-    		Iterator it = source.getChildren().iterator();
-    		while (it.hasNext()) {
-    			SQLObject ob = (SQLObject) it.next();
-    			undoUnlistenToHierarchy(listener, ob);
-    		}
-    	}
-    }
-
-    /**
-     * Calls unlistenToHierarchy on each element in the sources array.
-     * Does nothing if sources is null.
-     */
-    public static void undoUnlistenToHierarchy(CompoundEventListener listener, SQLObject[] sources)
-    throws SQLObjectException {
-    	if (sources == null) return;
-    	for (int i = 0; i < sources.length; i++) {
-    		undoUnlistenToHierarchy(listener, sources[i]);
-    	}
-    }
-
-    /**
      * Updates the child list of the given parent object with the new children in the
      * given list, in the following way:
      * 
@@ -265,20 +148,21 @@ public class SQLObjectUtils {
      * @param newChildren The list of children to update from. All objects in this list
      * are expected to be of the correct child type for parent. Also, they must not be attached
      * to any parent objects to start with (this method may connect some or all of them).
+     * @param childType The type of child that this method should look for to update.
      * @throws SQLObjectException If this exercise causes any SQLObjects to populate, and that
      * populate operation fails.
      */
-    public static void refreshChildren(SQLObject parent, List<? extends SQLObject> newChildren) throws SQLObjectException {
-        Set<String> oldChildNames = parent.getChildNames();
+    public static <T extends SQLObject> void refreshChildren(SQLObject parent, List<T> newChildren, Class<T> childType) throws SQLObjectException {
+        Set<String> oldChildNames = parent.getChildNames(childType);
         Set<String> newChildNames = new HashSet<String>(); // will populate in following loop
-        for (SQLObject newChild : newChildren) {
+        for (T newChild : newChildren) {
             newChildNames.add(newChild.getName());
             if (oldChildNames.contains(newChild.getName())) {
                 parent.getChildByName(newChild.getName()).updateToMatch(newChild);
             } else {
                 if (newChild instanceof SQLRelationship) {
-                    SQLRelationship r = (SQLRelationship) newChild;
-                    r.attachRelationship(r.getPkTable(), r.getFkTable(), false);
+                	SQLRelationship r = (SQLRelationship) newChild;
+                	r.attachRelationship(r.getPkTable(), r.getFkTable(), false);
                 } else {
                     parent.addChild(newChild);
                 }
@@ -288,14 +172,14 @@ public class SQLObjectUtils {
         // get rid of removed children
         oldChildNames.removeAll(newChildNames);
         for (String removedColName : oldChildNames) {
-            SQLObject removeMe = parent.getChildByName(removedColName);
-            if (removeMe instanceof SQLRelationship) {
-                SQLRelationship r = (SQLRelationship) removeMe;
-                r.getPkTable().getExportedKeysFolder().removeChild(r);
-                r.getFkTable().getImportedKeysFolder().removeChild(r);
-            } else {
-                parent.removeChild(removeMe);
-            }
+        	SQLObject removeMe = parent.getChildByName(removedColName);
+        	try {
+        		parent.removeChild(removeMe);
+        	} catch (IllegalArgumentException e) {
+        		throw new SQLObjectException(e);
+        	} catch (ObjectDependentException e) {
+        		throw new SQLObjectException(e);
+        	}
         }
     
     }
@@ -334,12 +218,11 @@ public class SQLObjectUtils {
     
         SQLObject tableContainer;
         if (schema != null) {
-            Class<? extends SQLObject> childType = schemaContainer.getChildType();
-            if ( !(childType == null || childType == SQLSchema.class) ) {
-                throw new SQLObjectException(
+        	if (!schemaContainer.allowsChildType(SQLSchema.class)) {
+        		throw new SQLObjectException(
                         "The schema container ("+schemaContainer+
                         ") can't actually contain children of type SQLSchema.");
-            }
+        	}
             tableContainer = schemaContainer.getChildByName(schema);
             if (tableContainer == null) {
                 tableContainer = new SQLSchema(schemaContainer, schema, true);
@@ -371,9 +254,8 @@ public class SQLObjectUtils {
     	    return 0;
     	} else {
     		int myCount = 0;
-    		Iterator it = so.getChildren().iterator();
-    		while (it.hasNext()) {
-    			myCount += countTables((SQLObject) it.next());
+    		for (SQLObject child : so.getChildren()) {
+    			myCount += countTables(child);
     		}
     		return myCount;
     	}
@@ -390,9 +272,8 @@ public class SQLObjectUtils {
     		return 1;
     	} else {
     		int count = 0;
-    		Iterator it = so.getChildren().iterator();
-    		while (it.hasNext()) {
-    			count += countTablesSnapshot((SQLObject) it.next());
+    		for (SQLObject child : so.getChildren()) {
+    			count += countTablesSnapshot(child);
     		}
     	    return count;
     	}
@@ -445,7 +326,7 @@ public class SQLObjectUtils {
     		if (so instanceof SQLTable) {
     			SQLTable t = (SQLTable) so;
     			for (SQLColumn col : t.getColumns()) {
-    				if (col.getSourceColumn() != null && source.equals(col.getSourceColumn().getParentTable().getParentDatabase())) {
+    				if (col.getSourceColumn() != null && source.equals(col.getSourceColumn().getParent().getParentDatabase())) {
     					matches.add(col);
     				}
     			}
@@ -518,7 +399,7 @@ public class SQLObjectUtils {
      */
     public static <T extends SQLObject> T getAncestor(SQLObject so, Class<T> ancestorType) {
         while (so != null) {
-            if (so.getClass().equals(ancestorType)) return (T) so;
+            if (so.getClass().equals(ancestorType)) return ancestorType.cast(so);
             so = so.getParent();
         }
         return null;
@@ -548,13 +429,11 @@ public class SQLObjectUtils {
     
         SQLObject tableContainer;
         if (schema != null){
-            if (schemaContainer.getChildType() == SQLSchema.class){
+            if (schemaContainer.allowsChildType(SQLSchema.class)){
                 tableContainer = schemaContainer.getChildByName(schema);
                 if (tableContainer == null) {
                     return true;
                 }
-            } else if (schemaContainer.getChildType() == null) {
-                return true;
             } else {
                 return false;
             }
@@ -563,7 +442,7 @@ public class SQLObjectUtils {
         }
     
         if (name != null) {
-            if (tableContainer.getChildType() == null || tableContainer.getChildType() == SQLTable.class){
+        	if (tableContainer.allowsChildType(SQLTable.class)) {
                 return true;
             } else {
                 return false;
@@ -593,12 +472,12 @@ public class SQLObjectUtils {
     public static SQLObject getTableContainer(SQLDatabase db, String catName, String schemaName) throws SQLObjectException {
         db.populate();
         logger.debug("Looking for catalog="+catName+", schema="+schemaName+" in db "+db);
-        if (db.getChildType() == SQLTable.class) {
+        if (db.isTableContainer()) {
             if (catName != null || schemaName != null) {
                 throw new IllegalArgumentException("Catalog or Schema name was given but neither is necessary.");
             }
             return db;
-        } else if (db.getChildType() == SQLSchema.class) {
+        } else if (db.isSchemaContainer()) {
            if (catName != null) {
                throw new IllegalArgumentException("Catalog name was given but is not necessary.");
            }
@@ -607,7 +486,7 @@ public class SQLObjectUtils {
            }
            
            return (SQLSchema) db.getChildByNameIgnoreCase(schemaName);
-        } else if (db.getChildType() == SQLCatalog.class) {
+        } else if (db.isCatalogContainer()) {
             if (catName == null) {
                 throw new IllegalArgumentException("Catalog name was expected but none was given.");
             }
@@ -617,8 +496,8 @@ public class SQLObjectUtils {
             
             tempCat.populate();
             
-            logger.debug("Found catalog "+catName+". Child Type="+tempCat.getChildType());
-            if (tempCat.getChildType() == SQLSchema.class) {
+            logger.debug("Found catalog "+catName+". Child Type="+tempCat.getChildrenWithoutPopulating().get(0).getClass());
+            if (tempCat.isSchemaContainer()) {
                 if (schemaName == null) {
                     throw new IllegalArgumentException("Schema name was expected but none was given.");
                 }
@@ -631,12 +510,12 @@ public class SQLObjectUtils {
             }
             
             return tempCat;
-        } else if (db.getChildType() == null) {
+        } else if (db.getChildrenWithoutPopulating().isEmpty()) {
             // special case: there are no children of db
             logger.debug("Database "+db+" has no children");
             return null;
         } else {
-            throw new IllegalStateException("Unknown database child type: " + db.getChildType());
+            throw new IllegalStateException("Unknown database child type: " + db.getChildrenWithoutPopulating().get(0).getClass());
         }
     }
 

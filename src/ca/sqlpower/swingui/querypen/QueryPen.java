@@ -80,6 +80,7 @@ import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLRelationship;
 import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.SQLRelationship.ColumnMapping;
+import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 import ca.sqlpower.swingui.CursorManager;
 import ca.sqlpower.swingui.dbtree.SQLObjectSelection;
 import ca.sqlpower.swingui.querypen.event.CreateJoinEventHandler;
@@ -208,7 +209,7 @@ public class QueryPen implements MouseState {
     						for (SQLRelationship relation : table.getExportedKeys()) {
     							List<Container> fkContainers = getContainerPane(relation.getFkTable());
     							for (Container fkContainer : fkContainers) {
-    								for (ColumnMapping mapping : relation.getMappings()) {
+    								for (ColumnMapping mapping : relation.getChildren(ColumnMapping.class)) {
     									logger.debug("PK container has model name " + tableModel.getName() + 
     											" looking for col named " + mapping.getPkColumn().getName());
     									Item pkItemNode = tableModel.getItem(mapping.getPkColumn());
@@ -229,10 +230,11 @@ public class QueryPen implements MouseState {
     							}
     						}
     						
-    						for (SQLRelationship relation : table.getImportedKeys()) {
-    							List<Container> pkContainers = getContainerPane(relation.getPkTable());
+    						for (SQLImportedKey key : table.getImportedKeys()) {
+    							SQLRelationship relation = key.getRelationship();
+    							List<Container> pkContainers = getContainerPane(relation.getParent());
     							for (Container pkContainer : pkContainers) {
-    								for (ColumnMapping mapping : relation.getMappings()) {
+    								for (ColumnMapping mapping : relation.getChildren(ColumnMapping.class)) {
     									Item fkItemNode = pkContainer.getItem(mapping.getPkColumn());
     									Item pkItemNode = tableModel.getItem(mapping.getFkColumn());
     									if (pkItemNode != null && fkItemNode != null) {

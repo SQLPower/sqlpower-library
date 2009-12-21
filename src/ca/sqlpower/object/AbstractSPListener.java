@@ -73,6 +73,7 @@ public abstract class AbstractSPListener implements SPListener {
             throw new IllegalStateException("The transaction count was not removed properly.");
         } else if (nestedTransactionCount > 0) {
             inTransactionMap.put((SPObject) e.getSource(), nestedTransactionCount);
+            transactionEndedImpl(e);
         } else {
             inTransactionMap.remove(e.getSource());
             if (eventMap.get(e.getSource()) != null) {
@@ -95,8 +96,9 @@ public abstract class AbstractSPListener implements SPListener {
             }
             
             eventMap.remove(e.getSource());
+            transactionEndedImpl(e);
+            finalCommitImpl(e);
         }
-        transactionEndedImpl(e);
     }
     
     /**
@@ -106,6 +108,16 @@ public abstract class AbstractSPListener implements SPListener {
      */
     protected void transactionEndedImpl(TransactionEvent e) {
         //meant to be overridden by classes extending this listener
+    }
+
+	/**
+	 * Override this method if an action is required when the final transaction
+	 * ends. This will only be called when the outermost transactionEnded event
+	 * is fired. Note that transactionEndedImpl will be called before this
+	 * method.
+	 */
+    protected void finalCommitImpl(TransactionEvent e) {
+    	//meant to be overridden by classes extending this listener
     }
 
     public final void transactionRollback(TransactionEvent e) {

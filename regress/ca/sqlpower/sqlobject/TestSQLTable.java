@@ -18,11 +18,13 @@
  */
 package ca.sqlpower.sqlobject;
 
+import java.beans.PropertyChangeEvent;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EventObject;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,13 +35,15 @@ import java.util.TreeMap;
 
 import org.apache.commons.beanutils.BeanUtils;
 
+import ca.sqlpower.object.AbstractSPListener;
+import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
-import ca.sqlpower.sqlobject.SQLTable.Folder;
 import ca.sqlpower.sqlobject.SQLTable.TransferStyles;
 import ca.sqlpower.sqlobject.TestSQLTable.EventLogger.SQLObjectSnapshot;
 import ca.sqlpower.sqlobject.undo.CompoundEvent;
 import ca.sqlpower.testutil.MockJDBCDriver;
+import ca.sqlpower.util.SQLPowerUtils;
 
 public class TestSQLTable extends BaseSQLObjectTestCase {
     
@@ -56,8 +60,20 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         sqlx("CREATE TABLE REGRESSION_TEST1 (t1_c1 numeric(10), t1_c2 numeric(5))");
         sqlx("CREATE TABLE REGRESSION_TEST2 (t2_c1 char(10))");
         sqlx("CREATE VIEW REGRESSION_TEST1_VIEW AS SELECT * FROM REGRESSION_TEST1");
+        
+		sqlx("CREATE TABLE SQL_TABLE_POPULATE_TEST (\n" +
+		        " cow numeric(10) NOT NULL, \n" +
+		        " CONSTRAINT test4pk PRIMARY KEY (cow))");
+		sqlx("CREATE TABLE SQL_TABLE_1_POPULATE_TEST (\n" +
+		        " cow numeric(10) NOT NULL, \n" +
+		        " CONSTRAINT test5pk PRIMARY KEY(cow))");
+		sqlx("ALTER TABLE SQL_TABLE_1_POPULATE_TEST " +
+		        "ADD CONSTRAINT TEST_FK FOREIGN KEY (cow) " +
+		        "REFERENCES SQL_TABLE_POPULATE_TEST (cow)");
 
         table = new SQLTable(null, true);
+        table.setParent(new StubSQLObject());
+        
         table.addColumn(new SQLColumn(table, "one", Types.INTEGER, 10, 0));
         table.addColumn(new SQLColumn(table, "two", Types.INTEGER, 10, 0));
         table.addColumn(new SQLColumn(table, "three", Types.INTEGER, 10, 0));
@@ -76,6 +92,11 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         return table;
     }
     
+    @Override
+    protected Class<?> getChildClassType() {
+    	return SQLColumn.class;
+    }
+    
     public void testConstructor() {
         // FIXME need to test both constructors!
     }
@@ -86,25 +107,24 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         // Check to make sure it can be added to a playpen like database
         SQLDatabase pp = new SQLDatabase();
         pp.setPlayPenDatabase(true);
+        pp.setParent(new StubSQLObject());
         assertNotNull(table1 = db.getTableByName("REGRESSION_TEST1"));
         derivedTable = table1.createInheritingInstance(pp);
         
-        TreeMap derivedPropertyMap = new TreeMap(BeanUtils.describe(derivedTable));
-        TreeMap table1PropertyMap = new TreeMap(BeanUtils.describe(table1));
+        TreeMap<String, Object> derivedPropertyMap = new TreeMap<String, Object>(BeanUtils.describe(derivedTable));
+        TreeMap<String, Object> table1PropertyMap = new TreeMap<String, Object>(BeanUtils.describe(table1));
         
-        derivedPropertyMap.remove("parent");
-        derivedPropertyMap.remove("parentDatabase");
-        derivedPropertyMap.remove("schemaName");
-        derivedPropertyMap.remove("schema");
-        derivedPropertyMap.remove("shortDisplayName");
         table1PropertyMap.remove("parent");
         table1PropertyMap.remove("schemaName");
         table1PropertyMap.remove("schema");
         table1PropertyMap.remove("parentDatabase");
         table1PropertyMap.remove("shortDisplayName");
-        assertEquals("Derived table not properly copied",
-                derivedPropertyMap.toString(),
-                table1PropertyMap.toString());
+        table1PropertyMap.remove("UUID");
+        table1PropertyMap.remove("session");
+        
+        for (Map.Entry<String, Object> property : table1PropertyMap.entrySet()) {
+        	assertEquals("Property \"" + property.getKey() + "\" has changed;", property.getValue(), derivedPropertyMap.get(property.getKey()));
+        }
         
     }
     
@@ -145,7 +165,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         table.getColumn(0).setAutoIncrementSequenceName("moo_" + table.getName() + "_cow");
         table.setName("new name");
         assertTrue(table.getColumn(0).isAutoIncrementSequenceNameSet());
-        for (int i = 1; i < table.getColumnsFolder().getChildCount(); i++) {
+        for (int i = 1; i < table.getColumns().size(); i++) {
             assertFalse(table.getColumn(i).isAutoIncrementSequenceNameSet());
         }
     }
@@ -198,7 +218,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     public void testAddColumn() throws SQLObjectException {
         SQLTable table1 = db.getTableByName("REGRESSION_TEST1");
         SQLColumn newColumn = new SQLColumn(table1, "my new column", Types.INTEGER, 10, 0);
-        table1.addColumn(2, newColumn);
+        table1.addColumn(newColumn, 2);
         SQLColumn addedCol = table1.getColumn(2);
         assertSame("Column at index 2 isn't same object as we added", newColumn, addedCol);
     }
@@ -211,7 +231,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         assertEquals("refcount didn't increase", 2, col.getReferenceCount());
     }
     
-    public void tesRemoveColumnByZeroRefs() throws SQLObjectException {
+    public void testRemoveColumnByZeroRefs() throws SQLObjectException {
         SQLTable table = db.getTableByName("REGRESSION_TEST1");
         SQLColumn col = table.getColumn(0);
         table.addColumn(col);
@@ -235,12 +255,12 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         SQLColumn at2 = new SQLColumn(t, "AT2", Types.INTEGER, 10, 0);
         SQLColumn at3 = new SQLColumn(t, "AT3", Types.INTEGER, 10, 0);
         
-        t.addColumn(0,pk1);
-        t.addColumn(1,pk2);
-        t.addColumn(2,pk3);
-        t.addColumn(3,at1);
-        t.addColumn(4,at2);
-        t.addColumn(5,at3);
+        t.addColumn(pk1,0);
+        t.addColumn(pk2,1);
+        t.addColumn(pk3,2);
+        t.addColumn(at1,3);
+        t.addColumn(at2,4);
+        t.addColumn(at3,5);
         
         pk1.setPrimaryKeySeq(1);
         pk2.setPrimaryKeySeq(2);
@@ -249,7 +269,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         assertEquals(3, t.getPkSize());
         
         SQLColumn newcol = new SQLColumn(t, "newcol", Types.INTEGER, 10, 0);
-        t.addColumn(3, newcol);
+        t.addColumn(newcol, 3);
         assertEquals("New column should be at requested position", 3, t.getColumnIndex(newcol));
         newcol.setPrimaryKeySeq(3);
         assertEquals("New column should still be at requested position", 3, t.getColumnIndex(newcol));
@@ -319,8 +339,8 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         table1 = db.getTableByName("REGRESSION_TEST1");
         col2 = new SQLColumn(col1);
         col2.setPrimaryKeySeq(new Integer(16));
-        table1.addColumn(2, col1);
-        table1.addColumn(3, col2);
+        table1.addColumn(col1, 2);
+        table1.addColumn(col2, 3);
         table1.normalizePrimaryKey();
         assertEquals("Wrong number of primary keys", table1.getPkSize(), 0);
         
@@ -338,10 +358,10 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         SQLColumn c1 = new SQLColumn(t1,"col1",1,0,0);
         SQLIndex i1 = new SQLIndex("name",true,null, "BTREE",null);
         i1.addIndexColumn(c1, AscendDescend.UNSPECIFIED);
-        t1.getIndicesFolder().addChild(i1);
+        t1.addChild(i1);
         SQLIndex i2 = new SQLIndex("name 2",true,null, "BTREE",null);
         i2.addChild(i2.new Column("Index column string",AscendDescend.UNSPECIFIED));
-        t1.getIndicesFolder().addChild(i2);
+        t1.addChild(i2);
         
         assertNull(t1.getPrimaryKeyIndex());
         
@@ -359,8 +379,8 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         i1.addIndexColumn(c1, AscendDescend.UNSPECIFIED);
         SQLIndex i2 = new SQLIndex("name 2",true,null, "BTREE",null);
         i2.addChild(i2.new Column("Index column string",AscendDescend.UNSPECIFIED));
-        t1.getIndicesFolder().addChild(i2);
-        t1.getIndicesFolder().addChild(i1);
+        t1.addChild(i2);
+        t1.addChild(i1);
         i1.setPrimaryKeyIndex(true);
         assertEquals(i1,t1.getPrimaryKeyIndex());
         i1.setPrimaryKeyIndex(false);
@@ -369,23 +389,26 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     
     public void testFireDbChildrenInserted() throws Exception {
         SQLTable table1 = new SQLTable();
+        table1.setPopulated(true);
         
         TestingSQLObjectListener testListener = new TestingSQLObjectListener();
-        table1.addSQLObjectListener(testListener);
+        table1.addSPListener(testListener);
         
-        table1.addChild(new Folder(Folder.COLUMNS, true));
+        SQLColumn col = new SQLColumn();
+        table1.addChild(col);
         assertEquals("Children inserted event not fired!", 1, testListener.getInsertedCount());
     }
     
     public void testFireDbChildrenRemoved() throws Exception {
         SQLTable table1 = new SQLTable();
-        Folder tempFolder = new Folder(Folder.COLUMNS, true);
-        table1.addChild(tempFolder);
+        table1.setPopulated(true);
+        SQLColumn col = new SQLColumn();
+        table1.addChild(col);
         
         TestingSQLObjectListener testListener = new TestingSQLObjectListener();
-        table1.addSQLObjectListener(testListener);
+        table1.addSPListener(testListener);
         
-        table1.removeChild(tempFolder);
+        table1.removeChild(col);
         assertEquals("Children removed event not fired!", 1, testListener.getRemovedCount());
     }
     
@@ -408,7 +431,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         
         try {
             SQLColumn inheritedCol = childTable1.getColumnByName("child_pkcol_1");
-            childTable1.removeColumn(inheritedCol);
+            childTable1.removeChild(inheritedCol);
             fail("Remove should have thrown LockedColumnException");
         } catch (LockedColumnException ex) {
             // good
@@ -435,7 +458,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         
     }
     
-    public void testRemoveFKColumn() throws SQLObjectException{
+    public void testRemoveFKColumn() throws Exception {
         assertEquals("There should be 6 columns to start",6, 
                 table.getColumns().size());
         table.removeColumn(table.getColumnIndex(table.getColumnByName("five")));
@@ -452,7 +475,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     }
     
     public void testAddColAtFirstIdx() throws SQLObjectException{
-        table.addColumn(0, new SQLColumn(table, "zero", Types.INTEGER, 10, 0));        
+        table.addColumn(new SQLColumn(table, "zero", Types.INTEGER, 10, 0), 0);        
         assertEquals(7, table.getColumns().size());
         assertEquals(4, table.getPkSize());
         
@@ -467,7 +490,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     }
     
     public void testAddColAbovePK() throws SQLObjectException{
-        table.addColumn(2, new SQLColumn(table, "indextwo", Types.INTEGER, 10, 0));        
+        table.addColumn(new SQLColumn(table, "indextwo", Types.INTEGER, 10, 0), 2);        
         assertEquals(7, table.getColumns().size());
         assertEquals(4, table.getPkSize());
         
@@ -482,7 +505,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     }
     
     public void testAddColBelowPK() throws SQLObjectException{
-        table.addColumn(4, new SQLColumn(table, "indexfour", Types.INTEGER, 10, 0));        
+        table.addColumn(new SQLColumn(table, "indexfour", Types.INTEGER, 10, 0), 4);        
         assertEquals(7, table.getColumns().size());
         assertEquals(3, table.getPkSize());
         
@@ -537,9 +560,9 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         EventLogger l = new EventLogger();
         SQLObjectSnapshot original = l.makeSQLObjectSnapshot(table);
         
-        SQLObjectUtils.listenToHierarchy(l, table);
+        SQLPowerUtils.listenToHierarchy(table, l);
         table.changeColumnIndex(4, 1, true);        
-        SQLObjectUtils.unlistenToHierarchy(l, table);
+        SQLPowerUtils.unlistenToHierarchy(table, l);
 
         assertEquals(4, table.getPkSize());
         
@@ -566,9 +589,9 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         EventLogger l = new EventLogger();
         SQLObjectSnapshot original = l.makeSQLObjectSnapshot(table);
         
-        SQLObjectUtils.listenToHierarchy(l, table);
+        SQLPowerUtils.listenToHierarchy(table, l);
         table.changeColumnIndex(4, 0, true);        
-        SQLObjectUtils.unlistenToHierarchy(l, table);
+        SQLPowerUtils.unlistenToHierarchy(table, l);
 
         assertEquals(4, table.getPkSize());
         
@@ -651,7 +674,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         assertEquals(5, table.getColumnIndex(table.getColumnByName("six")));
     }
     
-    public void testChangeForthColumnKey() throws SQLObjectException{
+    public void testChangeFourthColumnKey() throws SQLObjectException{
         SQLColumn col4 = table.getColumnByName("four");
         assertNotNull(col4);
         col4.setPrimaryKeySeq(0);
@@ -672,9 +695,9 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
 
         SQLObjectSnapshot original = l.makeSQLObjectSnapshot(table);
         
-        SQLObjectUtils.listenToHierarchy(l, table);
+        SQLPowerUtils.listenToHierarchy(table, l);
         col5.setPrimaryKeySeq(0);
-        SQLObjectUtils.unlistenToHierarchy(l, table);
+        SQLPowerUtils.unlistenToHierarchy(table, l);
 
         System.out.println("Event log:\n"+l);
 
@@ -722,10 +745,9 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
           
         SQLTable t = db.getTableByName("REGRESSION_TEST1_VIEW");
         
-        SQLObject o = t.getIndicesFolder();
-        
         // Should not throw an ArchitectException
-        o.populate();
+        t.populateColumns();
+        t.populateIndices();
     }
     
     /**
@@ -735,11 +757,11 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
      * in any way), and compared to older snapshots.  Old snapshots can also be rolled forward
      * (like an undo manager redo operation) to test that a stream of events is fully redoable.
      */
-    public static class EventLogger implements SQLObjectListener, ca.sqlpower.sqlobject.undo.CompoundEventListener {
+    public static class EventLogger extends AbstractSPListener {
 
         /**
          * The list of events captured from the SQLObject tree.  Events are stored in the order they
-         * are recieved, oldest first.
+         * are received, oldest first.
          */
         private List<LogItem> log = new ArrayList<LogItem>();
 
@@ -750,12 +772,12 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
 
         /**
          * An item in the log.  It has a type (based on which listener method was invoked) and the
-         * event that the listener recieved.
+         * event that the listener received.
          */
         private static class LogItem {
             private LogItemType type;
-            private SQLObjectEvent event;
-            public LogItem(LogItemType type, SQLObjectEvent event) {
+            private EventObject event;
+            public LogItem(LogItemType type, EventObject event) {
                 this.type = type;
                 this.event = event;
             }
@@ -764,7 +786,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                 return type;
             }
             
-            public SQLObjectEvent getEvent() {
+            public EventObject getEvent() {
                 return event;
             }
             
@@ -780,7 +802,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
          * @param type The event type (based on which listener method was called)
          * @param e The event.  Must not be null.
          */
-        private void addToLog(LogItemType type, SQLObjectEvent e) {
+        private void addToLog(LogItemType type, EventObject e) {
             if (e == null) throw new NullPointerException("Can't add null events, dude");
             log.add(new LogItem(type, e));
         }
@@ -788,30 +810,33 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         /**
          * Listener method.  Adds the received event to the log.
          */
-        public void dbChildrenInserted(SQLObjectEvent e) {
+        @Override
+        public void childAddedImpl(SPChildEvent e) {
             addToLog(LogItemType.INSERT, e);
         }
 
         /**
          * Listener method.  Adds the received event to the log.
          */
-        public void dbChildrenRemoved(SQLObjectEvent e) {
+        @Override
+        public void childRemovedImpl(SPChildEvent e) {
             addToLog(LogItemType.REMOVE, e);
         }
 
         /**
          * Listener method.  Adds the received event to the log.
          */
-        public void dbObjectChanged(SQLObjectEvent e) {
+        @Override
+        public void propertyChangeImpl(PropertyChangeEvent e) {
             addToLog(LogItemType.CHANGE, e);
             // FIXME have to unlisten to old objects and listen to new ones
         }
 
-        public void compoundEditStart(CompoundEvent e) {
+        public void transactionStarted(CompoundEvent e) {
             // whatever
         }
 
-        public void compoundEditEnd(CompoundEvent e) {
+        public void transactionEnded(CompoundEvent e) {
             // whatever
         }
         
@@ -836,20 +861,26 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                 
                 Set<String> set = new HashSet<String>();
                 set.add("columns");  // tracked by the snapshot's "children" list
+                set.add("children"); // tracked by the snapshot's "children" list, is the same as the columns
+                set.add("childrenWithoutPopulating"); // the same as "children" except it does not populate the child list.
+                set.add("columnsWithoutPopulating"); // the same as "children" except it does not populate the child list.
+                set.add("columnsFolder"); // now equivalent to "columns".
                 set.add("pkSize");   // depends on number of columns with non-null PKSeq
                 set.add("SQLObjectListeners"); // interferes with EventLogger, which listens to all objects
+                set.add("SPListeners"); // interferes with EventLogger, which listens to all objects
                 ignoreProperties.put(SQLTable.class, set);
 
-                set = new HashSet<String>();
-                set.add("children");  // tracked by the snapshot's "children" list
-                set.add("childCount"); // tracked by the snapshot's "children" list
-                set.add("SQLObjectListeners"); // interferes with EventLogger, which listens to all objects
-                ignoreProperties.put(SQLTable.Folder.class, set);
+//                set = new HashSet<String>();
+//                set.add("children");  // tracked by the snapshot's "children" list
+//                set.add("childCount"); // tracked by the snapshot's "children" list
+//                set.add("SQLObjectListeners"); // interferes with EventLogger, which listens to all objects
+//                ignoreProperties.put(SQLTable.Folder.class, set);
 
                 set = new HashSet<String>();
                 set.add("definitelyNullable");  // secondary property depends on nullable
                 set.add("primaryKey");          // secondary property depends on position in parent is isInPk
                 set.add("SQLObjectListeners"); // interferes with EventLogger, which listens to all objects
+                set.add("SPListeners"); // interferes with EventLogger, which listens to all objects
                 set.add("foreignKey");         // secondary property depends on position in parent
                 set.add("indexed");            // secondary property depends on position in parent
                 set.add("uniqueIndexed");      // secondary property depends on position in parent
@@ -857,12 +888,15 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                 
                 set = new HashSet<String>();
                 set.add("children");  // tracked by the snapshot's "children" list
+                set.add("childrenWithoutPopulating");  // tracked by the snapshot's "children" list
                 set.add("childCount"); // tracked by the snapshot's "children" list
                 set.add("SQLObjectListeners"); // interferes with EventLogger, which listens to all objects
+                set.add("SPListeners"); // interferes with EventLogger, which listens to all objects
                 ignoreProperties.put(SQLIndex.class, set);
                 
                 set = new HashSet<String>();
                 set.add("SQLObjectListeners"); // interferes with EventLogger, which listens to all objects
+                set.add("SPListeners"); // interferes with EventLogger, which listens to all objects
                 ignoreProperties.put(SQLIndex.Column.class, set);
 
             }
@@ -888,7 +922,18 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
              * The class of the snapshotted object.
              */
             private Class snapshottedObjectClass;
-         
+            
+    		/**
+    		 * When rolling back changes, values may be changed to one object and
+    		 * then that object may be removed and added at a different index in its
+    		 * parent. When this occurs we cannot just make a new snapshot of the
+    		 * current object as we changed values in the snapshot we want to keep.
+    		 * This list stores the removed snapshots so we can reuse them as we
+    		 * roll back. This would not happen in a normal event system as they use
+    		 * the actual objects.
+    		 */
+            private final List<SQLObjectSnapshot> removedSnapshots = new ArrayList<SQLObjectSnapshot>();
+            
             public SQLObjectSnapshot(SQLObject object) 
             throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, SQLObjectException {
                 snapshottedObjectClass = object.getClass();
@@ -905,6 +950,10 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                 for (SQLObject c : (List<SQLObject>) object.getChildren()) {
                     children.add(new SQLObjectSnapshot(c));
                 }
+            }
+            
+            public void clearRollbackSnapshots() {
+            	removedSnapshots.clear();
             }
             
             @Override
@@ -954,14 +1003,28 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
             }
             
 
-            public void insertChild(int i, SQLObject object) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, SQLObjectException {
-                SQLObjectSnapshot snapshot = new SQLObjectSnapshot(object);
+            public void insertChild(int i, SQLObject object, boolean rollForward) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, SQLObjectException {
+                SQLObjectSnapshot snapshot = null;
+                for (SQLObjectSnapshot removedSnapshot : removedSnapshots) {
+                	if (removedSnapshot.getSnapshottedObjectIdentity() == 
+                		System.identityHashCode(object)) {
+                		snapshot = removedSnapshot;
+                		removedSnapshots.remove(removedSnapshot);
+                		break;
+                	}
+                }
+                if (snapshot == null) {
+                	snapshot = new SQLObjectSnapshot(object);
+                }
                 children.add(i,snapshot);
             }
 
-            public void removeChild(int i, SQLObject object) {
+            public void removeChild(int i, SQLObject object, boolean rollForward) {
                 SQLObjectSnapshot removed = children.remove(i);
                 checkSnapshottedObject(object, removed, "removing child "+i);
+                if (!rollForward) {
+                	removedSnapshots.add(removed);
+                }
             }
 
             private void checkSnapshottedObject(SQLObject object, SQLObjectSnapshot snapshot, String message) {
@@ -995,21 +1058,21 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                 return snapshottedObjectClass;
             }
 
-            public void applyChange(SQLObjectEvent e) {
+            public void applyChange(PropertyChangeEvent e) {
                 if (!properties.containsKey(e.getPropertyName())) {
                     throw new IllegalStateException("the snapshotted object does not contain this property: " +
                             e.getPropertyName());
                 }
-                checkSnapshottedObject(e.getSQLSource(), this, "applying a property modification");
+                checkSnapshottedObject((SQLObject) e.getSource(), this, "applying a property modification");
                 properties.put(e.getPropertyName(),e.getNewValue());                
             }
 
-            public void revertChange(SQLObjectEvent e) {
+            public void revertChange(PropertyChangeEvent e) {
                 if (!properties.containsKey(e.getPropertyName())) {
                     throw new IllegalStateException("this snapshotted object does not contain property: " +
                             e.getPropertyName());
                 }
-                checkSnapshottedObject(e.getSQLSource(), this, "reversing a property midification");
+                checkSnapshottedObject((SQLObject) e.getSource(), this, "reversing a property midification");
                 properties.put(e.getPropertyName(), e.getOldValue());
             }
 
@@ -1027,7 +1090,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
              * @return True if the snapshot tree rooted at this snapshot contains a snapshot
              * of the SQLObject e.getSource(); false if it does not.
              */
-            public boolean applyEvent(LogItemType type, SQLObjectEvent e, boolean rollForward) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, SQLObjectException {
+            public boolean applyEvent(LogItemType type, EventObject e, boolean rollForward) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, SQLObjectException {
                 if (System.identityHashCode(e.getSource()) != getSnapshottedObjectIdentity()) {
                     for (SQLObjectSnapshot snap : children) {
                         if (snap.applyEvent(type, e, rollForward)) return true;
@@ -1040,30 +1103,30 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                     if (rollForward) {
                         System.out.println("Rolling forward a "+type+": "+e);
                         if (type == LogItemType.INSERT) {
-                            for (int i = 0; i < e.getChangedIndices().length; i++) {
-                                insertChild(e.getChangedIndices()[i], (SQLColumn) e.getChildren()[i]);
-                            }
+                        	SPChildEvent event = (SPChildEvent) e;
+                        	insertChild(event.getIndex(), (SQLObject) event.getChild(), rollForward);
+                        	
                         } else if (type == LogItemType.REMOVE) {
-                            for (int i = 0; i < e.getChangedIndices().length; i++) {
-                                removeChild(e.getChangedIndices()[i], e.getChildren()[i]);
-                            }
+                        	SPChildEvent event = (SPChildEvent) e;
+                        	removeChild(event.getIndex(), (SQLObject) event.getChild(), rollForward);
+                        	
                         } else if (type == LogItemType.CHANGE) {
-                            applyChange(e);
+                            applyChange((PropertyChangeEvent) e);
                         } else {
                             throw new UnsupportedOperationException("Unknown log item type "+type);
                         }
                     } else {
                         System.out.println("Rolling back a "+type+": "+e);
                         if (type == LogItemType.INSERT) {
-                            for (int i = 0; i < e.getChangedIndices().length; i++) {
-                                removeChild(e.getChangedIndices()[i], e.getChildren()[i]);
-                            }
+                        	SPChildEvent event = (SPChildEvent) e;
+                        	removeChild(event.getIndex(), (SQLObject) event.getChild(), rollForward);
+                        	
                         } else if (type == LogItemType.REMOVE) {
-                            for (int i = 0; i < e.getChangedIndices().length; i++) {
-                                insertChild(e.getChangedIndices()[i], e.getChildren()[i]);
-                            }
+                        	SPChildEvent event = (SPChildEvent) e;
+                        	insertChild(event.getIndex(), (SQLObject) event.getChild(), rollForward);
+                        	
                         } else if (type == LogItemType.CHANGE) {
-                            revertChange(e);
+                            revertChange((PropertyChangeEvent) e);
                         } else {
                             throw new UnsupportedOperationException("Unknown log item type "+type);
                         }
@@ -1072,7 +1135,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                 }
             }
         }
-        
+
         public SQLObjectSnapshot makeSQLObjectSnapshot(SQLTable t) throws Exception {
             return new SQLObjectSnapshot(t);
         }
@@ -1084,7 +1147,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         public void rollForward(SQLObjectSnapshot snapshot) throws Exception {
             for (LogItem li : log) {
                 LogItemType type = li.getType();
-                SQLObjectEvent e = li.getEvent();
+                EventObject e = li.getEvent();
                 snapshot.applyEvent(type, e, true);
             }
         }
@@ -1094,11 +1157,12 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
          * @param snapshot
          */
         public void rollBack(SQLObjectSnapshot snapshot) throws Exception {
+        	snapshot.clearRollbackSnapshots();
             List<LogItem> revlog = new ArrayList(log);
             Collections.reverse(revlog);
             for (LogItem li : revlog) {
                 LogItemType type = li.getType();
-                SQLObjectEvent e = li.getEvent();
+                EventObject e = li.getEvent();
                 snapshot.applyEvent(type, e, false);
             }
         }
@@ -1112,6 +1176,20 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
             return sb.toString();
         }
     }
+
+	/**
+	 * Tests for a regression case where populating a table's exported keys,
+	 * where that would cause recursive calls to populate other tables. Ideally,
+	 * only one connection should ever be opened. This test was originally
+	 * written for TestFolder, but the Folder class no longer exists.
+	 */
+	public void testPopulateActiveConnections() throws Exception{
+	    SQLDatabase db = getDb();
+	    assertEquals(0, db.getMaxActiveConnections());
+        SQLTable t = db.getTableByName("SQL_TABLE_POPULATE_TEST");
+        t.getExportedKeys();
+	    assertEquals(1, db.getMaxActiveConnections());
+	}
 
     /**
      * This test was intended to be a regression test for bug 1640.
@@ -1128,45 +1206,76 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
      */
     public void testInsertEventsConsistentWithReality() throws Exception {
         
-        class InsertListener implements SQLObjectListener {
+        class InsertListener extends AbstractSPListener {
 
-            public void dbChildrenInserted(SQLObjectEvent e) {
-                
-                for (int i = 0; i < e.getChangedIndices().length; i++) {
-                    int idx = e.getChangedIndices()[i];
-                    SQLObject child = e.getChildren()[i];
-                    try {
-                        assertTrue(idx < table.getColumns().size());
-                        assertSame(table.getColumn(idx), child);
-                    } catch (SQLObjectException ex) {
-                        throw new SQLObjectRuntimeException(ex);
-                    }
-                }
-            }
-
-            public void dbChildrenRemoved(SQLObjectEvent e) {
-                // TODO Auto-generated method stub
-                
-            }
-
-            public void dbObjectChanged(SQLObjectEvent e) {
-                // TODO Auto-generated method stub
-                
-            }
+        	@Override
+            public void childAddedImpl(SPChildEvent e) {
+        		if (e.getChildType() == SQLColumn.class) {
+        			try {
+        				assertTrue(e.getIndex() < table.getColumns().size());
+        				assertSame(table.getColumn(e.getIndex()), e.getChild());
+        			} catch (SQLObjectException ex) {
+        				throw new SQLObjectRuntimeException(ex);
+        			}
+        		}
+        	}
 
         }
-        table.getColumnsFolder().addSQLObjectListener(new InsertListener());
+        table.addSPListener(new InsertListener());
         SQLRelationship selfref = new SQLRelationship();
-        table.getColumnsFolder().addSQLObjectListener(new InsertListener());
+        table.addSPListener(new InsertListener());
         selfref.attachRelationship(table, table, true);
         assertEquals(9, table.getColumns().size());
         assertEquals(3, selfref.getChildCount());
 
-        table.getColumnsFolder().addSQLObjectListener(new InsertListener());
+        table.addSPListener(new InsertListener());
         table.changeColumnIndex(2, 0, true);
         assertEquals(9, table.getColumns().size());
         assertEquals(3, selfref.getChildCount());
         
-        System.out.println(table.getSQLObjectListeners());
+        System.out.println(table.getSPListeners());
     }
+
+	/**
+	 * This tests inheriting a column at the end of the primary key list and
+	 * defining the inherited column to be a primary key does indeed set the
+	 * primary key sequence number of the column to be a non-null value.
+	 */
+    public void testInheritDefinesPK() throws Exception {
+    	SQLTable t2 = new SQLTable(table.getParentDatabase(), true);
+		t2.setName("Another Test Table");
+		SQLColumn newcol = new SQLColumn(t2, "newcol", Types.INTEGER, 10, 0);
+		t2.addColumn(newcol, 0);
+		newcol.setPrimaryKeySeq(1);
+		assertNotNull("Column should start in primary key", newcol.getPrimaryKeySeq());
+		
+		List<SQLColumn> columns = new ArrayList<SQLColumn>(table.getColumns());
+		
+		//Defining the column to be a primary key
+		table.inherit(table.getPkSize(), newcol, true, TransferStyles.COPY, true);
+		
+		List<SQLColumn> newColumns = new ArrayList<SQLColumn>(table.getColumns());
+		newColumns.removeAll(columns);
+
+		assertEquals(1, newColumns.size());
+		SQLColumn copyCol = newColumns.get(0);
+		assertNotNull(copyCol.getPrimaryKeySeq());
+	}
+
+	/**
+	 * Tests if the first column in the primary key is moved to be the last
+	 * column in the primary key it actually becomes the last column in the
+	 * primary key and not the first column not inside the primary key.
+	 */
+    public void testFirstPKMovedToLastPK() throws Exception {
+    	SQLColumn col = table.getColumn(0);
+    	assertEquals(3, table.getPkSize());
+		assertNotNull(col.getPrimaryKeySeq());
+		
+		table.changeColumnIndex(0, 2, true);
+		
+		assertNotNull(col.getPrimaryKeySeq());
+		assertEquals(new Integer(2), col.getPrimaryKeySeq());
+		assertEquals(3, table.getPkSize());
+	}
 }

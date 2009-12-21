@@ -82,11 +82,13 @@ public interface SPObject {
      */
     boolean allowsChildren();
 
-    /**
-     * Returns the position in the list that would be returned by getChildren()
-     * that the first object of type childClass is, or where it would be if
-     * there were any children of that type.
-     */
+	/**
+	 * Returns the position in the list that would be returned by getChildren()
+	 * that the first object of type childClass is, or where it would be if
+	 * there were any children of that type. If this class does not contain
+	 * children of type <code>childType</code>, this throws an
+	 * IllegalArgumentException
+	 */
     int childPositionOffset(Class<? extends SPObject> childType);
 
 	/**
@@ -209,5 +211,21 @@ public interface SPObject {
      * Returns a list of all children of the given type
      */
     <T extends SPObject> List<T> getChildren(Class<T> type);
+    
+    /**
+     * Returns a list of classes that are allowed to be children of this object.
+     * If no children are allowed this will return an empty list.
+     */
+    List<Class<? extends SPObject>> getAllowedChildTypes();
+
+	/**
+	 * Returns true if this object allows children of the given type. Returns
+	 * false otherwise.
+	 * 
+	 * @param type
+	 *            The class of object that is being decided on if it can be
+	 *            added to this object as a child.
+	 */
+    boolean allowsChildType(Class<? extends SPObject> type);
     
 }

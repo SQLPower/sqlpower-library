@@ -27,6 +27,10 @@ import javax.annotation.Nullable;
 
 import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.Mutator;
 
 /**
  * A Grant object represents a set of permissions on a single object, or class
@@ -65,9 +69,14 @@ public class Grant extends AbstractSPObject {
      * @param execute
      * @param grant
      */
-    public Grant(@Nullable String subject, @Nonnull String type,
-            boolean create, boolean modify, boolean delete, boolean execute,
-            boolean grant) 
+    @Constructor
+    public Grant(@Nullable @ConstructorParameter(propertyName = "subject") String subject, 
+    		@Nonnull @ConstructorParameter(propertyName = "type") String type,
+            @ConstructorParameter(propertyName = "createPrivilege") boolean create, 
+            @ConstructorParameter(propertyName = "modifyPrivilege") boolean modify, 
+            @ConstructorParameter(propertyName = "deletePrivilege") boolean delete, 
+            @ConstructorParameter(propertyName = "executePrivilege") boolean execute,
+            @ConstructorParameter(propertyName = "grantPrivilege") boolean grant) 
     {
         this.subject = subject;
         this.type = type;
@@ -79,11 +88,13 @@ public class Grant extends AbstractSPObject {
     }
 
     @Override
+    @Mutator
     public void setName(String name) {
     	// no op
     }
     
     @Override
+    @Accessor
     public String getName() {
         if (this.subject != null) {
             return this.subject.concat(" - ").concat(this.getPermsString());
@@ -108,7 +119,7 @@ public class Grant extends AbstractSPObject {
     	return 0;
     }
     
-    public List<Class<? extends SPObject>> allowedChildTypes() {
+    public List<Class<? extends SPObject>> getAllowedChildTypes() {
     	return Collections.emptyList();
     }
 

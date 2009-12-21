@@ -76,6 +76,7 @@ public abstract class DatabaseConnectedTestCase extends TestCase {
     @Override
     protected void setUp() throws Exception {
         db = new SQLDatabase(new JDBCDataSource(getJDBCDataSource()));
+        db.setParent(new StubSQLObject());
         assertNotNull(db.getDataSource().getParentType());
     }
     

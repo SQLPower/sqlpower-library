@@ -162,7 +162,7 @@ public class SQLObjectSelection implements Transferable {
         if (object instanceof SQLTable) {
             nodeName = ((SQLTable) object).toQualifiedName();
         } else if (object instanceof SQLColumn) {
-            nodeName = ((SQLColumn) object).getParentTable().getName() + "." + ((SQLColumn) object).getName();
+            nodeName = ((SQLColumn) object).getParent().getName() + "." + ((SQLColumn) object).getName();
         } else {
             nodeName = object.getName();
         }

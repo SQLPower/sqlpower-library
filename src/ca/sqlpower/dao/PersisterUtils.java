@@ -27,6 +27,13 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import ca.sqlpower.dao.SPPersister.DataType;
+import ca.sqlpower.dao.session.BidirectionalConverter;
+import ca.sqlpower.object.SPObject;
+
+/**
+ * Utilities that are used by {@link SPPersister}s. 
+ */
 public class PersisterUtils {
 	
 	private PersisterUtils() {
@@ -61,5 +68,64 @@ public class PersisterUtils {
         }
         return byteStream;
 	}
+	
+	/**
+	 * Splits a string by the converter delimiter and checks that the correct
+	 * number of pieces are returned or it throws an
+	 * {@link IllegalArgumentException}. This is a simple place to do general
+	 * error checking when first converting a string into an object.
+	 * 
+	 * @param toSplit
+	 *            The string to split by the delimiter.
+	 * @param numPieces
+	 *            The number of pieces the string must be split into.
+	 * @return The pieces the string is split into.
+	 */
+	public static String[] splitByDelimiter(String toSplit, int numPieces) {
+		String[] pieces = toSplit.split(BidirectionalConverter.DELIMITER);
+
+		if (pieces.length > numPieces) {
+			throw new IllegalArgumentException("Cannot convert string \""
+					+ toSplit + "\" with an invalid number of properties.");
+		} else if (pieces.length < numPieces) {
+			//split will strip off empty space that comes after a delimiter instead of
+			//appending an empty string to the array so we have to do that ourselves.
+			String[] allPieces = new String[numPieces];
+			
+			int i = 0;
+			for (String piece : pieces) {
+				allPieces[i] = piece;
+				i++;
+			}
+			for (; i < numPieces; i++) {
+				allPieces[i] = "";
+			}
+			return allPieces;
+		}
+		return pieces;
+	}
+	
+    /**
+     * Gets the correct data type based on the given class for the {@link SPPersister}.
+     */
+    public static DataType getDataType(Class<? extends Object> classForDataType) {
+    	if (Integer.class.isAssignableFrom(classForDataType)) {
+    		return DataType.INTEGER;
+    	} else if (Boolean.class.isAssignableFrom(classForDataType)) {
+    		return DataType.BOOLEAN;
+    	} else if (Double.class.isAssignableFrom(classForDataType)) {
+    		return DataType.DOUBLE;
+    	} else if (String.class.isAssignableFrom(classForDataType)) {
+    		return DataType.STRING;
+    	} else if (Image.class.isAssignableFrom(classForDataType)) {
+    		return DataType.PNG_IMG;
+    	} else if (SPObject.class.isAssignableFrom(classForDataType)) {
+    		return DataType.REFERENCE;
+    	} else if (Void.class.isAssignableFrom(classForDataType)) {
+    		return DataType.NULL;
+    	} else {
+    		return DataType.STRING;
+    	}
+    }
 
 }

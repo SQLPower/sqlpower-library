@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,11 +32,11 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import ca.sqlpower.object.AbstractSPObject;
+import ca.sqlpower.object.ObjectDependentException;
+import ca.sqlpower.object.SPListener;
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
-import ca.sqlpower.sqlobject.SQLRelationship.RelationshipManager;
-import ca.sqlpower.sqlobject.undo.CompoundEvent;
-import ca.sqlpower.sqlobject.undo.CompoundEventListener;
-import ca.sqlpower.sqlobject.undo.CompoundEvent.EventTypes;
 
 /**
  * SQLObject is the main base class of the Architect API. All objects that can
@@ -77,7 +76,7 @@ import ca.sqlpower.sqlobject.undo.CompoundEvent.EventTypes;
  * into namespaces to ensure multiple clients who don't know about each other do
  * not end up suffering naming collisions.
  */
-public abstract class SQLObject implements java.io.Serializable {
+public abstract class SQLObject extends AbstractSPObject implements java.io.Serializable {
 
 	private static Logger logger = Logger.getLogger(SQLObject.class);
 	protected boolean populated = false;
@@ -89,14 +88,6 @@ public abstract class SQLObject implements java.io.Serializable {
 	 */
 	private String physicalName;
 
-    /**
-     * The name given to this object by the data model designer. There are no
-     * database-specific constraints on the length or permissible characters in
-     * this name, and it will not be adjusted by the program unless specifically
-     * directed by the designer.
-     */
-	private String name;
-	
 	/**
 	 * The map that hold the client properties of this object. Don't modify the
 	 * contents of this map directly; use the {@link #putClientProperty(Class, String, Object)}
@@ -105,12 +96,6 @@ public abstract class SQLObject implements java.io.Serializable {
 	 */
 	private final Map<String, Object> clientProperties = new HashMap<String, Object>();
 	
-	/**
-	 * The children of this SQLObject (if not applicable, set to
-	 * Collections.EMPTY_LIST in your constructor).
-	 */
-	protected List children;
-
 	/**
 	 * When this counter is > 0, the fireXXX methods will ignore secondary changes.
 	 */
@@ -123,12 +108,6 @@ public abstract class SQLObject implements java.io.Serializable {
 	 */
 	private Throwable childrenInaccessibleReason = null;
 	
-	/**
-	 * The parent of this SQLObject. This may be null if it is
-	 * a root object.
-	 */
-	private SQLObject parent;
-	 
 	public synchronized void setMagicEnabled(boolean enable) {
 		if (magicDisableCount < 0) {
 			throw new IllegalStateException("magicDisableCount < 0");
@@ -154,29 +133,6 @@ public abstract class SQLObject implements java.io.Serializable {
 		return true;
 	}
 	
-    /**
-     * The name given to this object by the data model designer. There are no
-     * database-specific constraints on the length or permissible characters in
-     * this name, and it will not be adjusted by the program unless specifically
-     * directed by the designer.
-     */
-	public String getName()	{
-		return name;
-	}
-	
-	
-    /**
-     * Sets the name given to this object by the data model designer. There are no
-     * database-specific constraints on the length or permissible characters in
-     * this name, and it will not be adjusted by the program unless specifically
-     * directed by the designer.
-     */
-	public void setName(String argName) {
-		String oldValue = name;
-		this.name = argName;
-		fireDbObjectChanged("name", oldValue, name);
-	}
-
     /**
      * Returns the name used for this object in a physical database system. This
      * name may have to be altered to fit the naming constraints of a particular
@@ -213,7 +169,7 @@ public abstract class SQLObject implements java.io.Serializable {
 	public void setPhysicalName(String argName) {
 		String oldPhysicalName = this.physicalName;
 		this.physicalName = argName;
-		fireDbObjectChanged("physicalName",oldPhysicalName,argName);
+		firePropertyChange("physicalName",oldPhysicalName,argName);
 	}
 
 	/**
@@ -221,17 +177,9 @@ public abstract class SQLObject implements java.io.Serializable {
 	 * is a root object.
 	 */
 	public SQLObject getParent() {
-	   return parent; 
+	   return (SQLObject) super.getParent(); 
 	}
 
-	/**
-	 * Parents call this on their children to update parent pointers
-	 * during addChild and removeChild requests.
-	 */
-	protected void setParent(SQLObject parent) {
-	    this.parent = parent;
-	}
-	
 	/**
      * Causes this SQLObject to load its children through populateImpl (if any exist).
      * This will do nothing if the object is already populated.
@@ -297,267 +245,127 @@ public abstract class SQLObject implements java.io.Serializable {
 	 */
 	public abstract boolean allowsChildren();
 
+	@Override
+	public boolean removeChild(SPObject child) throws ObjectDependentException,
+			IllegalArgumentException {
+		if (child instanceof SQLObject) {
+			if (!fireDbChildPreRemove(getChildrenWithoutPopulating(child.getClass()).indexOf(child), (SQLObject) child)) {
+				return false;
+			}
+		}
+		
+	    if (!getChildrenWithoutPopulating().contains(child)) {
+	        throw new IllegalArgumentException("Child object " + child.getName() + " of type " + child.getClass()
+	                + " is not a child of " + getName() + " of type " + getClass());
+	    }
+	    
+	    return removeChildImpl(child);
+	}
+	
 	/**
 	 * Returns an unmodifiable view of the child list.  All list
 	 * members will be SQLObject subclasses (SQLTable,
 	 * SQLRelationship, SQLColumn, etc.) which are directly contained
 	 * within this SQLObject.
 	 */
-	public List getChildren() throws SQLObjectException {
-		if (!allowsChildren()) //never return null;
-			return children;
-		populate();
+	public List<? extends SQLObject> getChildren() {
+		return getChildren(SQLObject.class);
+	}
+	
+	public <T extends SPObject> List<T> getChildren(Class<T> type) {
+		try {
+			populate();
+			return getChildrenWithoutPopulating(type);
+		} catch (SQLObjectException e) {
+			throw new RuntimeException("Could not populate " + getName() + 
+					": " + e.getMessage());
+		}
+	}
+	
+	public abstract List<? extends SQLObject> getChildrenWithoutPopulating();
+	
+	public <T extends SPObject> List<T> getChildrenWithoutPopulating(Class<T> type) {
+		List<T> children = new ArrayList<T>();
+		for (SQLObject child : getChildrenWithoutPopulating()) {
+			if (type.isAssignableFrom(child.getClass())) {
+				children.add(type.cast(child));
+			}
+		}
 		return Collections.unmodifiableList(children);
 	}
 
 	public SQLObject getChild(int index) throws SQLObjectException {
 		populate();
-		return (SQLObject) children.get(index);
+		return (SQLObject) getChildrenWithoutPopulating().get(index);
 	}
 
 	public int getChildCount() throws SQLObjectException {
 		populate();
-		return children.size();
+		return getChildrenWithoutPopulating().size();
 	}
 
-    /**
-     * Returns the names of all children of this SQLObject. Causes this
-     * SQLObject to become populated.
-     * <p>
-     * Originally created for internal use during refresh. There should be no
-     * harm in making this method public if it's needed externally.
-     * 
-     * @throws SQLObjectException if populating this object fails
-     */
+	/**
+	 * Returns the names of all children of this SQLObject. Causes this
+	 * SQLObject to become populated.
+	 * <p>
+	 * Originally created for internal use during refresh. There should be no
+	 * harm in making this method public if it's needed externally.
+	 * 
+	 * @throws SQLObjectException
+	 *             if populating this object fails
+	 */
     Set<String> getChildNames() throws SQLObjectException {
+        return getChildNames(SQLObject.class);
+    }
+
+	/**
+	 * Returns the names of all children of a certain type of this SQLObject.
+	 * Causes this SQLObject to become populated.
+	 * <p>
+	 * Originally created for internal use during refresh. There should be no
+	 * harm in making this method public if it's needed externally.
+	 * 
+	 * @throws SQLObjectException
+	 *             if populating this object fails
+	 */
+    <T extends SQLObject> Set<String> getChildNames(Class<T> childType) {
         HashSet<String> names = new HashSet<String>();
-        for (SQLObject child : (List<SQLObject>) getChildren()) {
+        for (T child : getChildren(childType)) {
             names.add(child.getName());
         }
         return names;
     }
 
 	/**
-	 * All other addChild() methods call this one.  If you want to override the addChild behaviour,
-	 * override this method only.
-	 * 
-	 * @param index The index that the new child will have
-	 * @param newChild The new child to add (must be same type as all other children)
-	 * @throws SQLObjectException  If you try to add a child of a different type than the existing children.
-	 */
-	protected void addChildImpl(int index, SQLObject newChild) throws SQLObjectException {
-		if ( children.size() > 0 && 
-				! (children.get(0).getClass().isAssignableFrom(newChild.getClass())
-					|| newChild.getClass().isAssignableFrom(children.get(0).getClass()))) {
-            
-            throw new SQLObjectException(
-                    "You Can't mix SQL Object Types! You gave: " +
-                    newChild.getClass().getName() +
-                    "; I need " + children.get(0).getClass());
-		}
-		children.add(index, newChild);
-		newChild.setParent(this);
-		fireDbChildInserted(index, newChild);
-	}
-	
-	/**
 	 * Adds the given SQLObject to this SQLObject at index. Causes a
 	 * DBChildrenInserted event.  If you want to override the
 	 * behaviour of addChild, override this method.
 	 * @throws SQLObjectException 
-	 * @throws SQLObjectException 
 	 */
-	public void addChild(int index, SQLObject newChild) throws SQLObjectException {
-		addChildImpl(index, newChild);
-	}
+//	public void addChild(SQLObject newChild, int index) throws SQLObjectException {
+//		addChildImpl(newChild, index);
+//	}
 
 	/**
 	 * Adds the given SQLObject to this SQLObject at the end of the
-	 * child list by calling {@link #addChild(int,SQLObject)}. Causes
+	 * child list by calling {@link #addChild(SPObject, int)}. Causes
 	 * a DBChildrenInserted event.  If you want to override the
 	 * behaviour of addChild, do not override this method.
 	 * @throws SQLObjectException 
-	 * @throws SQLObjectException 
-	 * @throws Exception 
 	 */
 	public void addChild(SQLObject newChild) throws SQLObjectException {
-		addChildImpl(children.size(), newChild);
+		addChild(newChild, getChildrenWithoutPopulating(newChild.getClass()).size());
 	}
-	
-    /**
-     * This implementation calls {@link#removeImpl(int)}.
-     */
-	public SQLObject removeChild(int index) {
-	    return removeImpl(index);
-	}
-
-	/**
-	 * This method is implemented in terms of {@link #removeImpl(int)}.
-	 */
-	public boolean removeChild(SQLObject child) {
-		int childIdx = children.indexOf(child);
-		if (childIdx >= 0) {
-			removeChild(childIdx);
-		}
-		return childIdx >= 0;
-	}
-
-    /**
-     * The implementation that all remove methods delegate to.  If you want
-     * to override the behaviour of removeChild, override this method.
-     */
-    protected SQLObject removeImpl(int index) {
-        boolean shouldProceed = fireDbChildPreRemove(index, (SQLObject) children.get(index));
-
-        if (shouldProceed) {
-            try {
-                startCompoundEdit("Remove child of " + getName());
-                SQLObject removedChild = (SQLObject) children.remove(index);
-                if (removedChild != null) {
-                    removedChild.setParent(null);
-                    fireDbChildRemoved(index, removedChild);
-                }
-                return removedChild;
-            } finally {
-                endCompoundEdit("Remove child of " + getName());
-            }
-        } else {
-            return null;
-        }
-    }
 	
 	// ------------------- sql object event support -------------------
-	private final transient List<SQLObjectListener> sqlObjectListeners = 
-		new LinkedList<SQLObjectListener>();
 
 	/*
 	 * @return An immutable copy of the list of SQLObject listeners
 	 */
-	public List<SQLObjectListener> getSQLObjectListeners() {
-			return sqlObjectListeners;
+	public List<SPListener> getSPListeners() {
+			return listeners;
 	}
 	
-	public void addSQLObjectListener(SQLObjectListener l) {
-		if (l == null) throw new NullPointerException("You can't add a null listener");
-		synchronized(sqlObjectListeners) {
-			if (sqlObjectListeners.contains(l)) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("NOT Adding duplicate listener "+l+" to SQLObject "+this);
-				}
-				return;
-			}		
-			sqlObjectListeners.add(l);
-		}
-	}
-
-	public void removeSQLObjectListener(SQLObjectListener l) {
-		synchronized(sqlObjectListeners) {
-			sqlObjectListeners.remove(l);
-		}
-	}
-
-	protected void fireDbChildrenInserted(int[] newIndices, List newChildren) {
-		if (logger.isDebugEnabled()) {
-			logger.debug(getClass().getName()+" "+toString()+": " +
-					"firing dbChildrenInserted event");
-		}
-		SQLObjectEvent e = new SQLObjectEvent
-			(this,
-			 newIndices,
-			 (SQLObject[]) newChildren.toArray(new SQLObject[newChildren.size()]));
-		synchronized(sqlObjectListeners) {
-		    int count = 0;
-		    
-		    // XXX Notifying the RelationshipManager last is a workaround for an elusive bug
-		    //     we are still trying to nail down. This is not intended to be used long term,
-		    //     and is definitely not an example of good practice! See bug 1640 for details.
-		    
-            for (SQLObjectListener l : new ArrayList<SQLObjectListener>(sqlObjectListeners)) {
-                if (!(l instanceof RelationshipManager)) {
-                    count++;
-                    l.dbChildrenInserted(e);
-                }
-            }
-            for (SQLObjectListener l : new ArrayList<SQLObjectListener>(sqlObjectListeners)) {
-                if (l instanceof RelationshipManager) {
-                    count++;
-                    l.dbChildrenInserted(e);
-                }
-            }
-			logger.debug(getClass().getName()+": notified "+count+" listeners");
-		}
-	}
-
-	protected void fireDbChildInserted(int newIndex, SQLObject newChild) {
-		int[] newIndexArray = new int[1];
-		newIndexArray[0] = newIndex;
-		List newChildList = new ArrayList(1);
-		newChildList.add(newChild);
-		fireDbChildrenInserted(newIndexArray, newChildList);
-	}
-
-	protected void fireDbChildrenRemoved(int[] oldIndices, List oldChildren) {
-		if (logger.isDebugEnabled()) {
-			logger.debug(getClass().getName()+" "+toString()+": " +
-					"firing dbChildrenRemoved event");
-			logger.debug("Removing children " + oldChildren + " from " + this);
-		}
-		SQLObjectEvent e = new SQLObjectEvent
-			(this,
-			 oldIndices,
-			 (SQLObject[]) oldChildren.toArray(new SQLObject[oldChildren.size()]));
-		int count =0;
-		synchronized(sqlObjectListeners) {
-			SQLObjectListener[] listeners = sqlObjectListeners.toArray(new SQLObjectListener[0]);
-			for(int i = listeners.length-1;i>=0;i--) {
-				listeners[i].dbChildrenRemoved(e);
-				count++;
-			}
-		}
-		if (logger.isDebugEnabled()) logger.debug("Notified "+count+" listeners.");
-	}
-
-	protected void fireDbChildRemoved(int oldIndex, SQLObject oldChild) {
-		int[] oldIndexArray = new int[1];
-		oldIndexArray[0] = oldIndex;
-		List oldChildList = new ArrayList(1);
-		oldChildList.add(oldChild);
-		fireDbChildrenRemoved(oldIndexArray, oldChildList);
-		
-	}
-
-	protected void fireDbObjectChanged(String propertyName, Object oldValue, Object newValue) {
-		boolean same = (oldValue == null ? oldValue == newValue : oldValue.equals(newValue));
-		if (same) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Not firing property change: "+getClass().getName()+"."+propertyName+
-                        " '"+oldValue+"' == '"+newValue+"'");
-            }
-			return;
-		}
-		if (logger.isDebugEnabled()) {
-			logger.debug("Firing Property Change: "+getClass().getName()+"."+propertyName+
-                    " '"+oldValue+"' -> '"+newValue+"'");
-		}
-
-        SQLObjectEvent e = new SQLObjectEvent(
-                this,
-                propertyName,
-                oldValue,
-                newValue);
-
-		int count = 0;
-		synchronized(sqlObjectListeners) {
-			SQLObjectListener[] listeners = sqlObjectListeners.toArray(new SQLObjectListener[0]);
-//            for(int i = listeners.length-1;i>=0;i--) {
-			for (int i = 0; i < listeners.length; i++) {
-			    listeners[i].dbObjectChanged(e);
-			    count++;
-            }
-		}
-		if (logger.isDebugEnabled()) logger.debug("Notified "+count+" listeners.");
-	}
-
     // ------------------- sql object Pre-event support -------------------
     private final transient List<SQLObjectPreEventListener> sqlObjectPreEventListeners = 
         new ArrayList<SQLObjectPreEventListener>();
@@ -633,56 +441,6 @@ public abstract class SQLObject implements java.io.Serializable {
         return fireDbChildrenPreRemove(oldIndexArray, oldChildList);
     }
 
-    
-	public abstract Class<? extends SQLObject> getChildType();
-	
-	/**
-	 * The list of SQLObject property change event listeners
-	 * used for undo
-	 */
-	protected LinkedList<CompoundEventListener> undoEventListeners = new LinkedList<CompoundEventListener>();
-
-	
-	public void addUndoEventListener(CompoundEventListener l) {
-		if (undoEventListeners.contains(l)) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("NOT Adding duplicate Undo listener "+l+" to SQLObject "+this);
-			}
-			return;
-		}
-		undoEventListeners.add(l);
-	}
-
-	public void removeUndoEventListener(CompoundEventListener l) {
-		undoEventListeners.remove(l);
-	}
-	
-	private void fireUndoCompoundEvent(CompoundEvent e) {
-		CompoundEventListener[] listeners = undoEventListeners.toArray(new CompoundEventListener[0]);
-		if (e.getType().isStartEvent()) {
-			for(int i = listeners.length-1;i>=0;i--) {
-				listeners[i].compoundEditStart(e);
-			}
-		} else {
-			for(int i = listeners.length-1;i>=0;i--) {
-				listeners[i].compoundEditEnd(e);
-			}
-		} 
-		
-	}
-	
-	public void startCompoundEdit(String message){
-		fireUndoCompoundEvent(new CompoundEvent(EventTypes.COMPOUND_EDIT_START,message));
-	}
-	
-	public void endCompoundEdit(String message){
-		fireUndoCompoundEvent(new CompoundEvent(EventTypes.COMPOUND_EDIT_END,message));
-	}
-
-	public LinkedList<CompoundEventListener> getUndoEventListeners() {
-		return undoEventListeners;
-	}
-
     /**
      * Returns the first child (in the sequence of the getChildren() list) which has the
      * given name (case sensitive).
@@ -693,6 +451,10 @@ public abstract class SQLObject implements java.io.Serializable {
      */
     public SQLObject getChildByName(String name) throws SQLObjectException {
         return getChildByNameImpl(name, false);
+    }
+    
+    public <T extends SQLObject> T getChildByName(String name, Class<T> childType) {
+    	return getChildByNameImpl(name, false, childType);
     }
     
     /**
@@ -707,11 +469,39 @@ public abstract class SQLObject implements java.io.Serializable {
         return getChildByNameImpl(name, true);
     }
     
-    /**
-     * Common implementation for the two getChildByName methods.
-     */
-    private SQLObject getChildByNameImpl(String name, boolean ignoreCase) throws SQLObjectException {
-        for (SQLObject o : (List<SQLObject>) getChildren()) {
+    public <T extends SQLObject> T getChildByNameIgnoreCase(String name, Class<T> childType) {
+    	return getChildByNameImpl(name, true, childType);
+    }
+
+	/**
+	 * Searches for a child object through the entire list of children based on
+	 * its name and case sensitivity.
+	 * 
+	 * @param name The name of the child
+	 * @param ignoreCase Whether the name search should be case sensitive
+	 * @return The found child with the given name, or null if it does not exist.
+	 */
+    private SQLObject getChildByNameImpl(String name, boolean ignoreCase) {
+        return getChildByNameImpl(name, ignoreCase, SQLObject.class);
+    }
+
+	/**
+	 * Searches for a child object based on its class type, name and case
+	 * sensitivity.
+	 * 
+	 * @param <T>
+	 *            The child type of SQLObject to look for
+	 * @param name
+	 *            The name of the child
+	 * @param ignoreCase
+	 *            Whether the name search should be case sensitive
+	 * @param childType
+	 *            The child type to look for when searching for the SQLObject's
+	 *            name
+	 * @return The found child with the given name, or null if it does not exist.
+	 */
+    private <T extends SQLObject> T getChildByNameImpl(String name, boolean ignoreCase, Class<T> childType) {
+        for (T o : getChildren(childType)) {
             if ( (ignoreCase && o.getName().equalsIgnoreCase(name))
                   || ( (!ignoreCase) && o.getName().equals(name)) ) {
                 return o;
@@ -719,6 +509,7 @@ public abstract class SQLObject implements java.io.Serializable {
         }
         return null;
     }
+    
     /**
      * Returns the index of the named child, or -1 if there is no child with
      * that name.
@@ -757,7 +548,7 @@ public abstract class SQLObject implements java.io.Serializable {
         String key = namespace + "." + propName;
         Object oldValue = clientProperties.get(key);
         clientProperties.put(key, property);
-        fireDbObjectChanged("clientProperty." + key, oldValue, property);
+        firePropertyChange("clientProperty." + key, oldValue, property);
     }
 
     /**
@@ -805,7 +596,7 @@ public abstract class SQLObject implements java.io.Serializable {
     public void setChildrenInaccessibleReason(Throwable cause, boolean rethrow) throws SQLObjectException {
         Throwable oldVal = this.childrenInaccessibleReason;
         this.childrenInaccessibleReason = cause;
-        fireDbObjectChanged("childrenInaccessibleReason", oldVal, childrenInaccessibleReason);
+        firePropertyChange("childrenInaccessibleReason", oldVal, childrenInaccessibleReason);
         if (rethrow) {
         	if (cause instanceof SQLObjectException) {
         		throw (SQLObjectException) cause;
@@ -847,16 +638,16 @@ public abstract class SQLObject implements java.io.Serializable {
                         dbmd,
                         cat == null ? null : cat.getName(),
                         sch == null ? null : sch.getName());
-                SQLObjectUtils.refreshChildren(this, newChildren);
+                SQLObjectUtils.refreshChildren(this, newChildren, SQLTable.class);
 
-                for (SQLTable t : (List<SQLTable>) children) {
+                for (SQLTable t : getChildrenWithoutPopulating(SQLTable.class)) {
                     t.refreshColumns();
                 }
-                for (SQLTable t : (List<SQLTable>) children) {
+                for (SQLTable t : getChildrenWithoutPopulating(SQLTable.class)) {
                     t.refreshIndexes();
                 }
-                for (SQLTable t : (List<SQLTable>) children) {
-                    t.refreshImportedKeys();
+                for (SQLTable t : getChildrenWithoutPopulating(SQLTable.class)) {
+                    t.refreshExportedKeys();
                 }
                 
                 logger.debug("Table container refresh complete for " + this);
@@ -870,7 +661,7 @@ public abstract class SQLObject implements java.io.Serializable {
                 }
             }
         } else {
-            for (SQLObject o : (List<SQLObject>) children) {
+            for (SQLObject o : getChildrenWithoutPopulating()) {
                 o.refresh();
             }
         }
@@ -903,12 +694,8 @@ public abstract class SQLObject implements java.io.Serializable {
     public boolean isTableContainer() throws SQLObjectException {
         
         // first, check for existing SQLTable children--this is a dead giveaway for a table container!
-        if (children.size() > 0) {
-            if (children.get(0).getClass() == SQLTable.class) {
-                return true;
-            } else {
-                return false;
-            }
+        if (getChildrenWithoutPopulating().size() > 0) {
+            return (getChildrenWithoutPopulating(SQLTable.class).size() != 0);
         }
         
         // no children. we have to do a bit of structural investigation.

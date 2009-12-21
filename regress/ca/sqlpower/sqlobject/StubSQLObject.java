@@ -19,6 +19,12 @@
 package ca.sqlpower.sqlobject;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import ca.sqlpower.object.SPObject;
+import ca.sqlpower.util.SPSession;
+import ca.sqlpower.util.StubSPSession;
 
 /**
  * The StubSQLObject is a general-purpose SQLObject that you can use for testing
@@ -26,6 +32,10 @@ import java.util.ArrayList;
  * it directly.  Which is better is a judgement call!
  */
 public class StubSQLObject extends SQLObject {
+	
+	private List<SQLObject> children = new ArrayList<SQLObject>();
+	
+	private SPSession session = new StubSPSession();
 
     /**
      * Keeps track of how many times populate() has been called.
@@ -33,7 +43,6 @@ public class StubSQLObject extends SQLObject {
     private int populateCount = 0;
     
     public StubSQLObject() {
-        children = new ArrayList<SQLObject>();
     }
     
     @Override
@@ -42,7 +51,7 @@ public class StubSQLObject extends SQLObject {
     }
 
     @Override
-    protected void setParent(SQLObject parent) {
+	public void setParent(SPObject parent) {
         // no op
     }
 
@@ -61,14 +70,57 @@ public class StubSQLObject extends SQLObject {
         return true;
     }
 
-    @Override
-    public Class<? extends SQLObject> getChildType() {
-        return null;
-    }
-
     // ======= non-SQLObject methods below this line ==========
     
     public int getPopulateCount() {
         return populateCount;
     }
+
+	@Override
+	public List<? extends SQLObject> getChildrenWithoutPopulating() {
+		return Collections.unmodifiableList(children);
+	}
+
+	@Override
+	protected boolean removeChildImpl(SPObject child) {
+		int index = children.indexOf(child);
+		if (index != -1) {
+			children.remove(index);
+			child.setParent(null);
+			fireChildRemoved(child.getClass(), child, index);
+			return true;
+		}
+		return false;
+	}
+
+	public int childPositionOffset(Class<? extends SPObject> childType) {
+		return 0;
+	}
+
+	public List<? extends SPObject> getDependencies() {
+		return Collections.emptyList();
+	}
+
+	public void removeDependency(SPObject dependency) {
+		for (SQLObject child : children) {
+			child.removeDependency(dependency);
+		}
+	}
+	
+	@Override
+	protected void addChildImpl(SPObject child, int index) {
+		children.add(index, (SQLObject) child);
+		child.setParent(this);
+		fireChildAdded(child.getClass(), child, index);
+	}
+	
+	public SPSession getSession() {
+		return session;
+	}
+
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
+		types.add(SQLObject.class);
+		return Collections.unmodifiableList(types);
+	}
 }

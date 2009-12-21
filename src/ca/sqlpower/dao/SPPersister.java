@@ -47,9 +47,9 @@ public interface SPPersister {
 		NULL("Null", null);
 		
 		private final String name;
-		private final Class representation;
+		private final Class<?> representation;
 		
-		private DataType(String name, Class representation){
+		private DataType(String name, Class<?> representation){
 			this.name = name;
 			this.representation = representation;
 		}
@@ -58,7 +58,7 @@ public interface SPPersister {
 			return name;
 		}
 
-		public Class getRepresentation() {
+		public Class<?> getRepresentation() {
 			return representation;
 		}
 		

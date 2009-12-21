@@ -26,11 +26,13 @@ import junit.framework.TestCase;
 public class SQLObjectMagicTest extends TestCase {
 
 	SQLObject parent;
-	SQLObject child = new SQLTable.Folder<SQLColumn>(SQLTable.Folder.COLUMNS, false);
+	SQLObject child = new SQLIndex();
 	
 	@Override
 	protected void setUp() throws Exception {
-        parent  = new SQLTable();
+		child.setName("Test index");
+        parent = new SQLTable();
+        parent.setPopulated(true);
 		parent.addChild(child);
 	}
 	

@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -41,6 +40,8 @@ import org.apache.commons.pool.impl.GenericObjectPool;
 import org.apache.commons.pool.impl.GenericObjectPool.Config;
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.ObjectDependentException;
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.JDBCDSConnectionFactory;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
@@ -88,18 +89,25 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	private String schemaTerm;
 	
 	/**
+	 * The {@link SQLCatalog} children of this {@link SQLDatabase}.
+	 */
+	private final List<SQLCatalog> catalogs = new ArrayList<SQLCatalog>();
+	
+	private final List<SQLSchema> schemas = new ArrayList<SQLSchema>();
+	
+	private final List<SQLTable> tables = new ArrayList<SQLTable>();
+	
+	/**
 	 * Constructor for instances that connect to a real database by JDBC.
 	 */
 	public SQLDatabase(JDBCDataSource dataSource) {
 		setDataSource(dataSource);
-		children = new ArrayList();
 	}
 	
 	/**
 	 * Constructor for non-JDBC connected instances.
 	 */
 	public SQLDatabase() {
-		children = new ArrayList();
 		populated = true;
 	}
 
@@ -110,13 +118,14 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	protected synchronized void populateImpl() throws SQLObjectException {
 	    logger.debug("SQLDatabase: is populated " + populated); //$NON-NLS-1$
 		if (populated) return;
-		int oldSize = children.size();
+		int oldSize = getChildrenWithoutPopulating().size();
 		
 		logger.debug("SQLDatabase: populate starting"); //$NON-NLS-1$
 		
 		Connection con = null;
 		ResultSet rs = null;
 		try {
+			begin("Populating Database " + this);
 			con = getConnection();
 			DatabaseMetaData dbmd = con.getMetaData();
 			
@@ -126,45 +135,36 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			schemaTerm = dbmd.getSchemaTerm();
 			if ("".equals(schemaTerm)) schemaTerm = null; //$NON-NLS-1$
 			
-			List<SQLCatalog> catalogs = SQLCatalog.fetchCatalogs(dbmd);
-			for (SQLCatalog cat : catalogs) {
-			    cat.setParent(this);
-			    children.add(cat);
+			List<SQLCatalog> fetchedCatalogs = SQLCatalog.fetchCatalogs(dbmd);
+			for (SQLCatalog cat : fetchedCatalogs) {
+				addCatalog(cat);
 			}
 
 			// If there were no catalogs, we should look for schemas
 			// instead (i.e. this database has no catalogs, and schemas
             // may be attached directly to the database)
-			if ( children.size() == oldSize ) {
-				List<SQLSchema> schemas = SQLSchema.fetchSchemas(dbmd, null);
-				for (SQLSchema schema : schemas) {
-				    schema.setParent(this);
-				    children.add(schema);
+			if (getChildrenWithoutPopulating().size() == oldSize) {
+				List<SQLSchema> fetchedSchemas = SQLSchema.fetchSchemas(dbmd, null);
+				for (SQLSchema schema : fetchedSchemas) {
+					addSchema(schema);
 				}
 			}
             
             // Finally, look for tables directly under the database (this
             // could be a platform without catalogs or schemas at all)
-            if (children.size() == oldSize) {
-                List<SQLTable> tables = SQLTable.fetchTablesForTableContainer(dbmd, "", ""); //$NON-NLS-1$ //$NON-NLS-2$
-                for (SQLTable table : tables) {
-                    table.setParent(this);
-                    children.add(table);
+            if (getChildrenWithoutPopulating().size() == oldSize) {
+                List<SQLTable> fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, "", ""); //$NON-NLS-1$ //$NON-NLS-2$
+                for (SQLTable table : fetchedTables) {
+                	addTable(table);
                 }
             }
+            commit();
             
 		} catch (SQLException e) {
+			rollback(e.getMessage());
 			throw new SQLObjectException(Messages.getString("SQLDatabase.populateFailed"), e); //$NON-NLS-1$
 		} finally {
 			populated = true;
-			int newSize = children.size();
-			if (newSize > oldSize) {
-				int[] changedIndices = new int[newSize - oldSize];
-				for (int i = 0, n = newSize - oldSize; i < n; i++) {
-					changedIndices[i] = oldSize + i;
-				}
-				fireDbChildrenInserted(changedIndices, children.subList(oldSize, newSize));
-			}
 			try {
 				if (rs != null ) rs.close();
 			} catch (SQLException e2) {
@@ -180,21 +180,16 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		logger.debug("SQLDatabase: populate finished"); //$NON-NLS-1$
 	}
 	
-
-
-
 	public SQLCatalog getCatalogByName(String catalogName) throws SQLObjectException {
 		populate();
-		if (children == null || children.size() == 0) {
+		if (getChildrenWithoutPopulating().isEmpty()) {
 			return null;
 		}
-		if (! (children.get(0) instanceof SQLCatalog) ) {
+		if (catalogs.isEmpty()) {
 			// this database doesn't contain catalogs!
 			return null;
 		}
-		Iterator childit = children.iterator();
-		while (childit.hasNext()) {
-			SQLCatalog child = (SQLCatalog) childit.next();
+		for (SQLCatalog child : catalogs) {
 			if (child.getName().equalsIgnoreCase(catalogName)) {
 				return child;
 			}
@@ -216,16 +211,14 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 */
 	public SQLSchema getSchemaByName(String schemaName) throws SQLObjectException {
 		populate();
-		if (children == null || children.size() == 0) {
+		if (getChildrenWithoutPopulating().isEmpty()) {
 			return null;
 		}
-		if (! (children.get(0) instanceof SQLSchema || children.get(0) instanceof SQLCatalog) ) {
+		if (schemas.isEmpty() && catalogs.isEmpty()) {
 			// this database doesn't contain schemas or catalogs!
 			return null;
 		}
-		Iterator childit = children.iterator();
-		while (childit.hasNext()) {
-			SQLObject child = (SQLObject) childit.next();
+		for (SQLObject child : getChildren()) {
 			if (child instanceof SQLCatalog) {
 				// children are tables or schemas
 				SQLSchema schema = ((SQLCatalog) child).getSchemaByName(schemaName);
@@ -304,9 +297,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			return null;
 		}
 		target.populate();		
-		Iterator childit = target.children.iterator();
-		while (childit.hasNext()) {
-			SQLObject child = (SQLObject) childit.next();
+		for (SQLObject child : target.getChildren()) {
 			if (child instanceof SQLTable) {
 				SQLTable table = (SQLTable) child;
 				if (table.getName().equalsIgnoreCase(tableName)) {
@@ -372,12 +363,8 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		if (getParent() != null){
 			populate();
 		}
-			
-		if (children.size() == 0) {
-			return true;
-		} else {
-			return (children.get(0) instanceof SQLCatalog);
-		}
+		
+		return (getChildrenWithoutPopulating().isEmpty() || !catalogs.isEmpty());
 	}
 	
 	/**
@@ -392,12 +379,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		}
 	
 		// catalog has been populated
-	
-		if (children.size() == 0) {
-			return true;
-		} else {
-			return (children.get(0) instanceof SQLSchema);
-		}
+		return (getChildrenWithoutPopulating().isEmpty() || !schemas.isEmpty());
 	}
 
 	// ----------------- accessors and mutators -------------------
@@ -427,9 +409,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		if (!o.allowsChildren()) return Collections.emptyList();
 
 		List<SQLTable> tables = new LinkedList<SQLTable>();
-		Iterator it = o.getChildren().iterator();
-		while (it.hasNext()) {
-			SQLObject c = (SQLObject) it.next();
+		for (SQLObject c : o.getChildren()) {
 			if (c instanceof SQLTable) {
 				tables.add((SQLTable) c);
 			} else {
@@ -455,13 +435,17 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 */
 	public void setDataSource(JDBCDataSource argDataSource) {
 		SPDataSource oldDataSource = this.dataSource;
+		begin("Resetting Database");
 		if (dataSource != null) {
 			dataSource.removePropertyChangeListener(this);
-			reset();
+			if (isMagicEnabled()) {
+				reset();
+			}
 		}
 		dataSource = argDataSource;
 		dataSource.addPropertyChangeListener(this);		
-		fireDbObjectChanged("dataSource",oldDataSource,argDataSource); //$NON-NLS-1$
+		firePropertyChange("dataSource",oldDataSource,argDataSource); //$NON-NLS-1$
+		commit();
 	}
 
 	public void setPlayPenDatabase(boolean v) {
@@ -469,7 +453,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		playPenDatabase = v;
 
 		if (oldValue != v) {
-			fireDbObjectChanged("playPenDatabase", oldValue, v); //$NON-NLS-1$
+			firePropertyChange("playPenDatabase", oldValue, v); //$NON-NLS-1$
 		}
 	}
 
@@ -492,17 +476,20 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			// discard everything and reload (this is generally for source systems)
 			logger.debug("Resetting: " + getDataSource() ); //$NON-NLS-1$
 			// tear down old connection stuff
-			List old = children;
-			if (old != null && old.size() > 0) {
-				int[] oldIndices = new int[old.size()];
-				for (int i = 0, n = old.size(); i < n; i++) {
-					oldIndices[i] = i;
+			try {
+				begin("Resetting Database " + this);
+				for (int i = getChildrenWithoutPopulating().size()-1; i >= 0; i--) {
+					removeChild(getChildrenWithoutPopulating().get(i));
 				}
-				fireDbChildrenRemoved(oldIndices, old);
-				
+				populated = false;
+				commit();
+			} catch (IllegalArgumentException e) {
+				rollback(e.getMessage());
+				throw new RuntimeException(e);
+			} catch (ObjectDependentException e) {
+				rollback(e.getMessage());
+				throw new RuntimeException(e);
 			}
-			children = new ArrayList();
-			populated = false;
 		}
 		
 		// destroy connection pool in either case (it still points to the old data source)
@@ -530,7 +517,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			if ("url".equals(pn) || "driverClass".equals(pn) || "user".equals(pn)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				reset();
 			} else if ("name".equals(pn)) {				 //$NON-NLS-1$
-				fireDbObjectChanged("shortDisplayName",e.getOldValue(),e.getNewValue()); //$NON-NLS-1$
+				firePropertyChange("shortDisplayName",e.getOldValue(),e.getNewValue()); //$NON-NLS-1$
 			}
 		}
 	}
@@ -603,16 +590,6 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		return connectionPool;
 	}
 
-	@Override
-	public Class<? extends SQLObject> getChildType() {
-		if (children.size() == 0){
-			return null;
-		}
-		else{
-			return ((SQLObject)children.get(0)).getClass();
-		}
-	}
-
 	/**
 	 * Returns the maximum number of active connections that
 	 * this database has ever opened. 
@@ -648,7 +625,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 
         Connection con = null;
         try {
-            startCompoundEdit(Messages.getString("SQLDatabase.refreshDatabase", getName())); //$NON-NLS-1$
+            begin(Messages.getString("SQLDatabase.refreshDatabase", getName())); //$NON-NLS-1$
 
             con = getConnection();
             DatabaseMetaData dbmd = con.getMetaData();
@@ -656,11 +633,11 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
             if (catalogTerm != null) {
                 logger.debug("refresh: catalogTerm is '"+catalogTerm+"'. refreshing catalogs!"); //$NON-NLS-1$ //$NON-NLS-2$
                 List<SQLCatalog> newCatalogs = SQLCatalog.fetchCatalogs(dbmd);
-                SQLObjectUtils.refreshChildren(this, newCatalogs);
+                SQLObjectUtils.refreshChildren(this, newCatalogs, SQLCatalog.class);
             } else if (schemaTerm != null) {
                 logger.debug("refresh: schemaTerm is '"+schemaTerm+"'. refreshing schemas!"); //$NON-NLS-1$ //$NON-NLS-2$
                 List<SQLSchema> newSchemas = SQLSchema.fetchSchemas(dbmd, null);
-                SQLObjectUtils.refreshChildren(this, newSchemas);
+                SQLObjectUtils.refreshChildren(this, newSchemas, SQLSchema.class);
             }
             
             // close connection before invoking the super refresh,
@@ -674,7 +651,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
         } catch (SQLException e) {
             throw new SQLObjectException(Messages.getString("SQLDatabase.refreshFailed"), e); //$NON-NLS-1$
         } finally {
-            endCompoundEdit(Messages.getString("SQLDatabase.refreshDatabase", getName())); //$NON-NLS-1$
+            commit();
             
             try {
                 if (con != null) con.close();
@@ -706,4 +683,155 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
         
         return uniqueRelationships;
     }
+	
+	public List<? extends SQLObject> getChildrenWithoutPopulating() {
+		List<SQLObject> children = new ArrayList<SQLObject>();
+		children.addAll(catalogs);
+		children.addAll(schemas);
+		children.addAll(tables);
+		return Collections.unmodifiableList(children);
+	}
+
+	@Override
+	protected boolean removeChildImpl(SPObject child) {
+		if (child instanceof SQLCatalog) {
+			return removeCatalog((SQLCatalog) child);
+		} else if (child instanceof SQLSchema) {
+			return removeSchema((SQLSchema) child);
+		} else if (child instanceof SQLTable) {
+			return removeTable((SQLTable) child);
+		} else {
+			throw new IllegalArgumentException("Cannot remove children of type " 
+					+ child.getClass() + " from " + getName());
+		}
+	}
+	
+	public boolean removeCatalog(SQLCatalog child) {
+		if (child.getParent() != this) {
+			throw new IllegalStateException("Cannot remove child " + child.getName() + 
+					" of type " + child.getClass() + " as its parent is not " + getName());
+		}
+		int index = catalogs.indexOf(child);
+		if (index != -1) {
+			 catalogs.remove(index);
+			 child.setParent(null);
+			 fireChildRemoved(SQLCatalog.class, child, index);
+			 return true;
+		}
+		return false;
+	}
+	
+	public boolean removeSchema(SQLSchema child) {
+		if (isMagicEnabled() && child.getParent() != this) {
+			throw new IllegalStateException("Cannot remove child " + child.getName() + 
+					" of type " + child.getClass() + " as its parent is not " + getName());
+		}
+		int index = schemas.indexOf(child);
+		if (index != -1) {
+			 schemas.remove(index);
+			 fireChildRemoved(SQLSchema.class, child, index);
+			 child.setParent(null);
+			 return true;
+		}
+		return false;
+	}
+	
+	public boolean removeTable(SQLTable child) {
+		if (isMagicEnabled() && child.getParent() != this) {
+			throw new IllegalStateException("Cannot remove child " + child.getName() + 
+					" of type " + child.getClass() + " as its parent is not " + getName());
+		}
+		int index = tables.indexOf(child);
+		if (index != -1) {
+			 tables.remove(index);
+			 fireChildRemoved(SQLTable.class, child, index);
+			 child.setParent(null);
+			 return true;
+		}
+		return false;
+	}
+
+	public int childPositionOffset(Class<? extends SPObject> childType) {
+		int offset = 0;
+		
+		if (childType == SQLCatalog.class) return offset;
+		offset += catalogs.size();
+		
+		if (childType == SQLSchema.class) return offset;
+		offset += schemas.size();
+		
+		if (childType == SQLTable.class) return offset;
+		
+		throw new IllegalArgumentException("The type " + childType + 
+				" is not a valid child type of " + getName());
+	}
+
+	public List<? extends SPObject> getDependencies() {
+		return Collections.emptyList();
+	}
+
+	public void removeDependency(SPObject dependency) {
+        for (SQLObject child : getChildren()) {
+            child.removeDependency(dependency);
+        }
+	}
+	
+	@Override
+	protected void addChildImpl(SPObject child, int index) {
+		if (child instanceof SQLCatalog) {
+			addCatalog((SQLCatalog) child, index);
+		} else if (child instanceof SQLSchema) {
+			addSchema((SQLSchema) child, index);
+		} else if (child instanceof SQLTable) {
+			addTable((SQLTable) child, index);
+		} else {
+			throw new IllegalArgumentException("The child " + child.getName() + 
+					" of type " + child.getClass() + " is not a valid child type of " + 
+					getClass() + ".");
+		}
+	}
+	
+	public void addCatalog(SQLCatalog catalog) {
+		addCatalog(catalog, catalogs.size());
+	}
+	
+	public void addCatalog(SQLCatalog catalog, int index) {
+		catalogs.add(index, catalog);
+		catalog.setParent(this);
+		fireChildAdded(SQLCatalog.class, catalog, index);
+	}
+	
+	public void addSchema(SQLSchema schema) {
+		addSchema(schema, schemas.size());
+	}
+	
+	public void addSchema(SQLSchema schema, int index) {
+		schemas.add(index, schema);
+		schema.setParent(this);
+		fireChildAdded(SQLSchema.class, schema, index);
+	}
+	
+	public void addTable(SQLTable table) {
+		addTable(table, tables.size());
+	}
+	
+	public void addTable(SQLTable table, int index) {
+		tables.add(index, table);
+		table.setParent(this);
+		fireChildAdded(SQLTable.class, table, index);
+	}
+
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
+		if (schemas.isEmpty() && tables.isEmpty()) {
+			types.add(SQLCatalog.class);
+		}
+		if (catalogs.isEmpty() && tables.isEmpty()) {
+			types.add(SQLSchema.class);
+		}
+		if (catalogs.isEmpty() && schemas.isEmpty()) {
+			types.add(SQLTable.class);
+		}
+		return Collections.unmodifiableList(types);
+	}
 }

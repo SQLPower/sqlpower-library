@@ -30,7 +30,6 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLDatabase;
-import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLTable;
 
@@ -123,11 +122,11 @@ public class TableContainer extends ItemContainer implements Container {
 	 */
 	private void loadColumnsFromTable(SQLTable t) {
 		try {
-			for (Object child : t.getColumnsFolder().getChildren()) {
+			for (SQLColumn child : t.getColumns()) {
 				boolean itemFound = false;
 				for (Item item : itemList) {
-					if (item.getName().equals(((SQLColumn) child).getName())) {
-						((SQLObjectItem) item).setItem((SQLColumn) child);
+					if (item.getName().equals(child.getName())) {
+						((SQLObjectItem) item).setItem(child);
 						itemFound = true;
 						break;
 					}
@@ -135,7 +134,7 @@ public class TableContainer extends ItemContainer implements Container {
 				if (itemFound) {
 					continue;
 				}
-				SQLObjectItem item = new SQLObjectItem((SQLObject) child);
+				SQLObjectItem item = new SQLObjectItem(child);
 				item.setParent(this);
 				itemList.add(item);
 				fireChildAdded(item, itemList.indexOf(item));

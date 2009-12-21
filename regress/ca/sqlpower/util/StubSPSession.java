@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, SQL Power Group Inc.
+ * Copyright (c) 2009, SQL Power Group Inc.
  *
  * This file is part of SQL Power Library.
  *
@@ -16,15 +16,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
-package ca.sqlpower.sqlobject;
 
-/**
- * Our own version of the javax.swing.event.TreeModelListener.
- *
- * @see javax.swing.event.TreeModelListener
- */
-public interface SQLObjectListener {
-	public void dbChildrenInserted(SQLObjectEvent e);
-	public void dbChildrenRemoved(SQLObjectEvent e);
-	public void dbObjectChanged(SQLObjectEvent e);
+package ca.sqlpower.util;
+
+import ca.sqlpower.object.SPObject;
+
+
+public class StubSPSession implements SPSession {
+
+	public SPObject getWorkspace() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public boolean isForegroundThread() {
+		return true;
+	}
+
+	public void runInBackground(Runnable runner) {
+		runner.run();
+	}
+
+	public void runInForeground(Runnable runner) {
+		runner.run();
+	}
+
 }

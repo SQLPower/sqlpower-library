@@ -40,5 +40,10 @@ public class TestSQLIndexColumn extends BaseSQLObjectTestCase {
         
         return indexColumn;
     }
+    
+    @Override
+    protected Class<?> getChildClassType() {
+    	return null;
+    }
 
 }

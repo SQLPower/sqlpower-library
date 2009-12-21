@@ -21,13 +21,14 @@ package ca.sqlpower.object;
 
 import java.beans.PropertyChangeListener;
 
+import ca.sqlpower.sqlobject.undo.CompoundEventListener;
 import ca.sqlpower.util.TransactionEvent;
 
 /**
  * This listener can be added to any {@link SPObject}s and is notified of
  * property and child changes.
  */
-public interface SPListener extends PropertyChangeListener {
+public interface SPListener extends PropertyChangeListener, CompoundEventListener {
 
     /**
      * Called when a child is added to an object this listener is attached to.

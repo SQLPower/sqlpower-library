@@ -38,7 +38,6 @@ public class AllTests {
         suite.addTestSuite(SQLObjectMagicTest.class);
         suite.addTestSuite(SQLObjectTest.class);
         suite.addTestSuite(SQLTableLazyLoadTest.class);
-        suite.addTestSuite(TestFolder.class);
         suite.addTestSuite(TestSQLCatalog.class);
         suite.addTestSuite(TestSQLColumn.class);
         suite.addTestSuite(TestSQLDatabase.class);
