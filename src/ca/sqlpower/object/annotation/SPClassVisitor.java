@@ -319,8 +319,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 		String methodName = d.getSimpleName();
 		Class<?> c = null;
 		
-		System.out.println("MethodDeclaration: " + methodName);
-		
 		try {
 			
 			c = SPAnnotationProcessorUtils.convertTypeMirrorToClass(type);

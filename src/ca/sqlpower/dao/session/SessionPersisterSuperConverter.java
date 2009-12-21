@@ -65,13 +65,12 @@ public class SessionPersisterSuperConverter {
 	 *            then this value can go away.
 	 * @returns The basic type representation of the given object.
 	 */
-	@SuppressWarnings("unchecked")
 	public Object convertToBasicType(Object convertFrom, Object ... additionalInfo) {
 		if (convertFrom == null) {
 			return null;
 		} else if (convertFrom instanceof SPObject) {
-			SPObject wo = (SPObject) convertFrom;
-			return spObjectConverter.convertToSimpleType(wo);
+			SPObject spo = (SPObject) convertFrom;
+			return spObjectConverter.convertToSimpleType(spo);
 			
 		} else if (convertFrom instanceof String) {
 			return convertFrom;
@@ -124,6 +123,9 @@ public class SessionPersisterSuperConverter {
 			
 		} else if (Boolean.class.isAssignableFrom(type)) {
 			return (Boolean) o;
+			
+		} else if (Enum.class.isAssignableFrom(type)) {
+			return new EnumConverter(type).convertToComplexType((String) o);
 			
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + o + " of type " + 
