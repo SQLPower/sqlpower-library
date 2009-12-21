@@ -39,6 +39,7 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.Persistable;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -290,7 +291,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		fkColumnManager = new RelationshipManager();
 	}
 	
-	public SQLRelationship(SQLImportedKey foreignKey) {
+	@Constructor
+	public SQLRelationship(@ConstructorParameter(propertyName = "foreignKey") SQLImportedKey foreignKey) {
 		this();
 		this.foreignKey = foreignKey;
 	}
@@ -1021,6 +1023,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	/**
 	 * Returns the foreign key name.
 	 */
+	@Accessor
 	public String getShortDisplayName() {
 		return getName();
 	}
@@ -1044,6 +1047,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	/**
 	 * Returns true.
 	 */
+	@Accessor
 	public boolean isPopulated() {
 		return true;
 	}
@@ -1051,30 +1055,36 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 	// ----------------- accessors and mutators -------------------
 
+	@Accessor
 	public UpdateDeleteRule getUpdateRule()  {
 		return this.updateRule;
 	}
 
+	@Mutator
 	public void setUpdateRule(UpdateDeleteRule rule) {
 	    UpdateDeleteRule oldRule = updateRule;
 	    updateRule = rule;
 		firePropertyChange("updateRule", oldRule, rule);
 	}
 
+	@Accessor
 	public UpdateDeleteRule getDeleteRule()  {
 		return this.deleteRule;
 	}
 
+	@Mutator
 	public void setDeleteRule(UpdateDeleteRule rule) {
         UpdateDeleteRule oldRule = deleteRule;
         deleteRule = rule;
         firePropertyChange("deleteRule", oldRule, rule);
 	}
 
+	@Accessor
 	public Deferrability getDeferrability()  {
 		return this.deferrability;
 	}
 
+	@Mutator
 	public void setDeferrability(Deferrability argDeferrability) {
         if (argDeferrability == null) {
             throw new NullPointerException("Deferrability policy must not be null");
@@ -1090,6 +1100,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of pkCardinality
 	 */
+	@Accessor
 	public int getPkCardinality()  {
 		return this.pkCardinality;
 	}
@@ -1099,6 +1110,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 *
 	 * @param argPkCardinality Value to assign to this.pkCardinality
 	 */
+	@Mutator
 	public void setPkCardinality(int argPkCardinality) {
 		int oldPkCardinality = this.pkCardinality;
 		this.pkCardinality = argPkCardinality;
@@ -1110,6 +1122,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of fkCardinality
 	 */
+	@Accessor
 	public int getFkCardinality()  {
 		return this.fkCardinality;
 	}
@@ -1119,6 +1132,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 *
 	 * @param argFkCardinality Value to assign to this.fkCardinality
 	 */
+	@Mutator
 	public void setFkCardinality(int argFkCardinality) {
 		begin("Modify the Foreign key cardinality");
 		int oldFkCardinality = this.fkCardinality;
@@ -1132,6 +1146,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of identifying
 	 */
+	@Accessor
 	public boolean isIdentifying()  {
 		return this.identifying;
 	}
@@ -1142,6 +1157,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 *
 	 * @param argIdentifying Value to assign to this.identifying
 	 */
+	@Mutator
 	public void setIdentifying(boolean argIdentifying) throws SQLObjectException {
 		boolean oldIdentifying = this.identifying;
 		if (identifying != argIdentifying) {
@@ -1163,6 +1179,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 	}
 	
+	@Accessor
 	public SQLTable getParent() {
 		return (SQLTable) super.getParent();
 	}
@@ -1171,16 +1188,19 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		return getParent();
 	}
 
+	@Accessor
 	public SQLImportedKey getForeignKey() {
 		return foreignKey;
 	}
 	
+	@Mutator
 	public void setForeignKey(SQLImportedKey k) {
 		SQLImportedKey oldVal = foreignKey;
 		foreignKey = k;
 		firePropertyChange("foreignKey", oldVal, k);
 	}
 	
+	@Mutator
 	public void setParent(SPObject parent) {
 		SPObject oldVal = getParent();
 		super.setParent(parent);
@@ -1205,17 +1225,17 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 * This class acts a wrapper around a SQLRelationship. It should be added to
 	 * the foreign key table as a child, and is depended on by the Relationship.
 	 */
+	@Persistable
 	public static class SQLImportedKey extends SQLObject {
 
 		private SQLRelationship relationship;
-		
+
+		@Constructor
 		public SQLImportedKey() {
 			super();
 		}
 		
-		@Constructor
-		public SQLImportedKey(
-				@ConstructorParameter(isProperty = false) SQLRelationship relationship) {
+		public SQLImportedKey(SQLRelationship relationship) {
 			super();
 			this.relationship = relationship;
 		}
@@ -1295,6 +1315,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	
 	// -------------------------- COLUMN MAPPING ------------------------
 
+	@Persistable
 	public static class ColumnMapping extends SQLObject {
 		protected SQLRelationship parent;
 		protected SQLColumn pkColumn;
@@ -1564,22 +1585,26 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     	return result;
     }
 
+    @Mutator
 	public void setTextForParentLabel(String textForParentLabel) {
 		String oldVal = this.textForParentLabel;
 		this.textForParentLabel = textForParentLabel;
 		firePropertyChange("textForParentLabel", oldVal, textForParentLabel);
 	}
 
+    @Accessor
 	public String getTextForParentLabel() {
 		return textForParentLabel;
 	}
 
+    @Mutator
 	public void setTextForChildLabel(String textForChildLabel) {
 		String oldVal = this.textForChildLabel;
 		this.textForChildLabel = textForChildLabel;
 		firePropertyChange("textForChildLabel", oldVal, textForChildLabel);
 	}
 
+    @Accessor
 	public String getTextForChildLabel() {
 		return textForChildLabel;
 	}

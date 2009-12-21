@@ -42,11 +42,15 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.Persistable;
 import ca.sqlpower.sql.JDBCDSConnectionFactory;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
 
+@Persistable
 public class SQLDatabase extends SQLObject implements java.io.Serializable, PropertyChangeListener {
 	private static Logger logger = Logger.getLogger(SQLDatabase.class);
 
@@ -324,6 +328,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	// ---------------------- SQLObject support ------------------------
 
 	@Override
+	@Accessor
 	public String getName() {
 		if (isPlayPenDatabase()) {
 			return Messages.getString("SQLDatabase.playPenDB"); //$NON-NLS-1$
@@ -337,6 +342,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 * Sets the data source name if the data source is not null
 	 */
 	@Override
+	@Mutator
 	public void setName(String argName)
 	{
 		if (dataSource != null) {
@@ -345,6 +351,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		
 	}
 
+	@Accessor
 	public String getShortDisplayName() {
 		return getName();
 	}
@@ -424,6 +431,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 *
 	 * @return the value of dataSource
 	 */
+	@Accessor
 	public JDBCDataSource getDataSource()  {
 		return this.dataSource;
 	}
@@ -433,6 +441,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 *
 	 * @param argDataSource Value to assign to this.dataSource
 	 */
+	@Mutator
 	public void setDataSource(JDBCDataSource argDataSource) {
 		SPDataSource oldDataSource = this.dataSource;
 		begin("Resetting Database");
@@ -448,6 +457,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		commit();
 	}
 
+	@Mutator
 	public void setPlayPenDatabase(boolean v) {
 		boolean oldValue = playPenDatabase;
 		playPenDatabase = v;
@@ -457,6 +467,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		}
 	}
 
+	@Accessor
 	public boolean isPlayPenDatabase() {
 		return playPenDatabase;
 	}
@@ -595,6 +606,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 * this database has ever opened. 
 	 * @return Maximum number of active connections ever opened.
 	 */
+	@Accessor
     public int getMaxActiveConnections() {
         return maxActiveConnections;
     }

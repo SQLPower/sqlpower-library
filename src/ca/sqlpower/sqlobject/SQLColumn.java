@@ -31,9 +31,16 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.MutatorParameter;
+import ca.sqlpower.object.annotation.Persistable;
 import ca.sqlpower.sql.SQL;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 
+@Persistable
 public class SQLColumn extends SQLObject implements java.io.Serializable {
 
 	private static Logger logger = Logger.getLogger(SQLColumn.class);
@@ -197,17 +204,18 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * @param primaryKeySeq This column's position in the table's primary key.  Null if it is not in the PK.
 	 * @param isAutoIncrement Does this column auto-increment?
 	 */
-	public SQLColumn(SQLTable parentTable,
-					 String colName,
-					 int dataType,
-					 String nativeType,
-					 int precision,
-					 int scale,
-					 int nullable,
-					 String remarks,
-					 String defaultValue,
-					 Integer primaryKeySeq,
-					 boolean isAutoIncrement) {
+	@Constructor
+	public SQLColumn(@ConstructorParameter(propertyName = "parent") SQLTable parentTable,
+			@ConstructorParameter(propertyName = "name") String colName,
+			@ConstructorParameter(propertyName = "type") int dataType,
+			@ConstructorParameter(propertyName = "sourceDataTypeName") String nativeType,
+			@ConstructorParameter(propertyName = "precision") int precision,
+			@ConstructorParameter(propertyName = "scale") int scale,
+			@ConstructorParameter(propertyName = "nullable") int nullable,
+			@ConstructorParameter(propertyName = "remarks") String remarks,
+			@ConstructorParameter(propertyName = "defaultValue") String defaultValue,
+			@ConstructorParameter(propertyName = "primaryKeySeq") Integer primaryKeySeq,
+			@ConstructorParameter(propertyName = "autoIncrement") boolean isAutoIncrement) {
 		if (parentTable != null) {
 			logger.debug("NEW COLUMN "+colName+"@"+hashCode()+" parent "+parentTable.getName()+"@"+parentTable.hashCode());
 		} else {
@@ -435,7 +443,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		// SQLColumn: populate is a no-op
 	}
 
-	
+	@Accessor
 	public boolean isPopulated() {
 		return true;
 	}
@@ -445,6 +453,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * any necessary parameters e.g. length for VARCHAR or precision and scale
 	 * for numeric datatypes
 	 */
+	@Accessor
 	public String getTypeName() {
 		if (sourceDataTypeName != null) {
 			if (precision > 0 && scale > 0) {
@@ -465,6 +474,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * @see #getTypeName()
 	 * @see #getName()
 	 */
+	@Accessor
 	public String getShortDisplayName() {
 		return getName() + ": " + getTypeName();
 	}
@@ -475,10 +485,12 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 
 	// ------------------------- accessors and mutators --------------------------
 
+	@Accessor
 	public SQLColumn getSourceColumn() {
 		return sourceColumn;
 	}
 
+	@Mutator
 	public void setSourceColumn(SQLColumn col) {
 		SQLColumn oldCol = this.sourceColumn;
 		sourceColumn = col;
@@ -492,6 +504,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of type
 	 */
+	@Accessor
 	public int getType()  {
 		return this.type;
 	}
@@ -501,6 +514,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @param argType Value to assign to this.type
 	 */
+	@Mutator
 	public void setType(int argType) {
 		int oldType = type;
 		this.type = argType;
@@ -513,10 +527,12 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	/**
 	 * The data type name as obtained during reverse engineering
 	 */
+	@Accessor
 	public String getSourceDataTypeName() {
 		return sourceDataTypeName;
 	}
 
+	@Mutator
 	public void setSourceDataTypeName(String n) {
 		String oldSourceDataTypeName =  sourceDataTypeName;
 		sourceDataTypeName = n;
@@ -528,6 +544,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of scale
 	 */
+	@Accessor
 	public int getScale()  {
 		return this.scale;
 	}
@@ -537,6 +554,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @param argScale Value to assign to this.scale
 	 */
+	@Mutator
 	public void setScale(int argScale) {
 		int oldScale = this.scale;
 		logger.debug("scale changed from "+scale+" to "+argScale);
@@ -555,6 +573,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * @see #getType()
 	 * @see #getTypeName()
 	 */
+	@Accessor
 	public int getPrecision()  {
 		return this.precision;
 	}
@@ -564,6 +583,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @param argPrecision Value to assign to this.precision
 	 */
+	@Mutator
 	public void setPrecision(int argPrecision) {
 		int oldPrecision = this.precision;
 		this.precision = argPrecision;
@@ -681,6 +701,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	/**
 	 * Returns the parent SQLTable object.
 	 */
+	@Accessor
 	public SQLTable getParent() {
 		return (SQLTable) super.getParent();
 	}
@@ -694,6 +715,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      *     <li>DatabaseMetaData.columnNullableUnknown - nullability unknown
      * </ul>
      */
+	@Accessor
 	public int getNullable() {
 		return nullable;
 	}
@@ -707,6 +729,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      *     <li>DatabaseMetaData.columnNullableUnknown - nullability unknown
      * </ul>
 	 */
+	@Mutator
 	public void setNullable(int argNullable) {
 		int oldNullable = this.nullable;
 		logger.debug("Changing nullable "+oldNullable+" -> "+argNullable);
@@ -791,6 +814,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of remarks
 	 */
+	@Accessor
 	public String getRemarks()  {
 		return this.remarks;
 	}
@@ -800,6 +824,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @param argRemarks Value to assign to this.remarks
 	 */
+	@Mutator
 	public void setRemarks(String argRemarks) {
 		String oldRemarks = this.remarks;
 		this.remarks = argRemarks;
@@ -811,6 +836,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of defaultValue
 	 */
+	@Accessor
 	public String getDefaultValue()  {
 		return this.defaultValue;
 	}
@@ -820,6 +846,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @param argDefaultValue Value to assign to this.defaultValue
 	 */
+	@Mutator
 	public void setDefaultValue(String argDefaultValue) {
 		String oldDefaultValue = this.defaultValue;
 		this.defaultValue = argDefaultValue;
@@ -831,6 +858,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of primaryKeySeq
 	 */
+	@Accessor
 	public Integer getPrimaryKeySeq()  {
 		return this.primaryKeySeq;
 	}
@@ -844,6 +872,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      * If there is no primary key on this column's table it will create a new key
      * with default values.
      */
+	@Mutator
 	public void setPrimaryKeySeq(Integer argPrimaryKeySeq) {
 	    setPrimaryKeySeq(argPrimaryKeySeq, true);
 	}
@@ -886,7 +915,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *            set without needing to disable magic to get the same effect if
 	 *            we want to set the primary key with magic enabled.
 	 */
-	public void setPrimaryKeySeq(Integer argPrimaryKeySeq, boolean normalizeKey, boolean rearrangeColumns) {
+	@Mutator
+	public void setPrimaryKeySeq(Integer argPrimaryKeySeq, @MutatorParameter("false") boolean normalizeKey, @MutatorParameter("false") boolean rearrangeColumns) {
 	    // do nothing if there's no change
 	    if ( (primaryKeySeq == null && argPrimaryKeySeq == null) ||
 	         (primaryKeySeq != null && primaryKeySeq.equals(argPrimaryKeySeq)) ) {
@@ -964,6 +994,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of autoIncrement
 	 */
+	@Accessor
 	public boolean isAutoIncrement()  {
 		return this.autoIncrement;
 	}
@@ -973,6 +1004,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @param argAutoIncrement Value to assign to this.autoIncrement
 	 */
+	@Mutator
 	public void setAutoIncrement(boolean argAutoIncrement) {
 	    boolean oldAutoIncrement = autoIncrement;
 	    this.autoIncrement = argAutoIncrement;
@@ -986,6 +1018,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      * name is a hint to DDL generators for platforms that need
      * sequence objects to support auto-incrementing column values.
      */
+	@Accessor
     public String getAutoIncrementSequenceName() {
         if (autoIncrementSequenceName == null) {
         	String tableName;
@@ -1006,6 +1039,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      * Only sets the name if it is different from the default name.  This is important
      * in case the table name changes; the name should be expected to update.
      */
+	@Mutator
     public void setAutoIncrementSequenceName(String autoIncrementSequenceName) {
 
         // have to use getter because it produces the default value

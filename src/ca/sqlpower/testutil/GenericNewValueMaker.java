@@ -105,8 +105,7 @@ public class GenericNewValueMaker implements NewValueMaker {
         	newVal = new SQLTable();
         	((SQLTable) newVal).setName("Generated testing table");
         } else if (valueType.isAssignableFrom(Column.class)) {
-        	SQLIndex index = new SQLIndex();
-        	newVal = index.new Column();
+        	newVal = new Column();
         	((Column) newVal).setName("Generated testing column index");
         } else if (valueType.isAssignableFrom(ColumnMapping.class)) {
         	newVal = new ColumnMapping();

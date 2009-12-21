@@ -29,14 +29,18 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.Persistable;
 
 /**
  * A SQLSchema is a container for SQLTables.  If it is in the
  * containment hierarchy for a given RDBMS, it will be directly above
  * SQLTables.  Its parent could be either a SQLDatabase or a SQLCatalog.
  */
+@Persistable
 public class SQLSchema extends SQLObject {
 	private static final Logger logger = Logger.getLogger(SQLSchema.class);
 	
@@ -116,7 +120,7 @@ public class SQLSchema extends SQLObject {
 	@Constructor
 	public SQLSchema(@ConstructorParameter(propertyName = "parent") SQLObject parent, 
 			@ConstructorParameter(propertyName = "name") String name, 
-			@ConstructorParameter(isProperty = false, defaultValue = "true") boolean populated) {
+			@ConstructorParameter(propertyName = "populated") boolean populated) {
 		if (parent != null && !(parent instanceof SQLCatalog || parent instanceof SQLDatabase)) {
 			throw new IllegalArgumentException("Parent to SQLSchema must be SQLCatalog or SQLDatabase");
 		}
@@ -155,6 +159,7 @@ public class SQLSchema extends SQLObject {
 
 	// ---------------------- SQLObject support ------------------------
 	
+	@Accessor
 	public String getShortDisplayName() {
 		return getName();
 	}
@@ -231,6 +236,7 @@ public class SQLSchema extends SQLObject {
 	 *
 	 * @return the value of nativeTerm
 	 */
+	@Accessor
 	public String getNativeTerm()  {
 		return this.nativeTerm;
 	}
@@ -240,6 +246,7 @@ public class SQLSchema extends SQLObject {
 	 *
 	 * @param argNativeTerm Value to assign to this.nativeTerm
 	 */
+	@Mutator
 	public void setNativeTerm(String argNativeTerm) {
 	    String oldValue = nativeTerm;
 		if (argNativeTerm != null) argNativeTerm = argNativeTerm.toLowerCase();

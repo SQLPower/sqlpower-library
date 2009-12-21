@@ -36,6 +36,8 @@ import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
 
 /**
@@ -153,6 +155,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      *         comparison, or the logical name (see {@link #getName()}) if no
      *         physical name has been set.
      */
+	@Accessor
 	public final String getPhysicalName() {
 		if (physicalName != null) {
 			return physicalName;
@@ -166,6 +169,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      * 
      * @param argName The new physical name to use.
      */
+	@Mutator
 	public void setPhysicalName(String argName) {
 		String oldPhysicalName = this.physicalName;
 		this.physicalName = argName;
@@ -176,6 +180,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 * Returns the parent of this SQLObject or <code>null</code> if it
 	 * is a root object.
 	 */
+	@Accessor
 	public SQLObject getParent() {
 	   return (SQLObject) super.getParent(); 
 	}
@@ -220,6 +225,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 * Tells if this object has already been filled with children, or
 	 * if that operation is still pending.
 	 */
+	@Accessor
 	public boolean isPopulated() {
 		return populated;
 	}
@@ -231,6 +237,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 * not normally call this method, but it needs to be public for the
 	 * SwingUIProject load implementation.
 	 */
+	@Mutator
 	public void setPopulated(boolean v) {
 		populated = v;
 	}

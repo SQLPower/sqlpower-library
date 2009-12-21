@@ -29,12 +29,18 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.Persistable;
 
 /**
  * A SQLCatalog is a container for other SQLObjects.  If it is in the
  * containment hierarchy for a given RDBMS, it will be directly under
  * SQLDatabase.
  */
+@Persistable
 public class SQLCatalog extends SQLObject {
 	private static Logger logger = Logger.getLogger(SQLCatalog.class);
 	
@@ -78,7 +84,9 @@ public class SQLCatalog extends SQLObject {
 		this(null, null, false);
 	}
 
-	public SQLCatalog(SQLDatabase parent, String name) {
+	@Constructor
+	public SQLCatalog(@ConstructorParameter(propertyName = "parent") SQLDatabase parent,
+			@ConstructorParameter(propertyName = "name") String name) {
         this(parent, name, false);
 	}
     
@@ -139,6 +147,7 @@ public class SQLCatalog extends SQLObject {
 
 	// ---------------------- SQLObject support ------------------------
 	
+	@Accessor
 	public String getShortDisplayName() {
 		return getName();
 	}
@@ -197,6 +206,7 @@ public class SQLCatalog extends SQLObject {
 
 	// ----------------- accessors and mutators -------------------
 
+	@Accessor
 	public SQLDatabase getParent() {
 		return (SQLDatabase) super.getParent();
 	}
@@ -206,6 +216,7 @@ public class SQLCatalog extends SQLObject {
 	 *
 	 * @return the value of nativeTerm
 	 */
+	@Accessor
 	public String getNativeTerm()  {
 		return this.nativeTerm;
 	}
@@ -215,6 +226,7 @@ public class SQLCatalog extends SQLObject {
 	 *
 	 * @param argNativeTerm Value to assign to this.nativeTerm
 	 */
+	@Mutator
 	public void setNativeTerm(String argNativeTerm) {
 		if (argNativeTerm != null) argNativeTerm = argNativeTerm.toLowerCase();
 		String oldValue = nativeTerm;

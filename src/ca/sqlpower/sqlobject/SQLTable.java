@@ -33,11 +33,17 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.Persistable;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 
+@Persistable
 public class SQLTable extends SQLObject {
 
 	private static Logger logger = Logger.getLogger(SQLTable.class);
@@ -103,7 +109,12 @@ public class SQLTable extends SQLObject {
      */
     private boolean importedKeysPopulated = false;
 
-	public SQLTable(SQLObject parent, String name, String remarks, String objectType, boolean startPopulated) throws SQLObjectException {
+    @Constructor
+	public SQLTable(@ConstructorParameter(propertyName = "parent") SQLObject parent,
+			@ConstructorParameter(propertyName = "name") String name,
+			@ConstructorParameter(propertyName = "remarks") String remarks,
+			@ConstructorParameter(propertyName = "objectType") String objectType,
+			@ConstructorParameter(propertyName = "populated") boolean startPopulated) {
 		logger.debug("NEW TABLE "+name+"@"+hashCode());
 		initFolders(startPopulated);
 		setup(parent, name, remarks, objectType);
@@ -161,7 +172,7 @@ public class SQLTable extends SQLObject {
 	 * populated status.  When loading from a file, this should be true;
 	 * if lazy loading from a database, it should be false.
 	 */
-	public void initFolders(boolean populated) throws SQLObjectException {
+	public void initFolders(boolean populated) {
 		this.populated = populated;
 		columnsPopulated = populated;
 		exportedKeysPopulated = populated;
@@ -1081,17 +1092,6 @@ public class SQLTable extends SQLObject {
 
 	// ---------------------- SQLObject support ------------------------
 
-	//TODO XXX Sql object should be doing this when we add generics
-	protected void setParent(SQLObject newParent) {
-		logger.debug("Setting " + getName() + "'s parent to "+ newParent);
-		if (getParent() == newParent) return;
-		SQLObject oldVal = getParent();
-		super.setParent(newParent);
-		firePropertyChange("parent", oldVal, getParent());
-	}
-
-
-
 	/**
 	 * The table's name.
 	 */
@@ -1130,6 +1130,7 @@ public class SQLTable extends SQLObject {
 		}
 	}
 
+	@Accessor
 	public boolean isPopulated() {
 		if (!populated && isColumnsPopulated() && isImportedKeysPopulated() && isExportedKeysPopulated() && isIndicesPopulated()) {
 			populated = true;
@@ -1147,227 +1148,6 @@ public class SQLTable extends SQLObject {
 	public Class<? extends SQLObject> getChildType() {
 		return SQLObject.class;
 	}
-
-	/**
-	 * The Folder class is a SQLObject that holds a SQLTable's child
-	 * folders (columns and relationships).
-	 */
-//	public static class Folder<T extends SQLObject> extends SQLObject {
-//		protected int type;
-//		protected String name;
-//		protected SQLTable parent;
-//
-//		public static final int COLUMNS = 1;
-//		public static final int IMPORTED_KEYS = 2;
-//        public static final int EXPORTED_KEYS = 3;
-//        public static final int INDICES = 4;
-//
-//		public Folder(int type, boolean populated) {
-//			this.populated = populated;
-//			this.type = type;
-//			this.children = new ArrayList<T>();
-//			if (type == COLUMNS) {
-//				name = "Columns";
-//			} else if (type == IMPORTED_KEYS) {
-//				name = "Imported Keys";
-//            } else if (type == EXPORTED_KEYS) {
-//                name = "Exported Keys";
-//            } else if (type == INDICES) {
-//                name = "Indices";
-//			} else {
-//				throw new IllegalArgumentException("Unknown folder type: "+type);
-//			}
-//		}
-//
-//		public String getName() {
-//			return name;
-//		}
-//
-//		public void setName(String n) {
-//			String oldName = name;
-//			name = n;
-//			firePropertyChange("name", oldName, name);
-//		}
-//
-//		public SQLTable getParent() {
-//			return parent;
-//		}
-//
-//		/**
-//		 * Sets the parent reference in this folder.
-//		 *
-//		 * @throws ClassCastException if newParent is not an instance of SQLTable.
-//		 */
-//		protected void setParent(SQLObject newParentTable) {
-//			parent = (SQLTable) newParentTable;
-//		}
-//
-//		protected void populateImpl() throws SQLObjectException {
-//		    if (logger.isDebugEnabled()) {
-//		        List<SQLObject> hierarchy = new ArrayList<SQLObject>();
-//		        SQLObject parent = this;
-//		        while (parent != null) {
-//		            hierarchy.add(0, parent);
-//		            parent = parent.getParent();
-//		        }
-//		        logger.debug("Populating folder on " + getParent().getName() + " for type " + type + " with ancestor path " + hierarchy);
-//		    }
-//
-//		    if (populated) return;
-//
-//			logger.debug("SQLTable.Folder["+getName()+"]: populate starting");
-//
-//			
-//			try {
-//				if (type == COLUMNS) {
-//					parent.populateColumns();
-//				} else if (type == IMPORTED_KEYS) {
-//					parent.populateColumns();
-//					parent.populateRelationships(null);
-//				} else if (type == EXPORTED_KEYS) {
-//					CachedRowSet crs = null;
-//					Connection con = null;
-//					try {
-//						con = parent.getParentDatabase().getConnection();
-//						DatabaseMetaData dbmd = con.getMetaData();
-//						crs = new CachedRowSet();
-//						ResultSet exportedKeysRS = dbmd.getExportedKeys(parent.getCatalogName(), parent.getSchemaName(), parent.getName());
-//                        crs.populate(exportedKeysRS);
-//                        exportedKeysRS.close();
-//					} catch (SQLException ex) {
-//                        throw new SQLObjectException("Couldn't locate related tables", ex);
-//                    } finally {
-//                        // close the connection before it makes the recursive call
-//                        // that could lead to opening more connections
-//                        try {
-//                            if (con != null) con.close();
-//                        } catch (SQLException ex) {
-//                            logger.warn("Couldn't close connection", ex);
-//                        }
-//                    }
-//                    try {
-//						while (crs.next()) {
-//							if (crs.getInt(9) != 1) {
-//								// just another column mapping in a relationship we've already handled
-//								logger.debug("Got exported key with sequence " + crs.getInt(9) + " on " + crs.getString(5) + "." + crs.getString(6) + "." + crs.getString(7) + ", continuing.");
-//								continue;
-//							}
-//							logger.debug("Got exported key with sequence " + crs.getInt(9) + " on " + crs.getString(5) + "." + crs.getString(6) + "." + crs.getString(7) + ", populating.");
-//							String cat = crs.getString(5);
-//							String sch = crs.getString(6);
-//							String tab = crs.getString(7);
-//							SQLTable fkTable = parent.getParentDatabase().getTableByName(cat, sch, tab);
-//                            if (fkTable == null) {
-//                                throw new IllegalStateException("While populating table " +
-//                                        SQLObjectUtils.toQualifiedName(getParent()) +
-//                                        ", I failed to find child table " +
-//                                        "\""+cat+"\".\""+sch+"\".\""+tab+"\"");
-//                            }
-//							fkTable.populateColumns();
-//							fkTable.populateRelationships(parent);
-//						}
-//					} catch (SQLException ex) {
-//						throw new SQLObjectException("Couldn't locate related tables", ex);
-//					} finally {
-//						try {
-//							if (crs != null) crs.close();
-//						} catch (SQLException ex) {
-//							logger.warn("Couldn't close resultset", ex);
-//						}
-//					}
-//                } else if (type == INDICES) {
-//                    parent.populateColumns();
-//                    parent.populateIndices();
-//				} else {
-//					throw new IllegalArgumentException("Unknown folder type: "+type);
-//				}
-//			} finally {
-//				populated = true;
-//			}
-//
-//			logger.debug("SQLTable.Folder["+getName()+"]: populate finished");
-//
-//		}
-//		
-//        @Override
-//		protected void addChildImpl(int index, SQLObject child) throws SQLObjectException {
-//			logger.debug("Adding child "+child.getName()+" to folder "+getName());
-//			super.addChildImpl(index, child);
-//		}
-//
-//        /**
-//         * Overrides default remove behaviour to normalize the primary key in
-//         * the case of a removed SQLColumn and to check for locked (imported)
-//         * columns. In both cases, the special checking is not performed if
-//         * magic is disabled or this folder has no parent.
-//         * 
-//         * @throws LockedColumnException
-//         *             If this is a folder of columns, and the column you
-//         *             attempt to remove is "owned" by a relationship.
-//         */
-//        @Override
-//        protected SQLObject removeImpl(int index) {
-//            if (isMagicEnabled() && type == COLUMNS && getParent() != null) {
-//                SQLColumn col = (SQLColumn) children.get(index);
-//                // a column is only locked if it is an IMPORTed key--not if it is EXPORTed.
-//                for (SQLRelationship r : (List<SQLRelationship>) parent.importedKeysFolder.children) {
-//                    r.checkColumnLocked(col);
-//                }
-//            }
-//            SQLObject removed = super.removeImpl(index);
-//            if (isMagicEnabled() && type == COLUMNS && removed != null && getParent() != null) {
-//                try {
-//                    getParent().normalizePrimaryKey();
-//                } catch (SQLObjectException e) {
-//                    throw new SQLObjectRuntimeException(e);
-//                }
-//            }
-//            return removed;
-//        }
-//        
-//		public String getShortDisplayName() {
-//			return name;
-//		}
-//
-//		public boolean allowsChildren() {
-//			return true;
-//		}
-//
-//		public String toString() {
-//			if (parent == null) {
-//				return name+" folder (no parent)";
-//			} else {
-//				return name+" folder of "+parent.getName();
-//			}
-//		}
-//
-//		/**
-//		 * Returns the type code of this folder.
-//		 *
-//		 * @return One of COLUMNS, IMPORTED_KEYS, or EXPORTED_KEYS.
-//		 */
-//		public int getType() {
-//			return type;
-//		}
-//
-//		/**
-//	     * Returns an unmodifiable view of the child list.  All list
-//	     * members will be SQLObject subclasses (SQLTable,
-//	     * SQLRelationship, SQLColumn, etc.) which are directly contained
-//	     * within this SQLObject.
-//	     */
-//	    public List getChildren(DatabaseMetaData dbmd) throws SQLObjectException {
-//	        if (!allowsChildren()) //never return null;
-//	            return children;
-//	        populate();
-//	        return Collections.unmodifiableList(children);
-//	    }
-//		
-//		@Override
-//		public Class<? extends SQLObject> getChildType() {
-//			return SQLColumn.class;
-//		}
-//	}
 
 	// ------------------ Accessors and mutators below this line ------------------------
 
@@ -1428,10 +1208,6 @@ public class SQLTable extends SQLObject {
 		return (SQLSchema) o;
 	}
 
-	public List<SQLColumn> getColumnsFolder() {
-		return columns;
-	}
-
 	/**
 	 * Sets the table name, and also modifies the primary key name if
 	 * it was previously null or set to the default of
@@ -1441,6 +1217,7 @@ public class SQLTable extends SQLObject {
 	 *
 	 * @param argName The new table name.  NULL is not allowed.
 	 */
+	@Mutator
 	public void setPhysicalName(String argName) {
 
         logger.debug("About to change table name from \""+getPhysicalName()+"\" to \""+argName+"\"");
@@ -1499,6 +1276,7 @@ public class SQLTable extends SQLObject {
 	 *
 	 * @return the value of remarks
 	 */
+	@Accessor
 	public String getRemarks()  {
 		return this.remarks;
 	}
@@ -1508,6 +1286,7 @@ public class SQLTable extends SQLObject {
 	 *
 	 * @param argRemarks Value to assign to this.remarks
 	 */
+	@Mutator
 	public void setRemarks(String argRemarks) {
 		String oldRemarks = this.remarks;
 		this.remarks = argRemarks;
@@ -1650,6 +1429,7 @@ public class SQLTable extends SQLObject {
 	/**
      * Returns true if this table's columns folder says it's populated.
 	 */
+    @Accessor
 	public boolean isColumnsPopulated()  {
 		return columnsPopulated;
 	}
@@ -1658,6 +1438,7 @@ public class SQLTable extends SQLObject {
 	 * Returns true if this table's imported keys and exported
      * keys both say are populated.
 	 */
+    @Accessor
 	public boolean isRelationshipsPopulated()  {
 		return importedKeysPopulated && exportedKeysPopulated;
 	}
@@ -1665,6 +1446,7 @@ public class SQLTable extends SQLObject {
 	/**
 	 * Returns true if this table's imported keys have been populated.
 	 */
+    @Accessor
 	public boolean isImportedKeysPopulated() {
 		return importedKeysPopulated;
 	}
@@ -1672,6 +1454,7 @@ public class SQLTable extends SQLObject {
 	/**
 	 * Returns true if this table's exported keys have been populated. 
 	 */
+    @Accessor
 	public boolean isExportedKeysPopulated() {
 		return exportedKeysPopulated;
 	}
@@ -1679,6 +1462,7 @@ public class SQLTable extends SQLObject {
     /**
      * Returns true if this table's indices folder says it's populated.
      */
+    @Accessor
     public boolean isIndicesPopulated()  {
         return indicesPopulated;
     }
@@ -1703,6 +1487,7 @@ public class SQLTable extends SQLObject {
 	 *
 	 * @return the value of objectType
 	 */
+    @Accessor
 	public String getObjectType()  {
 		return this.objectType;
 	}
@@ -1712,6 +1497,7 @@ public class SQLTable extends SQLObject {
 	 *
 	 * @param argObjectType Value to assign to this.objectType
 	 */
+    @Mutator
 	public void setObjectType(String argObjectType) {
 		String oldObjectType = this.objectType;
 		this.objectType = argObjectType;
