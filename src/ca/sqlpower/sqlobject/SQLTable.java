@@ -1903,13 +1903,13 @@ public class SQLTable extends SQLObject {
 	}
 
 	public List<? extends SPObject> getDependencies() {
-		// TODO Auto-generated method stub
-		return null;
+		return Collections.emptyList();
 	}
 
 	public void removeDependency(SPObject dependency) {
-		// TODO Auto-generated method stub
-		
+		for (SQLObject child : getChildrenWithoutPopulating()) {
+			child.removeDependency(dependency);
+		}
 	}
 
 	/**

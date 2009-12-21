@@ -1267,7 +1267,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 
 		public void removeDependency(SPObject dependency) {
-			throw new UnsupportedOperationException("Cannot change the relationship referred to by the foreign key wrapper");
+			getParent().removeImportedKey(this);
 		}
 		
 		public SQLRelationship getRelationship() {
