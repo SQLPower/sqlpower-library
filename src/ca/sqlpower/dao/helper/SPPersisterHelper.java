@@ -64,8 +64,8 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *            The {@link PersistedSPObject} that the {@link SPObject} is
 	 *            being created from. The UUID to use for the created
 	 *            {@link SPObject} is to be taken from this object and the
-	 *            loaded flag should be set the true before returning the newly
-	 *            created {@link SPObject}.
+	 *            loaded flag should be set the <code>true</code> before
+	 *            returning the newly created {@link SPObject}.
 	 * @param persistedObjects
 	 *            The {@link List} of {@link PersistedSPObject}s that has been
 	 *            persisted in an {@link SPPersister}. This is to be used for
@@ -120,7 +120,7 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *            the property fired by the setter for the event which is
 	 *            enforced by tests using JavaBeans methods. If changes are made
 	 *            to an {@link SPObject} class such that one or more properties
-	 *            are changed (i.e. changed name or class type), the
+	 *            are changed (i.e. changed property name or property type), the
 	 *            {@link SPAnnotationProcessorFactory} should be executed to
 	 *            generate an updated {@link SPPersisterHelper} class.
 	 * @param converter
