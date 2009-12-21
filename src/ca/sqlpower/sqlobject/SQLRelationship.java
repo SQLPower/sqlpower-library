@@ -35,6 +35,10 @@ import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -1209,7 +1213,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			super();
 		}
 		
-		public SQLImportedKey(SQLRelationship relationship) {
+		@Constructor
+		public SQLImportedKey(
+				@ConstructorParameter(isProperty = false) SQLRelationship relationship) {
 			super();
 			this.relationship = relationship;
 		}
@@ -1270,6 +1276,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			getParent().removeImportedKey(this);
 		}
 		
+		@Accessor
 		public SQLRelationship getRelationship() {
 			return relationship;
 		}
@@ -1278,6 +1285,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		 * Note that this should probably not be called outside of the
 		 * persistence framework.
 		 */
+		@Mutator
 		public void setRelationship(SQLRelationship relationship) {
 			SQLRelationship oldVal = this.relationship;
 			this.relationship = relationship;
@@ -1292,6 +1300,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		protected SQLColumn pkColumn;
 		protected SQLColumn fkColumn;
 
+		@Constructor
 		public ColumnMapping() {
 		}
 
@@ -1300,6 +1309,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		 *
 		 * @return the value of pkColumn
 		 */
+		@Accessor
 		public SQLColumn getPkColumn()  {
 			return this.pkColumn;
 		}
@@ -1309,6 +1319,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		 *
 		 * @param argPkColumn Value to assign to this.pkColumn
 		 */
+		@Mutator
 		public void setPkColumn(SQLColumn argPkColumn) {
 			this.pkColumn = argPkColumn;
 		}
@@ -1318,6 +1329,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		 *
 		 * @return the value of fkColumn
 		 */
+		@Accessor
 		public SQLColumn getFkColumn()  {
 			return this.fkColumn;
 		}
@@ -1327,6 +1339,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		 *
 		 * @param argFkColumn Value to assign to this.fkColumn
 		 */
+		@Mutator
 		public void setFkColumn(SQLColumn argFkColumn) {
 			this.fkColumn = argFkColumn;
 		}
@@ -1340,10 +1353,12 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		/**
 		 * Returns the table that holds the primary keys (the imported table).
 		 */
+		@Accessor
 		public SQLRelationship getParent() {
 			return (SQLRelationship) parent;
 		}
 
+		@Mutator
 		protected void setParent(SQLObject newParent) {
 			parent = (SQLRelationship) newParent;
 		}

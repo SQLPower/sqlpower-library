@@ -212,7 +212,10 @@ public class SPClassVisitor implements DeclarationVisitor {
 	public void visitClassDeclaration(ClassDeclaration d) {
 		if (d.getAnnotation(Persistable.class) != null) {
 			try {
-				visitedClass = (Class<? extends SPObject>) Class.forName(d.getQualifiedName());
+				String qualifiedName = 
+					SPAnnotationProcessorUtils.convertTypeDeclarationToQualifiedName(d);
+				visitedClass = (Class<? extends SPObject>) Class.forName(qualifiedName);
+				
 			} catch (ClassNotFoundException e) {
 				valid = false;
 				e.printStackTrace();
@@ -222,6 +225,12 @@ public class SPClassVisitor implements DeclarationVisitor {
 	
 	public void visitConstructorDeclaration(ConstructorDeclaration d) {
 		if (d.getAnnotation(Constructor.class) != null) {
+			
+			// If there are nested classes, we need to clear the buffer of
+			// constructor parameters as this class visitor visits all classes
+			// underneath the top level class.
+			constructorParameters.clear();
+			
 			for (ParameterDeclaration pd : d.getParameters()) {
 				ConstructorParameter cp = pd.getAnnotation(ConstructorParameter.class);
 				if (cp != null) {
@@ -273,8 +282,25 @@ public class SPClassVisitor implements DeclarationVisitor {
 		
 		String methodName = d.getSimpleName();
 		Class<?> c = null;
-
+		
 		try {
+			if (visitedClass != null) {
+				// Since this class visitor visits method declarations before
+				// class declarations, having visitedClass be non-null means
+				// that the method being visited actually belongs to a higher
+				// level class and not a lower nested class. Thus, we need to
+				// clear any buffer of information about accessors and mutators
+				// that belonged to nested classes first before populating them
+				// again.
+				visitedClass = null;
+				propertiesToAccess.clear();
+				propertiesToPersistOnlyIfNonNull.clear();
+				accessorAdditionalInfo.clear();
+				propertiesToMutate.clear();
+				mutatorThrownTypes.clear();
+				mutatorExtraParameters.clear();
+			}
+			
 			c = SPAnnotationProcessorUtils.convertTypeMirrorToClass(type);
 
 			if (accessorAnnotation != null) {

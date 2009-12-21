@@ -38,9 +38,11 @@ import com.sun.mirror.declaration.AnnotationTypeDeclaration;
  * s which handle generating source code for persister helper classes based on
  * the supported annotations used in {@link SPObject}s. These persister helpers
  * will be used by a session {@link SPPersister}. In order to invoke this
- * factory to generate the persister helper classes, simply navigate to this
- * workspace project folder in a terminal window and call "mvn apt:process". It
- * will place the generated persister helper files in build/generated-sources/apt/.
+ * factory through Maven to generate the persister helper classes, simply
+ * navigate to this workspace project folder in a terminal window and call
+ * "mvn apt:process". It will place the generated persister helper files in
+ * build/generated-sources/apt/. In order to invoke this factory through Ant,
+ * just run the build through Ant.
  * 
  */
 public class SPAnnotationProcessorFactory implements AnnotationProcessorFactory {

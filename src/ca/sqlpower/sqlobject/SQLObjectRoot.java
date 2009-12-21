@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Constructor;
 
 /**
  * This is normally an invisible root node that contains
@@ -33,6 +34,7 @@ public class SQLObjectRoot extends SQLObject {
 	private List<SQLDatabase> databases = new ArrayList<SQLDatabase>();
 	private List<SQLTable> tables = new ArrayList<SQLTable>();
 	
+	@Constructor
 	public SQLObjectRoot() {
 	}
 

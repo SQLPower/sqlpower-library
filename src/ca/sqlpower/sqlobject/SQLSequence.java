@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.List;
 
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
 
 /**
  * A SQLObject that represents a sequence in a database. This is not yet a
@@ -41,7 +43,8 @@ public class SQLSequence extends SQLObject {
     /**
      * Creates a new SQLSequence with the given name.
      */
-    public SQLSequence(String name) {
+	@Constructor
+    public SQLSequence(@ConstructorParameter(propertyName = "name") String name) {
         setPopulated(true);
         setName(name);
     }

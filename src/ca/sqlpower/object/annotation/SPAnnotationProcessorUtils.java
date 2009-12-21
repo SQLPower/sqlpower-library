@@ -22,6 +22,7 @@ package ca.sqlpower.object.annotation;
 import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.object.SPObject;
 
+import com.sun.mirror.declaration.TypeDeclaration;
 import com.sun.mirror.type.ClassType;
 import com.sun.mirror.type.InterfaceType;
 import com.sun.mirror.type.PrimitiveType;
@@ -79,8 +80,14 @@ public class SPAnnotationProcessorUtils {
 	public static Class<?> convertTypeMirrorToClass(TypeMirror type) throws ClassNotFoundException {
 		if (type instanceof PrimitiveType) {
 			return convertPrimitiveToClass(((PrimitiveType) type).getKind());
-		} else if (type instanceof ClassType || type instanceof InterfaceType) {
-			return Class.forName(type.toString());
+		} else if (type instanceof ClassType) {
+			String qualifiedName = 
+				convertTypeDeclarationToQualifiedName(((ClassType) type).getDeclaration());
+			return Class.forName(qualifiedName);
+		} else if (type instanceof InterfaceType) {
+			String qualifiedName = 
+				convertTypeDeclarationToQualifiedName(((InterfaceType) type).getDeclaration());
+			return Class.forName(qualifiedName);
 		} else {
 			return null;
 		}
@@ -154,6 +161,32 @@ public class SPAnnotationProcessorUtils {
 	 */
 	public static String convertClassToFieldName(Class<? extends SPObject> clazz) {
 		return "helperFor" + clazz.getSimpleName();
+	}
+
+	/**
+	 * Converts a {@link TypeDeclaration} to its qualified name. This qualified
+	 * name will correctly convert "." to "$" for nested classes, enums, etc.
+	 * 
+	 * @param td
+	 *            The {@link TypeDeclaration} to convert.
+	 * @return The qualified name of the given {@link TypeDeclaration}.
+	 */
+	public static String convertTypeDeclarationToQualifiedName(TypeDeclaration td) {
+		TypeDeclaration declaringType = td;
+		while (declaringType.getDeclaringType() != null) {
+			declaringType = declaringType.getDeclaringType();
+		}
+		
+		String topLevelName = declaringType.getQualifiedName();
+		String qualifiedName;
+		if (td == declaringType) {
+			qualifiedName = topLevelName;
+		} else {
+			String suffix = td.getQualifiedName().substring(topLevelName.length());
+			qualifiedName = topLevelName + suffix.replaceAll("\\.", "\\$");
+		}
+		
+		return qualifiedName;
 	}
 	
 }

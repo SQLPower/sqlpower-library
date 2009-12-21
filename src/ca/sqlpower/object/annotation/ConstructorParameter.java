@@ -53,7 +53,7 @@ public @interface ConstructorParameter {
 	/**
 	 * This will be the JavaBean property that will be set to the annotated
 	 * constructor parameter value. Note that this field should only and must be
-	 * used if {@link #isProperty()} is false.
+	 * used if {@link #isProperty()} is true.
 	 */
 	String propertyName() default "";
 
@@ -62,7 +62,7 @@ public @interface ConstructorParameter {
 	 * should be a {@link String} representation of the value to be used by
 	 * session {@link SPPersister}s when passing in constructor arguments to
 	 * create the {@link SPObject}. Note that this field should only and must be
-	 * used if {@link #isProperty()} is true.
+	 * used if {@link #isProperty()} is false.
 	 */
 	String defaultValue() default "";
 	

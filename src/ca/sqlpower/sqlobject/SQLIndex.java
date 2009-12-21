@@ -33,6 +33,8 @@ import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.sql.SQL;
 import ca.sqlpower.util.TransactionEvent;
 
@@ -158,7 +160,10 @@ public class SQLIndex extends SQLObject {
          * Creates a Column object that does not correspond to a particular column
          * (such as an expression index).
          */
-        public Column(String name, AscendDescend ad) {
+        @Constructor
+        public Column(
+        		@ConstructorParameter(propertyName = "name") String name, 
+        		@ConstructorParameter(propertyName = "ascendingOrDescending") AscendDescend ad) {
             setName(name);
 
             ascendingOrDescending = ad;
@@ -355,7 +360,13 @@ public class SQLIndex extends SQLObject {
     
     private List<Column> columns = new ArrayList<Column>();
 
-    public SQLIndex(String name, boolean unique, String qualifier, String type, String filter) {
+    @Constructor
+    public SQLIndex(
+    		@ConstructorParameter(propertyName = "name") String name, 
+    		@ConstructorParameter(propertyName = "unique") boolean unique, 
+    		@ConstructorParameter(propertyName = "qualifier") String qualifier, 
+    		@ConstructorParameter(propertyName = "type") String type, 
+    		@ConstructorParameter(propertyName = "filterCondition") String filter) {
         this();
         setName(name);
         this.unique = unique;
