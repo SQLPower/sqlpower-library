@@ -95,6 +95,24 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	}
 	
 	/**
+	 * This is a hook method that sub classes can override. It gets called
+	 * before all lookup operations (resolve, match and resolves).
+	 * @param key The key we were asked to lookup info on.
+	 */
+	protected void beforeLookups(String key) {
+		// Nothing to do here. Only sub-classes implement this.
+	}
+	
+	/**
+	 * This is a hook method that sub classes can override. It gets called
+	 * before the keySet operation.
+	 * @param namespace The namespace we were asked to lookup info on.
+	 */
+	protected void beforeKeyLookup(String namespace) {
+		// Nothing to do here. Only sub-classes implement this.
+	}
+	
+	/**
 	 * Defines this variable resolver's namespace.
 	 * @param namespace The namespace to use. Can be null.
 	 */
@@ -125,6 +143,9 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	}
 
 	public Collection<Object> matches(String key, String partialValue) {
+		// Call the subclass hook.
+		this.beforeLookups(key);
+		
 		String namespace = SPVariableHelper.getNamespace(key);
 		if (this.resolvesNamespace(namespace)) {
 			Set matches = new HashSet();
@@ -145,6 +166,9 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	}
 
 	public Object resolve(String key, Object defaultValue) {
+		// Call the subclass hook.
+		this.beforeLookups(key);
+		
 		String namespace = SPVariableHelper.getNamespace(key);
 		if (this.resolvesNamespace(namespace)) {
 			Collection value = this.variables.getCollection(SPVariableHelper.stripNamespace(key));
@@ -163,6 +187,9 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	}
 
 	public Collection<Object> resolveCollection(String key, Object defaultValue) {
+		// Call the subclass hook.
+		this.beforeLookups(key);
+		
 		String namespace = SPVariableHelper.getNamespace(key);
 		if (this.resolvesNamespace(namespace)) {
 			Collection value = this.variables.getCollection(SPVariableHelper.stripNamespace(key));
@@ -174,6 +201,9 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	}
 
 	public boolean resolves(String key) {
+		// Call the subclass hook.
+		this.beforeLookups(key);
+		
 		String namespace = SPVariableHelper.getNamespace(key);
 		if (this.resolvesNamespace(namespace)) {
 			return this.variables.containsKey(SPVariableHelper.stripNamespace(key));
@@ -197,6 +227,9 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	}
 
 	public Collection<String> keySet(String namespace) {
+		// Call the subclass hook.
+		this.beforeKeyLookup(namespace);
+		
 		if (this.resolvesNamespace(namespace)) {
 			if (this.namespace == null) {
 				return this.variables.keySet();
