@@ -64,6 +64,10 @@ public abstract class SPPersisterHelperFactory {
 		this.persister = persister;
 		this.converter = converter;
 	}
+	
+	public SessionPersisterSuperConverter getConverter() {
+		return converter;
+	}
 
 	/**
 	 * Retrieves the appropriate {@link SPPersisterHelper} given an

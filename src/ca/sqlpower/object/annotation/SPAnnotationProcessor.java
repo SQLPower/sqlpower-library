@@ -403,6 +403,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		final String persistedObjectField = "pso";
 		final String persistedObjectsListField = "persistedObjects";
 		final String factoryField = "factory";
+		final String converterField = "converter";
 		final String uuidField = "uuid";
 		final String childPersistedObjectField = "childPSO";
 		
@@ -424,34 +425,44 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		sb.append(indent(tabs));
 		sb.append(PersistedSPObject.class.getSimpleName() + " " + 
-				childPersistedObjectField + " = null;\n\n");
+				childPersistedObjectField + " = null;\n");
+		
+		sb.append(indent(tabs));
+		sb.append(SessionPersisterSuperConverter.class.getSimpleName() + " " +
+				converterField + " = " + factoryField + ".getConverter();\n");
+		
+		sb.append("\n");
 		
 		// Assign each constructor parameter property to a variable.
 		for (ConstructorParameterObject cpo : constructorParameters) {
 			sb.append(indent(tabs));
 			
+			String parameterType = cpo.getType().getSimpleName();
+			String parameterName = cpo.getName();
+			
 			if (cpo.isProperty()) {
-				sb.append(cpo.getType().getSimpleName() + " " + cpo.getName() + 
-						" = (" + cpo.getType().getSimpleName() + ") " + 
+				sb.append(parameterType + " " + parameterName + 
+						" = (" + parameterType + ") " + 
+						converterField + ".convertToComplexType(" + 
 						"findPropertyAndRemove(" + uuidField + ", " +
-						"\"" + cpo.getName() + "\", " + 
-						persistedPropertiesField + ");\n");
+						"\"" + parameterName + "\", " + 
+						persistedPropertiesField + "), " + parameterType + ".class);\n");
 			} else if (SPObject.class.isAssignableFrom(cpo.getType())) {
 				sb.append(childPersistedObjectField + " = findPersistedSPObject(" + 
-						uuidField + ", \"" + cpo.getType().getSimpleName() + "\", " + 
+						uuidField + ", \"" + parameterType + "\", " + 
 						persistedObjectsListField + ");\n");
 				
 				sb.append(indent(tabs));
-				sb.append(cpo.getType().getSimpleName() + " " + cpo.getName() + " = " + 
+				sb.append(parameterType + " " + parameterName + " = " + 
 						factoryField + ".commitObject(" + 
-						cpo.getType().getSimpleName() + ".class, " + 
+						parameterType + ".class, " + 
 						persistedPropertiesField + ", " + 
 						childPersistedObjectField + ", " + 
 						persistedObjectsListField + ");\n");
 				
 			} else {
-				sb.append(cpo.getType().getSimpleName() + " " + cpo.getName() + " = " + 
-						cpo.getType().getSimpleName() + ".valueOf(");
+				sb.append(parameterType + " " + parameterName + " = " + 
+						parameterType + ".valueOf(");
 				
 				if (cpo.getType() == Character.class) {
 					sb.append("'" + cpo.getValue() + "');\n");
