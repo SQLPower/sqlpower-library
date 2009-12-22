@@ -228,6 +228,14 @@ public class SPClassVisitor implements DeclarationVisitor {
 		imports.clear();
 	}
 
+	/**
+	 * Stores the class reference of a {@link Persistable} {@link SPObject} for
+	 * use in annotation processing in the {@link SPAnnotationProcessor}. The
+	 * processor takes this information to generate {@link SPPersisterHelper}s.
+	 * 
+	 * @param d
+	 *            The {@link ClassDeclaration} of the class to visit.
+	 */
 	public void visitClassDeclaration(ClassDeclaration d) {
 		if (visitedClass != null) {
 			reset();
@@ -245,7 +253,19 @@ public class SPClassVisitor implements DeclarationVisitor {
 			}
 		}
 	}
-	
+
+	/**
+	 * Stores information about constructors annotated with {@link Constructor},
+	 * particularly with the {@link ConstructorParameter} annotated parameters
+	 * and their required imports. The {@link SPAnnotationProcessor} takes this
+	 * information and generates
+	 * {@link SPPersisterHelper#commitObject(ca.sqlpower.dao.PersistedSPObject, Multimap, List, ca.sqlpower.dao.helper.SPPersisterHelperFactory)}
+	 * and
+	 * {@link SPPersisterHelper#persistObject(SPObject, int, SPPersister, ca.sqlpower.dao.session.SessionPersisterSuperConverter)}
+	 * methods.
+	 * 
+	 * @param d The {@link ConstructorDeclaration} of the constructor to visit.
+	 */
 	public void visitConstructorDeclaration(ConstructorDeclaration d) {
 		
 		// If there are nested classes, we need to clear the buffer of
@@ -292,7 +312,21 @@ public class SPClassVisitor implements DeclarationVisitor {
 			}
 		}
 	}
-	
+
+	/**
+	 * Stores information about getter and setter methods annotated with
+	 * {@link Accessor} and {@link Mutator}. This includes thrown exceptions,
+	 * setter parameters annotated with {@link MutatorParameter}, and required
+	 * imports. The {@link SPAnnotationProcessor} takes this information and
+	 * generates
+	 * {@link SPPersisterHelper#commitProperty(SPObject, String, Object, ca.sqlpower.dao.session.SessionPersisterSuperConverter)}
+	 * and
+	 * {@link SPPersisterHelper#findProperty(SPObject, String, ca.sqlpower.dao.session.SessionPersisterSuperConverter)}
+	 * methods.
+	 * 
+	 * @param d
+	 *            The {@link MethodDeclaration} of the method to visit.
+	 */
 	public void visitMethodDeclaration(MethodDeclaration d) {
 		Accessor accessorAnnotation = d.getAnnotation(Accessor.class);
 		Mutator mutatorAnnotation = d.getAnnotation(Mutator.class);
