@@ -33,14 +33,12 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
-import ca.sqlpower.object.annotation.Persistable;
 
 /**
  * A SQLSchema is a container for SQLTables.  If it is in the
  * containment hierarchy for a given RDBMS, it will be directly above
  * SQLTables.  Its parent could be either a SQLDatabase or a SQLCatalog.
  */
-@Persistable
 public class SQLSchema extends SQLObject {
 	private static final Logger logger = Logger.getLogger(SQLSchema.class);
 	

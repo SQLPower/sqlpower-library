@@ -37,7 +37,6 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
-import ca.sqlpower.object.annotation.Persistable;
 import ca.sqlpower.sql.SQL;
 import ca.sqlpower.util.TransactionEvent;
 
@@ -80,7 +79,6 @@ public class SQLIndex extends SQLObject {
      * tree of SQLObjects can remain tree-like.  If we put the real SQLColumns in here, the columns
      * would appear in two places in the tree (here and under the table's columns folder)!
      */
-    @Persistable
     public static class Column extends SQLObject {
 
         /**

@@ -25,7 +25,6 @@ import java.util.List;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
-import ca.sqlpower.object.annotation.Persistable;
 
 /**
  * A SQLObject that represents a sequence in a database. This is not yet a
@@ -39,7 +38,6 @@ import ca.sqlpower.object.annotation.Persistable;
  * See {@link SQLColumn#getAutoIncrementSequenceName()} for more details on
  * how a sequence might come to exist.
  */
-@Persistable
 public class SQLSequence extends SQLObject {
 
     /**

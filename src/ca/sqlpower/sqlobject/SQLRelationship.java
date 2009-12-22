@@ -39,7 +39,6 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
-import ca.sqlpower.object.annotation.Persistable;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -1225,7 +1224,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 * This class acts a wrapper around a SQLRelationship. It should be added to
 	 * the foreign key table as a child, and is depended on by the Relationship.
 	 */
-	@Persistable
 	public static class SQLImportedKey extends SQLObject {
 
 		private SQLRelationship relationship;
@@ -1325,7 +1323,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	
 	// -------------------------- COLUMN MAPPING ------------------------
 
-	@Persistable
 	public static class ColumnMapping extends SQLObject {
 		protected SQLRelationship parent;
 		protected SQLColumn pkColumn;

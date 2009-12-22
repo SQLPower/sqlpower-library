@@ -25,13 +25,11 @@ import java.util.List;
 
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Constructor;
-import ca.sqlpower.object.annotation.Persistable;
 
 /**
  * This is normally an invisible root node that contains
  * SQLDatabase objects.
  */
-@Persistable
 public class SQLObjectRoot extends SQLObject {
 	private List<SQLDatabase> databases = new ArrayList<SQLDatabase>();
 	private List<SQLTable> tables = new ArrayList<SQLTable>();

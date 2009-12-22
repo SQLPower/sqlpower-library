@@ -33,14 +33,12 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
-import ca.sqlpower.object.annotation.Persistable;
 
 /**
  * A SQLCatalog is a container for other SQLObjects.  If it is in the
  * containment hierarchy for a given RDBMS, it will be directly under
  * SQLDatabase.
  */
-@Persistable
 public class SQLCatalog extends SQLObject {
 	private static Logger logger = Logger.getLogger(SQLCatalog.class);
 	
