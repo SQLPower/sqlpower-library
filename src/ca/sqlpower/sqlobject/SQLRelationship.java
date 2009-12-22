@@ -1311,6 +1311,16 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			this.relationship = relationship;
 			firePropertyChange("relationship", oldVal, relationship);
 		}
+		
+		@Override
+		public String toString() {
+			return getShortDisplayName();
+		}
+		
+		@Override
+		public boolean isPopulated() {
+			return relationship.isPopulated();
+		}
 	}
 	
 	// -------------------------- COLUMN MAPPING ------------------------

@@ -285,12 +285,12 @@ public class SQLTable extends SQLObject {
 			for (SQLColumn col : cols) {
 			    addColumnWithoutPopulating(col);
 			}
+			columnsPopulated = true;
 			commit();
 		} catch (SQLException e) {
 			rollback(e.getMessage());
 			throw new SQLObjectException("Failed to populate columns of table "+getName(), e);
 		} finally {
-			columnsPopulated = true;
 			if (con != null) {
 			    try {
 			        con.close();
@@ -348,11 +348,11 @@ public class SQLTable extends SQLObject {
             commit();
             logger.debug("found "+indices.size()+" indices.");
           
+            indicesPopulated = true;
         } catch (SQLException e) {
         	rollback(e.getMessage());
             throw new SQLObjectException("Failed to populate indices of table "+getName(), e);
         } finally {
-            indicesPopulated = true;
 
             try {
                 if (con != null) con.close();
@@ -1121,12 +1121,11 @@ public class SQLTable extends SQLObject {
 			populateColumns();
 			populateRelationships();
 			populateIndices();
+			populated = true;
 			commit();
 		} catch (SQLObjectException e) {
 			rollback(e.getMessage());
 			throw e;
-		} finally {
-			populated = true;
 		}
 	}
 
@@ -1679,8 +1678,10 @@ public class SQLTable extends SQLObject {
 		offset += columns.size();
 		
 		if (childType == SQLRelationship.class) return offset;
-		offset += importedKeys.size();
 		offset += exportedKeys.size();
+		
+		if (childType == SQLImportedKey.class) return offset;
+		offset += importedKeys.size();
 		
 		if (childType == SQLIndex.class) return offset;
 		

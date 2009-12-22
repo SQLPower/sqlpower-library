@@ -77,7 +77,10 @@ public abstract class AbstractSPListener implements SPListener {
         } else {
             inTransactionMap.remove(e.getSource());
             if (eventMap.get(e.getSource()) != null) {
-                for (Object evt : eventMap.get(e.getSource())) {
+            	//Copy of event list in case listener receiving events causes other events.
+            	List<Object> eventsForSource = new ArrayList<Object>(eventMap.get(e.getSource()));
+            	eventMap.remove(e.getSource());
+                for (Object evt : eventsForSource) {
                     if (evt instanceof PropertyChangeEvent) {
                         propertyChangeImpl((PropertyChangeEvent) evt);
                     } else if (evt instanceof SPChildEvent) {
@@ -95,7 +98,6 @@ public abstract class AbstractSPListener implements SPListener {
                 }
             }
             
-            eventMap.remove(e.getSource());
             transactionEndedImpl(e);
             finalCommitImpl(e);
         }

@@ -162,13 +162,13 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
                 	addTable(table);
                 }
             }
+            populated = true;
             commit();
             
 		} catch (SQLException e) {
 			rollback(e.getMessage());
 			throw new SQLObjectException(Messages.getString("SQLDatabase.populateFailed"), e); //$NON-NLS-1$
 		} finally {
-			populated = true;
 			try {
 				if (rs != null ) rs.close();
 			} catch (SQLException e2) {

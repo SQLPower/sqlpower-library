@@ -183,12 +183,12 @@ public class SQLCatalog extends SQLObject {
 				    }
 				}
 				
+				populated = true;
 				commit();
 			} catch (SQLException e) {
 				rollback(e.getMessage());
 				throw new SQLObjectException("catalog.populate.fail", e);
 			} finally {
-				populated = true;
 				try {
 					if (con != null) {
                         con.close();

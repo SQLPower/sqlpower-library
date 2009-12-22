@@ -207,13 +207,13 @@ public class SQLSchema extends SQLObject {
                     	addTable(table);
                     }
 				}
+				populated = true;
 				commit();
 			}
 		} catch (SQLException e) {
 			rollback(e.getMessage());
 			throw new SQLObjectException("schema.populate.fail", e);
 		} finally {
-			populated = true;
 			try {
 				if ( rs != null ) rs.close();
 			} catch (SQLException e2) {
