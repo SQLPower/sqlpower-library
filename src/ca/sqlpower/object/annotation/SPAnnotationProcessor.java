@@ -230,7 +230,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			Multimap<String, Class<? extends Exception>> mutatorThrownTypes,
 			Set<String> propertiesToPersistOnlyIfNonNull) {
 		try {
-			final String helperPackage = SPPersisterHelper.class.getPackage().getName();
+			final String helperPackage = SPPersisterHelper.class.getPackage().getName() + 
+					".generated";
 			int tabs = 0;
 			
 			Filer f = environment.getFiler();
@@ -351,6 +352,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		// XXX Need to import any additional classes this generated persister helper
 		// class requires, aside from those needed in visitedClass.
+		allImports.add(AbstractSPPersisterHelper.class.getName());
+		allImports.add(SPPersisterHelperFactory.class.getName());
 		allImports.add(List.class.getName());
 		allImports.add(visitedClass.getName());
 		allImports.add(PersistedSPOProperty.class.getName());
@@ -963,7 +966,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	private void generateFactoryFile(Set<Class<? extends SPObject>> persistableClasses) {
 		try {
 			final String factoryPackage = 
-				SPPersisterHelperFactory.class.getPackage().getName();
+				SPPersisterHelperFactory.class.getPackage().getName() + ".generated";
 			final String getHelperMethodName = "getSPPersisterHelper";
 			int tabs = 0;
 			
@@ -1010,7 +1013,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		imports.add(SPPersister.class.getName());
 		imports.add(SessionPersisterSuperConverter.class.getName());
 		
-		final String helperPackage = SPPersisterHelper.class.getPackage().getName();
+		final String helperPackage = SPPersisterHelper.class.getPackage().getName() + 
+				".generated";
 		
 		for (Class<? extends SPObject> c : persistableClasses) {
 			if (!Modifier.isAbstract(c.getModifiers())) {

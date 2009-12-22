@@ -264,7 +264,9 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 * {@link SPPersisterHelper#persistObject(SPObject, int, SPPersister, ca.sqlpower.dao.session.SessionPersisterSuperConverter)}
 	 * methods.
 	 * 
-	 * @param d The {@link ConstructorDeclaration} of the constructor to visit.
+	 * @param d
+	 *            The {@link ConstructorDeclaration} of the constructor to
+	 *            visit.
 	 */
 	public void visitConstructorDeclaration(ConstructorDeclaration d) {
 		

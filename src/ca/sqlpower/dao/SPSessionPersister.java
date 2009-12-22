@@ -659,7 +659,7 @@ public class SPSessionPersister implements SPPersister {
 	}
 	
 	/**
-	 * Commits the persisted {@link WabitObject}s
+	 * Commits the persisted {@link SPObject}s
 	 * 
 	 * @throws SPPersistenceException
 	 */
@@ -708,10 +708,10 @@ public class SPSessionPersister implements SPPersister {
 	}
 	
 	/**
-	 * Commits the persisted {@link WabitObject} property values
+	 * Commits the persisted {@link SPObject} property values
 	 * 
 	 * @throws SPPersistenceException
-	 *             Thrown if an invalid WabitObject type has been persisted into
+	 *             Thrown if an invalid SPObject type has been persisted into
 	 *             storage. This theoretically should not occur.
 	 */
 	private void commitProperties() throws SPPersistenceException {
