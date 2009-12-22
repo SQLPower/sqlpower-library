@@ -39,6 +39,7 @@ import ca.sqlpower.object.AbstractSPListener;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
+import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.sqlobject.SQLTable.TransferStyles;
 import ca.sqlpower.sqlobject.TestSQLTable.EventLogger.SQLObjectSnapshot;
 import ca.sqlpower.sqlobject.undo.CompoundEvent;
@@ -360,7 +361,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         i1.addIndexColumn(c1, AscendDescend.UNSPECIFIED);
         t1.addChild(i1);
         SQLIndex i2 = new SQLIndex("name 2",true,null, "BTREE",null);
-        i2.addChild(i2.new Column("Index column string",AscendDescend.UNSPECIFIED));
+        i2.addChild(new Column("Index column string",AscendDescend.UNSPECIFIED));
         t1.addChild(i2);
         
         assertNull(t1.getPrimaryKeyIndex());
@@ -378,7 +379,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         SQLIndex i1 = new SQLIndex("name",true,null, "BTREE",null);
         i1.addIndexColumn(c1, AscendDescend.UNSPECIFIED);
         SQLIndex i2 = new SQLIndex("name 2",true,null, "BTREE",null);
-        i2.addChild(i2.new Column("Index column string",AscendDescend.UNSPECIFIED));
+        i2.addChild(new Column("Index column string",AscendDescend.UNSPECIFIED));
         t1.addChild(i2);
         t1.addChild(i1);
         i1.setPrimaryKeyIndex(true);

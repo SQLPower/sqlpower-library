@@ -27,6 +27,7 @@ import java.util.List;
 
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
+import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.sqlobject.SQLRelationship.ColumnMapping;
 
 
@@ -102,8 +103,8 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 		
 		SQLIndex parentTablePK = new SQLIndex();
 		parentTablePK.setPrimaryKeyIndex(true);
-		parentTablePK.addChild(parentTablePK.new Column(pkcol1, AscendDescend.UNSPECIFIED));
-		parentTablePK.addChild(parentTablePK.new Column(pkcol2, AscendDescend.UNSPECIFIED));
+		parentTablePK.addChild(new Column(pkcol1, AscendDescend.UNSPECIFIED));
+		parentTablePK.addChild(new Column(pkcol2, AscendDescend.UNSPECIFIED));
 		parentTablePK.setName("parentTable_pk");
 		parentTable.addIndex(parentTablePK);
 		database.addChild(parentTable);

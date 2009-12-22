@@ -33,8 +33,11 @@ import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.Persistable;
 import ca.sqlpower.sql.SQL;
 import ca.sqlpower.util.TransactionEvent;
 
@@ -77,7 +80,8 @@ public class SQLIndex extends SQLObject {
      * tree of SQLObjects can remain tree-like.  If we put the real SQLColumns in here, the columns
      * would appear in two places in the tree (here and under the table's columns folder)!
      */
-    public class Column extends SQLObject {
+    @Persistable
+    public static class Column extends SQLObject {
 
         /**
          * Small class for reacting to changes in this index columns's
@@ -116,13 +120,13 @@ public class SQLIndex extends SQLObject {
             @Override
             public String toString() {
                 StringBuffer buf = new StringBuffer();
-                buf.append(SQLIndex.this.getName());
+                buf.append(getParent().getName());
                 buf.append(".");
                 buf.append(Column.this.getName());
                 buf.append(".");
                 buf.append("TargetColumnListener");
                 buf.append(" isPrimarykey?");
-                buf.append(SQLIndex.this.primaryKeyIndex);
+                buf.append(getParent().primaryKeyIndex);
                 return buf.toString();
             }
         }
@@ -160,15 +164,15 @@ public class SQLIndex extends SQLObject {
          * Creates a Column object that does not correspond to a particular column
          * (such as an expression index).
          */
-        @Constructor
         public Column(
-        		@ConstructorParameter(propertyName = "name") String name, 
-        		@ConstructorParameter(propertyName = "ascendingOrDescending") AscendDescend ad) {
+        		String name, 
+        		AscendDescend ad) {
             setName(name);
 
             ascendingOrDescending = ad;
         }
 
+        @Constructor
         public Column() {
             this((String) null, AscendDescend.UNSPECIFIED);
         }
@@ -179,8 +183,9 @@ public class SQLIndex extends SQLObject {
         }
 
         @Override
+        @Accessor
         public SQLIndex getParent() {
-            return SQLIndex.this;
+            return (SQLIndex) super.getParent();
         }
 
         @Override
@@ -194,25 +199,21 @@ public class SQLIndex extends SQLObject {
         }
 
         @Override
+        @Accessor
         public boolean isPopulated() {
             return true;
-        }
-
-        @Override
-		public void setParent(SPObject parent) {
-            if (parent != null && parent != SQLIndex.this) {
-                throw new UnsupportedOperationException("You can't change an Index.Column's parent");
-            }
         }
 
         /**
          * NOTE: This column can be null if the column it represents is an expression
          * and not a basic column.
          */
+        @Accessor
         public SQLColumn getColumn() {
             return column;
         }
 
+        @Mutator
         public void setColumn(SQLColumn column) {
             if (this.column != null) {
                 this.column.removeSPListener(targetColumnListener);
@@ -225,24 +226,26 @@ public class SQLIndex extends SQLObject {
             firePropertyChange("column", oldValue, column);
         }
 
+        @Accessor
         public AscendDescend getAscendingOrDescending() {
             return ascendingOrDescending;
         }
-
+        
         /**
          * This setter should be passed an enumerated item of type
          * AscendDescend.
          */
+        @Mutator
         public void setAscendingOrDescending(Object ad) {
-            AscendDescend oldValue = ascendingOrDescending;
-            if (ad instanceof AscendDescend) {
-                ascendingOrDescending = (AscendDescend) ad;
-            } else if (ad instanceof String) {
-                ascendingOrDescending = AscendDescend.valueOf((String) ad);
-            } else {
-                throw new IllegalStateException("Invalid ascending or descending object on an index column.");
-            }
-            firePropertyChange("ascendingOrDescending", oldValue, ascendingOrDescending);
+        	AscendDescend oldValue = ascendingOrDescending;
+        	if (ad instanceof AscendDescend) {
+        		ascendingOrDescending = (AscendDescend) ad;
+        	} else if (ad instanceof String) {
+        		ascendingOrDescending = AscendDescend.valueOf((String) ad);
+        	} else {
+        		throw new IllegalArgumentException();
+        	}
+        	firePropertyChange("ascendingOrDescending", oldValue, ascendingOrDescending);
         }
 
         public void setAscending(boolean ascending) {
@@ -760,9 +763,9 @@ public class SQLIndex extends SQLObject {
                 SQLColumn tableCol = targetTable.getColumnByName(colName, false, true);
                 Column indexCol;
                 if (tableCol != null) {
-                    indexCol = idx.new Column(tableCol, aOrD);
+                    indexCol = new Column(tableCol, aOrD);
                 } else {
-                    indexCol = idx.new Column(colName, aOrD); // probably an expression like "col1+col2"
+                    indexCol = new Column(colName, aOrD); // probably an expression like "col1+col2"
                 }
 
 //                idx.children.add(indexCol); // direct access avoids possible recursive SQLObjectEvents
@@ -886,9 +889,9 @@ public class SQLIndex extends SQLObject {
                             column.getColumn().getName() + "is not found in parent table [" + parentTable.getName() +
                             "]");
                 }
-                newColumn = index.new Column(sqlColumn, column.getAscendingOrDescending());
+                newColumn = new Column(sqlColumn, column.getAscendingOrDescending());
             } else {
-                newColumn = index.new Column(column.getName(), column.getAscendingOrDescending());
+                newColumn = new Column(column.getName(), column.getAscendingOrDescending());
             }
             index.addChild(newColumn);
         }

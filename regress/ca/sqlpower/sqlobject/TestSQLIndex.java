@@ -235,7 +235,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         SQLIndex i = new SQLIndex("Index",true,"","BTREE","");
         i.setPrimaryKeyIndex(true);
         try {
-            i.addChild(i.new Column("index column",AscendDescend.UNSPECIFIED));
+            i.addChild(new Column("index column",AscendDescend.UNSPECIFIED));
             fail();
         } catch (IllegalArgumentException e) {
             assertEquals("The primary key index must consist of real columns, not expressions",e.getMessage());
@@ -246,7 +246,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     
     public void testAddChangeIndexToPkWithStringColumn() throws SQLObjectException{
         SQLIndex i = new SQLIndex("Index",true,"", "BTREE","");
-        i.addChild(i.new Column("index column",AscendDescend.UNSPECIFIED));
+        i.addChild(new Column("index column",AscendDescend.UNSPECIFIED));
         try {
             i.setPrimaryKeyIndex(true);
             fail();
@@ -259,8 +259,8 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     public void testMakeColumnsLikeOtherIndexWhichHasNoColumns() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
         SQLIndex i = new SQLIndex("Index",true,"", "BTREE","");
         SQLColumn col = new SQLColumn();
-        i.addChild(i.new Column("index column",AscendDescend.UNSPECIFIED));
-        i.addChild(i.new Column(col,AscendDescend.UNSPECIFIED));
+        i.addChild(new Column("index column",AscendDescend.UNSPECIFIED));
+        i.addChild(new Column(col,AscendDescend.UNSPECIFIED));
         
         SQLIndex i2 = new SQLIndex("Index2",false,"", "HASH","asdfa");
         i.makeColumnsLike(i2);
@@ -272,8 +272,8 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         SQLColumn col = new SQLColumn();
         
         SQLIndex i2 = new SQLIndex("Index2",false,"", "HASH","asdfa");
-        i2.addChild(i2.new Column("index column",AscendDescend.UNSPECIFIED));
-        i2.addChild(i2.new Column(col,AscendDescend.UNSPECIFIED));
+        i2.addChild(new Column("index column",AscendDescend.UNSPECIFIED));
+        i2.addChild(new Column(col,AscendDescend.UNSPECIFIED));
         i.makeColumnsLike(i2);
         assertEquals("Wrong number of children!",2,i.getChildCount());
         assertEquals("Oh no wrong child!",i2.getChild(0),i.getChild(0));
@@ -283,12 +283,12 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     public void testMakeColumnsLikeOtherIndexReordersColumns() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
         SQLIndex i = new SQLIndex("Index",true,"", "BTREE","");
         SQLColumn col = new SQLColumn();
-        i.addChild(i.new Column(col,AscendDescend.UNSPECIFIED));
-        i.addChild(i.new Column("index column",AscendDescend.UNSPECIFIED));
+        i.addChild(new Column(col,AscendDescend.UNSPECIFIED));
+        i.addChild(new Column("index column",AscendDescend.UNSPECIFIED));
 
         SQLIndex i2 = new SQLIndex("Index2",false,"", "HASH","asdfa");
-        i2.addChild(i2.new Column("index column",AscendDescend.UNSPECIFIED));
-        i2.addChild(i2.new Column(col,AscendDescend.UNSPECIFIED));
+        i2.addChild(new Column("index column",AscendDescend.UNSPECIFIED));
+        i2.addChild(new Column(col,AscendDescend.UNSPECIFIED));
         i.makeColumnsLike(i2);
         assertEquals("Wrong number of children!",2,i.getChildCount());
         assertEquals("Oh no wrong child!",i2.getChild(0),i.getChild(0));
@@ -298,7 +298,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     // Test to ensure NPE doesn't get thrown for a SQLIndex with no SQLColumn
     public void testGetDerivedInstance() throws Exception {
         SQLIndex derivedIndex;
-        Column newColumn = index.new Column("lower((name)::text))",AscendDescend.UNSPECIFIED);
+        Column newColumn = new Column("lower((name)::text))",AscendDescend.UNSPECIFIED);
         index.addChild(newColumn);
         derivedIndex = SQLIndex.getDerivedInstance(index, table);
     }

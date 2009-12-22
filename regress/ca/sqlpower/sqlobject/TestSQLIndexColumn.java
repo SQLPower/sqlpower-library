@@ -19,6 +19,7 @@
 package ca.sqlpower.sqlobject;
 
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
+import ca.sqlpower.sqlobject.SQLIndex.Column;
 
 public class TestSQLIndexColumn extends BaseSQLObjectTestCase {
     
@@ -27,8 +28,7 @@ public class TestSQLIndexColumn extends BaseSQLObjectTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        SQLIndex index = new SQLIndex("Test Index",true,"", "HASH","");
-        indexColumn =index.new Column("Index1",AscendDescend.UNSPECIFIED);
+        indexColumn = new Column("Index1",AscendDescend.UNSPECIFIED);
     }
     
     public TestSQLIndexColumn(String name) throws Exception {

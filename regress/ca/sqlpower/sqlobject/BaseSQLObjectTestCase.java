@@ -162,6 +162,12 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
                 } else {
                     newVal = SQLRelationship.UpdateDeleteRule.CASCADE;
                 }
+            } else if (property.getPropertyType() == SQLIndex.AscendDescend.class) {
+            	if (oldVal == SQLIndex.AscendDescend.ASCENDING) {
+            		newVal = SQLIndex.AscendDescend.DESCENDING;
+            	} else {
+            		newVal = SQLIndex.AscendDescend.ASCENDING;
+            	}
             } else if (property.getPropertyType() == Throwable.class) {
                 newVal = new Throwable();
             } else {
@@ -296,6 +302,12 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
                 } else {
                     newVal = SQLRelationship.Deferrability.INITIALLY_DEFERRED;
                 }
+            } else if (property.getPropertyType() == SQLIndex.AscendDescend.class) {
+            	if (oldVal == SQLIndex.AscendDescend.ASCENDING) {
+            		newVal = SQLIndex.AscendDescend.DESCENDING;
+            	} else {
+            		newVal = SQLIndex.AscendDescend.ASCENDING;
+            	}
             } else if (property.getPropertyType() == Throwable.class) {
                 newVal = new Throwable();
             } else {
