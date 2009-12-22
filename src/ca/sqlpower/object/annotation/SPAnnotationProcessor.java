@@ -410,10 +410,10 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		// commitObject method header.
 		sb.append(indent(tabs));
 		sb.append("public " + visitedClass.getSimpleName() + " commitObject(" +
+				PersistedSPObject.class.getSimpleName() + " " + persistedObjectField + ", " +
 				Multimap.class.getSimpleName() + "<" + String.class.getSimpleName() + ", " + 
 						PersistedSPOProperty.class.getSimpleName() + "> " + 
 						persistedPropertiesField + ", " +
-				PersistedSPObject.class.getSimpleName() + " " + persistedObjectField + ", " +
 				List.class.getSimpleName() + "<" + 
 						PersistedSPObject.class.getSimpleName() + "> " + persistedObjectsListField + ", " +
 				SPPersisterHelperFactory.class.getSimpleName() + " " + factoryField + ") {\n");
@@ -1121,14 +1121,13 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			int tabs) {
 		StringBuilder sb = new StringBuilder();
 		boolean firstIf = true;
-		final String genericTypeField = "T";
-		final String classTypeField = "clazz";
+		final String simpleNameField = "simpleName";
 		
 		sb.append(indent(tabs));
-		sb.append("public <" + genericTypeField + " extends " + SPObject.class.getSimpleName() + "> " + 
-				SPPersisterHelper.class.getSimpleName() + "<" + genericTypeField + "> " + 
-				getHelperMethodName + "(" + Class.class.getSimpleName() + 
-				"<" + genericTypeField + "> " + classTypeField + ") {\n");
+		sb.append("public " + SPPersisterHelper.class.getSimpleName() + 
+				"<? extends " + SPObject.class.getSimpleName() + "> " + 
+				getHelperMethodName + "(" + String.class.getSimpleName() + 
+				" " + simpleNameField + ") {\n");
 		tabs++;
 		
 		for (Class<? extends SPObject> clazz : persistableClasses) {
@@ -1142,13 +1141,13 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				sb.append("} else ");
 			}
 			
-			sb.append("if (" + classTypeField + " == " + clazz.getSimpleName() + ".class" + 
-					") {\n");
+			sb.append("if (" + simpleNameField + ".equals(" + 
+					clazz.getSimpleName() + ".class.getSimpleName())) {\n"); 
 			tabs++;
 			
 			sb.append(indent(tabs));
-			sb.append("return (" + SPPersisterHelper.class.getSimpleName() + "<" + genericTypeField + ">) " + SPAnnotationProcessorUtils.convertClassToFieldName(clazz) + 
-					";\n");
+			sb.append("return " + 
+					SPAnnotationProcessorUtils.convertClassToFieldName(clazz) + ";\n");
 
 			tabs--;
 			
@@ -1165,7 +1164,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		sb.append("throw new " + IllegalArgumentException.class.getSimpleName() + 
 				"(\"There are no " + SPPersisterHelper.class.getSimpleName() + "s " +
 						"that deal with " + SPObject.class.getSimpleName() + "s of type " +
-								"\" + " + classTypeField + " + \".\");\n");
+								"\" + " + simpleNameField + " + \".\");\n");
 		
 		if (!firstIf) {
 			tabs--;

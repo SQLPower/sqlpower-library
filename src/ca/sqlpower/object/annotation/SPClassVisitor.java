@@ -216,6 +216,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 * classes.
 	 */
 	private void reset() {
+		valid = true;
 		visitedClass = null;
 		propertiesToAccess.clear();
 		propertiesToPersistOnlyIfNonNull.clear();

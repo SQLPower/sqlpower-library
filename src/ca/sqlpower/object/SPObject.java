@@ -227,9 +227,24 @@ public interface SPObject {
 	 *            added to this object as a child.
 	 */
     boolean allowsChildType(Class<? extends SPObject> type);
-    
+
+	/**
+	 * Enables or disables magic. Magic determines whether certain property
+	 * changes trigger secondary side effects. Magic is enabled if and only if
+	 * an equal number of <code>setMagicEnabled(true)</code> and
+	 * <code>setMagicEnabled(false)</code> calls have been made.
+	 * 
+	 * @param enable
+	 *            True if magic should be enabled, causing the disable magic
+	 *            counter to decrement. False if magic should be disabled,
+	 *            causing the enable magic counter to increment.
+	 */
     void setMagicEnabled(boolean enable);
-    
+
+	/**
+	 * Returns true if magic is enabled, where some property changes can trigger
+	 * secondary magical side effects.
+	 */
     boolean isMagicEnabled();
     
 }
