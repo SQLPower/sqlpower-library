@@ -71,38 +71,50 @@ public class SPSessionPersister implements SPPersister {
 	 * Persisted property buffer, mapping of {@link SPObject} UUIDs to each
 	 * individual persisted property
 	 */
-	private Multimap<String, PersistedSPOProperty> persistedProperties = LinkedListMultimap.create();
+	private Multimap<String, PersistedSPOProperty> persistedProperties = 
+		LinkedListMultimap.create();
 
 	/**
 	 * This will be the list we will use to rollback persisted properties
 	 */
-	private List<PersistedPropertiesEntry> persistedPropertiesRollbackList = new LinkedList<PersistedPropertiesEntry>();
+	private List<PersistedPropertiesEntry> persistedPropertiesRollbackList = 
+		new LinkedList<PersistedPropertiesEntry>();
 	
 	/**
 	 * Persisted {@link SPObject} buffer, contains all the data that was
 	 * passed into the persistedObject call in the order of insertion
 	 */
-	protected List<PersistedSPObject> persistedObjects = new LinkedList<PersistedSPObject>();
+	protected List<PersistedSPObject> persistedObjects = 
+		new LinkedList<PersistedSPObject>();
 
 	/**
 	 * This will be the list we use to rollback persisted objects.
 	 * It contains UUIDs of objects that were created.
 	 */
-	private List<PersistedObjectEntry> persistedObjectsRollbackList = new LinkedList<PersistedObjectEntry>();
-	
-	protected final Comparator<PersistedSPObject> persistedObjectComparator = new Comparator<PersistedSPObject>() {
+	private List<PersistedObjectEntry> persistedObjectsRollbackList = 
+		new LinkedList<PersistedObjectEntry>();
 
-		// If the two objects being compared are of the same type and are children of the same parent, the one with the lower index should go first.
-		// Otherwise, the one with the smaller ancestor tree should go first (e.g. Report should go before Page).
+	/**
+	 * {@link Comparator} for comparing {@link PersistedSPObject}s, to be used
+	 * before committing persisted objects.
+	 */
+	protected final Comparator<PersistedSPObject> persistedObjectComparator = 
+		new Comparator<PersistedSPObject>() {
+
+		// If the two objects being compared are of the same type and are
+		// children of the same parent, the one with the lower index should go
+		// first. Otherwise, the one with the smaller ancestor tree should go first
+		// (e.g. Report should go before Page).
 		public int compare(PersistedSPObject o1, PersistedSPObject o2) {
-			
+
 			if (o1.getParentUUID() == null && o2.getParentUUID() == null) {
 				return 0;
 			} else if (o1.getParentUUID() == null) {
 				return -1;
 			} else if (o2.getParentUUID() == null) {
 				return 1;
-			} else if (o1.getParentUUID().equals(o2.getParentUUID()) && o1.getType().equals(o2.getType())) {
+			} else if (o1.getParentUUID().equals(o2.getParentUUID()) && 
+					o1.getType().equals(o2.getType())) {
 				return Integer.signum(o1.getIndex() - o2.getIndex());
 			}
 			
@@ -252,12 +264,14 @@ public class SPSessionPersister implements SPPersister {
 	 * {@link SPObject} removal buffer, mapping of {@link SPObject} UUIDs
 	 * to their parents
 	 */
-	protected Map<String, String> objectsToRemove = new TreeMap<String, String>(removedObjectComparator);
+	protected Map<String, String> objectsToRemove = 
+		new TreeMap<String, String>(removedObjectComparator);
 	
 	/**
 	 * This is the list we use to rollback object removal
 	 */
-	private List<RemovedObjectEntry> objectsToRemoveRollbackList = new LinkedList<RemovedObjectEntry>();
+	private List<RemovedObjectEntry> objectsToRemoveRollbackList = 
+		new LinkedList<RemovedObjectEntry>();
 	
 	/**
 	 * This converter will do all of the converting for this persister.
@@ -362,9 +376,10 @@ public class SPSessionPersister implements SPPersister {
 					if (transactionCount == 1) {
 						if (logger.isDebugEnabled()) {
 							logger.debug("Begin of commit phase...");
-							logger.debug("Committing " + persistedObjects.size() + " new objects, " + 
-									persistedProperties.size() + " changes to different property names, " +
-									"and " + objectsToRemove.size() + " objects are being removed.");
+							logger.debug("Committing " + persistedObjects.size() + 
+									" new objects, " + persistedProperties.size() + 
+									" changes to different property names, and " + 
+									objectsToRemove.size() + " objects are being removed.");
 						}
 						
 						workspace.begin("Begin batch transaction...");
@@ -389,7 +404,8 @@ public class SPSessionPersister implements SPPersister {
 						transactionCount--;
 					}
 				} catch (Throwable t) {
-					logger.error("SPSessionPersister caught an exception while performing a commit operation. Will try to rollback...", t);
+					logger.error("SPSessionPersister caught an exception while " +
+							"performing a commit operation. Will try to rollback...", t);
 					this.rollback();
 					throw new SPPersistenceException(null, t);
 				} finally {
@@ -412,7 +428,8 @@ public class SPSessionPersister implements SPPersister {
 			
 			if (transactionCount == 0) {
 				this.rollback();
-				throw new SPPersistenceException("Cannot persist objects while outside a transaction.");
+				throw new SPPersistenceException("Cannot persist objects while outside " +
+						"a transaction.");
 			}
 			SPObject objectToPersist = SQLPowerUtils.findByUuid(root, uuid, SPObject.class);
 			if (exists(uuid) && objectToPersist.getClass() != root.getClass()) {
@@ -423,9 +440,9 @@ public class SPSessionPersister implements SPPersister {
 						+ " already exists.");
 			}
 
-			PersistedSPObject pwo = new PersistedSPObject(parentUUID,
+			PersistedSPObject pso = new PersistedSPObject(parentUUID,
 					type, uuid, index);
-			persistedObjects.add(pwo);
+			persistedObjects.add(pso);
 		}
 	}
 
@@ -434,7 +451,8 @@ public class SPSessionPersister implements SPPersister {
 			throws SPPersistenceException {
 		if (transactionCount <= 0) {
 			this.rollback();
-			throw new SPPersistenceException("Cannot persist objects while outside a transaction.");
+			throw new SPPersistenceException("Cannot persist objects while outside " +
+					"a transaction.");
 		}
 		synchronized (session) {
 			this.enforeThreadSafety();
@@ -460,7 +478,8 @@ public class SPSessionPersister implements SPPersister {
 			throws SPPersistenceException {
 		if (transactionCount <= 0) {
 			this.rollback();
-			throw new SPPersistenceException("Cannot persist objects while outside a transaction.");
+			throw new SPPersistenceException("Cannot persist objects while outside " +
+					"a transaction.");
 		}
 		synchronized (session) {
 			this.enforeThreadSafety();
@@ -518,9 +537,9 @@ public class SPSessionPersister implements SPPersister {
 		
 		Object lastPropertyValueFound = null;
 		
-		for (PersistedSPOProperty wop : persistedProperties.get(uuid)) {
-			if (propertyName.equals(wop.getPropertyName())) {
-				lastPropertyValueFound = wop.getNewValue();
+		for (PersistedSPOProperty persistedProperty : persistedProperties.get(uuid)) {
+			if (propertyName.equals(persistedProperty.getPropertyName())) {
+				lastPropertyValueFound = persistedProperty.getNewValue();
 			}
 		}
 		
@@ -568,12 +587,18 @@ public class SPSessionPersister implements SPPersister {
 			throws SPPersistenceException {
 		synchronized (session) {
 			this.enforeThreadSafety();
-			logger.debug(String.format("spsp.removeObject(\"%s\", \"%s\");",
-					parentUUID, uuid));
+			
+			if (logger.isDebugEnabled()) {
+				logger.debug(String.format("spsp.removeObject(\"%s\", \"%s\");",
+						parentUUID, uuid));
+			}
+			
 			if (this.transactionCount == 0) {
-				logger.error("Remove Object attempted while not in a transaction. Rollback initiated.");
+				logger.error("Remove Object attempted while not in a transaction. " +
+						"Rollback initiated.");
 				this.rollback();
-				throw new SPPersistenceException(uuid,"Remove Object attempted while not in a transaction. Rollback initiated.");
+				throw new SPPersistenceException(uuid,"Remove Object attempted while " +
+						"not in a transaction. Rollback initiated.");
 			}
 			if (!exists(uuid)) {
 				this.rollback();
@@ -622,7 +647,10 @@ public class SPSessionPersister implements SPPersister {
 				this.persistedPropertiesRollbackList.clear();
 				transactionCount = 0;
 				this.headingToWisconsin = false;
-				logger.debug("spsp.rollback(); - Killed all current transactions.");
+				
+				if (logger.isDebugEnabled()) {
+					logger.debug("spsp.rollback(); - Killed all current transactions.");
+				}
 			}
 		}
 	}
@@ -666,12 +694,13 @@ public class SPSessionPersister implements SPPersister {
 	private void commitObjects() throws SPPersistenceException {
 		Collections.sort(persistedObjects, persistedObjectComparator);
 		
-		for (PersistedSPObject pwo : persistedObjects) {
-			if (pwo.isLoaded())
+		for (PersistedSPObject pso : persistedObjects) {
+			if (pso.isLoaded())
 				continue;
-			SPObject parent = SQLPowerUtils.findByUuid(root, pwo
-					.getParentUUID(), SPObject.class);
-			SPObject spo = persisterFactory.commitObject(pwo, persistedProperties, persistedObjects);
+			SPObject parent = SQLPowerUtils.findByUuid(root, pso.getParentUUID(), 
+					SPObject.class);
+			SPObject spo = persisterFactory.commitObject(pso, persistedProperties, 
+					persistedObjects);
 			if (spo != null) {
 				SPListener removeChildOnAddListener = new SPListener() {
 					public void propertyChange(PropertyChangeEvent arg0) {
@@ -679,7 +708,8 @@ public class SPSessionPersister implements SPPersister {
 					}
 					public void childRemoved(SPChildEvent e) {
 						objectsToRemoveRollbackList.add(
-								new RemovedObjectEntry(e.getSource().getUUID(), e.getChild(), e.getIndex()));
+								new RemovedObjectEntry(e.getSource().getUUID(), 
+										e.getChild(), e.getIndex()));
 					}
 					public void childAdded(SPChildEvent e) {
 						//do nothing
@@ -696,7 +726,8 @@ public class SPSessionPersister implements SPPersister {
 				};
 				parent.addSPListener(removeChildOnAddListener);
 				// FIXME Terrible hack, see bug 2326
-				parent.addChild(spo, Math.min(pwo.getIndex(), parent.getChildren(spo.getClass()).size()));
+				parent.addChild(spo, Math.min(pso.getIndex(), 
+						parent.getChildren(spo.getClass()).size()));
 				parent.removeSPListener(removeChildOnAddListener);
 				this.persistedObjectsRollbackList.add(
 					new PersistedObjectEntry(
@@ -726,20 +757,24 @@ public class SPSessionPersister implements SPPersister {
 						+ uuid + " in session");
 			}
 
-			for (PersistedSPOProperty wop : persistedProperties.get(uuid)) {
+			for (PersistedSPOProperty persistedProperty : persistedProperties.get(uuid)) {
 				
-				propertyName = wop.getPropertyName();
-				newValue = wop.getNewValue();
+				propertyName = persistedProperty.getPropertyName();
+				newValue = persistedProperty.getNewValue();
 				
-				logger.debug("Applying property " + propertyName + " to " + spo.getClass().getSimpleName() + " at " + spo.getUUID());				
+				if (logger.isDebugEnabled()) {
+					logger.debug("Applying property " + propertyName + " to " + 
+							spo.getClass().getSimpleName() + " at " + spo.getUUID());
+				}
+				
 				persisterFactory.commitProperty(spo, propertyName, newValue);
 				
 				this.persistedPropertiesRollbackList.add(
 					new PersistedPropertiesEntry(
 						spo.getUUID(), //The uuid can be changed so using the currently set one.
-						wop.getPropertyName(), 
-						wop.getDataType(), 
-						wop.getOldValue()));
+						persistedProperty.getPropertyName(), 
+						persistedProperty.getDataType(), 
+						persistedProperty.getOldValue()));
 			}
 		}
 		persistedProperties.clear();
@@ -747,12 +782,8 @@ public class SPSessionPersister implements SPPersister {
 	
 	/**
 	 * Rolls back the removal of persisted {@link SPObject}s
-	 * 
-	 * @throws SPPersistenceException
-	 *             Thrown if an {@link SPObject} could not be rolled back from
-	 *             its parent.
 	 */
-	private void rollbackRemovals() throws IllegalStateException {
+	private void rollbackRemovals() {
 		// We must rollback in the inverse order the operations were performed.
 		Collections.reverse(this.objectsToRemoveRollbackList);
 		for (RemovedObjectEntry entry : this.objectsToRemoveRollbackList) {
@@ -768,34 +799,44 @@ public class SPSessionPersister implements SPPersister {
 			}
 		}
 	}
-	
-	private void rollbackProperties() throws SPPersistenceException {
+
+	/**
+	 * Rolls back the changed properties of persisted {@link SPObject}s.
+	 */
+	private void rollbackProperties() {
 		Collections.reverse(this.persistedPropertiesRollbackList);
 		for (PersistedPropertiesEntry entry : this.persistedPropertiesRollbackList) {
 			try {
-				final String parentUuid = entry.getUUID();
+				final String parentUUID = entry.getUUID();
 				final String propertyName = entry.getPropertyName();
 				final Object rollbackValue = entry.getRollbackValue();
-				final SPObject parent = SQLPowerUtils.findByUuid(root, parentUuid, SPObject.class);
+				final SPObject parent = SQLPowerUtils.findByUuid(root, parentUUID, SPObject.class);
 				if (parent != null) {
 					persisterFactory.commitProperty(parent, propertyName, rollbackValue);
 				}
 			} catch (Throwable t) {
 				// Keep going. We need to rollback as much as we can.
-				logger.error("Cannot rollback change to " + entry.getPropertyName() + " to value " + entry.getRollbackValue(), t);
+				logger.error("Cannot rollback change to " + entry.getPropertyName() + 
+						" to value " + entry.getRollbackValue(), t);
 			}
 		}
 	}
-	
-	private void rollbackCreations() throws Exception {
+
+	/**
+	 * Rolls back the created persisted {@link SPObject}s by removing them from
+	 * their parents.
+	 */
+	private void rollbackCreations() {
 		Collections.reverse(this.persistedObjectsRollbackList);
 		for (PersistedObjectEntry entry : this.persistedObjectsRollbackList) {
 			try {
 				// We need to verify if the entry specifies a parent.
 				// WabitWorkspaces don't have parents so we can't remove them really...
 				if (entry.getParentId() != null) {
-					final SPObject parent = SQLPowerUtils.findByUuid(root, entry.getParentId(), SPObject.class);
-					final SPObject child = SQLPowerUtils.findByUuid(root, entry.getChildId(), SPObject.class);
+					final SPObject parent = SQLPowerUtils.findByUuid(root, 
+							entry.getParentId(), SPObject.class);
+					final SPObject child = SQLPowerUtils.findByUuid(root, 
+							entry.getChildId(), SPObject.class);
 					parent.removeChild(child);
 				}
 			} catch (Throwable t) {
@@ -814,8 +855,8 @@ public class SPSessionPersister implements SPPersister {
 	 */
 	private boolean exists(String uuid) {
 		if (!objectsToRemove.containsKey(uuid)) {
-			for (PersistedSPObject pwo : persistedObjects) {
-				if (uuid.equals(pwo.getUUID())) {
+			for (PersistedSPObject pso : persistedObjects) {
+				if (uuid.equals(pso.getUUID())) {
 					return true;
 				}
 			}
@@ -842,17 +883,23 @@ public class SPSessionPersister implements SPPersister {
 			return false;
 		} else {
 			this.rollback();
-			throw new IllegalStateException("This persister is in an illegal state. transactionCount was :" + transactionCount);
+			throw new IllegalStateException("This persister is in an illegal state. " +
+					"transactionCount was :" + transactionCount);
 		}
 	}
 
+	/**
+	 * Enforces thread safety.
+	 */
 	public void enforeThreadSafety() {
 		if (this.currentThread == null) {
 			this.currentThread = Thread.currentThread();
 		} else {
 			if (this.currentThread!=Thread.currentThread()) {
 				this.rollback(true);
-				throw new RuntimeException("A call from two different threads was detected. Callers of a sessionPersister should synchronize prior to opening transactions.");
+				throw new RuntimeException("A call from two different threads was detected. " +
+						"Callers of a sessionPersister should synchronize prior to " +
+						"opening transactions.");
 			}
 		}
 	}
@@ -915,10 +962,10 @@ public class SPSessionPersister implements SPPersister {
 		// Iterate through list of persisted SPObjects to build an ancestor
 		// list from objects that do not exist in the root yet.
 		String uuid = child.getParentUUID();
-		PersistedSPObject pwo;
-		while ((pwo = findPersistedObjectByUUID(uuid)) != null) {
-			resultList.add(0, pwo);
-			uuid = pwo.getParentUUID();
+		PersistedSPObject pso;
+		while ((pso = findPersistedObjectByUUID(uuid)) != null) {
+			resultList.add(0, pso);
+			uuid = pso.getParentUUID();
 		}
 
 		// Iterate through list of existing SPObjects in the root and
@@ -959,9 +1006,9 @@ public class SPSessionPersister implements SPPersister {
 	 */
 	private PersistedSPObject findPersistedObjectByUUID(String uuid) {
 		if (uuid != null) {
-			for (PersistedSPObject pwo : persistedObjects) {
-				if (uuid.equals(pwo.getUUID())) {
-					return pwo;
+			for (PersistedSPObject pso : persistedObjects) {
+				if (uuid.equals(pso.getUUID())) {
+					return pso;
 				}
 			}
 		}
