@@ -99,41 +99,11 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	private final Map<String, Object> clientProperties = new HashMap<String, Object>();
 	
 	/**
-	 * When this counter is > 0, the fireXXX methods will ignore secondary changes.
-	 */
-	protected int magicDisableCount = 0;
-	
-	/**
 	 * This is the throwable that tells if the children of this component can be reached
 	 * or not. If this is null then the children can be reached. If it is not null
 	 * then there was an exception the last time the children were attempted to be accessed.
 	 */
 	private Throwable childrenInaccessibleReason = null;
-	
-	public synchronized void setMagicEnabled(boolean enable) {
-		if (magicDisableCount < 0) {
-			throw new IllegalStateException("magicDisableCount < 0");
-		}
-		if (enable) {
-			if (magicDisableCount == 0) {
-				throw new IllegalArgumentException("Sorry, you asked me to enable, but disable count already 0");
-				// return;
-			}
-			--magicDisableCount;
-		} else { // disable
-			++magicDisableCount;
-		}
-	}
-	
-	public boolean isMagicEnabled() {
-		if (magicDisableCount > 0) {
-			return false;
-		}
-		if (getParent() != null) {
-			return getParent().isMagicEnabled();
-		}
-		return true;
-	}
 	
     /**
      * Returns the name used for this object in a physical database system. This

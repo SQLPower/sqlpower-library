@@ -46,6 +46,18 @@ public abstract class AbstractSPObject implements SPObject {
     
 	private SPObject parent;
 	private String name;
+
+	/**
+	 * If magic is disabled, secondary side effects of methods or events should
+	 * not be performed. Magic is disabled if the disabled value is greater than
+	 * 0. For example in Wabit, if a guide is moved in a report the content
+	 * boxes attached to it will normally be moved with it. If magic is disabled
+	 * the content boxes attached to a guide should not be moved as the guide
+	 * moves. The guide that is moved while magic is disabled should still fire
+	 * an event that it was moved but the secondary event of moving the content
+	 * boxes and any other side effects should not take place.
+	 */
+	private int magicDisableCount = 0;
 	
 	@Constructor
 	public AbstractSPObject() {
@@ -525,6 +537,22 @@ public abstract class AbstractSPObject implements SPObject {
 	    } catch (SessionNotFoundException e) {
 	        runner.run();
 	    }
+	}
+	
+	public boolean isMagicEnabled() {
+		return (magicDisableCount == 0 && 
+				(getParent() == null || getParent().isMagicEnabled()));
+	}
+	
+	public synchronized void setMagicEnabled(boolean enable) {
+		if (enable) {
+			if (magicDisableCount == 0) {
+				throw new IllegalArgumentException("Cannot enable magic because it is already enabled.");
+			}
+			magicDisableCount--;
+		} else {
+			magicDisableCount++;
+		}
 	}
     
     @Override

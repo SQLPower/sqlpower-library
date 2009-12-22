@@ -228,4 +228,8 @@ public interface SPObject {
 	 */
     boolean allowsChildType(Class<? extends SPObject> type);
     
+    void setMagicEnabled(boolean enable);
+    
+    boolean isMagicEnabled();
+    
 }
