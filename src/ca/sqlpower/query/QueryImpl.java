@@ -376,7 +376,6 @@ public class QueryImpl implements Query {
 		
 		if (dataSource != null) {
 			setDataSourceWithoutSideEffects(dataSource);
-			setStreaming(dataSource.getParentType().getSupportsStreamQueries());
 		}
 		
 		if (prepopulateConstants) {
@@ -1284,9 +1283,6 @@ public class QueryImpl implements Query {
 	    boolean dsSet = setDataSourceWithoutSideEffects(dataSource);
 	    if (dsSet) {
 	        reset();
-	        if (dataSource != null) {
-	        	setStreaming(dataSource.getParentType().getSupportsStreamQueries());
-	        }
 	    }
 	}
 	
