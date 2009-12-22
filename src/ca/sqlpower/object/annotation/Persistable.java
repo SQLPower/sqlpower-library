@@ -34,8 +34,10 @@ import ca.sqlpower.object.SPObject;
  * {@link SPAnnotationProcessorFactory#supportedAnnotationTypes()}. The
  * {@link SPAnnotationProcessor} needs to validate that a given {@link SPObject}
  * class is tagged with this annotation before proceeding to generate source
- * code for persister helpers. Any extending class of the annotated
- * {@link SPObject} will also be deemed as {@link Persistable}.
+ * code for persister helpers. Since this annotation is {@link Inherited}, any
+ * extending class of the annotated {@link SPObject} will also be deemed as
+ * {@link Persistable}, so there is no need to annotate subclasses as
+ * {@link Persistable}.
  */
 @Inherited
 @Target(ElementType.TYPE)
