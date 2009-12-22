@@ -71,18 +71,15 @@ public abstract class SPPersisterHelperFactory {
 
 	/**
 	 * Retrieves the appropriate {@link SPPersisterHelper} given an
-	 * {@link SPObject} class type.
+	 * {@link SPObject} class simple name.
 	 * 
-	 * @param <T>
-	 *            An {@link SPObject} type.
-	 * @param clazz
-	 *            The class of type T that the {@link SPPersisterHelper} deals
-	 *            with.
+	 * @param simpleName
+	 *            The simple name of the {@link SPObject} class.
 	 * @return The {@link SPPersisterHelper} that deals with {@link SPObject}s
-	 *         of type T.
+	 *         with the specified simple name.
 	 */
-	public abstract <T extends SPObject> SPPersisterHelper<T> getSPPersisterHelper(
-			Class<T> clazz);
+	public abstract SPPersisterHelper<? extends SPObject> 
+			getSPPersisterHelper(String simpleName);
 
 	/**
 	 * Retrieves the appropriate {@link SPPersisterHelper} given an
@@ -92,21 +89,18 @@ public abstract class SPPersisterHelperFactory {
 	 * 
 	 * @param <T>
 	 *            An {@link SPObject} type.
-	 * @param clazz
-	 *            The class of type T that the {@link SPPersisterHelper} deals
-	 *            with.
-	 * @param persistedProperties
-	 *            A mutable {@link Multimap} of {@link SPObject} UUIDs to
-	 *            persisted properties, each represented by
-	 *            {@link PersistedSPOProperty}. Some entries within this
-	 *            {@link Multimap} will be removed if the {@link SPObject}
-	 *            constructor it calls requires arguments.
 	 * @param pso
 	 *            The {@link PersistedSPObject} that the {@link SPObject} is
 	 *            being created from. The UUID to use for the created
 	 *            {@link SPObject} is to be taken from this object and the
 	 *            loaded flag should be set the <code>true</code> before
 	 *            returning the newly created {@link SPObject}.
+	 * @param persistedProperties
+	 *            A mutable {@link Multimap} of {@link SPObject} UUIDs to
+	 *            persisted properties, each represented by
+	 *            {@link PersistedSPOProperty}. Some entries within this
+	 *            {@link Multimap} will be removed if the {@link SPObject}
+	 *            constructor it calls requires arguments.
 	 * @param persistedObjects
 	 *            The {@link List} of {@link PersistedSPObject}s that has been
 	 *            persisted in an {@link SPPersister}. This is to be used for
@@ -120,12 +114,12 @@ public abstract class SPPersisterHelperFactory {
 	 *      SPPersisterHelperFactory)
 	 */
 	public <T extends SPObject> T commitObject(
-			Class<T> clazz, 
-			Multimap<String, PersistedSPOProperty> persistedProperties, 
 			PersistedSPObject pso, 
+			Multimap<String, PersistedSPOProperty> persistedProperties, 
 			List<PersistedSPObject> persistedObjects) {
-		SPPersisterHelper<T> helper = getSPPersisterHelper(clazz);
-		return helper.commitObject(persistedProperties, pso, persistedObjects, this);
+		SPPersisterHelper<T> helper = 
+			(SPPersisterHelper<T>) getSPPersisterHelper(pso.getType());
+		return helper.commitObject(pso, persistedProperties, persistedObjects, this);
 	}
 
 	/**
@@ -155,7 +149,8 @@ public abstract class SPPersisterHelperFactory {
 			T spo, 
 			String propertyName, 
 			Object newValue) throws SPPersistenceException {
-		SPPersisterHelper<T> helper = getSPPersisterHelper((Class<T>) spo.getClass());
+		SPPersisterHelper<T> helper = 
+			(SPPersisterHelper<T>) getSPPersisterHelper(spo.getClass().getSimpleName());
 		helper.commitProperty(spo, propertyName, newValue, converter);
 	}
 
@@ -190,7 +185,8 @@ public abstract class SPPersisterHelperFactory {
 	 *      SessionPersisterSuperConverter)
 	 */
 	public <T extends SPObject> Object findProperty(T spo, String propertyName) throws SPPersistenceException {
-		SPPersisterHelper<T> helper = getSPPersisterHelper((Class<T>) spo.getClass());
+		SPPersisterHelper<T> helper = 
+			(SPPersisterHelper<T>) getSPPersisterHelper(spo.getClass().getSimpleName());
 		return helper.findProperty(spo, propertyName, converter);
 	}
 
@@ -214,7 +210,8 @@ public abstract class SPPersisterHelperFactory {
 	 * @see {@link SPPersisterHelper#persistObject(SPObject, int, SPPersister, SessionPersisterSuperConverter)}
 	 */
 	public <T extends SPObject> void persistObject(T spo, int index) throws SPPersistenceException {
-		SPPersisterHelper<T> helper = getSPPersisterHelper((Class<T>) spo.getClass());
+		SPPersisterHelper<T> helper = 
+			(SPPersisterHelper<T>) getSPPersisterHelper(spo.getClass().getSimpleName());
 		helper.persistObject(spo, index, persister, converter);
 	}
 	

@@ -54,18 +54,18 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 * the {@link Multimap} of the given UUID to pass into the {@link SPObject}
 	 * constructor must be removed.
 	 * 
-	 * @param persistedProperties
-	 *            A mutable {@link Multimap} of {@link SPObject} UUIDs to
-	 *            persisted properties, each represented by
-	 *            {@link PersistedSPOProperty}. Some entries within this
-	 *            {@link Multimap} will be removed if the {@link SPObject}
-	 *            constructor it calls requires arguments.
 	 * @param pso
 	 *            The {@link PersistedSPObject} that the {@link SPObject} is
 	 *            being created from. The UUID to use for the created
 	 *            {@link SPObject} is to be taken from this object and the
 	 *            loaded flag should be set the <code>true</code> before
 	 *            returning the newly created {@link SPObject}.
+	 * @param persistedProperties
+	 *            A mutable {@link Multimap} of {@link SPObject} UUIDs to
+	 *            persisted properties, each represented by
+	 *            {@link PersistedSPOProperty}. Some entries within this
+	 *            {@link Multimap} will be removed if the {@link SPObject}
+	 *            constructor it calls requires arguments.
 	 * @param persistedObjects
 	 *            The {@link List} of {@link PersistedSPObject}s that has been
 	 *            persisted in an {@link SPPersister}. This is to be used for
@@ -79,8 +79,8 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 * @return The created {@link SPObject} with the given required persisted
 	 *         properties.
 	 */
-	T commitObject(Multimap<String, PersistedSPOProperty> persistedProperties, 
-			PersistedSPObject pso,
+	T commitObject(PersistedSPObject pso,
+			Multimap<String, PersistedSPOProperty> persistedProperties, 
 			List<PersistedSPObject> persistedObjects,
 			SPPersisterHelperFactory factory);
 
