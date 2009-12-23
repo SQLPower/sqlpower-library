@@ -184,8 +184,8 @@ public class SPVariableHelper implements SPVariableResolver {
         
         // Now generate a prepared statement and inject it's variables.
         PreparedStatement ps = connection.prepareStatement(text.toString());
-        for (int i = 1; i <= vars.size(); i++) {
-    		ps.setObject(i, vars.get(i));
+        for (int i = 0; i < vars.size(); i++) {
+    		ps.setObject(i+1, vars.get(i));
         }
         
         return ps;
