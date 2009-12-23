@@ -1264,7 +1264,11 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 		@Override
 		public String getShortDisplayName() {
-			return relationship.getShortDisplayName();
+			if (relationship != null) {
+				return relationship.getShortDisplayName();
+			} else {
+				return getName();
+			}
 		}
 
 		@Override
@@ -1324,7 +1328,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	// -------------------------- COLUMN MAPPING ------------------------
 
 	public static class ColumnMapping extends SQLObject {
-		protected SQLRelationship parent;
 		protected SQLColumn pkColumn;
 		protected SQLColumn fkColumn;
 
@@ -1383,12 +1386,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		 */
 		@Accessor
 		public SQLRelationship getParent() {
-			return (SQLRelationship) parent;
-		}
-
-		@Mutator
-		protected void setParent(SQLObject newParent) {
-			parent = (SQLRelationship) newParent;
+			return (SQLRelationship) super.getParent();
 		}
 
 		public String getName() {
