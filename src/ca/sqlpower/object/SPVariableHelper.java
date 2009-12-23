@@ -765,8 +765,12 @@ public class SPVariableHelper implements SPVariableResolver {
 			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
 			if (resolver.resolvesNamespace(namespace)) {
 				for (String key : resolver.keySet(namespace)) {
-					if (keys.getCollection(currentNode.getName()) != null
-							&& !keys.getCollection(currentNode.getName()).contains(key))
+					if (keys.getCollection(currentNode.getName()) == null
+							||
+								(
+									keys.getCollection(currentNode.getName()) != null
+									&& !keys.getCollection(currentNode.getName()).contains(key))
+								)
 					{
 						keys.put(currentNode.getName(), key);
 					}
