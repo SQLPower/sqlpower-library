@@ -259,8 +259,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			int tabs = 0;
 			
 			Filer f = environment.getFiler();
-			PrintWriter pw = f.createSourceFile("src." + helperPackage + 
-					"." + visitedClass.getSimpleName() + "PersisterHelper");
+			PrintWriter pw = f.createSourceFile(helperPackage + "." + 
+					visitedClass.getSimpleName() + "PersisterHelper");
 			
 			pw.print(generateWarning());
 			pw.print("\n");
@@ -1009,8 +1009,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			int tabs = 0;
 			
 			Filer f = environment.getFiler();
-			PrintWriter pw = f.createSourceFile("src." + factoryPackage + 
-					"." + FACTORY_NAME);
+			PrintWriter pw = f.createSourceFile(factoryPackage + "." + FACTORY_NAME);
 			pw.print(generateWarning());
 			pw.print("\n");
 			pw.print(generateLicense());

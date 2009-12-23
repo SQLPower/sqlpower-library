@@ -131,6 +131,22 @@
 					</systemProperties>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>apt-maven-plugin</artifactId>
+				<version>1.0-alpha-3</version>
+				<configuration>
+					<factory>ca.sqlpower.object.annotation.SPAnnotationProcessorFactory</factory>
+					<outputDirectory>src</outputDirectory>
+				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>ca.sqlpower</groupId>
+						<artifactId>sqlpower-library</artifactId>
+						<version>1.0-SNAPSHOT</version>
+					</dependency>
+				</dependencies>
+			</plugin>
 		</plugins>
 	</build>
 

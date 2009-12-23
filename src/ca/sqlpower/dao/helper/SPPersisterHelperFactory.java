@@ -53,8 +53,7 @@ public abstract class SPPersisterHelperFactory {
 	private final SPPersister persister;
 
 	/**
-	 * The {@link SessionPersisterSuperConverter} to use to convert property
-	 * values from a complex to basic persistable type and vice versa.
+	 * @see #getConverter()
 	 */
 	private final SessionPersisterSuperConverter converter;
 
@@ -64,7 +63,11 @@ public abstract class SPPersisterHelperFactory {
 		this.persister = persister;
 		this.converter = converter;
 	}
-	
+
+	/**
+	 * Returns the {@link SessionPersisterSuperConverter} to use to convert
+	 * property values from a complex to basic persistable type and vice versa.
+	 */
 	public SessionPersisterSuperConverter getConverter() {
 		return converter;
 	}

@@ -70,17 +70,35 @@
 		</copy>
 	</target>
 	
-	<target name="process-annotations" depends="compile">
+	<target name="compile-with-annotations" depends="init">
+		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
 		<apt srcdir="${src}"
 			destdir="${build_tmp}"
 			classpathref="apt.classpath"
 			debug="true"
 			compile="true"
-			factory="ca.sqlpower.object.annotation.SPAnnotationProcessorFactory">
+			factory="ca.sqlpower.object.annotation.SPAnnotationProcessorFactory"
+			preprocessdir="src">
 		</apt>
+		<delete dir="${build}"/>
+		<move todir="${build}">
+			<fileset dir="${build_tmp}"/>
+		</move>
+		<copy tofile="${build}/ca/sqlpower/sql/default_database_types.ini"
+				     file="src/ca/sqlpower/sql/default_database_types.ini"/>
+		<copy todir="${build}">
+			<fileset dir="${src}">
+				<include name="**/*.png"/>
+			</fileset>
+		</copy>
+		<copy todir="${build}/">
+			<fileset dir="src">
+				<include name="**/messages*.properties"/>
+			</fileset>
+		</copy>
 	</target>
 
-	<target name="compile-tests" depends="compile">
+	<target name="compile-tests" depends="compile-with-annotations">
 		<property name="build.tests" value="${build}/tests"/>
 		<mkdir dir="${build.tests}"/>
 		<javac srcdir="${tests}" destdir="${build.tests}" classpathref="test.classpath" debug="true"/>
@@ -108,7 +126,7 @@
 		</junitreport>
 	</target>
 	
-	<target name="jar" depends="compile, test">
+	<target name="jar" depends="compile-with-annotations, test">
 		<jar jarfile="${build}/${dist.jar}" basedir="${build}" 
 			includes="META-INF/*,ca/**">
 		</jar>
@@ -132,7 +150,7 @@
 	
 	<target name="javadoc" 
 		description="Generate the Javadoc documentation for the SQL Power Library API"
-		depends="compile">
+		depends="compile-with-annotations">
 		<mkdir dir="${dist.dir}/doc/api"/>
 		<javadoc sourcepath="${src}" destdir="${dist.dir}/doc/api"
 			packagenames="ca.sqlpower.*"
@@ -152,7 +170,7 @@
 	
 	<target name="javadoc.with.umlgraph" 
 		description="Generate the Javadoc documentation for the SQL Power Library API along with UML diagrams generated using UMLGraph"
-		depends="compile">
+		depends="compile-with-annotations">
 		<mkdir dir="${dist.dir}/doc/api"/>
 		<javadoc sourcepath="${src}" destdir="${dist.dir}/doc/api"
 			packagenames="ca.sqlpower.*"
@@ -193,7 +211,7 @@
 	
 	<target name="findbugs"
 		description="Runs the FindBugs tool, outputs results to a text file"
-		depends="compile">
+		depends="compile-with-annotations">
 		<mkdir dir="${reports.dir}"/>
 		<taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask"
 			classpath="${findbugs-ant.jar}"/>

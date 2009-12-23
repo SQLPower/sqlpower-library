@@ -430,10 +430,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 				}
 			}
 			
-			if (c.getName().endsWith("SQLObject")) {
-				System.out.println("Method importing SQLObject: " + methodName);
-			}
-			
 		} catch (ClassNotFoundException e) {
 			valid = false;
 			e.printStackTrace();
