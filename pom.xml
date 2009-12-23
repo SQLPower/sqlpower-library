@@ -137,7 +137,7 @@
 				<version>1.0-alpha-3</version>
 				<configuration>
 					<factory>ca.sqlpower.object.annotation.SPAnnotationProcessorFactory</factory>
-					<outputDirectory>src</outputDirectory>
+					<outputDirectory>build</outputDirectory>
 				</configuration>
 				<dependencies>
 					<dependency>
