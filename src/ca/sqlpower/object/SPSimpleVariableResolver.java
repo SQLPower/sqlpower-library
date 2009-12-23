@@ -230,7 +230,8 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 		// Call the subclass hook.
 		this.beforeKeyLookup(namespace);
 		
-		if (this.resolvesNamespace(namespace)) {
+		if (namespace == null &&
+				this.resolvesNamespace(namespace)) {
 			if (this.namespace == null) {
 				return this.variables.keySet();
 			} else {

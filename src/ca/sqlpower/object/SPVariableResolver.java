@@ -184,8 +184,8 @@ public interface SPVariableResolver {
 	/**
 	 * This function is used to get all available variable names
 	 * for a given namespace. Passing a null value as a namespace
-	 * will make all non-snubby resolvers to append to the list of
-	 * available keys.
+	 * means that we want to ignore namespaces and we want a complete
+	 * list of available namespaces/keys.
 	 * 
 	 * @param namespace Either a namespace or null.
 	 * @return A collection of available variable names.

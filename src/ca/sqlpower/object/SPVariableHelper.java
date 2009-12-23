@@ -19,6 +19,8 @@
 
 package ca.sqlpower.object;
 
+import java.awt.Component;
+import java.awt.event.ActionEvent;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -30,6 +32,15 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.swing.AbstractAction;
+import javax.swing.JComponent;
+import javax.swing.JMenu;
+import javax.swing.JPopupMenu;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.JTextComponent;
+
+import org.apache.commons.collections.MultiMap;
+import org.apache.commons.collections.map.MultiValueMap;
 import org.apache.log4j.Logger;
 
 /**
@@ -190,6 +201,66 @@ public class SPVariableHelper implements SPVariableResolver {
         
         return ps;
     }
+    
+    
+    /**
+     * Searches for all available variables in a given namespace then builds a JMenu
+     * with configured actions so a user can pick a variable from a list and insert it
+     * in a target {@link JTextComponent}.
+     * @param variableNamespace The namespace in which to search. In accordance with the
+     * {@link SPVariableResolver} interface, passing a null namespace value means that
+     * we search through all namespaces.
+     * @param invoker The {@link JComponent} that invokes the menu. This is used for positioning.
+     * @param target The target into which to place the variable name.
+     */
+    public void promptAndInsertVariable(
+    		String variableNamespace, 
+    		Component invoker, 
+    		JTextComponent target)
+    {
+    	SPVariableHelper.promptAndInsertVariable(this, variableNamespace, invoker, target);
+    }
+    
+    /**
+     * Searches for all available variables in a given namespace then builds a JMenu
+     * with configured actions so a user can pick a variable from a list and insert it
+     * in a target {@link JTextComponent}.
+     * @param variableHelper The variable helper to use as a resolver.
+     * @param variableNamespace The namespace in which to search. In accordance with the
+     * {@link SPVariableResolver} interface, passing a null namespace value means that
+     * we search through all namespaces.
+     * @param invoker The {@link JComponent} that invokes the menu. This is used for positioning.
+     * @param target The target into which to place the variable name.
+     */
+    public static void promptAndInsertVariable(
+    		SPVariableHelper variableHelper, 
+    		String variableNamespace, 
+    		Component invoker, 
+    		JTextComponent target) 
+    {
+    	// Step 1. Get the keys and object names.
+    	MultiValueMap keys = new MultiValueMap();
+		variableHelper.recursiveKeySet(
+				variableHelper.contextSource,
+				keys, 
+				variableNamespace,
+				true);
+		
+		// Now build the menu
+    	JPopupMenu menu = new JPopupMenu();
+        for (Object name : keys.entrySet()) {
+        	JMenu subMenu = new JMenu(name.toString());
+    		menu.add(subMenu);
+    		for (Object key : keys.getCollection(name)) {
+    			subMenu.add(new InsertVariableAction(stripNamespace(key.toString()), key.toString(), target));
+    		}
+        }
+    	
+        // All done. Show the menu.
+        menu.show(invoker, invoker.getHeight(), 0);
+    }
+    
+    
     
     /**
      * Returns the namespace of a variable. If there is
@@ -362,14 +433,21 @@ public class SPVariableHelper implements SPVariableResolver {
 	}
 	
 	
+	@SuppressWarnings("unchecked")
 	public Collection<String> keySet(String namespace) {
-		Collection<String> keys = new HashSet<String>();
+		// We use a spobject.name->spobject.key map in order to 
+		// find all variables keys and names because the 
+		// recursive version of this method is used to build a menu
+		// as well. We will only return the keys though.
+		MultiMap keys = new MultiValueMap();
 		this.recursiveKeySet(
 				this.contextSource,
 				keys, 
 				namespace,
 				true);
-		return keys;
+		
+		// Only return the values.
+		return keys.values();
 	}
 
 
@@ -675,9 +753,9 @@ public class SPVariableHelper implements SPVariableResolver {
 	}
 	
 	
-	private void recursiveKeySet(
+	void recursiveKeySet(
 			SPObject currentNode, 
-			Collection<String> keys,
+			MultiMap keys,
 			String namespace,
 			boolean upwards) 
 	{
@@ -687,8 +765,9 @@ public class SPVariableHelper implements SPVariableResolver {
 			// Turns out it is. Let's ask it if it can help us.
 			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
 			if (resolver.resolvesNamespace(namespace)) {
-				keys.addAll(
-					resolver.keySet(namespace));
+				for (String key : resolver.keySet(namespace)) {
+					keys.put(currentNode.getName(), key);
+				}
 			}
 		}
 		
@@ -726,4 +805,21 @@ public class SPVariableHelper implements SPVariableResolver {
 			}
 		}
 	}
+	
+	private static class InsertVariableAction extends AbstractAction {
+        private final String varName;
+		private final JTextComponent target;
+        InsertVariableAction(String label, String varName, JTextComponent target) {
+            super(label);
+            this.varName = varName;
+			this.target = target;
+        }
+        public void actionPerformed(ActionEvent e) {
+            try {
+                target.getDocument().insertString(target.getCaretPosition(), "${" + varName + "}", null);
+            } catch (BadLocationException ex) {
+                throw new RuntimeException("Unexpected bad location exception", ex);
+            }
+        }
+    }
 }
