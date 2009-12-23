@@ -110,9 +110,19 @@ public class SPClassVisitor implements DeclarationVisitor {
 	private Multimap<String, Class<? extends Exception>> mutatorThrownTypes = HashMultimap.create();
 	
 	/**
-	 * @see #getImports()
+	 * @see #getConstructorImports()
 	 */
-	private Set<String> imports = new HashSet<String>();
+	private Set<String> constructorImports = new HashSet<String>();
+	
+	/**
+	 * @see #getAccessorImports()
+	 */
+	private Multimap<String, String> accessorImports = HashMultimap.create();
+	
+	/**
+	 * @see #getMutatorImports()
+	 */
+	private Multimap<String, String> mutatorImports = HashMultimap.create();
 	
 	/**
 	 * @see #propertiesToPersistOnlyIfNonNull
@@ -192,13 +202,31 @@ public class SPClassVisitor implements DeclarationVisitor {
 
 	/**
 	 * Returns the {@link Set} of imports that are required for an
-	 * {@link SPPersisterHelper} to use that deals with type
-	 * {@link #visitedClass} which includes dependencies of the
-	 * {@link ConstructorParameter} annotated constructor parameters and the
-	 * getters/setters annotated with {@link Accessor} and {@link Mutator}.
+	 * {@link SPPersisterHelper} to use that deals with {@link SPObject}s of
+	 * type {@link #visitedClass} which includes dependencies of the
+	 * {@link ConstructorParameter} annotated constructor parameters.
 	 */
-	public Set<String> getImports() {
-		return Collections.unmodifiableSet(imports);
+	public Set<String> getConstructorImports() {
+		return Collections.unmodifiableSet(constructorImports);
+	}
+
+	/**
+	 * Returns the {@link Multimap} of {@link Accessor} annotated getter methods to
+	 * required imports needed to generate {@link SPPersisterHelper}s that deal
+	 * with {@link SPObject}s of type {@link #visitedClass}.
+	 */
+	public Multimap<String, String> getAccessorImports() {
+		return accessorImports;
+	}
+
+	/**
+	 * Returns the {@link Multimap} of {@link Mutator} annotated setter methods to
+	 * required imports needed to generate {@link SPPersisterHelper}s that deal
+	 * with {@link SPObject}s of type {@link #visitedClass}, which include
+	 * thrown exception types.
+	 */
+	public Multimap<String, String> getMutatorImports() {
+		return mutatorImports;
 	}
 
 	/**
@@ -225,7 +253,9 @@ public class SPClassVisitor implements DeclarationVisitor {
 		mutatorThrownTypes.clear();
 		mutatorExtraParameters.clear();
 		constructorParameters.clear();
-		imports.clear();
+		constructorImports.clear();
+		accessorImports.clear();
+		mutatorImports.clear();
 	}
 
 	/**
@@ -304,7 +334,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 						} else if (type instanceof ClassType || type instanceof InterfaceType) {
 							constructorParameters.add(
 									new ConstructorParameterObject(property, c, name, null));
-							imports.add(c.getName());
+							constructorImports.add(c.getName());
 						}
 					} catch (ClassNotFoundException e) {
 						valid = false;
@@ -370,32 +400,39 @@ public class SPClassVisitor implements DeclarationVisitor {
 				accessorAdditionalInfo.putAll(
 						methodName, Arrays.asList(accessorAnnotation.additionalInfo()));
 				
+				accessorImports.put(methodName, c.getName());
+				
 			} else {
 				for (ReferenceType refType : d.getThrownTypes()) {
 					Class<? extends Exception> thrownType = 
 						(Class<? extends Exception>) Class.forName(refType.toString());
 					mutatorThrownTypes.put(methodName, thrownType);
-					imports.add(thrownType.getName());
+					mutatorImports.put(methodName, thrownType.getName());
 				}
 
 				propertiesToMutate.put(methodName, c);
+				mutatorImports.put(methodName, c.getName());
 				
 				for (ParameterDeclaration pd : d.getParameters()) {
 					MutatorParameter mutatorParameterAnnotation = 
 						pd.getAnnotation(MutatorParameter.class);
 					
 					if (mutatorParameterAnnotation != null) {
+						Class<?> extraParamType = 
+							SPAnnotationProcessorUtils.convertTypeMirrorToClass(pd.getType());
 						mutatorExtraParameters.put(methodName, 
 								new MutatorParameterObject(
-										SPAnnotationProcessorUtils.convertTypeMirrorToClass(
-												pd.getType()),
+										extraParamType,
 										pd.getSimpleName(), 
 										mutatorParameterAnnotation.value()));
+						mutatorImports.put(methodName, extraParamType.getName());
 					}
 				}
 			}
 			
-			imports.add(c.getName());
+			if (c.getName().endsWith("SQLObject")) {
+				System.out.println("Method importing SQLObject: " + methodName);
+			}
 			
 		} catch (ClassNotFoundException e) {
 			valid = false;

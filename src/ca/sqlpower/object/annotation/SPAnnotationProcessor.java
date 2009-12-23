@@ -109,7 +109,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			Class<? extends SPObject> superClass = e.getKey();
 			SPClassVisitor visitor = e.getValue();
 			
-			Set<String> imports = new HashSet<String>(visitor.getImports());
+			Multimap<String, String> accessorImports = HashMultimap.create(visitor.getAccessorImports());
+			Multimap<String, String> mutatorImports = HashMultimap.create(visitor.getMutatorImports());
 			Map<String, Class<?>> propertiesToAccess = 
 				new HashMap<String, Class<?>>(visitor.getPropertiesToAccess());
 			Multimap<String, String> accessorAdditionalInfo = 
@@ -121,15 +122,12 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			Multimap<String, Class<? extends Exception>> mutatorThrownTypes = 
 				HashMultimap.create(visitor.getMutatorThrownTypes());
 			Set<String> propertiesToPersistOnlyIfNonNull = 
-				new HashSet(visitor.getPropertiesToPersistOnlyIfNonNull());
+				new HashSet<String>(visitor.getPropertiesToPersistOnlyIfNonNull());
 			
 			while ((superClass = (Class<? extends SPObject>) superClass.getSuperclass()) 
 					!= null) {
 				if (visitors.containsKey(superClass)) {
 					SPClassVisitor superClassVisitor = visitors.get(superClass);
-					
-					// Add inherited imports.
-					imports.addAll(superClassVisitor.getImports());
 					
 					// Add inherited non-null only persistable properties.
 					propertiesToPersistOnlyIfNonNull.addAll(
@@ -146,6 +144,10 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 							// Add inherited accessor required additional information.
 							accessorAdditionalInfo.putAll(methodName, 
 									superClassVisitor.getAccessorAdditionalInfo().get(methodName));
+							
+							// Add inherited accessor imports.
+							accessorImports.putAll(methodName, 
+									superClassVisitor.getAccessorImports().get(methodName));
 						}
 					}
 					
@@ -161,6 +163,10 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 							// Add inherited mutator thrown types.
 							mutatorThrownTypes.putAll(methodName, 
 									superClassVisitor.getMutatorThrownTypes().get(methodName));
+							
+							// Add inherited mutator imports.
+							mutatorImports.putAll(methodName, 
+									superClassVisitor.getMutatorImports().get(methodName));
 						}
 					}
 				}
@@ -168,10 +174,17 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			
 			// Generate the persister helper file if the SPObject class is not abstract.
 			if (!Modifier.isAbstract(visitor.getVisitedClass().getModifiers())) {
-				generatePersisterHelperFile(e.getKey(), imports,
-						visitor.getConstructorParameters(), propertiesToAccess, 
-						accessorAdditionalInfo, propertiesToMutate, 
-						mutatorExtraParameters, mutatorThrownTypes, 
+				generatePersisterHelperFile(
+						e.getKey(),
+						visitor.getConstructorImports(),
+						visitor.getConstructorParameters(), 
+						accessorImports, 
+						propertiesToAccess, 
+						accessorAdditionalInfo,
+						mutatorImports,
+						propertiesToMutate, 
+						mutatorExtraParameters, 
+						mutatorThrownTypes, 
 						propertiesToPersistOnlyIfNonNull);
 			}
 		}
@@ -191,13 +204,18 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 * @param visitedClass
 	 *            The {@link SPObject} class that is being visited by the
 	 *            annotation processor.
-	 * @param imports
+	 * @param constructorImports
 	 *            The {@link Set} of imports that the generated persister helper
-	 *            requires to have the class compile correctly. class require
+	 *            requires for calling the {@link Constructor} annotated
+	 *            constructor.
 	 * @param constructorParameters
 	 *            The {@link List} of {@link ConstructorParameterObject}s that
 	 *            contain information about what the parameter should be used
 	 *            for.
+	 * @param accessorImports
+	 *            The {@link Multimap} of getter methods to imports that the
+	 *            generated persister helper requires for calling the
+	 *            {@link Accessor} annotated getters.
 	 * @param propertiesToAccess
 	 *            The {@link Map} of getter method names of persistable
 	 *            properties to its property type.
@@ -206,6 +224,10 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 *            properties a session {@link SPPersister} requires to convert
 	 *            the getter's returned value from a complex to basic
 	 *            persistable type.
+	 * @param mutatorImports
+	 *            The {@link Multimap} of setter methods to imports that the
+	 *            generated persister helper requires for calling the
+	 *            {@link Mutator} annotated setters.
 	 * @param propertiesToMutate
 	 *            The {@link Map} of setter method names of persistable
 	 *            properties to its property type.
@@ -221,10 +243,12 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 */
 	private void generatePersisterHelperFile(
 			Class<? extends SPObject> visitedClass, 
-			Set<String> imports,
+			Set<String> constructorImports,
 			List<ConstructorParameterObject> constructorParameters,
+			Multimap<String, String> accessorImports,
 			Map<String, Class<?>> propertiesToAccess, 
 			Multimap<String, String> accessorAdditionalInfo,
+			Multimap<String, String> mutatorImports,
 			Map<String, Class<?>> propertiesToMutate,
 			Multimap<String, MutatorParameterObject> mutatorExtraParameters,
 			Multimap<String, Class<? extends Exception>> mutatorThrownTypes,
@@ -244,7 +268,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			pw.print("\n");
 			pw.print("package " + helperPackage + ";\n");
 			pw.print("\n");
-			pw.print(generateImports(visitedClass, imports));
+			pw.print(generateImports(visitedClass, constructorImports, accessorImports, mutatorImports));
 			pw.print("\n");
 			pw.print("public class " + visitedClass.getSimpleName() + "PersisterHelper" +
 					" extends " + AbstractSPPersisterHelper.class.getSimpleName() + 
@@ -338,16 +362,30 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 * @param visitedClass
 	 *            The {@link SPObject} class that is being visited by the
 	 *            annotation processor.
-	 * @param imports
-	 *            The {@link Set} of packages that visitedClass uses and
-	 *            need to be imported.
+	 * @param constructorImports
+	 *            The {@link Set} of packages that visitedClass uses in its
+	 *            {@link Constructor} annotated constructor and need to be
+	 *            imported.
+	 * @param accessorImports
+	 *            The {@link Multimap} of getter methods to packages that
+	 *            visitedClass uses in its {@link Accessor} annotated methods
+	 *            and needs to be imported.
+	 * @param mutatorImports
+	 *            The {@link Multimap} of setter methods to packages that
+	 *            visitedClass uses in its {@link Mutator} annotated methods and
+	 *            needs to be imported.
 	 * @return The source code for the generated imports.
 	 */
 	private String generateImports(
 			Class<? extends SPObject> visitedClass, 
-			Set<String> imports) {
+			Set<String> constructorImports,
+			Multimap<String, String> accessorImports,
+			Multimap<String, String> mutatorImports) {
 		// Using a TreeSet here to sort imports alphabetically.
-		Set<String> allImports = new TreeSet<String>(imports);
+		Set<String> allImports = new TreeSet<String>(constructorImports);
+		allImports.addAll(accessorImports.values());
+		allImports.addAll(mutatorImports.values());
+		
 		StringBuilder sb = new StringBuilder();
 		
 		// XXX Need to import any additional classes this generated persister helper
