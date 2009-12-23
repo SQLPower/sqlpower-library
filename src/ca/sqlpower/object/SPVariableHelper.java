@@ -39,7 +39,6 @@ import javax.swing.JPopupMenu;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.JTextComponent;
 
-import org.apache.commons.collections.MultiMap;
 import org.apache.commons.collections.map.MultiValueMap;
 import org.apache.log4j.Logger;
 
@@ -439,7 +438,7 @@ public class SPVariableHelper implements SPVariableResolver {
 		// find all variables keys and names because the 
 		// recursive version of this method is used to build a menu
 		// as well. We will only return the keys though.
-		MultiMap keys = new MultiValueMap();
+		MultiValueMap keys = new MultiValueMap();
 		this.recursiveKeySet(
 				this.contextSource,
 				keys, 
@@ -755,7 +754,7 @@ public class SPVariableHelper implements SPVariableResolver {
 	
 	void recursiveKeySet(
 			SPObject currentNode, 
-			MultiMap keys,
+			MultiValueMap keys,
 			String namespace,
 			boolean upwards) 
 	{
@@ -766,7 +765,11 @@ public class SPVariableHelper implements SPVariableResolver {
 			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
 			if (resolver.resolvesNamespace(namespace)) {
 				for (String key : resolver.keySet(namespace)) {
-					keys.put(currentNode.getName(), key);
+					if (keys.getCollection(currentNode.getName()) != null
+							&& !keys.getCollection(currentNode.getName()).contains(key))
+					{
+						keys.put(currentNode.getName(), key);
+					}
 				}
 			}
 		}
