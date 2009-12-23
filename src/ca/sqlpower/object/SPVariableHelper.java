@@ -248,7 +248,7 @@ public class SPVariableHelper implements SPVariableResolver {
 		
 		// Now build the menu
     	JPopupMenu menu = new JPopupMenu();
-        for (Object name : keys.entrySet()) {
+        for (Object name : keys.keySet()) {
         	JMenu subMenu = new JMenu(name.toString());
     		menu.add(subMenu);
     		for (Object key : keys.getCollection(name)) {
