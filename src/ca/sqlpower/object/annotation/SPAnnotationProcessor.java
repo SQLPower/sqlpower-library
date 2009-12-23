@@ -109,7 +109,6 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			Class<? extends SPObject> superClass = e.getKey();
 			SPClassVisitor visitor = e.getValue();
 			
-			Multimap<String, String> accessorImports = HashMultimap.create(visitor.getAccessorImports());
 			Multimap<String, String> mutatorImports = HashMultimap.create(visitor.getMutatorImports());
 			Map<String, Class<?>> propertiesToAccess = 
 				new HashMap<String, Class<?>>(visitor.getPropertiesToAccess());
@@ -145,9 +144,6 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 							accessorAdditionalInfo.putAll(methodName, 
 									superClassVisitor.getAccessorAdditionalInfo().get(methodName));
 							
-							// Add inherited accessor imports.
-							accessorImports.putAll(methodName, 
-									superClassVisitor.getAccessorImports().get(methodName));
 						}
 					}
 					
@@ -178,7 +174,6 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 						e.getKey(),
 						visitor.getConstructorImports(),
 						visitor.getConstructorParameters(), 
-						accessorImports, 
 						propertiesToAccess, 
 						accessorAdditionalInfo,
 						mutatorImports,
@@ -212,10 +207,6 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 *            The {@link List} of {@link ConstructorParameterObject}s that
 	 *            contain information about what the parameter should be used
 	 *            for.
-	 * @param accessorImports
-	 *            The {@link Multimap} of getter methods to imports that the
-	 *            generated persister helper requires for calling the
-	 *            {@link Accessor} annotated getters.
 	 * @param propertiesToAccess
 	 *            The {@link Map} of getter method names of persistable
 	 *            properties to its property type.
@@ -245,7 +236,6 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			Class<? extends SPObject> visitedClass, 
 			Set<String> constructorImports,
 			List<ConstructorParameterObject> constructorParameters,
-			Multimap<String, String> accessorImports,
 			Map<String, Class<?>> propertiesToAccess, 
 			Multimap<String, String> accessorAdditionalInfo,
 			Multimap<String, String> mutatorImports,
@@ -268,7 +258,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			pw.print("\n");
 			pw.print("package " + helperPackage + ";\n");
 			pw.print("\n");
-			pw.print(generateImports(visitedClass, constructorImports, accessorImports, mutatorImports));
+			pw.print(generateImports(visitedClass, constructorImports, mutatorImports));
 			pw.print("\n");
 			pw.print("public class " + visitedClass.getSimpleName() + "PersisterHelper" +
 					" extends " + AbstractSPPersisterHelper.class.getSimpleName() + 
@@ -366,10 +356,6 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 *            The {@link Set} of packages that visitedClass uses in its
 	 *            {@link Constructor} annotated constructor and need to be
 	 *            imported.
-	 * @param accessorImports
-	 *            The {@link Multimap} of getter methods to packages that
-	 *            visitedClass uses in its {@link Accessor} annotated methods
-	 *            and needs to be imported.
 	 * @param mutatorImports
 	 *            The {@link Multimap} of setter methods to packages that
 	 *            visitedClass uses in its {@link Mutator} annotated methods and
@@ -379,11 +365,10 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	private String generateImports(
 			Class<? extends SPObject> visitedClass, 
 			Set<String> constructorImports,
-			Multimap<String, String> accessorImports,
 			Multimap<String, String> mutatorImports) {
 		// Using a TreeSet here to sort imports alphabetically.
-		Set<String> allImports = new TreeSet<String>(constructorImports);
-		allImports.addAll(accessorImports.values());
+		Set<String> allImports = new TreeSet<String>();
+		allImports.addAll(constructorImports);
 		allImports.addAll(mutatorImports.values());
 		
 		StringBuilder sb = new StringBuilder();

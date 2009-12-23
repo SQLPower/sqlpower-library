@@ -115,11 +115,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 	private Set<String> constructorImports = new HashSet<String>();
 	
 	/**
-	 * @see #getAccessorImports()
-	 */
-	private Multimap<String, String> accessorImports = HashMultimap.create();
-	
-	/**
 	 * @see #getMutatorImports()
 	 */
 	private Multimap<String, String> mutatorImports = HashMultimap.create();
@@ -211,15 +206,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 	}
 
 	/**
-	 * Returns the {@link Multimap} of {@link Accessor} annotated getter methods to
-	 * required imports needed to generate {@link SPPersisterHelper}s that deal
-	 * with {@link SPObject}s of type {@link #visitedClass}.
-	 */
-	public Multimap<String, String> getAccessorImports() {
-		return accessorImports;
-	}
-
-	/**
 	 * Returns the {@link Multimap} of {@link Mutator} annotated setter methods to
 	 * required imports needed to generate {@link SPPersisterHelper}s that deal
 	 * with {@link SPObject}s of type {@link #visitedClass}, which include
@@ -254,7 +240,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 		mutatorExtraParameters.clear();
 		constructorParameters.clear();
 		constructorImports.clear();
-		accessorImports.clear();
 		mutatorImports.clear();
 	}
 
@@ -399,8 +384,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 				}
 				accessorAdditionalInfo.putAll(
 						methodName, Arrays.asList(accessorAnnotation.additionalInfo()));
-				
-				accessorImports.put(methodName, c.getName());
 				
 			} else {
 				for (ReferenceType refType : d.getThrownTypes()) {
