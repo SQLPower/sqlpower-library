@@ -19,9 +19,14 @@
 
 package ca.sqlpower.object;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -64,6 +69,8 @@ import org.apache.log4j.Logger;
  * @author Luc Boudreau
  */
 public class SPVariableHelper implements SPVariableResolver {
+	
+	private final static Pattern varPattern = Pattern.compile("\\$\\{([$a-zA-Z0-9"+NAMESPACE_DELIMITER_REGEXP+"\\-_.]+)\\}");
 
 	private static final Logger logger = Logger.getLogger(SPVariableHelper.class);
 	
@@ -88,6 +95,11 @@ public class SPVariableHelper implements SPVariableResolver {
 	private class NotFoundException extends Exception {};
 	private class CompletedException extends Exception {};
     
+	
+	public String substitute(String textWithVars) {
+		return SPVariableHelper.substitute(textWithVars, this);
+	}
+	
     /**
      * Substitutes any number of variable references in the given string, returning
      * the resultant string with all variable references replaced by the corresponding
@@ -98,12 +110,11 @@ public class SPVariableHelper implements SPVariableResolver {
      * @return
      */
     public static String substitute(String textWithVars, SPVariableHelper variableHelper) {
-        Pattern p = Pattern.compile("\\$\\{([$a-zA-Z0-9"+NAMESPACE_DELIMITER_REGEXP+"\\-_.]+)\\}");
         
         logger.debug("Performing variable substitution on " + textWithVars);
         
         StringBuilder text = new StringBuilder();
-        Matcher matcher = p.matcher(textWithVars);
+        Matcher matcher = varPattern.matcher(textWithVars);
         
         int currentIndex = 0;
         while (!matcher.hitEnd()) {
@@ -125,6 +136,59 @@ public class SPVariableHelper implements SPVariableResolver {
         text.append(textWithVars.substring(currentIndex));
         
         return text.toString();
+    }
+    
+    /**
+     * Helper method that takes a connection and a SQL statement which includes variable and 
+     * converts all that in a nifty prepared statement ready for execution, on time for christmas.
+     * @param connection A connection object to use in order to generate the prepared statement.
+     * @param sql A SQL string which might include variables.
+     * @return A {@link PreparedStatement} object ready for execution.
+     * @throws SQLException Might get thrown if we cannot generate a {@link PreparedStatement} with the supplied connection.
+     */
+    public PreparedStatement substituteForDb(Connection connection, String sql) throws SQLException {
+    	return SPVariableHelper.substituteForDb(connection, sql, this);
+    }
+    
+    /**
+     * Helper method that takes a connection and a SQL statement which includes variable and 
+     * converts all that in a nifty prepared statement ready for execution, on time for christmas.
+     * @param connection A connection object to use in order to generate the prepared statement.
+     * @param sql A SQL string which might include variables.
+     * @param variableHelper A {@link SPVariableHelper} object to resolve the variables.
+     * @return A {@link PreparedStatement} object ready for execution.
+     * @throws SQLException Might get thrown if we cannot generate a {@link PreparedStatement} with the supplied connection.
+     */
+    public static PreparedStatement substituteForDb(Connection connection, String sql, SPVariableHelper variableHelper) throws SQLException {
+    	
+        StringBuilder text = new StringBuilder();
+        Matcher matcher = varPattern.matcher(sql);
+        List<Object> vars = new LinkedList<Object>();
+        
+        // First, change all vars to '?' markers.
+        int currentIndex = 0;
+        while (!matcher.hitEnd()) {
+            if (matcher.find()) {
+                String variableName = matcher.group(1);
+                if (variableName.equals("$")) {
+                	vars.add("$");
+                } else {
+                	vars.add(variableHelper.resolve(variableName, (Object) ("MISSING_VAR:" + variableName)));
+                }
+                text.append(sql.substring(currentIndex, matcher.start()));
+                text.append("?");
+                currentIndex = matcher.end();
+            }  
+        }
+        text.append(sql.substring(currentIndex));
+        
+        // Now generate a prepared statement and inject it's variables.
+        PreparedStatement ps = connection.prepareStatement(text.toString());
+        for (int i = 1; i <= vars.size(); i++) {
+    		ps.setObject(i, vars.get(i));
+        }
+        
+        return ps;
     }
     
     /**
