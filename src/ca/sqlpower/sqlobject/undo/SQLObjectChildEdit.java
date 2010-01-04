@@ -73,7 +73,7 @@ public class SQLObjectChildEdit extends AbstractUndoableEdit {
 	public void addChild() throws SQLObjectException {
 		logger.debug("Adding child " + e.getChildType().getSimpleName() + " to parent " + e.getSource().getClass().getSimpleName());
 		SQLObject source = (SQLObject) e.getSource();
-		SQLObject parent = source.getParent();
+		SQLObject parent = source.getSQLParent();
 		try{
 			if (parent != null) {
 				parent.setMagicEnabled(false);

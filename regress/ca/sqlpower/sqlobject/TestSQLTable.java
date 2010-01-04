@@ -116,6 +116,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         TreeMap<String, Object> table1PropertyMap = new TreeMap<String, Object>(BeanUtils.describe(table1));
         
         table1PropertyMap.remove("parent");
+        table1PropertyMap.remove("SQLParent");
         table1PropertyMap.remove("schemaName");
         table1PropertyMap.remove("schema");
         table1PropertyMap.remove("parentDatabase");

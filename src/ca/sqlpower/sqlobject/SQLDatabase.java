@@ -343,10 +343,11 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	@Mutator
 	public void setName(String argName)
 	{
+		String oldName = getName();
 		if (dataSource != null) {
 			dataSource.setName(argName);
 		}
-		
+		firePropertyChange("name", oldName, argName);
 	}
 
 	@Accessor

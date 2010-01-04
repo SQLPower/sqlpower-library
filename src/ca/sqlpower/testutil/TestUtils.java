@@ -64,7 +64,7 @@ public class TestUtils {
     				props[i].getWriteMethod() != null &&
     				!propertiesToIgnore.contains(props[i].getName())) {
     		
-    		    NewValueMaker valueMaker = new GenericNewValueMaker();
+    		    NewValueMaker valueMaker = new GenericNewValueMaker(new SPObjectRoot());
     		    Object newVal = valueMaker.makeNewValue(props[i].getPropertyType(), oldVal, props[i].getName());
 
     		    System.out.println("Changing property \""+props[i].getName()+"\" to \""+newVal+"\"");

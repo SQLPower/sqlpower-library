@@ -215,7 +215,11 @@ public abstract class SPPersisterHelperFactory {
 	public <T extends SPObject> void persistObject(T spo, int index) throws SPPersistenceException {
 		SPPersisterHelper<T> helper = 
 			(SPPersisterHelper<T>) getSPPersisterHelper(spo.getClass().getSimpleName());
-		helper.persistObject(spo, index, persister, converter);
+		helper.persistObject(spo, index, getPersister(), converter);
+	}
+
+	public SPPersister getPersister() {
+		return persister;
 	}
 	
 }

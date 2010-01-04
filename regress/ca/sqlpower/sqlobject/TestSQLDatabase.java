@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Set;
 
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.sql.JDBCDataSource;
@@ -30,6 +31,16 @@ import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.testutil.MockJDBCDriver;
 
 public class TestSQLDatabase extends BaseSQLObjectTestCase {
+	
+	@Override
+	public Set<String> getPropertiesToIgnoreForPersisting() {
+		Set<String> ignored = super.getPropertiesToIgnoreForPersisting();
+		ignored.add("relationships");
+		ignored.add("connection");
+		ignored.add("schemaContainer");
+		ignored.add("tables");
+		return ignored;
+	}
 	
 	public TestSQLDatabase(String name) throws Exception {
 		super(name);

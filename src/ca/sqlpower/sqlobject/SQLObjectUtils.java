@@ -30,7 +30,6 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.ObjectDependentException;
-import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 
 public class SQLObjectUtils {
     
@@ -45,12 +44,12 @@ public class SQLObjectUtils {
      */
     public static boolean isInSameSession(SQLObject o1, SQLObject o2) {
         SQLObject o1Parent = o1;
-        while (o1Parent.getParent() != null) {
-            o1Parent = o1Parent.getParent();
+        while (o1Parent.getSQLParent() != null) {
+            o1Parent = o1Parent.getSQLParent();
         }
         SQLObject o2Parent = o2;
-        while (o2Parent.getParent() != null) {
-            o2Parent = o2Parent.getParent();
+        while (o2Parent.getSQLParent() != null) {
+            o2Parent = o2Parent.getSQLParent();
         }
         
         logger.debug("Parent of " + o1 + " is " + o1Parent + ", parent of " + o2 + " is " + o2Parent);
@@ -98,7 +97,7 @@ public class SQLObjectUtils {
         List<SQLObject> ancestors = new ArrayList<SQLObject>();
         while (obj != null && obj.getClass() != stopAt) {
             ancestors.add(obj);
-            obj = obj.getParent();
+            obj = obj.getSQLParent();
         }
         StringBuilder sb = new StringBuilder();
         for (int i = ancestors.size() - 1; i >= 0; i--) {
@@ -382,7 +381,7 @@ public class SQLObjectUtils {
         List<SQLObject> ancestors = new LinkedList<SQLObject>();
         while (so != null) {
             ancestors.add(0, so);
-            so = so.getParent();
+            so = so.getSQLParent();
         }
         return ancestors;
     }
@@ -400,7 +399,7 @@ public class SQLObjectUtils {
     public static <T extends SQLObject> T getAncestor(SQLObject so, Class<T> ancestorType) {
         while (so != null) {
             if (so.getClass().equals(ancestorType)) return ancestorType.cast(so);
-            so = so.getParent();
+            so = so.getSQLParent();
         }
         return null;
     }

@@ -29,6 +29,8 @@ import java.util.Set;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 
+import ca.sqlpower.object.PersistedSPObjectTest;
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
@@ -42,7 +44,7 @@ import ca.sqlpower.testutil.NewValueMaker;
  * should be applied to every SQLObject implementation. If you are making a test
  * for a new SQLObject implementation, this is the test class you should extend!
  */
-public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
+public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 
     Set<String>propertiesToIgnoreForUndo = new HashSet<String>();
     Set<String>propertiesToIgnoreForEventGeneration = new HashSet<String>();
@@ -52,6 +54,39 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
 	}
 	
 	protected abstract SQLObject getSQLObjectUnderTest() throws SQLObjectException;
+	
+	@Override
+	public SPObject getSPObjectUnderTest() {
+		try {
+			return getSQLObjectUnderTest();
+		} catch (SQLObjectException e) {
+			throw new RuntimeException("This should not happen!", e);
+		}
+	}
+	
+	@Override
+	public Set<String> getPropertiesToIgnoreForEvents() {
+		Set<String> ignored = super.getPropertiesToIgnoreForEvents();
+		ignored.add("referenceCount");
+		ignored.add("populated");
+		ignored.add("SQLObjectListeners");
+		ignored.add("children");
+		ignored.add("parent");
+		ignored.add("parentDatabase");
+		ignored.add("class");
+		ignored.add("childCount");
+		ignored.add("undoEventListeners");
+		ignored.add("connection");
+		ignored.add("typeMap");
+		ignored.add("secondaryChangeMode");	
+		ignored.add("zoomInAction");
+		ignored.add("zoomOutAction");
+        ignored.add("magicEnabled");
+        ignored.add("tableContainer");
+        ignored.add("session");
+        ignored.add("foregroundThread");
+		return ignored;
+	}
 	
 	/**
 	 * Returns a class that is one of the child types of the object under test. An
@@ -68,24 +103,7 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
 		SQLObject so = getSQLObjectUnderTest();
 		so.populate();
 		
-        propertiesToIgnoreForEventGeneration.add("referenceCount");
-		propertiesToIgnoreForEventGeneration.add("populated");
-		propertiesToIgnoreForEventGeneration.add("SQLObjectListeners");
-		propertiesToIgnoreForEventGeneration.add("children");
-		propertiesToIgnoreForEventGeneration.add("parent");
-		propertiesToIgnoreForEventGeneration.add("parentDatabase");
-		propertiesToIgnoreForEventGeneration.add("class");
-		propertiesToIgnoreForEventGeneration.add("childCount");
-		propertiesToIgnoreForEventGeneration.add("undoEventListeners");
-		propertiesToIgnoreForEventGeneration.add("connection");
-		propertiesToIgnoreForEventGeneration.add("typeMap");
-		propertiesToIgnoreForEventGeneration.add("secondaryChangeMode");	
-		propertiesToIgnoreForEventGeneration.add("zoomInAction");
-		propertiesToIgnoreForEventGeneration.add("zoomOutAction");
-        propertiesToIgnoreForEventGeneration.add("magicEnabled");
-        propertiesToIgnoreForEventGeneration.add("tableContainer");
-        propertiesToIgnoreForEventGeneration.add("session");
-        propertiesToIgnoreForEventGeneration.add("foregroundThread");
+        propertiesToIgnoreForEventGeneration.addAll(getPropertiesToIgnoreForEvents());
 		
 		if (so instanceof SQLDatabase) {
 			// should be handled in the Datasource
@@ -352,7 +370,7 @@ public abstract class BaseSQLObjectTestCase extends DatabaseConnectedTestCase {
     	Class<?> childClassType = getChildClassType();
     	if (childClassType == null) return;
     	
-    	NewValueMaker valueMaker = new GenericNewValueMaker();
+    	NewValueMaker valueMaker = new GenericNewValueMaker(getRootObject());
     	SQLObject newChild = (SQLObject) valueMaker.makeNewValue(childClassType, null, "child");
     	
     	o.addChild(newChild);

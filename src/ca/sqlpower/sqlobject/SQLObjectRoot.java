@@ -38,14 +38,6 @@ public class SQLObjectRoot extends SQLObject {
 	public SQLObjectRoot() {
 	}
 
-	public SQLObject getParent() {
-		return null;
-	}
-
-	protected void setParent(SQLObject newParent) {
-		// no parent
-	}
-
 	public String getName() {
 		return getShortDisplayName();
 	}

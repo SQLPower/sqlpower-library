@@ -178,9 +178,9 @@ public class SQLSchema extends SQLObject {
 		
 		logger.debug("SQLSchema: populate starting");
 
-		SQLObject tmp = getParent();
+		SQLObject tmp = getSQLParent();
 		while (tmp != null && (! (tmp instanceof SQLDatabase))) {
-			tmp = tmp.getParent();
+			tmp = tmp.getSQLParent();
 		}
 		if (tmp == null) throw new IllegalStateException("Schema does not have a SQLDatabase ancestor. Can't populate.");
 		SQLDatabase parentDatabase = (SQLDatabase) tmp;

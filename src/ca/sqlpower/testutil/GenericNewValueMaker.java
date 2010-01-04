@@ -27,17 +27,24 @@ import java.io.File;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.query.SQLGroupFunction;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.Olap4jDataSource;
 import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLColumn;
+import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLIndex;
 import ca.sqlpower.sqlobject.SQLObjectException;
+import ca.sqlpower.sqlobject.SQLObjectRoot;
+import ca.sqlpower.sqlobject.SQLRelationship;
 import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.sqlobject.SQLRelationship.ColumnMapping;
+import ca.sqlpower.sqlobject.SQLRelationship.Deferrability;
+import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
+import ca.sqlpower.sqlobject.SQLRelationship.UpdateDeleteRule;
 import ca.sqlpower.util.DefaultUserPrompter;
 import ca.sqlpower.util.UserPrompter;
 import ca.sqlpower.util.UserPrompter.UserPromptOptions;
@@ -49,6 +56,31 @@ import ca.sqlpower.util.UserPrompter.UserPromptResponse;
  * awareness for their own types that show up in bean properties.
  */
 public class GenericNewValueMaker implements NewValueMaker {
+	
+	/**
+	 * See doc comment on constructor.
+	 */
+	private final SPObject root;
+
+	/**
+	 * @param root
+	 *            The absolute root object of the new value maker. All SPObjects
+	 *            made by this class must be attached to this root object in
+	 *            some way so they can be traversed by tests. The objects
+	 *            created by this test do not have to be an immediate child of
+	 *            the root for cases where they may need a specific type of
+	 *            parent or ancestor which can be a child of the root. This object
+	 *            must be able to accept children of any type that can be produced by
+	 *            this new value maker.
+	 */
+	public GenericNewValueMaker(SPObject root) {
+		this.root = root;
+		
+	}
+	
+	protected SPObject getRootObject() {
+		return root;
+	}
 
     public Object makeNewValue(Class<?> valueType, Object oldVal, String propName) {
         Object newVal;  // don't init here so compiler can warn if the following code doesn't always give it a value
@@ -99,20 +131,54 @@ public class GenericNewValueMaker implements NewValueMaker {
         		newVal = SimpleDateFormat.getDateTimeInstance();
         	}
         } else if (valueType == SQLColumn.class) {
-        	newVal = new SQLColumn();
-        	((SQLColumn) newVal).setName("testing!");
+        	SQLColumn sqlCol = new SQLColumn();
+        	sqlCol.setName("testing!");
+        	SQLTable table = (SQLTable) makeNewValue(SQLTable.class, null, "Parent of column");
+        	table.addColumnWithoutPopulating(sqlCol);
+        	newVal = sqlCol;
         } else if (valueType.isAssignableFrom(SQLTable.class)) {
-        	newVal = new SQLTable();
-        	((SQLTable) newVal).setName("Generated testing table");
+        	SQLTable table = new SQLTable();
+        	table.setName("Generated testing table");
+        	SQLDatabase db = (SQLDatabase) makeNewValue(SQLDatabase.class, null, "parent of table");
+        	db.addTable(table);
+        	newVal = table;
+        } else if (valueType.isAssignableFrom(SQLDatabase.class)) {
+        	SQLDatabase db = new SQLDatabase();
+        	SQLObjectRoot sqlRoot = (SQLObjectRoot) makeNewValue(SQLObjectRoot.class, null, "parent of db");
+        	sqlRoot.addDatabase(db, 0);
+        	newVal = db;
+        } else if (valueType.isAssignableFrom(SQLObjectRoot.class)) {
+        	SQLObjectRoot sqlRoot = new SQLObjectRoot();
+        	root.addChild(sqlRoot, 0);
+        	newVal = sqlRoot;
         } else if (valueType.isAssignableFrom(Column.class)) {
-        	newVal = new Column();
-        	((Column) newVal).setName("Generated testing column index");
+        	Column col = new Column();
+        	col.setName("Generated testing column index");
+        	SQLIndex index = (SQLIndex) makeNewValue(SQLIndex.class, null, "parent of column");
+        	index.addIndexColumn(col);
+        	newVal = col;
+        } else if (valueType.isAssignableFrom(SQLIndex.class)) {
+        	SQLIndex index = new SQLIndex();
+        	index.setName("a new index");
+        	SQLTable table = (SQLTable) makeNewValue(SQLTable.class, null, "parent of index");
+        	table.addIndex(index);
+        	newVal = index;
         } else if (valueType.isAssignableFrom(ColumnMapping.class)) {
-        	newVal = new ColumnMapping();
-        	((ColumnMapping) newVal).setName("Generated testing mapping");
-        } else if (valueType == SQLIndex.class) {
-        	newVal = new SQLIndex();
-        	((SQLIndex) newVal).setName("a new index");
+        	ColumnMapping mapping = new ColumnMapping();
+        	mapping.setName("Generated testing mapping");
+        	SQLRelationship rel = (SQLRelationship) makeNewValue(SQLRelationship.class, null, "parent of column mapping");
+        	rel.addMapping(mapping);
+        	newVal = mapping;
+        } else if (valueType.isAssignableFrom(SQLRelationship.class)) {
+        	SQLRelationship rel = new SQLRelationship();
+        	SQLTable parent = (SQLTable) makeNewValue(SQLTable.class, null, "parent of relationship");
+        	SQLTable child = (SQLTable) makeNewValue(SQLTable.class, null, "child of relationship");
+        	try {
+				rel.attachRelationship(parent, child, true);
+			} catch (SQLObjectException e) {
+				throw new RuntimeException("Trying to create a new relationship for testing", e);
+			}
+        	newVal = rel;
         } else if (valueType.isAssignableFrom(Throwable.class)) {
         	newVal = new SQLObjectException("Test Exception");
         } else if (valueType == UserPrompter.class) {
@@ -157,6 +223,23 @@ public class GenericNewValueMaker implements NewValueMaker {
         	} else {
         		newVal = SQLGroupFunction.COUNT;
         	}
+        } else if (valueType.isAssignableFrom(Deferrability.class)) {
+        	if (oldVal.equals(Deferrability.INITIALLY_DEFERRED)) {
+        		newVal = Deferrability.INITIALLY_IMMEDIATE;
+        	} else {
+        		newVal = Deferrability.INITIALLY_DEFERRED;
+        	}
+        } else if (valueType.isAssignableFrom(UpdateDeleteRule.class)) {
+        	if (oldVal.equals(UpdateDeleteRule.CASCADE)) {
+        		newVal = UpdateDeleteRule.NO_ACTION;
+        	} else {
+        		newVal = UpdateDeleteRule.CASCADE;
+        	}
+        } else if (valueType.isAssignableFrom(SQLImportedKey.class)) {
+        	SQLImportedKey key = new SQLImportedKey();
+        	SQLTable table = (SQLTable) makeNewValue(SQLTable.class, null, "parent of imported key");
+        	table.addImportedKey(key);
+        	newVal = key;
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +

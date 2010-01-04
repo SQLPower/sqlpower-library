@@ -141,18 +141,31 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      */
 	@Mutator
 	public void setPhysicalName(String argName) {
-		String oldPhysicalName = this.physicalName;
+		String oldPhysicalName = getPhysicalName();
+		String actualOldPhysicalName = physicalName;
 		this.physicalName = argName;
+		
+		//The old physicalName returned from getPhysicalName must be the same
+		//as that returned by getPhysicalName or the persisters will fail. However,
+		//if the physical name is being set to null when it was null we do not want
+		//to fire an event.
+		if ((actualOldPhysicalName == null && argName == null)
+    			|| (actualOldPhysicalName != null && actualOldPhysicalName.equals(argName))) return;
+		
 		firePropertyChange("physicalName",oldPhysicalName,argName);
 	}
 
 	/**
-	 * Returns the parent of this SQLObject or <code>null</code> if it
-	 * is a root object.
+	 * Returns the parent of this SQLObject if it is a SQLObject or
+	 * <code>null</code> if it is a root object.
 	 */
 	@Accessor
-	public SQLObject getParent() {
-	   return (SQLObject) super.getParent(); 
+	public SQLObject getSQLParent() {
+		SPObject parent = super.getParent();
+		if (parent instanceof SQLObject) {
+			return (SQLObject) parent;
+		}
+		return null; 
 	}
 
 	/**

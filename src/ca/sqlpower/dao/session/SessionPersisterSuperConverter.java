@@ -20,7 +20,9 @@
 package ca.sqlpower.dao.session;
 
 import ca.sqlpower.object.SPObject;
-import ca.sqlpower.util.SPSession;
+import ca.sqlpower.sql.DataSourceCollection;
+import ca.sqlpower.sql.JDBCDataSource;
+import ca.sqlpower.sql.SPDataSource;
 
 /**
  * Converts any known object into a simple type of object that can be
@@ -31,6 +33,8 @@ import ca.sqlpower.util.SPSession;
 public class SessionPersisterSuperConverter {
 	
 	private final SPObjectConverter spObjectConverter;
+	
+	private final JDBCDataSourceConverter jdbcDSConverter;
 
 	/**
 	 * This converter will allow changes between any complex object in the
@@ -43,8 +47,10 @@ public class SessionPersisterSuperConverter {
 	 *            look up connections, cubes, and {@link SPObject}s in the
 	 *            workspace.
 	 */
-	public SessionPersisterSuperConverter(SPSession session, SPObject root) {
+	public SessionPersisterSuperConverter(DataSourceCollection<SPDataSource> dsCollection, 
+			SPObject root) {
 		spObjectConverter = new SPObjectConverter(root);
+		jdbcDSConverter = new JDBCDataSourceConverter(dsCollection);
 	}
 
 	/**
@@ -87,6 +93,8 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom.getClass().isEnum()) {
 			return new EnumConverter(convertFrom.getClass()).convertToSimpleType((Enum) convertFrom);
 			
+		} else if (convertFrom instanceof JDBCDataSource) {
+			return jdbcDSConverter.convertToSimpleType((JDBCDataSource) convertFrom);
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + convertFrom + " of type " + 
 					convertFrom.getClass());
@@ -126,6 +134,9 @@ public class SessionPersisterSuperConverter {
 			
 		} else if (Enum.class.isAssignableFrom(type)) {
 			return new EnumConverter(type).convertToComplexType((String) o);
+			
+		} else if (JDBCDataSource.class.isAssignableFrom(type)) {
+			return jdbcDSConverter.convertToComplexType((String) o);
 			
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + o + " of type " + 

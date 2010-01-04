@@ -209,10 +209,12 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	
 	public void testGetDerivedInstance() throws Exception {
 		SQLColumn origCol = table1pk.getColumn(0);
+		table1pk.addChild(origCol);
 
 		Set<String> propsToIgnore = new HashSet<String>();
 		propsToIgnore.add("parentTable");
 		propsToIgnore.add("parent");
+		propsToIgnore.add("SQLParent");
 		propsToIgnore.add("sourceColumn");
 		propsToIgnore.add("sourceDataTypeName");
 		propsToIgnore.add("SPListeners");
@@ -228,6 +230,8 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		
 		origCol.setAutoIncrementSequenceName("custom_sequence_name");  // supress auto-generate behaviour
 		SQLColumn derivCol = origCol.createInheritingInstance(table3pk);
+		table3pk.addChild(derivCol);
+		table3pk.setPopulated(true);
 		
 		// These should be the only differences between origCol and derivCol
 		assertEquals(table3pk, derivCol.getParent());

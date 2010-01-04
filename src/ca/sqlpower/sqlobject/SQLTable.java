@@ -403,7 +403,7 @@ public class SQLTable extends SQLObject {
 				SQLTable pkTable = getParentDatabase().getTableByName(cat, sch, tab);
                 if (pkTable == null) {
                     throw new IllegalStateException("While populating table " +
-                            SQLObjectUtils.toQualifiedName(getParent()) +
+                            SQLObjectUtils.toQualifiedName(getSQLParent()) +
                             ", I failed to find child table " +
                             "\""+cat+"\".\""+sch+"\".\""+tab+"\"");
                 }
@@ -1156,9 +1156,9 @@ public class SQLTable extends SQLObject {
 	 * @return the value of parentDatabase
 	 */
 	public SQLDatabase getParentDatabase()  {
-		SQLObject o = getParent();
+		SQLObject o = getSQLParent();
 		while (o != null && ! (o instanceof SQLDatabase)) {
-			o = o.getParent();
+			o = o.getSQLParent();
 		}
 		return (SQLDatabase) o;
 	}
@@ -1177,9 +1177,9 @@ public class SQLTable extends SQLObject {
 	}
 
 	public SQLCatalog getCatalog()  {
-		SQLObject o = getParent();
+		SQLObject o = getSQLParent();
 		while (o != null && ! (o instanceof SQLCatalog)) {
-			o = o.getParent();
+			o = o.getSQLParent();
 		}
 		return (SQLCatalog) o;
 	}
@@ -1198,9 +1198,9 @@ public class SQLTable extends SQLObject {
 	}
 
 	public SQLSchema getSchema()  {
-		SQLObject o = getParent();
+		SQLObject o = getSQLParent();
 		while (o != null && ! (o instanceof SQLSchema)) {
-			o = o.getParent();
+			o = o.getSQLParent();
 		}
 		return (SQLSchema) o;
 	}

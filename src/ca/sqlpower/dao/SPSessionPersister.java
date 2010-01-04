@@ -39,6 +39,8 @@ import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.sql.DataSourceCollection;
+import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.util.SPSession;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -314,30 +316,17 @@ public class SPSessionPersister implements SPPersister {
 	private boolean headingToWisconsin;
 	
 	/**
-	 * Creates a session persister that can update any object at or a descendant
-	 * of the given session's workspace object. If the persist call to this
-	 * persister is involving an object that is not the workspace or descendant
-	 * of the workspace in the given session an exception will be thrown
-	 * depending on the call. See the specific method being called for more
-	 * information about the exceptions that will be thrown.
-	 */
-	public SPSessionPersister(String name, SPSession session) {
-		this(name, session, session.getWorkspace());
-	}
-	
-	/**
 	 * Creates a session persister that can update an object at or a descendant
 	 * of the given root now. If the persist call involves an object that is
 	 * outside of the scope of the root node and its descendant tree an
 	 * exception will be thrown depending on the method called as the object
 	 * will not be found.
 	 */
-	public SPSessionPersister(String name, SPSession session, SPObject root) {
+	public SPSessionPersister(String name, DataSourceCollection<SPDataSource> dsCollection, SPObject root) {
 		this.name = name;
-		this.session = session;
 		this.root = root;
 		
-		converter = new SessionPersisterSuperConverter(session, root);
+		converter = new SessionPersisterSuperConverter(dsCollection, root);
 		persisterFactory = new SPPersisterHelperFactory(null, converter) {
 			
 			@Override
@@ -951,12 +940,13 @@ public class SPSessionPersister implements SPPersister {
 	 * @throws SPPersistenceException
 	 */
 	public static void undoForSession(
-			SPSession session,
+			DataSourceCollection<SPDataSource> dsCollection,
+			SPObject root,
 			List<PersistedObjectEntry> creations,
 			List<PersistedPropertiesEntry> properties,
 			List<RemovedObjectEntry> removals) throws SPPersistenceException
 	{
-		SPSessionPersister persister = new SPSessionPersister("undoer", session);
+		SPSessionPersister persister = new SPSessionPersister("undoer", dsCollection, root);
 		persister.setGodMode(true);
 		persister.setObjectsToRemoveRollbackList(removals);
 		persister.setPersistedObjectsRollbackList(creations);
