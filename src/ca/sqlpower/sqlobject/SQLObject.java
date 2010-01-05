@@ -36,6 +36,7 @@ import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.SPObjectUtils;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
@@ -153,19 +154,6 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
     			|| (actualOldPhysicalName != null && actualOldPhysicalName.equals(argName))) return;
 		
 		firePropertyChange("physicalName",oldPhysicalName,argName);
-	}
-
-	/**
-	 * Returns the parent of this SQLObject if it is a SQLObject or
-	 * <code>null</code> if it is a root object.
-	 */
-	@Accessor
-	public SQLObject getSQLParent() {
-		SPObject parent = super.getParent();
-		if (parent instanceof SQLObject) {
-			return (SQLObject) parent;
-		}
-		return null; 
 	}
 
 	/**
@@ -618,9 +606,9 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
             logger.debug("Refreshing table container " + this);
             Connection con = null;
             try {
-                SQLDatabase db = SQLObjectUtils.getAncestor(this, SQLDatabase.class);
-                SQLCatalog cat = SQLObjectUtils.getAncestor(this, SQLCatalog.class);
-                SQLSchema sch = SQLObjectUtils.getAncestor(this, SQLSchema.class);
+                SQLDatabase db = SPObjectUtils.getAncestor(this, SQLDatabase.class);
+                SQLCatalog cat = SPObjectUtils.getAncestor(this, SQLCatalog.class);
+                SQLSchema sch = SPObjectUtils.getAncestor(this, SQLSchema.class);
                 
                 con = db.getConnection();
                 DatabaseMetaData dbmd = con.getMetaData();

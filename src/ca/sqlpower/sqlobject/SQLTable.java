@@ -33,6 +33,7 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.SPObjectUtils;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
@@ -403,7 +404,7 @@ public class SQLTable extends SQLObject {
 				SQLTable pkTable = getParentDatabase().getTableByName(cat, sch, tab);
                 if (pkTable == null) {
                     throw new IllegalStateException("While populating table " +
-                            SQLObjectUtils.toQualifiedName(getSQLParent()) +
+                            SQLObjectUtils.toQualifiedName(getParent()) +
                             ", I failed to find child table " +
                             "\""+cat+"\".\""+sch+"\".\""+tab+"\"");
                 }
@@ -1156,11 +1157,12 @@ public class SQLTable extends SQLObject {
 	 * @return the value of parentDatabase
 	 */
 	public SQLDatabase getParentDatabase()  {
-		SQLObject o = getSQLParent();
-		while (o != null && ! (o instanceof SQLDatabase)) {
-			o = o.getSQLParent();
-		}
-		return (SQLDatabase) o;
+		return SPObjectUtils.getAncestor(this, SQLDatabase.class);
+	}
+	
+	@Override
+	public SQLObject getParent() {
+		return (SQLObject) super.getParent();
 	}
 
 	/**
@@ -1177,11 +1179,7 @@ public class SQLTable extends SQLObject {
 	}
 
 	public SQLCatalog getCatalog()  {
-		SQLObject o = getSQLParent();
-		while (o != null && ! (o instanceof SQLCatalog)) {
-			o = o.getSQLParent();
-		}
-		return (SQLCatalog) o;
+		return SPObjectUtils.getAncestor(this, SQLCatalog.class);
 	}
 
 	/**
@@ -1198,11 +1196,7 @@ public class SQLTable extends SQLObject {
 	}
 
 	public SQLSchema getSchema()  {
-		SQLObject o = getSQLParent();
-		while (o != null && ! (o instanceof SQLSchema)) {
-			o = o.getSQLParent();
-		}
-		return (SQLSchema) o;
+		return SPObjectUtils.getAncestor(this, SQLSchema.class);
 	}
 
 	/**

@@ -39,17 +39,17 @@ public class SQLObjectUtils {
 
     /**
      * This will check if the two objects given are contained in the same
-     * session by finding their top ancestors and comparing them. o1 and o2
+     * root SQLObject by finding their top ancestors and comparing them. o1 and o2
      * cannot be null.
      */
     public static boolean isInSameSession(SQLObject o1, SQLObject o2) {
         SQLObject o1Parent = o1;
-        while (o1Parent.getSQLParent() != null) {
-            o1Parent = o1Parent.getSQLParent();
+        while (o1Parent.getParent() != null && o1Parent.getParent() instanceof SQLObject) {
+            o1Parent = (SQLObject) o1Parent.getParent();
         }
         SQLObject o2Parent = o2;
-        while (o2Parent.getSQLParent() != null) {
-            o2Parent = o2Parent.getSQLParent();
+        while (o2Parent.getParent() != null && o2Parent.getParent() instanceof SQLObject) {
+            o2Parent = (SQLObject) o2Parent.getParent();
         }
         
         logger.debug("Parent of " + o1 + " is " + o1Parent + ", parent of " + o2 + " is " + o2Parent);
@@ -74,7 +74,7 @@ public class SQLObjectUtils {
     public static String toQualifiedName(SQLObject obj, Class<? extends SQLObject> stopAt) {
         return toQualifiedName(obj, stopAt, "");
     }
-
+    
     /**
      * Creates a dot-separated quoted string of the name of the given SQLObject
      * and the names of each of its ancestors, stopping at the first ancestor of
@@ -97,7 +97,8 @@ public class SQLObjectUtils {
         List<SQLObject> ancestors = new ArrayList<SQLObject>();
         while (obj != null && obj.getClass() != stopAt) {
             ancestors.add(obj);
-            obj = obj.getSQLParent();
+            if (!(obj.getParent() instanceof SQLObject)) break;
+            obj = (SQLObject) obj.getParent();
         }
         StringBuilder sb = new StringBuilder();
         for (int i = ancestors.size() - 1; i >= 0; i--) {
@@ -377,31 +378,18 @@ public class SQLObjectUtils {
         return commonAncestor;
     }
 
+    /**
+     * Returns a list of SQLObjects where the first entity in the list is the
+     * highest ancestor and the last object in the list is the given object.
+     */
     public static List<SQLObject> ancestorList(SQLObject so) {
         List<SQLObject> ancestors = new LinkedList<SQLObject>();
         while (so != null) {
             ancestors.add(0, so);
-            so = so.getSQLParent();
+            if (!(so.getParent() instanceof SQLObject)) break;
+            so = (SQLObject) so.getParent();
         }
         return ancestors;
-    }
-
-    /**
-     * Returns the first ancestor of <tt>so</tt> which is of the given type, or
-     * <tt>null</tt> if <tt>so</tt> doesn't have an ancestor whose class is
-     * <tt>ancestorType</tt>.
-     * 
-     * @param so
-     *            The object for whose ancestor to look. (Thanks, Winston).
-     * @return The nearest ancestor of type ancestorType, or null if no such
-     *         ancestor exists.
-     */
-    public static <T extends SQLObject> T getAncestor(SQLObject so, Class<T> ancestorType) {
-        while (so != null) {
-            if (so.getClass().equals(ancestorType)) return ancestorType.cast(so);
-            so = so.getSQLParent();
-        }
-        return null;
     }
 
     /**

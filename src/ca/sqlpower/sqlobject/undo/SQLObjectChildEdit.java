@@ -25,6 +25,7 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.SPChildEvent.EventType;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLIndex;
@@ -73,7 +74,13 @@ public class SQLObjectChildEdit extends AbstractUndoableEdit {
 	public void addChild() throws SQLObjectException {
 		logger.debug("Adding child " + e.getChildType().getSimpleName() + " to parent " + e.getSource().getClass().getSimpleName());
 		SQLObject source = (SQLObject) e.getSource();
-		SQLObject parent = source.getSQLParent();
+		SPObject spParent = source.getParent();
+		SQLObject parent;
+		if (spParent instanceof SQLObject) {
+			parent = (SQLObject) spParent;
+		} else {
+			parent = null;
+		}
 		try{
 			if (parent != null) {
 				parent.setMagicEnabled(false);
