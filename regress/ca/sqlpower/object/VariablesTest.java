@@ -289,8 +289,6 @@ public class VariablesTest extends TestCase {
 		
 		// Now search for keys on the way back too
 		helper.setWalkDown(true);
-		assertTrue(Arrays.equals(new String[] {"key1", "key3", "key2"}, helper.keySet(null).toArray()));
-		
+		assertTrue(Arrays.equals(new String[] {"key1", "key2", "key3"}, helper.keySet(null).toArray()));
 	}
-	
 }
