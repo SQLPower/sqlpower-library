@@ -22,6 +22,8 @@ package ca.sqlpower.swingui.querypen;
 import java.awt.Color;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 
 import javax.swing.JEditorPane;
 import javax.swing.UIManager;
@@ -30,6 +32,7 @@ import javax.swing.text.StyleConstants;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.SPVariableHelper;
 import edu.umd.cs.piccolo.PCanvas;
 import edu.umd.cs.piccolo.PNode;
 import edu.umd.cs.piccolo.event.PBasicInputEventHandler;
@@ -73,13 +76,15 @@ private static final Logger logger = Logger.getLogger(EditablePStyledText.class)
 			}
 		}
 		public void focusGained(FocusEvent e) {
-			whereOptionBox.translate(getGlobalFullBounds().getX()-whereOptionBox.getXOffset()-ONE_PIXEL_SPACE
-					,(getGlobalFullBounds().getY() + getEditorPane().getHeight())-whereOptionBox.getYOffset());
-			queryPen.getTopLayer().addChild(whereOptionBox);
+			whereOptionBox.translate(
+					getGlobalFullBounds().getX()-whereOptionBox.getXOffset()-ONE_PIXEL_SPACE,
+					(getGlobalFullBounds().getY() + getEditorPane().getHeight())-whereOptionBox.getYOffset());
+			if (!queryPen.getTopLayer().isAncestorOf(whereOptionBox))
+				queryPen.getTopLayer().addChild(whereOptionBox);
 			whereOptionBox.moveToFront();
 		}
 	};
-
+	
 	/**
 	 * This is the width of the WHERE option's box
 	 */
@@ -94,25 +99,57 @@ private static final Logger logger = Logger.getLogger(EditablePStyledText.class)
 	private boolean boxClicked;
 	
 	private final QueryPen queryPen;
+
+	private final SPVariableHelper variablesHelper;
 	
 	/**
 	 *  This is an Array of Where Options for the whereOptionsBox
 	 */
 	private static final String[] whereOptions = new String[]{"<", ">", 
 		"=", "<>", ">=", "<=", "BETWEEN", "LIKE", "IN", "NOT" };
+
+	public EditablePStyledTextWithOptionBox(String startingText, QueryPen queryPenRef, PCanvas canvas, int minCharCountSize) {
+		this(startingText, queryPenRef, canvas, minCharCountSize, null);
+	}
 	
-	public EditablePStyledTextWithOptionBox(String startingText, QueryPen queryPen, PCanvas canvas, int minCharCountSize) {
-		super(startingText, queryPen, canvas, minCharCountSize);
-		this.queryPen = queryPen;
-		getEditorPane().removeFocusListener(getEditorFocusListener());
+	public EditablePStyledTextWithOptionBox(String startingText, QueryPen queryPenRef, final PCanvas canvas, int minCharCountSize, SPVariableHelper variables) {
+		super(startingText, queryPenRef, canvas, minCharCountSize);
+		this.queryPen = queryPenRef;
+		this.variablesHelper = variables;
 		
+		getEditorPane().removeFocusListener(getEditorFocusListener());
 		getEditorPane().addFocusListener(editorFocusListener);
+		getEditorPane().addMouseListener(new MouseListener() {
+			public void mouseReleased(MouseEvent e) {
+			}
+			public void mousePressed(MouseEvent e) {
+				if (e.getButton() == MouseEvent.BUTTON3) {
+					if (variablesHelper!=null) {
+						whereOptionBox.setVisible(false);
+						variablesHelper.promptAndInsertVariable(null, getEditorPane(), getEditorPane());
+						try {
+							getEditorPane().setText(getEditorPane().getDocument().getText(0,getEditorPane().getDocument().getLength()));
+						} catch (BadLocationException e1) {}
+						whereOptionBox.setVisible(true);
+						setVisible(true);
+						getEditorPane().requestFocus();
+						syncWithDocument();
+						repaint();
+					}
+				}
+			}
+			public void mouseExited(MouseEvent e) {
+			}
+			public void mouseEntered(MouseEvent e) {
+			}
+			public void mouseClicked(MouseEvent e) {
+			}
+		});
 		
 		whereOptionBox = PPath.createRectangle(0, 0
 				, (float)WHERE_OPTION_BOX_WIDTH, (float)WHERE_OPTION_BOX_HIEGHT);
 		
 		whereOptionBox.addInputEventListener(new PBasicInputEventHandler() {
-		
 			@Override
 			public void mousePressed(PInputEvent event) {
 				boxClicked = true;
@@ -134,7 +171,6 @@ private static final Logger logger = Logger.getLogger(EditablePStyledText.class)
 			background.setPaint(Color.gray);
 			background.setVisible(false);
 			newOption.addInputEventListener(new PBasicInputEventHandler() {
-				
 				
 				@Override
 				public void mouseEntered(PInputEvent event) {

@@ -17,6 +17,7 @@ import javax.swing.text.StyleConstants;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.SPVariableHelper;
 import ca.sqlpower.query.Item;
 import ca.sqlpower.swingui.querypen.MouseState.MouseStates;
 import edu.umd.cs.piccolo.PCanvas;
@@ -144,9 +145,12 @@ public class UnmodifiableItemPNode extends PNode implements CleanupPNode {
 			} else if (evt.getPropertyName().equals("alias")) {
 				setVisibleAliasText();
 			} else if (evt.getPropertyName().equals("where")) {
-				whereText.getEditorPane().setText(item.getWhere());
-				whereText.syncWithDocument();
-				whereText.repaint();
+				if (!item.getWhere().equals(whereText.getEditorPane().getText().trim())) {
+					whereText.getEditorPane().setText(item.getWhere());
+					fillWithSpaces();
+					whereText.syncWithDocument();
+					whereText.repaint();
+				}
 			}
 			
 			for (PropertyChangeListener l : queryChangeListeners) {
@@ -154,6 +158,18 @@ public class UnmodifiableItemPNode extends PNode implements CleanupPNode {
 			}
 		}
 	};
+	
+	private void fillWithSpaces() {
+		if (whereText.getEditorPane().getText() == null || whereText.getEditorPane().getText().trim().equals("") ) {
+			whereText.getEditorPane().setText(WHERE_START_TEXT);
+		} else if (	whereText.getEditorPane().getText().length() < WHERE_START_TEXT.length()) {
+			StringBuffer sb = new StringBuffer();
+			for (int i = 0; i < WHERE_START_TEXT.length() - whereText.getEditorPane().getText().length(); i++) {
+				sb.append(" ");
+			}
+			whereText.getEditorPane().setText(whereText.getEditorPane().getText() + sb.toString());
+		}
+	}
 	
 	/**
 	 * HighLights the columnText. This will be called when the item is joined or Deleted.
@@ -204,8 +220,15 @@ public class UnmodifiableItemPNode extends PNode implements CleanupPNode {
 	private PSwing swingCheckBox;
 	private final QueryPen queryPen;
 
+	private final SPVariableHelper variablesHelper;
+
 	public UnmodifiableItemPNode(QueryPen mouseStates, PCanvas canvas, Item i) {
+		this(mouseStates, canvas, i, null);
+	}
+	
+	public UnmodifiableItemPNode(QueryPen mouseStates, PCanvas canvas, Item i, SPVariableHelper newVariablesHelper) {
 		this.item = i;
+		this.variablesHelper = newVariablesHelper;
 		item.addPropertyChangeListener(itemChangeListener);
 		queryPen = mouseStates;
 		queryChangeListeners = new ArrayList<PropertyChangeListener>();
@@ -252,7 +275,7 @@ public class UnmodifiableItemPNode extends PNode implements CleanupPNode {
 		
 		addChild(columnText);
 		
-		whereText = new EditablePStyledTextWithOptionBox(WHERE_START_TEXT, queryPen, canvas, WHERE_START_TEXT.length());
+		whereText = new EditablePStyledTextWithOptionBox(WHERE_START_TEXT, queryPen, canvas, WHERE_START_TEXT.length(), variablesHelper);
 		whereText.addEditStyledTextListener(whereTextListener);
 		whereText.translate(0, textYTranslation);
 		addChild(whereText);

@@ -66,6 +66,8 @@ import javax.swing.event.ChangeListener;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.SPVariableHelper;
 import ca.sqlpower.query.Container;
 import ca.sqlpower.query.Item;
 import ca.sqlpower.query.Query;
@@ -530,7 +532,7 @@ public class QueryPen implements MouseState {
     
         public void containerAdded(QueryChangeEvent evt) {
         	Container containerChanged = evt.getContainerChanged();
-			ContainerPane pane = new ContainerPane(QueryPen.this, canvas, containerChanged);
+			ContainerPane pane = new ContainerPane(QueryPen.this, canvas, containerChanged, variablesHelper);
 			pane.addQueryChangeListener(queryChangeListener);
 			topLayer.addChild(pane);
 			
@@ -552,6 +554,8 @@ public class QueryPen implements MouseState {
      * the query.
      */
     private final Action joinAction;
+
+	private SPVariableHelper variablesHelper;
 
 	public JPanel createQueryPen() {
         panel.setLayout(new BorderLayout());
@@ -633,6 +637,7 @@ public class QueryPen implements MouseState {
 		this.executeQueryAction = executeQueryAction;
 		
 		this.model = model;
+		
 		model.addQueryChangeListener(queryListener);
 		panel = new JPanel();
 	    cursorManager = new CursorManager(panel);
@@ -641,6 +646,14 @@ public class QueryPen implements MouseState {
 		} else {
 			acceleratorKeyString = "Ctrl";
 		}
+		
+		if (model instanceof SPObject) {
+			this.variablesHelper = new SPVariableHelper((SPObject)model);
+			this.variablesHelper.setWalkDown(true);
+		} else {
+			this.variablesHelper = null;
+		}
+		
 		canvas = new PSwingCanvas();
 		canvas.setBackground(Color.black);
 		canvas.setAnimatingRenderQuality(PPaintContext.HIGH_QUALITY_RENDERING);
@@ -770,7 +783,7 @@ public class QueryPen implements MouseState {
 	 * This will load the related tables and their properties into the QueryPen.
 	 */
 	private void loadQueryCache(boolean showConstantContainer) {
-        constantsContainer = new ConstantsPane(this, canvas, model.getConstantsContainer());
+        constantsContainer = new ConstantsPane(this, canvas, model.getConstantsContainer(), this.variablesHelper);
         constantsContainer.addChangeListener(queryChangeListener);
         
         if (showConstantContainer) {
@@ -779,7 +792,7 @@ public class QueryPen implements MouseState {
         
         Map<Item, UnmodifiableItemPNode> loadedItemPNodes = new HashMap<Item, UnmodifiableItemPNode>();
         for (Container c : model.getFromTableList()) {
-        	ContainerPane container = new ContainerPane(this, canvas, c);
+        	ContainerPane container = new ContainerPane(this, canvas, c, this.variablesHelper);
 			topLayer.addChild(container);
 			for (UnmodifiableItemPNode node : container.getContainedItems()) {
 				loadedItemPNodes.put(node.getItem(), node);

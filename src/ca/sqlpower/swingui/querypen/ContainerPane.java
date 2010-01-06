@@ -38,6 +38,8 @@ import javax.swing.JLabel;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.SPVariableHelper;
 import ca.sqlpower.query.Container;
 import ca.sqlpower.query.ContainerChildEvent;
 import ca.sqlpower.query.ContainerChildListener;
@@ -282,8 +284,15 @@ public class ContainerPane extends PNode implements CleanupPNode {
 	 */
     private final PSwing closeButton;
     
-	public ContainerPane(QueryPen pen, PCanvas canvas, Container newModel) {
+    private final SPVariableHelper variablesHelper;
+    
+    public ContainerPane(QueryPen pen, PCanvas canvas, Container newModel) {
+    	this(pen, canvas, newModel, null);
+    }
+    
+	public ContainerPane(QueryPen pen, PCanvas canvas, Container newModel, SPVariableHelper variables) {
 		model = newModel;
+		this.variablesHelper = variables;
 		logger.debug("Container alias is " + model.getAlias());
 		model.addPropertyChangeListener(containerChangeListener);
 		model.addChildListener(containerChildListener);
@@ -403,7 +412,7 @@ public class ContainerPane extends PNode implements CleanupPNode {
 	 */
 	private UnmodifiableItemPNode createTextLine(Item item) {
 		final UnmodifiableItemPNode modelNameText;
-		modelNameText = new UnmodifiableItemPNode(queryPen, canvas, item);
+		modelNameText = new UnmodifiableItemPNode(queryPen, canvas, item, this.variablesHelper);
 		modelNameText.getItemText().addPropertyChangeListener(PNode.PROPERTY_BOUNDS, resizeOnEditChangeListener);
 		modelNameText.getWherePStyledText().addPropertyChangeListener(PNode.PROPERTY_BOUNDS, resizeOnEditChangeListener);
 		modelNameText.addQueryChangeListener(guiItemChangeListener);

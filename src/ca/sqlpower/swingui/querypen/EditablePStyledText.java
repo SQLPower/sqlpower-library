@@ -39,7 +39,6 @@ import javax.swing.JEditorPane;
 import javax.swing.UIManager;
 import javax.swing.border.LineBorder;
 import javax.swing.text.DefaultStyledDocument;
-import javax.swing.text.JTextComponent;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 
@@ -123,14 +122,7 @@ public class EditablePStyledText extends PStyledText {
      */
     private EditStyledTextListener emptyListener = new EditStyledTextListener() {
         public void editingStopping() {
-            if (editorPane.getText() == null || editorPane.getText().length() < minCharCountSize) {
-                StringBuffer sb = new StringBuffer();
-                for (int i = 0; i < minCharCountSize - editorPane.getText().length(); i++) {
-                    sb.append(" ");
-                }
-                editorPane.setText(editorPane.getText() + sb.toString());
-                syncWithDocument();
-            }
+            fillWithSpaces();
         }
         public void editingStarting() {
             editorPane.setText(editorPane.getText().trim());
@@ -175,6 +167,8 @@ public class EditablePStyledText extends PStyledText {
             editorPane.setLocation((int)nodePt.getX()-bInsets.left,(int)nodePt.getY()-bInsets.top);
         }
     };
+
+	protected final String startingText;
 	
 	public EditablePStyledText(QueryPen queryPen, PCanvas canvas) {
 		this("", queryPen, canvas);
@@ -185,7 +179,8 @@ public class EditablePStyledText extends PStyledText {
 	}
 	
 	public EditablePStyledText(String startingText, QueryPen queryPen, final PCanvas canvas, int minCharCountSize) {
-	    this.minCharCountSize = minCharCountSize;
+	    this.startingText = startingText;
+		this.minCharCountSize = minCharCountSize;
 	    this.canvas = canvas;
 		editorPane = new JEditorPane();
 		editingListeners = new ArrayList<EditStyledTextListener>();
@@ -204,16 +199,6 @@ public class EditablePStyledText extends PStyledText {
         canvas.getCamera().addPropertyChangeListener(PCamera.PROPERTY_VIEW_TRANSFORM, cameraViewChangeListener);
 		
 		styledTextEventHandler = new ExtendedStyledTextEventHandler(queryPen, canvas, editorPane) {
-		    @Override
-		    protected void initEditor(JTextComponent newEditor) {
-		        editor = newEditor;
-		        
-		        canvas.setLayout(null);
-		        canvas.add(editor);
-		        editor.setVisible(false);
-		        
-		        docListener = createDocumentListener();
-		    }
 		    
 			@Override
 			public void startEditing(PInputEvent event, PStyledText text) {
@@ -226,6 +211,7 @@ public class EditablePStyledText extends PStyledText {
 			@Override
 			public void stopEditing() {
 				editorPane.setText(editorPane.getText().replaceAll("\n", "").trim());
+				fillWithSpaces();
 				syncWithDocument();
 				for (EditStyledTextListener l : editingListeners) {
 					l.editingStopping();
@@ -311,6 +297,20 @@ public class EditablePStyledText extends PStyledText {
 	
 	public JEditorPane getEditorPane() {
 		return editorPane;
+	}
+
+	private void fillWithSpaces() {
+		if (editorPane.getText() == null || editorPane.getText().trim().equals("") ) {
+			editorPane.setText(startingText);
+			syncWithDocument();
+		} else if (	editorPane.getText().length() < minCharCountSize) {
+			StringBuffer sb = new StringBuffer();
+			for (int i = 0; i < minCharCountSize - editorPane.getText().length(); i++) {
+				sb.append(" ");
+			}
+			editorPane.setText(editorPane.getText() + sb.toString());
+			syncWithDocument();
+		}
 	}
 	
 }

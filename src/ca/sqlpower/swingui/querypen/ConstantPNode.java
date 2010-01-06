@@ -30,6 +30,7 @@ import javax.swing.JCheckBox;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.SPVariableHelper;
 import ca.sqlpower.query.Item;
 import ca.sqlpower.query.StringItem;
 import edu.umd.cs.piccolo.PCanvas;
@@ -123,7 +124,11 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 	 */
     private final QueryPen queryPen;
 
-	public ConstantPNode(Item source, QueryPen mouseStates, PCanvas canvas) {
+    public ConstantPNode(Item source, QueryPen mouseStates, PCanvas canvas) {
+    	this(source, mouseStates, canvas, null);
+    }
+    
+	public ConstantPNode(Item source, QueryPen mouseStates, PCanvas canvas, SPVariableHelper variables) {
 		this.item = source;
         this.queryPen = mouseStates;
 		item.addPropertyChangeListener(itemChangeListener);
@@ -169,9 +174,9 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 		addChild(aliasText);
 		
 		if (item.getWhere().trim().length() > 0) {
-			whereText = new EditablePStyledTextWithOptionBox(item.getWhere(), mouseStates, canvas, LONG_EMPTY_STRING.length());
+			whereText = new EditablePStyledTextWithOptionBox(item.getWhere(), mouseStates, canvas, LONG_EMPTY_STRING.length(), variables);
 		} else {
-			whereText = new EditablePStyledTextWithOptionBox(LONG_EMPTY_STRING, mouseStates, canvas, LONG_EMPTY_STRING.length());
+			whereText = new EditablePStyledTextWithOptionBox(LONG_EMPTY_STRING, mouseStates, canvas, LONG_EMPTY_STRING.length(), variables);
 		}
 		
 		whereText.addEditStyledTextListener(new EditStyledTextListener() {

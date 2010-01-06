@@ -33,6 +33,7 @@ import javax.swing.JCheckBox;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.SPVariableHelper;
 import ca.sqlpower.query.Container;
 import ca.sqlpower.query.ContainerChildEvent;
 import ca.sqlpower.query.ContainerChildListener;
@@ -196,11 +197,18 @@ public class ConstantsPane extends PNode implements CleanupPNode {
 	 * This is the background for the area where the user can add where text.
 	 */
 	private PNode whereBackground;
+
+	private final SPVariableHelper variables;
 	
 	public ConstantsPane(QueryPen mouseState, PCanvas canvas, Container containerModel) {
+		this(mouseState, canvas, containerModel, null);
+	}
+	
+	public ConstantsPane(QueryPen mouseState, PCanvas canvas, Container containerModel, SPVariableHelper variables) {
 		this.queryPen = mouseState;
 		this.canvas = canvas;
 		this.model = containerModel;
+		this.variables = variables;
 
 		changeListeners = new ArrayList<PropertyChangeListener>();
 		constantPNodeList = new ArrayList<ConstantPNode>();
@@ -405,7 +413,7 @@ public class ConstantsPane extends PNode implements CleanupPNode {
 	 * Adds the item to this ConstanstPane in a new ConstantPNode.
 	 */
 	public void addItem(Item item) {
-		ConstantPNode newConstantNode = new ConstantPNode(item, queryPen, canvas);
+		ConstantPNode newConstantNode = new ConstantPNode(item, queryPen, canvas, this.variables);
 		newConstantNode.addChangeListener(resizeListener);
 		newConstantNode.translate(0, (title.getHeight() + BORDER_SIZE) * (2 + constantPNodeList.size()) + BORDER_SIZE);
 		constantPNodeList.add(newConstantNode);
