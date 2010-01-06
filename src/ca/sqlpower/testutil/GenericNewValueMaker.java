@@ -61,6 +61,7 @@ public class GenericNewValueMaker implements NewValueMaker {
 	 * See doc comment on constructor.
 	 */
 	private final SPObject root;
+	private final PlDotIni pl;
 
 	/**
 	 * @param root
@@ -74,8 +75,12 @@ public class GenericNewValueMaker implements NewValueMaker {
 	 *            this new value maker.
 	 */
 	public GenericNewValueMaker(SPObject root) {
+		this(root, new PlDotIni());
+	}
+	
+	public GenericNewValueMaker(SPObject root, PlDotIni pl) {
 		this.root = root;
-		
+		this.pl = pl;
 	}
 	
 	protected SPObject getRootObject() {
@@ -108,11 +113,17 @@ public class GenericNewValueMaker implements NewValueMaker {
         } else if (valueType == File.class) {
             newVal = new File("temp" + System.currentTimeMillis());
         } else if (valueType == JDBCDataSource.class) {
-            newVal = new JDBCDataSource(new PlDotIni());
+            newVal = new JDBCDataSource(this.pl);
             ((SPDataSource)newVal).setName("Testing data source");
+            if (this.pl.getDataSource("Testing data source")==null) {
+            	this.pl.addDataSource((JDBCDataSource)newVal);
+            }
         } else if (valueType == SPDataSource.class) {
-            newVal = new JDBCDataSource(new PlDotIni());
+            newVal = new JDBCDataSource(this.pl);
             ((SPDataSource)newVal).setName("Testing data source");
+            if (this.pl.getDataSource("Testing data source")==null) {
+            	this.pl.addDataSource((JDBCDataSource)newVal);
+            }
         } else if (valueType == Font.class) {
             newVal = Font.decode("Dialog");
             if (newVal.equals(oldVal)) {
