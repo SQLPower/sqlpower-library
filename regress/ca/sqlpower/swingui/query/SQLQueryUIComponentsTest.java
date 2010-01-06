@@ -83,10 +83,7 @@ public class SQLQueryUIComponentsTest extends TestCase {
 		}
 		assertFalse(queryUIComponents.getLogTextArea().getText().contains("Exception"));
 		
-		queryUIComponents.executeQuery("SHUTDOWN");
-		while (queryUIComponents.getSqlExecuteWorker() != null) {
-			//wait for query to execute and return with a result.
-		}
+		queryUIComponents.closeConMap();
 		
 		queryUIComponents.executeQuery("create table dummy2 (col1 varchar(10))");
 		while (queryUIComponents.getSqlExecuteWorker() != null) {
@@ -95,5 +92,4 @@ public class SQLQueryUIComponentsTest extends TestCase {
 		System.out.println(queryUIComponents.getLogTextArea().getText());
 		assertFalse(queryUIComponents.getLogTextArea().getText().contains("Exception"));
 	}
-
 }
