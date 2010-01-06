@@ -24,8 +24,10 @@ import java.awt.event.ActionEvent;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -245,9 +247,18 @@ public class SPVariableHelper implements SPVariableResolver {
 				variableNamespace,
 				true);
 		
+		// Sort the names.
+		List<String> sortedNames = new ArrayList<String>(keys.keySet().size());
+		sortedNames.addAll(keys.keySet());
+		Collections.sort(sortedNames, new Comparator<String>() {
+			public int compare(String o1, String o2) {
+				return o1.compareTo(o2);
+			};
+		});
+		
 		// Now build the menu
     	JPopupMenu menu = new JPopupMenu();
-        for (Object name : keys.keySet()) {
+        for (String name : sortedNames) {
         	JMenu subMenu = new JMenu(name.toString());
     		menu.add(subMenu);
     		for (Object key : keys.getCollection(name)) {
@@ -256,7 +267,7 @@ public class SPVariableHelper implements SPVariableResolver {
         }
     	
         // All done. Show the menu.
-        menu.show(invoker, invoker.getHeight(), 0);
+        menu.show(invoker, 0, invoker.getHeight());
     }
     
     
