@@ -25,6 +25,7 @@ import java.util.List;
 
 import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.NonProperty;
 
 /**
  * A generic root implementation to contain any type of SPObject implementation.
@@ -51,16 +52,19 @@ public class SPObjectRoot extends AbstractSPObject {
 		return 0;
 	}
 
+	@NonProperty
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
 		types.add(SPObject.class);
 		return types;
 	}
 
+	@NonProperty
 	public List<? extends SPObject> getChildren() {
 		return Collections.unmodifiableList(children);
 	}
 
+	@NonProperty
 	public List<? extends SPObject> getDependencies() {
 		return Collections.emptyList();
 	}

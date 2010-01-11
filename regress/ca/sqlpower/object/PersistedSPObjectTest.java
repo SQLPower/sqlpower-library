@@ -22,6 +22,8 @@ package ca.sqlpower.object;
 import java.awt.Image;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,6 +42,11 @@ import ca.sqlpower.dao.SPPersisterListener;
 import ca.sqlpower.dao.helper.SPPersisterHelperFactory;
 import ca.sqlpower.dao.helper.generated.SPPersisterHelperFactoryImpl;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonBound;
+import ca.sqlpower.object.annotation.NonProperty;
+import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.DatabaseConnectedTestCase;
@@ -283,5 +290,69 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
                 logger.debug("(non-fatal) Failed to write property '"+property.getName()+" to type "+wo.getClass().getName());
             }
         }
+	}
+
+	/**
+	 * Ensures that each getter and setter in the object under test is annotated
+	 * in some way. This way methods that need to be annotated to be persisted
+	 * will not be missed or will be defined to be skipped. The annotations are either
+	 * {@link Accessor} for getters, {@link Mutator} for setters, and {@link NonProperty}
+	 * that is neither an accessor or mutator but looks like one.
+	 */
+	public void testGettersAndSettersPersistedAnnotated() throws Exception {
+		SPObject objectUnderTest = getSPObjectUnderTest();
+		List<Method> getters = new ArrayList<Method>();
+		List<Method> setters = new ArrayList<Method>();
+		for (Method m : objectUnderTest.getClass().getDeclaredMethods()) {
+			//skip non-public methods as they are not visible for persisting anyways.
+			if (!Modifier.isPublic(m.getModifiers())) continue;
+			//skip static methods
+			if (Modifier.isStatic(m.getModifiers())) continue;
+			
+			if (m.getName().startsWith("get") || m.getName().startsWith("is")) {
+				Class<?> parentClass = objectUnderTest.getClass();
+				boolean accessor = false;
+				boolean ignored = false;
+				parentClass.getMethod(m.getName(), m.getParameterTypes());//test
+				while (parentClass != null) {
+					Method parentMethod;
+					try {
+						parentMethod = parentClass.getMethod(m.getName(), m.getParameterTypes());
+					} catch (NoSuchMethodException e) {
+						parentClass = parentClass.getSuperclass();
+						continue;
+					}
+					if (parentMethod.getAnnotation(Accessor.class) != null) {
+						accessor = true;
+						break;
+					} else if (parentMethod.getAnnotation(NonProperty.class) != null ||
+							parentMethod.getAnnotation(NonBound.class) != null) {
+						ignored = true;
+						break;
+					}
+					parentClass = parentClass.getSuperclass();
+				}
+				System.out.println("checking " + m.getName() + " with return type " + m.getReturnType() + " on class " + m.getDeclaringClass() + " with annotations " + Arrays.asList(m.getDeclaredAnnotations()));
+				if (accessor) {
+					getters.add(m);
+				} else if (ignored) {
+					//transient so skip
+				} else {
+					fail("The method " + m.getName() + " is a getter that is not annotated " +
+							"to be an accessor or transient. The exiting annotations are " + 
+							Arrays.toString(m.getAnnotations()));
+				}
+			} else if (m.getName().startsWith("set")) {
+				if (m.getAnnotation(Mutator.class) != null) {
+					setters.add(m);
+				} else if (m.getAnnotation(NonProperty.class) != null ||
+						m.getAnnotation(NonBound.class) != null) {
+					//transient so skip and pass
+				} else {
+					fail("The method " + m.getName() + " is a setter that is not annotated " +
+							"to be a mutator or transient.");
+				}
+			}
+		}
 	}
 }

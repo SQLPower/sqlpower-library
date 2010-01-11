@@ -38,6 +38,9 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonBound;
+import ca.sqlpower.object.annotation.NonProperty;
+import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
@@ -569,6 +572,7 @@ public class SQLTable extends SQLObject {
 	/**
 	 * Counts the number of columns in the primary key of this table.
 	 */
+	@Transient @Accessor
 	public int getPkSize() {
 		int size = 0;
 		for (SQLColumn c : columns) {
@@ -668,6 +672,7 @@ public class SQLTable extends SQLObject {
 		addChild(c, pos);
 	}
 
+	@NonProperty
 	public SQLColumn getColumn(int index) throws SQLObjectException {
 		populateColumns();
 		return columns.get(index);
@@ -677,6 +682,7 @@ public class SQLTable extends SQLObject {
 	 * Populates this table then searches for the named column in a case-insensitive
      * manner.
 	 */
+	@NonProperty
 	public SQLColumn getColumnByName(String colName) throws SQLObjectException {
 		return getColumnByName(colName, true, false);
 	}
@@ -688,6 +694,7 @@ public class SQLTable extends SQLObject {
 	 * list from the database; otherwise it just searches the current
 	 * list.
 	 */
+	@NonProperty
 	public SQLColumn getColumnByName(String colName, boolean populate, boolean caseSensitive) 
 	    throws SQLObjectException {
 
@@ -718,6 +725,7 @@ public class SQLTable extends SQLObject {
 		return null;
 	}
 
+	@NonProperty
 	public int getColumnIndex(SQLColumn col) throws SQLObjectException {
 		logger.debug("Looking for column index of: " + col);
 
@@ -777,7 +785,7 @@ public class SQLTable extends SQLObject {
 		        	SQLColumn changingPKCol = getColumns().get(i);
 		        	try {
 		        		changingPKCol.setMagicEnabled(false);
-		        		changingPKCol.setPrimaryKeySeq(new Integer(i + 1), false);
+		        		changingPKCol.setPrimaryKeySeqAndRearrangeCols(new Integer(i + 1), false);
 		        	} finally {
 		        		changingPKCol.setMagicEnabled(true);
 		        	}
@@ -789,14 +797,14 @@ public class SQLTable extends SQLObject {
 		        col.nullable = DatabaseMetaData.columnNoNulls;
 		        try {
 		        	col.setMagicEnabled(false);
-		        	col.setPrimaryKeySeq(new Integer(pos), false);
+		        	col.setPrimaryKeySeqAndRearrangeCols(new Integer(pos), false);
 		        } finally {
 		        	col.setMagicEnabled(true);
 		        }
 		    } else {
 		    	try {
 		    		col.setMagicEnabled(false);
-		    		col.setPrimaryKeySeq(null, false);
+		    		col.setPrimaryKeySeqAndRearrangeCols(null, false);
 		    	} finally {
 		    		col.setMagicEnabled(true);
 		    	}
@@ -1143,6 +1151,7 @@ public class SQLTable extends SQLObject {
 		return true;
 	}
 
+	@NonBound
 	public Class<? extends SQLObject> getChildType() {
 		return SQLObject.class;
 	}
@@ -1156,11 +1165,13 @@ public class SQLTable extends SQLObject {
 	 *
 	 * @return the value of parentDatabase
 	 */
+	@Transient @Accessor
 	public SQLDatabase getParentDatabase()  {
 		return SPObjectUtils.getAncestor(this, SQLDatabase.class);
 	}
 	
 	@Override
+	@Accessor
 	public SQLObject getParent() {
 		return (SQLObject) super.getParent();
 	}
@@ -1169,6 +1180,7 @@ public class SQLTable extends SQLObject {
 	 * @return An empty string if the catalog for this table is null;
 	 * otherwise, getCatalog().getCatalogName().
 	 */
+	@Transient @Accessor
 	public String getCatalogName() {
 		SQLCatalog catalog = getCatalog();
 		if (catalog == null) {
@@ -1178,6 +1190,7 @@ public class SQLTable extends SQLObject {
 		}
 	}
 
+	@Transient @Accessor
 	public SQLCatalog getCatalog()  {
 		return SPObjectUtils.getAncestor(this, SQLCatalog.class);
 	}
@@ -1186,6 +1199,7 @@ public class SQLTable extends SQLObject {
 	 * @return An empty string if the schema for this table is null;
 	 * otherwise, schema.getSchemaName().
 	 */
+	@Transient @Accessor
 	public String getSchemaName() {
 		SQLSchema schema = getSchema();
 		if (schema == null) {
@@ -1195,6 +1209,7 @@ public class SQLTable extends SQLObject {
 		}
 	}
 
+	@Transient @Accessor
 	public SQLSchema getSchema()  {
 		return SPObjectUtils.getAncestor(this, SQLSchema.class);
 	}
@@ -1290,6 +1305,7 @@ public class SQLTable extends SQLObject {
 	 * 
 	 * @return the value of columns
 	 */
+	@NonProperty
 	public synchronized List<SQLColumn> getColumns() throws SQLObjectException {
 		populateColumns();
 		return getColumnsWithoutPopulating();
@@ -1299,6 +1315,7 @@ public class SQLTable extends SQLObject {
 	 * Returns the list of columns without populating first. This will allow
 	 * access to the columns at current.
 	 */
+	@NonProperty
 	public synchronized List<SQLColumn> getColumnsWithoutPopulating() {
 		return Collections.unmodifiableList(columns);
 	}
@@ -1310,6 +1327,7 @@ public class SQLTable extends SQLObject {
 	 * @return the value of importedKeys
 	 * @throws SQLObjectException
 	 */
+	@NonProperty
 	public List<SQLImportedKey> getImportedKeys() throws SQLObjectException {
 		populateImportedKeys();
 		return getImportedKeysWithoutPopulating();
@@ -1319,6 +1337,7 @@ public class SQLTable extends SQLObject {
 	 * Returns the list of imported keys without populating first. This will
 	 * allow access to the imported keys at current.
 	 */
+	@NonProperty
 	public List<SQLImportedKey> getImportedKeysWithoutPopulating() {
 		return Collections.unmodifiableList(importedKeys);
 	}
@@ -1330,6 +1349,7 @@ public class SQLTable extends SQLObject {
 	 * @return the value of exportedKeys
 	 * @throws SQLObjectException
 	 */
+	@NonProperty
 	public List<SQLRelationship> getExportedKeys() throws SQLObjectException {
 		populateExportedKeys();
 		return getExportedKeysWithoutPopulating();
@@ -1339,6 +1359,7 @@ public class SQLTable extends SQLObject {
 	 * Returns the list of exported keys without populating first. This will
 	 * allow access to the exported keys at current.
 	 */
+	@NonProperty
 	public List<SQLRelationship> getExportedKeysWithoutPopulating() {
 		return Collections.unmodifiableList(exportedKeys);
 	}
@@ -1348,6 +1369,7 @@ public class SQLTable extends SQLObject {
      *
      * @return the value of exportedKeys
      */
+	@NonProperty
     public SQLRelationship getExportedKeyByName(String name) throws SQLObjectException {
         return getExportedKeyByName(name,true);
     }
@@ -1357,6 +1379,7 @@ public class SQLTable extends SQLObject {
      *
      * @return the value of exportedKeys
      */
+	@NonProperty
     public SQLRelationship getExportedKeyByName(String name,
             boolean populate ) throws SQLObjectException {
         if (populate) populateRelationships();
@@ -1374,6 +1397,7 @@ public class SQLTable extends SQLObject {
     /**
      * Gets a list of unique indices
      */
+	@NonProperty
     public synchronized List<SQLIndex> getUniqueIndices() throws SQLObjectException {
         populateColumns();
         populateIndices();
@@ -1391,6 +1415,7 @@ public class SQLTable extends SQLObject {
      *
      * @return the value of index
      */
+	@NonProperty
     public SQLIndex getIndexByName(String name) throws SQLObjectException {
         return getIndexByName(name,true);
     }
@@ -1400,6 +1425,7 @@ public class SQLTable extends SQLObject {
      *
      * @return the value of index
      */
+	@NonProperty
     public SQLIndex getIndexByName(String name,
             boolean populate ) throws SQLObjectException {
         if (populate) {
@@ -1468,6 +1494,7 @@ public class SQLTable extends SQLObject {
      *             {@link #getPrimaryKeyIndex()}.getName() instead.
      */
     @Deprecated
+    @Transient @Accessor
 	public String getPrimaryKeyName() throws SQLObjectException  {
         SQLIndex primaryKeyIndex = getPrimaryKeyIndex();
 		return primaryKeyIndex == null ? null : primaryKeyIndex.getName();
@@ -1501,6 +1528,7 @@ public class SQLTable extends SQLObject {
      * 
      * @throws SQLObjectException
      */
+    @Transient @Accessor
     public SQLIndex getPrimaryKeyIndex() throws SQLObjectException {
     	for (SQLIndex i : getIndices()) {
     		if (i.isPrimaryKeyIndex()) return i;
@@ -1557,6 +1585,7 @@ public class SQLTable extends SQLObject {
      * 
      * @throws SQLObjectException If there is a problem populating the indices folder
      */
+    @NonProperty
     public List<SQLIndex> getIndices() throws SQLObjectException {
     	populateColumns();
     	populateIndices();
@@ -1697,6 +1726,7 @@ public class SQLTable extends SQLObject {
 	 * accordingly as well.
 	 */
 	@Override
+	@Mutator
 	public void setPopulated(boolean v) {
 		populated = v;
 		columnsPopulated = v;

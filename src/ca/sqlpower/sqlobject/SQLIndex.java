@@ -37,6 +37,7 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.sql.SQL;
 import ca.sqlpower.util.TransactionEvent;
 
@@ -246,6 +247,7 @@ public class SQLIndex extends SQLObject {
         	firePropertyChange("ascendingOrDescending", oldValue, ascendingOrDescending);
         }
 
+        @Mutator
         public void setAscending(boolean ascending) {
             AscendDescend oldValue = this.ascendingOrDescending;
             if (ascending) {
@@ -254,6 +256,7 @@ public class SQLIndex extends SQLObject {
             firePropertyChange("ascending", oldValue, ascendingOrDescending);
         }
 
+        @Mutator
         public void setDescending(boolean descending) {
             AscendDescend oldValue = this.ascendingOrDescending;
             if (descending) {
@@ -475,6 +478,7 @@ public class SQLIndex extends SQLObject {
      * Overriden to narrow return type.
      */
     @Override
+    @NonProperty
     public Column getChild(int index) throws SQLObjectException {
         return (Column) super.getChild(index);
     }
@@ -483,6 +487,7 @@ public class SQLIndex extends SQLObject {
      * Overriden to narrow return type.
      */
     @Override
+    @NonProperty
     public List<Column> getChildrenWithoutPopulating() {
     	return Collections.unmodifiableList(columns);
     }
@@ -525,6 +530,7 @@ public class SQLIndex extends SQLObject {
      *             parent table.
      */
     @Override
+    @Mutator
     public void setParent(SPObject parent) {
     	if (getParent() != null) {
             getParent().removeSPListener(removeColumnListener);
@@ -605,50 +611,60 @@ public class SQLIndex extends SQLObject {
     	}
     }
 
+    @Accessor
     public String getFilterCondition() {
         return filterCondition;
     }
 
+    @Mutator
     public void setFilterCondition(String filterCondition) {
         String oldValue = this.filterCondition;
         this.filterCondition = filterCondition;
         firePropertyChange("filterCondition", oldValue, filterCondition);
     }
 
+    @Accessor
     public String getQualifier() {
         return qualifier;
     }
 
+    @Mutator
     public void setQualifier(String qualifier) {
         String oldValue = this.qualifier;
         this.qualifier = qualifier;
         firePropertyChange("qualifier", oldValue, qualifier);
     }
 
+    @Accessor
     public String getType() {
         return type;
     }
 
+    @Mutator
     public void setType(String type) {
         String oldValue = this.type;
         this.type = type;
         firePropertyChange("type", oldValue, type);
     }
 
+    @Accessor
     public boolean isUnique() {
         return unique;
     }
 
+    @Accessor
     public boolean isClustered() {
         return clustered;
     }
 
+    @Mutator
     public void setUnique(boolean unique) {
         boolean oldValue = this.unique;
         this.unique = unique;
         firePropertyChange("unique", oldValue, unique);
     }
 
+    @Mutator
     public void setClustered(boolean value) {
         boolean oldValue = this.clustered;
         this.clustered = value;
@@ -784,6 +800,7 @@ public class SQLIndex extends SQLObject {
         }
     }
 
+    @Accessor
     public boolean isPrimaryKeyIndex() {
         return primaryKeyIndex;
     }
@@ -797,6 +814,7 @@ public class SQLIndex extends SQLObject {
      *
      * @param isPrimaryKey
      */
+    @Mutator
     public void setPrimaryKeyIndex(boolean isPrimaryKey) throws SQLObjectException {
         boolean oldValue = this.primaryKeyIndex;
         if (oldValue == isPrimaryKey)
@@ -963,6 +981,7 @@ public class SQLIndex extends SQLObject {
         }
 	}
 
+	@NonProperty
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
 		types.add(Column.class);

@@ -24,7 +24,10 @@ import java.util.Collections;
 import java.util.List;
 
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.NonProperty;
+import ca.sqlpower.object.annotation.Transient;
 
 /**
  * This is normally an invisible root node that contains
@@ -54,6 +57,7 @@ public class SQLObjectRoot extends SQLObject {
 		// no-op
 	}
 	
+	@Transient @Accessor
 	public boolean isPopulated() {
 		return true;
 	}
@@ -124,6 +128,7 @@ public class SQLObjectRoot extends SQLObject {
 				" is not a valid child type of " + getName());
 	}
 
+	@NonProperty
 	public List<? extends SPObject> getDependencies() {
 		return Collections.emptyList();
 	}

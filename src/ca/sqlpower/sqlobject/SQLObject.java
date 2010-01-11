@@ -39,6 +39,8 @@ import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.SPObjectUtils;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonProperty;
+import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
 
 /**
@@ -83,6 +85,8 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 
 	private static Logger logger = Logger.getLogger(SQLObject.class);
 	protected boolean populated = false;
+	
+	private boolean populating = false;
 	
 	/**
 	 * The name used for this object in a physical database system. This name may have
@@ -161,7 +165,9 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      * This will do nothing if the object is already populated.
      */
 	public final void populate() throws SQLObjectException {
-	    if (populated) return;
+	    if (populated || populating) return;
+	    
+	    populating = true;
 	    
         // We're going to just leave caching on all the time and see how it pans out
         DatabaseMetaDataDecorator.putHint(
@@ -175,6 +181,8 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	        setChildrenInaccessibleReason(e, true);
 	    } catch (RuntimeException e) {
 	        setChildrenInaccessibleReason(e, true);
+	    } finally {
+	    	populating = false;
 	    }
 	}
 
@@ -190,6 +198,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 * Returns a short string that should be displayed to the user for
 	 * representing this SQLObject as a label.
 	 */
+	@Accessor
 	public abstract String getShortDisplayName();
 
 	/**
@@ -246,10 +255,12 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 * SQLRelationship, SQLColumn, etc.) which are directly contained
 	 * within this SQLObject.
 	 */
+	@NonProperty
 	public List<? extends SQLObject> getChildren() {
 		return getChildren(SQLObject.class);
 	}
 	
+	@NonProperty
 	public <T extends SPObject> List<T> getChildren(Class<T> type) {
 		try {
 			populate();
@@ -260,8 +271,10 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 		}
 	}
 	
+	@NonProperty
 	public abstract List<? extends SQLObject> getChildrenWithoutPopulating();
 	
+	@NonProperty
 	public <T extends SPObject> List<T> getChildrenWithoutPopulating(Class<T> type) {
 		List<T> children = new ArrayList<T>();
 		for (SQLObject child : getChildrenWithoutPopulating()) {
@@ -272,11 +285,13 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 		return Collections.unmodifiableList(children);
 	}
 
+	@NonProperty
 	public SQLObject getChild(int index) throws SQLObjectException {
 		populate();
 		return (SQLObject) getChildrenWithoutPopulating().get(index);
 	}
 
+	@NonProperty
 	public int getChildCount() throws SQLObjectException {
 		populate();
 		return getChildrenWithoutPopulating().size();
@@ -292,6 +307,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 * @throws SQLObjectException
 	 *             if populating this object fails
 	 */
+	@NonProperty
     Set<String> getChildNames() throws SQLObjectException {
         return getChildNames(SQLObject.class);
     }
@@ -306,6 +322,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 * @throws SQLObjectException
 	 *             if populating this object fails
 	 */
+	@NonProperty
     <T extends SQLObject> Set<String> getChildNames(Class<T> childType) {
         HashSet<String> names = new HashSet<String>();
         for (T child : getChildren(childType)) {
@@ -340,6 +357,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	/*
 	 * @return An immutable copy of the list of SQLObject listeners
 	 */
+	@NonProperty
 	public List<SPListener> getSPListeners() {
 			return listeners;
 	}
@@ -351,6 +369,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
     /**
      * @return An immutable copy of the list of SQLObject pre-event listeners
      */
+    @NonProperty
     public List<SQLObjectPreEventListener> getSQLObjectPreEventListeners() {
             return sqlObjectPreEventListeners;
     }
@@ -427,10 +446,12 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      * @return The first child with the given name, or null if there is no such child.
      * @throws SQLObjectException If the moon is waxing gibbous.
      */
+    @NonProperty
     public SQLObject getChildByName(String name) throws SQLObjectException {
         return getChildByNameImpl(name, false);
     }
     
+    @NonProperty
     public <T extends SQLObject> T getChildByName(String name, Class<T> childType) {
     	return getChildByNameImpl(name, false, childType);
     }
@@ -443,10 +464,12 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      * @return The first child with the given name, or null if there is no such child.
      * @throws SQLObjectException If the moon is waxing gibbous.
      */
+    @NonProperty
     public SQLObject getChildByNameIgnoreCase(String name) throws SQLObjectException {
         return getChildByNameImpl(name, true);
     }
     
+    @NonProperty
     public <T extends SQLObject> T getChildByNameIgnoreCase(String name, Class<T> childType) {
     	return getChildByNameImpl(name, true, childType);
     }
@@ -459,6 +482,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 * @param ignoreCase Whether the name search should be case sensitive
 	 * @return The found child with the given name, or null if it does not exist.
 	 */
+    @NonProperty
     private SQLObject getChildByNameImpl(String name, boolean ignoreCase) {
         return getChildByNameImpl(name, ignoreCase, SQLObject.class);
     }
@@ -478,6 +502,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 *            name
 	 * @return The found child with the given name, or null if it does not exist.
 	 */
+    @NonProperty
     private <T extends SQLObject> T getChildByNameImpl(String name, boolean ignoreCase, Class<T> childType) {
         for (T o : getChildren(childType)) {
             if ( (ignoreCase && o.getName().equalsIgnoreCase(name))
@@ -497,6 +522,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      * is no such child.
      * @throws SQLObjectException if the child list can't be populated
      */
+    @NonProperty
     public int getIndexOfChildByName(String name) throws SQLObjectException {
         int i = 0;
         for (Object o : getChildren()) {
@@ -542,6 +568,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      * @return The property's current value, or null if the property is not set
      *         on this SQL Object.
      */
+    @NonProperty
     public Object getClientProperty(Class<?> namespace, String propName) {
         return clientProperties.get(namespace + "." + propName);
     }
@@ -550,10 +577,12 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      * Rerturns the property names of all client properties currently set
      * on this SQLObject.
      */
+    @NonProperty
     public Set<String> getClientPropertyNames() {
         return clientProperties.keySet();
     }
     
+    @Transient @Accessor
     public Throwable getChildrenInaccessibleReason() {
         return childrenInaccessibleReason;
     }
@@ -571,6 +600,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 *            SQLObjectException. Set this to true to have the exception be
 	 *            rethrown.
 	 */
+    @Transient @Mutator
     public void setChildrenInaccessibleReason(Throwable cause, boolean rethrow) throws SQLObjectException {
         Throwable oldVal = this.childrenInaccessibleReason;
         this.childrenInaccessibleReason = cause;
@@ -669,6 +699,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      *             it's not possible to obtain the database connection or the
      *             database metadata.
      */
+    @NonProperty
     public boolean isTableContainer() throws SQLObjectException {
         
         // first, check for existing SQLTable children--this is a dead giveaway for a table container!

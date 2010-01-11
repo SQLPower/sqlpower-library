@@ -44,6 +44,7 @@ import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.sql.JDBCDSConnectionFactory;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
@@ -113,6 +114,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		populated = true;
 	}
 
+	@NonProperty
 	public synchronized boolean isConnected() {
 		return connectionPool != null;
 	}
@@ -182,6 +184,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		logger.debug("SQLDatabase: populate finished"); //$NON-NLS-1$
 	}
 	
+	@NonProperty
 	public SQLCatalog getCatalogByName(String catalogName) throws SQLObjectException {
 		populate();
 		if (getChildrenWithoutPopulating().isEmpty()) {
@@ -211,6 +214,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 * @return the first SQLSchema whose name matches the given schema
 	 * name.
 	 */
+	@NonProperty
 	public SQLSchema getSchemaByName(String schemaName) throws SQLObjectException {
 		populate();
 		if (getChildrenWithoutPopulating().isEmpty()) {
@@ -223,7 +227,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		for (SQLObject child : getChildren()) {
 			if (child instanceof SQLCatalog) {
 				// children are tables or schemas
-				SQLSchema schema = ((SQLCatalog) child).getSchemaByName(schemaName);
+				SQLSchema schema = ((SQLCatalog) child).findSchemaByName(schemaName);
 				if (schema != null) {
 					return schema;
 				}
@@ -241,6 +245,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		return null;
 	}
 
+	@NonProperty
 	public SQLTable getTableByName(String tableName) throws SQLObjectException {
 		return getTableByName(null, null, tableName);
 	}
@@ -259,6 +264,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 * @return the first SQLTable with the given name, or null if no
 	 * such table exists.
 	 */
+	@NonProperty
 	public SQLTable getTableByName(String catalogName, String schemaName, String tableName)
 		throws SQLObjectException {
 
@@ -286,7 +292,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			if (target instanceof SQLDatabase) {
 				target = ((SQLDatabase) target).getSchemaByName(schemaName);
 			} else if (target instanceof SQLCatalog) {
-				target = ((SQLCatalog) target).getSchemaByName(schemaName);
+				target = ((SQLCatalog) target).findSchemaByName(schemaName);
 			} else {
 				throw new IllegalStateException("Oops, somebody forgot to update this!"); //$NON-NLS-1$
 			}
@@ -311,7 +317,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 					return table;
 				}
 			} else if (child instanceof SQLSchema) {
-				SQLTable table = ((SQLSchema) child).getTableByName(tableName);
+				SQLTable table = ((SQLSchema) child).findTableByName(tableName);
 				if (table != null) {
 					return table;
 				}
@@ -365,6 +371,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 * @return true (the default) if there are no children; false if
 	 * the first child is not of type SQLCatlog.
 	 */
+	@NonProperty
 	public boolean isCatalogContainer() throws SQLObjectException {
 		if (getParent() != null){
 			populate();
@@ -379,6 +386,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 * @return true (the default) if there are no children; false if
 	 * the first child is not of type SQLSchema.
 	 */
+	@NonProperty
 	public boolean isSchemaContainer() throws SQLObjectException {
 		if (getParent() != null){
 			populate();
@@ -398,6 +406,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
      *         catalogs and schemas). You are free to modify the returned list,
      *         but doing so will not affect the contents of this database.
      */
+	@NonProperty
 	public List<SQLTable> getTables() throws SQLObjectException {
 		return getTableDescendants(this);
 	}
@@ -542,6 +551,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 * dataSource; null if this is a dummy database (such as the
 	 * playpen instance).
 	 */
+	@NonProperty
 	public Connection getConnection() throws SQLObjectException {
 		if (dataSource == null) {
 			return null;
@@ -683,6 +693,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
      *             if this is a lazy-loading database and populating any of its
      *             objects fails for any reason.
      */
+    @NonProperty
     public Collection<SQLRelationship> getRelationships() throws SQLObjectException {
         List<SQLRelationship> allRelationships =
             SQLObjectUtils.findDescendentsByClass(
@@ -695,6 +706,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
         return uniqueRelationships;
     }
 	
+    @NonProperty
 	public List<? extends SQLObject> getChildrenWithoutPopulating() {
 		List<SQLObject> children = new ArrayList<SQLObject>();
 		children.addAll(catalogs);
@@ -777,6 +789,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 				" is not a valid child type of " + getName());
 	}
 
+	@NonProperty
 	public List<? extends SPObject> getDependencies() {
 		return Collections.emptyList();
 	}
@@ -832,6 +845,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		fireChildAdded(SQLTable.class, table, index);
 	}
 
+	@NonProperty
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
 		if (schemas.isEmpty() && tables.isEmpty()) {

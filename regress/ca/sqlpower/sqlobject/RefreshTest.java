@@ -51,7 +51,7 @@ public class RefreshTest extends DatabaseConnectedTestCase {
     
     public void testAddNonPkCol() throws Exception {
         SQLSchema s = db.getSchemaByName("public");
-        SQLTable moose = s.getTableByName("moose");
+        SQLTable moose = s.findTableByName("moose");
         moose.populateColumns();
         moose.populateExportedKeys();
         moose.populateIndices();
@@ -66,7 +66,7 @@ public class RefreshTest extends DatabaseConnectedTestCase {
     
     public void testRemoveNonPkCol() throws Exception {
         SQLSchema s = db.getSchemaByName("public");
-        SQLTable moose = s.getTableByName("moose");
+        SQLTable moose = s.findTableByName("moose");
         moose.populateColumns();
         moose.populateExportedKeys();
         moose.populateIndices();
@@ -82,7 +82,7 @@ public class RefreshTest extends DatabaseConnectedTestCase {
 
     public void testRemoveAllCols() throws Exception {
         SQLSchema s = db.getSchemaByName("public");
-        SQLTable moose = s.getTableByName("moose");
+        SQLTable moose = s.findTableByName("moose");
         moose.populateColumns();
         moose.populateExportedKeys();
         moose.populateIndices();
@@ -99,7 +99,7 @@ public class RefreshTest extends DatabaseConnectedTestCase {
 
     public void testModifyNonPkCol() throws Exception {
         SQLSchema s = db.getSchemaByName("public");
-        SQLTable moose = s.getTableByName("moose");
+        SQLTable moose = s.findTableByName("moose");
         moose.populateColumns();
         moose.populateExportedKeys();
         moose.populateIndices();
@@ -124,7 +124,7 @@ public class RefreshTest extends DatabaseConnectedTestCase {
     
     public void testAddIndex() throws Exception {
         SQLSchema s = db.getSchemaByName("public");
-        SQLTable moose = s.getTableByName("moose");
+        SQLTable moose = s.findTableByName("moose");
         moose.populateColumns();
         moose.populateExportedKeys();
         moose.populateIndices();
@@ -148,7 +148,7 @@ public class RefreshTest extends DatabaseConnectedTestCase {
         sqlx("CREATE INDEX moose_idx ON moose (name)");
 
         SQLSchema s = db.getSchemaByName("public");
-        SQLTable moose = s.getTableByName("moose");
+        SQLTable moose = s.findTableByName("moose");
         moose.populateColumns();
         moose.populateExportedKeys();
         moose.populateIndices();
@@ -168,7 +168,7 @@ public class RefreshTest extends DatabaseConnectedTestCase {
         sqlx("CREATE INDEX moose_idx ON moose (name)");
 
         SQLSchema s = db.getSchemaByName("public");
-        SQLTable moose = s.getTableByName("moose");
+        SQLTable moose = s.findTableByName("moose");
         moose.populateColumns();
         moose.populateExportedKeys();
         moose.populateIndices();
@@ -196,7 +196,7 @@ public class RefreshTest extends DatabaseConnectedTestCase {
         sqlx("CREATE INDEX moose_idx ON moose (name, antler_length)");
 
         SQLSchema s = db.getSchemaByName("public");
-        SQLTable moose = s.getTableByName("moose");
+        SQLTable moose = s.findTableByName("moose");
         moose.populateColumns();
         moose.populateExportedKeys();
         moose.populateIndices();
@@ -223,7 +223,7 @@ public class RefreshTest extends DatabaseConnectedTestCase {
         sqlx("CREATE INDEX moose_idx ON moose (name, antler_length)");
 
         SQLSchema s = db.getSchemaByName("public");
-        SQLTable moose = s.getTableByName("moose");
+        SQLTable moose = s.findTableByName("moose");
 //        moose.getColumnsFolder().populate();
 //        moose.getExportedKeysFolder().populate();
 //        moose.getIndicesFolder().populate();

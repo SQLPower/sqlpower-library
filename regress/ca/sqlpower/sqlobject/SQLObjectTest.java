@@ -25,6 +25,8 @@ import java.util.List;
 
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Mutator;
 
 public class SQLObjectTest extends BaseSQLObjectTestCase {
 
@@ -42,10 +44,12 @@ public class SQLObjectTest extends BaseSQLObjectTestCase {
 		SQLObject parent = null;
 
 		@Override
+		@Accessor
 		public SQLObject getParent() {
 			return parent;
 		}
 		@Override
+		@Mutator
 		public void setParent(SPObject parent) {
 			this.parent = (SQLObject) parent;
 		}

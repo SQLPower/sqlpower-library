@@ -33,6 +33,8 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonBound;
+import ca.sqlpower.object.annotation.NonProperty;
 
 /**
  * A SQLCatalog is a container for other SQLObjects.  If it is in the
@@ -112,7 +114,7 @@ public class SQLCatalog extends SQLObject {
 					return table;
 				}
 			} else if (child instanceof SQLSchema) {
-				SQLTable table = ((SQLSchema) child).getTableByName(tableName);
+				SQLTable table = ((SQLSchema) child).findTableByName(tableName);
 				if (table != null) {
 					return table;
 				}
@@ -126,7 +128,7 @@ public class SQLCatalog extends SQLObject {
 	 * @return The schema in this catalog with the given name, or null
 	 * if no such schema exists.
 	 */
-	public SQLSchema getSchemaByName(String schemaName) throws SQLObjectException {
+	public SQLSchema findSchemaByName(String schemaName) throws SQLObjectException {
 		populate();
 		if (!isSchemaContainer()) {
 			return null;
@@ -208,7 +210,7 @@ public class SQLCatalog extends SQLObject {
 	public SQLDatabase getParent() {
 		return (SQLDatabase) super.getParent();
 	}
-
+	
 	/**
 	 * Gets the value of nativeTerm
 	 *
@@ -238,6 +240,7 @@ public class SQLCatalog extends SQLObject {
 	 * @return true (the default) if there are no children; false if
 	 * the first child is not of type SQLSchema.
 	 */
+	@NonBound
 	public boolean isSchemaContainer() throws SQLObjectException {
 		if (getParent() != null){
 			populate();

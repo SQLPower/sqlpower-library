@@ -21,6 +21,8 @@ package ca.sqlpower.object.annotation;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import ca.sqlpower.dao.helper.SPPersisterHelper;
@@ -40,8 +42,12 @@ import ca.sqlpower.object.SPObject;
  * source code for the
  * {@link SPPersisterHelper#findProperty(SPObject, String, ca.sqlpower.dao.session.SessionPersisterSuperConverter)}
  * method.
+ * <p>
+ * This annotation is retained at runtime for the benefits of tests only. There
+ * will be no need to access this annotation at runtime when the app is running.
  */
-@Target(ElementType.METHOD)
+@Target(ElementType.METHOD) 
+@Retention(RetentionPolicy.RUNTIME)
 public @interface Accessor {
 
 	/**

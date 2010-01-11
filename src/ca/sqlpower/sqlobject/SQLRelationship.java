@@ -39,6 +39,9 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonBound;
+import ca.sqlpower.object.annotation.NonProperty;
+import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -370,6 +373,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
      * This method is for the benefit of the unit tests.  It should never
      * be necessary to use it in the real world.
      */
+	@NonBound
     public RelationshipManager getRelationshipManager() {
         return fkColumnManager;
     }
@@ -692,6 +696,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 	}
 	
+	@NonProperty
 	public ColumnMapping getMappingByPkCol(SQLColumn pkcol) {
 		for (ColumnMapping m : mappings) {
 			if (m.pkColumn == pkcol) {
@@ -705,6 +710,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		return getMappingByPkCol(col) != null;
 	}
 
+	@NonProperty
 	public ColumnMapping getMappingByFkCol(SQLColumn fkcol) {
 		for (ColumnMapping m : mappings) {
 			if (m.fkColumn == fkcol) {
@@ -1183,6 +1189,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		return (SQLTable) super.getParent();
 	}
 	
+	@Accessor
 	public SQLTable getPkTable() {
 		return getParent();
 	}
@@ -1212,6 +1219,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 	}
 	
+	@Transient @Accessor
 	public SQLTable getFkTable() {
 		if (foreignKey != null) {
 			return foreignKey.getParent();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, SQL Power Group Inc.
+ * Copyright (c) 2010, SQL Power Group Inc.
  *
  * This file is part of SQL Power Library.
  *
@@ -19,35 +19,24 @@
 
 package ca.sqlpower.object.annotation;
 
-import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import ca.sqlpower.dao.helper.SPPersisterHelper;
-import ca.sqlpower.object.SPObject;
-
 /**
- * This {@link Annotation} defines a setter method in an {@link SPObject} class
- * as a mutator for a persistable property. The setter method name must be in
- * JavaBean format. Every persistable property should have a respective
- * annotated setter and getter method. Thus, there should be an equal number of
- * {@link Accessor} and {@link Mutator} annotations within each {@link SPObject}
- * class. The {@link SPAnnotationProcessorFactory} should recognize this
- * annotation as a supported annotation type by the
- * {@link SPAnnotationProcessorFactory#supportedAnnotationTypes()} method. The
- * {@link SPAnnotationProcessor} needs to validate that a given method in
- * {@link SPObject} is tagged with this annotation before proceeding to generate
- * source code for the
- * {@link SPPersisterHelper#commitProperty(SPObject, String, Object, ca.sqlpower.dao.session.SessionPersisterSuperConverter)}
- * method.
+ * Each method annotated with {@link Accessor} or {@link Mutator} can be
+ * optionally annotated with {@link Transient}. A method marked as transient
+ * identifies that the property it returns or modifies should not be persisted
+ * and will be ignored by persistence tests and other persistence classes.
+ * However, since the method is an {@link Accessor} or {@link Mutator} it must
+ * still fire events.
  * <p>
  * This annotation is retained at runtime for the benefits of tests only. There
  * will be no need to access this annotation at runtime when the app is running.
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Mutator {
+public @interface Transient {
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, SQL Power Group Inc.
+ * Copyright (c) 2010, SQL Power Group Inc.
  *
  * This file is part of SQL Power Library.
  *
@@ -25,29 +25,23 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.object.SPObject;
 
 /**
- * This {@link Annotation} defines a setter method in an {@link SPObject} class
- * as a mutator for a persistable property. The setter method name must be in
- * JavaBean format. Every persistable property should have a respective
- * annotated setter and getter method. Thus, there should be an equal number of
- * {@link Accessor} and {@link Mutator} annotations within each {@link SPObject}
- * class. The {@link SPAnnotationProcessorFactory} should recognize this
- * annotation as a supported annotation type by the
- * {@link SPAnnotationProcessorFactory#supportedAnnotationTypes()} method. The
- * {@link SPAnnotationProcessor} needs to validate that a given method in
- * {@link SPObject} is tagged with this annotation before proceeding to generate
- * source code for the
- * {@link SPPersisterHelper#commitProperty(SPObject, String, Object, ca.sqlpower.dao.session.SessionPersisterSuperConverter)}
- * method.
+ * This {@link Annotation} defines a getter or setter method in an
+ * {@link SPObject} class as a property that does not fire events. If a property
+ * is not bound then it is transient by default as an unbound persisted property
+ * does not make sense. This annotation is currently for the benefit of testing
+ * to describe a method that looks like a setter or getter to be ignored when
+ * ensuring all of the getters and setters are annotated. In the future there
+ * may be some use for getters and setters of properties that do not fire events
+ * and are not transient.
  * <p>
  * This annotation is retained at runtime for the benefits of tests only. There
  * will be no need to access this annotation at runtime when the app is running.
  */
-@Target(ElementType.METHOD)
+@Target(ElementType.METHOD) 
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Mutator {
+public @interface NonBound {
 
 }

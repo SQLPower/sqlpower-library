@@ -104,7 +104,7 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 	 * Test method for 'ca.sqlpower.sqlobject.SQLSchema.getTableByName(String)'
 	 */
 	public void testGetTableByName() throws Exception {
-		SQLTable t1 = s.getTableByName("REGRESSION_TEST1");
+		SQLTable t1 = s.findTableByName("REGRESSION_TEST1");
 		assertNull(t1);
 		
 		t1 = new SQLTable();
@@ -123,15 +123,15 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 		t1.setName("xx2");
 		s.addChild(t1);
 		
-		t1 = s.getTableByName("xx1");
+		t1 = s.findTableByName("xx1");
 		assertNotNull(t1);
 		assertEquals(t1.getName(),"xx1");
 		
-		t1 = s.getTableByName("xx2");
+		t1 = s.findTableByName("xx2");
 		assertNotNull(t1);
 		assertEquals(t1.getName(),"xx2");
 		
-		t1 = s.getTableByName("xx3");
+		t1 = s.findTableByName("xx3");
 		assertNotNull(t1);
 		assertEquals(t1.getName(),"xx3");
 	}

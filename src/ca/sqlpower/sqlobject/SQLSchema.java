@@ -34,6 +34,7 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.Transient;
 
 /**
  * A SQLSchema is a container for SQLTables.  If it is in the
@@ -137,7 +138,7 @@ public class SQLSchema extends SQLObject {
         setPhysicalName(s.getPhysicalName());
     }
 
-	public SQLTable getTableByName(String tableName) throws SQLObjectException {
+	public SQLTable findTableByName(String tableName) throws SQLObjectException {
 		populate();
 		for (SQLTable child : tables) {
 			logger.debug("getTableByName: is child '"+child.getName()+"' equal to '"+tableName+"'?");		
@@ -152,6 +153,7 @@ public class SQLSchema extends SQLObject {
 		return getShortDisplayName();
 	}
 
+	@Transient @Accessor
 	public boolean isParentTypeDatabase() {
 		return (getParent() instanceof SQLDatabase);
 	}

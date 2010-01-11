@@ -36,6 +36,9 @@ import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.MutatorParameter;
+import ca.sqlpower.object.annotation.NonBound;
+import ca.sqlpower.object.annotation.NonProperty;
+import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sql.SQL;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 
@@ -593,6 +596,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return true iff this.nullable == DatabaseMetaData.columnNullable.
 	 */
+	@NonBound
 	public boolean isDefinitelyNullable()  {
 		return this.nullable == DatabaseMetaData.columnNullable;
 	}
@@ -602,6 +606,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return whether or not primaryKeySeq is defined
 	 */
+	@NonBound
 	public boolean isPrimaryKey()  {
 		return this.primaryKeySeq != null;
 	}
@@ -611,6 +616,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return null, if this column is not a FK column, the referenced table otherwise
 	 */
+	@NonBound
 	public SQLTable getReferencedTable() {
 	    if (getParent() == null) return null;
 	    try {
@@ -632,6 +638,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * 
 	 * @see #getReferencedTable()
 	 */
+	@NonBound
 	public boolean isForeignKey() {
 		return getReferencedTable() != null;
 	}
@@ -643,6 +650,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      * @return Returns true if this column is in an exported key. Otherwise,
      *         returns false.
      */
+	@NonBound
 	public boolean isExported() {
 	    if (getParent() == null) return false;
 	    try {
@@ -660,6 +668,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	/**
 	 * Returns whether this column is in an index 
 	 */
+	@NonBound
 	public boolean isIndexed() {
 	    if (getParent() == null) return false;
 	    try {
@@ -679,6 +688,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	/**
 	 * Returns whether this column is in an unique index.
 	 */
+	@NonBound
 	public boolean isUniqueIndexed() {
 	    if (getParent() == null) return false;
 	    try {
@@ -870,9 +880,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      * If there is no primary key on this column's table it will create a new key
      * with default values.
      */
-	@Mutator
+	@Transient @Mutator
 	public void setPrimaryKeySeq(Integer argPrimaryKeySeq) {
-	    setPrimaryKeySeq(argPrimaryKeySeq, true);
+	    setPrimaryKeySeqAndRearrangeCols(argPrimaryKeySeq, true);
 	}
 
     /**
@@ -887,7 +897,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      * @param normalizeKey pass in false if the key should not be normalized when setting this
      *      key's primary sequence.
      */
-	public void setPrimaryKeySeq(Integer argPrimaryKeySeq, boolean normalizeKey) {
+	@Transient @Mutator
+	public void setPrimaryKeySeqAndRearrangeCols(Integer argPrimaryKeySeq, boolean normalizeKey) {
 		setPrimaryKeySeq(argPrimaryKeySeq, normalizeKey, true);
 	}
 
@@ -1054,6 +1065,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      * been changed from its default value.  Code that loads and saves this
      * SQLColumn will want to know if the value is a default or not.
      */
+	@NonProperty
     public boolean isAutoIncrementSequenceNameSet() {
         return autoIncrementSequenceName != null;
     }
@@ -1121,6 +1133,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	/**
 	 * @return Returns the referenceCount.
 	 */
+	@Transient @Accessor
 	public int getReferenceCount() {
 		return referenceCount;
 	}
@@ -1131,11 +1144,13 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      * @deprecated This method exists only to be called reflectively by the undo manager.  You should use addReference() and removeReference().
      */
 	@Deprecated
+	@NonBound
     public void setReferenceCount(int referenceCount) {
         this.referenceCount = referenceCount;
     }
 
 	@Override
+	@NonProperty
 	public List<? extends SQLObject> getChildrenWithoutPopulating() {
 		return Collections.emptyList();
 	}
@@ -1150,6 +1165,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 				childType + " but " + getClass() + " does not allow children.");
 	}
 
+	@NonProperty
 	public List<? extends SPObject> getDependencies() {
 		return Collections.emptyList();
 	}
@@ -1158,6 +1174,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		// no-op
 	}
 
+	@NonProperty
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		return Collections.emptyList();
 	}

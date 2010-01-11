@@ -24,6 +24,11 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonBound;
+import ca.sqlpower.object.annotation.NonProperty;
+import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.util.SPSession;
 
 /**
@@ -58,6 +63,7 @@ public interface SPObject {
 	 * object this will remain null and the object may be treated as the root
 	 * node of a {@link SPObject} tree.
 	 */
+    @Accessor
 	SPObject getParent();
 	
     /**
@@ -67,6 +73,7 @@ public interface SPObject {
      * @param parent
      *            The new parent of this object.
      */
+    @Mutator
 	void setParent(SPObject parent);
 
 	/**
@@ -74,6 +81,7 @@ public interface SPObject {
 	 * {@link SPObject}. If there are no children in this
 	 * {@link SPObject}, an empty list should be returned.
 	 */
+	@NonProperty
     List<? extends SPObject> getChildren();
 
     /**
@@ -127,15 +135,19 @@ public interface SPObject {
      * Returns the short name for this object.
      */
     @Nullable
+    @Accessor
     String getName();
     
     /**
      * Sets the name for this object 
      */
+    @Mutator
     void setName(@Nullable String name);
     
+    @Accessor
     String getUUID();
     
+    @Mutator
     void setUUID(String uuid);
     
     /**
@@ -159,6 +171,7 @@ public interface SPObject {
      * dependent on an empty list should be returned. These are only the
      * immediate dependencies of this object.
      */
+    @NonBound
     List<? extends SPObject> getDependencies();
 
     /**
@@ -196,6 +209,7 @@ public interface SPObject {
     /**
      * Gets the session that contains this SPObject
      */
+    @Transient @Accessor
     SPSession getSession();
     
 	/**
@@ -210,12 +224,14 @@ public interface SPObject {
     /**
      * Returns a list of all children of the given type
      */
+    @NonProperty
     <T extends SPObject> List<T> getChildren(Class<T> type);
     
     /**
      * Returns a list of classes that are allowed to be children of this object.
      * If no children are allowed this will return an empty list.
      */
+    @Transient @Accessor
     List<Class<? extends SPObject>> getAllowedChildTypes();
 
 	/**
@@ -239,12 +255,14 @@ public interface SPObject {
 	 *            counter to decrement. False if magic should be disabled,
 	 *            causing the enable magic counter to increment.
 	 */
+    @Transient @Mutator
     void setMagicEnabled(boolean enable);
 
 	/**
 	 * Returns true if magic is enabled, where some property changes can trigger
 	 * secondary magical side effects.
 	 */
+    @Transient @Accessor
     boolean isMagicEnabled();
     
 }

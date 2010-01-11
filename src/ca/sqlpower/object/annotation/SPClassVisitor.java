@@ -347,6 +347,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 	public void visitMethodDeclaration(MethodDeclaration d) {
 		Accessor accessorAnnotation = d.getAnnotation(Accessor.class);
 		Mutator mutatorAnnotation = d.getAnnotation(Mutator.class);
+		Transient transientAnnotation = d.getAnnotation(Transient.class);
 		TypeMirror type = null;
 		
 		if (visitedClass != null) {
@@ -360,9 +361,9 @@ public class SPClassVisitor implements DeclarationVisitor {
 			reset();
 		}
 		
-		if (accessorAnnotation != null) {
+		if (accessorAnnotation != null && transientAnnotation == null) {
 			type = d.getReturnType();
-		} else if (mutatorAnnotation != null) {
+		} else if (mutatorAnnotation != null && transientAnnotation == null) {
 			type = d.getParameters().iterator().next().getType();
 		} else {
 			return;
