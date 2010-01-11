@@ -31,7 +31,9 @@ import ca.sqlpower.object.SPChildEvent.EventType;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.Persistable;
+import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.util.SPSession;
 import ca.sqlpower.util.SessionNotFoundException;
 import ca.sqlpower.util.TransactionEvent;
@@ -230,6 +232,7 @@ public abstract class AbstractSPObject implements SPObject {
 	/**
 	 * Gets the current session by passing the request up the tree.
 	 */
+	@Transient @Accessor
 	public SPSession getSession() throws SessionNotFoundException {
 		// The root object of the tree model should have a reference back to the
 		// session (like WabitWorkspace), and should therefore override this
@@ -539,11 +542,13 @@ public abstract class AbstractSPObject implements SPObject {
 	    }
 	}
 	
+	@NonBound
 	public boolean isMagicEnabled() {
 		return (magicDisableCount == 0 && 
 				(getParent() == null || getParent().isMagicEnabled()));
 	}
 	
+	@NonBound
 	public synchronized void setMagicEnabled(boolean enable) {
 		if (enable) {
 			if (magicDisableCount == 0) {

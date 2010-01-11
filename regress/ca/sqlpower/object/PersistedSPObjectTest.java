@@ -168,26 +168,6 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	}
 	
 	/**
-     * Returns a list of JavaBeans property names that should be ignored when
-     * testing for proper events.
-     */
-    public Set<String> getPropertiesToIgnoreForEvents() {
-        Set<String> ignore = new HashSet<String>();
-        ignore.add("class");
-        ignore.add("session");
-        return ignore;
-    }
-    
-    /**
-     * These properties, on top of the properties ignored for events, will be
-     * ignored when checking the properties of a specific {@link WabitObject}
-     * are persisted.
-     */
-    public Set<String> getPropertiesToIgnoreForPersisting() {
-    	return new HashSet<String>();
-    }
-
-	/**
 	 * Tests the SPPersisterListener will persist a property change to its
 	 * target persister.
 	 */
@@ -208,18 +188,13 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 
         List<PropertyDescriptor> settableProperties;
         settableProperties = Arrays.asList(PropertyUtils.getPropertyDescriptors(wo.getClass()));
+        
+        Set<String> propertiesToPersist = findPersistableBeanProperties(false);
 
-        //Ignore properties that are not in events because we won't have an event
-        //to respond to.
-        Set<String> propertiesToIgnoreForEvents = getPropertiesToIgnoreForEvents();
-        
-        Set<String> propertiesToIgnoreForPersisting = getPropertiesToIgnoreForPersisting();
-        
         for (PropertyDescriptor property : settableProperties) {
             Object oldVal;
             
-            if (propertiesToIgnoreForEvents.contains(property.getName())) continue;
-            if (propertiesToIgnoreForPersisting.contains(property.getName())) continue;
+            if (!propertiesToPersist.contains(property.getName())) continue;
 
             countingPersister.clearAllPropertyChanges();
             try {
@@ -262,8 +237,6 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
                 assertEquals(wo.getUUID(), propertyChange.getUUID());
                 assertEquals(property.getName(), propertyChange.getPropertyName());
                 
-                List<Object> additionalVals = new ArrayList<Object>();
-                
 				assertEquals("Old value of property " + property.getName() + " was wrong, value expected was  " + oldVal + 
 						" but is " + countingPersister.getLastOldValue(), oldVal, 
                 		propertyChange.getOldValue());
@@ -300,10 +273,34 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 * that is neither an accessor or mutator but looks like one.
 	 */
 	public void testGettersAndSettersPersistedAnnotated() throws Exception {
+		findPersistableBeanProperties(false);
+	}
+
+	/**
+	 * This method will iterate through all of the methods in a class and
+	 * collect all of the methods defined as setters and getters. The list will
+	 * then be filtered out to only contain the bean property names of those
+	 * setters and getters where each property has both a getter and setter.
+	 * This will also fail if a getter or setter is found that is not properly
+	 * annotated.
+	 * 
+	 * @param includeTransient
+	 *            If true the transient properties will be included in the
+	 *            resulting list. If false only the property names that are to
+	 *            be persisted will be included.
+	 * 
+	 * @return A list of bean property names that have both a getter and setter.
+	 *         The transient bean properties will be included if the transient
+	 *         flag is set to true.
+	 * 
+	 */
+	private Set<String> findPersistableBeanProperties(boolean includeTransient) throws Exception {
 		SPObject objectUnderTest = getSPObjectUnderTest();
-		List<Method> getters = new ArrayList<Method>();
-		List<Method> setters = new ArrayList<Method>();
-		for (Method m : objectUnderTest.getClass().getDeclaredMethods()) {
+		Set<String> getters = new HashSet<String>();
+		Set<String> setters = new HashSet<String>();
+		for (Method m : objectUnderTest.getClass().getMethods()) {
+			if (m.getName().equals("getClass")) continue;
+			
 			//skip non-public methods as they are not visible for persisting anyways.
 			if (!Modifier.isPublic(m.getModifiers())) continue;
 			//skip static methods
@@ -313,6 +310,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 				Class<?> parentClass = objectUnderTest.getClass();
 				boolean accessor = false;
 				boolean ignored = false;
+				boolean isTransient = false;
 				parentClass.getMethod(m.getName(), m.getParameterTypes());//test
 				while (parentClass != null) {
 					Method parentMethod;
@@ -324,6 +322,9 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 					}
 					if (parentMethod.getAnnotation(Accessor.class) != null) {
 						accessor = true;
+						if (parentMethod.getAnnotation(Transient.class) != null) {
+							isTransient = true;
+						}
 						break;
 					} else if (parentMethod.getAnnotation(NonProperty.class) != null ||
 							parentMethod.getAnnotation(NonBound.class) != null) {
@@ -334,9 +335,15 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 				}
 				System.out.println("checking " + m.getName() + " with return type " + m.getReturnType() + " on class " + m.getDeclaringClass() + " with annotations " + Arrays.asList(m.getDeclaredAnnotations()));
 				if (accessor) {
-					getters.add(m);
+					if (includeTransient || !isTransient) {
+						if (m.getName().startsWith("get")) {
+							getters.add(m.getName().substring(3));
+						} else if (m.getName().startsWith("is")) {
+							getters.add(m.getName().substring(2));
+						}
+					}
 				} else if (ignored) {
-					//transient so skip
+					//ignored so skip
 				} else {
 					fail("The method " + m.getName() + " is a getter that is not annotated " +
 							"to be an accessor or transient. The exiting annotations are " + 
@@ -344,15 +351,25 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 				}
 			} else if (m.getName().startsWith("set")) {
 				if (m.getAnnotation(Mutator.class) != null) {
-					setters.add(m);
+					if (includeTransient || m.getAnnotation(Transient.class) == null) {
+						setters.add(m.getName().substring(3));
+					}
 				} else if (m.getAnnotation(NonProperty.class) != null ||
 						m.getAnnotation(NonBound.class) != null) {
-					//transient so skip and pass
+					//ignored so skip and pass
 				} else {
 					fail("The method " + m.getName() + " is a setter that is not annotated " +
 							"to be a mutator or transient.");
 				}
 			}
 		}
+		
+		Set<String> beanNames = new HashSet<String>();
+		for (String beanName : getters) {
+			if (setters.contains(beanName)) {
+				beanNames.add(beanName);
+			}
+		}
+		return beanNames;
 	}
 }

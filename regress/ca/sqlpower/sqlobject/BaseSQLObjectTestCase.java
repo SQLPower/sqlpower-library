@@ -64,9 +64,8 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 		}
 	}
 	
-	@Override
 	public Set<String> getPropertiesToIgnoreForEvents() {
-		Set<String> ignored = super.getPropertiesToIgnoreForEvents();
+		Set<String> ignored = new HashSet<String>();
 		ignored.add("referenceCount");
 		ignored.add("populated");
 		ignored.add("SQLObjectListeners");
