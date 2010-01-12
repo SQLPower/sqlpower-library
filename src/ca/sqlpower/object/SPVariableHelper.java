@@ -368,6 +368,13 @@ public class SPVariableHelper implements SPVariableResolver {
 	}
 	
 	/**
+	 * Returns the node onto which this helper is pinned.
+	 */
+	public SPObject getContextSource() {
+		return contextSource;
+	}
+	
+	/**
 	 * Searches and returns the first resolver for a given namespace
 	 * it can find in the tree, starting by climbing it and then searching
 	 * everywhere.
@@ -792,7 +799,7 @@ public class SPVariableHelper implements SPVariableResolver {
 	}
 	
 	
-	void recursiveKeySet(
+	public void recursiveKeySet(
 			SPObject currentNode, 
 			MultiValueMap keys,
 			String namespace,
