@@ -136,7 +136,7 @@ public class SPVariableHelper implements SPVariableResolver {
                 if (variableName.equals("$")) {
                     variableValue = "$";
                 } else {
-                    variableValue = variableHelper.resolve(variableName, (Object) ("MISSING_VAR:" + variableName));
+                    variableValue = variableHelper.resolve(variableName);
                 }
                 logger.debug("Found variable " + variableName + " = " + variableValue);
                 text.append(textWithVars.substring(currentIndex, matcher.start()));
@@ -185,7 +185,7 @@ public class SPVariableHelper implements SPVariableResolver {
                 if (variableName.equals("$")) {
                 	vars.add("$");
                 } else {
-                	vars.add(variableHelper.resolve(variableName, (Object) ("MISSING_VAR:" + variableName)));
+                	vars.add(variableHelper.resolve(variableName));
                 }
                 text.append(sql.substring(currentIndex, matcher.start()));
                 text.append("?");
