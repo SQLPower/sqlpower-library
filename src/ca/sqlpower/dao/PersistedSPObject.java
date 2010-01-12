@@ -24,7 +24,7 @@ import ca.sqlpower.object.SPObject;
 /**
  * A class representing an individual persisted {@link SPObject}.
  */
-public class PersistedSPObject {
+public class PersistedSPObject implements Comparable<PersistedSPObject> {
 	private final String parentUUID;
 	private final String type;
 	private final String uuid;
@@ -130,6 +130,12 @@ public class PersistedSPObject {
 		result = prime * result + (loaded ? 1 : 0);
 		
 		return result;
+	}
+	
+	public int compareTo(PersistedSPObject o) {	 
+	    
+	    return (getUUID() + getParentUUID()).compareTo(o.getUUID() + o.getParentUUID());
+	    
 	}
 
 }

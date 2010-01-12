@@ -30,7 +30,7 @@ import ca.sqlpower.object.SPObject;
  * A class representing an individual persisted {@link SPObject}
  * property.
  */
-public class PersistedSPOProperty {
+public class PersistedSPOProperty implements Comparable<PersistedSPOProperty> {
 
 	private final String uuid;
 	private final String propertyName;
@@ -191,5 +191,12 @@ public class PersistedSPOProperty {
 		
 		return result;
 	}
+	
+    public int compareTo(PersistedSPOProperty p) {  
+        
+        
+        return (getUUID() + getPropertyName()).compareTo(p.getUUID() + p.getPropertyName());
+        
+    }	
 	
 }
