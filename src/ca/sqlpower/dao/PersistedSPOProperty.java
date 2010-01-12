@@ -19,6 +19,10 @@
 
 package ca.sqlpower.dao;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.Arrays;
+
 import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.object.SPObject;
 
@@ -106,25 +110,72 @@ public class PersistedSPOProperty {
 				+ unconditional + "]";
 	}
 	
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == null || obj.getClass() != this.getClass()) {
-			return false;
-		}
-		
-		PersistedSPOProperty wop = (PersistedSPOProperty) obj;
-		
-		if (!isUnconditional() && !wop.isUnconditional() 
-				&& !getOldValue().equals(wop.getOldValue())) {
-			return false;
-		}
-		
-		return isUnconditional() == wop.isUnconditional()
-				&& getUUID().equals(wop.getUUID()) 
-				&& getPropertyName().equals(wop.getPropertyName()) 
-				&& getDataType().equals(wop.getDataType()) 
-				&& getNewValue().equals(wop.getNewValue());
-	}
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || obj.getClass() != this.getClass()) {
+            return false;
+        }
+        
+        PersistedSPOProperty wop = (PersistedSPOProperty) obj;
+        
+        if (!isUnconditional() && !wop.isUnconditional() 
+                && !getOldValue().equals(wop.getOldValue())) {
+            return false;
+        }
+        
+        if (isUnconditional() == wop.isUnconditional()
+                && getUUID().equals(wop.getUUID()) 
+                && getPropertyName().equals(wop.getPropertyName()) 
+                && getDataType().equals(wop.getDataType())) {
+    
+            if (getDataType().equals(DataType.PNG_IMG)) {
+                return imageObjectsAreEqual(getNewValue(), wop.getNewValue());
+            } else {
+                return getNewValue().equals(wop.getNewValue());
+            }
+            
+        } else {
+            return false;
+        }
+    
+    }
+	 
+    /**
+     * Compare two property values of PersistedSPOProperty objects that are an image type.     
+     * 
+     * @param a Image property of type ByteArrayInputStream
+     * @param b Image property of type ByteArrayInputStream
+     * 
+     * @throws IllegalArgumentException thrown if one or both parameters are not ByteArrayInputStreams 
+     */
+    public static boolean imageObjectsAreEqual(Object a, Object b) throws IllegalArgumentException {
+        if (a instanceof ByteArrayInputStream) {
+            
+            ByteArrayInputStream aStream = (ByteArrayInputStream) a;
+            ByteArrayInputStream bStream = (ByteArrayInputStream) b;
+            
+            byte[] aBytes = new byte[aStream.available()];
+            byte[] bBytes = new byte[bStream.available()];
+            
+            try {
+                
+                aStream.mark(-1); // No mark limit
+                aStream.read(aBytes);
+                aStream.reset();
+                bStream.mark(-1); // No mark limit
+                bStream.read(bBytes);
+                bStream.reset();
+                
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            
+            return Arrays.equals(aBytes, bBytes);
+            
+        } else {
+            throw new IllegalArgumentException();
+        }                       
+    }
 	
 	@Override
 	public int hashCode() {
