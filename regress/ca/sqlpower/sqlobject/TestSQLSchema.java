@@ -32,6 +32,7 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 	protected void setUp() throws Exception {
 		super.setUp();
 		s = new SQLSchema(true);
+		db.addSchema(s);
 	}
 	
 	@Override
@@ -58,7 +59,8 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 	 * Test method for 'ca.sqlpower.sqlobject.SQLSchema.getParent()'
 	 */
 	public void testGetParent() {
-		assertNull(s.getParent());
+		SQLSchema s1 = new SQLSchema(true);
+		assertNull(s1.getParent());
 		
 		SQLSchema s2 = new SQLSchema(db,"xxx",true);
 		assertEquals(db,s2.getParent());
@@ -140,7 +142,8 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 	 * Test method for 'ca.sqlpower.sqlobject.SQLSchema.isParentTypeDatabase()'
 	 */
 	public void testIsParentTypeDatabase() {
-		assertEquals(s.isParentTypeDatabase(),false);
+		SQLSchema s1 = new SQLSchema(true);
+		assertEquals(s1.isParentTypeDatabase(),false);
 		
 		SQLSchema s2 = new SQLSchema(new SQLDatabase(db.getDataSource()),
 									"xx",false);

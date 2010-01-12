@@ -444,7 +444,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		// SQLColumn: populate is a no-op
 	}
 
-	@Accessor
+	@Transient @Accessor
 	public boolean isPopulated() {
 		return true;
 	}

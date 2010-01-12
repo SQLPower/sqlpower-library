@@ -109,7 +109,7 @@ public abstract class DatabaseConnectedTestCase extends TestCase {
      * method will return whatever plini value you set up in your override (which will
      * be null if you didn't set the {@link #plini} variable).
      */
-    public DataSourceCollection getPLIni() {
+    public DataSourceCollection<SPDataSource> getPLIni() {
         return plini;
     }
 

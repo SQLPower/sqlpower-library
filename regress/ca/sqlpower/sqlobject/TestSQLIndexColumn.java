@@ -29,6 +29,12 @@ public class TestSQLIndexColumn extends BaseSQLObjectTestCase {
     protected void setUp() throws Exception {
         super.setUp();
         indexColumn = new Column("Index1",AscendDescend.UNSPECIFIED);
+        SQLIndex index = new SQLIndex();
+        index.addIndexColumn(indexColumn);
+        SQLTable table = new SQLTable();
+        table.addIndex(index);
+        table.setPopulated(true);
+        db.addTable(table);
     }
     
     public TestSQLIndexColumn(String name) throws Exception {

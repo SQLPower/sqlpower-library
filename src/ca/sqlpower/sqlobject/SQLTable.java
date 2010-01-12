@@ -907,12 +907,17 @@ public class SQLTable extends SQLObject {
 			throw new IllegalStateException("Cannot remove child " + col.getName() + 
 					" of type " + col.getClass() + " as its parent is not " + getName());
 		}
-		int index = columns.indexOf(col);
-		if (index != -1) {
-			columns.remove(index);
-			fireChildRemoved(SQLColumn.class, col, index);
-			col.setParent(null);
-			return true;
+		try {
+			begin("Removing column " + col.getName());
+			int index = columns.indexOf(col);
+			if (index != -1) {
+				columns.remove(index);
+				fireChildRemoved(SQLColumn.class, col, index);
+				col.setParent(null);
+				return true;
+			}
+		} finally {
+			commit();
 		}
 		return false;
 	}
@@ -1728,11 +1733,13 @@ public class SQLTable extends SQLObject {
 	@Override
 	@Mutator
 	public void setPopulated(boolean v) {
+		boolean oldPop = populated;
 		populated = v;
 		columnsPopulated = v;
 		importedKeysPopulated = v;
 		exportedKeysPopulated = v;
 		indicesPopulated = v;
+		firePropertyChange("populated", oldPop, v);
 	}
 
     void refreshExportedKeys() throws SQLObjectException {

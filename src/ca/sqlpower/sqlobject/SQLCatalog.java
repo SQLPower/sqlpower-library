@@ -34,7 +34,6 @@ import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonBound;
-import ca.sqlpower.object.annotation.NonProperty;
 
 /**
  * A SQLCatalog is a container for other SQLObjects.  If it is in the

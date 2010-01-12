@@ -94,6 +94,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 		System.out.println("-------------Starting New Test "+getName()+" -------------");
 		
 		database = new SQLDatabase();
+		getRootObject().addChild(database, 0);
 		parentTable = new SQLTable(database, "parent", null, "TABLE", true);
 		SQLColumn pkcol1 = new SQLColumn(parentTable, "pkcol_1", Types.INTEGER, 10, 0);
 		SQLColumn pkcol2 = new SQLColumn(parentTable, "pkcol_2", Types.INTEGER, 10, 0);

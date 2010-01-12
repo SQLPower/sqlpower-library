@@ -94,7 +94,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		Map<Class<? extends SPObject>, SPClassVisitor> visitors = new HashMap<Class<? extends SPObject>, SPClassVisitor>();
 		
 		for (TypeDeclaration typeDecl : environment.getTypeDeclarations()) {
-			SPClassVisitor visitor = new SPClassVisitor();
+			SPClassVisitor visitor = new SPClassVisitor(typeDecl);
 			typeDecl.accept(DeclarationVisitors.getDeclarationScanner(DeclarationVisitors.NO_OP, visitor));
 			if (visitor.isValid() && visitor.getVisitedClass() != null) {
 				visitors.put(visitor.getVisitedClass(), visitor);
@@ -649,8 +649,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 					sb.append("throw new " + SPPersistenceException.class.getSimpleName() + 
 							"(" + objectField + ".getUUID(), " +
 									"createSPPersistenceExceptionMessage(" + 
-									objectField + ", " + propertyNameField + ", " + 
-									exceptionField + "));\n");
+									objectField + ", " + propertyNameField + "), " + 
+									exceptionField + ");\n");
 					tabs--;
 				}
 				sb.append(indent(tabs));

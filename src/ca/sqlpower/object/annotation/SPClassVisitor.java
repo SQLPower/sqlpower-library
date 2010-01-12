@@ -125,6 +125,22 @@ public class SPClassVisitor implements DeclarationVisitor {
 	private Set<String> propertiesToPersistOnlyIfNonNull = new HashSet<String>();
 	
 	/**
+	 * If true then an annotated constructor has been recently found for the current
+	 * class being visited. We must only have one constructor per class. 
+	 */
+	private boolean constructorFound = false;
+
+	/**
+	 * The type of object this visitor will walk through. If the type has inner classes
+	 * they will not be considered.
+	 */
+	private final TypeDeclaration typeDecl;
+	
+	public SPClassVisitor(TypeDeclaration typeDecl) {
+		this.typeDecl = typeDecl;
+	}
+ 	
+	/**
 	 * Returns whether the visited class along with all its annotated elements is valid.
 	 */
 	public boolean isValid() {
@@ -224,26 +240,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 	}
 
 	/**
-	 * Resets all the fields within this class visitor. All the information
-	 * about the visited class type, constructor, accessors and mutators will be
-	 * wiped. This is to be used when processing classes that contain nested
-	 * classes.
-	 */
-	private void reset() {
-		valid = true;
-		visitedClass = null;
-		propertiesToAccess.clear();
-		propertiesToPersistOnlyIfNonNull.clear();
-		accessorAdditionalInfo.clear();
-		propertiesToMutate.clear();
-		mutatorThrownTypes.clear();
-		mutatorExtraParameters.clear();
-		constructorParameters.clear();
-		constructorImports.clear();
-		mutatorImports.clear();
-	}
-
-	/**
 	 * Stores the class reference of a {@link Persistable} {@link SPObject} for
 	 * use in annotation processing in the {@link SPAnnotationProcessor}. The
 	 * processor takes this information to generate {@link SPPersisterHelper}s.
@@ -252,10 +248,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 *            The {@link ClassDeclaration} of the class to visit.
 	 */
 	public void visitClassDeclaration(ClassDeclaration d) {
-		if (visitedClass != null) {
-			reset();
-		}
-		
 		if (d.getAnnotation(Persistable.class) != null) {
 			try {
 				String qualifiedName = 
@@ -285,14 +277,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 */
 	public void visitConstructorDeclaration(ConstructorDeclaration d) {
 		
-		// If there are nested classes, we need to clear the buffer of
-		// constructor parameters as this class visitor visits all classes
-		// underneath the top level class.
-		if (visitedClass != null) {
-			reset();
-		}
-		
-		if (d.getAnnotation(Constructor.class) != null) {
+		if (!constructorFound && d.getAnnotation(Constructor.class) != null) {
 			
 			for (ParameterDeclaration pd : d.getParameters()) {
 				ConstructorParameter cp = pd.getAnnotation(ConstructorParameter.class);
@@ -327,9 +312,10 @@ public class SPClassVisitor implements DeclarationVisitor {
 					}
 				}
 			}
+			constructorFound = true;
 		}
 	}
-
+	
 	/**
 	 * Stores information about getter and setter methods annotated with
 	 * {@link Accessor} and {@link Mutator}. This includes thrown exceptions,
@@ -350,17 +336,8 @@ public class SPClassVisitor implements DeclarationVisitor {
 		Transient transientAnnotation = d.getAnnotation(Transient.class);
 		TypeMirror type = null;
 		
-		if (visitedClass != null) {
-			// Since this class visitor visits method declarations before
-			// class declarations, having visitedClass be non-null means
-			// that the method being visited actually belongs to a higher
-			// level class and not a lower nested class. Thus, we need to
-			// clear any buffer of information about accessors and mutators
-			// that belonged to nested classes first before populating them
-			// again.
-			reset();
-		}
-		
+		if (!d.getDeclaringType().equals(typeDecl)) return;
+
 		if (accessorAnnotation != null && transientAnnotation == null) {
 			type = d.getReturnType();
 		} else if (mutatorAnnotation != null && transientAnnotation == null) {
@@ -376,7 +353,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 			
 			c = SPAnnotationProcessorUtils.convertTypeMirrorToClass(type);
 
-			if (accessorAnnotation != null) {
+			if (!propertiesToAccess.containsKey(methodName) && accessorAnnotation != null) {
 				propertiesToAccess.put(methodName, c);
 				
 				if (accessorAnnotation.persistOnlyIfNonNull()) {
@@ -386,7 +363,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 				accessorAdditionalInfo.putAll(
 						methodName, Arrays.asList(accessorAnnotation.additionalInfo()));
 				
-			} else {
+			} else if (!propertiesToMutate.containsKey(methodName) && mutatorAnnotation != null) {
 				for (ReferenceType refType : d.getThrownTypes()) {
 					Class<? extends Exception> thrownType = 
 						(Class<? extends Exception>) Class.forName(refType.toString());

@@ -38,6 +38,7 @@ import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonProperty;
+import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sql.SQL;
 import ca.sqlpower.util.TransactionEvent;
 
@@ -198,7 +199,7 @@ public class SQLIndex extends SQLObject {
         }
 
         @Override
-        @Accessor
+        @Transient @Accessor
         public boolean isPopulated() {
             return true;
         }
@@ -514,6 +515,7 @@ public class SQLIndex extends SQLObject {
     }
 
     @Override
+    @Transient @Accessor
     public boolean isPopulated() {
         return true;
     }
@@ -550,7 +552,11 @@ public class SQLIndex extends SQLObject {
     private void removeColumnFromIndices(SPChildEvent e) {
         if (getParent() != null && getParent().isMagicEnabled()) {
             try {
-            	begin("Removing column from indices");
+            	//begin and commit on the parent table in case the index is removed from the system
+            	//as the commit would then not be fired to the undo listeners.
+            	SQLTable parentTable = getParent();
+            	parentTable.begin("Removing column from indices");
+            	
                     for (int j = this.getChildCount() - 1; j >= 0; j--) {
                     	Column col = getChild(j);
                         if (col.getColumn() != null && col.getColumn().equals(e.getChild())) {
@@ -558,7 +564,8 @@ public class SQLIndex extends SQLObject {
                         }
                     }
                 cleanUpIfChildless();
-                commit();
+                
+                parentTable.commit();
             } catch (SQLObjectException e1) {
             	rollback("Could not remove child: " + e1.getMessage());
                 throw new SQLObjectRuntimeException(e1);

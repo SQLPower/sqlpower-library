@@ -219,7 +219,9 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 */
 	@Mutator
 	public void setPopulated(boolean v) {
+		boolean oldPop = populated;
 		populated = v;
+		firePropertyChange("populated", oldPop, v);
 	}
 
 	/**

@@ -1052,7 +1052,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	/**
 	 * Returns true.
 	 */
-	@Accessor
+	@Transient @Accessor
 	public boolean isPopulated() {
 		return true;
 	}

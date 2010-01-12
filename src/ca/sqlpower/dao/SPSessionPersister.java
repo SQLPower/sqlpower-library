@@ -34,6 +34,7 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.dao.helper.SPPersisterHelperFactory;
+import ca.sqlpower.dao.helper.generated.SPPersisterHelperFactoryImpl;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
@@ -327,16 +328,7 @@ public class SPSessionPersister implements SPPersister {
 		this.root = root;
 		
 		converter = new SessionPersisterSuperConverter(dsCollection, root);
-		persisterFactory = new SPPersisterHelperFactory(null, converter) {
-			
-			@Override
-			public SPPersisterHelper<? extends SPObject> getSPPersisterHelper(
-					String simpleName) {
-				// TODO Auto-generated method stub
-				return null;
-			}
-		};
-//		persisterFactory = new SPPersisterHelperFactoryImpl(null, converter);
+		persisterFactory = new SPPersisterHelperFactoryImpl(null, converter);
 	}
 	
 	@Override
@@ -345,7 +337,7 @@ public class SPSessionPersister implements SPPersister {
 	}
 
 	public void begin() throws SPPersistenceException {
-		synchronized (session) {
+		synchronized (getSession()) {
 			enforeThreadSafety();
 			transactionCount++;
 			
@@ -356,14 +348,14 @@ public class SPSessionPersister implements SPPersister {
 	}
 
 	public void commit() throws SPPersistenceException {
-		synchronized (session) {
+		synchronized (getSession()) {
 			enforeThreadSafety();
 			
 			if (logger.isDebugEnabled()) {
 				logger.debug("spsp.commit(); - transaction count : " + transactionCount);
 			}
 			
-			final SPObject workspace = session.getWorkspace();
+			final SPObject workspace = getSession().getWorkspace();
 			synchronized (workspace) {
 				try {
 					workspace.setMagicEnabled(false);
@@ -421,7 +413,7 @@ public class SPSessionPersister implements SPPersister {
 
 	public void persistObject(String parentUUID, String type, String uuid,
 			int index) throws SPPersistenceException {
-		synchronized (session) {
+		synchronized (getSession()) {
 			enforeThreadSafety();
 			
 			if (logger.isDebugEnabled()) {
@@ -458,7 +450,7 @@ public class SPSessionPersister implements SPPersister {
 			throw new SPPersistenceException("Cannot persist objects while outside " +
 					"a transaction.");
 		}
-		synchronized (session) {
+		synchronized (getSession()) {
 			enforeThreadSafety();
 			
 			if (logger.isDebugEnabled()) {
@@ -485,7 +477,7 @@ public class SPSessionPersister implements SPPersister {
 			throw new SPPersistenceException("Cannot persist objects while outside " +
 					"a transaction.");
 		}
-		synchronized (session) {
+		synchronized (getSession()) {
 			enforeThreadSafety();
 			
 			if (logger.isDebugEnabled()) {
@@ -589,7 +581,7 @@ public class SPSessionPersister implements SPPersister {
 
 	public void removeObject(String parentUUID, String uuid)
 			throws SPPersistenceException {
-		synchronized (session) {
+		synchronized (getSession()) {
 			enforeThreadSafety();
 			
 			if (logger.isDebugEnabled()) {
@@ -620,7 +612,7 @@ public class SPSessionPersister implements SPPersister {
 	}
 	
 	public void rollback(boolean force) {
-		final SPObject workspace = session.getWorkspace();
+		final SPObject workspace = getSession().getWorkspace();
 		synchronized (workspace) {
 			if (headingToWisconsin) {
 				return;
@@ -1038,6 +1030,14 @@ public class SPSessionPersister implements SPPersister {
 			}
 		}
 		return null;
+	}
+
+	public void setSession(SPSession session) {
+		this.session = session;
+	}
+
+	public SPSession getSession() {
+		return session;
 	}
 
 }

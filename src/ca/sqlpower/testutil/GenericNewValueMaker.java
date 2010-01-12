@@ -29,6 +29,7 @@ import java.text.SimpleDateFormat;
 
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.query.SQLGroupFunction;
+import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.Olap4jDataSource;
 import ca.sqlpower.sql.PlDotIni;
@@ -61,7 +62,7 @@ public class GenericNewValueMaker implements NewValueMaker {
 	 * See doc comment on constructor.
 	 */
 	private final SPObject root;
-	private final PlDotIni pl;
+	private final DataSourceCollection<SPDataSource> pl;
 
 	/**
 	 * @param root
@@ -78,7 +79,7 @@ public class GenericNewValueMaker implements NewValueMaker {
 		this(root, new PlDotIni());
 	}
 	
-	public GenericNewValueMaker(SPObject root, PlDotIni pl) {
+	public GenericNewValueMaker(SPObject root, DataSourceCollection<SPDataSource> pl) {
 		this.root = root;
 		this.pl = pl;
 	}
@@ -146,10 +147,12 @@ public class GenericNewValueMaker implements NewValueMaker {
         	sqlCol.setName("testing!");
         	SQLTable table = (SQLTable) makeNewValue(SQLTable.class, null, "Parent of column");
         	table.addColumnWithoutPopulating(sqlCol);
+        	table.setPopulated(true);
         	newVal = sqlCol;
         } else if (valueType.isAssignableFrom(SQLTable.class)) {
         	SQLTable table = new SQLTable();
         	table.setName("Generated testing table");
+        	table.setPopulated(true);
         	SQLDatabase db = (SQLDatabase) makeNewValue(SQLDatabase.class, null, "parent of table");
         	db.addTable(table);
         	newVal = table;
@@ -166,6 +169,7 @@ public class GenericNewValueMaker implements NewValueMaker {
         	Column col = new Column();
         	col.setName("Generated testing column index");
         	SQLIndex index = (SQLIndex) makeNewValue(SQLIndex.class, null, "parent of column");
+        	index.setPopulated(true);
         	index.addIndexColumn(col);
         	newVal = col;
         } else if (valueType.isAssignableFrom(SQLIndex.class)) {
@@ -173,6 +177,7 @@ public class GenericNewValueMaker implements NewValueMaker {
         	index.setName("a new index");
         	SQLTable table = (SQLTable) makeNewValue(SQLTable.class, null, "parent of index");
         	table.addIndex(index);
+        	table.setPopulated(true);
         	newVal = index;
         } else if (valueType.isAssignableFrom(ColumnMapping.class)) {
         	ColumnMapping mapping = new ColumnMapping();

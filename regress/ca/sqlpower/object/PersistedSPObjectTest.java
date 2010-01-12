@@ -39,6 +39,8 @@ import ca.sqlpower.dao.PersistedSPOProperty;
 import ca.sqlpower.dao.PersisterUtils;
 import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.dao.SPPersisterListener;
+import ca.sqlpower.dao.SPSessionPersister;
+import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.helper.SPPersisterHelperFactory;
 import ca.sqlpower.dao.helper.generated.SPPersisterHelperFactoryImpl;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
@@ -180,9 +182,6 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		SPPersisterListener listener = new SPPersisterListener(
 				getPersisterHelperFactory(countingPersister, converter));
 		
-		SPObject spObject = getSPObjectUnderTest();
-		spObject.addSPListener(listener);
-		
 		SPObject wo = getSPObjectUnderTest();
         wo.addSPListener(listener);
 
@@ -264,6 +263,117 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
             }
         }
 	}
+	
+	/**
+	 * Tests the {@link SPSessionPersister} can update every settable property
+	 * on an object based on a persist call.
+	 */
+	public void testSPPersisterPersistsProperties() throws Exception {
+		NewValueMaker valueMaker = new GenericNewValueMaker(root, getPLIni());
+		SessionPersisterSuperConverter converter = new SessionPersisterSuperConverter(
+				getPLIni(), root);
+		
+		SPObject objectUnderTest = getSPObjectUnderTest();
+		
+		SPSessionPersister persister = new SPSessionPersister(
+				"Testing Persister", getPLIni(), root);
+		persister.setSession(root.getSession());
+		
+		List<PropertyDescriptor> settableProperties = Arrays.asList(
+				PropertyUtils.getPropertyDescriptors(objectUnderTest.getClass()));
+		
+		Set<String> propertiesToPersist = findPersistableBeanProperties(false);
+		
+		for (PropertyDescriptor property : settableProperties) {
+            Object oldVal;
+
+            //Changing the UUID of the object makes it referenced as a different object
+            //and would make the check later in this test fail.
+            if (property.getName().equals("UUID")) continue;
+            
+            if (!propertiesToPersist.contains(property.getName())) continue;
+
+            try {
+                oldVal = PropertyUtils.getSimpleProperty(objectUnderTest, property.getName());
+
+                // check for a setter
+                if (property.getWriteMethod() == null) continue;
+                
+            } catch (NoSuchMethodException e) {
+                logger.debug("Skipping non-settable property " + property.getName() +
+                		" on " + objectUnderTest.getClass().getName());
+                continue;
+            }
+            
+            //special case for parent types. If a specific wabit object has a tighter parent then
+            //WabitObject the getParentClass should return the parent type.
+            Class<?> propertyType = property.getPropertyType();
+            if (property.getName().equals("parent")) {
+            	propertyType = getSPObjectUnderTest().getClass().getMethod("getParent").getReturnType();
+            	logger.debug("Persisting parent, type is " + propertyType);
+            }
+            Object newVal = valueMaker.makeNewValue(propertyType, oldVal, property.getName());
+            
+            System.out.println("Persisting property \"" + property.getName() + "\" from oldVal \"" + oldVal + "\" to newVal \"" + newVal + "\"");
+            
+            DataType type = PersisterUtils.getDataType(property.getPropertyType());
+			Object basicNewValue = converter.convertToBasicType(newVal);
+			persister.begin();
+			persister.persistProperty(objectUnderTest.getUUID(), property.getName(), type, 
+					converter.convertToBasicType(oldVal), 
+					basicNewValue);
+			persister.commit();
+			
+			Object newValAfterSet = PropertyUtils.getSimpleProperty(objectUnderTest, property.getName());
+			Object basicExpectedValue = converter.convertToBasicType(newValAfterSet);
+			
+			assertPersistedValuesAreEqual(newVal, newValAfterSet, basicNewValue, 
+					basicExpectedValue, property.getPropertyType());
+    	}
+	}
+	
+	/**
+	 * Taken from AbstractWabitObjectTest. When Wabit is using annotations
+	 * remove this method from that class as this class will be doing the reflective
+	 * tests.
+	 * <p>
+	 * Tests that the new value that was persisted is the same as an old value
+	 * that was to be persisted. This helper method for the persister tests will
+	 * compare the values by their converted type or some other means as not all
+	 * values that are persisted have implemented their equals method.
+	 * <p>
+	 * This will do the asserts to compare if the objects are equal.
+	 * 
+	 * @param valueBeforePersist
+	 *            the value that we are expecting the persisted value to contain
+	 * @param valueAfterPersist
+	 *            the value that was persisted to the object. This will be
+	 *            tested against the valueBeforePersist to ensure that they are
+	 *            the same.
+	 * @param basicValueBeforePersist
+	 *            The valueBeforePersist converted to a basic type by a
+	 *            converter.
+	 * @param basicValueAfterPersist
+	 *            The valueAfterPersist converted to a basic type by a
+	 *            converter.
+	 * @param valueType
+	 *            The type of object the before and after values should contain.
+	 */
+    private void assertPersistedValuesAreEqual(Object valueBeforePersist, Object valueAfterPersist, 
+    		Object basicValueBeforePersist, Object basicValueAfterPersist, 
+    		Class<? extends Object> valueType) {
+    	
+		//Input streams from images are being compared by hash code not values
+		if (Image.class.isAssignableFrom(valueType)) {
+			assertTrue(Arrays.equals(PersisterUtils.convertImageToStreamAsPNG((Image) valueBeforePersist).toByteArray(),
+					PersisterUtils.convertImageToStreamAsPNG((Image) valueAfterPersist).toByteArray()));
+		} else {
+
+			//Not all new values are equivalent to their old values so we are
+			//comparing them by their basic type as that is at least comparable, in most cases, i hope.
+			assertEquals("Persist failed for type " + valueType, basicValueBeforePersist, basicValueAfterPersist);
+		}
+    }
 
 	/**
 	 * Ensures that each getter and setter in the object under test is annotated
@@ -333,7 +443,6 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 					}
 					parentClass = parentClass.getSuperclass();
 				}
-				System.out.println("checking " + m.getName() + " with return type " + m.getReturnType() + " on class " + m.getDeclaringClass() + " with annotations " + Arrays.asList(m.getDeclaredAnnotations()));
 				if (accessor) {
 					if (includeTransient || !isTransient) {
 						if (m.getName().startsWith("get")) {
@@ -367,7 +476,8 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		Set<String> beanNames = new HashSet<String>();
 		for (String beanName : getters) {
 			if (setters.contains(beanName)) {
-				beanNames.add(beanName);
+				String firstLetter = new String(new char[]{beanName.charAt(0)});
+				beanNames.add(beanName.replaceFirst(firstLetter, firstLetter.toLowerCase()));
 			}
 		}
 		return beanNames;

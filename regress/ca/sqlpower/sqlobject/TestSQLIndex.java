@@ -63,7 +63,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
                 " foo char(10))");
 
         index = new SQLIndex("Test Index",true,"a", "HASH","b");
-        table = new SQLTable(null,true);
+        table = new SQLTable(null, true);
         table.setName("Test Table");
         col1 = new SQLColumn();
         table.addColumn(col1);
@@ -79,6 +79,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         index2.addIndexColumn(col1, AscendDescend.UNSPECIFIED);
         index2.addIndexColumn(col3, AscendDescend.DESCENDING);
         table.addIndex(index2);
+        table.setPopulated(true);
         dbTable = db.getTableByName("SQL_COLUMN_TEST_3PK");
 
         index3 = new SQLIndex("Test Index 3", true, "a", "HASH", "b");
@@ -86,6 +87,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         index3.addIndexColumn(col2, AscendDescend.DESCENDING);
         index3.addIndexColumn(col1, AscendDescend.UNSPECIFIED);
         table.addIndex(index3);
+        db.addTable(table);
     }
 
     @Override

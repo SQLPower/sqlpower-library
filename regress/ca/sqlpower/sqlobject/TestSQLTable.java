@@ -86,6 +86,8 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         table.getColumn(2).setPrimaryKeySeq(2);
         table.getColumn(0).setNullable(DatabaseMetaData.columnNullable);
         table.getColumn(0).setAutoIncrement(true); 
+        
+        db.addTable(table);
     }
     
     @Override

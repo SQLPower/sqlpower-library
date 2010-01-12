@@ -36,7 +36,7 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 		super.setUp();
 		c = new SQLCatalog();
         c.setPopulated(true);
-        c.setParent(new SQLDatabase());
+        db.addChild(c);
 	}
 
 	@Override
