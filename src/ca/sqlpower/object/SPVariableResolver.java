@@ -30,13 +30,20 @@ import java.util.Collection;
  * You can ask the resolver directly if he is capable of resolving variables
  * in a given namespace by calling {@link SPVariableResolver#resolvesNamespace(String)}.
  * 
- * <p>For example, one might expect a lookup key to be something like:
+ * <p>For example, one might expect an inserted variable to be something like:
  * 
- * <blockquote><code>w1234-1234-1234-1234::myVariableKey</code></blockquote>
+ * <blockquote><code>${w1234-1234-1234-1234::myVariableKey}</code></blockquote>
  * 
  * <p>For performance reasons, it is strongly suggested of using those namespaces
  * and cache a map of namespaces<->resolvers. Large object models will benefit greatly
  * of this.
+ *
+ * <p>An inserted variable can also specify it's default value. This can be accomplished 
+ * by inserting a variable as so.
+ * 
+ * <blockquote><code>${w1234-1234-1234-1234::myVariableKey->defValue}</code></blockquote>
+ * 
+ * <p>In the above example, the default value is a string which contents is 'defValue'.
  * 
  * <p>The usual way of using the Variables framework goes like this. {@link SPObject} that want
  * to expose variables must implement the {@link SPVariableResolverProvider} interface.
@@ -55,6 +62,7 @@ import java.util.Collection;
  * {@link SPVariableResolverProvider}. There are lots of options available to configure
  * the helper's behavior and optimize it's search routine. Read it's javadoc for more details.
  * 
+ * @see {@link SPVariableHelper}
  * @author Luc Boudreau
  */
 public interface SPVariableResolver {
@@ -66,6 +74,12 @@ public interface SPVariableResolver {
 	
 	static final String NAMESPACE_DELIMITER_REGEXP = "\\:\\:";
 
+	/**
+	 * Used to define an inserted variable default value if it cannot be resolved.
+	 * @see {@link SPVariableResolver}
+	 */
+	public static final String DEFAULT_VALUE_DELIMITER = "->";
+	
 	/**
 	 * Resolves a variable to it's value by a String key.
 	 * Returns null if the variable cannot be resolved.

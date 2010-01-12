@@ -291,4 +291,79 @@ public class VariablesTest extends TestCase {
 		helper.setWalkDown(true);
 		assertTrue(Arrays.equals(new String[] {"key1", "key2", "key3"}, helper.keySet(null).toArray()));
 	}
+	
+	public void testVariablesDefaultValue() throws Exception {
+		
+		String defValue = "defValue";
+		String keyWithDefValue1 = "key1" + SPVariableResolver.DEFAULT_VALUE_DELIMITER + defValue;
+		String keyWithDefValue2 = "namespace" + SPVariableResolver.NAMESPACE_DELIMITER + "key1" + SPVariableResolver.DEFAULT_VALUE_DELIMITER + defValue;
+		
+		root = new MockSPObject();
+		MockSPObject node1 = new MockSPObject();
+		MockSPObject node2 = new MockSPObject();
+		MockSPObject node3 = new MockSPObject();
+		root.addChild(node1, 0);
+		root.addChild(node2, 1);
+		node2.addChild(node3, 0);
+		
+		SPVariableHelper helper = new SPVariableHelper(node1);
+		helper.setWalkDown(true);
+		
+		// First test by resolving non-existent variables.
+		assertEquals(defValue, helper.resolve(keyWithDefValue1));
+		assertEquals(defValue, helper.resolve(keyWithDefValue2));
+		assertEquals(1, helper.resolveCollection(keyWithDefValue1).size());
+		assertEquals(defValue, helper.resolveCollection(keyWithDefValue1).iterator().next());
+		assertEquals(1, helper.resolveCollection(keyWithDefValue2).size());
+		assertEquals(defValue, helper.resolveCollection(keyWithDefValue2).iterator().next());
+		
+		// Set the variables to a different value, without a namespace
+		// set.
+		node3.getVariableResolver().store("key1", defValue+"X");
+		
+		// Now resolve again and make sure we get the correct values
+		assertEquals(defValue+"X", helper.resolve(keyWithDefValue1));
+		assertEquals(defValue, helper.resolve(keyWithDefValue2));
+		node3.getVariableResolver().setSnobbyResolver(false);
+		assertEquals(defValue+"X", helper.resolve(keyWithDefValue2));
+		node3.getVariableResolver().setSnobbyResolver(true);
+		assertEquals(1, helper.resolveCollection(keyWithDefValue1).size());
+		assertEquals(defValue+"X", helper.resolveCollection(keyWithDefValue1).iterator().next());
+		assertEquals(1, helper.resolveCollection(keyWithDefValue2).size());
+		assertEquals(defValue, helper.resolveCollection(keyWithDefValue2).iterator().next());
+		node3.getVariableResolver().setSnobbyResolver(false);
+		assertEquals(1, helper.resolveCollection(keyWithDefValue2).size());
+		assertEquals(defValue+"X", helper.resolveCollection(keyWithDefValue2).iterator().next());
+		node3.getVariableResolver().setSnobbyResolver(true);
+		
+		// Set a namespace on the node and do this all over.
+		node3.getVariableResolver().setNamespace("namespace");
+		node3.getVariableResolver().delete("key1");
+		
+		// First test by resolving non-existent variables.
+		assertEquals(defValue, helper.resolve(keyWithDefValue1));
+		assertEquals(defValue, helper.resolve(keyWithDefValue2));
+		assertEquals(1, helper.resolveCollection(keyWithDefValue1).size());
+		assertEquals(defValue, helper.resolveCollection(keyWithDefValue1).iterator().next());
+		assertEquals(1, helper.resolveCollection(keyWithDefValue2).size());
+		assertEquals(defValue, helper.resolveCollection(keyWithDefValue2).iterator().next());
+		
+		// Set the variables to a different value, with a namespace set.
+		node3.getVariableResolver().store("namespace" + SPVariableResolver.NAMESPACE_DELIMITER + "key1", defValue+"X");
+		
+		// Now resolve again and make sure we get the correct values
+		assertEquals(defValue, helper.resolve(keyWithDefValue1));
+		node3.getVariableResolver().setSnobbyResolver(false);
+		assertEquals(defValue+"X", helper.resolve(keyWithDefValue1));
+		node3.getVariableResolver().setSnobbyResolver(true);
+		assertEquals(defValue+"X", helper.resolve(keyWithDefValue2));
+		assertEquals(1, helper.resolveCollection(keyWithDefValue1).size());
+		assertEquals(defValue, helper.resolveCollection(keyWithDefValue1).iterator().next());
+		node3.getVariableResolver().setSnobbyResolver(false);
+		assertEquals(1, helper.resolveCollection(keyWithDefValue1).size());
+		assertEquals(defValue+"X", helper.resolveCollection(keyWithDefValue1).iterator().next());
+		node3.getVariableResolver().setSnobbyResolver(true);
+		assertEquals(1, helper.resolveCollection(keyWithDefValue2).size());
+		assertEquals(defValue+"X", helper.resolveCollection(keyWithDefValue2).iterator().next());
+	}
 }

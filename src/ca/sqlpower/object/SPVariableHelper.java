@@ -82,7 +82,7 @@ import org.apache.log4j.Logger;
  */
 public class SPVariableHelper implements SPVariableResolver {
 	
-	private final static Pattern varPattern = Pattern.compile("\\$\\{([$a-zA-Z0-9"+NAMESPACE_DELIMITER_REGEXP+"\\-_.]+)\\}");
+	private final static Pattern varPattern = Pattern.compile("\\$\\{([$a-zA-Z0-9"+NAMESPACE_DELIMITER_REGEXP+"\\-_.\\>]+)\\}");
 
 	private static final Logger logger = Logger.getLogger(SPVariableHelper.class);
 	
@@ -262,7 +262,7 @@ public class SPVariableHelper implements SPVariableResolver {
         	JMenu subMenu = new JMenu(name.toString());
     		menu.add(subMenu);
     		for (Object key : keys.getCollection(name)) {
-    			subMenu.add(new InsertVariableAction(stripNamespace(key.toString()), key.toString(), target));
+    			subMenu.add(new InsertVariableAction(getKey(key.toString()), key.toString(), target));
     		}
         }
     	
@@ -275,29 +275,68 @@ public class SPVariableHelper implements SPVariableResolver {
     /**
      * Returns the namespace of a variable. If there is
      * no variable namespace, null is returned.
-     * @param key The key for which we want the namespace.
-     * @return The namespace value, or null if none.
+     * @param varDef The complete variable key lookup value. Something like : '1234-1234::myVar->defValue'
+     * @return The namespace value, '1234-1234' in the above example, or null if none.
      */
-    public static String getNamespace(String key) {
-		int index = key.indexOf(NAMESPACE_DELIMITER);
+    public static String getNamespace(String varDef) {
+		int index = varDef.indexOf(NAMESPACE_DELIMITER);
 		if (index != -1) {
-			return key.substring(0, index);
+			return varDef.substring(0, index);
 		}
 		return null;
 	}
     
     
     /**
-     * Returns the variable name without the namespace.
-     * @param key
-     * @return
+     * Returns the variable name without the namespace nor
+     * the default value.
+     * @param varDef The complete variable key lookup value. Something like : '1234-1234::myVar->defValue'
+     * @return Only the key part, 'myVar' in the above example.
      */
-    public static String stripNamespace(String key) {
-    	int index = key.indexOf(NAMESPACE_DELIMITER);
-		if (index != -1) {
-			return key.substring(index + NAMESPACE_DELIMITER.length(), key.length());
+    public static String getKey(String varDef) {
+    	
+    	int namespaceIndex = varDef.indexOf(NAMESPACE_DELIMITER);
+    	int defValueIndex = varDef.indexOf(DEFAULT_VALUE_DELIMITER);
+    	String returnValue = varDef;
+    	
+		if (namespaceIndex != -1) {
+			returnValue = returnValue.substring(namespaceIndex + NAMESPACE_DELIMITER.length(), varDef.length());
 		}
-		return key;
+		
+		if (defValueIndex != -1) {
+			returnValue = returnValue.substring(0, defValueIndex);
+		}
+		
+		return returnValue;
+    }
+    
+    /**
+     * Extracts the default value from an inserted variable key.
+     * @param varDef The complete variable key lookup value. Something like : '1234-1234::myVar->defValue'
+     * @return Only the default value part. 'defValue' in the above example.
+     */
+    public static String getDefaultValue(String varDef) {
+    	int defValueIndex = varDef.indexOf(DEFAULT_VALUE_DELIMITER);
+    	if (defValueIndex != -1) {
+    		return varDef.substring(defValueIndex + DEFAULT_VALUE_DELIMITER.length(), varDef.length());
+    	} else {
+    		return null;
+    	}
+    }
+
+    /**
+     * Returns an inserted variable lookup key stripped from it's default
+     * value part.
+     * @param varDef The complete variable key lookup value. Something like : '1234-1234::myVar->defValue'
+     * @return Would return '1234-1234::myVar' in the above example
+     */
+    public static String stripDefaultValue(String varDef) {
+    	int defValueIndex = varDef.indexOf(DEFAULT_VALUE_DELIMITER);
+    	if (defValueIndex != -1) {
+    		return varDef.substring(0, defValueIndex);
+    	} else {
+    		return varDef;
+    	}
     }
     
 
@@ -368,17 +407,16 @@ public class SPVariableHelper implements SPVariableResolver {
 	// *************************  Resolver Implementation  *****************************//
 
 	public Object resolve(String key) {
-		return this.resolve(key, null);
+		return this.resolve(stripDefaultValue(key), getDefaultValue(key));
 	}
 
 	public Object resolve(String key, Object defaultValue) {
 		try {
-			return 
+			return
 				this.recursivelyResolveSingleValue(
 					this.contextSource,
 					getNamespace(key),
-					key, 
-					defaultValue,
+					getKey(key),
 					true);
 		} catch (NotFoundException e) {
 			return defaultValue;
@@ -386,7 +424,7 @@ public class SPVariableHelper implements SPVariableResolver {
 	}
 
 	public Collection<Object> resolveCollection(String key) {
-		return this.resolveCollection(key, null);
+		return this.resolveCollection(stripDefaultValue(key), getDefaultValue(key));
 	}
 
 	public Collection<Object> resolveCollection(String key, Object defaultValue) {
@@ -396,8 +434,7 @@ public class SPVariableHelper implements SPVariableResolver {
 					results,
 					this.contextSource, 
 					getNamespace(key),
-					key, 
-					defaultValue,
+					getKey(key),
 					true);
 		} catch (CompletedException e) {
 			return results;
@@ -467,8 +504,7 @@ public class SPVariableHelper implements SPVariableResolver {
 	private Object recursivelyResolveSingleValue(
 			SPObject currentNode, 
 			String namespace,
-			String key, 
-			Object defaultValue,
+			String key,
 			boolean upwards) throws NotFoundException 
 	{
 		
@@ -478,9 +514,9 @@ public class SPVariableHelper implements SPVariableResolver {
 			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
 			
 			if (resolver.resolvesNamespace(namespace) &&
-					resolver.resolves(key)) {
+					resolver.resolves(namespace != null ? namespace + NAMESPACE_DELIMITER + key : key)) {
 				// Kewl. We found the correct variable value.
-				return resolver.resolve(key, defaultValue);
+				return resolver.resolve(namespace != null ? namespace + NAMESPACE_DELIMITER + key : key);
 			}
 		}
 		
@@ -496,8 +532,7 @@ public class SPVariableHelper implements SPVariableResolver {
 						this.recursivelyResolveSingleValue(
 							currentNode, 
 							namespace,
-							key, 
-							defaultValue,
+							key,
 							false);
 				} else {
 					throw new NotFoundException();
@@ -510,8 +545,7 @@ public class SPVariableHelper implements SPVariableResolver {
 				this.recursivelyResolveSingleValue(
 					currentNode.getParent(), 
 					namespace,
-					key, 
-					defaultValue,
+					key,
 					true);
 		} else {
 			for (SPObject child : currentNode.getChildren()) {
@@ -521,8 +555,7 @@ public class SPVariableHelper implements SPVariableResolver {
 					result = this.recursivelyResolveSingleValue(
 								child, 
 								namespace,
-								key, 
-								defaultValue,
+								key,
 								false);
 				} catch (NotFoundException e) {
 					continue;
@@ -540,8 +573,7 @@ public class SPVariableHelper implements SPVariableResolver {
 			Collection<Object> results,
 			SPObject currentNode, 
 			String namespace,
-			String key, 
-			Object defaultValue,
+			String key,
 			boolean upwards) throws CompletedException 
 	{
 		// First, verify if the current node is a variable resolver implementation.
@@ -549,9 +581,9 @@ public class SPVariableHelper implements SPVariableResolver {
 			// Turns out it is. Let's ask it if it can help us.
 			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
 			if (resolver.resolvesNamespace(namespace) &&
-					resolver.resolves(key)) {
+					resolver.resolves(namespace != null ? namespace + NAMESPACE_DELIMITER + key : key)) {
 				// Kewl. We found a valid variable resolver.
-				results.addAll(resolver.resolveCollection(key, defaultValue));
+				results.addAll(resolver.resolveCollection(namespace != null ? namespace + NAMESPACE_DELIMITER + key : key));
 				if (!globalCollectionResolve) {
 					throw new CompletedException();
 				}
@@ -566,8 +598,7 @@ public class SPVariableHelper implements SPVariableResolver {
 							results,
 							currentNode, 
 							namespace,
-							key, 
-							defaultValue,
+							key,
 							false);
 				} else {
 					return;
@@ -577,8 +608,7 @@ public class SPVariableHelper implements SPVariableResolver {
 						results,
 						currentNode.getParent(), 
 						namespace,
-						key, 
-						defaultValue,
+						key,
 						true);
 			}
 		} else {
@@ -588,8 +618,7 @@ public class SPVariableHelper implements SPVariableResolver {
 						results,
 						child, 
 						namespace,
-						key, 
-						defaultValue,
+						key,
 						false);
 			}
 		}

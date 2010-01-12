@@ -62,7 +62,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 		if (SPVariableHelper.getNamespace(key)!=null && !this.resolvesNamespace(SPVariableHelper.getNamespace(key))) {
 			throw new IllegalStateException("Cannot store a variable of namespace '" + SPVariableHelper.getNamespace(key) + "' because this resolver is configured to operate under the namespace '" + this.namespace + "'");
 		}
-		this.variables.put(SPVariableHelper.stripNamespace(key), value);
+		this.variables.put(SPVariableHelper.getKey(key), value);
 	}
 	
 	/**
@@ -80,8 +80,8 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 		if (!this.resolvesNamespace(SPVariableHelper.getNamespace(key))) {
 			throw new IllegalStateException("Cannot store a variable of namespace '" + SPVariableHelper.getNamespace(key) + "' because this resolver is configured to operate under the namespace '" + this.namespace + "'");
 		}
-		if (this.variables.containsKey(SPVariableHelper.stripNamespace(key))) {
-			this.variables.remove(SPVariableHelper.stripNamespace(key));
+		if (this.variables.containsKey(SPVariableHelper.getKey(key))) {
+			this.variables.remove(SPVariableHelper.getKey(key));
 		}
 		this.store(key, value);
 	}
@@ -91,7 +91,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	 * @param key The key for which we want to delete all occurences.
 	 */
 	public void delete(String key) {
-		this.variables.remove(SPVariableHelper.stripNamespace(key));
+		this.variables.remove(SPVariableHelper.getKey(key));
 	}
 	
 	/**
@@ -171,7 +171,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 		
 		String namespace = SPVariableHelper.getNamespace(key);
 		if (this.resolvesNamespace(namespace)) {
-			Collection value = this.variables.getCollection(SPVariableHelper.stripNamespace(key));
+			Collection value = this.variables.getCollection(SPVariableHelper.getKey(key));
 			if (value == null || value.size() == 0) {
 				return defaultValue;
 			} else {
@@ -192,7 +192,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 		
 		String namespace = SPVariableHelper.getNamespace(key);
 		if (this.resolvesNamespace(namespace)) {
-			Collection value = this.variables.getCollection(SPVariableHelper.stripNamespace(key));
+			Collection value = this.variables.getCollection(SPVariableHelper.getKey(key));
 			if (value != null) {
 				return value;
 			}
@@ -206,7 +206,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 		
 		String namespace = SPVariableHelper.getNamespace(key);
 		if (this.resolvesNamespace(namespace)) {
-			return this.variables.containsKey(SPVariableHelper.stripNamespace(key));
+			return this.variables.containsKey(SPVariableHelper.getKey(key));
 		}
 		return false;
 	}
