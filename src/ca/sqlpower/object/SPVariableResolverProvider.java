@@ -35,6 +35,9 @@ public interface SPVariableResolverProvider {
 
 	/**
 	 * Returns this object's {@link SPVariableResolver}
+	 * <p>Implementing classes are allowed to return
+	 * a null object if they desire not to act as a variable
+	 * provider no more.
 	 * @return this object's {@link SPVariableResolver}
 	 */
 	public SPVariableResolver getVariableResolver();

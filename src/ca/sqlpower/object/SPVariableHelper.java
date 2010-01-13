@@ -82,7 +82,7 @@ import org.apache.log4j.Logger;
  */
 public class SPVariableHelper implements SPVariableResolver {
 	
-	private final static Pattern varPattern = Pattern.compile("\\$\\{([$a-zA-Z0-9"+NAMESPACE_DELIMITER_REGEXP+"\\-_.\\>]+)\\}");
+	private final static Pattern varPattern = Pattern.compile("\\$\\{([^\\}]+)\\}");
 
 	private static final Logger logger = Logger.getLogger(SPVariableHelper.class);
 	
@@ -520,7 +520,8 @@ public class SPVariableHelper implements SPVariableResolver {
 			// Turns out it is. Let's ask it if it can help us.
 			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
 			
-			if (resolver.resolvesNamespace(namespace) &&
+			if (resolver != null &&
+					resolver.resolvesNamespace(namespace) &&
 					resolver.resolves(namespace != null ? namespace + NAMESPACE_DELIMITER + key : key)) {
 				// Kewl. We found the correct variable value.
 				return resolver.resolve(namespace != null ? namespace + NAMESPACE_DELIMITER + key : key);
@@ -587,7 +588,8 @@ public class SPVariableHelper implements SPVariableResolver {
 		if (currentNode instanceof SPVariableResolverProvider) {
 			// Turns out it is. Let's ask it if it can help us.
 			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
-			if (resolver.resolvesNamespace(namespace) &&
+			if (resolver != null &&
+					resolver.resolvesNamespace(namespace) &&
 					resolver.resolves(namespace != null ? namespace + NAMESPACE_DELIMITER + key : key)) {
 				// Kewl. We found a valid variable resolver.
 				results.addAll(resolver.resolveCollection(namespace != null ? namespace + NAMESPACE_DELIMITER + key : key));
@@ -641,7 +643,8 @@ public class SPVariableHelper implements SPVariableResolver {
 		if (currentNode instanceof SPVariableResolverProvider) {
 			// Turns out it is. Let's ask it if it can help us.
 			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
-			if (resolver.resolvesNamespace(namespace) && resolver.resolves(key)) {
+			if (resolver != null &&
+					resolver.resolvesNamespace(namespace) && resolver.resolves(key)) {
 				// Kewl. We found at least someone to resolve it.
 				return true;
 			}
@@ -697,7 +700,8 @@ public class SPVariableHelper implements SPVariableResolver {
 			// Turns out it is. Let's check if it is the correct resolver
 			// for the desired namespace
 			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
-			if (resolver.resolvesNamespace(namespace)) {
+			if (resolver != null &&
+					resolver.resolvesNamespace(namespace)) {
 				return resolver;
 			}
 		}
@@ -748,7 +752,8 @@ public class SPVariableHelper implements SPVariableResolver {
 		if (currentNode instanceof SPVariableResolverProvider) {
 			// Turns out it is. Let's ask it if it can help us.
 			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
-			if (resolver.resolves(key)) {
+			if (resolver != null &&
+					resolver.resolves(key)) {
 				matches.addAll(
 						resolver.matches(
 								key, 
@@ -810,7 +815,8 @@ public class SPVariableHelper implements SPVariableResolver {
 		if (currentNode instanceof SPVariableResolverProvider) {
 			// Turns out it is. Let's ask it if it can help us.
 			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
-			if (resolver.resolvesNamespace(namespace)) {
+			if (resolver != null &&
+					resolver.resolvesNamespace(namespace)) {
 				for (String key : resolver.keySet(namespace)) {
 					if (keys.getCollection(currentNode.getName()) == null
 							||
