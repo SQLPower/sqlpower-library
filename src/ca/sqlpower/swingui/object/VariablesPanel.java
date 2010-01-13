@@ -19,7 +19,6 @@
 
 package ca.sqlpower.swingui.object;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
@@ -33,10 +32,8 @@ import java.util.Comparator;
 import java.util.List;
 
 import javax.swing.AbstractAction;
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JOptionPane;
@@ -52,11 +49,7 @@ import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.collections.map.MultiValueMap;
 
-import ca.sqlpower.object.AbstractSPObject;
-import ca.sqlpower.object.SPObject;
-import ca.sqlpower.object.SPSimpleVariableResolver;
 import ca.sqlpower.object.SPVariableHelper;
-import ca.sqlpower.object.SPVariableResolverProvider;
 import ca.sqlpower.swingui.DataEntryPanel;
 
 public class VariablesPanel implements DataEntryPanel {
@@ -279,92 +272,92 @@ public class VariablesPanel implements DataEntryPanel {
         menu.show(varNameText, 0, varNameText.getHeight());
     }
 	
-	public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                try {
-                	
-                	JFrame f = new JFrame("TEST PANEL");
-                    JPanel outerPanel = new JPanel(new BorderLayout());
-                    outerPanel.setBorder(BorderFactory.createLineBorder(Color.BLUE));
-                    JTextField dummyField = new JTextField();
-                	
-                	MockSPObject root = new MockSPObject();
-            		MockSPObject node1 = new MockSPObject();
-            		MockSPObject node2 = new MockSPObject();
-            		MockSPObject node3 = new MockSPObject();
-            		root.addChild(node1, 0);
-            		root.addChild(node2, 1);
-            		node2.addChild(node3, 0);
-            		
-            		SPVariableHelper helper = new SPVariableHelper(node1);
-            		helper.setWalkDown(true);
-            		
-            		node1.getVariableResolver().setNamespace("namespace");
-            		node1.getVariableResolver().setSnobbyResolver(false);
-            		node1.getVariableResolver().store("key", "value");
-            		
-            		node3.getVariableResolver().setNamespace("namespace3");
-            		node3.getVariableResolver().setSnobbyResolver(false);
-            		node3.getVariableResolver().store("key3", "value3");
-            		
-            		
-                	
-            		VariablesPanel panel = new VariablesPanel(helper, f, dummyField);
-                	
-                    
-                    outerPanel.add(panel.getPanel(), BorderLayout.CENTER);
-                    f.setContentPane(outerPanel);
-                    f.pack();
-                    f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-                    f.setVisible(true);
-                    
-                } catch (Exception ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
-        });
-    }
-	
-	private static class MockSPObject extends AbstractSPObject implements SPVariableResolverProvider {
-		private List<SPObject> children = new ArrayList<SPObject>();
-		private SPSimpleVariableResolver resolver;
-		public MockSPObject() {
-			this.resolver = new SPSimpleVariableResolver(null);
-		}
-		@Override
-		public String getName() {
-			return this.uuid;
-		}
-		protected boolean removeChildImpl(SPObject child) {
-			return true;
-		}
-		public boolean allowsChildren() {
-			return true;
-		}
-		public int childPositionOffset(Class<? extends SPObject> childType) {
-			return 0;
-		}
-		public List<? extends SPObject> getChildren() {
-			return this.children;
-		}
-		public List<? extends SPObject> getDependencies() {
-			return Collections.emptyList();
-		}
-		public void removeDependency(SPObject dependency) {
-			return;
-		}
-		public SPSimpleVariableResolver getVariableResolver() {
-			return this.resolver;
-		}
-		@Override
-		protected void addChildImpl(SPObject child, int index) {
-			this.children.add(child);
-		}
-		public List<Class<? extends SPObject>> getAllowedChildTypes() {
-			List<Class<? extends SPObject>> types = new ArrayList<Class <? extends SPObject>>();
-			types.add(SPObject.class);
-			return types;
-		}
-	}
+//	public static void main(String[] args) {
+//        SwingUtilities.invokeLater(new Runnable() {
+//            public void run() {
+//                try {
+//                	
+//                	JFrame f = new JFrame("TEST PANEL");
+//                    JPanel outerPanel = new JPanel(new BorderLayout());
+//                    outerPanel.setBorder(BorderFactory.createLineBorder(Color.BLUE));
+//                    JTextField dummyField = new JTextField();
+//                	
+//                	MockSPObject root = new MockSPObject();
+//            		MockSPObject node1 = new MockSPObject();
+//            		MockSPObject node2 = new MockSPObject();
+//            		MockSPObject node3 = new MockSPObject();
+//            		root.addChild(node1, 0);
+//            		root.addChild(node2, 1);
+//            		node2.addChild(node3, 0);
+//            		
+//            		SPVariableHelper helper = new SPVariableHelper(node1);
+//            		helper.setWalkDown(true);
+//            		
+//            		node1.getVariableResolver().setNamespace("namespace");
+//            		node1.getVariableResolver().setSnobbyResolver(false);
+//            		node1.getVariableResolver().store("key", "value");
+//            		
+//            		node3.getVariableResolver().setNamespace("namespace3");
+//            		node3.getVariableResolver().setSnobbyResolver(false);
+//            		node3.getVariableResolver().store("key3", "value3");
+//            		
+//            		
+//                	
+//            		VariablesPanel panel = new VariablesPanel(helper, f, dummyField);
+//                	
+//                    
+//                    outerPanel.add(panel.getPanel(), BorderLayout.CENTER);
+//                    f.setContentPane(outerPanel);
+//                    f.pack();
+//                    f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//                    f.setVisible(true);
+//                    
+//                } catch (Exception ex) {
+//                    throw new RuntimeException(ex);
+//                }
+//            }
+//        });
+//    }
+//	
+//	private static class MockSPObject extends AbstractSPObject implements SPVariableResolverProvider {
+//		private List<SPObject> children = new ArrayList<SPObject>();
+//		private SPSimpleVariableResolver resolver;
+//		public MockSPObject() {
+//			this.resolver = new SPSimpleVariableResolver(null);
+//		}
+//		@Override
+//		public String getName() {
+//			return this.uuid;
+//		}
+//		protected boolean removeChildImpl(SPObject child) {
+//			return true;
+//		}
+//		public boolean allowsChildren() {
+//			return true;
+//		}
+//		public int childPositionOffset(Class<? extends SPObject> childType) {
+//			return 0;
+//		}
+//		public List<? extends SPObject> getChildren() {
+//			return this.children;
+//		}
+//		public List<? extends SPObject> getDependencies() {
+//			return Collections.emptyList();
+//		}
+//		public void removeDependency(SPObject dependency) {
+//			return;
+//		}
+//		public SPSimpleVariableResolver getVariableResolver() {
+//			return this.resolver;
+//		}
+//		@Override
+//		protected void addChildImpl(SPObject child, int index) {
+//			this.children.add(child);
+//		}
+//		public List<Class<? extends SPObject>> getAllowedChildTypes() {
+//			List<Class<? extends SPObject>> types = new ArrayList<Class <? extends SPObject>>();
+//			types.add(SPObject.class);
+//			return types;
+//		}
+//	}
 }
