@@ -20,7 +20,6 @@
 package ca.sqlpower.swingui.object;
 
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -36,14 +35,11 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.JTextComponent;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -52,46 +48,51 @@ import org.apache.commons.collections.map.MultiValueMap;
 import ca.sqlpower.object.SPVariableHelper;
 import ca.sqlpower.swingui.DataEntryPanel;
 
+/**
+ * This calss displays a panel to pick and insert a variable.
+ * @author Luc Boudreau
+ */
 public class VariablesPanel implements DataEntryPanel {
 	
 	private final JPanel panel;
-	
-	private final JTextComponent target;
-	
 	private String currentPickedVariable = "";
 	private String currentDefValue = "";
-
-	private final Component invoker;
-
 	private final SPVariableHelper variableHelper;
-
 	private final JLabel pickerLabel;
 	private final JTextField varNameText;
 	private final JButton varPicker;
-	
-	
 	private final JLabel varDefaultLabel;
 	private final JTextField varDefaultText;
 	private final JLabel varEditLabel;
 	private final JTextField varEditText;
-	
 	private final JLabel varPreviewLabel1;
 	private final JLabel varPreviewLabel2;
+	private boolean stuffToInsert = true;
+	private final VariableInsertionCallback action;
+	private final String namespace;
 	
-	
+	/**
+	 * Default constructor for the variables panel.
+	 * @param variableHelper A helper that will be used in order to
+	 * resolve discover and resolve variables.
+	 * @param namespace The namespacec into which to resolve variables.
+	 * Pass null to resolve all available variables.
+	 * @param action An implementation of {@link VariableInsertionCallback} that 
+	 * gets called once the variable has been created. This action will be executed
+	 * on the Swing Event Dispatch Thread.
+	 */
 	public VariablesPanel(
 			SPVariableHelper variableHelper,
-    		Component invoker, 
-    		JTextComponent target) 
+			String namespace,
+    		VariableInsertionCallback action) 
 	{
 		this.variableHelper = variableHelper;
-		this.invoker = invoker;
-		this.target = target;
+		this.namespace = namespace;
+		this.action = action;
 		
 		this.pickerLabel = new JLabel("Pick a variable");
 		this.varNameText = new JTextField();
 		this.varNameText.setEditable(false);
-//		this.varNameText.setForeground(Color.GRAY);
 		this.varNameText.addMouseListener(new MouseListener() {
 			public void mouseReleased(MouseEvent e) {
 			}
@@ -222,17 +223,18 @@ public class VariablesPanel implements DataEntryPanel {
 	}
 
 	public boolean applyChanges() {
-		try {
-			target.getDocument().insertString(target.getCaretPosition(), varEditText.getText(), null);
-			return true;
-		} catch (BadLocationException e) {
-			JOptionPane.showMessageDialog(invoker, "Could not insert the variable because the cursor is not at a valid insertion point.");
-			return false;
-		}
+		final String variable = varEditText.getText();
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				action.insert(variable);
+			}
+		});
+		this.stuffToInsert = false;
+		return true;
 	}
 
 	public void discardChanges() {
-		// no op
+		this.stuffToInsert = false;
 	}
 
 	public JComponent getPanel() {
@@ -240,16 +242,17 @@ public class VariablesPanel implements DataEntryPanel {
 	}
 
 	public boolean hasUnsavedChanges() {
-		return false;
+		return this.stuffToInsert;
 	}
 	
+	@SuppressWarnings("unchecked")
 	private void showVarsPicker() 
     {
     	MultiValueMap keys = new MultiValueMap();
 		variableHelper.recursiveKeySet(
 				variableHelper.getContextSource(),
 				keys, 
-				null,
+				this.namespace,
 				true);
 		
 		List<String> sortedNames = new ArrayList<String>(keys.keySet().size());

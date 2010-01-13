@@ -25,6 +25,7 @@ import java.awt.event.FocusListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
+import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.UIManager;
 import javax.swing.text.BadLocationException;
@@ -33,6 +34,9 @@ import javax.swing.text.StyleConstants;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.SPVariableHelper;
+import ca.sqlpower.swingui.DataEntryPanelBuilder;
+import ca.sqlpower.swingui.object.VariableInsertionCallback;
+import ca.sqlpower.swingui.object.VariablesPanel;
 import edu.umd.cs.piccolo.PCanvas;
 import edu.umd.cs.piccolo.PNode;
 import edu.umd.cs.piccolo.event.PBasicInputEventHandler;
@@ -123,18 +127,36 @@ private static final Logger logger = Logger.getLogger(EditablePStyledText.class)
 			public void mouseReleased(MouseEvent e) {
 			}
 			public void mousePressed(MouseEvent e) {
-				if (e.getButton() == MouseEvent.BUTTON3) {
-					if (variablesHelper!=null) {
-						whereOptionBox.setVisible(false);
-						variablesHelper.promptAndInsertVariable(null, getEditorPane(), getEditorPane());
-						try {
-							getEditorPane().setText(getEditorPane().getDocument().getText(0,getEditorPane().getDocument().getLength()));
-						} catch (BadLocationException e1) {}
-						whereOptionBox.setVisible(true);
-						setVisible(true);
-						getEditorPane().requestFocus();
-						syncWithDocument();
-						repaint();
+				if (e.getButton() == MouseEvent.BUTTON3) 
+				{
+					if (variablesHelper!=null) 
+					{
+						VariablesPanel vp = 
+							new VariablesPanel(
+									variablesHelper,
+									null,
+									new VariableInsertionCallback() {
+										public void insert(String variable) {
+											try {
+												getDocument().insertString(
+													getEditorPane().getCaretPosition(), 
+													variable, 
+													null);
+											} catch (BadLocationException e) {
+												// no op
+											}
+											syncWithDocument();
+											getStyledTextEventHandler().stopEditing();
+										}
+									});
+						
+						JDialog dialog = 
+							DataEntryPanelBuilder.createDataEntryPanelDialog(
+								vp,
+						        queryPen.getScrollPane(), 
+						        "Insert a variable", 
+						        "Insert");
+						dialog.setVisible(true);
 					}
 				}
 			}
