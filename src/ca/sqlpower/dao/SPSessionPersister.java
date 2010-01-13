@@ -34,14 +34,10 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.dao.helper.SPPersisterHelperFactory;
-import ca.sqlpower.dao.helper.generated.SPPersisterHelperFactoryImpl;
-import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
-import ca.sqlpower.sql.DataSourceCollection;
-import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.util.SPSession;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -290,11 +286,6 @@ public class SPSessionPersister implements SPPersister {
 		new LinkedList<RemovedObjectEntry>();
 	
 	/**
-	 * This converter will do all of the converting for this persister.
-	 */
-	private final SessionPersisterSuperConverter converter;
-
-	/**
 	 * This factory creates {@link SPPersisterHelper}s for each type of
 	 * persistable {@link SPObject} and allows persistObject, commitObject,
 	 * commitProperty and findProperty method calls on it.
@@ -323,12 +314,11 @@ public class SPSessionPersister implements SPPersister {
 	 * exception will be thrown depending on the method called as the object
 	 * will not be found.
 	 */
-	public SPSessionPersister(String name, DataSourceCollection<SPDataSource> dsCollection, SPObject root) {
+	public SPSessionPersister(String name, SPObject root, SPPersisterHelperFactory persisterFactory) {
 		this.name = name;
 		this.root = root;
 		
-		converter = new SessionPersisterSuperConverter(dsCollection, root);
-		persisterFactory = new SPPersisterHelperFactoryImpl(null, converter);
+		this.persisterFactory = persisterFactory;
 	}
 	
 	@Override
@@ -932,13 +922,13 @@ public class SPSessionPersister implements SPPersister {
 	 * @throws SPPersistenceException
 	 */
 	public static void undoForSession(
-			DataSourceCollection<SPDataSource> dsCollection,
+			SPPersisterHelperFactory persisterFactory,
 			SPObject root,
 			List<PersistedObjectEntry> creations,
 			List<PersistedPropertiesEntry> properties,
 			List<RemovedObjectEntry> removals) throws SPPersistenceException
 	{
-		SPSessionPersister persister = new SPSessionPersister("undoer", dsCollection, root);
+		SPSessionPersister persister = new SPSessionPersister("undoer", root, persisterFactory);
 		persister.setGodMode(true);
 		persister.setObjectsToRemoveRollbackList(removals);
 		persister.setPersistedObjectsRollbackList(creations);
