@@ -42,6 +42,7 @@ import ca.sqlpower.dao.SPPersisterListener;
 import ca.sqlpower.dao.SPSessionPersister;
 import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.helper.SPPersisterHelperFactory;
+import ca.sqlpower.dao.helper.generated.SPPersisterHelperFactoryImpl;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Mutator;
@@ -274,7 +275,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		
 		SPObject objectUnderTest = getSPObjectUnderTest();
 		
-		SPPersisterHelperFactory persisterFactory = new SPPersisterHelperFactoryImpl(null, getPLIni());
+		SPPersisterHelperFactory persisterFactory = new SPPersisterHelperFactoryImpl(null, converter);
 		SPSessionPersister persister = new SPSessionPersister(
 				"Testing Persister", root, persisterFactory);
 		persister.setSession(root.getSession());
