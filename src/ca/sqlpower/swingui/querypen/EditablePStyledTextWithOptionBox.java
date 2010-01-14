@@ -35,7 +35,7 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.SPVariableHelper;
 import ca.sqlpower.swingui.object.InsertVariableAction;
-import ca.sqlpower.swingui.object.VariableInsertionCallback;
+import ca.sqlpower.swingui.object.VariableInserter;
 import edu.umd.cs.piccolo.PCanvas;
 import edu.umd.cs.piccolo.PNode;
 import edu.umd.cs.piccolo.event.PBasicInputEventHandler;
@@ -136,7 +136,7 @@ private static final Logger logger = Logger.getLogger(EditablePStyledText.class)
 							"Insert variable",
 							this.variablesHelper, 
 							null, 
-							new VariableInsertionCallback() {
+							new VariableInserter() {
 								public void insert(String variable) {
 									try {
 										getDocument().insertString(
@@ -144,13 +144,13 @@ private static final Logger logger = Logger.getLogger(EditablePStyledText.class)
 												variable, 
 												null);
 									} catch (BadLocationException e) {
-										// no op
+										throw new IllegalStateException(e);
 									}
 									syncWithDocument();
 									getStyledTextEventHandler().stopEditing();
 								}
 							}, 
-							queryPen.getScrollPane()));
+							this.getEditorPane()));
 		}
 		
 		whereOptionBox = PPath.createRectangle(0, 0

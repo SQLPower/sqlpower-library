@@ -34,7 +34,7 @@ import ca.sqlpower.swingui.DataEntryPanelBuilder;
 public class InsertVariableAction extends AbstractAction {
 
 	private final SPVariableHelper variablesHelper;
-	private final VariableInsertionCallback callback;
+	private final VariableInserter callback;
 	private final String variableNamespace;
 	private final Component dialogOwner;
 
@@ -42,7 +42,7 @@ public class InsertVariableAction extends AbstractAction {
 			String actionLabel,
 			SPVariableHelper variablesHelper, 
 			String variableNamespace,
-			VariableInsertionCallback callback,
+			VariableInserter callback,
 			Component dialogOwner) 
 	{
 		super(actionLabel);

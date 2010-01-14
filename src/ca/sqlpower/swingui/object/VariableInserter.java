@@ -19,6 +19,6 @@
 
 package ca.sqlpower.swingui.object;
 
-public abstract class VariableInsertionCallback {
+public abstract class VariableInserter {
 	public abstract void insert(String variable);
 }

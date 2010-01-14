@@ -71,8 +71,6 @@ public interface SPVariableResolver {
 	 * The delimiter to use for namespaced variable names.
 	 */
 	public static final String NAMESPACE_DELIMITER = "::";
-	
-	static final String NAMESPACE_DELIMITER_REGEXP = "\\:\\:";
 
 	/**
 	 * Used to define an inserted variable default value if it cannot be resolved.

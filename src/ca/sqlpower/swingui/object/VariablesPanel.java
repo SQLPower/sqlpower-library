@@ -68,7 +68,7 @@ public class VariablesPanel implements DataEntryPanel {
 	private final JLabel varPreviewLabel1;
 	private final JLabel varPreviewLabel2;
 	private boolean stuffToInsert = true;
-	private final VariableInsertionCallback action;
+	private final VariableInserter action;
 	private final String namespace;
 	
 	/**
@@ -77,14 +77,14 @@ public class VariablesPanel implements DataEntryPanel {
 	 * resolve discover and resolve variables.
 	 * @param namespace The namespacec into which to resolve variables.
 	 * Pass null to resolve all available variables.
-	 * @param action An implementation of {@link VariableInsertionCallback} that 
+	 * @param action An implementation of {@link VariableInserter} that 
 	 * gets called once the variable has been created. This action will be executed
 	 * on the Swing Event Dispatch Thread.
 	 */
 	public VariablesPanel(
 			SPVariableHelper variableHelper,
 			String namespace,
-    		VariableInsertionCallback action) 
+    		VariableInserter action) 
 	{
 		this.variableHelper = variableHelper;
 		this.namespace = namespace;
