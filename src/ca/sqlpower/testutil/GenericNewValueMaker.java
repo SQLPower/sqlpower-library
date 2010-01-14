@@ -34,12 +34,14 @@ import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.Olap4jDataSource;
 import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sqlobject.SQLCatalog;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLIndex;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLObjectRoot;
 import ca.sqlpower.sqlobject.SQLRelationship;
+import ca.sqlpower.sqlobject.SQLSchema;
 import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.sqlobject.SQLRelationship.ColumnMapping;
@@ -195,6 +197,17 @@ public class GenericNewValueMaker implements NewValueMaker {
 				throw new RuntimeException("Trying to create a new relationship for testing", e);
 			}
         	newVal = rel;
+        } else if (valueType.isAssignableFrom(SQLSchema.class)) {
+        	SQLSchema schema = new SQLSchema(true);
+        	schema.setName("A new schema for testing");
+        	SQLDatabase db = (SQLDatabase) makeNewValue(SQLDatabase.class, null, "Schema database");
+        	db.addSchema(schema);
+        	newVal = schema;
+        } else if (valueType.isAssignableFrom(SQLCatalog.class)) {
+        	SQLDatabase db = (SQLDatabase) makeNewValue(SQLDatabase.class, null, "Schema database");
+        	SQLCatalog catalog = new SQLCatalog(db, "catalog for test", true);
+        	db.addCatalog(catalog);
+        	newVal = catalog;
         } else if (valueType.isAssignableFrom(Throwable.class)) {
         	newVal = new SQLObjectException("Test Exception");
         } else if (valueType == UserPrompter.class) {

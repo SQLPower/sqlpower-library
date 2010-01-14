@@ -21,6 +21,7 @@ package ca.sqlpower.sqlobject;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.Set;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 
+import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.PersistedSPObjectTest;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.JDBCDataSource;
@@ -375,6 +377,221 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
     	o.addChild(newChild);
     	
     	assertFalse(o.isPopulated());
+    }
+    
+	/*
+	 * Test method for 'ca.sqlpower.sqlobject.SQLObject.setPopulated(boolean)'
+	 */
+	public void testSetPopulated() throws Exception {
+		getSQLObjectUnderTest().setPopulated(true);
+		assertTrue(getSQLObjectUnderTest().isPopulated());
+	}
+	
+	/*
+	 * Test method for 'ca.sqlpower.sqlobject.SQLObject.setChildren(List)'
+	 * Note that setChildren copies elements, does not assign the list, and
+	 * getChildren returns an unmodifiable copy of the current list.
+	 */
+	public final void testAllChildHandlingMethods() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
+		if (!getSQLObjectUnderTest().allowsChildren()) return;
+		
+		getSQLObjectUnderTest().populate();
+		
+		NewValueMaker newValueMaker = new GenericNewValueMaker(getRootObject());
+		Class<? extends SPObject> childType = getSQLObjectUnderTest().getAllowedChildTypes().get(0);
+		
+		int childCount = getSQLObjectUnderTest().getChildCount();
+		List<SPObject> children = new ArrayList<SPObject>();
+		children.addAll(getSQLObjectUnderTest().getChildren(childType));
+
+		SQLObject x = (SQLObject) newValueMaker.makeNewValue(childType, null, "");
+		
+		getSQLObjectUnderTest().addChild(x);
+		assertEquals(childCount + 1, getSQLObjectUnderTest().getChildCount());
+		assertEquals(x, getSQLObjectUnderTest().getChildren(childType).get(
+				getSQLObjectUnderTest().getChildren(childType).size() - 1));
+		
+		SQLObject y = (SQLObject) newValueMaker.makeNewValue(childType, null, "");
+		
+		// Test addChild(SQLObject, int)
+		getSQLObjectUnderTest().addChild(y, 0);
+		assertEquals(y, getSQLObjectUnderTest().getChild(0));
+		assertEquals(x, getSQLObjectUnderTest().getChildren(childType).get(
+				getSQLObjectUnderTest().getChildren(childType).size() - 1));
+		
+		getSQLObjectUnderTest().removeChild(x);
+		children.add(0, y);
+		assertTrue(getSQLObjectUnderTest().getChildren(childType).containsAll(children));
+		
+		getSQLObjectUnderTest().removeChild(y);
+		assertEquals(childCount, getSQLObjectUnderTest().getChildCount());
+	}
+
+	public final void testFiresAddEvent() throws SQLObjectException {
+		if (!getSQLObjectUnderTest().allowsChildren()) return;
+		
+		CountingSQLObjectListener l = new CountingSQLObjectListener();
+		getSQLObjectUnderTest().addSPListener(l);
+		
+		Class<? extends SPObject> childType = getSQLObjectUnderTest().getAllowedChildTypes().get(0);
+		NewValueMaker newValueMaker = new GenericNewValueMaker(getRootObject());
+		SQLObject x = (SQLObject) newValueMaker.makeNewValue(childType, null, "");
+		
+		getSQLObjectUnderTest().addChild(x);
+		assertEquals(1, l.getInsertedCount());
+        assertEquals(0, l.getRemovedCount());
+        assertEquals(0, l.getChangedCount());
+        assertEquals(0, l.getStructureChangedCount());
+    }
+
+    public void testFireChangeEvent() throws Exception {
+        CountingSQLObjectListener l = new CountingSQLObjectListener();
+        
+        class NewStubSQLObject extends StubSQLObject {
+    		public void fakeObjectChanged(String string,Object oldValue, Object newValue) {
+    			firePropertyChange(string,oldValue,newValue);
+    		}
+		};
+		NewStubSQLObject stub = new NewStubSQLObject();
+
+		stub.addSPListener(l);
+		
+        stub.fakeObjectChanged("fred","old value","new value");
+        assertEquals(0, l.getInsertedCount());
+        assertEquals(0, l.getRemovedCount());
+        assertEquals(1, l.getChangedCount());
+        assertEquals(0, l.getStructureChangedCount());
+    }
+    
+    /** make sure "change" to same value doesn't fire useless event */
+    public void testDontFireChangeEvent() throws Exception {
+        CountingSQLObjectListener l = new CountingSQLObjectListener();
+        
+        class NewStubSQLObject extends StubSQLObject {
+    		public void fakeObjectChanged(String string,Object oldValue, Object newValue) {
+    			firePropertyChange(string,oldValue,newValue);
+    		}
+		};
+		NewStubSQLObject stub = new NewStubSQLObject();
+		
+        stub.addSPListener(l);
+
+        stub.fakeObjectChanged("fred","old value","old value");
+        assertEquals(0, l.getInsertedCount());
+        assertEquals(0, l.getRemovedCount());
+        assertEquals(0, l.getChangedCount());
+        assertEquals(0, l.getStructureChangedCount());
+    }
+
+    public void testFireStructureChangeEvent() throws Exception {
+        CountingSQLObjectListener l = new CountingSQLObjectListener();
+        getSQLObjectUnderTest().addSPListener(l);
+        assertEquals(0, l.getInsertedCount());
+        assertEquals(0, l.getRemovedCount());
+        assertEquals(0, l.getChangedCount());
+    }
+    
+    public void testAddRemoveListener() throws Exception {
+        CountingSQLObjectListener l = new CountingSQLObjectListener();
+        
+        int listenerSize = getSQLObjectUnderTest().getSPListeners().size();
+        getSQLObjectUnderTest().addSPListener(l);
+        assertEquals(listenerSize + 1, getSQLObjectUnderTest().getSPListeners().size());
+		
+        getSQLObjectUnderTest().removeSPListener(l);
+		assertEquals(listenerSize, getSQLObjectUnderTest().getSPListeners().size());
+	}
+	
+	public void testAllowMixedChildrenThatAreSubclassesOfEachOther() throws Exception {
+		SQLObject stub = new StubSQLObject();
+		
+		SQLObject subImpl = new StubSQLObject() {};
+		stub.addChild(new StubSQLObject());
+		stub.addChild(subImpl);
+		
+		// now test the other direction
+		stub.removeChild(stub.getChild(0));
+		stub.addChild(new StubSQLObject());
+        
+        // test passes if no exceptions were thrown
+	}
+	
+    public void testPreRemoveEventNoVeto() throws Exception {
+    	if (!getSQLObjectUnderTest().allowsChildren()) return;
+    	
+    	getSQLObjectUnderTest().populate();
+    	
+		Class<? extends SPObject> childType = getSQLObjectUnderTest().getAllowedChildTypes().get(0);
+		NewValueMaker newValueMaker = new GenericNewValueMaker(getRootObject());
+		SQLObject x = (SQLObject) newValueMaker.makeNewValue(childType, null, "");
+		
+		int childCount = getSQLObjectUnderTest().getChildCount();
+        getSQLObjectUnderTest().addChild(x);
+
+        CountingSQLObjectPreEventListener l = new CountingSQLObjectPreEventListener();
+        getSQLObjectUnderTest().addSQLObjectPreEventListener(l);
+        
+        l.setVetoing(false);
+        
+        getSQLObjectUnderTest().removeChild(getSQLObjectUnderTest().getChild(0));
+        
+        assertEquals("Event fired", 1, l.getPreRemoveCount());
+        assertEquals("Child removed", childCount, getSQLObjectUnderTest().getChildren().size());
+    }
+    
+    public void testPreRemoveEventVeto() throws Exception {
+    	if (!getSQLObjectUnderTest().allowsChildren()) return;
+    	
+    	getSQLObjectUnderTest().populate();
+    	
+		Class<? extends SPObject> childType = getSQLObjectUnderTest().getAllowedChildTypes().get(0);
+		NewValueMaker newValueMaker = new GenericNewValueMaker(getRootObject());
+		SQLObject x = (SQLObject) newValueMaker.makeNewValue(childType, null, "");
+		
+		int childCount = getSQLObjectUnderTest().getChildCount();
+        getSQLObjectUnderTest().addChild(x);
+
+        CountingSQLObjectPreEventListener l = new CountingSQLObjectPreEventListener();
+        getSQLObjectUnderTest().addSQLObjectPreEventListener(l);
+        
+        l.setVetoing(true);
+        
+        getSQLObjectUnderTest().removeChild(getSQLObjectUnderTest().getChild(0));
+        
+        assertEquals("Event fired", 1, l.getPreRemoveCount());
+        assertEquals("Child not removed", childCount + 1, getSQLObjectUnderTest().getChildren().size());
+    }
+    
+    public void testClientPropertySetAndGet() throws Exception {
+        getSQLObjectUnderTest().putClientProperty(this.getClass(), "testProperty", "test me");
+        assertEquals("test me", getSQLObjectUnderTest().getClientProperty(this.getClass(), "testProperty"));
+    }
+    
+    public void testClientPropertyFiresEvent() throws Exception {
+        CountingSQLObjectListener listener = new CountingSQLObjectListener();
+        getSQLObjectUnderTest().addSPListener(listener);
+        getSQLObjectUnderTest().putClientProperty(this.getClass(), "testProperty", "test me");
+        assertEquals(1, listener.getChangedCount());
+    }
+    
+    public void testChildrenInaccessibleReasonSetOnPopulateError() throws Exception {
+        final RuntimeException e = new RuntimeException("freaky!");
+        SQLObject o = new StubSQLObject() {
+            @Override
+            protected void populateImpl() throws SQLObjectException {
+                throw e;
+            }
+        };
+        
+        try {
+        	o.populate();
+        	fail("Failing on populate should throw an exception as well as store it in the children inaccessible reason.");
+        } catch (RuntimeException ex) {
+        	assertEquals(e, ex);
+        }
+        
+        assertEquals(e, o.getChildrenInaccessibleReason());
+            
     }
 
 }
