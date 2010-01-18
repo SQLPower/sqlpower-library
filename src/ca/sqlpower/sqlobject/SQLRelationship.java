@@ -1341,6 +1341,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 		@Constructor
 		public ColumnMapping() {
+			setName("Column Mapping");
 		}
 
 		/**
@@ -1360,7 +1361,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		 */
 		@Mutator
 		public void setPkColumn(SQLColumn argPkColumn) {
+			SQLColumn oldPK = pkColumn;
 			this.pkColumn = argPkColumn;
+			firePropertyChange("pkColumn", oldPK, argPkColumn);
 		}
 
 		/**
@@ -1380,7 +1383,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		 */
 		@Mutator
 		public void setFkColumn(SQLColumn argFkColumn) {
+			SQLColumn oldFK = this.fkColumn;
 			this.fkColumn = argFkColumn;
+			firePropertyChange("fkColumn", oldFK, argFkColumn);
 		}
 
 		public String toString() {
@@ -1395,10 +1400,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		@Accessor
 		public SQLRelationship getParent() {
 			return (SQLRelationship) super.getParent();
-		}
-
-		public String getName() {
-			return "Column Mapping";
 		}
 
 		/**
@@ -1434,6 +1435,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		/**
 		 * Returns true.
 		 */
+		@Transient @Accessor
 		public boolean isPopulated() {
 			return true;
 		}
