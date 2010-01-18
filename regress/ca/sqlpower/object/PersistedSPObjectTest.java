@@ -389,6 +389,10 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
             }
             
             Object newVal = valueMaker.makeNewValue(property.getPropertyType(), oldVal, property.getName());
+            Object newValInNewRoot = newValueMaker.makeNewValue(property.getPropertyType(), oldVal, property.getName());
+            if (newValInNewRoot instanceof SPObject) {
+            	((SPObject) newValInNewRoot).setUUID(((SPObject) newVal).getUUID());
+            }
             
             try {
                 logger.debug("Setting property '" + property.getName() + "' to '" + newVal + 
@@ -420,8 +424,30 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		
 		//check object exists
         assertEquals(childCount + 1, newParent.getChildren().size());
+        SPObject newChild = null;
+        for (SPObject child : newParent.getChildren()) {
+        	if (child.getUUID().equals(objectUnderTest.getUUID())) {
+        		newChild = child;
+        		break;
+        	}
+        }
+        if (newChild == null) fail("The child was not correctly persisted.");
 		
-		//TODO check all interesting properties
+		//check all interesting properties
+        for (PropertyDescriptor property : settableProperties) {
+            if (!propertiesToPersist.contains(property.getName())) continue;
+            if (property.getName().equals("parent")) continue; //Changing the parent causes headaches.
+            
+            Method readMethod = property.getReadMethod();
+            
+            Object valueBeforePersist = readMethod.invoke(objectUnderTest);
+            Object valueAfterPersist = readMethod.invoke(newChild);
+            Object basicValueBeforePersist = converter.convertToBasicType(valueBeforePersist);
+            Object basicValueAfterPersist = newConverter.convertToBasicType(valueAfterPersist);
+            
+            assertPersistedValuesAreEqual(valueBeforePersist, valueAfterPersist, 
+            		basicValueBeforePersist, basicValueAfterPersist, readMethod.getReturnType());
+        }
 	}
 	
 	/**
