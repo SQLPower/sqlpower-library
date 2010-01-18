@@ -128,7 +128,7 @@ public abstract class AbstractSPObject implements SPObject {
     	}
     	synchronized (listeners) {
     		if (listeners.contains(l)) {
-    			logger.warn("Listener " + l + " was added twice! Ignoring second add");
+    			logger.debug("Listener " + l + " was added twice! Ignoring second add");
     		} else {
     			listeners.add(l);
     		}
