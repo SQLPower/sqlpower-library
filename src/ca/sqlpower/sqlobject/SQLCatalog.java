@@ -34,6 +34,7 @@ import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonBound;
+import ca.sqlpower.object.annotation.Transient;
 
 /**
  * A SQLCatalog is a container for other SQLObjects.  If it is in the
@@ -146,7 +147,7 @@ public class SQLCatalog extends SQLObject {
 
 	// ---------------------- SQLObject support ------------------------
 	
-	@Accessor
+	@Transient @Accessor
 	public String getShortDisplayName() {
 		return getName();
 	}

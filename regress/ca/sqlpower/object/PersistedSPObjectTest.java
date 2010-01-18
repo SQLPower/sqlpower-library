@@ -188,7 +188,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
         List<PropertyDescriptor> settableProperties;
         settableProperties = Arrays.asList(PropertyUtils.getPropertyDescriptors(wo.getClass()));
         
-        Set<String> propertiesToPersist = findPersistableBeanProperties(false);
+        Set<String> propertiesToPersist = findPersistableBeanProperties(false, false);
 
         for (PropertyDescriptor property : settableProperties) {
             Object oldVal;
@@ -283,7 +283,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		List<PropertyDescriptor> settableProperties = Arrays.asList(
 				PropertyUtils.getPropertyDescriptors(objectUnderTest.getClass()));
 		
-		Set<String> propertiesToPersist = findPersistableBeanProperties(false);
+		Set<String> propertiesToPersist = findPersistableBeanProperties(false, false);
 		
 		for (PropertyDescriptor property : settableProperties) {
             Object oldVal;
@@ -331,6 +331,97 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 			assertPersistedValuesAreEqual(newVal, newValAfterSet, basicNewValue, 
 					basicExpectedValue, property.getPropertyType());
     	}
+	}
+	
+	/**
+	 * This test will be run for each object that extends SPObject and confirms
+	 * the SPSessionPersister can create new objects 
+	 * @throws Exception
+	 */
+	public void testPersisterCreatesNewObjects() throws Exception {
+		SPObject newRoot = new SPObjectRoot();
+		SPSession stub = new StubSPSession() {
+			private final SPObject workspace = new StubWorkspace(this);
+			@Override
+			public SPObject getWorkspace() {
+				return workspace;
+			}
+		};
+		newRoot.setParent(stub.getWorkspace());
+		
+		NewValueMaker valueMaker = new GenericNewValueMaker(root, getPLIni());
+		NewValueMaker newValueMaker = new GenericNewValueMaker(newRoot, getPLIni());
+		
+		SessionPersisterSuperConverter newConverter = new SessionPersisterSuperConverter(
+				getPLIni(), newRoot);
+		SPPersisterHelperFactory newPersisterFactory = new SPPersisterHelperFactoryImpl(null, newConverter);
+		
+		SPSessionPersister persister = new SPSessionPersister("Test persister", newRoot, newPersisterFactory);
+		persister.setSession(stub);
+		
+		SessionPersisterSuperConverter converter = new SessionPersisterSuperConverter(
+				getPLIni(), root);
+		SPPersisterHelperFactory persisterFactory = new SPPersisterHelperFactoryImpl(persister, converter);
+		
+		SPObject objectUnderTest = getSPObjectUnderTest();
+		
+		Set<String> propertiesToPersist = findPersistableBeanProperties(false, false);
+		
+		List<PropertyDescriptor> settableProperties = Arrays.asList(
+				PropertyUtils.getPropertyDescriptors(objectUnderTest.getClass()));
+		
+		//set all properties of the object
+        for (PropertyDescriptor property : settableProperties) {
+            Object oldVal;
+            if (!propertiesToPersist.contains(property.getName())) continue;
+            if (property.getName().equals("parent")) continue; //Changing the parent causes headaches.
+            
+            try {
+                oldVal = PropertyUtils.getSimpleProperty(objectUnderTest, property.getName());
+
+                // check for a setter
+                if (property.getWriteMethod() == null) continue;
+                
+            } catch (NoSuchMethodException e) {
+                logger.debug("Skipping non-settable property " + property.getName() + " on " + 
+                		objectUnderTest.getClass().getName());
+                continue;
+            }
+            
+            Object newVal = valueMaker.makeNewValue(property.getPropertyType(), oldVal, property.getName());
+            
+            try {
+                logger.debug("Setting property '" + property.getName() + "' to '" + newVal + 
+                		"' (" + newVal.getClass().getName() + ")");
+                BeanUtils.copyProperty(objectUnderTest, property.getName(), newVal);
+                
+            } catch (InvocationTargetException e) {
+                logger.debug("(non-fatal) Failed to write property '" + property.getName() + 
+                		" to type " + objectUnderTest.getClass().getName());
+            }
+        }
+		
+		//create a new root and parent for the object
+        SPObject newParent;
+        if (objectUnderTest.getParent() instanceof SPObjectRoot) {
+        	newParent = newRoot;
+        } else {
+        	newParent = (SPObject) newValueMaker.makeNewValue(
+        			objectUnderTest.getParent().getClass(), null, "");
+        }
+        newParent.setUUID(objectUnderTest.getParent().getUUID());
+		
+        int childCount = newParent.getChildren().size();
+        
+		//persist the object to the new target root
+        persister.begin();
+        persisterFactory.persistObject(objectUnderTest, 0);
+        persister.commit();
+		
+		//check object exists
+        assertEquals(childCount + 1, newParent.getChildren().size());
+		
+		//TODO check all interesting properties
 	}
 	
 	/**
@@ -384,7 +475,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 * that is neither an accessor or mutator but looks like one.
 	 */
 	public void testGettersAndSettersPersistedAnnotated() throws Exception {
-		findPersistableBeanProperties(false);
+		findPersistableBeanProperties(false, false);
 	}
 
 	/**
@@ -399,13 +490,18 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 *            If true the transient properties will be included in the
 	 *            resulting list. If false only the property names that are to
 	 *            be persisted will be included.
+	 * @param includeConstructorMutators
+	 *            If true mutators that can only be set shortly after the object
+	 *            has been created will be included. These mutators are normally
+	 *            used for objects that cannot be given in the constructor but
+	 *            should be treated as though they were final.
 	 * 
 	 * @return A list of bean property names that have both a getter and setter.
 	 *         The transient bean properties will be included if the transient
 	 *         flag is set to true.
 	 * 
 	 */
-	private Set<String> findPersistableBeanProperties(boolean includeTransient) throws Exception {
+	private Set<String> findPersistableBeanProperties(boolean includeTransient, boolean includeConstructorMutators) throws Exception {
 		SPObject objectUnderTest = getSPObjectUnderTest();
 		Set<String> getters = new HashSet<String>();
 		Set<String> setters = new HashSet<String>();
@@ -461,7 +557,8 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 				}
 			} else if (m.getName().startsWith("set")) {
 				if (m.getAnnotation(Mutator.class) != null) {
-					if (includeTransient || m.getAnnotation(Transient.class) == null) {
+					if ((includeTransient || m.getAnnotation(Transient.class) == null)
+							&& (includeConstructorMutators || !m.getAnnotation(Mutator.class).constructorMutator())) {
 						setters.add(m.getName().substring(3));
 					}
 				} else if (m.getAnnotation(NonProperty.class) != null ||

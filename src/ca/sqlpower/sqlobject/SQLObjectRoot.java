@@ -42,6 +42,7 @@ public class SQLObjectRoot extends SQLObject {
 		setName("Database Connections");
 	}
 
+	@Transient @Accessor
 	public String getShortDisplayName() {
 		return getName();
 	}

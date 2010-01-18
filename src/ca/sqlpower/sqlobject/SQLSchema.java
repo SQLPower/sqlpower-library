@@ -160,7 +160,7 @@ public class SQLSchema extends SQLObject {
 
 	// ---------------------- SQLObject support ------------------------
 	
-	@Accessor
+	@Transient @Accessor
 	public String getShortDisplayName() {
 		return getName();
 	}

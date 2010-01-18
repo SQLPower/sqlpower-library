@@ -454,7 +454,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * any necessary parameters e.g. length for VARCHAR or precision and scale
 	 * for numeric datatypes
 	 */
-	@Accessor
+	@Transient @Accessor
 	public String getTypeName() {
 		if (sourceDataTypeName != null) {
 			if (precision > 0 && scale > 0) {
@@ -475,7 +475,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * @see #getTypeName()
 	 * @see #getName()
 	 */
-	@Accessor
+	@Transient @Accessor
 	public String getShortDisplayName() {
 		return getName() + ": " + getTypeName();
 	}

@@ -45,6 +45,7 @@ import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonProperty;
+import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sql.JDBCDSConnectionFactory;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
@@ -356,7 +357,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		firePropertyChange("name", oldName, argName);
 	}
 
-	@Accessor
+	@Transient @Accessor
 	public String getShortDisplayName() {
 		return getName();
 	}
@@ -615,7 +616,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 * this database has ever opened. 
 	 * @return Maximum number of active connections ever opened.
 	 */
-	@Accessor
+	@Transient @Accessor
     public int getMaxActiveConnections() {
         return maxActiveConnections;
     }

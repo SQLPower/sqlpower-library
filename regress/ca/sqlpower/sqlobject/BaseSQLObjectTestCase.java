@@ -97,6 +97,17 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 	 */
 	protected abstract Class<?> getChildClassType();
 	
+	/**
+	 * XXX This test should use the {@link GenericNewValueMaker} as it has it's own mini
+	 * version inside it. This test should also be using the annotations to decide which 
+	 * setters can fire events.
+	 * 
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 * @throws InvocationTargetException
+	 * @throws NoSuchMethodException
+	 * @throws SQLObjectException
+	 */
 	public void testAllSettersGenerateEvents()
 	throws IllegalArgumentException, IllegalAccessException, 
 	InvocationTargetException, NoSuchMethodException, SQLObjectException {
@@ -105,6 +116,12 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 		so.populate();
 		
         propertiesToIgnoreForEventGeneration.addAll(getPropertiesToIgnoreForEvents());
+        
+        //Ignored because we expect the object to be populated.
+        propertiesToIgnoreForEventGeneration.add("exportedKeysPopulated");
+        propertiesToIgnoreForEventGeneration.add("importedKeysPopulated");
+        propertiesToIgnoreForEventGeneration.add("columnsPopulated");
+        propertiesToIgnoreForEventGeneration.add("indicesPopulated");
 		
 		if (so instanceof SQLDatabase) {
 			// should be handled in the Datasource
@@ -234,6 +251,10 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 		SQLObject so = getSQLObjectUnderTest();
         propertiesToIgnoreForUndo.add("referenceCount");
 		propertiesToIgnoreForUndo.add("populated");
+		propertiesToIgnoreForUndo.add("exportedKeysPopulated");
+		propertiesToIgnoreForUndo.add("importedKeysPopulated");
+		propertiesToIgnoreForUndo.add("columnsPopulated");
+		propertiesToIgnoreForUndo.add("indicesPopulated");
 		propertiesToIgnoreForUndo.add("SQLObjectListeners");
 		propertiesToIgnoreForUndo.add("children");
 		propertiesToIgnoreForUndo.add("parent");

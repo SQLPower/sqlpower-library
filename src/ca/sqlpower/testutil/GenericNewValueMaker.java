@@ -43,6 +43,7 @@ import ca.sqlpower.sqlobject.SQLObjectRoot;
 import ca.sqlpower.sqlobject.SQLRelationship;
 import ca.sqlpower.sqlobject.SQLSchema;
 import ca.sqlpower.sqlobject.SQLTable;
+import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.sqlobject.SQLRelationship.ColumnMapping;
 import ca.sqlpower.sqlobject.SQLRelationship.Deferrability;
@@ -115,18 +116,14 @@ public class GenericNewValueMaker implements NewValueMaker {
             newVal = new Boolean(! ((Boolean) oldVal).booleanValue());
         } else if (valueType == File.class) {
             newVal = new File("temp" + System.currentTimeMillis());
-        } else if (valueType == JDBCDataSource.class) {
+        } else if (valueType == JDBCDataSource.class || valueType == SPDataSource.class) {
             newVal = new JDBCDataSource(this.pl);
-            ((SPDataSource)newVal).setName("Testing data source");
-            if (this.pl.getDataSource("Testing data source")==null) {
-            	this.pl.addDataSource((JDBCDataSource)newVal);
+            String name = "Testing data source";
+            while (pl.getDataSource(name) != null) {
+            	name = (String) makeNewValue(String.class, name, "");
             }
-        } else if (valueType == SPDataSource.class) {
-            newVal = new JDBCDataSource(this.pl);
-            ((SPDataSource)newVal).setName("Testing data source");
-            if (this.pl.getDataSource("Testing data source")==null) {
-            	this.pl.addDataSource((JDBCDataSource)newVal);
-            }
+            ((SPDataSource)newVal).setName(name);
+            this.pl.addDataSource((JDBCDataSource)newVal);
         } else if (valueType == Font.class) {
             newVal = Font.decode("Dialog");
             if (newVal.equals(oldVal)) {
@@ -269,6 +266,12 @@ public class GenericNewValueMaker implements NewValueMaker {
         	SQLTable table = (SQLTable) makeNewValue(SQLTable.class, null, "parent of imported key");
         	table.addImportedKey(key);
         	newVal = key;
+        } else if (valueType.isAssignableFrom(AscendDescend.class)) {
+        	if (oldVal.equals(AscendDescend.ASCENDING)) {
+        		newVal = AscendDescend.DESCENDING;
+        	} else {
+        		newVal = AscendDescend.ASCENDING;
+        	}
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +

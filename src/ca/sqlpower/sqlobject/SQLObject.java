@@ -198,7 +198,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 * Returns a short string that should be displayed to the user for
 	 * representing this SQLObject as a label.
 	 */
-	@Accessor
+	@Transient @Accessor
 	public abstract String getShortDisplayName();
 
 	/**

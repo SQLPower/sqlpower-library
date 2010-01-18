@@ -189,6 +189,7 @@ public class SQLIndex extends SQLObject {
         }
 
         @Override
+        @Transient @Accessor
         public String getShortDisplayName() {
             return getName();
         }
@@ -236,15 +237,9 @@ public class SQLIndex extends SQLObject {
          * AscendDescend.
          */
         @Mutator
-        public void setAscendingOrDescending(Object ad) {
+        public void setAscendingOrDescending(AscendDescend ad) {
         	AscendDescend oldValue = ascendingOrDescending;
-        	if (ad instanceof AscendDescend) {
-        		ascendingOrDescending = (AscendDescend) ad;
-        	} else if (ad instanceof String) {
-        		ascendingOrDescending = AscendDescend.valueOf((String) ad);
-        	} else {
-        		throw new IllegalArgumentException();
-        	}
+        	ascendingOrDescending = (AscendDescend) ad;
         	firePropertyChange("ascendingOrDescending", oldValue, ascendingOrDescending);
         }
 
@@ -502,6 +497,7 @@ public class SQLIndex extends SQLObject {
     }
 
     @Override
+    @Transient @Accessor
     public String getShortDisplayName() {
         return getName();
     }

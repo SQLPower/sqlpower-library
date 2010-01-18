@@ -50,4 +50,12 @@ import ca.sqlpower.object.SPObject;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Mutator {
 
+	/**
+	 * If true this mutator is only allowed to be used shortly after the object is
+	 * constructed. These types of setters define properties that would normally
+	 * be final but are not due to implementation restrictions.
+	 * <p>
+	 * This flag is mainly used for testing.
+	 */
+	boolean constructorMutator() default false;
 }

@@ -1107,6 +1107,7 @@ public class SQLTable extends SQLObject {
 	/**
 	 * The table's name.
 	 */
+	@Transient @Accessor
 	public String getShortDisplayName() {
 		SQLSchema schema = getSchema();
 		if (schema != null) {
@@ -1460,7 +1461,7 @@ public class SQLTable extends SQLObject {
 	 * Returns true if this table's imported keys and exported
      * keys both say are populated.
 	 */
-    @Accessor
+    @Transient @Accessor
 	public boolean isRelationshipsPopulated()  {
 		return importedKeysPopulated && exportedKeysPopulated;
 	}
@@ -1488,6 +1489,34 @@ public class SQLTable extends SQLObject {
     public boolean isIndicesPopulated()  {
         return indicesPopulated;
     }
+    
+    @Mutator
+    public void setColumnsPopulated(boolean columnsPopulated) {
+    	boolean oldPop = this.columnsPopulated;
+		this.columnsPopulated = columnsPopulated;
+		firePropertyChange("columnsPopulated", oldPop, columnsPopulated);
+	}
+    
+    @Mutator
+    public void setImportedKeysPopulated(boolean importedKeysPopulated) {
+    	boolean oldPop = this.importedKeysPopulated;
+		this.importedKeysPopulated = importedKeysPopulated;
+		firePropertyChange("importedKeysPopulated", oldPop, importedKeysPopulated);
+	}
+    
+    @Mutator
+    public void setExportedKeysPopulated(boolean exportedKeysPopulated) {
+    	boolean oldPop = this.exportedKeysPopulated;
+		this.exportedKeysPopulated = exportedKeysPopulated;
+		firePropertyChange("exportedKeysPopulated", oldPop, exportedKeysPopulated);
+	}
+    
+    @Mutator
+    public void setIndicesPopulated(boolean indicesPopulated) {
+    	boolean oldPop = this.indicesPopulated;
+		this.indicesPopulated = indicesPopulated;
+		firePropertyChange("indicesPopulated", oldPop, indicesPopulated);
+	}
 
     /**
      * Gets the name of this table's Primary Key index if it has one, otherwise
