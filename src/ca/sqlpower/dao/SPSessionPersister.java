@@ -306,13 +306,32 @@ public class SPSessionPersister implements SPPersister {
 	private Thread currentThread;
 
 	private boolean headingToWisconsin;
-	
+
 	/**
 	 * Creates a session persister that can update an object at or a descendant
 	 * of the given root now. If the persist call involves an object that is
 	 * outside of the scope of the root node and its descendant tree an
 	 * exception will be thrown depending on the method called as the object
 	 * will not be found.
+	 * 
+	 * @param name
+	 *            The name of the persister. Helps to tell which persister is
+	 *            performing actions.
+	 * @param root
+	 *            The root of the tree of {@link SPObject}s. The tree rooted at
+	 *            this node will have objects added to it and properties changed
+	 *            on nodes in this tree.
+	 * @param persisterFactory
+	 *            The set of persisters that are used to modify the nodes in the
+	 *            tree based on persist calls. The
+	 *            {@link SPPersisterHelperFactory} does not need a
+	 *            {@link SPPersister} as this persister directly modifies an
+	 *            object tree and does not forward the calls again. The helpers
+	 *            are used to do object specific modifications. If a specific
+	 *            object in the tree needs a property set the tree object will
+	 *            be found and then a {@link SPPersisterHelper} will be
+	 *            found/created by the factory and that helper will be used to
+	 *            set the property.
 	 */
 	public SPSessionPersister(String name, SPObject root, SPPersisterHelperFactory persisterFactory) {
 		this.name = name;
