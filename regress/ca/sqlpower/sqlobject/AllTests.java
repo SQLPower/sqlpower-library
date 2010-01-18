@@ -45,6 +45,7 @@ public class AllTests {
         suite.addTestSuite(TestSQLRelationship.class);
         suite.addTestSuite(TestSQLSchema.class);
         suite.addTestSuite(TestSQLTable.class);
+        suite.addTestSuite(SQLObjectRootTest.class);
         suite.addTestSuite(ArchitectPropertyChangeUndoableEditTest.class);
         suite.addTestSuite(SQLObjectChildrenTest.class);
         suite.addTestSuite(TestSQLObjectChildrenInsert.class);

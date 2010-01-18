@@ -39,14 +39,11 @@ public class SQLObjectRoot extends SQLObject {
 	
 	@Constructor
 	public SQLObjectRoot() {
-	}
-
-	public String getName() {
-		return getShortDisplayName();
+		setName("Database Connections");
 	}
 
 	public String getShortDisplayName() {
-		return "Database Connections";
+		return getName();
 	}
 	
 	public boolean allowsChildren() {
