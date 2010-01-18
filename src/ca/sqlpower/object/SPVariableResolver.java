@@ -203,4 +203,17 @@ public interface SPVariableResolver {
 	 * @return A collection of available variable names.
 	 */
 	public Collection<String> keySet(String namespace);
+	
+	/**
+	 * returns the namespace under which this resolver is registered.
+	 * @return The namespace of this resolver implementation.
+	 */
+	public String getNamespace();
+	
+	/**
+	 * Returns the name of this resolver as to be exposed to
+	 * the end user.
+	 * @return A user friendly name for this resolver.
+	 */
+	public String getUserFriendlyName();
 }

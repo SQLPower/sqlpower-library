@@ -62,13 +62,17 @@ public abstract class AbstractSPListener implements SPListener {
         new HashMap<SPObject, List<Object>>();
 
     public final void transactionEnded(TransactionEvent e) {
+    	Integer lastTransactionCount;
         if (inTransactionMap.get(e.getSource()) == null) {
-            throw new IllegalStateException("An end transaction for object " + e.getSource() 
+            logger.warn("An end transaction for object " + e.getSource() 
                     + " of type " + e.getSource().getClass() + " was called while it was " +
-                    		"not in a transaction.");
+            		"not in a transaction.");
+            lastTransactionCount = 1;
+        } else {
+        	lastTransactionCount = inTransactionMap.get(e.getSource());
+        	logger.debug("Transaction count on " + this +  " for:" + e.getSource() + ": " + inTransactionMap.get((SPObject) e.getSource()));
         }
-        logger.debug("Transaction count on " + this +  " for:" + e.getSource() + ": " + inTransactionMap.get((SPObject) e.getSource()));
-        Integer nestedTransactionCount = inTransactionMap.get(e.getSource()) - 1;
+        Integer nestedTransactionCount = lastTransactionCount - 1;
         if (nestedTransactionCount < 0) {
             throw new IllegalStateException("The transaction count was not removed properly.");
         } else if (nestedTransactionCount > 0) {

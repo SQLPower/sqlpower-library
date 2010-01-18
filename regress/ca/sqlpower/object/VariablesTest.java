@@ -34,7 +34,7 @@ public class VariablesTest extends TestCase {
 		private List<SPObject> children = new ArrayList<SPObject>();
 		private SPSimpleVariableResolver resolver;
 		public MockSPObject() {
-			this.resolver = new SPSimpleVariableResolver(null);
+			this.resolver = new SPSimpleVariableResolver(this, this.uuid, this.uuid);
 		}
 		protected boolean removeChildImpl(SPObject child) {
 			return true;
@@ -78,52 +78,37 @@ public class VariablesTest extends TestCase {
 		root = new MockSPObject();
 		
 		// Test the resolver in namespaced mode
-		root.getVariableResolver().setSnobbyResolver(true);
 		assertFalse(root.getVariableResolver().resolvesNamespace("namespace"));
 		root.getVariableResolver().setNamespace("namespace");
 		assertTrue(root.getVariableResolver().resolvesNamespace("namespace"));
+		assertEquals("namespace", root.getVariableResolver().getNamespace());
 		
-		// Assigning variables with wrong namespace should fail
+		// Assigning variables should pass.
+		root.getVariableResolver().store("var1", "value1");
+		root.getVariableResolver().store("var2", "value2");
+		
 		try {
-			root.getVariableResolver().store("badnamespace" + SPVariableHelper.NAMESPACE_DELIMITER + "var1", "value1");
-			fail("resolver should have rejected this variable because it is not in the right namespace.");
-		} catch (Exception e) {
-			// as expected...
+			root.getVariableResolver().store("baloneyNamespace" + SPVariableResolver.NAMESPACE_DELIMITER + "key", "whatever");
+			fail();
+		} catch (IllegalArgumentException e) {
+			//as expected
 		}
 		
-		// Assigning variables with the correct variables should pass.
-		root.getVariableResolver().store("namespace" + SPVariableHelper.NAMESPACE_DELIMITER + "var1", "value1");
-		root.getVariableResolver().store("namespace" + SPVariableHelper.NAMESPACE_DELIMITER + "var2", "value2");
-		
-		// Resolving non-namespaced variables while this resolver has one should return null
-		assertEquals(null, root.getVariableResolver().resolve("var1"));
-		assertEquals(null, root.getVariableResolver().resolve("var2"));
-		assertFalse(root.getVariableResolver().resolves("var1"));
-		assertFalse(root.getVariableResolver().resolves("var2"));
-		assertEquals("value2", root.getVariableResolver().resolve("namespace" + SPVariableHelper.NAMESPACE_DELIMITER + "var2"));
-		
-		// test with namespace assigned but while in non-snobby mode
-		root.getVariableResolver().setSnobbyResolver(false);
-		assertTrue(root.getVariableResolver().resolves("var1"));
-		assertTrue(root.getVariableResolver().resolves("var2"));
-		assertFalse(root.getVariableResolver().resolves("baloneyvar"));
 		assertEquals("value1", root.getVariableResolver().resolve("var1"));
 		assertEquals("value2", root.getVariableResolver().resolve("var2"));
-		
+		assertTrue(root.getVariableResolver().resolves("var1"));
+		assertTrue(root.getVariableResolver().resolves("var2"));
+		assertEquals("value1", root.getVariableResolver().resolve("namespace" + SPVariableHelper.NAMESPACE_DELIMITER + "var1"));
+		assertEquals("value2", root.getVariableResolver().resolve("namespace" + SPVariableHelper.NAMESPACE_DELIMITER + "var2"));
+
+		assertFalse(root.getVariableResolver().resolves("baloneyvar"));
 		
 		
 		// test this resolver without a namespace assigned
 		root.getVariableResolver().setNamespace(null);
-		assertTrue(root.getVariableResolver().resolvesNamespace("namespace"));
-		// In snubby mode, it should ignore namespaced variables
-		root.getVariableResolver().setSnobbyResolver(true);
 		assertFalse(root.getVariableResolver().resolvesNamespace("namespace"));
-		assertEquals(null, root.getVariableResolver().resolve("namespace" + SPVariableHelper.NAMESPACE_DELIMITER + "var1"));
-		assertEquals(null, root.getVariableResolver().resolve("namespace" + SPVariableHelper.NAMESPACE_DELIMITER + "var2"));
-		// In non-snubby mode, it should resolve namespaced variables
-		root.getVariableResolver().setSnobbyResolver(false);
-		assertEquals("value1", root.getVariableResolver().resolve("namespace" + SPVariableHelper.NAMESPACE_DELIMITER + "var1"));
-		assertEquals("value2", root.getVariableResolver().resolve("namespace" + SPVariableHelper.NAMESPACE_DELIMITER + "var2"));
+		assertEquals("myValue", root.getVariableResolver().resolve("namespace" + SPVariableHelper.NAMESPACE_DELIMITER + "var1", "myValue"));
+		assertEquals("myValue", root.getVariableResolver().resolve("namespace" + SPVariableHelper.NAMESPACE_DELIMITER + "var2", "myValue"));
 	}
 	
 	
@@ -143,34 +128,13 @@ public class VariablesTest extends TestCase {
 		assertFalse(node1.getVariableResolver().resolves("key1"));
 		assertTrue(root.getVariableResolver().resolves("key1"));
 		
-		// If we instanciate a helper and ask it to resolve, it should 
-		// be able to resolve it.
+		// If we instanciate a helper bound to the lowest node and ask it to resolve, 
+		// a variable at the root, it should be able to resolve it.
 		SPVariableHelper helper = new SPVariableHelper(node2);
 		assertTrue(helper.resolves("key1"));
-		assertEquals("value1", helper.resolve("key1"));
+		assertEquals("value1", helper.resolve("key1", "defValueReturned"));
 	}
-	
-	public void testWalkDown() throws Exception {
-		
-		root = new MockSPObject();
-		MockSPObject node1 = new MockSPObject();
-		MockSPObject node2 = new MockSPObject();
-		MockSPObject node3 = new MockSPObject();
-		root.addChild(node1, 0);
-		root.addChild(node2, 1);
-		node2.addChild(node3, 0);
-		
-		// Put a variable in a different branch and try to resolve it
-		SPVariableHelper helper = new SPVariableHelper(node1);
-		node3.getVariableResolver().store("key1", "value1");
-		assertFalse(helper.resolves("key1"));
-		assertNull(helper.resolve("key1"));
-		
-		// Now tell the helper to walk back down and resolve it.
-		helper.setWalkDown(true);
-		assertTrue(helper.resolves("key1"));
-		assertEquals("value1", helper.resolve("key1"));
-	}
+
 	
 	
 	public void testResolveCollection() throws Exception {
@@ -184,13 +148,6 @@ public class VariablesTest extends TestCase {
 		list2[1] = "value4";
 		list2[2] = "value2";
 		list2[3] = "value3";
-		
-		String[] list3 = new String[5];
-		list3[0] = "value1";
-		list3[1] = "value4";
-		list3[2] = "value2";
-		list3[3] = "value5";
-		list3[4] = "value3";
 		
 		root = new MockSPObject();
 		MockSPObject node1 = new MockSPObject();
@@ -217,11 +174,9 @@ public class VariablesTest extends TestCase {
 		helper.setGlobalCollectionResolve(true);
 		assertTrue(Arrays.equals(list2, helper.resolveCollection("key1").toArray(new String[4])));
 		
-		// Add variables to node 3, which is in another branch and test the walk down
-		// with global resolve.
-		helper.setWalkDown(true);
+		// Add variables to node 3, which is in another branch
 		node3.getVariableResolver().store("key1", "value5");
-		assertTrue(Arrays.equals(list3, helper.resolveCollection("key1").toArray(new String[5])));
+		assertTrue(Arrays.equals(list2, helper.resolveCollection("key1").toArray(new String[4])));
 	}
 	
 	public void testMatches() throws Exception {
@@ -257,14 +212,6 @@ public class VariablesTest extends TestCase {
 		assertTrue(Arrays.equals(list1, helper.matches("key1", "fo").toArray()));
 		assertTrue(Arrays.equals(new String[] {"foo"}, helper.matches("key1", "foo").toArray()));
 		assertTrue(Arrays.equals(new String[] {}, helper.matches("key1", "foob").toArray()));
-		
-		// Now turn walkdown but not globalsearch
-		helper.setWalkDown(true);
-		assertTrue(Arrays.equals(new String[] {"foobar"}, helper.matches("key3", "foo").toArray()));
-		
-		// Now global and walkDown
-		helper.setGlobalCollectionResolve(true);
-		assertTrue(Arrays.equals(list2, helper.matches("key1", "foo").toArray()));
 	}
 	
 	public void testKeySetResolving() throws Exception {
@@ -285,11 +232,8 @@ public class VariablesTest extends TestCase {
 		SPVariableHelper helper = new SPVariableHelper(node2);
 		
 		// Try fo find keys.
-		assertTrue(Arrays.equals(new String[] {"key1", "key2"}, helper.keySet(null).toArray()));
-		
-		// Now search for keys on the way back too
-		helper.setWalkDown(true);
-		assertTrue(Arrays.equals(new String[] {"key1", "key2", "key3"}, helper.keySet(null).toArray()));
+		helper.setGlobalCollectionResolve(true);
+		assertTrue(Arrays.equals(new String[] {node1.getVariableResolver().getNamespace() + SPVariableResolver.NAMESPACE_DELIMITER + "key1", root.getVariableResolver().getNamespace() + SPVariableResolver.NAMESPACE_DELIMITER + "key2"}, helper.keySet(null).toArray()));
 	}
 	
 	public void testVariablesDefaultValue() throws Exception {
@@ -306,8 +250,7 @@ public class VariablesTest extends TestCase {
 		root.addChild(node2, 1);
 		node2.addChild(node3, 0);
 		
-		SPVariableHelper helper = new SPVariableHelper(node1);
-		helper.setWalkDown(true);
+		SPVariableHelper helper = new SPVariableHelper(node3);
 		
 		// First test by resolving non-existent variables.
 		assertEquals(defValue, helper.resolve(keyWithDefValue1));
@@ -317,24 +260,17 @@ public class VariablesTest extends TestCase {
 		assertEquals(1, helper.resolveCollection(keyWithDefValue2).size());
 		assertEquals(defValue, helper.resolveCollection(keyWithDefValue2).iterator().next());
 		
-		// Set the variables to a different value, without a namespace
-		// set.
-		node3.getVariableResolver().store("key1", defValue+"X");
+		// Set the variables to a different value
+		node3.getVariableResolver().update("key1", defValue+"X");
 		
 		// Now resolve again and make sure we get the correct values
 		assertEquals(defValue+"X", helper.resolve(keyWithDefValue1));
 		assertEquals(defValue, helper.resolve(keyWithDefValue2));
-		node3.getVariableResolver().setSnobbyResolver(false);
-		assertEquals(defValue+"X", helper.resolve(keyWithDefValue2));
-		node3.getVariableResolver().setSnobbyResolver(true);
+		assertEquals(defValue, helper.resolve(keyWithDefValue2));
 		assertEquals(1, helper.resolveCollection(keyWithDefValue1).size());
 		assertEquals(defValue+"X", helper.resolveCollection(keyWithDefValue1).iterator().next());
 		assertEquals(1, helper.resolveCollection(keyWithDefValue2).size());
 		assertEquals(defValue, helper.resolveCollection(keyWithDefValue2).iterator().next());
-		node3.getVariableResolver().setSnobbyResolver(false);
-		assertEquals(1, helper.resolveCollection(keyWithDefValue2).size());
-		assertEquals(defValue+"X", helper.resolveCollection(keyWithDefValue2).iterator().next());
-		node3.getVariableResolver().setSnobbyResolver(true);
 		
 		// Set a namespace on the node and do this all over.
 		node3.getVariableResolver().setNamespace("namespace");
@@ -352,18 +288,11 @@ public class VariablesTest extends TestCase {
 		node3.getVariableResolver().store("namespace" + SPVariableResolver.NAMESPACE_DELIMITER + "key1", defValue+"X");
 		
 		// Now resolve again and make sure we get the correct values
-		assertEquals(defValue, helper.resolve(keyWithDefValue1));
-		node3.getVariableResolver().setSnobbyResolver(false);
 		assertEquals(defValue+"X", helper.resolve(keyWithDefValue1));
-		node3.getVariableResolver().setSnobbyResolver(true);
-		assertEquals(defValue+"X", helper.resolve(keyWithDefValue2));
-		assertEquals(1, helper.resolveCollection(keyWithDefValue1).size());
-		assertEquals(defValue, helper.resolveCollection(keyWithDefValue1).iterator().next());
-		node3.getVariableResolver().setSnobbyResolver(false);
+		assertEquals(defValue, helper.resolve(keyWithDefValue2));
 		assertEquals(1, helper.resolveCollection(keyWithDefValue1).size());
 		assertEquals(defValue+"X", helper.resolveCollection(keyWithDefValue1).iterator().next());
-		node3.getVariableResolver().setSnobbyResolver(true);
 		assertEquals(1, helper.resolveCollection(keyWithDefValue2).size());
-		assertEquals(defValue+"X", helper.resolveCollection(keyWithDefValue2).iterator().next());
+		assertEquals(defValue, helper.resolveCollection(keyWithDefValue2).iterator().next());
 	}
 }

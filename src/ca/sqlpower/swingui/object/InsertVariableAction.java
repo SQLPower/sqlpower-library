@@ -35,7 +35,6 @@ public class InsertVariableAction extends AbstractAction {
 
 	private final SPVariableHelper variablesHelper;
 	private final VariableInserter callback;
-	private final String variableNamespace;
 	private final Component dialogOwner;
 
 	public InsertVariableAction(
@@ -47,7 +46,6 @@ public class InsertVariableAction extends AbstractAction {
 	{
 		super(actionLabel);
 		this.variablesHelper = variablesHelper;
-		this.variableNamespace = variableNamespace;
 		this.callback = callback;
 		this.dialogOwner = dialogOwner;
 		
@@ -64,7 +62,6 @@ public class InsertVariableAction extends AbstractAction {
 		VariablesPanel vp = 
 			new VariablesPanel(
 					this.variablesHelper,
-					this.variableNamespace,
 					this.callback);
 		
 		JDialog dialog = 

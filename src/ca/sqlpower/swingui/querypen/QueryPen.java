@@ -649,7 +649,6 @@ public class QueryPen implements MouseState {
 		
 		if (model instanceof SPObject) {
 			this.variablesHelper = new SPVariableHelper((SPObject)model);
-			this.variablesHelper.setWalkDown(true);
 		} else {
 			this.variablesHelper = null;
 		}

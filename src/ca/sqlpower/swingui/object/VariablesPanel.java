@@ -21,6 +21,7 @@ package ca.sqlpower.swingui.object;
 
 import java.awt.Color;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -40,10 +41,14 @@ import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 
 import net.miginfocom.swing.MigLayout;
 
 import org.apache.commons.collections.map.MultiValueMap;
+import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.SPVariableHelper;
 import ca.sqlpower.swingui.DataEntryPanel;
@@ -69,25 +74,21 @@ public class VariablesPanel implements DataEntryPanel {
 	private final JLabel varPreviewLabel2;
 	private boolean stuffToInsert = true;
 	private final VariableInserter action;
-	private final String namespace;
+	private static final Logger logger = Logger.getLogger(VariablesPanel.class);
 	
 	/**
 	 * Default constructor for the variables panel.
 	 * @param variableHelper A helper that will be used in order to
 	 * resolve discover and resolve variables.
-	 * @param namespace The namespacec into which to resolve variables.
-	 * Pass null to resolve all available variables.
 	 * @param action An implementation of {@link VariableInserter} that 
 	 * gets called once the variable has been created. This action will be executed
 	 * on the Swing Event Dispatch Thread.
 	 */
 	public VariablesPanel(
 			SPVariableHelper variableHelper,
-			String namespace,
     		VariableInserter action) 
 	{
 		this.variableHelper = variableHelper;
-		this.namespace = namespace;
 		this.action = action;
 		
 		this.pickerLabel = new JLabel("Pick a variable");
@@ -248,32 +249,82 @@ public class VariablesPanel implements DataEntryPanel {
 	@SuppressWarnings("unchecked")
 	private void showVarsPicker() 
     {
-    	MultiValueMap keys = new MultiValueMap();
-		variableHelper.recursiveKeySet(
-				variableHelper.getContextSource(),
-				keys, 
-				this.namespace,
-				true);
-		
-		List<String> sortedNames = new ArrayList<String>(keys.keySet().size());
-		sortedNames.addAll(keys.keySet());
+    	final MultiValueMap namespaces = this.variableHelper.getNamespaces();
+    	
+		List<String> sortedNames = new ArrayList<String>(namespaces.keySet().size());
+		sortedNames.addAll(namespaces.keySet());
 		Collections.sort(sortedNames, new Comparator<String>() {
 			public int compare(String o1, String o2) {
 				return o1.compareTo(o2);
 			};
 		});
 		
-    	JPopupMenu menu = new JPopupMenu();
-        for (String name : sortedNames) {
-        	JMenu subMenu = new JMenu(name.toString());
+    	final JPopupMenu menu = new JPopupMenu();
+        for (final String name : sortedNames) {
+        	final JMenu subMenu = new JMenu(name.toString());
     		menu.add(subMenu);
-    		for (Object key : keys.getCollection(name)) {
-    			subMenu.add(new InsertVariableAction(SPVariableHelper.getKey((String)key), (String)key));
-    		}
+    		subMenu.addMenuListener(new MenuListener() {
+				private Timer timer;
+				public void menuSelected(MenuEvent e) {
+					
+					subMenu.removeAll();
+					subMenu.add(new PleaseWaitAction());
+
+					ActionListener menuPopulator = new ActionListener() {
+						public void actionPerformed(ActionEvent e) {
+							if (subMenu.isPopupMenuVisible()) {
+								subMenu.removeAll();
+								for (Object namespaceO : namespaces.getCollection(name)) {
+									String namespace = (String)namespaceO;
+									logger.debug("Resolving variables for namespace ".concat(namespace));
+									int nbItems = 0;
+									for (String key : variableHelper.keySet(namespace)) {
+										subMenu.add(new InsertVariableAction(SPVariableHelper.getKey((String)key), (String)key));
+										nbItems++;
+									}
+									if (nbItems==0) {
+										subMenu.add(new DummyAction());
+										logger.debug("No variables found.");
+									}
+								}
+								subMenu.revalidate();
+								subMenu.getPopupMenu().pack();
+							}
+						}
+					};
+					timer = new Timer(700, menuPopulator);
+					timer.setRepeats(false);
+					timer.start();
+				}
+				public void menuDeselected(MenuEvent e) {
+					timer.stop();
+				}
+				public void menuCanceled(MenuEvent e) {
+					timer.stop();
+				}
+			});
         }
     	
         menu.show(varNameText, 0, varNameText.getHeight());
     }
+	
+	private final class DummyAction extends AbstractAction {
+		public DummyAction() {
+			super("No variables available");
+			this.setEnabled(false);
+		}
+		public void actionPerformed(ActionEvent e) {
+		}
+	}
+	
+	private final class PleaseWaitAction extends AbstractAction {
+		public PleaseWaitAction() {
+			super("Please wait...");
+			this.setEnabled(false);
+		}
+		public void actionPerformed(ActionEvent e) {
+		}
+	}
 	
 //	public static void main(String[] args) {
 //        SwingUtilities.invokeLater(new Runnable() {
@@ -283,30 +334,29 @@ public class VariablesPanel implements DataEntryPanel {
 //                	JFrame f = new JFrame("TEST PANEL");
 //                    JPanel outerPanel = new JPanel(new BorderLayout());
 //                    outerPanel.setBorder(BorderFactory.createLineBorder(Color.BLUE));
-//                    JTextField dummyField = new JTextField();
 //                	
-//                	MockSPObject root = new MockSPObject();
-//            		MockSPObject node1 = new MockSPObject();
-//            		MockSPObject node2 = new MockSPObject();
-//            		MockSPObject node3 = new MockSPObject();
+//                	MockSPObject root = new MockSPObject("root");
+//                	root.setResolver(new SPSimpleVariableResolver(root, root.getUUID(), root.getName()));
+//                	root.begin("Begin tree building...");
+//            		MockSPObject node1 = new MockSPObject("node1");
+//            		MockSPObject node2 = new MockSPObject("node2");
+//            		MockSPObject node3 = new MockSPObject("node3");
 //            		root.addChild(node1, 0);
 //            		root.addChild(node2, 1);
 //            		node2.addChild(node3, 0);
-//            		
-//            		SPVariableHelper helper = new SPVariableHelper(node1);
-//            		helper.setWalkDown(true);
-//            		
-//            		node1.getVariableResolver().setNamespace("namespace");
-//            		node1.getVariableResolver().setSnobbyResolver(false);
-//            		node1.getVariableResolver().store("key", "value");
-//            		
-//            		node3.getVariableResolver().setNamespace("namespace3");
-//            		node3.getVariableResolver().setSnobbyResolver(false);
+//            		root.commit();
+//
+//            		node1.getVariableResolver().store("key1", "value1");
+//            		node2.getVariableResolver().store("key2", "value2");
 //            		node3.getVariableResolver().store("key3", "value3");
+//            		node3.getVariableResolver().store("key4", "value4");
 //            		
-//            		
+//            		SPVariableHelper helper = new SPVariableHelper(node3);
 //                	
-//            		VariablesPanel panel = new VariablesPanel(helper, f, dummyField);
+//            		VariablesPanel panel = new VariablesPanel(helper, new VariableInserter() {
+//						public void insert(String variable) {
+//						}
+//					});
 //                	
 //                    
 //                    outerPanel.add(panel.getPanel(), BorderLayout.CENTER);
@@ -324,16 +374,20 @@ public class VariablesPanel implements DataEntryPanel {
 //	
 //	private static class MockSPObject extends AbstractSPObject implements SPVariableResolverProvider {
 //		private List<SPObject> children = new ArrayList<SPObject>();
-//		private SPSimpleVariableResolver resolver;
-//		public MockSPObject() {
-//			this.resolver = new SPSimpleVariableResolver(null);
+//		private SPSimpleVariableResolver resolver = null;
+//		public MockSPObject(String name) {
+//			this.setName(name);
 //		}
 //		@Override
-//		public String getName() {
-//			return this.uuid;
+//		public void setParent(SPObject parent) {
+//			super.setParent(parent);
+//			this.resolver = new SPSimpleVariableResolver(this, this.getUUID(), this.getName());
+//		}
+//		public void setResolver(SPSimpleVariableResolver resolver) {
+//			this.resolver = resolver;
 //		}
 //		protected boolean removeChildImpl(SPObject child) {
-//			return true;
+//			return this.children.remove(child);
 //		}
 //		public boolean allowsChildren() {
 //			return true;

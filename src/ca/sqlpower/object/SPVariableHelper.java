@@ -19,27 +19,17 @@
 
 package ca.sqlpower.object;
 
-import java.awt.Component;
-import java.awt.event.ActionEvent;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.swing.AbstractAction;
-import javax.swing.JComponent;
-import javax.swing.JMenu;
-import javax.swing.JPopupMenu;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.JTextComponent;
 
 import org.apache.commons.collections.map.MultiValueMap;
 import org.apache.log4j.Logger;
@@ -87,11 +77,6 @@ public class SPVariableHelper implements SPVariableResolver {
 	private static final Logger logger = Logger.getLogger(SPVariableHelper.class);
 	
 	/**
-	 * Tells if this helper is supposed to walk back down the tree.
-	 */
-	private boolean walkDown = false;
-	
-	/**
 	 * Tells if we want to search everywhere in the tree when we are
 	 * resolving collections of variable values.
 	 */
@@ -104,9 +89,24 @@ public class SPVariableHelper implements SPVariableResolver {
 	 */
 	private final SPObject contextSource;
 	
-	private class NotFoundException extends Exception {};
-	private class CompletedException extends Exception {};
-    
+	
+	/**
+	 * Builds a variable helper to help resolve variables as values.
+	 * @param contextSource The source node from which to start
+	 * resolving variables.
+	 */
+	public SPVariableHelper(SPObject contextSource) {
+		this.contextSource = contextSource;
+	}
+	
+	/**
+	 * Returns the node onto which this helper is pinned.
+	 */
+	public SPObject getContextSource() {
+		return contextSource;
+	}
+	
+	
 	
 	public String substitute(String textWithVars) {
 		return SPVariableHelper.substitute(textWithVars, this);
@@ -124,6 +124,9 @@ public class SPVariableHelper implements SPVariableResolver {
     public static String substitute(String textWithVars, SPVariableHelper variableHelper) {
         
         logger.debug("Performing variable substitution on " + textWithVars);
+        
+        // Make sure that the registry is ready.
+        SPResolverRegistry.init(variableHelper.getContextSource());
         
         StringBuilder text = new StringBuilder();
         Matcher matcher = varPattern.matcher(textWithVars);
@@ -173,6 +176,9 @@ public class SPVariableHelper implements SPVariableResolver {
      */
     public static PreparedStatement substituteForDb(Connection connection, String sql, SPVariableHelper variableHelper) throws SQLException {
     	
+    	// Make sure that the registry is ready.
+        SPResolverRegistry.init(variableHelper.getContextSource());
+        
         StringBuilder text = new StringBuilder();
         Matcher matcher = varPattern.matcher(sql);
         List<Object> vars = new LinkedList<Object>();
@@ -201,73 +207,6 @@ public class SPVariableHelper implements SPVariableResolver {
         }
         
         return ps;
-    }
-    
-    
-    /**
-     * Searches for all available variables in a given namespace then builds a JMenu
-     * with configured actions so a user can pick a variable from a list and insert it
-     * in a target {@link JTextComponent}.
-     * @param variableNamespace The namespace in which to search. In accordance with the
-     * {@link SPVariableResolver} interface, passing a null namespace value means that
-     * we search through all namespaces.
-     * @param invoker The {@link JComponent} that invokes the menu. This is used for positioning.
-     * @param target The target into which to place the variable name.
-     */
-    public void promptAndInsertVariable(
-    		String variableNamespace, 
-    		Component invoker, 
-    		JTextComponent target)
-    {
-    	SPVariableHelper.promptAndInsertVariable(this, variableNamespace, invoker, target);
-    }
-    
-    /**
-     * Searches for all available variables in a given namespace then builds a JMenu
-     * with configured actions so a user can pick a variable from a list and insert it
-     * in a target {@link JTextComponent}.
-     * @param variableHelper The variable helper to use as a resolver.
-     * @param variableNamespace The namespace in which to search. In accordance with the
-     * {@link SPVariableResolver} interface, passing a null namespace value means that
-     * we search through all namespaces.
-     * @param invoker The {@link JComponent} that invokes the menu. This is used for positioning.
-     * @param target The target into which to place the variable name.
-     */
-    public static void promptAndInsertVariable(
-    		SPVariableHelper variableHelper, 
-    		String variableNamespace, 
-    		Component invoker, 
-    		JTextComponent target) 
-    {
-    	// Step 1. Get the keys and object names.
-    	MultiValueMap keys = new MultiValueMap();
-		variableHelper.recursiveKeySet(
-				variableHelper.contextSource,
-				keys, 
-				variableNamespace,
-				true);
-		
-		// Sort the names.
-		List<String> sortedNames = new ArrayList<String>(keys.keySet().size());
-		sortedNames.addAll(keys.keySet());
-		Collections.sort(sortedNames, new Comparator<String>() {
-			public int compare(String o1, String o2) {
-				return o1.compareTo(o2);
-			};
-		});
-		
-		// Now build the menu
-    	JPopupMenu menu = new JPopupMenu();
-        for (String name : sortedNames) {
-        	JMenu subMenu = new JMenu(name.toString());
-    		menu.add(subMenu);
-    		for (Object key : keys.getCollection(name)) {
-    			subMenu.add(new InsertVariableAction(getKey(key.toString()), key.toString(), target));
-    		}
-        }
-    	
-        // All done. Show the menu.
-        menu.show(invoker, 0, invoker.getHeight());
     }
     
     
@@ -338,61 +277,16 @@ public class SPVariableHelper implements SPVariableResolver {
     		return varDef;
     	}
     }
-    
-
-	/**
-	 * This constructor is not usable. Please use 
-	 * {@link SPVariableHelper#SPVariableHelper(SPObject)}
-	 */
-	@SuppressWarnings("unused")
-	private SPVariableHelper() {
-		this.contextSource = null;
-	}
-	
-	/**
-	 * Builds a variable helper to help resolve variables as values.
-	 * @param contextSource The source node from which to start
-	 * resolving variables.
-	 */
-	public SPVariableHelper(SPObject contextSource) {
-		this(contextSource, false);
-	}
-	
-	/**
-	 * Builds a variable helper to help resolve variables as values.
-	 * @param contextSource
-	 */
-	public SPVariableHelper(SPObject contextSource, boolean walkBackDown) {
-		this.contextSource = contextSource;
-		this.walkDown = walkBackDown;
-	}
-	
-	/**
-	 * Returns the node onto which this helper is pinned.
-	 */
-	public SPObject getContextSource() {
-		return contextSource;
-	}
 	
 	/**
 	 * Searches and returns the first resolver for a given namespace
-	 * it can find in the tree, starting by climbing it and then searching
-	 * everywhere.
-	 * If none can be found, NULL is returned.
+	 * it can find in the tree. If none can be found, NULL is returned.
 	 * @param namespace The namespace for which we want the resolver.
 	 * @return Either a proper resolver for the given namespace or null
 	 * if none can be found.
 	 */
 	public SPVariableResolver getResolverForNamespace(String namespace) {
-		return this.recursiveNamespaceResolverFinder(contextSource, namespace, true);
-	}
-	
-	/**
-	 * Tells this helper if we should walk back down the tree in order
-	 * to resolve variables once we reach the root.
-	 */
-	public void setWalkDown(boolean walkDown) {
-		this.walkDown = walkDown;
+		return SPResolverRegistry.getResolver(this.contextSource, namespace);
 	}
 	
 	/**
@@ -411,6 +305,11 @@ public class SPVariableHelper implements SPVariableResolver {
 		this.globalCollectionResolve = globalCollectionResolve;
 	}
 	
+	
+	
+	
+	
+	
 	// *************************  Resolver Implementation  *****************************//
 
 	public Object resolve(String key) {
@@ -418,34 +317,70 @@ public class SPVariableHelper implements SPVariableResolver {
 	}
 
 	public Object resolve(String key, Object defaultValue) {
-		try {
-			return
-				this.recursivelyResolveSingleValue(
-					this.contextSource,
-					getNamespace(key),
-					getKey(key),
-					true);
-		} catch (NotFoundException e) {
-			return defaultValue;
+		
+		String namespace = getNamespace(key);
+		
+		if (namespace != null) {
+			SPVariableResolver resolver = 
+					SPResolverRegistry.getResolver(this.contextSource, namespace);
+			if (resolver==null) {
+				return defaultValue;
+			} else {
+				return resolver.resolve(key, defaultValue);
+			}
+		}
+		
+		SPObject node = this.contextSource;
+		while (true) {	
+			if (node instanceof SPVariableResolverProvider) {
+				SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
+				if (resolver.resolves(key)) {
+					return resolver.resolve(key, defaultValue);
+				}
+			}
+			node = node.getParent();
+			if (node == null) return defaultValue;
 		}
 	}
 
+	
+	
 	public Collection<Object> resolveCollection(String key) {
 		return this.resolveCollection(stripDefaultValue(key), getDefaultValue(key));
 	}
 
 	public Collection<Object> resolveCollection(String key, Object defaultValue) {
+		
 		Collection<Object> results = new HashSet<Object>();
-		try {
-			this.recursivelyResolveCollection(
-					results,
-					this.contextSource, 
-					getNamespace(key),
-					getKey(key),
-					true);
-		} catch (CompletedException e) {
-			return results;
+		String namespace = getNamespace(key);
+		
+		if (namespace != null) {
+			List<SPVariableResolver> resolvers = SPResolverRegistry.getResolvers(this.contextSource, namespace);
+			for (SPVariableResolver resolver : resolvers) {
+				if (resolver.resolves(key)) {
+					results.addAll(resolver.resolveCollection(key));
+					if (!globalCollectionResolve) {
+						break;
+					}
+				}
+			}
+		} else {
+			SPObject node = this.contextSource;
+			while (true) {	
+				if (node instanceof SPVariableResolverProvider) {
+					SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
+					if (resolver.resolves(key)) {
+						results.addAll(resolver.resolveCollection(key));
+						if (!globalCollectionResolve) {
+							break;
+						}
+					}
+				}
+				node = node.getParent();
+				if (node == null) break;
+			}
 		}
+		
 		if (results.size() == 0) {
 			if (defaultValue == null) {
 				return Collections.emptySet();
@@ -454,432 +389,111 @@ public class SPVariableHelper implements SPVariableResolver {
 			}
 		} else {
 			return results;
+		}	
+	}
+
+	
+	
+	public boolean resolves(String key) {
+		String namespace = getNamespace(key);
+		if (namespace != null) {
+			return SPResolverRegistry.getResolver(this.contextSource, namespace) != null;
+		} else {
+			SPObject node = this.contextSource;
+			while (true) {	
+				if (node instanceof SPVariableResolverProvider) {
+					SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
+					if (resolver.resolves(key)) {
+						return true;
+					}
+				}
+				node = node.getParent();
+				if (node == null) return false;
+			}
 		}
 	}
 
-	public boolean resolves(String key) {
-		return
-			this.recursiveResolveCheck(
-				this.contextSource, 
-				getNamespace(key),
-				key,
-				true);
-	}
-
+	
+	
 	public boolean resolvesNamespace(String namespace) {
-		return (this.recursiveNamespaceResolverFinder(contextSource, namespace, true) != null);
+		return SPResolverRegistry.getResolver(this.contextSource, namespace) != null;
 	}
+	
+	
 	
 	public Collection<Object> matches(String key, String partialValue) {
+		
 		Collection<Object> matches = new HashSet<Object>();
-		try {
-			this.recursiveMatch(
-					matches, 
-					this.contextSource, 
-					getNamespace(key),
-					key, 
-					partialValue,
-					true);
-		} catch (CompletedException e) {
-			// no op
-		}
-		return matches;
-	}
-	
-	
-	@SuppressWarnings("unchecked")
-	public Collection<String> keySet(String namespace) {
-		// We use a spobject.name->spobject.key map in order to 
-		// find all variables keys and names because the 
-		// recursive version of this method is used to build a menu
-		// as well. We will only return the keys though.
-		MultiValueMap keys = new MultiValueMap();
-		this.recursiveKeySet(
-				this.contextSource,
-				keys, 
-				namespace,
-				true);
+		String namespace = getNamespace(key);
 		
-		// Only return the values.
-		return keys.values();
-	}
-
-
-// *******************  Private helper methods **********************************
-
-	
-	private Object recursivelyResolveSingleValue(
-			SPObject currentNode, 
-			String namespace,
-			String key,
-			boolean upwards) throws NotFoundException 
-	{
-		
-		// First, verify if the current node is a variable resolver implementation.
-		if (currentNode instanceof SPVariableResolverProvider) {
-			// Turns out it is. Let's ask it if it can help us.
-			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
-			
-			if (resolver != null &&
-					resolver.resolvesNamespace(namespace) &&
-					resolver.resolves(namespace != null ? namespace + NAMESPACE_DELIMITER + key : key)) {
-				// Kewl. We found the correct variable value.
-				return resolver.resolve(namespace != null ? namespace + NAMESPACE_DELIMITER + key : key);
-			}
-		}
-		
-		if (upwards) {
-			// If we can't climb anymore and we still haven't found it, 
-			// we return the default value.
-			if (currentNode.getParent() == null)
-			{
-				if (this.walkDown) {
-					// The current node still has a parent. Let's recursively
-					// ask it to resolve the variable.
-					return 
-						this.recursivelyResolveSingleValue(
-							currentNode, 
-							namespace,
-							key,
-							false);
-				} else {
-					throw new NotFoundException();
-				}
-			}
-			
-			// The current node still has a parent. Let's recursively
-			// ask it to resolve the variable.
-			return 
-				this.recursivelyResolveSingleValue(
-					currentNode.getParent(), 
-					namespace,
-					key,
-					true);
-		} else {
-			for (SPObject child : currentNode.getChildren()) {
-				// We are going downwards. Let's iterate over children.
-				Object result;
-				try {
-					result = this.recursivelyResolveSingleValue(
-								child, 
-								namespace,
-								key,
-								false);
-				} catch (NotFoundException e) {
-					continue;
-				}
-				// Something was found. Return.
-				return result;
-			}
-			// we iterated over all children without success. 
-			// throw a nfe.
-			throw new NotFoundException();
-		}
-	}
-	
-	private void recursivelyResolveCollection(
-			Collection<Object> results,
-			SPObject currentNode, 
-			String namespace,
-			String key,
-			boolean upwards) throws CompletedException 
-	{
-		// First, verify if the current node is a variable resolver implementation.
-		if (currentNode instanceof SPVariableResolverProvider) {
-			// Turns out it is. Let's ask it if it can help us.
-			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
-			if (resolver != null &&
-					resolver.resolvesNamespace(namespace) &&
-					resolver.resolves(namespace != null ? namespace + NAMESPACE_DELIMITER + key : key)) {
-				// Kewl. We found a valid variable resolver.
-				results.addAll(resolver.resolveCollection(namespace != null ? namespace + NAMESPACE_DELIMITER + key : key));
-				if (!globalCollectionResolve) {
-					throw new CompletedException();
-				}
-			}
-		}
-		
-		if (upwards) {
-			// If we can't climb anymore and we still haven't found it...
-			if (currentNode.getParent() == null) {
-				if (this.walkDown) {
-					this.recursivelyResolveCollection(
-							results,
-							currentNode, 
-							namespace,
-							key,
-							false);
-				} else {
-					return;
-				}
-			} else {
-				this.recursivelyResolveCollection(
-						results,
-						currentNode.getParent(), 
-						namespace,
-						key,
-						true);
-			}
-		} else {
-			for (SPObject child : currentNode.getChildren()) {
-				// We are going downwards. Let's iterate over children.
-				this.recursivelyResolveCollection(
-						results,
-						child, 
-						namespace,
-						key,
-						false);
-			}
-		}
-	}
-	
-	private boolean recursiveResolveCheck(
-			SPObject currentNode, 
-			String namespace, 
-			String key,
-			boolean upwards) 
-	{
-		// First, verify if the current node is a variable resolver implementation.
-		if (currentNode instanceof SPVariableResolverProvider) {
-			// Turns out it is. Let's ask it if it can help us.
-			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
-			if (resolver != null &&
-					resolver.resolvesNamespace(namespace) && resolver.resolves(key)) {
-				// Kewl. We found at least someone to resolve it.
-				return true;
-			}
-		}
-		
-		if (upwards) {
-			if (currentNode.getParent() == null) {
-				if (walkDown) {
-					return 
-						this.recursiveResolveCheck(
-							currentNode, 
-							namespace,
-							key,
-							false);
-				} else {
-					return false;
-				}
-			} else {
-				// The current node still has a parent. Let's recursively
-				// ask it if it can resolve the variable
-				return 
-					this.recursiveResolveCheck(
-						currentNode.getParent(), 
-						namespace,
-						key,
-						true);
-			}
-		} else {
-			for (SPObject child : currentNode.getChildren()) {
-				// We are going downwards. Let's iterate over children.
-				boolean result = this.recursiveResolveCheck(
-									child, 
-									namespace,
-									key,
-									false);
-				if (result) {
-					// we found a resolver. Break and return.
-					return true;
-				}
-			}
-			return false;
-		}
-	}
-	
-	
-	private SPVariableResolver recursiveNamespaceResolverFinder(
-			SPObject currentNode, 
-			String namespace,
-			boolean upwards)
-	{
-		// First, verify if the current node is a variable resolver implementation.
-		if (currentNode instanceof SPVariableResolverProvider) {
-			// Turns out it is. Let's check if it is the correct resolver
-			// for the desired namespace
-			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
-			if (resolver != null &&
-					resolver.resolvesNamespace(namespace)) {
-				return resolver;
-			}
-		}
-		
-		if (upwards) {
-			// If we can't climb anymore and we still haven't found it...
-			if (currentNode.getParent() == null) {
-				if (walkDown) {
-					return this.recursiveNamespaceResolverFinder(
-							currentNode, 
-							namespace,
-							false);
-				} else {
-					return null;
-				}
-			} else {
-				return 
-					this.recursiveNamespaceResolverFinder(
-						currentNode.getParent(), 
-						namespace,
-						true);
-			}
-		} else {
-			for (SPObject child : currentNode.getChildren()) {
-				// We are going downwards. Let's iterate over children.
-				SPVariableResolver result = this.recursiveNamespaceResolverFinder(
-													child, 
-													namespace,
-													false); 
-				if (result!=null) {
-					return result;
-				}
-			}
-			return null;
-		}
-	}
-	
-	
-	private void recursiveMatch(
-			Collection<Object> matches, 
-			SPObject currentNode, 
-			String namespace, 
-			String key, 
-			String partialValue,
-			boolean upwards) throws CompletedException
-	{
-		// First, verify if the current node is a variable resolver implementation.
-		if (currentNode instanceof SPVariableResolverProvider) {
-			// Turns out it is. Let's ask it if it can help us.
-			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
-			if (resolver != null &&
-					resolver.resolves(key)) {
-				matches.addAll(
-						resolver.matches(
-								key, 
-								partialValue));
-				if (!globalCollectionResolve) {
-					throw new CompletedException();
-				}
-			}
-		}
-		
-		if (upwards) {
-			// If we can't climb anymore and we still haven't found it
-			if (currentNode.getParent() == null) {
-				if (walkDown) {
-					this.recursiveMatch(
-						matches,
-						currentNode, 
-						namespace,
-						key,
-						partialValue,
-						false);
-				} else {
-					throw new CompletedException();
-				}
-			} else {
-				// The current node still has a parent. Let's recursively
-				// ask it to resolve the variable.
-				this.recursiveMatch(
-					matches,
-					currentNode.getParent(), 
-					namespace,
-					key,
-					partialValue,
-					true);
-			}
-		} else {
-			for (SPObject child : currentNode.getChildren()) {
-				// We are going downwards. Let's iterate over children.
-				this.recursiveMatch(
-						matches,
-						child, 
-						namespace,
-						key,
-						partialValue,
-						false);
-			}
-		}
-	}
-	
-	
-	public void recursiveKeySet(
-			SPObject currentNode, 
-			MultiValueMap keys,
-			String namespace,
-			boolean upwards) 
-	{
-		
-		// First, verify if the current node is a variable resolver implementation.
-		if (currentNode instanceof SPVariableResolverProvider) {
-			// Turns out it is. Let's ask it if it can help us.
-			SPVariableResolver resolver = ((SPVariableResolverProvider)currentNode).getVariableResolver();
-			if (resolver != null &&
-					resolver.resolvesNamespace(namespace)) {
-				for (String key : resolver.keySet(namespace)) {
-					if (keys.getCollection(currentNode.getName()) == null
-							||
-								(
-									keys.getCollection(currentNode.getName()) != null
-									&& !keys.getCollection(currentNode.getName()).contains(key))
-								)
-					{
-						keys.put(currentNode.getName(), key);
+		if (namespace != null) {
+			for (SPVariableResolver resolver : SPResolverRegistry.getResolvers(contextSource, namespace)) {
+				if (resolver.resolves(key)) {
+					matches.addAll(resolver.matches(key, partialValue));
+					if (!globalCollectionResolve) {
+						break;
 					}
 				}
 			}
-		}
-		
-		if (upwards) {
-			// If we can't climb anymore and we still haven't found it, 
-			// we return the default value.
-			if (currentNode.getParent() == null) {
-				if (walkDown) {
-					this.recursiveKeySet(
-							currentNode, 
-							keys,
-							namespace,
-							false);
-				} else {
-					return;
-				}
-			} else {
-				// The current node still has a parent. Let's recursively
-				// ask it to resolve the variable.
-				this.recursiveKeySet(
-						currentNode.getParent(), 
-						keys,
-						namespace,
-						true);
-			}
+			return matches;
 		} else {
-			for (SPObject child : currentNode.getChildren()) {
-				// The current node still has a parent. Let's recursively
-				// ask it to resolve the variable.
-				this.recursiveKeySet(
-						child, 
-						keys,
-						namespace,
-						false);
+			SPObject node = this.contextSource;
+			while (true) {	
+				if (node instanceof SPVariableResolverProvider) {
+					SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
+					if (resolver.resolves(key)) {
+						matches.addAll(resolver.matches(key, partialValue));
+						if (!globalCollectionResolve) {
+							break;
+						}
+					}
+				}
+				node = node.getParent();
+				if (node == null) break;
 			}
+			return matches;
 		}
 	}
 	
-	private static class InsertVariableAction extends AbstractAction {
-        private final String varName;
-		private final JTextComponent target;
-        InsertVariableAction(String label, String varName, JTextComponent target) {
-            super(label);
-            this.varName = varName;
-			this.target = target;
-        }
-        public void actionPerformed(ActionEvent e) {
-            try {
-                target.getDocument().insertString(target.getCaretPosition(), "${" + varName + "}", null);
-            } catch (BadLocationException ex) {
-                throw new RuntimeException("Unexpected bad location exception", ex);
-            }
-        }
-    }
+	public Collection<String> keySet(String namespace) {
+		
+		List<String> results = new ArrayList<String>();
+		
+		if (namespace != null) {
+			for (SPVariableResolver resolver : SPResolverRegistry.getResolvers(this.contextSource, namespace)) {
+				if (resolver.resolvesNamespace(namespace)) {
+					results.addAll(resolver.keySet(namespace));
+				}
+			}
+			return results;
+		} else {
+			SPObject node = this.contextSource;
+			while (true) {	
+				if (node instanceof SPVariableResolverProvider) {
+					SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
+					results.addAll(resolver.keySet(namespace));
+				}
+				node = node.getParent();
+				if (node == null) break;
+			}
+			return results;
+		}
+	}
+	
+	public String getNamespace() {
+		throw new UnsupportedOperationException("SPVariableHelper is not bound to a namespace.");
+	}
+	
+	/**
+	 * Creates a list of user friendly names->namespaces.
+	 * If you want only the namespaces, do {@link MultiValueMap#values()}
+	 * @return
+	 */
+	public MultiValueMap getNamespaces() {
+		return SPResolverRegistry.getNamespaces(this.contextSource);
+	}
+
+	public String getUserFriendlyName() {
+		return null;
+	}
 }

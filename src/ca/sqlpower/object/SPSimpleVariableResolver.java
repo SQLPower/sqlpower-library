@@ -37,30 +37,30 @@ import org.apache.commons.collections.map.MultiValueMap;
  * @author Luc Boudreau
  *
  */
-@SuppressWarnings("unchecked")
 public class SPSimpleVariableResolver implements SPVariableResolver {
 	
 	protected final MultiValueMap variables = new MultiValueMap();
 	private String namespace = null;
-	private boolean snobbyResolver = true;
+	private String userFriendlyName;
 	
-	public SPSimpleVariableResolver(String namespace) {
+	public SPSimpleVariableResolver(SPObject owner, String namespace, String userFriendlyName) {
 		this.namespace = namespace;
+		this.userFriendlyName = userFriendlyName;
+		SPResolverRegistry.register(owner, this);
 	}
 	
 	/**
 	 * Stores a variable value. If a value with the same key already exists,
 	 * a new value will be added.
 	 * 
-	 * If you try to store a variable with a different namespace than
-	 * the one it is configured to answer to, you get an {@link IllegalStateException}
-	 * 
 	 * @param key The key to store the value under.
 	 * @param value The value to store.
 	 */
 	public void store(String key, Object value) {
-		if (SPVariableHelper.getNamespace(key)!=null && !this.resolvesNamespace(SPVariableHelper.getNamespace(key))) {
-			throw new IllegalStateException("Cannot store a variable of namespace '" + SPVariableHelper.getNamespace(key) + "' because this resolver is configured to operate under the namespace '" + this.namespace + "'");
+		if (this.namespace != null
+				&& SPVariableHelper.getNamespace(key) != null
+				&& !this.namespace.equals(SPVariableHelper.getNamespace(key))) {
+			throw new IllegalArgumentException("Cannot store a namespaced variable of a different namespace than this resolver is configured with.");
 		}
 		this.variables.put(SPVariableHelper.getKey(key), value);
 	}
@@ -70,20 +70,14 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	 * same key was already stored, it will be wiped and replaced by
 	 * the new value.
 	 * 
-	 * If you try to store a variable with a different namespace than
-	 * the one it is configured to answer to, you get an {@link IllegalStateException}
-	 * 
 	 * @param key The key to store the value under.
 	 * @param value The value to store.
 	 */
 	public void update(String key, Object value) {
-		if (!this.resolvesNamespace(SPVariableHelper.getNamespace(key))) {
-			throw new IllegalStateException("Cannot store a variable of namespace '" + SPVariableHelper.getNamespace(key) + "' because this resolver is configured to operate under the namespace '" + this.namespace + "'");
-		}
 		if (this.variables.containsKey(SPVariableHelper.getKey(key))) {
 			this.variables.remove(SPVariableHelper.getKey(key));
 		}
-		this.store(key, value);
+		this.variables.put(SPVariableHelper.getKey(key), value);
 	}
 	
 	/**
@@ -119,28 +113,6 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	public void setNamespace(String namespace) {
 		this.namespace = namespace;
 	}
-	
-	/**
-	 * Turns this resolver in a snobby one. This affects the namespace 
-	 * resolution decisions. When true, the resolver will ignore all requests
-	 * for variables whose key is not explicitely prefixed with the proper
-	 * namespace.
-	 * @param snobbyResolver Wether or not to be snobby.
-	 */
-	public void setSnobbyResolver(boolean snobbyResolver) {
-		this.snobbyResolver = snobbyResolver;
-	}
-	
-	/**
-	 * This tells if this resolver is in snobby mode or not.
-	 * When true, the resolver will ignore all requests
-	 * for variables whose key is not explicitely prefixed with the proper
-	 * namespace.
-	 * @return True if snobby. False otherwise.
-	 */
-	public boolean isSnobbyResolver() {
-		return snobbyResolver;
-	}
 
 	public Collection<Object> matches(String key, String partialValue) {
 		// Call the subclass hook.
@@ -148,8 +120,8 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 		
 		String namespace = SPVariableHelper.getNamespace(key);
 		if (this.resolvesNamespace(namespace)) {
-			Set matches = new HashSet();
-			Collection values  = this.resolveCollection(key);
+			Set<Object> matches = new HashSet<Object>();
+			Collection<Object> values  = this.resolveCollection(key);
 			for (Object obj : values) {
 				String stringRep = obj.toString();
 				if (stringRep.startsWith(partialValue)) {
@@ -171,7 +143,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 		
 		String namespace = SPVariableHelper.getNamespace(key);
 		if (this.resolvesNamespace(namespace)) {
-			Collection value = this.variables.getCollection(SPVariableHelper.getKey(key));
+			Collection<Object> value = this.variables.getCollection(SPVariableHelper.getKey(key));
 			if (value == null || value.size() == 0) {
 				return defaultValue;
 			} else {
@@ -192,7 +164,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 		
 		String namespace = SPVariableHelper.getNamespace(key);
 		if (this.resolvesNamespace(namespace)) {
-			Collection value = this.variables.getCollection(SPVariableHelper.getKey(key));
+			Collection<Object> value = this.variables.getCollection(SPVariableHelper.getKey(key));
 			if (value != null) {
 				return value;
 			}
@@ -212,30 +184,21 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	}
 
 	public boolean resolvesNamespace(String namespace) {
-		if (namespace != null && this.namespace != null) {
-			return this.namespace.equals(namespace);
-		} else if (namespace != null && this.namespace == null) {
-			if (this.snobbyResolver) {
-				return false;
-			} else {
-				return true;
-			}
-		} else if (namespace == null && this.namespace != null && this.snobbyResolver) {
-			return false;
+		if (namespace == null) {
+			return true;
 		}
-		return true;
+		return namespace.equals(this.namespace);
 	}
 
 	public Collection<String> keySet(String namespace) {
 		// Call the subclass hook.
 		this.beforeKeyLookup(namespace);
 		
-		if (namespace == null &&
-				this.resolvesNamespace(namespace)) {
+		if (this.resolvesNamespace(namespace)) {
 			if (this.namespace == null) {
 				return this.variables.keySet();
 			} else {
-				Set keys = new HashSet();
+				Set<String> keys = new HashSet<String>();
 				for (Object key : this.variables.keySet()) {
 					keys.add(this.namespace.concat(NAMESPACE_DELIMITER).concat(key.toString()));
 				}
@@ -243,5 +206,17 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 			}
 		}
 		return Collections.emptySet();
+	}
+	
+	public String getNamespace() {
+		return this.namespace;
+	}
+	
+	public String getUserFriendlyName() {
+		return this.userFriendlyName;
+	}
+	
+	public void setUserFriendlyName(String userFriendlyName) {
+		this.userFriendlyName = userFriendlyName;
 	}
 }
