@@ -73,4 +73,13 @@ public interface StatementExecutor {
 	 */
 	String getStatement();
 	
+	/**
+	 * Tells if this executor is currently running a query.
+	 * @return True or false, depending if it's running.
+	 */
+	boolean isRunning();
+	
+	void addStatementExecutorListener(StatementExecutorListener sel);
+	
+	void removeStatementExecutorListener(StatementExecutorListener sel);
 }

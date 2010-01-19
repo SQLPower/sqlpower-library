@@ -319,6 +319,14 @@ public class SQLQueryUIComponents {
 		private final SQLDatabase db;
 		private long startExecutionTime;
 		private final StatementExecutor stmtExecutor;
+		private final StatementExecutorListener executorListener = new StatementExecutorListener() {
+			public void queryStopped() {
+				stopButton.setEnabled(false);
+			}
+			public void queryStarted() {
+				stopButton.setEnabled(true);
+			}
+		};
 
         /**
          * Constructs a new ExecuteSQLWorker that will use the given SQL
@@ -340,6 +348,8 @@ public class SQLQueryUIComponents {
         		firstResultPanel.removeAll();
         		firstResultPanel.revalidate();
         	} 
+        	
+        	this.stmtExecutor.addStatementExecutorListener(executorListener);
         	
         	db = databaseMapping.getDatabase((JDBCDataSource) databaseComboBox.getSelectedItem());
         	
@@ -395,52 +405,59 @@ public class SQLQueryUIComponents {
         	} finally {
         		logTextArea.append("\n");
         		updateStatus();
+        		this.stmtExecutor.removeStatementExecutorListener(executorListener);
         	}
         }
 
         @Override
         public void doStuff() throws Exception {
-        	startExecutionTime = System.currentTimeMillis();
-            logger.debug("Starting execute action of \"" + stmtExecutor.getStatement() + "\".");
-            if (db == null) {
-                return;
-            }
-            if (stmtExecutor.getStatement().trim().length() == 0) {
-            	return;
-            }
-            if (conMap.get(db) == null || conMap.get(db).getConnection() == null || conMap.get(db).getConnection().isClosed()) {
-            	addConnection(db);
-            }
-            
-            logger.debug("Executing statement " + stmtExecutor.getStatement());
-            boolean sqlResult = stmtExecutor.executeStatement();
-            logger.debug("Finished execution");
-            boolean hasNext = true;
-                
-            while (hasNext) {
-            	if (sqlResult) {
-            		ResultSet rs = stmtExecutor.getResultSet();
-            		CachedRowSet rowSet = new CachedRowSet();
-            		logger.debug("Populating cached row set");
-            		if (rs instanceof CachedRowSet) {
-            			rowSet = ((CachedRowSet) rs).createShared();
-            		} else {
-            			rowSet.populate(rs);
-            		}
-            		logger.debug("Result set row count is " + rowSet.size());
-            		resultSets.add(rowSet);
-            		rowsAffected.add(new Integer(rowSet.size()));
-            		rs.close();
-            	} else {
-            		rowsAffected.add(new Integer(stmtExecutor.getUpdateCount()));
-            		logger.debug("Update count is : " + stmtExecutor.getUpdateCount());
-            	}
-            	sqlResult = stmtExecutor.getMoreResults();
-            	hasNext = !((sqlResult == false) && (stmtExecutor.getUpdateCount() == -1));
-            }
-            logger.debug("Finished Execute method");
+        	try {
+        		startExecutionTime = System.currentTimeMillis();
+        		logger.debug("Starting execute action of \"" + stmtExecutor.getStatement() + "\".");
+        		if (db == null) {
+        			return;
+        		}
+        		if (stmtExecutor.getStatement().trim().length() == 0) {
+        			return;
+        		}
+        		if (conMap.get(db) == null || conMap.get(db).getConnection() == null || conMap.get(db).getConnection().isClosed()) {
+        			addConnection(db);
+        		}
+        		
+        		updateStatus();
+        		
+        		logger.debug("Executing statement " + stmtExecutor.getStatement());
+        		boolean sqlResult = stmtExecutor.executeStatement();
+        		logger.debug("Finished execution");
+        		boolean hasNext = true;
+        		
+        		while (hasNext) {
+        			if (sqlResult) {
+        				ResultSet rs = stmtExecutor.getResultSet();
+        				CachedRowSet rowSet = new CachedRowSet();
+        				logger.debug("Populating cached row set");
+        				if (rs instanceof CachedRowSet) {
+        					rowSet = ((CachedRowSet) rs).createShared();
+        				} else {
+        					rowSet.populate(rs);
+        				}
+        				logger.debug("Result set row count is " + rowSet.size());
+        				resultSets.add(rowSet);
+        				rowsAffected.add(new Integer(rowSet.size()));
+        				rs.close();
+        			} else {
+        				rowsAffected.add(new Integer(stmtExecutor.getUpdateCount()));
+        				logger.debug("Update count is : " + stmtExecutor.getUpdateCount());
+        			}
+        			sqlResult = stmtExecutor.getMoreResults();
+        			hasNext = !((sqlResult == false) && (stmtExecutor.getUpdateCount() == -1));
+        		}
+        		logger.debug("Finished Execute method");
+        		
+        	} finally {
+        		updateStatus();
+        	}
         }
-
     }
     
     private class DefaultStatementExecutor implements StatementExecutor {
@@ -450,6 +467,7 @@ public class SQLQueryUIComponents {
 		private final int rowLimit;
 		private final List<ResultSet> resultSets = new ArrayList<ResultSet>();
 		private final List<Integer> updateCounts = new ArrayList<Integer>();
+		private final List<StatementExecutorListener> executorListeners = new ArrayList<StatementExecutorListener>();
 		private int resultPosition;
 		
 		/**
@@ -468,11 +486,27 @@ public class SQLQueryUIComponents {
 			resultPosition = 0;
 		}
 
+		public boolean isRunning() {
+			boolean dbSelected = databaseComboBox.getSelectedItem() != null;
+	    	ConnectionAndStatementBean selectedConnection;
+	    	if (dbSelected) {
+	    	    JDBCDataSource selectedDS = (JDBCDataSource) databaseComboBox.getSelectedItem();
+	            selectedConnection =
+	    	        conMap.get(databaseMapping.getDatabase(selectedDS));
+	    	} else {
+	    	    selectedConnection = null;
+	    	}
+			return dbSelected 
+					&& selectedConnection != null
+					&& selectedConnection.getCurrentStmt() != null;
+		}
+		
 		public boolean executeStatement() throws SQLException {
 			resultPosition = 0;
 			Connection con = null;
             Statement stmt = null;
             try {
+            	fireQueryExecutionStart();
             	con = conMap.get(db).getConnection();
                 stmt = con.createStatement();
                 conMap.get(db).setCurrentStmt(stmt);
@@ -503,6 +537,7 @@ public class SQLQueryUIComponents {
                     }
                     conMap.get(db).setCurrentStmt(null);
                 }
+                fireQueryExecutionStop();
             }
 		}
 
@@ -535,6 +570,28 @@ public class SQLQueryUIComponents {
 
 		public void removeRowSetChangeListener(RowSetChangeListener l) {
 			rowSetChangeListeners.remove(l);
+		}
+		
+		private void fireQueryExecutionStart() {
+			for (StatementExecutorListener listener : this.executorListeners) {
+				listener.queryStarted();
+			}
+		}
+		
+		private void fireQueryExecutionStop() {
+			for (StatementExecutorListener listener : this.executorListeners) {
+				listener.queryStopped();
+			}
+		}
+		
+		public void addStatementExecutorListener(
+				StatementExecutorListener qcl) {
+			this.executorListeners.add(qcl);
+		}
+		
+		public void removeStatementExecutorListener(
+				StatementExecutorListener qcl) {
+			this.executorListeners.remove(qcl);
 		}
 
     }
@@ -1206,6 +1263,7 @@ public class SQLQueryUIComponents {
                         }
                     }
                 }
+                updateStatus();
             }
              });
          clearButton = new JButton(new AbstractSQLQueryAction(dialogOwner, Messages.getString("SQLQuery.clear")){
@@ -1265,23 +1323,20 @@ public class SQLQueryUIComponents {
      * ties together.
      */
     private void updateStatus() {
+    	
     	boolean dbSelected = databaseComboBox.getSelectedItem() != null;
-    	ConnectionAndStatementBean selectedConnection;
-    	if (dbSelected) {
-    	    JDBCDataSource selectedDS = (JDBCDataSource) databaseComboBox.getSelectedItem();
-            selectedConnection =
-    	        conMap.get(databaseMapping.getDatabase(selectedDS));
-    	} else {
-    	    selectedConnection = null;
-    	}
-        boolean executingQuery = dbSelected 
-			&& selectedConnection != null
-			&& selectedConnection.getCurrentStmt() != null;
-    	executeAction.setEnabled(!executingQuery && (stmtExecutor != null || dbSelected));
+    	
+    	executeAction.setEnabled(
+    			(stmtExecutor != null || dbSelected)
+    			&& (stmtExecutor != null && !stmtExecutor.isRunning())); 
+    	executeButton.setEnabled(
+    			(stmtExecutor != null || dbSelected)
+    			&& (stmtExecutor != null && !stmtExecutor.isRunning())); 
+    	
     	boolean autoCommit = autoCommitToggleButton.isSelected();
+    	
     	rollbackButton.setEnabled(!autoCommit && dbSelected);
     	commitButton.setEnabled(!autoCommit && dbSelected);
-    	stopButton.setEnabled(executingQuery);
     }
     
     /**
