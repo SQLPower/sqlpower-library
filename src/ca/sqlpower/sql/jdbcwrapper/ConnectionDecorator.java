@@ -52,7 +52,9 @@ public abstract class ConnectionDecorator implements Connection {
 	/**
 	 * The object to which all JDBC operations are delegated. 
 	 */
-	private Connection connection;
+	protected Connection connection;
+	
+	protected DatabaseMetaDataDecorator databaseMetaDataDecorator = null;
 	
 	/**
 	 * Creates a new ConnectionDecorator which delegates to the given connection.
@@ -88,7 +90,7 @@ public abstract class ConnectionDecorator implements Connection {
         } else if (driverName.equals("SQLServer")
         		|| driverName.equals("Microsoft SQL Server 2005 JDBC Driver")
         		|| driverName.equals("Microsoft SQL Server JDBC Driver 2.0")) {
-            return new SQLServerConnectionDecorator(delegate);
+        	return new SQLServerConnectionDecorator(delegate);      	
         } else if (driverName.equals("MySQL-AB JDBC Driver")) {
             return new MySQLConnectionDecorator(delegate);
         } else if (driverName.equals("HSQL Database Engine Driver")) {

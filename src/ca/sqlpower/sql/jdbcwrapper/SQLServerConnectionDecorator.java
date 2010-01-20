@@ -21,7 +21,9 @@ package ca.sqlpower.sql.jdbcwrapper;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 import org.apache.log4j.Logger;
 
@@ -29,7 +31,7 @@ import org.apache.log4j.Logger;
  * The class exists mainly to wrap instances of DatabaseMetaData returned
  * by {@link #getMetaData()} in the appropriate decorator class.
  */
-public class SQLServerConnectionDecorator extends GenericConnectionDecorator {
+public class SQLServerConnectionDecorator extends ConnectionDecorator {
 
     private static final Logger logger = Logger.getLogger(SQLServerConnectionDecorator.class);
     
@@ -39,18 +41,33 @@ public class SQLServerConnectionDecorator extends GenericConnectionDecorator {
 
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        DatabaseMetaData rawDBMD = super.getMetaData();
-        if (rawDBMD.getDatabaseProductVersion().startsWith("8")) {
-            return new SQLServer2000DatabaseMetaDataDecorator(rawDBMD);
-        } else if (rawDBMD.getDatabaseProductVersion().startsWith("9")) {
-            return new SQLServer2005DatabaseMetaDataDecorator(rawDBMD);
-        } else if (rawDBMD.getDatabaseProductVersion().startsWith("10")) {
-            return new SQLServer2008DatabaseMetaDataDecorator(rawDBMD);
-        } else {
-            logger.warn("Unknown database product version: " +
-                    rawDBMD.getDatabaseProductVersion() +
-                    " -- returning generic SQL Server wrapper");
-            return new SQLServerDatabaseMetaDataDecorator(rawDBMD);
-        }
+        
+    	if (databaseMetaDataDecorator == null) {
+    		DatabaseMetaData rawDBMD = super.getMetaData();
+            if (rawDBMD.getDatabaseProductVersion().startsWith("8")) {
+            	databaseMetaDataDecorator = new SQLServer2000DatabaseMetaDataDecorator(rawDBMD, this);
+            } else if (rawDBMD.getDatabaseProductVersion().startsWith("9")) {
+            	databaseMetaDataDecorator = new SQLServer2005DatabaseMetaDataDecorator(rawDBMD, this);
+            } else if (rawDBMD.getDatabaseProductVersion().startsWith("10")) {
+            	databaseMetaDataDecorator = new SQLServer2008DatabaseMetaDataDecorator(rawDBMD, this);
+            } else {
+                logger.warn("Unknown database product version: " +
+                        rawDBMD.getDatabaseProductVersion() +
+                        " -- returning generic SQL Server wrapper");
+                databaseMetaDataDecorator = new SQLServerDatabaseMetaDataDecorator(rawDBMD, this);
+            }
+    	}
+    	
+    	return databaseMetaDataDecorator;
     }
+
+	@Override
+	protected PreparedStatement makePreparedStatementDecorator(PreparedStatement pstmt) {
+		return new SQLServerPreparedStatementDecorator(this, pstmt);
+	}
+
+	@Override
+	protected Statement makeStatementDecorator(Statement stmt) {
+		return new SQLServerStatementDecorator(this, stmt);
+	}
 }

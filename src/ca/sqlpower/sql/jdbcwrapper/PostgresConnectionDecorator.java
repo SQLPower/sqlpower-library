@@ -48,7 +48,12 @@ public class PostgresConnectionDecorator extends ConnectionDecorator {
     }
     
     public DatabaseMetaData getMetaData() throws SQLException {
-        return new PostgresDatabaseMetaDataDecorator(super.getMetaData());
+    	
+    	if (databaseMetaDataDecorator == null) {
+    		databaseMetaDataDecorator = new PostgresDatabaseMetaDataDecorator(super.getMetaData(), this);
+    	}
+    	
+        return databaseMetaDataDecorator;
     }
 
 	@Override

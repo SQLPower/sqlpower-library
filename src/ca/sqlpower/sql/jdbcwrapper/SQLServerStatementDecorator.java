@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, SQL Power Group Inc.
+ * Copyright (c) 2010, SQL Power Group Inc.
  *
  * This file is part of SQL Power Library.
  *
@@ -19,23 +19,17 @@
 
 package ca.sqlpower.sql.jdbcwrapper;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
+import java.sql.ResultSet;
+import java.sql.Statement;
 
-public class HSQLDBConnectionDecorator extends GenericConnectionDecorator {
+public class SQLServerStatementDecorator extends StatementDecorator {
 
-    protected HSQLDBConnectionDecorator(Connection delegate) {
-        super(delegate);
-    }
+	protected SQLServerStatementDecorator(ConnectionDecorator connection, Statement statement) {
+		super(connection, statement);
+	}
 
-    @Override
-    public DatabaseMetaData getMetaData() throws SQLException {
-    	
-    	if (databaseMetaDataDecorator == null) {
-    		databaseMetaDataDecorator = new HSQLDBDatabaseMetaDataDecorator(super.getMetaData(), this);
-    	}
-        
-    	return databaseMetaDataDecorator;
-    }
+	@Override
+	protected ResultSet makeResultSetDecorator(ResultSet rs) {
+		return new SQLServerResultSetDecorator(this, rs);
+	}
 }

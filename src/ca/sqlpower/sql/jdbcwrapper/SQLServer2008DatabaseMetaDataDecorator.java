@@ -32,8 +32,8 @@ import ca.sqlpower.sql.CachedRowSet;
  */
 public class SQLServer2008DatabaseMetaDataDecorator extends SQLServerDatabaseMetaDataDecorator {
 
-    public SQLServer2008DatabaseMetaDataDecorator(DatabaseMetaData delegate) {
-        super(delegate);
+    public SQLServer2008DatabaseMetaDataDecorator(DatabaseMetaData delegate, ConnectionDecorator connectionDecorator) {
+        super(delegate, connectionDecorator);
     }
 
     /**

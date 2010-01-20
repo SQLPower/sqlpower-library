@@ -59,8 +59,8 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
      */
     private boolean hidingSYSIOTOVERTables = true;
     
-	public OracleDatabaseMetaDataDecorator(DatabaseMetaData delegate) {
-		super(delegate);
+	public OracleDatabaseMetaDataDecorator(DatabaseMetaData delegate, ConnectionDecorator connectionDecorator) {
+		super(delegate, connectionDecorator);
 		logger.debug("Created new OracleDatabaseMetaDataDecorator");
 	}
 	
@@ -101,7 +101,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
     @Override
 	public ResultSet getTypeInfo() throws SQLException {
 		try {
-			return super.getTypeInfo();
+			return wrap(super.getTypeInfo());
 		} catch (SQLException e) {
 			if (e.getErrorCode() == DREADED_ORACLE_ERROR_CODE_1722) {
 				SQLException newE = new SQLException(ORACLE_1722_MESSAGE);
@@ -677,4 +677,14 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
             }
 		}
 	}
+	
+	@Override
+	protected OracleResultSetDecorator wrap (ResultSet rs) throws SQLException {
+		return new OracleResultSetDecorator(wrap(rs.getStatement()), rs);	
+    }
+    
+	@Override
+    protected OracleStatementDecorator wrap (Statement statement) {
+    	return new OracleStatementDecorator(connectionDecorator, statement);
+    }
 }

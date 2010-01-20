@@ -36,9 +36,9 @@ public class SQLiteDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 
     private static final Logger logger = Logger.getLogger(SQLiteDatabaseMetaDataDecorator.class);
     
-    public SQLiteDatabaseMetaDataDecorator(DatabaseMetaData delegate) {
-        super(delegate);
-    }
+    public SQLiteDatabaseMetaDataDecorator(DatabaseMetaData delegate, ConnectionDecorator connectionDecorator) {
+		super(delegate, connectionDecorator);
+	}
     
     @Override
     public ResultSet getImportedKeys(String catalog, String schema, String table)
@@ -128,5 +128,15 @@ public class SQLiteDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
                 }
             }
         }
+    }
+    
+    @Override
+    protected ResultSetDecorator wrap (ResultSet rs) throws SQLException {	
+    	return new GenericResultSetDecorator(wrap(rs.getStatement()), rs);
+    }
+    
+    @Override
+    protected StatementDecorator wrap (Statement statement) {
+    	return new GenericStatementDecorator(connectionDecorator, statement);
     }
 }

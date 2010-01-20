@@ -19,9 +19,11 @@
 
 package ca.sqlpower.sql.jdbcwrapper;
 
+import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,9 +36,9 @@ public class SQLServerDatabaseMetaDataDecorator extends DatabaseMetaDataDecorato
 
 	private static final Logger logger = Logger.getLogger(SQLServerDatabaseMetaDataDecorator.class);
 	
-    public SQLServerDatabaseMetaDataDecorator(DatabaseMetaData delegate) {
-        super(delegate);
-    }
+    public SQLServerDatabaseMetaDataDecorator(DatabaseMetaData delegate, ConnectionDecorator connectionDecorator) {
+		super(delegate, connectionDecorator);
+	}
 
     /**
      * Augments the Microsoft-supplied getColumns() result set with the JDBC4
@@ -108,5 +110,15 @@ public class SQLServerDatabaseMetaDataDecorator extends DatabaseMetaDataDecorato
             m = p.matcher(original);
         }
         return original;
+    }
+    
+    @Override
+    protected ResultSetDecorator wrap (ResultSet rs) throws SQLException {	
+    	return new SQLServerResultSetDecorator(wrap(rs.getStatement()), rs);
+    }
+    
+    @Override
+    protected StatementDecorator wrap (Statement statement) {
+    	return new SQLServerStatementDecorator(connectionDecorator, statement);
     }
 }

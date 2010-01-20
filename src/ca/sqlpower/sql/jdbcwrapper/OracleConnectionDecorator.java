@@ -28,15 +28,20 @@ import java.sql.Statement;
  * Allow for workarounds for dealing with Oracle Driver issues.
 */
 public class OracleConnectionDecorator extends ConnectionDecorator {
-	
-	public DatabaseMetaData getMetaData() throws SQLException {
-        return new OracleDatabaseMetaDataDecorator(super.getMetaData());
-    }
 
 	public OracleConnectionDecorator(Connection conn) {
 		super(conn);
 	}
 
+	public DatabaseMetaData getMetaData() throws SQLException {
+		
+		if (databaseMetaDataDecorator == null) {
+			databaseMetaDataDecorator = new OracleDatabaseMetaDataDecorator(super.getMetaData(), this);
+		}
+		
+        return databaseMetaDataDecorator;
+    }
+	
 	@Override
 	protected PreparedStatement makePreparedStatementDecorator(
 			PreparedStatement pstmt) {

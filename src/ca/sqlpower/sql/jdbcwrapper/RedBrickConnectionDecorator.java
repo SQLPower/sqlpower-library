@@ -42,6 +42,11 @@ public class RedBrickConnectionDecorator extends GenericConnectionDecorator {
 
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        return new RedBrickDatabaseMetaDataDecorator(super.getMetaData());
+    	
+    	if (databaseMetaDataDecorator == null) {
+    		databaseMetaDataDecorator = new RedBrickDatabaseMetaDataDecorator(super.getMetaData(), this);
+    	}
+        
+    	return databaseMetaDataDecorator;
     }
 }

@@ -32,10 +32,29 @@ public class MySQLConnectionDecorator extends GenericConnectionDecorator {
     protected MySQLConnectionDecorator(Connection delegate) {
         super(delegate);
     }
+    
+    public void setCatalog (String catalog) throws SQLException {
+    	String oldCatalog;
+    	try {
+    		oldCatalog = connection.getCatalog();
+    	} catch (SQLException sqlEx) {
+    		throw sqlEx;
+    	}
+    	try {
+    		connection.setCatalog(catalog);
+    	} catch (SQLException sqlEx) {
+    		connection.setCatalog(oldCatalog);
+    		throw sqlEx;
+    	}
+    }
 
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        // TODO Auto-generated method stub
-        return new MySQLDatabaseMetaDataDecorator(super.getMetaData());
+       
+    	if (databaseMetaDataDecorator == null) {
+    		databaseMetaDataDecorator = new MySQLDatabaseMetaDataDecorator(super.getMetaData(), this);
+    	}
+    	
+        return databaseMetaDataDecorator;
     }
 }

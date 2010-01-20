@@ -37,8 +37,8 @@ public class MySQLDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	private static final Logger logger = Logger
 			.getLogger(MySQLDatabaseMetaDataDecorator.class);
 
-	public MySQLDatabaseMetaDataDecorator(DatabaseMetaData delegate) {
-		super(delegate);
+	public MySQLDatabaseMetaDataDecorator(DatabaseMetaData delegate, ConnectionDecorator connectionDecorator) {
+		super(delegate, connectionDecorator);
 	}
 
 	/**
@@ -171,4 +171,14 @@ public class MySQLDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	private String pkNameForTable(String tableName) {
 	    return tableName + "_PK";
 	}
+	
+	@Override
+	 protected ResultSetDecorator wrap (ResultSet rs) throws SQLException {	
+    	return new GenericResultSetDecorator(wrap(rs.getStatement()), rs);
+     }
+    
+	@Override
+    protected StatementDecorator wrap (Statement statement) {
+    	return new GenericStatementDecorator(connectionDecorator, statement);
+    }
 }

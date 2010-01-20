@@ -31,8 +31,12 @@ public class SQLiteConnectionDecorator extends GenericConnectionDecorator {
     
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        DatabaseMetaData metaData = super.getMetaData();
-        return new SQLiteDatabaseMetaDataDecorator(metaData);
+       
+    	if (databaseMetaDataDecorator == null) {
+    		databaseMetaDataDecorator = new SQLiteDatabaseMetaDataDecorator(super.getMetaData(), this);
+    	}
+      
+    	return databaseMetaDataDecorator;
     }
 
 }

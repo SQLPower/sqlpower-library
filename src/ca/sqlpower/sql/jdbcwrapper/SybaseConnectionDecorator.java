@@ -43,6 +43,11 @@ public class SybaseConnectionDecorator extends GenericConnectionDecorator {
 
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        return new SybaseDatabaseMetaDataDecorator(super.getMetaData());
+    	
+    	if (databaseMetaDataDecorator == null) {
+    		databaseMetaDataDecorator = new SybaseDatabaseMetaDataDecorator(super.getMetaData(), this);
+    	}
+    	
+        return databaseMetaDataDecorator;
     }
 }

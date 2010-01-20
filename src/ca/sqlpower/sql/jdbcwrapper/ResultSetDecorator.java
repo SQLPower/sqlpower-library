@@ -34,7 +34,6 @@ public abstract class ResultSetDecorator implements ResultSet {
 		}
 	}
 
-
 	/**
 	 * The statement that created this result set.
 	 */
@@ -43,13 +42,14 @@ public abstract class ResultSetDecorator implements ResultSet {
 	/**
 	 * The actual result set that does all the work.
 	 */
-	private final ResultSet resultSet;
+	protected final ResultSet resultSet;
 
 	/**
 	 * Creates a new result set decorator for the given result set.
 	 */
 	public ResultSetDecorator(Statement parentStatement, ResultSet rs) {
 		if (rs == null) throw new NullPointerException("Null result set not allowed");
+		if (parentStatement == null) throw new NullPointerException("Null statement not allowed");
 		this.parentStatement = parentStatement;
 		this.resultSet = rs;
 	}
@@ -58,6 +58,7 @@ public abstract class ResultSetDecorator implements ResultSet {
 			ResultSetMetaData rsmd);
 	
 	// ------------ ResultSet interface is below this line ------------------
+	
 	public boolean absolute(int row) throws SQLException {
 		ResultSetDecorator.checkInterrupted();
 		return resultSet.absolute(row);

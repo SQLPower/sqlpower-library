@@ -22,6 +22,7 @@ package ca.sqlpower.sql.jdbcwrapper;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 import org.apache.log4j.Logger;
 
@@ -36,8 +37,8 @@ public class SybaseDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
     private static final Logger logger = Logger
     .getLogger(SybaseDatabaseMetaDataDecorator.class);
     
-	public SybaseDatabaseMetaDataDecorator(DatabaseMetaData delegate) {
-        super(delegate);
+	public SybaseDatabaseMetaDataDecorator(DatabaseMetaData delegate, ConnectionDecorator connectionDecorator) {
+		super(delegate, connectionDecorator);
         logger.debug("Creating new DatabaseMetaDataDecorator for Sybase connection");
     }
 
@@ -69,4 +70,14 @@ public class SybaseDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	        }
 	    }
 	}
+	
+	@Override
+	protected ResultSetDecorator wrap (ResultSet rs) throws SQLException {	
+   		return new GenericResultSetDecorator(wrap(rs.getStatement()), rs);
+    }
+    
+	@Override
+    protected StatementDecorator wrap (Statement statement) {
+    	return new GenericStatementDecorator(connectionDecorator, statement);
+    }
 }

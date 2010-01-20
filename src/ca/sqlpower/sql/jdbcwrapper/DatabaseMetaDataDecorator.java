@@ -27,6 +27,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Date;
 
 /**
@@ -37,14 +38,18 @@ import java.util.Date;
  * @author fuerth
  * @version $Id$
  */
-public class DatabaseMetaDataDecorator implements DatabaseMetaData {
+public abstract class DatabaseMetaDataDecorator implements DatabaseMetaData {
     
     /**
      * The instance that performs all JDBC operations.
      */
     protected DatabaseMetaData databaseMetaData;
 
-
+    /**
+     *  TODO: comment this 
+     */
+    protected ConnectionDecorator connectionDecorator;
+    
 	/**
 	 * An enumeration of caching behaviours for the DatabaseMetaData. For now,
 	 * we just have: 
@@ -153,8 +158,9 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      * 
      * @param delegate The instance that performs all JDBC operations.
      */
-    public DatabaseMetaDataDecorator(DatabaseMetaData delegate) {
+    public DatabaseMetaDataDecorator(DatabaseMetaData delegate, ConnectionDecorator connectionDecorator) {
         this.databaseMetaData = delegate;
+        this.connectionDecorator = connectionDecorator;
     }
     
     /**
@@ -217,8 +223,8 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
     public ResultSet getAttributes(String catalog, String schemaPattern,
             String typeNamePattern, String attributeNamePattern)
             throws SQLException {
-        return databaseMetaData.getAttributes(catalog, schemaPattern,
-                typeNamePattern, attributeNamePattern);
+        return wrap(databaseMetaData.getAttributes(catalog, schemaPattern,
+                typeNamePattern, attributeNamePattern));
     }
     /**
      * @param catalog
@@ -231,15 +237,15 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      */
     public ResultSet getBestRowIdentifier(String catalog, String schema,
             String table, int scope, boolean nullable) throws SQLException {
-        return databaseMetaData.getBestRowIdentifier(catalog, schema, table,
-                scope, nullable);
+        return wrap(databaseMetaData.getBestRowIdentifier(catalog, schema, table,
+                scope, nullable));
     }
     /**
      * @return
      * @throws java.sql.SQLException
      */
     public ResultSet getCatalogs() throws SQLException {
-        return databaseMetaData.getCatalogs();
+        return wrap(databaseMetaData.getCatalogs());
     }
     /**
      * @return
@@ -265,8 +271,8 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      */
     public ResultSet getColumnPrivileges(String catalog, String schema,
             String table, String columnNamePattern) throws SQLException {
-        return databaseMetaData.getColumnPrivileges(catalog, schema, table,
-                columnNamePattern);
+        return wrap(databaseMetaData.getColumnPrivileges(catalog, schema, table,
+                columnNamePattern));
     }
     /**
      * @param catalog
@@ -279,15 +285,15 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
     public ResultSet getColumns(String catalog, String schemaPattern,
             String tableNamePattern, String columnNamePattern)
             throws SQLException {
-        return databaseMetaData.getColumns(catalog, schemaPattern,
-                tableNamePattern, columnNamePattern);
+        return wrap(databaseMetaData.getColumns(catalog, schemaPattern,
+                tableNamePattern, columnNamePattern));
     }
     /**
      * @return
      * @throws java.sql.SQLException
      */
-    public Connection getConnection() throws SQLException {
-        return databaseMetaData.getConnection();
+    public ConnectionDecorator getConnection() throws SQLException {
+        return connectionDecorator;
     }
     /**
      * @param primaryCatalog
@@ -302,9 +308,9 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
     public ResultSet getCrossReference(String primaryCatalog,
             String primarySchema, String primaryTable, String foreignCatalog,
             String foreignSchema, String foreignTable) throws SQLException {
-        return databaseMetaData.getCrossReference(primaryCatalog,
+        return wrap(databaseMetaData.getCrossReference(primaryCatalog,
                 primarySchema, primaryTable, foreignCatalog, foreignSchema,
-                foreignTable);
+                foreignTable));
     }
     /**
      * @return
@@ -376,7 +382,7 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      */
     public ResultSet getExportedKeys(String catalog, String schema, String table)
             throws SQLException {
-        return databaseMetaData.getExportedKeys(catalog, schema, table);
+        return wrap(databaseMetaData.getExportedKeys(catalog, schema, table));
     }
     /**
      * @return
@@ -401,7 +407,7 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      */
     public ResultSet getImportedKeys(String catalog, String schema, String table)
             throws SQLException {
-        return databaseMetaData.getImportedKeys(catalog, schema, table);
+        return wrap(databaseMetaData.getImportedKeys(catalog, schema, table));
     }
     /**
      * @param catalog
@@ -414,8 +420,8 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      */
     public ResultSet getIndexInfo(String catalog, String schema, String table,
             boolean unique, boolean approximate) throws SQLException {
-        return databaseMetaData.getIndexInfo(catalog, schema, table, unique,
-                approximate);
+        return wrap(databaseMetaData.getIndexInfo(catalog, schema, table, unique,
+                approximate));
     }
     /**
      * @return
@@ -587,7 +593,7 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      */
     public ResultSet getPrimaryKeys(String catalog, String schema, String table)
             throws SQLException {
-        return databaseMetaData.getPrimaryKeys(catalog, schema, table);
+        return wrap(databaseMetaData.getPrimaryKeys(catalog, schema, table));
     }
     /**
      * @param catalog
@@ -600,8 +606,8 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
     public ResultSet getProcedureColumns(String catalog, String schemaPattern,
             String procedureNamePattern, String columnNamePattern)
             throws SQLException {
-        return databaseMetaData.getProcedureColumns(catalog, schemaPattern,
-                procedureNamePattern, columnNamePattern);
+        return wrap(databaseMetaData.getProcedureColumns(catalog, schemaPattern,
+                procedureNamePattern, columnNamePattern));
     }
     /**
      * @param catalog
@@ -612,8 +618,8 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      */
     public ResultSet getProcedures(String catalog, String schemaPattern,
             String procedureNamePattern) throws SQLException {
-        return databaseMetaData.getProcedures(catalog, schemaPattern,
-                procedureNamePattern);
+        return wrap(databaseMetaData.getProcedures(catalog, schemaPattern,
+                procedureNamePattern));
     }
     /**
      * @return
@@ -634,7 +640,7 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      * @throws java.sql.SQLException
      */
     public ResultSet getSchemas() throws SQLException {
-        return databaseMetaData.getSchemas();
+        return wrap(databaseMetaData.getSchemas());
     }
     /**
      * @return
@@ -680,8 +686,8 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      */
     public ResultSet getSuperTables(String catalog, String schemaPattern,
             String tableNamePattern) throws SQLException {
-        return databaseMetaData.getSuperTables(catalog, schemaPattern,
-                tableNamePattern);
+        return wrap(databaseMetaData.getSuperTables(catalog, schemaPattern,
+                tableNamePattern));
     }
     /**
      * @param catalog
@@ -692,8 +698,8 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      */
     public ResultSet getSuperTypes(String catalog, String schemaPattern,
             String typeNamePattern) throws SQLException {
-        return databaseMetaData.getSuperTypes(catalog, schemaPattern,
-                typeNamePattern);
+        return wrap(databaseMetaData.getSuperTypes(catalog, schemaPattern,
+                typeNamePattern));
     }
     /**
      * @return
@@ -711,8 +717,8 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      */
     public ResultSet getTablePrivileges(String catalog, String schemaPattern,
             String tableNamePattern) throws SQLException {
-        return databaseMetaData.getTablePrivileges(catalog, schemaPattern,
-                tableNamePattern);
+        return wrap(databaseMetaData.getTablePrivileges(catalog, schemaPattern,
+                tableNamePattern));
     }
     /**
      * @param catalog
@@ -724,15 +730,15 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      */
     public ResultSet getTables(String catalog, String schemaPattern,
             String tableNamePattern, String[] types) throws SQLException {
-        return databaseMetaData.getTables(catalog, schemaPattern,
-                tableNamePattern, types);
+        return wrap(databaseMetaData.getTables(catalog, schemaPattern,
+                tableNamePattern, types));
     }
     /**
      * @return
      * @throws java.sql.SQLException
      */
     public ResultSet getTableTypes() throws SQLException {
-        return databaseMetaData.getTableTypes();
+        return wrap(databaseMetaData.getTableTypes());
     }
     /**
      * @return
@@ -746,7 +752,7 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      * @throws java.sql.SQLException
      */
     public ResultSet getTypeInfo() throws SQLException {
-        return databaseMetaData.getTypeInfo();
+        return wrap(databaseMetaData.getTypeInfo());
     }
     /**
      * @param catalog
@@ -758,8 +764,8 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      */
     public ResultSet getUDTs(String catalog, String schemaPattern,
             String typeNamePattern, int[] types) throws SQLException {
-        return databaseMetaData.getUDTs(catalog, schemaPattern,
-                typeNamePattern, types);
+        return wrap(databaseMetaData.getUDTs(catalog, schemaPattern,
+                typeNamePattern, types));
     }
     /**
      * @return
@@ -784,7 +790,7 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
      */
     public ResultSet getVersionColumns(String catalog, String schema,
             String table) throws SQLException {
-        return databaseMetaData.getVersionColumns(catalog, schema, table);
+        return wrap(databaseMetaData.getVersionColumns(catalog, schema, table));
     }
     /* (non-Javadoc)
      * @see java.lang.Object#hashCode()
@@ -1472,4 +1478,7 @@ public class DatabaseMetaDataDecorator implements DatabaseMetaData {
     	    cacheStaleDate.set((Date) value);
     	}
     }
+    
+    protected abstract ResultSetDecorator wrap (ResultSet rs) throws SQLException ;
+    protected abstract StatementDecorator wrap (Statement statement) throws SQLException ;
 }

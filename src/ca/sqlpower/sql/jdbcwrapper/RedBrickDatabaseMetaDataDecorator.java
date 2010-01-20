@@ -42,8 +42,8 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
      * 
      * @param delegate The database metadata object to wrap.
      */
-	public RedBrickDatabaseMetaDataDecorator(DatabaseMetaData delegate) {
-		super(delegate);
+	public RedBrickDatabaseMetaDataDecorator(DatabaseMetaData delegate, ConnectionDecorator connectionDecorator) {
+		super(delegate, connectionDecorator);
 	}
 	
 	/**
@@ -137,7 +137,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     public ResultSet getAttributes(String catalog, String schemaPattern,
             String typeNamePattern, String attributeNamePattern)
             throws SQLException {
-        return super.getAttributes(null, null, typeNamePattern, attributeNamePattern);
+        return wrap(super.getAttributes(null, null, typeNamePattern, attributeNamePattern));
     }
 
     /**
@@ -146,7 +146,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     @Override
     public ResultSet getBestRowIdentifier(String catalog, String schema,
             String table, int scope, boolean nullable) throws SQLException {
-        return super.getBestRowIdentifier(null, null, table, scope, nullable);
+        return wrap(super.getBestRowIdentifier(null, null, table, scope, nullable));
     }
     
     /**
@@ -156,7 +156,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     public ResultSet getColumns(String catalog, String schemaPattern,
             String tableNamePattern, String columnNamePattern)
             throws SQLException {
-        return super.getColumns(null, null, tableNamePattern, columnNamePattern);
+        return wrap(super.getColumns(null, null, tableNamePattern, columnNamePattern));
     }
     
     /**
@@ -165,7 +165,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     @Override
     public ResultSet getColumnPrivileges(String catalog, String schema,
             String table, String columnNamePattern) throws SQLException {
-        return super.getColumnPrivileges(null, null, table, columnNamePattern);
+        return wrap(super.getColumnPrivileges(null, null, table, columnNamePattern));
     }
     
     /**
@@ -175,9 +175,9 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     public ResultSet getCrossReference(String primaryCatalog,
             String primarySchema, String primaryTable, String foreignCatalog,
             String foreignSchema, String foreignTable) throws SQLException {
-        return super.getCrossReference(
+        return wrap(super.getCrossReference(
                 null, null, primaryTable,
-                null, null, foreignTable);
+                null, null, foreignTable));
     }
     
     /**
@@ -186,7 +186,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     @Override
     public ResultSet getExportedKeys(String catalog, String schema, String table)
             throws SQLException {
-        return super.getExportedKeys(null, null, table);
+        return wrap(super.getExportedKeys(null, null, table));
     }
 
     /**
@@ -195,7 +195,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     @Override
     public ResultSet getImportedKeys(String catalog, String schema, String table)
             throws SQLException {
-        return super.getImportedKeys(null, null, table);
+        return wrap(super.getImportedKeys(null, null, table));
     }
 
     /**
@@ -204,7 +204,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     @Override
     public ResultSet getIndexInfo(String catalog, String schema, String table,
             boolean unique, boolean approximate) throws SQLException {
-        return super.getIndexInfo(null, null, table, unique, approximate);
+        return wrap(super.getIndexInfo(null, null, table, unique, approximate));
     }
     
     /**
@@ -213,7 +213,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     @Override
     public ResultSet getPrimaryKeys(String catalog, String schema, String table)
             throws SQLException {
-        return super.getPrimaryKeys(null, null, table);
+        return wrap(super.getPrimaryKeys(null, null, table));
     }
 
     /**
@@ -223,8 +223,8 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     public ResultSet getProcedureColumns(String catalog, String schemaPattern,
             String procedureNamePattern, String columnNamePattern)
             throws SQLException {
-        return super.getProcedureColumns(
-                null, null, procedureNamePattern, columnNamePattern);
+        return wrap(super.getProcedureColumns(
+                null, null, procedureNamePattern, columnNamePattern));
     }
     
     /**
@@ -233,7 +233,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     @Override
     public ResultSet getProcedures(String catalog, String schemaPattern,
             String procedureNamePattern) throws SQLException {
-        return super.getProcedures(null, null, procedureNamePattern);
+        return wrap(super.getProcedures(null, null, procedureNamePattern));
     }
 
     /**
@@ -242,7 +242,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     @Override
     public ResultSet getSuperTables(String catalog, String schemaPattern,
             String tableNamePattern) throws SQLException {
-        return super.getSuperTables(null, null, tableNamePattern);
+        return wrap(super.getSuperTables(null, null, tableNamePattern));
     }
     
     /**
@@ -251,7 +251,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     @Override
     public ResultSet getSuperTypes(String catalog, String schemaPattern,
             String typeNamePattern) throws SQLException {
-        return super.getSuperTypes(null, null, typeNamePattern);
+        return wrap(super.getSuperTypes(null, null, typeNamePattern));
     }
     
     /**
@@ -260,7 +260,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     @Override
     public ResultSet getTables(String catalog, String schemaPattern,
             String tableNamePattern, String[] types) throws SQLException {
-        return super.getTables(null, null, tableNamePattern, types);
+        return wrap(super.getTables(null, null, tableNamePattern, types));
     }
 
     /**
@@ -269,7 +269,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     @Override
     public ResultSet getTablePrivileges(String catalog, String schemaPattern,
             String tableNamePattern) throws SQLException {
-        return super.getTablePrivileges(null, null, tableNamePattern);
+        return wrap(super.getTablePrivileges(null, null, tableNamePattern));
     }
     
     /**
@@ -278,7 +278,7 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     @Override
     public ResultSet getUDTs(String catalog, String schemaPattern,
             String typeNamePattern, int[] types) throws SQLException {
-        return super.getUDTs(null, null, typeNamePattern, types);
+        return wrap(super.getUDTs(null, null, typeNamePattern, types));
     }
     
     /**
@@ -287,6 +287,16 @@ public class RedBrickDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator
     @Override
     public ResultSet getVersionColumns(String catalog, String schema,
             String table) throws SQLException {
-        return super.getVersionColumns(null, null, table);
+        return wrap(super.getVersionColumns(null, null, table));
+    }
+    
+    @Override
+    protected ResultSetDecorator wrap (ResultSet rs) throws SQLException {	
+    	return new GenericResultSetDecorator(wrap(rs.getStatement()), rs);
+    }
+    
+    @Override
+    protected StatementDecorator wrap (Statement statement) {
+    	return new GenericStatementDecorator(connectionDecorator, statement);
     }
 }
