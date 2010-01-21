@@ -768,8 +768,8 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		int index = tables.indexOf(child);
 		if (index != -1) {
 			 tables.remove(index);
-			 fireChildRemoved(SQLTable.class, child, index);
 			 child.setParent(null);
+			 fireChildRemoved(SQLTable.class, child, index);
 			 return true;
 		}
 		return false;
