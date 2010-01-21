@@ -1302,15 +1302,6 @@ public class QueryImpl implements Query {
      * @see ca.sqlpower.query.Query#defineUserModifiedQuery(java.lang.String)
      */
 	public void setUserModifiedQuery(String query) {
-		String generatedQuery = generateQuery();
-		logger.debug("Generated query is " + generatedQuery + " and given query is " + query);
-		if (logger.isDebugEnabled()) {
-			try {
-				throw new RuntimeException();
-			} catch (RuntimeException e) {
-				logger.debug("Stack trace for setting user modified query is", e);
-			}
-		}
 		String oldUserQuery = userModifiedQuery;
 		userModifiedQuery = query;
 		firePropertyChangeEvent(new PropertyChangeEvent(this, USER_MODIFIED_QUERY, oldUserQuery, query));
