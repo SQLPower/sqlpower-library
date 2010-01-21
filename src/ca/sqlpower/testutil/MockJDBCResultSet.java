@@ -384,7 +384,7 @@ public class MockJDBCResultSet implements ResultSet {
 	}
 
 	public int getType() throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+		return ResultSet.TYPE_SCROLL_INSENSITIVE;
 	}
 
 	public int getConcurrency() throws SQLException {

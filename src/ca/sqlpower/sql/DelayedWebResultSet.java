@@ -336,11 +336,6 @@ public class DelayedWebResultSet extends WebResultSet {
 	 */
 	protected CachedRowSet getCachedResult(String key) throws SQLException {
 		CachedRowSet results = (CachedRowSet) getResultCache().get(key);
-		if (results != null) {
-			results = results.createShared();
-			// reset cursor, which is likely afterLast right now
-			results.beforeFirst();
-		}
 		return results;
 	}
 

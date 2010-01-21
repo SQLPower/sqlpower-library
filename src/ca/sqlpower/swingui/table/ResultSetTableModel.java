@@ -23,6 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
+import javax.annotation.Nullable;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 
@@ -35,29 +36,32 @@ import org.apache.log4j.Logger;
  */
 public class ResultSetTableModel extends AbstractTableModel {
     
-    private static final Logger logger = Logger.getLogger(ResultSetTableModel.class);
-
 	/**
 	 * This result set holds the cell entries in the table. 
 	 */
-	private final ResultSet rs;
+	private ResultSet rs = null;
 	
 	/**
 	 * The result set passed in here must be scrollable. If it is not
 	 * it should be wrapped in a CachedRowSet first.
+	 * 
 	 */
-	public ResultSetTableModel(ResultSet result) {
+	public ResultSetTableModel(@Nullable ResultSet result) {
 		this.rs = result;
-		if (logger.isDebugEnabled()) {
-		    try {
-                logger.debug("Result set has " + rs.getMetaData().getColumnCount());
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-		}
+	}
+	
+	/**
+	 * Used to inject a RS when it gets available.
+	 * @param rs
+	 */
+	public void setRs(ResultSet rs) {
+		this.rs = rs;
 	}
 	
 	public int getColumnCount() {
+		if (rs == null) {
+			return 0;
+		}
 		try {
 			int i = 0;
 			while (rs.getMetaData() == null && i < 100) {
@@ -83,6 +87,9 @@ public class ResultSetTableModel extends AbstractTableModel {
 	}
 
 	public int getRowCount() {
+		if (rs == null) {
+			return 0;
+		}
 		int newRowCount;
 		try {
 			int prevRow = rs.getRow();
@@ -96,6 +103,9 @@ public class ResultSetTableModel extends AbstractTableModel {
 	}
 
 	public Object getValueAt(int rowIndex, int columnIndex) {
+		if (rs == null) {
+			return null;
+		}
 		try {
 			int prevRow = rs.getRow();
 			rs.absolute(rowIndex + 1);
@@ -109,6 +119,9 @@ public class ResultSetTableModel extends AbstractTableModel {
 	
 	@Override
 	public int findColumn(String columnName) {
+		if (rs == null) {
+			return -1;
+		}
 		try {
 			for (int i = 0; i < rs.getMetaData().getColumnCount(); i++) {
 				if (rs.getMetaData().getColumnName(i).equals(columnName)) {
@@ -123,6 +136,9 @@ public class ResultSetTableModel extends AbstractTableModel {
 	
 	@Override
 	public String getColumnName(int column){
+		if (rs == null) {
+			return "";
+		}
 		try {
 			String colName = rs.getMetaData().getColumnLabel(column + 1);
 			if (colName == null || colName.equals("")) {
@@ -136,6 +152,9 @@ public class ResultSetTableModel extends AbstractTableModel {
 	
 	@Override
 	public Class<?> getColumnClass(int columnIndex) {
+		if (rs == null) {
+			return Object.class;
+		}
 		try {
 			if (columnIndex < 0 || columnIndex >= rs.getMetaData().getColumnCount()) {
 				return Object.class;
@@ -176,4 +195,7 @@ public class ResultSetTableModel extends AbstractTableModel {
         fireTableDataChanged();
     }
 	
+    public boolean isRsPresent() {
+    	return !(this.rs == null);
+    }
 }

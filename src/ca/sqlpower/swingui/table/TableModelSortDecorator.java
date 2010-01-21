@@ -289,22 +289,22 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
     }
 
     private Row[] getViewToModel() {
-        if (viewToModel == null) {
-            int tableModelRowCount = tableModel.getRowCount();
-            viewToModel = new Row[tableModelRowCount];
-            for (int row = 0; row < tableModelRowCount; row++) {
-                viewToModel[row] = new Row(row);
-            }
-
-            if (isSorting()) {
-                Arrays.sort(viewToModel);
-            }
-        }
-        return viewToModel;
+		if (viewToModel == null) {
+			int tableModelRowCount = tableModel.getRowCount();
+			viewToModel = new Row[tableModelRowCount];
+			for (int row = 0; row < tableModelRowCount; row++) {
+				viewToModel[row] = new Row(row);
+			}
+			
+			if (isSorting()) {
+				Arrays.sort(viewToModel);
+			}
+		}
+		return viewToModel;
     }
 
     public int modelIndex(int viewIndex) {
-        return getViewToModel()[viewIndex].modelIndex;
+		return getViewToModel()[viewIndex].modelIndex;			
     }
 
     // Added - not proven.
@@ -313,14 +313,14 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
     }*/
 
     private int[] getModelToView() {
-        if (modelToView == null) {
-            int n = getViewToModel().length;
-            modelToView = new int[n];
-            for (int i = 0; i < n; i++) {
-                modelToView[modelIndex(i)] = i;
-            }
-        }
-        return modelToView;
+		if (modelToView == null) {
+			int n = getViewToModel().length;
+			modelToView = new int[n];
+			for (int i = 0; i < n; i++) {
+				modelToView[modelIndex(i)] = i;
+			}
+		}
+		return modelToView;
     }
 
     // TableModel interface methods

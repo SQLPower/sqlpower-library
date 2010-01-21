@@ -45,6 +45,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 
 	private static final int BEFORE_FIRST_ROW = -1;
     private static final int INSERT_ROW = -2;
+    private boolean makeUppercase = true;
 
 	/**
 	 * The current row number in the result set.  Calling next() will
@@ -87,43 +88,6 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
      */
 	private final List<RowSetChangeListener> rowSetListeners =
 	    new ArrayList<RowSetChangeListener>();
-
-    /**
-     * The CachedRowSet this CachedRowSet was created from, or null if this
-     * CachedRowSet is standalone.
-     */
-	private final CachedRowSet parent;
-
-    /**
-     * Refires RowSet events from this CachedRowSet's parent.
-     * <p>
-     * State invariant: This listener is only attached to the parent when
-     * {@link #rowSetListeners}.size() &gt; 0. The purpose is to ensure this
-     * object can be garbage collected when it's no longer in use.
-     */
-    private final RowSetChangeListener parentRowEventHandler = new RowSetChangeListener() {
-        public void rowAdded(RowSetChangeEvent e) {
-            fireRowAdded(e.getRow(), e.getRowNumber());
-        }
-    };
-	
-	/**
-	 * Makes an empty cached rowset.
-	 */
-	public CachedRowSet() throws SQLException {
-        this(null);
-	}
-
-    /**
-     * For internal use by {@link #createShared()} and
-     * {@link #createSharedSorted(RowComparator)}.
-     * 
-     * @param parent
-     *            The upstream source of this instance's data list.
-     */
-	private CachedRowSet(@Nullable CachedRowSet parent) {
-	    this.parent = parent;
-	}
 	
 	/**
 	 * This is the "populate" method for streaming result sets. This method will
@@ -147,13 +111,8 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	public void follow(ResultSet rs, int rowLimit, String ... extraColNames) throws SQLException {
 	    data = new ArrayList<Object[]>();
 	    logger.debug("crs@" + System.identityHashCode(this) + " starting to follow...");
-		/*
-		 * XXX: this upcases all the column names in the metadata for
-		 * the Dashboard's benefit.  We should add a switch for this
-		 * behaviour to the CachedRowSet API and then use it from the
-		 * Dashboard
-		 */
-		rsmd = new CachedResultSetMetaData(rs.getMetaData(), true);
+	    
+		rsmd = new CachedResultSetMetaData(rs.getMetaData(), this.makeUppercase);
     	int rsColCount = rsmd.getColumnCount();
     	int colCount = rsColCount + extraColNames.length;
 		for (String extraColName : extraColNames) {
@@ -189,6 +148,12 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 			
 			fireRowAdded(row, rowNum);
 			rowNum++;
+		}
+	}
+	
+	public void sort(RowComparator c) {
+		if (this.data != null) {
+			Collections.sort(this.data, c);
 		}
 	}
 
@@ -227,13 +192,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
      */
     public void populate(ResultSet rs, RowFilter filter, String ... extraColNames) throws SQLException {
 
-    	/*
-		 * XXX: this upcases all the column names in the metadata for
-		 * the Dashboard's benefit.  We should add a switch for this
-		 * behaviour to the CachedRowSet API and then use it from the
-		 * Dashboard
-		 */
-		rsmd = new CachedResultSetMetaData(rs.getMetaData(), true);
+		rsmd = new CachedResultSetMetaData(rs.getMetaData(), this.makeUppercase);
     	int rsColCount = rsmd.getColumnCount();
     	int colCount = rsColCount + extraColNames.length;
 		for (String extraColName : extraColNames) {
@@ -247,6 +206,11 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 
 		int rowNum = 0;
 		data = new ArrayList<Object[]>();
+
+		if (rs.getType() != ResultSet.TYPE_FORWARD_ONLY) {
+			rs.beforeFirst();
+		}
+		
 		while (rs.next()) {
 		    if (logger.isDebugEnabled()) logger.debug("Populating Row "+rowNum);
 			Object[] row = new Object[colCount];
@@ -267,37 +231,6 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
                 logger.debug("Skipped this row (rejected by filter)");
             }
 		}
-	}
-
-	/**
-	 * Creates a new instance of CachedRowSet that shares the same
-	 * underlying data as this instance.  This method is useful for
-	 * iterating over the same data in parallel, or in caching result
-	 * sets for re-use.
-	 */
-	public CachedRowSet createShared() throws SQLException {
-		return createSharedSorted(null);
-	}
-
-	/**
-	 * Creates a new instance of CachedRowSet that shares the same
-	 * underlying data as this instance, but that data will be
-	 * returned in the order determined by the given sort qualifier.
-	 */
-	public CachedRowSet createSharedSorted(RowComparator c) throws SQLException {
-		final CachedRowSet newRowSet;
-		if (c != null) {
-		    newRowSet = new CachedRowSet();
-			logger.debug("CREATING NEW ARRAYLIST");
-			newRowSet.data = new ArrayList<Object[]>(data);
-			Collections.sort(newRowSet.data, c);
-		} else {
-		    newRowSet = new CachedRowSet(this);
-			newRowSet.data = data;
-		}
-		newRowSet.rsmd = rsmd;
-
-		return newRowSet;
 	}
 
 	public static class RowComparator implements Comparator<Object[]>, java.io.Serializable {
@@ -403,7 +336,11 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
         if (resultSetFilter == null) {
             return true;
         } else {
-            return resultSetFilter.acceptsRow(data.get(row - 1));
+        	if (data == null) {
+        		return true;
+        	} else {
+        		return resultSetFilter.acceptsRow(data.get(row - 1));
+        	}
         }
     }
 
@@ -411,14 +348,25 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * Tells how many rows are in this row set.
 	 */
 	public int size() {
+		if (data == null) {
+			return 0;
+		}
 		return data.size();
+	}
+	
+	/**
+	 * Tells this cached result set if it should make all column names upper case.
+	 * @param makeUppercase
+	 */
+	public void setMakeUppercase(boolean makeUppercase) {
+		this.makeUppercase = makeUppercase;
 	}
 
 	/**
 	 * Returns the list of rows in this result set.
 	 */
 	public List<Object[]> getData() {
-		return data;
+		return data == null ? new ArrayList<Object[]>() : data;
 	}
 
 	/**
@@ -464,10 +412,6 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	        throw new NullPointerException("Null listener not allowed");
 	    }
 	    rowSetListeners.add(listener);
-	    
-	    if (rowSetListeners.size() == 1 && parent != null) {
-	        parent.addRowSetListener(parentRowEventHandler );
-	    }
 	}
 
     /**
@@ -477,16 +421,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
      * @param listener The listener to remove. Nulls are ignored.
      */
 	public void removeRowSetListener(@Nullable RowSetChangeListener listener) {
-	    try {
-	        rowSetListeners.remove(listener);
-	    } finally {
-	        // the condition doesn't test if we were actually listening to the parent
-	        // (perhaps rowSetListeners was already empty to start with), but it's
-	        // safe to try this remove operation even when it's not strictly necessary
-	        if (rowSetListeners.size() == 0 && parent != null) {
-	            parent.removeRowSetListener(parentRowEventHandler);
-	        }
-	    }
+        rowSetListeners.remove(listener);
 	}
 
     /**
@@ -1038,7 +973,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * cursor on the first row.
 	 */
     public boolean isBeforeFirst() throws SQLException {
-		if (data == null) throw new SQLException("This CachedRowSet is not populated yet");
+		if (data == null) return false;
 		return rownum == BEFORE_FIRST_ROW;
 	}
       
@@ -1048,7 +983,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * leave the cursor on an invalid row.
 	 */
 	public boolean isAfterLast() throws SQLException {
-		if (data == null) throw new SQLException("This CachedRowSet is not populated yet");
+		if (data == null) return false;
 		return rownum >= data.size();
 	}
 
@@ -1057,7 +992,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * row.
 	 */
     public boolean isFirst() throws SQLException {
-		if (data == null) throw new SQLException("This CachedRowSet is not populated yet");
+		if (data == null) return false;
 		return rownum == 0;
 	}
  
@@ -1066,7 +1001,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * row.
 	 */
     public boolean isLast() throws SQLException {
-		if (data == null) throw new SQLException("This CachedRowSet is not populated yet");
+		if (data == null) return false;
 		return rownum == (data.size() - 1);
 	}
 
@@ -1083,7 +1018,9 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * calling absolute(size()).
 	 */ 
     public void afterLast() throws SQLException {
-		absolute(data.size());
+    	if (data != null) {
+    		absolute(data.size());
+    	}
 	}
 
 	/**
@@ -1122,7 +1059,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
      * cursor on a valid row (the getXXX() methods will work).
      */
     public boolean absolute(int row) throws SQLException {
-		if (data == null) throw new SQLException("This CachedRowSet is not populated yet");
+		if (data == null) return false;
 
 		curCol = -1;
 		curRow = null;
@@ -1190,7 +1127,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
      * <code>false</code> otherwise.
      */
     public boolean relative(int rows) throws SQLException {
-		if (data == null) throw new SQLException("This CachedRowSet is not populated yet.");
+		if (data == null) return false;
 
 		curCol = -1;
 		curRow = null;
@@ -1318,7 +1255,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * @return The number of rows in this result set.
 	 */
     public int getFetchSize() throws SQLException {
-		return data.size();
+		return data == null ? 0 : data.size();
 	}
 
 	/**

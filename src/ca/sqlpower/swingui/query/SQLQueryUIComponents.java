@@ -434,11 +434,12 @@ public class SQLQueryUIComponents {
         		while (hasNext) {
         			if (sqlResult) {
         				ResultSet rs = stmtExecutor.getResultSet();
-        				CachedRowSet rowSet = new CachedRowSet();
+        				CachedRowSet rowSet;
         				logger.debug("Populating cached row set");
         				if (rs instanceof CachedRowSet) {
-        					rowSet = ((CachedRowSet) rs).createShared();
+        					rowSet = (CachedRowSet)rs;
         				} else {
+        					rowSet = new CachedRowSet();
         					rowSet.populate(rs);
         				}
         				logger.debug("Result set row count is " + rowSet.size());
@@ -518,6 +519,7 @@ public class SQLQueryUIComponents {
                 while (hasNext) {
                 	if (sqlResult) {
                 		CachedRowSet crs = new CachedRowSet();
+                		crs.setMakeUppercase(false);
                 		crs.populate(stmt.getResultSet());
                 		resultSets.add(crs);
                 	} else {
@@ -994,7 +996,6 @@ public class SQLQueryUIComponents {
 	            }
 			});
 		}
-		
 	}
     
     /**
@@ -1326,17 +1327,19 @@ public class SQLQueryUIComponents {
     	
     	boolean dbSelected = databaseComboBox.getSelectedItem() != null;
     	
-    	executeAction.setEnabled(
-    			(stmtExecutor != null || dbSelected)
-    			&& (stmtExecutor != null && !stmtExecutor.isRunning())); 
-    	executeButton.setEnabled(
-    			(stmtExecutor != null || dbSelected)
-    			&& (stmtExecutor != null && !stmtExecutor.isRunning())); 
+    	executeAction.setEnabled(stmtExecutor != null || dbSelected);
+    	executeButton.setEnabled(stmtExecutor != null || dbSelected);
     	
     	boolean autoCommit = autoCommitToggleButton.isSelected();
     	
     	rollbackButton.setEnabled(!autoCommit && dbSelected);
     	commitButton.setEnabled(!autoCommit && dbSelected);
+    	
+    	if (this.stmtExecutor != null) {
+    		stopButton.setEnabled(this.stmtExecutor.isRunning());
+    	} else {
+    		stopButton.setEnabled(false);
+    	}
     }
     
     /**
@@ -1562,7 +1565,6 @@ public class SQLQueryUIComponents {
 
     	searchDocument = new DefaultStyledDocument();
     	for (CachedRowSet rs : resultSets) {
-    		CachedRowSet r = rs.createShared();
     		JTable tempTable;
     		FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "pref, fill:min(pref;50dlu):grow");
     		DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
@@ -1573,7 +1575,7 @@ public class SQLQueryUIComponents {
     			JTextField tableFilterTextField = new JTextField(searchDocument, null, 0);
     			tableAreaBuilder.append(searchLabel, tableFilterTextField);
     		}
-    		ResultSetTableModel model = new ResultSetTableModel(r);
+    		ResultSetTableModel model = new ResultSetTableModel(rs);
     		StreamingRowSetListener rowSetListener = new StreamingRowSetListener(rs, model);
     		rs.addRowSetListener(rowSetListener);
     		rowSetListeners.add(rowSetListener);

@@ -46,7 +46,7 @@ public interface StatementExecutor {
 	 * Retrieves the current result as a ResultSet object. This method should be
 	 * called only once per result.
 	 */
-	ResultSet getResultSet();
+	ResultSet getResultSet() throws SQLException;
 
 	/**
 	 * Retrieves the current result as an update count; if the result is a
@@ -65,7 +65,7 @@ public interface StatementExecutor {
 	 * // stmt is a Statement object ((stmt.getMoreResults() == false) &&
 	 * (stmt.getUpdateCount() == -1))
 	 */
-	boolean getMoreResults();
+	boolean getMoreResults() throws SQLException;
 	
 	/**
 	 * This will return the SQL string that is to be executed by this
