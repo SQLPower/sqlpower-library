@@ -1183,6 +1183,17 @@ public class SQLTable extends SQLObject {
 	}
 
 	/**
+	 * Because we constrained the return type on getParent there needs to be a
+	 * setter that has the same constraint otherwise the reflection in the undo
+	 * events will not find a setter to match the getter and won't be able to
+	 * undo parent property changes.
+	 */
+	@Mutator
+	public void setParent(SQLObject parent) {
+		super.setParent(parent);
+	}
+
+	/**
 	 * @return An empty string if the catalog for this table is null;
 	 * otherwise, getCatalog().getCatalogName().
 	 */

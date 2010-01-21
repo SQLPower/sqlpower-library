@@ -713,6 +713,17 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	public SQLTable getParent() {
 		return (SQLTable) super.getParent();
 	}
+	
+	/**
+	 * Because we constrained the return type on getParent there needs to be a
+	 * setter that has the same constraint otherwise the reflection in the undo
+	 * events will not find a setter to match the getter and won't be able to
+	 * undo parent property changes.
+	 */
+	@Mutator
+	public void setParent(SQLTable parent) {
+		super.setParent(parent);
+	}
 
 	/**
      * Returns this column's nullability.

@@ -187,6 +187,17 @@ public class SQLIndex extends SQLObject {
         public SQLIndex getParent() {
             return (SQLIndex) super.getParent();
         }
+        
+    	/**
+    	 * Because we constrained the return type on getParent there needs to be a
+    	 * setter that has the same constraint otherwise the reflection in the undo
+    	 * events will not find a setter to match the getter and won't be able to
+    	 * undo parent property changes.
+    	 */
+        @Mutator
+    	public void setParent(SQLIndex parent) {
+    		super.setParent(parent);
+    	}
 
         @Override
         @Transient @Accessor
@@ -495,6 +506,17 @@ public class SQLIndex extends SQLObject {
     public SQLTable getParent() {
         return (SQLTable) super.getParent();
     }
+    
+	/**
+	 * Because we constrained the return type on getParent there needs to be a
+	 * setter that has the same constraint otherwise the reflection in the undo
+	 * events will not find a setter to match the getter and won't be able to
+	 * undo parent property changes.
+	 */
+    @Mutator
+	public void setParent(SQLTable parent) {
+		setParentHelper(parent);
+	}
 
     @Override
     @Transient @Accessor
@@ -530,6 +552,14 @@ public class SQLIndex extends SQLObject {
     @Override
     @Mutator
     public void setParent(SPObject parent) {
+    	setParentHelper(parent);
+    }
+    
+    /**
+     * See the documentation on {@link #setParent(SQLTable)} for why
+     * setting the parent seems kind of goofy.
+     */
+    private void setParentHelper(SPObject parent) {
     	if (getParent() != null) {
             getParent().removeSPListener(removeColumnListener);
         }

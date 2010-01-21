@@ -239,8 +239,20 @@ public class SQLSchema extends SQLObject {
 	}
 	
 	@Override
+	@Accessor
 	public SQLObject getParent() {
 		return (SQLObject) super.getParent();
+	}
+	
+	/**
+	 * Because we constrained the return type on getParent there needs to be a
+	 * setter that has the same constraint otherwise the reflection in the undo
+	 * events will not find a setter to match the getter and won't be able to
+	 * undo parent property changes.
+	 */
+	@Mutator
+	public void setParent(SQLObject parent) {
+		super.setParent(parent);
 	}
 
 	/**

@@ -212,6 +212,17 @@ public class SQLCatalog extends SQLObject {
 	}
 	
 	/**
+	 * Because we constrained the return type on getParent there needs to be a
+	 * setter that has the same constraint otherwise the reflection in the undo
+	 * events will not find a setter to match the getter and won't be able to
+	 * undo parent property changes.
+	 */
+	@Mutator
+	public void setParent(SQLDatabase parent) {
+		super.setParent(parent);
+	}
+	
+	/**
 	 * Gets the value of nativeTerm
 	 *
 	 * @return the value of nativeTerm

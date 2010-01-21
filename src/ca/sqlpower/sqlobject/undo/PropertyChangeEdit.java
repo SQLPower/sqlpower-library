@@ -20,6 +20,7 @@
 package ca.sqlpower.sqlobject.undo;
 
 import java.beans.PropertyChangeEvent;
+import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 
 import javax.swing.undo.AbstractUndoableEdit;
@@ -28,6 +29,8 @@ import javax.swing.undo.CannotUndoException;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.log4j.Logger;
+
+import ca.sqlpower.object.SPObject;
 
 /**
  * This is the generic edit class that dynamically modifies bean properties
@@ -54,7 +57,13 @@ public class PropertyChangeEdit extends AbstractUndoableEdit {
     	logger.debug("Undoing Property change: Setting " + sourceEvent.getPropertyName() + " from " + sourceEvent.getNewValue() + " to " + sourceEvent.getOldValue());
         super.undo();
         try {
-            Method setter = PropertyUtils.getWriteMethod(PropertyUtils.getPropertyDescriptor(sourceEvent.getSource(), sourceEvent.getPropertyName()));
+            final PropertyDescriptor propertyDescriptor = PropertyUtils.getPropertyDescriptor(sourceEvent.getSource(), sourceEvent.getPropertyName());
+            logger.debug("Found property descriptor " + propertyDescriptor);
+            if (logger.isDebugEnabled()) {
+            	PropertyDescriptor[] propertyDescriptors = PropertyUtils.getPropertyDescriptors(sourceEvent.getSource());
+            	logger.debug("Descriptor has write method " + propertyDescriptor.getWriteMethod());
+            }
+			Method setter = PropertyUtils.getWriteMethod(propertyDescriptor);
             logger.info("Found setter: " + setter.getName());
             setter.invoke(sourceEvent.getSource(), sourceEvent.getOldValue());
 
