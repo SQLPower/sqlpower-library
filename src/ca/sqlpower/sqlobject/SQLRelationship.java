@@ -1472,12 +1472,12 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		public String getShortDisplayName() {
 			if (pkColumn == null || fkColumn == null) return "Incomplete mapping";
 			
-			String pkTableName = null;
-			if (pkColumn.getParent() != null) {
-				pkTableName = pkColumn.getParent().getName();
+			String fkTableName = null;
+			if (fkColumn.getParent() != null) {
+				fkTableName = fkColumn.getParent().getName();
 			}
-			return fkColumn.getName()+" - "+
-				pkTableName+"."+pkColumn.getName();
+			return pkColumn.getName() + " - " +
+				fkTableName + "." + fkColumn.getName();
 		}
 
 		/**
