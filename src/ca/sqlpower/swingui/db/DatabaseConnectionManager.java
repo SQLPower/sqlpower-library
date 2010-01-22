@@ -141,7 +141,13 @@ public class DatabaseConnectionManager {
 	private final Action jdbcDriversAction = new AbstractAction(Messages.getString("DatabaseConnectionManager.jdbcDriversActionName")){ //$NON-NLS-1$
 
 		public void actionPerformed(ActionEvent e) {
-			dsTypeDialogFactory.showDialog((d != null) ? d : DatabaseConnectionManager.this.currentOwner);
+			
+			// Was previously: dsTypeDialogFactory.showDialog((d != null) ? d : DatabaseConnectionManager.this.currentOwner);
+			// However, this caused a bug where a ghost dialog was created after the jdbcDialog
+			// was closed. The jdbcDialog is now owned by a different window, and this dialog can be selected out from under
+			// it. This was the only way of having the jdbcDialog maintain its state between closings.
+			
+			dsTypeDialogFactory.showDialog(DatabaseConnectionManager.this.currentOwner);
 		}
 	};
 	
