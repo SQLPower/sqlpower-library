@@ -107,16 +107,16 @@ public class OracleResultSetDecorator extends ResultSetDecorator {
 				return oracleTimestamp;
 			}
 		} catch (SecurityException e) {
-			SQLException ex = new SQLException("Cannot convert Oracle Timestamp class because of a security exception: " + e.getMessage());
-			ex.setStackTrace(e.getStackTrace());
+			SQLException ex = new SQLException("Cannot convert Oracle Timestamp class because of a security exception.");
+			ex.initCause(e);
 			throw ex;
 		} catch (NoSuchMethodException e) {
-			SQLException ex = new SQLException("Cannot convert Oracle Timestamp class because the getTimestamp method could not be found: " + e.getMessage());
-			ex.setStackTrace(e.getStackTrace());
+			SQLException ex = new SQLException("Cannot convert Oracle Timestamp class because the getTimestamp method could not be found");
+			ex.initCause(e);
 			throw ex;
 		} catch (Exception e) {
-			SQLException ex = new SQLException("Cannot convert Oracle Timestamp class because the an exception was encountered: " + e.getMessage());
-			ex.setStackTrace(e.getStackTrace());
+			SQLException ex = new SQLException("Cannot convert Oracle Timestamp class because the an exception was encountered");
+			ex.initCause(e);
 			throw ex;
 		}
 	}
