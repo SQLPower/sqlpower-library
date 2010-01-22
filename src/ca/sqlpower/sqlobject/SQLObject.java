@@ -268,8 +268,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 			populate();
 			return getChildrenWithoutPopulating(type);
 		} catch (SQLObjectException e) {
-			throw new RuntimeException("Could not populate " + getName() + 
-					": " + e.getMessage());
+			throw new RuntimeException("Could not populate " + getName(), e);
 		}
 	}
 	

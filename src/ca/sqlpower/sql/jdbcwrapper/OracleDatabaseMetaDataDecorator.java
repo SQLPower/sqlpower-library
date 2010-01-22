@@ -471,7 +471,7 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 		        sql.append("      AND fc.constraint_name = f.constraint_name\n");
 		        sql.append("      AND fc.table_name = f.table_name\n");
 		        sql.append("      AND fc.position = pc.position\n");
-		        sql.append("ORDER BY pktable_schem, pktable_name, key_seq");
+		        sql.append("ORDER BY fktable_cat, fktable_schem, fktable_name, key_seq");
 		        
 		        logger.debug("getExportedKeys() sql statement was: " + sql.toString());
 		        rs = stmt.executeQuery(sql.toString());
