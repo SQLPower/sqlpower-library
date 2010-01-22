@@ -98,4 +98,9 @@ public class ConstructorParameterObject {
 	public String getValue() {
 		return value;
 	}
+	
+	@Override
+	public String toString() {
+		return "name: " + name + ", property: " + property + ", type: " + type + ", value: " + value;
+	}
 }
