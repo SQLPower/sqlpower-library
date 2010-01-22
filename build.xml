@@ -127,13 +127,13 @@
 	</target>
 	
 	<target name="jar" depends="compile-with-annotations, test">
-		<jar jarfile="${build}/${dist.jar}" basedir="${build}" 
+		<jar jarfile="${dist.dir}/${dist.jar}" basedir="${build}" 
 			includes="META-INF/*,ca/**">
 		</jar>
 	</target>
 
 	<target name="dist" depends="jar, pmd, pmd-cpd, findbugs, javadoc">
-		<copy file="${build}/${dist.jar}" todir="${dist.dir}"/>
+		<!-- just a metatarget that brings the dependencies together -->
 	</target>
 
 	<target name="clean">
