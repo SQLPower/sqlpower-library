@@ -459,14 +459,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		        break;
 		    }
 		}
-		
-		if (!getParent().getChildrenWithoutPopulating(SQLRelationship.class).contains(this)) {
-			getParent().addChild(this);
-		}
-		
-		if (!fkTable.getChildrenWithoutPopulating(SQLImportedKey.class).contains(foreignKey)) {
-			fkTable.addChild(foreignKey);
-		}
+	
+		getParent().addChild(this);
+		fkTable.addChild(foreignKey);
 		
 		try {
 			fkTable.setMagicEnabled(false);
