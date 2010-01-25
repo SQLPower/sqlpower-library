@@ -1388,6 +1388,11 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		public boolean isPopulated() {
 			return relationship.isPopulated();
 		}
+		
+		@Override
+		public final void updateToMatch(SQLObject source) throws SQLObjectException {
+			//Do nothing, this is handled by the SQLRelationship
+		}
 	}
 	
 	// -------------------------- COLUMN MAPPING ------------------------
