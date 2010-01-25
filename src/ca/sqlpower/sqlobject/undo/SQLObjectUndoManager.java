@@ -203,8 +203,6 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
                 return;
 
             addEdit(new SQLObjectChildEdit(e));
-            
-            SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
         }
         
         /**
