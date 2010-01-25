@@ -715,7 +715,7 @@ public class SPSessionPersister implements SPPersister {
 					persistedObjects);
 			if (spo != null) {
 				SPListener removeChildOnAddListener = new SPListener() {
-					public void propertyChange(PropertyChangeEvent arg0) {
+					public void propertyChanged(PropertyChangeEvent arg0) {
 						//do nothing
 					}
 					public void childRemoved(SPChildEvent e) {

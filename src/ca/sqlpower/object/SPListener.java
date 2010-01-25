@@ -19,6 +19,7 @@
 
 package ca.sqlpower.object;
 
+import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
 import ca.sqlpower.sqlobject.undo.CompoundEventListener;
@@ -28,7 +29,7 @@ import ca.sqlpower.util.TransactionEvent;
  * This listener can be added to any {@link SPObject}s and is notified of
  * property and child changes.
  */
-public interface SPListener extends PropertyChangeListener, CompoundEventListener {
+public interface SPListener extends CompoundEventListener {
 
     /**
      * Called when a child is added to an object this listener is attached to.
@@ -80,5 +81,14 @@ public interface SPListener extends PropertyChangeListener, CompoundEventListene
      *            describing why the transaction was rolled back.
      */
     void transactionRollback(TransactionEvent e);
+
+	/**
+	 * This method gets called when a bound property is changed.
+	 * 
+	 * @param evt
+	 *            A PropertyChangeEvent object describing the event source and
+	 *            the property that has changed.
+	 */
+    public void propertyChanged(PropertyChangeEvent evt);
     
 }

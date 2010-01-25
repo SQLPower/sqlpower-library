@@ -70,7 +70,13 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     
     private List<ColumnMapping> mappings = new ArrayList<ColumnMapping>();
     
-    private SQLImportedKey foreignKey;
+    /**
+     * This is the imported side of this SQLRelationship. The imported key holds
+     * a reference to this relationship. The imported key is added  as a child
+     * to the child table to let the relationship exist as a child of both the
+     * parent and child tables.
+     */
+    private final SQLImportedKey foreignKey;
 
     /**
      * The enumeration of all referential integrity constraint checking
@@ -287,18 +293,14 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
      */
     private String textForChildLabel = "";
 
+    @Constructor
 	public SQLRelationship() {
-		pkCardinality = ONE;
+    	pkCardinality = ONE;
 		fkCardinality = ZERO | ONE | MANY;
 		fkColumnManager = new RelationshipManager();
+		foreignKey = new SQLImportedKey(this);
 	}
-	
-	@Constructor
-	public SQLRelationship(@ConstructorParameter(propertyName = "foreignKey") SQLImportedKey foreignKey) {
-		this();
-		this.foreignKey = foreignKey;
-	}
-	
+    
 	/**
      * A copy constructor that returns a copy of the provided SQLRelationship
      * with the following properties copied: 
@@ -379,14 +381,13 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     }
 
 	public void attachListeners() throws SQLObjectException {
-		fkColumnManager.target = getParent();
 		SQLPowerUtils.listenToHierarchy(getParent(), fkColumnManager);
 		SQLPowerUtils.listenToHierarchy(getFkTable(), fkColumnManager);
 	}
 
 	private void detachListeners(){
-        if (fkColumnManager.target != null)
-            SQLPowerUtils.unlistenToHierarchy(fkColumnManager.target, fkColumnManager);
+        if (getParent() != null)
+            SQLPowerUtils.unlistenToHierarchy(getParent(), fkColumnManager);
         if (getFkTable() != null)
             SQLPowerUtils.unlistenToHierarchy(getFkTable(), fkColumnManager);
 	}
@@ -409,7 +410,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 					getName() + " to " + fkTable.getName() + " as it is already attached to " + 
 					getFkTable().getName());
 		SQLTable oldTable = getFkTable();
-		foreignKey = new SQLImportedKey(this);
 		foreignKey.setParent(fkTable);
 		firePropertyChange("fkTable", oldTable, fkTable);
 	}
@@ -447,6 +447,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		SQLTable fkTable = getFkTable();
 		if(fkTable == null) throw new NullPointerException("Null fkTable not allowed");
 
+		//Listeners detached so they don't get added twice when adding the 
+		//relationship to parent tables?
 		detachListeners();
 
 		boolean alreadyExists = false;
@@ -648,12 +650,10 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			while (crs.next()) {
 				currentKeySeq = crs.getInt(9);
 				if (currentKeySeq == 1) {
-					SQLImportedKey foreignKey = new SQLImportedKey(r);
-					foreignKey.setParent(db.getTableByName(	crs.getString(5),  // catalog
+					r = new SQLRelationship();
+					r.setFkTable(db.getTableByName(	crs.getString(5),  // catalog
 							crs.getString(6), // schema
 							crs.getString(7))); // table
-					
-					r = new SQLRelationship(foreignKey);
 					newKeys.add(r);
 				}
 				try {
@@ -811,8 +811,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 */
 	protected class RelationshipManager implements SPListener {
 		
-		private SPObject target;
-		
 		public void childAdded(SPChildEvent e) {
 			if (!((SQLObject) e.getSource()).isMagicEnabled()){
 				logger.debug("Magic disabled; ignoring children inserted event "+e);
@@ -856,7 +854,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				try {
 					if (e.getChild() == SQLRelationship.this) {
 						SQLImportedKey fk = foreignKey;
-						setForeignKey(null);
 						fk.getParent().removeChild(fk);
 					} else {
 						getParent().removeChild(SQLRelationship.this);
@@ -866,7 +863,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				}
 
 				logger.debug("Removing references for mappings: "+getChildren());
-
+				
 				// references to fk columns are removed in reverse order in case
 				// this relationship is reconnected in the future. (if not removed
 				// in reverse order, the PK sequence numbers will change as each
@@ -887,7 +884,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			}
 		}
 
-		public void propertyChange(PropertyChangeEvent e) {
+		public void propertyChanged(PropertyChangeEvent e) {
 			if (!((SQLObject) e.getSource()).isMagicEnabled()){
 				logger.debug("Magic disabled; ignoring sqlobject changed event "+e);
 				return;
@@ -1227,16 +1224,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		return getParent();
 	}
 
-	@Accessor
+	@Transient @Accessor
 	public SQLImportedKey getForeignKey() {
 		return foreignKey;
-	}
-	
-	@Mutator
-	public void setForeignKey(SQLImportedKey k) {
-		SQLImportedKey oldVal = foreignKey;
-		foreignKey = k;
-		firePropertyChange("foreignKey", oldVal, k);
 	}
 	
 	@Mutator
@@ -1251,11 +1241,20 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	private void setParentHelper(SPObject parent) {
 		SPObject oldVal = getParent();
 		super.setParent(parent);
-		if (isMagicEnabled() && parent != null && parent != oldVal) {
-			try {
-				attachRelationship(true);
-			} catch (SQLObjectException e) {
-				throw new RuntimeException(e);
+		if (parent != null) {
+			if (isMagicEnabled() && parent != oldVal) {
+				try {
+					attachRelationship(true);
+				} catch (SQLObjectException e) {
+					throw new RuntimeException(e);
+				}
+			} else {
+				//Column manager is removed first in case it has already been
+				//added before. One case is when the relationship is being re-added 
+				//to the same table it was removed from by the undo system. 
+				SQLPowerUtils.unlistenToHierarchy(getParent(), fkColumnManager);
+				
+				SQLPowerUtils.listenToHierarchy(getParent(), fkColumnManager);
 			}
 		}
 	}
@@ -1275,14 +1274,11 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 */
 	public static class SQLImportedKey extends SQLObject {
 
-		private SQLRelationship relationship;
+		private final SQLRelationship relationship;
 
 		@Constructor
-		public SQLImportedKey() {
-			super();
-		}
-		
-		public SQLImportedKey(SQLRelationship relationship) {
+		public SQLImportedKey(
+				@ConstructorParameter(propertyName="relationship") SQLRelationship relationship) {
 			super();
 			this.relationship = relationship;
 		}
@@ -1315,6 +1311,14 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		@Mutator
 		public void setParent(SQLTable parent) {
 			super.setParent(parent);
+			if (parent != null) {
+				//Column manager is removed first in case it has already been
+				//added before. One case is when the relationship is being re-added 
+				//to the same table it was removed from by the undo system. 
+				SQLPowerUtils.unlistenToHierarchy(getParent(), relationship.fkColumnManager);
+
+				SQLPowerUtils.listenToHierarchy(getParent(), relationship.fkColumnManager);
+			}
 		}
 		
 		@Override
@@ -1355,7 +1359,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 
 		public void removeDependency(SPObject dependency) {
-			getParent().removeImportedKey(this);
+			throw new UnsupportedOperationException("Need to decide the correct " +
+					"dependency of this object.");
 		}
 		
 		@Accessor
@@ -1363,17 +1368,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			return relationship;
 		}
 
-		/**
-		 * Note that this should probably not be called outside of the
-		 * persistence framework.
-		 */
-		@Mutator
-		public void setRelationship(SQLRelationship relationship) {
-			SQLRelationship oldVal = this.relationship;
-			this.relationship = relationship;
-			firePropertyChange("relationship", oldVal, relationship);
-		}
-		
 		@Override
 		public String toString() {
 			return getShortDisplayName();

@@ -341,7 +341,7 @@ public abstract class AbstractSPObject implements SPObject {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
         	for (int i = staticListeners.size() - 1; i >= 0; i--) {
         		SPListener listener = staticListeners.get(i);
-        		listener.propertyChange(evt);
+        		listener.propertyChanged(evt);
         	}
         }
         return evt;
@@ -371,7 +371,7 @@ public abstract class AbstractSPObject implements SPObject {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
         	for (int i = staticListeners.size() - 1; i >= 0; i--) {
         		SPListener listener = staticListeners.get(i);
-        		listener.propertyChange(evt);
+        		listener.propertyChanged(evt);
         	}
         }
         return evt;
@@ -407,7 +407,7 @@ public abstract class AbstractSPObject implements SPObject {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
         	for (int i = staticListeners.size() - 1; i >= 0; i--) {
         		SPListener listener = staticListeners.get(i);
-        		listener.propertyChange(evt);
+        		listener.propertyChanged(evt);
         	}
         }
         return evt;

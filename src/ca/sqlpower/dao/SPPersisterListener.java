@@ -132,7 +132,7 @@ public class SPPersisterListener implements SPListener {
 		}
 	}
 
-	public void propertyChange(PropertyChangeEvent evt) {
+	public void propertyChanged(PropertyChangeEvent evt) {
 		DataType dataType;
 		if (evt.getNewValue() != null) {
 			dataType = PersisterUtils.getDataType(evt.getNewValue().getClass());

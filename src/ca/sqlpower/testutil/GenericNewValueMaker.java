@@ -262,7 +262,8 @@ public class GenericNewValueMaker implements NewValueMaker {
         		newVal = UpdateDeleteRule.CASCADE;
         	}
         } else if (valueType.isAssignableFrom(SQLImportedKey.class)) {
-        	SQLImportedKey key = new SQLImportedKey();
+        	SQLRelationship relationship = (SQLRelationship) makeNewValue(SQLTable.class, null, "parent of importedKey");
+        	SQLImportedKey key = relationship.getForeignKey();
         	SQLTable table = (SQLTable) makeNewValue(SQLTable.class, null, "parent of imported key");
         	table.addImportedKey(key);
         	newVal = key;

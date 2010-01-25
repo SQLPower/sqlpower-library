@@ -146,13 +146,13 @@ public class TestUndoManager extends TestCase {
         SQLObjectUndoableEventAdapter adapter = undoManager.getEventAdapter();
         myTester.addSPListener(adapter);
         myTester.begin("Test Compound undo");
-        adapter.propertyChange(
+        adapter.propertyChanged(
                 new PropertyChangeEvent(
                         myTester, "foo", 0, 1));
-        adapter.propertyChange(
+        adapter.propertyChanged(
                 new PropertyChangeEvent(
                         myTester, "foo", 1, 2));
-        adapter.propertyChange(
+        adapter.propertyChanged(
                 new PropertyChangeEvent(
                         myTester, "foo", 2, 3));
         myTester.commit();

@@ -20,6 +20,7 @@
 package ca.sqlpower.sqlobject.undo;
 
 import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +36,7 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
+import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -48,7 +50,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
      * Converts received SQLObjectEvents into UndoableEdits, PropertyChangeEvents
      * into specific edits and adds them to an UndoManager.
      */
-    public class SQLObjectUndoableEventAdapter implements SPListener {
+    public class SQLObjectUndoableEventAdapter implements SPListener, PropertyChangeListener {
 
         private final class CompEdit extends CompoundEdit {
 
@@ -203,6 +205,22 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
             addEdit(new SQLObjectChildEdit(e));
             
             SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
+        }
+        
+        /**
+         * XXX This should take an event of a type specific to SPObjects.
+         */
+        public void propertyChanged(PropertyChangeEvent e) {
+            if (SQLObjectUndoManager.this.isUndoOrRedoing())
+                return;
+            if (e.getSource() instanceof SQLDatabase && 
+            		e.getPropertyName().equals("shortDisplayName")) {
+                // this is not undoable at this time.
+            } else {
+                SPObjectPropertyChangeUndoableEdit undoEvent = 
+                	new SPObjectPropertyChangeUndoableEdit(e);
+                addEdit(undoEvent);
+            }
         }
 
         /**

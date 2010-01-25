@@ -277,7 +277,8 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 */
 	public void visitConstructorDeclaration(ConstructorDeclaration d) {
 		
-		if (!constructorFound && d.getAnnotation(Constructor.class) != null) {
+		if (!constructorFound && d.getAnnotation(Constructor.class) != null 
+				&& d.getSimpleName().equals(typeDecl.getSimpleName())) {
 			
 			for (ParameterDeclaration pd : d.getParameters()) {
 				ConstructorParameter cp = pd.getAnnotation(ConstructorParameter.class);

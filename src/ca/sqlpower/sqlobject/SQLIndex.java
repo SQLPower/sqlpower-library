@@ -95,7 +95,7 @@ public class SQLIndex extends SQLObject {
              * The process of doing the update will cause the SQLIndex.Column
              * object to fire an event of its own.
              */
-            public void propertyChange(PropertyChangeEvent e) {
+            public void propertyChanged(PropertyChangeEvent e) {
                 if ("name".equals(e.getPropertyName())) {
                     setName((String) e.getNewValue());
                 }
@@ -399,7 +399,7 @@ public class SQLIndex extends SQLObject {
             public void childAdded(SPChildEvent e) {
             	// no-op
             }
-            public void propertyChange(PropertyChangeEvent evt) {
+            public void propertyChanged(PropertyChangeEvent evt) {
             	// no-op
             }
             public void transactionStarted(TransactionEvent e) {

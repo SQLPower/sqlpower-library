@@ -203,7 +203,7 @@ public abstract class AbstractSPListener implements SPListener {
         //meant to be overridden by classes extending this listener
     }
 
-    public final void propertyChange(PropertyChangeEvent evt) {
+    public final void propertyChanged(PropertyChangeEvent evt) {
         if (inTransactionMap.get(evt.getSource()) != null 
                 && inTransactionMap.get(evt.getSource()) > 0) {
             List<Object> events = eventMap.get(evt.getSource());

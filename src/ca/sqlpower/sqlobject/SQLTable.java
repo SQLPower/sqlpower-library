@@ -537,7 +537,6 @@ public class SQLTable extends SQLObject {
 		int index = importedKeys.indexOf(k);
 		if (index != -1) {
 			 importedKeys.remove(index);
-			 k.setParent(null);
 			 fireChildRemoved(SQLRelationship.class, k, index);
 			 return true;
 		}
@@ -562,7 +561,6 @@ public class SQLTable extends SQLObject {
 		int index = exportedKeys.indexOf(r);
 		if (index != -1) {
 			 exportedKeys.remove(index);
-			 r.setParent(null);
 			 fireChildRemoved(SQLRelationship.class, r, index);
 			 return true;
 		}
