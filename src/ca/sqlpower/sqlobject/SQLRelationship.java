@@ -1178,30 +1178,44 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	/**
 	 * Sets the value of identifying, and moves the FK columns into or
 	 * out of the FK Table's primary key as appropriate.
+	 * <p>
+	 * XXX Does anything in this method actually throw a SQLObjectException?
 	 *
 	 * @param argIdentifying Value to assign to this.identifying
 	 */
 	@Mutator
 	public void setIdentifying(boolean argIdentifying) throws SQLObjectException {
-		boolean oldIdentifying = this.identifying;
-		if (identifying != argIdentifying) {
-			identifying = argIdentifying;
+		try {
+			fireTransactionStarted("Setting " + getName() + " to be identifying: " + argIdentifying);
 			
-			if (identifying) {
-				for (ColumnMapping m : getChildren(ColumnMapping.class)) {
-					if (m.getFkColumn().getPrimaryKeySeq() == null) {
-						m.getFkColumn().setPrimaryKeySeq(new Integer(getFkTable().getPkSize()));
+			boolean oldIdentifying = this.identifying;
+			if (identifying != argIdentifying) {
+				identifying = argIdentifying;
+
+				if (identifying) {
+					
+					firePropertyChange("identifying", oldIdentifying, argIdentifying);
+					
+					for (ColumnMapping m : getChildren(ColumnMapping.class)) {
+						if (m.getFkColumn().getPrimaryKeySeq() == null) {
+							m.getFkColumn().setPrimaryKeySeq(new Integer(getFkTable().getPkSize()));
+						}
+					}	
+					
+				} else {
+					for (ColumnMapping m : getChildren(ColumnMapping.class)) {
+						if (m.getFkColumn().getPrimaryKeySeq() != null) {
+							m.getFkColumn().setPrimaryKeySeq(null);
+						}
 					}
-				}
-			} else {
-				for (ColumnMapping m : getChildren(ColumnMapping.class)) {
-					if (m.getFkColumn().getPrimaryKeySeq() != null) {
-						m.getFkColumn().setPrimaryKeySeq(null);
-					}
+					
+					firePropertyChange("identifying", oldIdentifying, argIdentifying);
 				}
 			}
-			
-			firePropertyChange("identifying", oldIdentifying, argIdentifying);
+		} catch (RuntimeException e) {
+			fireTransactionRollback(e.getMessage());
+		} finally {
+			fireTransactionEnded();
 		}
 	}
 	
