@@ -29,11 +29,16 @@ import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.SPChildEvent.EventType;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLIndex;
-import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLRelationship;
 import ca.sqlpower.sqlobject.SQLTable;
 
+/**
+ * This is an edit for SPObject events involving children.
+ * <p>
+ * TODO This class requires a rename to be SPObjectChildEdit but Luc
+ * demands no more API changes for today.
+ */
 public class SQLObjectChildEdit extends AbstractUndoableEdit {
 
 	private static final Logger logger = Logger
@@ -50,8 +55,8 @@ public class SQLObjectChildEdit extends AbstractUndoableEdit {
 	
 	public void removeChild(){
 		logger.debug("Removing child " + e.getChildType().getSimpleName() + " from parent " + e.getSource().getClass().getSimpleName());
-		SQLObject source = (SQLObject) e.getSource();
-		SQLObject parent = (SQLObject) source.getParent();
+		SPObject source = e.getSource();
+		SPObject parent = source.getParent();
 		try {
 			if (parent != null) {
 				parent.setMagicEnabled(false);
@@ -73,14 +78,8 @@ public class SQLObjectChildEdit extends AbstractUndoableEdit {
 	
 	public void addChild() throws SQLObjectException {
 		logger.debug("Adding child " + e.getChildType().getSimpleName() + " to parent " + e.getSource().getClass().getSimpleName());
-		SQLObject source = (SQLObject) e.getSource();
-		SPObject spParent = source.getParent();
-		SQLObject parent;
-		if (spParent instanceof SQLObject) {
-			parent = (SQLObject) spParent;
-		} else {
-			parent = null;
-		}
+		SPObject source = e.getSource();
+		SPObject parent = source.getParent();
 		try{
 			if (parent != null) {
 				parent.setMagicEnabled(false);
