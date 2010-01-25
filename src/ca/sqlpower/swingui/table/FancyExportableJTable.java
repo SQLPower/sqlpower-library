@@ -88,7 +88,7 @@ public class FancyExportableJTable extends EditableJTable {
 					};
 					JDialog d = DataEntryPanelBuilder.createDataEntryPanelDialog(
 					        fontSelector,
-					        (JFrame) parentTable.getTopLevelAncestor(),
+					        parentTable.getTopLevelAncestor(),
 					        "Choose a font",
 					        "OK",
 					        okCall,
