@@ -1186,7 +1186,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		boolean oldIdentifying = this.identifying;
 		if (identifying != argIdentifying) {
 			identifying = argIdentifying;
-			firePropertyChange("identifying",oldIdentifying,argIdentifying);
+			
 			if (identifying) {
 				for (ColumnMapping m : getChildren(ColumnMapping.class)) {
 					if (m.getFkColumn().getPrimaryKeySeq() == null) {
@@ -1200,6 +1200,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 					}
 				}
 			}
+			
+			firePropertyChange("identifying", oldIdentifying, argIdentifying);
 		}
 	}
 	
