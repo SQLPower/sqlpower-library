@@ -1504,9 +1504,6 @@ public class SQLTable extends SQLObject {
     	boolean oldPop = this.columnsPopulated;
 		this.columnsPopulated = columnsPopulated;
 		firePropertyChange("columnsPopulated", oldPop, columnsPopulated);
-		if (!columnsPopulated) {
-		    setUnpopulatedIfPartiallyPopulated();
-		}
 	}
     
     @Mutator
@@ -1514,9 +1511,6 @@ public class SQLTable extends SQLObject {
     	boolean oldPop = this.importedKeysPopulated;
 		this.importedKeysPopulated = importedKeysPopulated;
 		firePropertyChange("importedKeysPopulated", oldPop, importedKeysPopulated);
-		if (!columnsPopulated) {
-            setUnpopulatedIfPartiallyPopulated();
-        }
 	}
     
     @Mutator
@@ -1524,9 +1518,6 @@ public class SQLTable extends SQLObject {
     	boolean oldPop = this.exportedKeysPopulated;
 		this.exportedKeysPopulated = exportedKeysPopulated;
 		firePropertyChange("exportedKeysPopulated", oldPop, exportedKeysPopulated);
-		if (!columnsPopulated) {
-            setUnpopulatedIfPartiallyPopulated();
-        }
 	}
     
     @Mutator
@@ -1534,27 +1525,8 @@ public class SQLTable extends SQLObject {
     	boolean oldPop = this.indicesPopulated;
 		this.indicesPopulated = indicesPopulated;
 		firePropertyChange("indicesPopulated", oldPop, indicesPopulated);
-		if (!columnsPopulated) {
-            setUnpopulatedIfPartiallyPopulated();
-        }
 	}
 
-    /**
-     * Helper method for setting one of the populated child types to be
-     * unpopulated. This will set the top level "populated" value to false if it
-     * was previously true.
-     * <p>
-     * XXX This may not be necessary if we can get rid of the top level
-     * populated flag and just keep a set of populated flags, one for each child
-     * type.
-     */
-    private void setUnpopulatedIfPartiallyPopulated() {
-        if (populated) {
-            populated = false;
-            firePropertyChange("populated", true, false);
-        }
-    }
-    
     /**
      * Gets the name of this table's Primary Key index if it has one, otherwise
      * returns null.
