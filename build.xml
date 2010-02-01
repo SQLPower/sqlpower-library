@@ -128,8 +128,7 @@
 	
 	<target name="jar" depends="compile-with-annotations, test">
 		<mkdir dir="${dist.dir}"/>
-		<jar jarfile="${dist.dir}/${dist.jar}" basedir="${build}" 
-			includes="META-INF/*,ca/**">
+		<jar jarfile="${dist.dir}/${dist.jar}" basedir="${build}">
 		</jar>
 	</target>
 
