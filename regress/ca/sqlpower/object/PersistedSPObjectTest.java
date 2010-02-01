@@ -20,6 +20,7 @@
 package ca.sqlpower.object;
 
 import java.awt.Image;
+import java.beans.PropertyChangeEvent;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -44,6 +45,7 @@ import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.helper.SPPersisterHelperFactory;
 import ca.sqlpower.dao.helper.generated.SPPersisterHelperFactoryImpl;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
+import ca.sqlpower.object.SPChildEvent.EventType;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonBound;
@@ -52,6 +54,7 @@ import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.DatabaseConnectedTestCase;
+import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLObjectRoot;
 import ca.sqlpower.testutil.GenericNewValueMaker;
 import ca.sqlpower.testutil.NewValueMaker;
@@ -60,6 +63,7 @@ import ca.sqlpower.testutil.StubDataSourceCollection;
 import ca.sqlpower.util.SPSession;
 import ca.sqlpower.util.SessionNotFoundException;
 import ca.sqlpower.util.StubSPSession;
+import ca.sqlpower.util.TransactionEvent;
 
 /**
  * Classes that implement SPObject and need to be persisted must implement
@@ -68,6 +72,14 @@ import ca.sqlpower.util.StubSPSession;
 public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	
 	private static final Logger logger = Logger.getLogger(PersistedSPObjectTest.class);
+	
+	/**
+	 * Returns a class that is one of the child types of the object under test. An
+	 * object of this type must be able to be added as a child to the object without
+	 * error. If the object under test does not allow children or all of the children
+	 * of the object are final so none can be added, null will be returned.
+	 */
+	protected abstract Class<? extends SPObject> getChildClassType();
 	
 	/**
 	 * This workspace contains the root SPObject made in setup. This is only needed
@@ -606,4 +618,86 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		}
 		return beanNames;
 	}
+	
+    public void testSPPersisterAddsChild() throws Exception {
+    	
+    	SPObject spObject = getSPObjectUnderTest();
+    	int oldChildCount = spObject.getChildren().size();
+    	if (!spObject.allowsChildren()) return;
+    	
+    	Class<? extends SPObject> childClassType = getChildClassType();
+    	if (childClassType == null) return;
+    	
+    	SessionPersisterSuperConverter converter = new SessionPersisterSuperConverter(getPLIni(), getRootObject());
+    	SPPersisterHelperFactory converterHelperFactory = getPersisterHelperFactory(null, converter);
+    	SPSessionPersister persister = new SPSessionPersister("test", getSPObjectUnderTest(), converterHelperFactory);
+    	persister.setSession(getSPObjectUnderTest().getSession());
+    	SPPersisterHelperFactory persisterHelperFactory = getPersisterHelperFactory(persister, converter);
+    	SPPersisterListener listener = new SPPersisterListener(persisterHelperFactory);
+    	
+    	GenericNewValueMaker valueMaker = new GenericNewValueMaker(getRootObject(), getPLIni());
+    	SQLObject newChild = (SQLObject) valueMaker.makeNewValue(childClassType, null, "child");
+    	newChild.setParent(spObject);
+    	
+    	listener.childAdded(new SPChildEvent(spObject, childClassType, newChild, 0, EventType.ADDED));
+    	
+    	assertEquals(oldChildCount + 1, spObject.getChildren().size());
+    	assertEquals(newChild, spObject.getChildren().get(0));
+    }
+    
+    public void testAddChildFiresEvents() throws Exception {
+    	SPObject o = getSPObjectUnderTest();
+    	
+    	if (!o.allowsChildren()) return;
+    	
+    	Class<?> childClassType = getChildClassType();
+    	if (childClassType == null) return;
+    	
+    	CountingSPListener listener = new CountingSPListener();
+		
+    	o.addSPListener(listener);
+    	
+    	NewValueMaker valueMaker = new GenericNewValueMaker(getRootObject());
+    	SQLObject newChild = (SQLObject) valueMaker.makeNewValue(childClassType, null, "child");
+    	
+    	o.addChild(newChild, 0);
+    	
+    	assertEquals(1, listener.childAddedCount);
+    }
+    
+    
+    private class CountingSPListener implements SPListener {
+
+    	private int childAddedCount = 0;
+    	private int childRemovedCount = 0;
+    	private int transactionEndedCount = 0;
+    	private int transactionRollbackCount = 0;
+    	private int transactionStartedCount = 0;
+    	private int propertyChangedCount = 0;
+    	
+    	
+		public void childAdded(SPChildEvent e) {
+			childAddedCount++;
+		}
+
+		public void childRemoved(SPChildEvent e) {
+			childRemovedCount++;
+		}
+
+		public void transactionEnded(TransactionEvent e) {
+			transactionEndedCount++;
+		}
+
+		public void transactionRollback(TransactionEvent e) {
+			transactionRollbackCount++;
+		}
+
+		public void transactionStarted(TransactionEvent e) {
+			transactionStartedCount++;
+		}
+
+		public void propertyChanged(PropertyChangeEvent evt) {
+			propertyChangedCount++;
+		}
+    }
 }

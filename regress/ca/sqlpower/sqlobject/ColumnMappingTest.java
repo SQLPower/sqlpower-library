@@ -21,6 +21,7 @@ package ca.sqlpower.sqlobject;
 
 import java.sql.Types;
 
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.sqlobject.SQLRelationship.ColumnMapping;
@@ -129,7 +130,7 @@ public class ColumnMappingTest extends BaseSQLObjectTestCase {
 	}
 
 	@Override
-	protected Class<?> getChildClassType() {
+	protected Class<? extends SPObject> getChildClassType() {
 		return null;
 	}
 

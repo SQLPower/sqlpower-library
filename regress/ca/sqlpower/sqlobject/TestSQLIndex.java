@@ -21,6 +21,7 @@ package ca.sqlpower.sqlobject;
 import java.sql.Types;
 
 import ca.sqlpower.object.ObjectDependentException;
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -97,7 +98,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     }
     
     @Override
-    protected Class<?> getChildClassType() {
+    protected Class<? extends SPObject> getChildClassType() {
     	return Column.class;
     }
 

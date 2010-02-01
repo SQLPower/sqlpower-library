@@ -94,7 +94,7 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 	 * error. If the object under test does not allow children or all of the children
 	 * of the object are final so none can be added, null will be returned.
 	 */
-	protected abstract Class<?> getChildClassType();
+	protected abstract Class<? extends SPObject> getChildClassType();
 	
 	/**
 	 * XXX This test should use the {@link GenericNewValueMaker} as it has it's own mini

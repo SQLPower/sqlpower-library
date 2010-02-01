@@ -19,6 +19,8 @@
 
 package ca.sqlpower.sqlobject;
 
+import ca.sqlpower.object.SPObject;
+
 public class SQLObjectRootTest extends BaseSQLObjectTestCase {
 	
 	private SQLObjectRoot root;
@@ -35,7 +37,7 @@ public class SQLObjectRootTest extends BaseSQLObjectTestCase {
 	}
 
 	@Override
-	protected Class<?> getChildClassType() {
+	protected Class<? extends SPObject> getChildClassType() {
 		return SQLDatabase.class;
 	}
 

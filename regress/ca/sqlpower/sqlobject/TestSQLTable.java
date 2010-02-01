@@ -37,6 +37,7 @@ import org.apache.commons.beanutils.BeanUtils;
 
 import ca.sqlpower.object.AbstractSPListener;
 import ca.sqlpower.object.SPChildEvent;
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
@@ -96,7 +97,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     }
     
     @Override
-    protected Class<?> getChildClassType() {
+    protected Class<? extends SPObject> getChildClassType() {
     	return SQLColumn.class;
     }
     

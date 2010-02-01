@@ -27,6 +27,7 @@ import java.util.Set;
 
 import org.apache.commons.beanutils.BeanUtils;
 
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sql.PlDotIni;
@@ -92,7 +93,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	}
 	
 	@Override
-    protected Class<?> getChildClassType() {
+    protected Class<? extends SPObject> getChildClassType() {
     	return null;
     }
 	

@@ -156,7 +156,10 @@ public class GenericNewValueMaker implements NewValueMaker {
         	db.addTable(table);
         	newVal = table;
         } else if (valueType.isAssignableFrom(SQLDatabase.class)) {
+        	JDBCDataSource argDataSource = new JDBCDataSource(this.pl);
+            argDataSource.setName("Testing data source");
         	SQLDatabase db = new SQLDatabase();
+        	db.setDataSource(argDataSource);
         	SQLObjectRoot sqlRoot = (SQLObjectRoot) makeNewValue(SQLObjectRoot.class, null, "parent of db");
         	sqlRoot.addDatabase(db, 0);
         	newVal = db;
