@@ -19,6 +19,8 @@
 
 package ca.sqlpower.dao.session;
 
+import javax.sql.DataSource;
+
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.JDBCDataSource;
@@ -34,7 +36,7 @@ public class SessionPersisterSuperConverter {
 	
 	private final SPObjectConverter spObjectConverter;
 	
-	private final JDBCDataSourceConverter jdbcDSConverter;
+	private final DataSourceCollection <? extends SPDataSource> dsCollection;
 
 	/**
 	 * This converter will allow changes between any complex object in the
@@ -47,10 +49,10 @@ public class SessionPersisterSuperConverter {
 	 *            look up connections, cubes, and {@link SPObject}s in the
 	 *            workspace.
 	 */
-	public SessionPersisterSuperConverter(DataSourceCollection<SPDataSource> dsCollection, 
+	public SessionPersisterSuperConverter(DataSourceCollection<? extends SPDataSource> dsCollection, 
 			SPObject root) {
 		spObjectConverter = new SPObjectConverter(root);
-		jdbcDSConverter = new JDBCDataSourceConverter(dsCollection);
+		this.dsCollection = dsCollection;
 	}
 
 	/**
@@ -94,7 +96,7 @@ public class SessionPersisterSuperConverter {
 			return new EnumConverter(convertFrom.getClass()).convertToSimpleType((Enum) convertFrom);
 			
 		} else if (convertFrom instanceof JDBCDataSource) {
-			return jdbcDSConverter.convertToSimpleType((JDBCDataSource) convertFrom);
+			return ((JDBCDataSource) convertFrom).getName();
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + convertFrom + " of type " + 
 					convertFrom.getClass());
@@ -136,7 +138,17 @@ public class SessionPersisterSuperConverter {
 			return new EnumConverter(type).convertToComplexType((String) o);
 			
 		} else if (JDBCDataSource.class.isAssignableFrom(type)) {
-			return jdbcDSConverter.convertToComplexType((String) o);
+			
+			//return jdbcDSConverter.convertToComplexType((String) o);
+			// TODO: There are BIG problems caused by trying to represent 
+			//       DataSourceCollection <JDBCDataSource> by DataSourceCollection <SPDataSource>
+			
+			SPDataSource ds = dsCollection.getDataSource((String) o);
+			if (ds instanceof JDBCDataSource) {
+				return ds;
+			} else {
+				return new JDBCDataSource(ds);
+			}
 			
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + o + " of type " + 
