@@ -76,6 +76,13 @@ public class VariablesPanel implements DataEntryPanel {
 	private final VariableInserter action;
 	private static final Logger logger = Logger.getLogger(VariablesPanel.class);
 	
+	public VariablesPanel(
+			SPVariableHelper variableHelper,
+    		VariableInserter action) 
+	{
+		this(variableHelper,action,"");
+	}
+	
 	/**
 	 * Default constructor for the variables panel.
 	 * @param variableHelper A helper that will be used in order to
@@ -83,10 +90,12 @@ public class VariablesPanel implements DataEntryPanel {
 	 * @param action An implementation of {@link VariableInserter} that 
 	 * gets called once the variable has been created. This action will be executed
 	 * on the Swing Event Dispatch Thread.
+	 * @param varDefinition The default variable definition string.
 	 */
 	public VariablesPanel(
 			SPVariableHelper variableHelper,
-    		VariableInserter action) 
+    		VariableInserter action,
+    		String varDefinition) 
 	{
 		this.variableHelper = variableHelper;
 		this.action = action;
@@ -184,6 +193,7 @@ public class VariablesPanel implements DataEntryPanel {
 		this.panel.add(this.varPreviewLabel1);
 		this.panel.add(this.varPreviewLabel2, "span, growx");
 		
+		this.currentPickedVariable = varDefinition;
 		updateGUI();
 	}
 	
