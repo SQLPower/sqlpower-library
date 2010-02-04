@@ -234,14 +234,14 @@ public class SPVariableHelper implements SPVariableResolver {
      */
     public static String getKey(String varDef) {
     	
-    	int namespaceIndex = varDef.indexOf(NAMESPACE_DELIMITER);
-    	int defValueIndex = varDef.indexOf(DEFAULT_VALUE_DELIMITER);
     	String returnValue = varDef;
     	
+    	int namespaceIndex = varDef.indexOf(NAMESPACE_DELIMITER);
 		if (namespaceIndex != -1) {
 			returnValue = returnValue.substring(namespaceIndex + NAMESPACE_DELIMITER.length(), varDef.length());
 		}
 		
+		int defValueIndex = returnValue.indexOf(DEFAULT_VALUE_DELIMITER);
 		if (defValueIndex != -1) {
 			returnValue = returnValue.substring(0, defValueIndex);
 		}
@@ -320,27 +320,32 @@ public class SPVariableHelper implements SPVariableResolver {
 		
 		String namespace = getNamespace(key);
 		
-		if (namespace != null) {
-			SPVariableResolver resolver = 
+		try {
+			if (namespace != null) {
+				SPVariableResolver resolver = 
 					SPResolverRegistry.getResolver(this.contextSource, namespace);
-			if (resolver==null) {
-				return defaultValue;
-			} else {
-				return resolver.resolve(key, defaultValue);
-			}
-		}
-		
-		SPObject node = this.contextSource;
-		while (true) {	
-			if (node instanceof SPVariableResolverProvider) {
-				SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
-				if (resolver.resolves(key)) {
+				if (resolver==null) {
+					return defaultValue;
+				} else {
 					return resolver.resolve(key, defaultValue);
 				}
 			}
-			node = node.getParent();
-			if (node == null) return defaultValue;
+			
+			SPObject node = this.contextSource;
+			while (true) {	
+				if (node instanceof SPVariableResolverProvider) {
+					SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
+					if (resolver.resolves(key)) {
+						return resolver.resolve(key, defaultValue);
+					}
+				}
+				node = node.getParent();
+				if (node == null) return defaultValue;
+			}
+		} catch (StackOverflowError soe) {
+			throw new RecursiveVariableException();
 		}
+		
 	}
 
 	
@@ -354,21 +359,10 @@ public class SPVariableHelper implements SPVariableResolver {
 		Collection<Object> results = new HashSet<Object>();
 		String namespace = getNamespace(key);
 		
-		if (namespace != null) {
-			List<SPVariableResolver> resolvers = SPResolverRegistry.getResolvers(this.contextSource, namespace);
-			for (SPVariableResolver resolver : resolvers) {
-				if (resolver.resolves(key)) {
-					results.addAll(resolver.resolveCollection(key));
-					if (!globalCollectionResolve) {
-						break;
-					}
-				}
-			}
-		} else {
-			SPObject node = this.contextSource;
-			while (true) {	
-				if (node instanceof SPVariableResolverProvider) {
-					SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
+		try {
+			if (namespace != null) {
+				List<SPVariableResolver> resolvers = SPResolverRegistry.getResolvers(this.contextSource, namespace);
+				for (SPVariableResolver resolver : resolvers) {
 					if (resolver.resolves(key)) {
 						results.addAll(resolver.resolveCollection(key));
 						if (!globalCollectionResolve) {
@@ -376,20 +370,36 @@ public class SPVariableHelper implements SPVariableResolver {
 						}
 					}
 				}
-				node = node.getParent();
-				if (node == null) break;
+			} else {
+				SPObject node = this.contextSource;
+				while (true) {	
+					if (node instanceof SPVariableResolverProvider) {
+						SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
+						if (resolver.resolves(key)) {
+							results.addAll(resolver.resolveCollection(key));
+							if (!globalCollectionResolve) {
+								break;
+							}
+						}
+					}
+					node = node.getParent();
+					if (node == null) break;
+				}
 			}
+			
+			if (results.size() == 0) {
+				if (defaultValue == null) {
+					return Collections.emptySet();
+				} else {
+					return Collections.singleton(defaultValue);			
+				}
+			} else {
+				return results;
+			}	
+		} catch (StackOverflowError soe) {
+			throw new RecursiveVariableException();
 		}
 		
-		if (results.size() == 0) {
-			if (defaultValue == null) {
-				return Collections.emptySet();
-			} else {
-				return Collections.singleton(defaultValue);			
-			}
-		} else {
-			return results;
-		}	
 	}
 
 	
@@ -426,21 +436,9 @@ public class SPVariableHelper implements SPVariableResolver {
 		Collection<Object> matches = new HashSet<Object>();
 		String namespace = getNamespace(key);
 		
-		if (namespace != null) {
-			for (SPVariableResolver resolver : SPResolverRegistry.getResolvers(contextSource, namespace)) {
-				if (resolver.resolves(key)) {
-					matches.addAll(resolver.matches(key, partialValue));
-					if (!globalCollectionResolve) {
-						break;
-					}
-				}
-			}
-			return matches;
-		} else {
-			SPObject node = this.contextSource;
-			while (true) {	
-				if (node instanceof SPVariableResolverProvider) {
-					SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
+		try {
+			if (namespace != null) {
+				for (SPVariableResolver resolver : SPResolverRegistry.getResolvers(contextSource, namespace)) {
 					if (resolver.resolves(key)) {
 						matches.addAll(resolver.matches(key, partialValue));
 						if (!globalCollectionResolve) {
@@ -448,11 +446,28 @@ public class SPVariableHelper implements SPVariableResolver {
 						}
 					}
 				}
-				node = node.getParent();
-				if (node == null) break;
+				return matches;
+			} else {
+				SPObject node = this.contextSource;
+				while (true) {	
+					if (node instanceof SPVariableResolverProvider) {
+						SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
+						if (resolver.resolves(key)) {
+							matches.addAll(resolver.matches(key, partialValue));
+							if (!globalCollectionResolve) {
+								break;
+							}
+						}
+					}
+					node = node.getParent();
+					if (node == null) break;
+				}
+				return matches;
 			}
-			return matches;
+		} catch (StackOverflowError soe) {
+			throw new RecursiveVariableException();
 		}
+		
 	}
 	
 	public Collection<String> keySet(String namespace) {
@@ -495,5 +510,23 @@ public class SPVariableHelper implements SPVariableResolver {
 
 	public String getUserFriendlyName() {
 		return null;
+	}
+	
+	/**
+	 * Wraps the RuntimeException to identify recursive variables resolutions.
+	 */
+	public class RecursiveVariableException extends RuntimeException {
+	}
+
+	public void delete(String key) {
+		throw new UnsupportedOperationException("SPVariableHelper cannot store variables.");
+	}
+
+	public void store(String key, Object value) {
+		throw new UnsupportedOperationException("SPVariableHelper cannot store variables.");
+	}
+
+	public void update(String key, Object value) {
+		throw new UnsupportedOperationException("SPVariableHelper cannot store variables.");
 	}
 }
