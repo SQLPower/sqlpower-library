@@ -90,7 +90,7 @@ public class VariableLabel extends JLabel {
 	
 	/**
 	 * Helper method to insert and register a styled label in
-	 * a document
+	 * a AWT StyledDocument
 	 * @param variableDef The variable unique key, including namespace, 
 	 * name and default value, but exclusing ${} markers.
 	 * @param helper The helper to use if this variable needs to be modified.
@@ -165,6 +165,7 @@ public class VariableLabel extends JLabel {
 		});
 	}
 	
+	
 	/**
 	 * Takes a {@link StyledDocument} object and switches all the
 	 * variables labels for textual representations of the variables.
@@ -190,7 +191,16 @@ public class VariableLabel extends JLabel {
 	}
 
 	
-	
+	/**
+	 * This helper method parses the contents of an AWT StyledDocument
+	 * and inserts pretty variables labels in it.
+	 * @param helper The var helper to use if the variables are
+	 * modified after being inserted.
+	 * @param target The StyledDocument into which to perform the
+	 * substitution
+	 * @param dialogOwner The owner of the dialog that will be displayed 
+	 * if the variables are edited.
+	 */
 	public static void insertLabels(
 			SPVariableHelper helper,
 			StyledDocument target,
@@ -204,7 +214,7 @@ public class VariableLabel extends JLabel {
 				int indexStart = text.indexOf("${");
 				int indexEnd = text.indexOf("}");
 				
-				if (indexStart == -1) {
+				if (indexStart == -1 || indexEnd == -1) {
 					break;
 				}
 				
@@ -218,6 +228,103 @@ public class VariableLabel extends JLabel {
 
 		} catch (BadLocationException e) {
 			throw new AssertionError(e);
+		}
+	}
+	
+	
+	
+	/**
+	 * Helper method to insert and register a styled label in
+	 * a AWT StyledDocument that will be rendered by the Picollo library.
+	 * @param variableDef The variable unique key, including namespace, 
+	 * name and default value, but exclusing ${} markers.
+	 * @param target The terget {@link StyledDocument} into which to insert
+	 * this variable.
+	 * @param insertPosition The position at whch to insert the variable.
+	 * @throws BadLocationException If the position supplied is not a valid
+	 * position within the target document.
+	 */
+	public static void insertLabelForPicollo(
+			final String variableDef, 
+			final StyledDocument target,
+			final int insertPosition) throws BadLocationException 
+	{
+		final Style varStyle = target.addStyle(STYLE_NAME, null);
+		
+		// These attributes will help us convert to/from the nice label format
+		varStyle.addAttribute(VAR_VALUE, variableDef);
+		
+		// Now we add attributes to make picollo display the variables in a nice way
+		StyleConstants.setBackground(varStyle, Color.BLUE);
+		StyleConstants.setForeground(varStyle, Color.WHITE);
+		StyleConstants.setBold(varStyle, true);
+		
+		target.insertString(insertPosition, " " + SPVariableHelper.getKey(variableDef) + " ", varStyle);
+	}
+	
+	/**
+	 * This helper method parses the contents of an AWT StyledDocument
+	 * which will be rendered by the Picollo library
+	 * and inserts pretty variables labels in it.
+	 * @param target The StyledDocument into which to perform the
+	 * substitution
+	 */
+	public static void insertLabelsForPicollo(StyledDocument target)
+	{
+		try {
+			
+			while (true) 
+			{
+				String text = target.getText(0, target.getLength());
+				int indexStart = text.indexOf("${");
+				int indexEnd = text.indexOf("}");
+				
+				if (indexStart == -1 || indexEnd == -1) {
+					break;
+				}
+				
+				String var = text.substring(indexStart, indexEnd + 1);
+				var = var.replaceFirst("\\$", "").replaceFirst("\\{", "").replaceFirst("\\}", "");
+				
+				target.remove(indexStart, indexEnd - indexStart + 1);
+				
+				insertLabelForPicollo(var, target, indexStart);
+			}
+
+		} catch (BadLocationException e) {
+			throw new AssertionError(e);
+		}
+	}
+	
+	/**
+	 * Takes a {@link StyledDocument} object who was crafted to be displayed
+	 * by the Picollo library and switches all the
+	 * variables labels for textual representations of the variables.
+	 * @param target
+	 */
+	public static void removeLabelsForPicollo(StyledDocument target) {
+		try {
+			for (int i = 0; i < target.getLength(); i++) {
+				if (target.getCharacterElement(i).getAttributes().isDefined(VAR_VALUE)) {
+					
+					// We must figure out the end of the var string.
+					int endIndex = i;
+					while (endIndex < target.getLength()
+							&& target.getCharacterElement(endIndex).getAttributes().isDefined(VAR_VALUE)) {
+						endIndex++;
+					}
+					
+					String varValue = (String)target.getCharacterElement(i).getAttributes().getAttribute(VAR_VALUE);
+					target.remove(i, endIndex - i);
+					target.insertString(
+							i, 
+							"${"+varValue+"}", 
+							null);
+				}
+			}
+		
+		} catch (BadLocationException e) {
+			throw new RuntimeException(e);
 		}
 	}
 }
