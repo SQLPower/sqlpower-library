@@ -119,7 +119,7 @@ public abstract class SPPersisterHelperFactory {
 	public <T extends SPObject> T commitObject(
 			PersistedSPObject pso, 
 			Multimap<String, PersistedSPOProperty> persistedProperties, 
-			List<PersistedSPObject> persistedObjects) {
+			List<PersistedSPObject> persistedObjects) throws SPPersistenceException {
 		SPPersisterHelper<T> helper = 
 			(SPPersisterHelper<T>) getSPPersisterHelper(pso.getType());
 		return helper.commitObject(pso, persistedProperties, persistedObjects, this);
@@ -153,7 +153,7 @@ public abstract class SPPersisterHelperFactory {
 			String propertyName, 
 			Object newValue) throws SPPersistenceException {
 		SPPersisterHelper<T> helper = 
-			(SPPersisterHelper<T>) getSPPersisterHelper(spo.getClass().getSimpleName());
+			(SPPersisterHelper<T>) getSPPersisterHelper(spo.getClass().getName());
 		helper.commitProperty(spo, propertyName, newValue, converter);
 	}
 
@@ -189,7 +189,7 @@ public abstract class SPPersisterHelperFactory {
 	 */
 	public <T extends SPObject> Object findProperty(T spo, String propertyName) throws SPPersistenceException {
 		SPPersisterHelper<T> helper = 
-			(SPPersisterHelper<T>) getSPPersisterHelper(spo.getClass().getSimpleName());
+			(SPPersisterHelper<T>) getSPPersisterHelper(spo.getClass().getName());
 		return helper.findProperty(spo, propertyName, converter);
 	}
 
@@ -214,7 +214,7 @@ public abstract class SPPersisterHelperFactory {
 	 */
 	public <T extends SPObject> void persistObject(T spo, int index) throws SPPersistenceException {
 		SPPersisterHelper<T> helper = 
-			(SPPersisterHelper<T>) getSPPersisterHelper(spo.getClass().getSimpleName());
+			(SPPersisterHelper<T>) getSPPersisterHelper(spo.getClass().getName());
 		helper.persistObject(spo, index, getPersister(), converter);
 	}
 

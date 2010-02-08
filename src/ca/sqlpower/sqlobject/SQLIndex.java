@@ -24,8 +24,12 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
 
@@ -50,6 +54,14 @@ import ca.sqlpower.util.TransactionEvent;
 public class SQLIndex extends SQLObject {
 
     private static final Logger logger = Logger.getLogger(SQLIndex.class);
+    
+    /**
+	 * Defines an absolute ordering of the child types of this class.
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Class<? extends SPObject>> allowedChildTypes = 
+		Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
+				Arrays.asList(Column.class)));
 
     /**
      * An enumeration to define if a column in an index should be ordered in ascending
@@ -82,6 +94,12 @@ public class SQLIndex extends SQLObject {
      * would appear in two places in the tree (here and under the table's columns folder)!
      */
     public static class Column extends SQLObject {
+    	
+    	/**
+    	 * Defines an absolute ordering of the child types of this class.
+    	 */
+    	@SuppressWarnings("unchecked")
+    	public static List<Class<? extends SPObject>> allowedChildTypes = Collections.emptyList();
 
         /**
          * Small class for reacting to changes in this index columns's
@@ -126,7 +144,7 @@ public class SQLIndex extends SQLObject {
                 buf.append(".");
                 buf.append("TargetColumnListener");
                 buf.append(" isPrimarykey?");
-                buf.append(getParent().primaryKeyIndex);
+                buf.append(getParent().isPrimaryKeyIndex());
                 return buf.toString();
             }
         }
@@ -172,7 +190,28 @@ public class SQLIndex extends SQLObject {
             ascendingOrDescending = ad;
         }
 
+		/**
+		 * Creates a Column object that may or may not correspond to a column.
+		 * 
+		 * @param name
+		 *            The name of the column being wrapped.
+		 * @param col
+		 *            If this column is representing a {@link SQLColumn} the
+		 *            column must be passed in. If the column is representing an
+		 *            expression or a column other than a SQLColumn null must be
+		 *            passed in.
+		 * @param ad
+		 *            Decides if the column should be indexed in ascending or
+		 *            descending order.
+		 */
         @Constructor
+        public Column(@ConstructorParameter(propertyName="name") String name, 
+        		@ConstructorParameter(propertyName="column") SQLColumn col, 
+        		@ConstructorParameter(propertyName="ascendingOrDescending") AscendDescend ad) {
+        	this(name, ad);
+        	setColumn(col);
+        }
+
         public Column() {
             this((String) null, AscendDescend.UNSPECIFIED);
         }
@@ -332,7 +371,13 @@ public class SQLIndex extends SQLObject {
 		}
 
 		public List<Class<? extends SPObject>> getAllowedChildTypes() {
-			return Collections.emptyList();
+			return allowedChildTypes;
+		}
+		
+		@Override
+		public void updateToMatch(SQLObject source) throws SQLObjectException {
+			Column sourceCol = (Column) source;
+			setAscendingOrDescending(sourceCol.getAscendingOrDescending());
 		}
     }
 
@@ -360,8 +405,6 @@ public class SQLIndex extends SQLObject {
      */
     private boolean clustered;
 
-    private boolean primaryKeyIndex;
-
     /**
      * This is a listener that will listen for SQLColumns in the SQLTable's column folder
      * and make sure that the SQLIndex will also remove its Column object associated
@@ -387,7 +430,6 @@ public class SQLIndex extends SQLObject {
     }
 
     public SQLIndex() {
-        primaryKeyIndex = false;
         removeColumnListener = new SPListener() {
 
             public void childRemoved(SPChildEvent e) {
@@ -436,6 +478,22 @@ public class SQLIndex extends SQLObject {
      */
     @Override
     public final void updateToMatch(SQLObject source) throws SQLObjectException {
+    	updateToMatch(source, true);
+    }
+
+	/**
+	 * Updates all properties and child objects of this index to match the given
+	 * index, except the parent pointer.
+	 * 
+	 * @param source
+	 *            The index to copy properties and columns from. If it has
+	 *            columns, they must already belong to the same table as this
+	 *            index does.
+	 * @param updateChildren
+	 *            If true the children of the index will be updated as well. If
+	 *            false only this index's parameters will be updated.
+	 */
+    public final void updateToMatch(SQLObject source, boolean updateChildren) throws SQLObjectException {
         SQLIndex sourceIdx = (SQLIndex) source;
         
         try {
@@ -448,20 +506,12 @@ public class SQLIndex extends SQLObject {
         	setFilterCondition(sourceIdx.filterCondition);
         	setQualifier(sourceIdx.qualifier);
         	setClustered(sourceIdx.clustered);
+        	setPhysicalName(sourceIdx.getPhysicalName());
 
-        	for (int i = columns.size()-1; i >= 0; i--) {
-        		removeChild(columns.get(i));
+        	if (updateChildren) {
+        		makeColumnsLike(sourceIdx);
         	}
-
-        	for (Object c : sourceIdx.getChildren()) {
-        		Column oldCol = (Column) c;
-        		Column newCol = new Column();
-        		newCol.setAscendingOrDescending(oldCol.ascendingOrDescending);
-        		newCol.setAscendingOrDescending(oldCol.ascendingOrDescending);
-        		newCol.setColumn(oldCol.column);
-        		newCol.setName(oldCol.getName());
-        		addChild(newCol);
-        	}
+        	
         	commit();
         } catch (IllegalArgumentException e) {
         	rollback("Could not remove columns from SQLIndex: " + e.getMessage());
@@ -609,6 +659,9 @@ public class SQLIndex extends SQLObject {
      * This method is used to clean up the index when it no longer has any children.
      */
     public void cleanUpIfChildless() {
+    	//This is a final field on the table
+    	if (isPrimaryKeyIndex()) return;
+    	
         try {
             if (getChildCount() == 0 && getParent() != null) {
                 logger.debug("Removing " + getName() + " index from table " + getParent().getName());
@@ -628,7 +681,7 @@ public class SQLIndex extends SQLObject {
     protected void addChildImpl(SPObject child, int index) {
     	if (child instanceof SQLIndex.Column) {
     		Column c = (Column) child;
-    		if (primaryKeyIndex && c.getColumn() == null) {
+    		if (isPrimaryKeyIndex() && c.getColumn() == null) {
     			throw new IllegalArgumentException("The primary key index must consist of real columns, not expressions");
     		}
     		addIndexColumn(c, index);
@@ -710,11 +763,14 @@ public class SQLIndex extends SQLObject {
      * direct references to the columns of the given SQLTable, but nothing in the table
      * will be modified. You can add the indexes to the table yourself when the list is
      * returned.
+     * <p>
+     * As a side effect of calling this method the primary key of the table will be updated
+     * to match the primary key of the table in the database.
      * 
      * @param dbmd The metadata to read the index descriptions from
      * @param targetTable The table the indexes are on. 
      */
-    static List<SQLIndex> fetchIndicesForTable(DatabaseMetaData dbmd, SQLTable targetTable) throws SQLException,
+    static List<SQLIndex> fetchIndicesForTableAndUpdatePK(DatabaseMetaData dbmd, SQLTable targetTable) throws SQLException,
             SQLObjectException {
         ResultSet rs = null;
 
@@ -727,19 +783,27 @@ public class SQLIndex extends SQLObject {
         try {
             String pkName = null;
             rs = dbmd.getPrimaryKeys(catalog, schema, tableName);
+            SortedMap<Integer, String> pkColPositionToName = new TreeMap<Integer, String>();
             while (rs.next()) {
-                SQLColumn col = targetTable.getColumnByName(rs.getString(4), false, true);
-                //logger.debug(rs.getString(4));
+            	pkColPositionToName.put(rs.getInt(5) - 1, rs.getString(4));
+            	String pkNameCheck = rs.getString(6);
+            	if (pkName == null) {
+            		pkName = pkNameCheck;
+            	} else if (!pkName.equals(pkNameCheck)) {
+            		throw new IllegalStateException(
+            				"The PK name has changed from " + pkName + " to " +
+            				pkNameCheck + " while adding indices to table");                    
+            	}
+            }
+            
+            for (Map.Entry<Integer, String> namedPositions : pkColPositionToName.entrySet()) {
+                SQLColumn col = targetTable.getColumnByName(namedPositions.getValue(), false, true);
                 if (col != null) {
-                    col.primaryKeySeq = new Integer(rs.getInt(5));   // XXX this is modifying the table too early, and without firing an event
-                    String pkNameCheck = rs.getString(6);
-                    if (pkName == null) {
-                        pkName = pkNameCheck;
-                    } else if (!pkName.equals(pkNameCheck)) {
-                        throw new IllegalStateException(
-                                "The PK name has changed from " + pkName + " to " +
-                                pkNameCheck + " while adding indices to table");                    }
+                	targetTable.changeColumnIndex(
+                			targetTable.getColumnsWithoutPopulating().indexOf(col), 
+                			namedPositions.getKey(), true);
                 } else {
+                	logger.error("Column " + namedPositions.getValue() + " not found in " + targetTable);
                     throw new SQLException("Column " + rs.getString(4) + " not found in " + targetTable);
                 }
             }
@@ -798,25 +862,30 @@ public class SQLIndex extends SQLObject {
                     logger.debug("Found index " + name);
                     idx = new SQLIndex(name, !nonUnique, qualifier, type, filter);
                     idx.setClustered(isClustered);
-                    indexes.add(idx);
                     if (name.equals(pkName)) {
-                        idx.setPrimaryKeyIndex(true);
+                    	targetTable.getPrimaryKeyIndexWithoutPopulating().updateToMatch(idx, false);
+                    	idx = targetTable.getPrimaryKeyIndexWithoutPopulating();
+                    } else {
+                    	indexes.add(idx);
                     }
                 }
 
-                logger.debug("Adding column " + colName + " to index " + idx.getName());
+                //Child columns of pk fixed before this loop
+                if (!idx.isPrimaryKeyIndex()) {
+                	logger.debug("Adding column " + colName + " to index " + idx.getName());
 
-                
-                SQLColumn tableCol = targetTable.getColumnByName(colName, false, true);
-                Column indexCol;
-                if (tableCol != null) {
-                    indexCol = new Column(tableCol, aOrD);
-                } else {
-                    indexCol = new Column(colName, aOrD); // probably an expression like "col1+col2"
+
+                	SQLColumn tableCol = targetTable.getColumnByName(colName, false, true);
+                	Column indexCol;
+                	if (tableCol != null) {
+                		indexCol = new Column(tableCol, aOrD);
+                	} else {
+                		indexCol = new Column(colName, aOrD); // probably an expression like "col1+col2"
+                	}
+
+                	//                idx.children.add(indexCol); // direct access avoids possible recursive SQLObjectEvents
+                	idx.addChild(indexCol);
                 }
-
-//                idx.children.add(indexCol); // direct access avoids possible recursive SQLObjectEvents
-                idx.addChild(indexCol);
             }
             rs.close();
             rs = null;
@@ -833,46 +902,10 @@ public class SQLIndex extends SQLObject {
         }
     }
 
-    @Accessor
+    @Transient @Accessor
     public boolean isPrimaryKeyIndex() {
-        return primaryKeyIndex;
-    }
-
-    /**
-     * Updates whether this index is a primary key
-     *
-     * set this index as primary key index and remove any old primary key
-     * if isPrimaryKey is true.  Otherwise, sets primaryKeyIndex to false and
-     * removes it from its parent table.
-     *
-     * @param isPrimaryKey
-     */
-    @Mutator
-    public void setPrimaryKeyIndex(boolean isPrimaryKey) throws SQLObjectException {
-        boolean oldValue = this.primaryKeyIndex;
-        if (oldValue == isPrimaryKey)
-            return;
-        try {
-            begin("Make index a Primary Key");
-            if (isPrimaryKey) {
-                for (Column c : getChildren(Column.class)) {
-                    if (c.getColumn() == null) {
-                        throw new SQLObjectException("A PK must only refer to Index.Columns that contain SQLColumns");
-                    }
-                }
-                SQLTable parentTable = getParent();
-                if (parentTable != null) {
-                    SQLIndex i = parentTable.getPrimaryKeyIndex();
-                    if (i != null && i != this) {
-                        i.setPrimaryKeyIndex(false);
-                    }
-                }
-            }
-            primaryKeyIndex = isPrimaryKey;
-            firePropertyChange("primaryKeyIndex", oldValue, isPrimaryKey);
-        } finally {
-            commit();
-        }
+    	if (getParent() == null) return false;
+        return getParent().isPrimaryKey(this);
     }
 
     @Override
@@ -880,10 +913,38 @@ public class SQLIndex extends SQLObject {
         return getName();
     }
 
+	/**
+	 * Adds a column to the index. If col1 is null a NPE will be thrown. The
+	 * given column must also be a child of the parent table. If this index is
+	 * the primary key of the table the column will be added to a position in
+	 * the index to match its position in the table. Since the position will be
+	 * matched by the index the column must be moved to the correct location in
+	 * the index before calling this method if it is being done for the primary
+	 * key.
+	 * <p>
+	 * The column in the index will be defined as unspecified for its ascending
+	 * or descending term.
+	 */
+    public void addIndexColumn(SQLColumn col) {
+    	addIndexColumn(col, AscendDescend.UNSPECIFIED);
+    }
+    
     /**
-     * Adds a column to the index. If col1 is null a NPE will be thrown.
-     */
-    public void addIndexColumn(SQLColumn col1, AscendDescend aOrD) throws SQLObjectException {
+	 * Adds a column to the index. If col1 is null a NPE will be thrown. The
+	 * given column must also be a child of the parent table. If this index is
+	 * the primary key of the table the column will be added to a position in
+	 * the index to match its position in the table. Since the position will be
+	 * matched by the index the column must be moved to the correct location in
+	 * the index before calling this method if it is being done for the primary
+	 * key. 
+	 */
+    public void addIndexColumn(SQLColumn col1, AscendDescend aOrD) {
+    	if (getParent() != null && !getParent().getColumnsWithoutPopulating().contains(col1)) 
+    		throw new IllegalArgumentException("Cannot add " + col1 + " to " + this + 
+    				" because the column is not part of the table " + getParent());
+    	if (indexOf(col1) != -1) 
+    		throw new IllegalArgumentException("Column " + col1 + " already exists in this index.");
+    	
         Column col = new Column(col1, aOrD);
         addIndexColumn(col);
     }
@@ -898,9 +959,21 @@ public class SQLIndex extends SQLObject {
     }
     
     public void addIndexColumn(SQLIndex.Column col, int index) {
+    	if (col != null && indexOf(col.getColumn()) != -1) 
+    		throw new IllegalArgumentException("Column " + col + " already exists in this index.");
+    	
+        if (isPrimaryKeyIndex()) {
+        	index = getParent().getColumnsWithoutPopulating().indexOf(col.getColumn());
+        	col.getColumn().setNullable(DatabaseMetaData.columnNoNulls);
+        }
+    	
     	columns.add(index, col);
     	col.setParent(this);
     	fireChildAdded(SQLIndex.Column.class, col, index);
+    	
+    	if (isPrimaryKeyIndex()) {
+    		getParent().updateRelationshipsForNewIndexColumn(col.getColumn());
+    	}
     }
 
     /**
@@ -923,7 +996,6 @@ public class SQLIndex extends SQLObject {
         index.setType(source.getType());
         index.setFilterCondition(source.getFilterCondition());
         index.setQualifier(source.getQualifier());
-        index.setPrimaryKeyIndex(source.isPrimaryKeyIndex());
         index.setPhysicalName(source.getPhysicalName());
         index.setClustered(source.isClustered());
         index.setChildrenInaccessibleReason(source.getChildrenInaccessibleReason(), false);
@@ -932,7 +1004,9 @@ public class SQLIndex extends SQLObject {
             Column newColumn;
 
             if (column.getColumn() != null) {
-                SQLColumn sqlColumn = parentTable.getColumnByName(column.getColumn().getName());
+            	SQLColumn sqlColumn = findEquivalentColumnNotIncluded(parentTable, index,
+						column.getColumn());
+            	
                 if (sqlColumn == null) {
                     throw new SQLObjectException("Can not derive instance, because coulmn " +
                             column.getColumn().getName() + "is not found in parent table [" + parentTable.getName() +
@@ -947,28 +1021,109 @@ public class SQLIndex extends SQLObject {
         return index;
     }
 
-    /**
-     * Make this index's columns look like the columns in index
-     *
-     * @param index The index who's columns are what we want in this index
-     * @throws SQLObjectException
-     * @throws ObjectDependentException 
-     * @throws IllegalArgumentException 
-     */
-    public void makeColumnsLike(SQLIndex index) throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
-        for (int i = columns.size() - 1; i >= 0; i--) {
-            Column c = columns.get(i);
-            if (c.column != null) {
-                c.column.removeSPListener(c.targetColumnListener);
-            }
-            removeChild(c);
-        }
+	/**
+	 * Returns a column that is equivalent to the given column in the parent
+	 * table that has not been added to the given index. This is a helper method
+	 * for updating the given index to another index based on another index.
+	 * 
+	 * @param parentTable
+	 *            The column returned will be a child of this table.
+	 * @param index
+	 *            The index that the column cannot be a child of already.
+	 * @param column
+	 *            The column we are trying to find an equivalent version of. If
+	 *            the column is in the parent table then the same column will be
+	 *            returned. If the column is not in the parent table a different
+	 *            column will be returned that closely matches this column.
+	 */
+	private static SQLColumn findEquivalentColumnNotIncluded(SQLTable parentTable,
+			SQLIndex index, SQLColumn column) {
+		if (column.getParent().equals(parentTable)) return column;
+		
+		SQLColumn sqlColumn = null;
+		for (SQLColumn existingCol : parentTable.getColumnsWithoutPopulating()) {
+			if (existingCol.getName().equals(column.getName()) &&
+					index.indexOf(existingCol) == -1) {
+				sqlColumn = existingCol;
+			}
+		}
+		return sqlColumn;
+	}
 
-        for (Column c : index.getChildren(Column.class)) {
-            Column newCol = new Column(c.getName(), c.getAscendingOrDescending());
-            newCol.setColumn(c.getColumn());
-            addChild(newCol);
-        }
+	/**
+	 * Make this index's columns look like the columns in index. If this is the
+	 * primary key index columns may be moved in the parent table.
+	 * 
+	 * @param index
+	 *            The index who's columns are what we want in this index
+	 * @throws SQLObjectException
+	 * @throws ObjectDependentException
+	 * @throws IllegalArgumentException
+	 */
+    public void makeColumnsLike(SQLIndex index) throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
+    	makeColumnsLike(index.getChildrenWithoutPopulating(Column.class));
+    }
+    
+    public void makeColumnsLike(List<Column> sourceCols) throws SQLObjectException {
+    	List<Column> originalCols = new ArrayList<Column>(columns);
+    	for (Column c : originalCols) {
+    		boolean remove = true;
+    		for (Column sourceCol : sourceCols) {
+    			if ((sourceCol.getColumn() == null && sourceCol.getName().equals(c.getName())) 
+    					|| (sourceCol.getColumn() != null && sourceCol.getColumn().equals(c.getColumn()))) {
+    				remove = false;
+    				c.updateToMatch(sourceCol);
+    				break;
+    			}
+    		}
+    		if (remove) { 
+    			if (isPrimaryKeyIndex()) {
+    				getParent().moveAfterPK(c.getColumn());
+    			} else {
+    				removeColumn(c);
+    			}
+    		}
+    	}
+    	
+    	int insertIndex = 0;
+    	for (Column c : sourceCols) {
+    		int currentIndex;
+    		if (c.getColumn() == null) {
+    			currentIndex = -1;
+    			for (int i = 0; i < originalCols.size(); i++) {
+    				if (originalCols.get(i).getName().equals(c.getName())) {
+    					currentIndex = i;
+    					break;
+    				}
+    			}
+    		} else {
+    			currentIndex = indexOf(c.getColumn());
+    		}
+    		if (isPrimaryKeyIndex()) {
+    			if (currentIndex != -1 && currentIndex != insertIndex) {
+    				getParent().changeColumnIndex(currentIndex, insertIndex, true);
+    			} else {
+    				SQLColumn equivalentCol = findEquivalentColumnNotIncluded(getParent(), this, c.getColumn());
+    				getParent().changeColumnIndex(
+    						getParent().getColumnsWithoutPopulating().indexOf(equivalentCol), 
+    						insertIndex, true);
+    			}
+    			getChild(insertIndex).setAscendingOrDescending(c.getAscendingOrDescending());
+    		} else {
+    			if (currentIndex != -1 && currentIndex != insertIndex) {
+    				Column child = getChild(currentIndex);
+    				removeColumn(child);
+    				child.setAscendingOrDescending(c.getAscendingOrDescending());
+    				addIndexColumn(child, insertIndex);
+    			} else if (currentIndex == -1) {
+    				Column newCol = new Column(c.getName(), c.getAscendingOrDescending());
+    	            newCol.setColumn(c.getColumn());
+    	            addChild(newCol);
+    			}
+    		}
+    			
+    		insertIndex++;
+    	}
     }
 
 	@Override
@@ -991,8 +1146,25 @@ public class SQLIndex extends SQLObject {
 	            col.getColumn().removeSPListener(col.targetColumnListener);
 	        }
 	        
+	        if (isPrimaryKeyIndex()) {
+	        	getParent().updateRelationshipsForRemovedIndexColumns(col.getColumn());
+	        }
+	        
 			col.setParent(null);
 			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * Removes the given column from this index. This does not change the ordering
+	 * of the columns in the table.
+	 */
+	public boolean removeColumn(SQLColumn col) {
+		for (Column colWrapper : columns) {
+			if (colWrapper.getColumn().equals(col)) {
+				return removeColumn(colWrapper);
+			}
 		}
 		return false;
 	}
@@ -1016,8 +1188,44 @@ public class SQLIndex extends SQLObject {
 
 	@NonProperty
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
-		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
-		types.add(Column.class);
-		return Collections.unmodifiableList(types);
+		return allowedChildTypes;
 	}
+
+	/**
+	 * Returns true if there is a {@link Column} wrapper that points to the
+	 * given column.
+	 */
+	public boolean containsColumn(SQLColumn column) {
+		for (Column colWrapper : columns) {
+			if (colWrapper.getColumn().equals(column)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Helper method for finding the index of a {@link SQLColumn} inside this
+	 * index. Returns the index in this column or -1 if the column does not
+	 * exist as a wrapped child of this index.
+	 */
+	public int indexOf(SQLColumn col) {
+		for (int i = 0; i < columns.size(); i++) {
+			if (columns.get(i).getColumn() != null && 
+					columns.get(i).getColumn().equals(col)) {
+				return i;
+			}
+		}
+		return -1;
+	}
+	
+	/**
+	 * Returns true if there are columns in this index.
+	 * @return
+	 */
+	@Transient @Accessor
+	public boolean isEmpty() {
+		return columns.isEmpty();
+	}
+
 }

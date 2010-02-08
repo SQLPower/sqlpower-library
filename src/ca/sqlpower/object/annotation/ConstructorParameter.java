@@ -25,6 +25,7 @@ import java.lang.annotation.Target;
 
 import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.dao.helper.SPPersisterHelper;
+import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPObject;
 
 /**
@@ -42,13 +43,47 @@ import ca.sqlpower.object.SPObject;
 public @interface ConstructorParameter {
 
 	/**
+	 * This enum distinguishes between the types of properties that can be
+	 * passed into a constructor as arguments. Each type is documented to fully
+	 * explain the type of parameter is supplied.
+	 */
+	public enum ParameterType {
+
+		/**
+		 * This is the default property type. Regular properties must be
+		 * convertable by a {@link SessionPersisterSuperConverter} of some kind.
+		 * Properties of this type will be converted to a unique value that
+		 * allows the object to be identified or created. This unique value will
+		 * be simple to allow the object to be persisted but also allow the
+		 * object to be retrieved when converted back.
+		 * <p>
+		 * This includes references to object that exist in the tree.
+		 */
+		PROPERTY,
+		
+		/**
+		 * This is any primitive object type that is not covered by the
+		 * {@link SessionPersisterSuperConverter}.
+		 */
+		PRIMITIVE,
+
+		/**
+		 * Children must be an {@link SPObject} that is a child of the object to
+		 * be constructed. These are different from the reference because the
+		 * object cannot be found in the tree until the current object is
+		 * created and added to the tree.
+		 */
+		CHILD;
+	}
+
+	/**
 	 * Determines whether this annotated constructor parameter maps onto an
 	 * {@link SPObject} property. If this is true, the parameter does map onto a
 	 * property and the property name is defined by {@link #propertyName()}.
 	 * Otherwise, either the parameter is an SPObject or a regular
 	 * primitive/String type. By default, this is true.
 	 */
-	boolean isProperty() default true;
+	ParameterType isProperty() default ParameterType.PROPERTY;
 
 	/**
 	 * This will be the JavaBean property that will be set to the annotated

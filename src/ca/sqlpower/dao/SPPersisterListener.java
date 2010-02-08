@@ -68,7 +68,7 @@ public class SPPersisterListener implements SPListener {
 
 	public void childAdded(SPChildEvent e) {
 		e.getChild().addSPListener(this);
-		persistObject(e.getChild());
+		persistObject(e.getChild(), e.getIndex());
 	}
 
 	/**
@@ -77,12 +77,16 @@ public class SPPersisterListener implements SPListener {
 	 * one persist object call made and any number of additional persist
 	 * property calls as needed. This can be useful for persisting an entire
 	 * tree of objects to the JCR as an initial commit.
+	 * 
+	 * @param o
+	 *            The object to be persisted.
+	 * @param index
+	 *            the index the object is located in its parent's list of
+	 *            children of the same object type.
 	 */
-	public void persistObject(SPObject o) {
+	public void persistObject(SPObject o, int index) {
 		this.transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
 			"Persisting " + o.getName() + " and its descendants."));
-
-		int index = 0;
 
 		try {
 			helperFactory.persistObject(o, index);
@@ -97,7 +101,13 @@ public class SPPersisterListener implements SPListener {
 			children = o.getChildren();
 		}
 		for (SPObject child : children) {
-			persistObject(child);
+			int childIndex = 0;
+			if (o instanceof SQLObject) {
+				childIndex = ((SQLObject) o).getChildrenWithoutPopulating(child.getClass()).indexOf(child);
+			} else {
+				childIndex = o.getChildren(child.getClass()).indexOf(child);
+			}
+			persistObject(child, childIndex);
 		}
 
 		this.transactionEnded(TransactionEvent.createEndTransactionEvent(this));

@@ -40,11 +40,13 @@ import ca.sqlpower.dao.SPPersistenceException;
 import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.helper.AbstractSPPersisterHelper;
+import ca.sqlpower.dao.helper.PersisterHelperFinder;
 import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.dao.helper.SPPersisterHelperFactory;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.util.SPSession;
 
 import com.google.common.collect.HashMultimap;
@@ -376,6 +378,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		// XXX Need to import any additional classes this generated persister helper
 		// class requires, aside from those needed in visitedClass.
 		allImports.add(AbstractSPPersisterHelper.class.getName());
+		allImports.add(SPPersisterHelper.class.getName());
+		allImports.add(PersisterHelperFinder.class.getName());
 		allImports.add(SPPersisterHelperFactory.class.getName());
 		allImports.add(List.class.getName());
 		allImports.add(visitedClass.getName());
@@ -386,6 +390,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		allImports.add(DataType.class.getName());
 		allImports.add(SessionPersisterSuperConverter.class.getName());
 		allImports.add(Multimap.class.getName());
+		allImports.add(SPObject.class.getName());
 		
 		for (String pkg : allImports) {
 			// No need to import java.lang as it is automatically imported.
@@ -442,7 +447,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 						persistedPropertiesField + ", " +
 				List.class.getSimpleName() + "<" + 
 						PersistedSPObject.class.getSimpleName() + "> " + persistedObjectsListField + ", " +
-				SPPersisterHelperFactory.class.getSimpleName() + " " + factoryField + ") {\n");
+				SPPersisterHelperFactory.class.getSimpleName() + " " + factoryField + ") throws SPPersistenceException {\n");
 		tabs++;
 		
 		sb.append(indent(tabs));
@@ -466,27 +471,14 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			String parameterType = cpo.getType().getSimpleName();
 			String parameterName = cpo.getName();
 			
-			if (cpo.isProperty()) {
+			if (ParameterType.PROPERTY.equals(cpo.getProperty())) {
 				sb.append(parameterType + " " + parameterName + 
 						" = (" + parameterType + ") " + 
 						converterField + ".convertToComplexType(" + 
 						"findPropertyAndRemove(" + uuidField + ", " +
 						"\"" + parameterName + "\", " + 
 						persistedPropertiesField + "), " + parameterType + ".class);\n");
-			} else if (SPObject.class.isAssignableFrom(cpo.getType())) {
-				sb.append(childPersistedObjectField + " = findPersistedSPObject(" + 
-						uuidField + ", \"" + parameterType + "\", " + 
-						persistedObjectsListField + ");\n");
-				
-				sb.append(indent(tabs));
-				sb.append(parameterType + " " + parameterName + " = " + 
-						factoryField + ".commitObject(" + 
-						parameterType + ".class, " + 
-						persistedPropertiesField + ", " + 
-						childPersistedObjectField + ", " + 
-						persistedObjectsListField + ");\n");
-				
-			} else {
+			} else if (ParameterType.PRIMITIVE.equals(cpo.getProperty())) {
 				sb.append(parameterType + " " + parameterName + " = " + 
 						parameterType + ".valueOf(");
 				
@@ -495,13 +487,58 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				} else {
 					sb.append("\"" + cpo.getValue() + "\");\n");
 				}
+			} else if (ParameterType.CHILD.equals(cpo.getProperty())) {
+				String objectUUIDField = parameterName + "UUID";
+				String childPersisterHelperField = parameterName + "Helper";
+				String childPersistedObject = parameterName + "PSO";
+				
+				
+				println(sb, tabs, "String " + objectUUIDField + " = (String) findPropertyAndRemove(" + 
+						uuidField + ", \"" + parameterName + "\", " + persistedPropertiesField + ");");
+				println(sb, tabs, "SPPersisterHelper<? extends SPObject> " + childPersisterHelperField + ";");
+				println(sb, tabs, "try {");
+				tabs++;
+				println(sb, tabs, childPersisterHelperField + " = PersisterHelperFinder.findPersister(" + parameterType + ".class);");
+				tabs--;
+				println(sb, tabs, "} catch (Exception e) {");
+				tabs++;
+				println(sb, tabs, "throw new SPPersistenceException(uuid, e);");
+				tabs--;
+				println(sb, tabs, "}");
+				println(sb, tabs, "PersistedSPObject " + childPersistedObject + 
+						" = findPersistedSPObject(" + uuidField + ", \"" + cpo.getType().getName() + "\", " + 
+						objectUUIDField + ", " + persistedObjectsListField + ");");
+				println(sb, tabs, parameterType + " " + parameterName + " = (" + parameterType + ") " + 
+						childPersisterHelperField + ".commitObject(" + childPersistedObject + ", " + 
+						persistedPropertiesField + ", " + persistedObjectsListField + ", " + factoryField + ");");
+				
+				/*
+				String primaryKeyIndexUUID = (String) findPropertyAndRemove(uuid, "primaryKeyIndex", persistedProperties);
+				SPPersisterHelper<? extends SPObject> primaryKeyIndexHelper;
+				try {
+					 primaryKeyIndexHelper = PersisterHelperFinder.findPersister(SQLIndex.class);
+				} catch (Exception e) {
+					throw new SPPersistenceException(uuid, e);
+				}
+				PersistedSPObject primaryKeyIndexPSO = findPersistedSPObject(uuid, "SQLIndex", primaryKeyIndexUUID, persistedObjects);
+				SQLIndex primaryKeyIndex = (SQLIndex) primaryKeyIndexHelper.commitObject(primaryKeyIndexPSO, persistedProperties, persistedObjects, factory);
+				*/
+				
+				
+			} else {
+				throw new IllegalStateException("Don't know how to handle " +
+						"property type " + cpo.getProperty());
 			}
 		}
 		sb.append("\n");
 		
 		// Create and return the new object.
 		sb.append(indent(tabs));
-		sb.append(visitedClass.getSimpleName() + " " + objectField + " = new " + 
+		sb.append(visitedClass.getSimpleName() + " " + objectField + ";\n");
+		sb.append(indent(tabs));
+		sb.append("try {\n");
+		sb.append(indent(tabs + 1));
+		sb.append(objectField + " = new " + 
 				visitedClass.getSimpleName() + "(");
 		
 		boolean firstArg = true;
@@ -516,6 +553,13 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		}
 		
 		sb.append(");\n");
+		
+		sb.append(indent(tabs));
+		sb.append("} catch (Exception ex) {\n");
+		sb.append(indent(tabs + 1));
+		sb.append("throw new SPPersistenceException(null, ex);\n");
+		sb.append(indent(tabs));
+		sb.append("}\n");
 		
 		sb.append(indent(tabs));
 		sb.append(objectField + ".setUUID(" + uuidField + ");\n");
@@ -876,10 +920,16 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		// Persist the object.
 		sb.append(indent(tabs));
 		sb.append(persisterField + ".persistObject(" + parentUUIDField + ", \"" + 
-				visitedClass.getSimpleName() + "\", " + uuidField + ", " + 
+				visitedClass.getName() + "\", " + uuidField + ", " + 
 				indexField + ");\n\n");
 		
 		sb.append(indent(tabs));
+		
+		//TODO pass in the actual exception types on any accessors
+		//then replace this blanket try/catch with specifics for any accessor
+		//that throws an exception.
+		println(sb, tabs, "try {");
+		tabs++;
 		if (constructorParameters.isEmpty()) {
 			sb.append("// No constructor arguments\n");
 		} else {
@@ -887,7 +937,9 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			
 			// Persist all of its constructor argument properties.
 			for (ConstructorParameterObject cpo : constructorParameters) {
-				if (cpo.isProperty()) {
+				//XXX Should this only be properties and children?
+				if (ParameterType.PROPERTY.equals(cpo.getProperty())
+						|| ParameterType.CHILD.equals(cpo.getProperty())) {
 					sb.append(indent(tabs));
 					sb.append(persisterField + ".persistProperty(" + uuidField + ", \"" + 
 							cpo.getName() + "\", " + 
@@ -919,7 +971,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				// See if the property has already been persisted as a constructor argument.
 				boolean foundConstructorProperty = false;
 				for (ConstructorParameterObject cpo : constructorParameters) {
-					if (cpo.isProperty() && cpo.getName().equals(propertyName)) {
+					if (ParameterType.PROPERTY.equals(cpo.getProperty()) && 
+							cpo.getName().equals(propertyName)) {
 						foundConstructorProperty = true;
 						break;
 					}
@@ -965,6 +1018,12 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				}
 			}
 		}
+		tabs--;
+		println(sb, tabs, "} catch (Exception ex) {");
+		tabs++;
+		println(sb, tabs, "throw new SPPersistenceException(" + uuidField + ", ex);");
+		tabs--;
+		println(sb, tabs, "}");
 		
 		tabs--;
 		sb.append(indent(tabs));
@@ -1168,7 +1227,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			}
 			
 			sb.append("if (" + simpleNameField + ".equals(" + 
-					clazz.getSimpleName() + ".class.getSimpleName())) {\n"); 
+					clazz.getSimpleName() + ".class.getName())) {\n"); 
 			tabs++;
 			
 			sb.append(indent(tabs));
@@ -1204,5 +1263,28 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		return sb.toString();
 	}
+	
+	//-------------- helper methods for dealing with string buffer, there may be a class that already does this
+	
+	private void println(StringBuilder sb, int tabs, String s) {
+		sb.append(indent(tabs));
+		sb.append(s);
+		sb.append("\n");
+	}
+	
+	private void print(StringBuilder sb, int tabs, String s) {
+		sb.append(indent(tabs));
+		sb.append(s);
+	}
+	
+	private void niprintln(StringBuilder sb, String s) {
+		sb.append(s + "\n");
+	}
+	
+	private void niprint(StringBuilder sb, String s) {
+		sb.append(s);
+	}
+	
+	//-------------- end helper methods
 
 }

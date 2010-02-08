@@ -25,6 +25,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -53,6 +54,14 @@ import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
 
 public class SQLDatabase extends SQLObject implements java.io.Serializable, PropertyChangeListener {
 	private static Logger logger = Logger.getLogger(SQLDatabase.class);
+	
+	/**
+	 * Defines an absolute ordering of the child types of this class.
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Class<? extends SPObject>> allowedChildTypes = 
+		Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
+				Arrays.asList(SQLCatalog.class, SQLSchema.class, SQLTable.class)));
 
 	/**
 	 * This SPDataSource describes how to connect to the 
@@ -765,6 +774,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			throw new IllegalStateException("Cannot remove child " + child.getName() + 
 					" of type " + child.getClass() + " as its parent is not " + getName());
 		}
+		child.removeNotify();
 		int index = tables.indexOf(child);
 		if (index != -1) {
 			 tables.remove(index);
@@ -846,6 +856,11 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		fireChildAdded(SQLTable.class, table, index);
 	}
 
+	/**
+	 * The child types for a database change as children are added. This is
+	 * different from most other cases but the order of the allowed children
+	 * will remain the same as the order specified by {@link #allowedChildTypes}.
+	 */
 	@NonProperty
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();

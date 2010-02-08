@@ -94,7 +94,7 @@ public class RefreshTest extends DatabaseConnectedTestCase {
         
         assertEquals("Wrong number of columns ("+moose.getChildNames(SQLColumn.class)+")",
                 0, moose.getColumns().size());
-        assertEquals("PK should have vanished too", 0, moose.getIndices().size());
+        assertEquals("PK no longer disappears", 1, moose.getIndices().size());
     }
 
     public void testModifyNonPkCol() throws Exception {
@@ -186,7 +186,7 @@ public class RefreshTest extends DatabaseConnectedTestCase {
         
         assertEquals("Unexpected indexes: " + moose.getChildNames(SQLIndex.class),
                 2, moose.getIndices().size());
-        assertSame(mooseIdx, moose.getIndices().get(0));
+        assertSame(mooseIdx, moose.getIndices().get(1));
         assertEquals(2, mooseIdx.getChildCount());
         assertEquals("NAME", mooseIdx.getChild(0).getName());
         assertEquals("ANTLER_LENGTH", mooseIdx.getChild(1).getName());
@@ -214,7 +214,7 @@ public class RefreshTest extends DatabaseConnectedTestCase {
         
         assertEquals("Unexpected indexes: " + moose.getChildNames(SQLIndex.class),
                 2, moose.getIndices().size());
-        assertSame(mooseIdx, moose.getIndices().get(0));
+        assertSame(mooseIdx, moose.getIndices().get(1));
         assertEquals(1, mooseIdx.getChildCount());
         assertEquals("ANTLER_LENGTH", mooseIdx.getChild(0).getName());
     }

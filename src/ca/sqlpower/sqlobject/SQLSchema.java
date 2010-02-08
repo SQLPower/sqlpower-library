@@ -23,6 +23,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -42,6 +43,15 @@ import ca.sqlpower.object.annotation.Transient;
  * SQLTables.  Its parent could be either a SQLDatabase or a SQLCatalog.
  */
 public class SQLSchema extends SQLObject {
+	
+	/**
+	 * Defines an absolute ordering of the child types of this class.
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Class<? extends SPObject>> allowedChildTypes = 
+		Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
+				Arrays.asList(SQLTable.class)));
+	
 	private static final Logger logger = Logger.getLogger(SQLSchema.class);
 	
 	private final List<SQLTable> tables = new ArrayList<SQLTable>();
@@ -288,6 +298,7 @@ public class SQLSchema extends SQLObject {
 			throw new IllegalStateException("Cannot remove child " + table.getName() + 
 					" of type " + table.getClass() + " as its parent is not " + getName());
 		}
+		table.removeNotify();
 		int index = tables.indexOf(table);
 		if (index != -1) {
 			 tables.remove(index);
@@ -337,9 +348,7 @@ public class SQLSchema extends SQLObject {
 	}
 
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
-		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
-		types.add(SQLTable.class);
-		return Collections.unmodifiableList(types);
+		return allowedChildTypes;
 	}
 
 }

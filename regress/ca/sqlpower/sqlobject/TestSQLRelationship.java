@@ -103,12 +103,10 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         parentTable.addColumn(pkcol2);
 		parentTable.addColumn(new SQLColumn(parentTable, "attribute_1", Types.INTEGER, 10, 0));
 		
-		SQLIndex parentTablePK = new SQLIndex();
-		parentTablePK.setPrimaryKeyIndex(true);
+		SQLIndex parentTablePK = parentTable.getPrimaryKeyIndex();
 		parentTablePK.addChild(new Column(pkcol1, AscendDescend.UNSPECIFIED));
 		parentTablePK.addChild(new Column(pkcol2, AscendDescend.UNSPECIFIED));
 		parentTablePK.setName("parentTable_pk");
-		parentTable.addIndex(parentTablePK);
 		database.addChild(parentTable);
 		
 		childTable1 = new SQLTable(database, "child_1", null, "TABLE", true);
@@ -317,13 +315,13 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 		SQLRelationship rel = parentTable.getExportedKeys().get(0);
 		childTable1.addColumn(fkcol, 0);
 		parentTable.addColumn(pkcol, 0);
-		pkcol.setPrimaryKeySeq(0);
+		parentTable.addToPK(pkcol);
 		
-		assertNotNull("parent column didn't to go PK", pkcol.getPrimaryKeySeq());
+		assertTrue("parent column didn't to go PK", pkcol.isPrimaryKey());
 		assertTrue("column didn't get hijacked", rel.containsFkColumn(fkcol));
 		
 		// this is the point of the test
-		assertNotNull("column didn't go to primary key", fkcol.getPrimaryKeySeq());
+		assertTrue("column didn't go to primary key", fkcol.isPrimaryKey());
 	}
 	
 	/**
@@ -339,14 +337,14 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 		SQLRelationship rel = parentTable.getExportedKeys().get(0);
 		childTable1.addColumn( fkcol);
 		parentTable.addColumn( pkcol);
-		assertNull("pkcol already in the primary key",pkcol.getPrimaryKeySeq());
-		pkcol.setPrimaryKeySeq(0);
+		assertFalse("pkcol already in the primary key",pkcol.isPrimaryKey());
+		parentTable.addToPK(pkcol);
 		
-		assertNotNull("parent column didn't to go PK", pkcol.getPrimaryKeySeq());
+		assertTrue("parent column didn't to go PK", pkcol.isPrimaryKey());
 		assertTrue("column didn't get hijacked", rel.containsFkColumn(fkcol));
 		
 		// this is the point of the test
-		assertNotNull("column didn't go to primary key", fkcol.getPrimaryKeySeq());
+		assertTrue("column didn't go to primary key", fkcol.isPrimaryKey());
 	}
 	
 	public void testFKColManagerRemovesImportedKey() throws SQLObjectException {
@@ -379,7 +377,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 		
 		SQLColumn pk3 = new SQLColumn(parentTable, "pk3", Types.VARCHAR, 10, 0);
 		parentTable.addColumn(pk3);
-		pk3.setPrimaryKeySeq(0);
+		parentTable.addToPK(pk3);
 		
 		assertEquals("Child table got new col!?!", oldChildColCount, childTable1.getColumns().size());
 	}
@@ -419,7 +417,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 	public void testPKColNameChangeGoesToFKColWhenNamesWereSame() throws SQLObjectException {
 		SQLColumn pkcol = new SQLColumn(parentTable, "old name", Types.VARCHAR, 10, 0);
 		parentTable.addColumn(pkcol);
-		pkcol.setPrimaryKeySeq(0);
+		parentTable.addToPK(pkcol);
 		
 		SQLColumn fkcol = childTable1.getColumnByName("old name");
 		
@@ -431,7 +429,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 	public void testPKColNameChangeDoesntGoToFKColWhenNamesWereDifferent() throws SQLObjectException {
 		SQLColumn pkcol = new SQLColumn(parentTable, "old name", Types.VARCHAR, 10, 0);
 		parentTable.addColumn(pkcol);
-		pkcol.setPrimaryKeySeq(0);
+		parentTable.addToPK(pkcol);
 		
 		SQLColumn fkcol = childTable1.getColumnByName("old name");
 		
@@ -444,7 +442,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 	public void testPKColTypeChangeGoesToFKCol() throws SQLObjectException {
 		SQLColumn pkcol = new SQLColumn(parentTable, "old name", Types.VARCHAR, 10, 0);
 		parentTable.addColumn(pkcol);
-		pkcol.setPrimaryKeySeq(0);
+		parentTable.addToPK(pkcol);
 		
 		SQLColumn fkcol = childTable1.getColumnByName("old name");
 		
@@ -460,22 +458,23 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         SQLColumn childCol1 = new SQLColumn(null, "child_attr", Types.INTEGER, 10, 0);
         
         parent.addColumn(parentCol1);
-        parentCol1.setPrimaryKeySeq(0);
+		parent.addToPK(parentCol1);
         
         child.addColumn(childCol1);
-        childCol1.setPrimaryKeySeq(null);
+        child.moveAfterPK(childCol1);
         
         SQLRelationship rel = new SQLRelationship();
         rel.setIdentifying(true);
         rel.attachRelationship(parent, child, true);
         
         assertEquals("pk1", parent.getColumn(0).getName());
-        assertEquals(new Integer(0), parent.getColumn(0).getPrimaryKeySeq());
+        assertEquals(parentCol1, parent.getPrimaryKeyIndex().getChild(0).getColumn());
+        assertEquals(parentCol1, parent.getColumn(0));
         
         assertEquals("pk1", child.getColumn(0).getName());
-        assertEquals(new Integer(0), child.getColumn(0).getPrimaryKeySeq());
+        assertEquals(child.getChild(0), child.getPrimaryKeyIndex().getChild(0).getColumn());
         assertEquals("child_attr", child.getColumn(1).getName());
-        assertEquals(null, child.getColumn(1).getPrimaryKeySeq());
+        assertFalse(child.getColumn(1).isPrimaryKey());
     }
     
     public void testCreateNonIdentifyingRelationship() throws SQLObjectException {
@@ -485,28 +484,30 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         SQLColumn childCol1 = new SQLColumn(null, "child_attr", Types.INTEGER, 10, 0);
         
         parent.addColumn(parentCol1);
-        parentCol1.setPrimaryKeySeq(0);
+        parent.addToPK(parentCol1);
         
         child.addColumn(childCol1);
-        childCol1.setPrimaryKeySeq(null);
+        child.moveAfterPK(childCol1);
         
         SQLRelationship rel = new SQLRelationship();
         rel.setIdentifying(false);
         rel.attachRelationship(parent, child, true);
         
         assertEquals("pk1", parent.getColumn(0).getName());
-        assertEquals(new Integer(0), parent.getColumn(0).getPrimaryKeySeq());
+        assertEquals(parentCol1, parent.getPrimaryKeyIndex().getChild(0).getColumn());
+        assertEquals(parentCol1, parent.getColumn(0));
         
         assertEquals("child_attr", child.getColumn(0).getName());
-        assertEquals(null, child.getColumn(0).getPrimaryKeySeq());
+        assertEquals(0, child.getPrimaryKeyIndex().getChildCount());
+        assertFalse(child.getColumn(0).isPrimaryKey());
         assertEquals("pk1", child.getColumn(1).getName());
-        assertEquals(null, child.getColumn(1).getPrimaryKeySeq());
+        assertFalse(child.getColumn(1).isPrimaryKey());
     }
 
 	public void testPKColPrecisionChangeGoesToFKCol() throws SQLObjectException {
 		SQLColumn pkcol = new SQLColumn(parentTable, "old name", Types.VARCHAR, 10, 0);
 		parentTable.addColumn(pkcol);
-		pkcol.setPrimaryKeySeq(0);
+		parentTable.addToPK(pkcol);
 		
 		SQLColumn fkcol = childTable1.getColumnByName("old name");
 		
@@ -526,8 +527,13 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 
         assertEquals(origMapping, rel1.getChildren());
         
-        assertEquals(Integer.valueOf(0), childTable1.getColumnByName("child_pkcol_1").getPrimaryKeySeq());
-        assertEquals(Integer.valueOf(1), childTable1.getColumnByName("child_pkcol_2").getPrimaryKeySeq());
+        SQLColumn pkcol1 = childTable1.getColumnByName("child_pkcol_1");
+        SQLColumn pkcol2 = childTable1.getColumnByName("child_pkcol_2");
+        assertTrue(pkcol1.isPrimaryKey());
+        assertTrue(pkcol2.isPrimaryKey());
+        
+        assertEquals(0, childTable1.getPrimaryKeyIndex().indexOf(pkcol1));
+        assertEquals(1, childTable1.getPrimaryKeyIndex().indexOf(pkcol2));
 
         assertEquals("Exported key columns disappeared", origParentCols, parentTable.getColumns());
 		assertEquals("Imported key columns didn't get put back", origChild1Cols, childTable1.getColumns());
@@ -540,9 +546,9 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 		SQLTable myParent = new SQLTable(db, true);
 		SQLColumn col;
 		myParent.addColumn(col = new SQLColumn(myParent, "pkcol1", Types.VARCHAR, 10, 0));
-		col.setPrimaryKeySeq(0);
+		myParent.addToPK(col);
 		myParent.addColumn(col = new SQLColumn(myParent, "pkcol2", Types.VARCHAR, 10, 0));
-		col.setPrimaryKeySeq(0);
+		myParent.addToPK(col);
 		
 		SQLTable myChild = new SQLTable(db, true);
 		
@@ -564,8 +570,8 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 		
 	public void testMovingPKColOutOfPK() throws SQLObjectException {
 		SQLColumn col = parentTable.getColumnByName("pkcol_1");
+		parentTable.moveAfterPK(col);
 		
-		col.setPrimaryKeySeq(null);
 		assertTrue("pkcol_1 dropped from the parent table", parentTable.getColumns().contains(col));
 	}
 	public void testMovingPKColOutOfPKByColIndex() throws SQLObjectException {
@@ -575,37 +581,19 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 		assertTrue("pkcol_1 dropped from the parent table", parentTable.getColumns().contains(col));
 	}
     
-    /**
-     * The relationship manager was detaching from its whole table whenever
-     * one relationship (not necessarily the listening one) was removed
-     * from its pk table.  This test checks for that problem.
-     */
-    public void testRelManagerDoesntDetachEarly() {
-        assertTrue(parentTable.getSPListeners().contains(rel1.getRelationshipManager()));
-        assertTrue(parentTable.getSPListeners().contains(rel2.getRelationshipManager()));
-        assertTrue(childTable2.getSPListeners().contains(rel2.getRelationshipManager()));
-        
-        parentTable.removeExportedKey(rel1);
-        
-        assertFalse(parentTable.getSPListeners().contains(rel1.getRelationshipManager()));
-        
-        // and finally, what we're testing for:
-        assertTrue(parentTable.getSPListeners().contains(rel2.getRelationshipManager()));
-        assertTrue(childTable2.getSPListeners().contains(rel2.getRelationshipManager()));
-    }
-    
     public void testAutoGeneratedColumnGoesIntoPK() throws SQLObjectException {
         SQLColumn mycol = new SQLColumn(null, "my_column", Types.CHAR, 1000000, 0);
         parentTable.addColumn(mycol, 0);
         
-        mycol.setPrimaryKeySeq(0);
+        parentTable.addToPK(mycol);
         assertTrue(mycol.isPrimaryKey());
         assertTrue(rel1.isIdentifying());
         
         // and the point of the test...
         SQLColumn generatedCol = childTable1.getColumnByName("my_column"); 
         System.out.println("Columns of childTable1: "+childTable1.getColumns());
-        System.out.println("Column 0 pk value:"+childTable1.getColumn(0).getPrimaryKeySeq());
+        System.out.println("Column 0 pk value:" + 
+        		childTable1.getPrimaryKeyIndex().indexOf(childTable1.getColumn(0)));
         assertNotNull(generatedCol);
         assertTrue(childTable1.getColumnIndex(generatedCol) < childTable1.getPkSize());
         assertTrue(generatedCol.isPrimaryKey());
@@ -646,17 +634,17 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         SQLTable table1 = new SQLTable(database, "table1", null, "TABLE", true);
         SQLColumn table1PK = new SQLColumn(table1, "pkcol_1", Types.INTEGER, 10, 0);
         table1.addChild(table1PK);
-        table1PK.setPrimaryKeySeq(0);
+        table1.addToPK(table1PK);
         
         SQLTable table2 = new SQLTable(database, "table2", null, "TABLE", true);
         SQLColumn table2PK = new SQLColumn(table2, "pkcol_2", Types.INTEGER, 10, 0);
         table2.addChild(table2PK);
-        table2PK.setPrimaryKeySeq(0);
+        table2.addToPK(table2PK);
         
         SQLTable table3 = new SQLTable(database, "table3", null, "TABLE", true);
         SQLColumn table3PK = new SQLColumn(table3, "pkcol_3", Types.INTEGER, 10, 0);
         table3.addChild(table3PK);
-        table3PK.setPrimaryKeySeq(0);
+        table3.addToPK(table3PK);
         
         SQLRelationship relTable3to2 = new SQLRelationship();
         relTable3to2.setIdentifying(true);
@@ -688,7 +676,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         SQLTable table1 = new SQLTable(database, "table1", null, "TABLE", true);
         SQLColumn table1PK = new SQLColumn(table1, "pkcol_1", Types.INTEGER, 10, 0);
         table1.addChild(table1PK);
-        table1PK.setPrimaryKeySeq(0);
+        table1.addToPK(table1PK);
         
         SQLTable table2 = new SQLTable(database, "table2", null, "TABLE", true);
         SQLRelationship relTable1to2 = new SQLRelationship();
@@ -698,7 +686,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 
         assertEquals("pkcol_1", table2.getColumn(0).getName());
         assertTrue(table2.getColumn(0).isPrimaryKey());
-        assertNotNull(table2.getColumn(0).getPrimaryKeySeq());
+        assertTrue(table2.getColumn(0).isPrimaryKey());
 
         assertNotNull(table2.getPrimaryKeyIndex());
         assertNotNull(table2.getPrimaryKeyName());
@@ -709,7 +697,10 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
      */
     public void testAutoMappingHijackWhenTargetColumnExists() throws Exception {
         SQLColumn parentCol = parentTable.getColumnByName("pkcol_1");
-        parentCol.setPrimaryKeySeq(0);
+        parentTable.addToPK(parentCol);
+        SQLColumn parentCol2 = parentTable.getColumnByName("pkcol_2");
+        parentTable.moveAfterPK(parentCol2);
+        assertEquals(1, parentTable.getPkSize());
         
         SQLTable childTable = new SQLTable(database, true);
         database.addChild(childTable);
@@ -728,7 +719,10 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
      */
     public void testAutoMappingNoHijackWhenTargetColumnExistsWithWrongType() throws Exception {
         SQLColumn parentCol = parentTable.getColumnByName("pkcol_1");
-        parentCol.setPrimaryKeySeq(0);
+        parentTable.addToPK(parentCol);
+        SQLColumn parentCol2 = parentTable.getColumnByName("pkcol_2");
+        parentTable.moveAfterPK(parentCol2);
+        assertEquals(1, parentTable.getPkSize());
         
         SQLTable childTable = new SQLTable(database, true);
         database.addChild(childTable);
@@ -748,7 +742,10 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
      */
     public void testSelfReferencingAutoMapping() throws Exception {
         SQLColumn parentCol = parentTable.getColumnByName("pkcol_1");
-        parentCol.setPrimaryKeySeq(0);
+        parentTable.addToPK(parentCol);
+        SQLColumn parentCol2 = parentTable.getColumnByName("pkcol_2");
+        parentTable.moveAfterPK(parentCol2);
+        assertEquals(1, parentTable.getPkSize());
 
         int oldColCount = parentTable.getColumns().size();
         
@@ -769,13 +766,16 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
      */
     public void testSelfReferencingAutoMappingOnPKModification() throws Exception {
         int oldColCount = parentTable.getColumns().size();
+        parentTable.moveAfterPK(parentTable.getColumnByName("pkcol_1"));
+        parentTable.moveAfterPK(parentTable.getColumnByName("pkcol_2"));
+        assertEquals(0, parentTable.getPkSize());
         
         SQLRelationship r = new SQLRelationship();
         r.attachRelationship(parentTable, parentTable, true);
         assertEquals(0, r.getChildren().size());
 
         SQLColumn parentCol = parentTable.getColumnByName("pkcol_1");
-        parentCol.setPrimaryKeySeq(0);
+        parentTable.addToPK(parentCol);
         
         assertEquals(1, r.getChildren().size());
         SQLRelationship.ColumnMapping mapping = r.getChildren(SQLRelationship.ColumnMapping.class).get(0);
@@ -794,6 +794,9 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
      */
     public void testSelfReferencingInfiniteRecursionOnPKModification() throws Exception {
         int oldColCount = parentTable.getColumns().size();
+        parentTable.moveAfterPK(parentTable.getColumnByName("pkcol_1"));
+        parentTable.moveAfterPK(parentTable.getColumnByName("pkcol_2"));
+        assertEquals(0, parentTable.getPkSize());
         
         SQLRelationship r = new SQLRelationship();
         r.attachRelationship(parentTable, parentTable, true);
@@ -801,7 +804,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 
         r.setIdentifying(true);
         SQLColumn parentCol = parentTable.getColumnByName("pkcol_1");
-        parentCol.setPrimaryKeySeq(0);
+        parentTable.addToPK(parentCol);
         
         assertEquals(1, r.getChildren().size());
         SQLRelationship.ColumnMapping mapping = r.getChildren(SQLRelationship.ColumnMapping.class).get(0);
@@ -821,7 +824,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         database.addChild(table);
         SQLColumn c1 = new SQLColumn(table, "Col", Types.INTEGER, 10, 0);
         table.addChild(c1);
-        c1.setPrimaryKeySeq(0);
+        table.addToPK(c1);
         
         SQLColumn c2 = new SQLColumn(table, "Parent_Col", Types.INTEGER, 10, 0);
         table.addColumn(c2);
@@ -848,7 +851,10 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
      */
     public void testAutoMappingNoHijackWhenRelationshipAlreadyExists() throws Exception {
         SQLColumn parentCol = parentTable.getColumnByName("pkcol_1");
-        parentCol.setPrimaryKeySeq(0);
+        parentTable.addToPK(parentCol);
+        SQLColumn parentCol2 = parentTable.getColumnByName("pkcol_2");
+        parentTable.moveAfterPK(parentCol2);
+        assertEquals(1, parentTable.getPkSize());
         
         SQLTable childTable = new SQLTable(database, true);
         database.addChild(childTable);
@@ -881,10 +887,10 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         SQLColumn child2PKCol1 = childTable2.getColumnByName("child2_pkcol_1");
         SQLColumn child2PKCol2 = childTable2.getColumnByName("child2_pkcol_2");
         
-        childPKCol1.setPrimaryKeySeq(0);
-        childPKCol2.setPrimaryKeySeq(1);
-        child2PKCol1.setPrimaryKeySeq(0);
-        child2PKCol2.setPrimaryKeySeq(1);
+        childTable1.addToPK(childPKCol1);
+        childTable1.addToPK(childPKCol2);
+        childTable2.addToPK(child2PKCol1);
+        childTable2.addToPK(child2PKCol2);
         
         assertTrue("Expected rel1 to be identifying", rel1.determineIdentifyingStatus());
         assertFalse("Expected rel2 to be non-identifying", rel2.determineIdentifyingStatus());
@@ -902,11 +908,11 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         // this is not expected to affect test results.
         parentTable.removeExportedKey(rel2);
         
-        parentTable.getColumnByName("pkcol_1").setPrimaryKeySeq(0);
-        parentTable.getColumnByName("pkcol_2").setPrimaryKeySeq(1);
+        parentTable.addToPK(parentTable.getColumnByName("pkcol_1"));
+        parentTable.addToPK(parentTable.getColumnByName("pkcol_2"));
 
-        childTable1.getColumnByName("child_pkcol_1").setPrimaryKeySeq(0);
-        childTable1.getColumnByName("child_pkcol_2").setPrimaryKeySeq(1);
+        childTable1.addToPK(childTable1.getColumnByName("child_pkcol_1"));
+        childTable1.addToPK(childTable1.getColumnByName("child_pkcol_2"));
 
         SQLTable grandchildTable = new SQLTable(database, "grandchild_1", null, "TABLE", true);
         grandchildTable.addColumn(new SQLColumn(grandchildTable, "grandchild_pkcol_1", Types.INTEGER, 10, 0));
@@ -930,7 +936,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         SQLColumn newParentPKCol = new SQLColumn(null, "new_parent_pk", Types.INTEGER, 10, 0);
         
         parentTable.addColumn(newParentPKCol);
-        newParentPKCol.setPrimaryKeySeq(3);
+        parentTable.addToPK(newParentPKCol);
         
         assertEquals(oldParentPkSize + 1, parentTable.getPkSize());
         assertEquals(oldChildPkSize + 1, childTable1.getPkSize());
@@ -956,7 +962,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         
         rel2.setIdentifying(true);
         
-        parentTable.getColumnByName("pkcol_1").setPrimaryKeySeq(0);
+        parentTable.addToPK(parentTable.getColumnByName("pkcol_1"));
 
         SQLTable grandchildTable = new SQLTable(database, "grandchild_1", null, "TABLE", true);
         database.addChild(grandchildTable);
@@ -988,6 +994,10 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
      * change events inside its loop, but sometimes (especially in the case of a
      * self-referencing relationship) those events were causing the column list
      * to change.. which causes a concurrent modification exception!
+     * <p>
+     * There is no more normalizePrimaryKey() but this test doesn't hurt to keep 
+     * around in case something unexpected happens when adding and removing columns
+     * to and from the primary key.
      * 
      * @throws Exception
      */
@@ -999,12 +1009,12 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         selfRef.setName("parent_table_self_ref");
         selfRef.attachRelationship(parentTable, parentTable, true);
         
-        parentTable.getColumnByName("pkcol_1").setPrimaryKeySeq(0);
-        parentTable.getColumnByName("pkcol_2").setPrimaryKeySeq(1);
-        parentTable.getColumnByName("attribute_1").setPrimaryKeySeq(2);
+        parentTable.addToPK(parentTable.getColumnByName("pkcol_1"));
+        parentTable.addToPK(parentTable.getColumnByName("pkcol_2"));
+        parentTable.addToPK(parentTable.getColumnByName("attribute_1"));
 
         // This was causing ConcurrentModificationException
-        parentTable.getColumnByName("pkcol_2").setPrimaryKeySeq(null);
+        parentTable.moveAfterPK(parentTable.getColumnByName("pkcol_2"));
     }
     
     /**
@@ -1016,24 +1026,28 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         parentTable.removeExportedKey(rel1);
         parentTable.removeExportedKey(rel2);
 
-        parentTable.getColumnByName("pkcol_1").setPrimaryKeySeq(0);
-        parentTable.getColumnByName("pkcol_2").setPrimaryKeySeq(1);
-        parentTable.getColumnByName("attribute_1").setPrimaryKeySeq(2);
+        final SQLColumn pkcol1 = parentTable.getColumnByName("pkcol_1");
+        final SQLColumn pkcol2 = parentTable.getColumnByName("pkcol_2");
+        final SQLColumn attr1 = parentTable.getColumnByName("attribute_1");
+		parentTable.addToPK(pkcol1);
+		parentTable.addToPK(pkcol2);
+		parentTable.addToPK(attr1);
         
         SQLRelationship selfRef = new SQLRelationship();
         selfRef.setName("parent_table_self_ref");
         selfRef.attachRelationship(parentTable, parentTable, true);
 
-        assertEquals(Integer.valueOf(0), parentTable.getColumnByName("pkcol_1").getPrimaryKeySeq());
-        assertEquals(Integer.valueOf(1), parentTable.getColumnByName("pkcol_2").getPrimaryKeySeq());
-        assertEquals(Integer.valueOf(2), parentTable.getColumnByName("attribute_1").getPrimaryKeySeq());
+        SQLIndex primaryKey = parentTable.getPrimaryKeyIndex();
+        assertEquals(0, primaryKey.indexOf(pkcol1));
+        assertEquals(1, primaryKey.indexOf(pkcol2));
+        assertEquals(2, primaryKey.indexOf(attr1));
         
-        parentTable.getColumnByName("pkcol_2").setPrimaryKeySeq(null);
+        parentTable.moveAfterPK(pkcol2);
  
         // The last of these three assertions is the one this test is looking for
-        assertEquals(Integer.valueOf(0), parentTable.getColumnByName("pkcol_1").getPrimaryKeySeq());
-        assertEquals(null,               parentTable.getColumnByName("pkcol_2").getPrimaryKeySeq());
-        assertEquals(Integer.valueOf(1), parentTable.getColumnByName("attribute_1").getPrimaryKeySeq());
+        assertEquals(0, primaryKey.indexOf(pkcol1));
+        assertFalse(pkcol2.isPrimaryKey());
+        assertEquals(1, primaryKey.indexOf(attr1));
     }
     
     /**
@@ -1048,21 +1062,25 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         parentTable.removeExportedKey(rel1);
         parentTable.removeExportedKey(rel2);
 
-        parentTable.getColumnByName("pkcol_1").setPrimaryKeySeq(0);
-        parentTable.getColumnByName("pkcol_2").setPrimaryKeySeq(1);
-        parentTable.getColumnByName("attribute_1").setPrimaryKeySeq(2);
+        SQLColumn pkcol1 = parentTable.getColumnByName("pkcol_1");
+        SQLColumn pkcol2 = parentTable.getColumnByName("pkcol_2");
+        SQLColumn attr1 = parentTable.getColumnByName("attribute_1");
+        parentTable.addToPK(pkcol1);
+        parentTable.addToPK(pkcol2);
+        parentTable.addToPK(attr1);
         
         SQLRelationship selfRef = new SQLRelationship();
         selfRef.setName("parent_table_self_ref");
         selfRef.attachRelationship(parentTable, parentTable, true);
 
-        assertEquals(Integer.valueOf(0), parentTable.getColumnByName("pkcol_1").getPrimaryKeySeq());
-        assertEquals(Integer.valueOf(1), parentTable.getColumnByName("pkcol_2").getPrimaryKeySeq());
-        assertEquals(Integer.valueOf(2), parentTable.getColumnByName("attribute_1").getPrimaryKeySeq());
+        SQLIndex pkIndex = parentTable.getPrimaryKeyIndex();
+        assertEquals(0, pkIndex.indexOf(pkcol1));
+        assertEquals(1, pkIndex.indexOf(pkcol2));
+        assertEquals(2, pkIndex.indexOf(attr1));
         
         assertNotNull(parentTable.getColumnByName("Parent_pkcol_1"));
         
-        parentTable.getColumnByName("Parent_pkcol_1").setPrimaryKeySeq(3);
+        parentTable.addToPK(parentTable.getColumnByName("Parent_pkcol_1"));
         SQLColumn newlyGeneratedCol = parentTable.getColumnByName("Parent_Parent_pkcol_1");
         
         assertNotNull(newlyGeneratedCol);
@@ -1079,25 +1097,29 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
     public void testMoveGeneratedColInSelfRefTable() throws Exception {
         parentTable.removeExportedKey(rel1);
         parentTable.removeExportedKey(rel2);
-
-        parentTable.getColumnByName("pkcol_1").setPrimaryKeySeq(0);
-        parentTable.getColumnByName("pkcol_2").setPrimaryKeySeq(1);
-        parentTable.getColumnByName("attribute_1").setPrimaryKeySeq(2);
+        
+        SQLColumn pkcol1 = parentTable.getColumnByName("pkcol_1");
+        SQLColumn pkcol2 = parentTable.getColumnByName("pkcol_2");
+        SQLColumn attr1 = parentTable.getColumnByName("attribute_1");
+        parentTable.addToPK(pkcol1);
+        parentTable.addToPK(pkcol2);
+        parentTable.addToPK(attr1);
         
         SQLRelationship selfRef = new SQLRelationship();
         selfRef.setName("parent_table_self_ref");
         selfRef.attachRelationship(parentTable, parentTable, true);
         
+        SQLIndex pkIndex = parentTable.getPrimaryKeyIndex();
         SQLColumn newlyGeneratedCol = parentTable.getColumnByName("Parent_pkcol_1");
         assertNotNull(newlyGeneratedCol);
-        newlyGeneratedCol.setPrimaryKeySeq(3);
+        parentTable.addToPK(newlyGeneratedCol);
         
         parentTable.changeColumnIndex(3, 0, true);
         
-        assertEquals(Integer.valueOf(0), newlyGeneratedCol.getPrimaryKeySeq());
-        assertEquals(Integer.valueOf(1), parentTable.getColumnByName("pkcol_1").getPrimaryKeySeq());
-        assertEquals(Integer.valueOf(2), parentTable.getColumnByName("pkcol_2").getPrimaryKeySeq());
-        assertEquals(Integer.valueOf(3), parentTable.getColumnByName("attribute_1").getPrimaryKeySeq());
+        assertEquals(0, pkIndex.indexOf(newlyGeneratedCol));
+        assertEquals(1, pkIndex.indexOf(pkcol1));
+        assertEquals(2, pkIndex.indexOf(pkcol2));
+        assertEquals(3, pkIndex.indexOf(attr1));
     }
 
     /**
@@ -1114,16 +1136,16 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         parentTable.removeExportedKey(rel1);
         parentTable.removeExportedKey(rel2);
 
-        parentTable.getColumnByName("pkcol_1").setPrimaryKeySeq(0);
-        parentTable.getColumnByName("pkcol_2").setPrimaryKeySeq(1);
-        parentTable.getColumnByName("attribute_1").setPrimaryKeySeq(2);
+        parentTable.addToPK(parentTable.getColumnByName("pkcol_1"));
+        parentTable.addToPK(parentTable.getColumnByName("pkcol_2"));
+        parentTable.addToPK(parentTable.getColumnByName("attribute_1"));
         
         SQLRelationship selfRef = new SQLRelationship();
         selfRef.setName("parent_table_self_ref");
         selfRef.attachRelationship(parentTable, parentTable, true);
         
         SQLColumn newlyGeneratedCol = parentTable.getColumnByName("Parent_pkcol_1");
-        newlyGeneratedCol.setPrimaryKeySeq(3);
+        parentTable.addToPK(newlyGeneratedCol);
         
         parentTable.changeColumnIndex(3, 0, true);
         parentTable.changeColumnIndex(1, 3, false);

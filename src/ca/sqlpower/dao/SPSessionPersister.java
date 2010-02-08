@@ -105,6 +105,7 @@ public class SPSessionPersister implements SPPersister {
 		// children of the same parent, the one with the lower index should go
 		// first. Otherwise, the one with the smaller ancestor tree should go first
 		// (e.g. Report should go before Page).
+		@SuppressWarnings("unchecked")
 		public int compare(PersistedSPObject o1, PersistedSPObject o2) {
 
 			if (o1.getParentUUID() == null && o2.getParentUUID() == null) {
@@ -158,11 +159,22 @@ public class SPSessionPersister implements SPPersister {
 				
 			} else if (ancestor1.getType().equals(ancestor2.getType())) {
 				c = ancestor1.getIndex() - ancestor2.getIndex();
-				
 			} else {
-				// XXX The comparator should really never reach
-				// this else block. However in the case that it does, compare by UUID.
-				c = ancestor1.getUUID().compareTo(ancestor2.getUUID());
+				
+				//Looking at the highest ancestor that is different in the list and finding the order
+				//of these ancestors based on the absolute ordering defined in their shared parent class type.
+				try {
+					Class<?> ancestorType1 = ClassLoader.getSystemClassLoader().loadClass(ancestor1.getType());
+					Class<?> ancestorType2 = ClassLoader.getSystemClassLoader().loadClass(ancestor2.getType());
+					Class<?> sharedAncestorType = ClassLoader.getSystemClassLoader().loadClass(previousAncestor.getType());
+					List<Class<? extends SPObject>> allowedChildTypes = (List<Class<? extends SPObject>>) 
+						sharedAncestorType.getDeclaredField("allowedChildTypes").get(null);
+					c = allowedChildTypes.indexOf(ancestorType1) - allowedChildTypes.indexOf(ancestorType2);
+					
+					if (c == 0) throw new IllegalStateException("This should be impossible.");
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
 			}
 			
 			return Integer.signum(c);
@@ -744,7 +756,10 @@ public class SPSessionPersister implements SPPersister {
 				} else {
 					siblings = parent.getChildren(spo.getClass());
 				}
+				
+				//XXX This appears to shuffle columns up which will cause columns to be rearranged
 				parent.addChild(spo, Math.min(pso.getIndex(), siblings.size()));
+				
 				parent.removeSPListener(removeChildOnAddListener);
 				persistedObjectsRollbackList.add(
 					new PersistedObjectEntry(
@@ -969,10 +984,14 @@ public class SPSessionPersister implements SPPersister {
 			List<PersistedPropertiesEntry> persistedPropertiesRollbackList) {
 		this.persistedPropertiesRollbackList = persistedPropertiesRollbackList;
 	}
-	
+
 	/**
-	 * Returns an ancestor list of {@link PersistedSPObject}s from a given
-	 * child {@link PersistedSPObject}.
+	 * Returns an ancestor list of {@link PersistedSPObject}s from a given child
+	 * {@link PersistedSPObject}. The list holds persist objects starting from
+	 * the root and going to the parent's persist call. This list does not hold
+	 * the persist call for the persist passed in. This list holds persist calls
+	 * that are outside of the current transaction of persist calls, it will
+	 * create persist calls as necessary.
 	 */
 	private List<PersistedSPObject> buildAncestorListFromPersistedObjects(PersistedSPObject child) {
 		List<PersistedSPObject> resultList = new ArrayList<PersistedSPObject>();
@@ -992,6 +1011,7 @@ public class SPSessionPersister implements SPPersister {
 		if (spo != null) {
 			resultList.add(0, createPersistedObjectFromSPObject(spo));
 			List<SPObject> ancestorList = SQLPowerUtils.getAncestorList(spo);
+			Collections.reverse(ancestorList);
 
 			for (SPObject ancestor : ancestorList) {
 				resultList.add(0, createPersistedObjectFromSPObject(ancestor));

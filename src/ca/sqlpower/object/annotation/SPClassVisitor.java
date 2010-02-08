@@ -31,6 +31,7 @@ import java.util.Set;
 import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.LinkedHashMultimap;
@@ -288,10 +289,10 @@ public class SPClassVisitor implements DeclarationVisitor {
 						Class<?> c = SPAnnotationProcessorUtils.convertTypeMirrorToClass(type);
 						String value = null;
 						
-						boolean property = cp.isProperty();
+						ParameterType property = cp.isProperty();
 						String name;
 						
-						if (property) {
+						if (property.equals(ParameterType.PROPERTY)) {
 							name = cp.propertyName();
 						} else {
 							name = pd.getSimpleName();

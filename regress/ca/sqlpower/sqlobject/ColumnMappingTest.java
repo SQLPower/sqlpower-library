@@ -99,12 +99,10 @@ public class ColumnMappingTest extends BaseSQLObjectTestCase {
         parentTable.addColumn(pkcol2);
 		parentTable.addColumn(new SQLColumn(parentTable, "attribute_1", Types.INTEGER, 10, 0));
 		
-		SQLIndex parentTablePK = new SQLIndex();
-		parentTablePK.setPrimaryKeyIndex(true);
+		SQLIndex parentTablePK = parentTable.getPrimaryKeyIndex();
 		parentTablePK.addChild(new Column(pkcol1, AscendDescend.UNSPECIFIED));
 		parentTablePK.addChild(new Column(pkcol2, AscendDescend.UNSPECIFIED));
 		parentTablePK.setName("parentTable_pk");
-		parentTable.addIndex(parentTablePK);
 		database.addChild(parentTable);
 		
 		childTable1 = new SQLTable(database, "child_1", null, "TABLE", true);

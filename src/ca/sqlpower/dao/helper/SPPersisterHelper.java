@@ -82,7 +82,7 @@ public interface SPPersisterHelper<T extends SPObject> {
 	T commitObject(PersistedSPObject pso,
 			Multimap<String, PersistedSPOProperty> persistedProperties, 
 			List<PersistedSPObject> persistedObjects,
-			SPPersisterHelperFactory factory);
+			SPPersisterHelperFactory factory) throws SPPersistenceException;
 
 	/**
 	 * Applies a property change on the given {@link SPObject} and property

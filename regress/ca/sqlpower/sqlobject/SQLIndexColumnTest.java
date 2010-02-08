@@ -48,13 +48,11 @@ public class SQLIndexColumnTest extends BaseSQLObjectTestCase {
         parentTable.addColumn(pkcol2);
 		parentTable.addColumn(new SQLColumn(parentTable, "attribute_1", Types.INTEGER, 10, 0));
 		
-		SQLIndex parentTablePK = new SQLIndex();
-		parentTablePK.setPrimaryKeyIndex(true);
+		SQLIndex parentTablePK = parentTable.getPrimaryKeyIndex();
 		column = new Column(pkcol1, AscendDescend.UNSPECIFIED);
 		parentTablePK.addChild(column);
 		parentTablePK.addChild(new Column(pkcol2, AscendDescend.UNSPECIFIED));
 		parentTablePK.setName("parentTable_pk");
-		parentTable.addIndex(parentTablePK);
 		database.addChild(parentTable);
 		
 	}

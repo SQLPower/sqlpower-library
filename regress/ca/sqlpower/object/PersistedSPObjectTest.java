@@ -22,6 +22,7 @@ package ca.sqlpower.object;
 import java.awt.Image;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyDescriptor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -179,6 +180,22 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	public SPPersisterHelperFactory getPersisterHelperFactory(
 			SPPersister targetPersister, SessionPersisterSuperConverter converter) {
 		return new SPPersisterHelperFactoryImpl(targetPersister, converter);
+	}
+	
+	/**
+	 * All {@link SPObject}s that are going to be persisted need to define
+	 * an absolute ordering of their child type classes. This method ensures
+	 * that list is retrievable by reflection from the object.
+	 */
+	@SuppressWarnings("unchecked")
+	public void testStaticOrdering() throws Exception {
+		Field absoluteChildOrder = getSPObjectUnderTest().getClass().getDeclaredField("allowedChildTypes");
+		List<Class<? extends SPObject>> children = (List<Class<? extends SPObject>>) absoluteChildOrder.get(null);
+		if (getSPObjectUnderTest().allowsChildren()) {
+			assertFalse(children.isEmpty());
+		} else {
+			assertTrue(children.isEmpty());
+		}
 	}
 	
 	/**
@@ -430,9 +447,8 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
         int childCount = newParent.getChildren().size();
         
 		//persist the object to the new target root
-        persister.begin();
-        persisterFactory.persistObject(objectUnderTest, 0);
-        persister.commit();
+        new SPPersisterListener(persisterFactory).persistObject(objectUnderTest, 
+        		objectUnderTest.getParent().getChildren(objectUnderTest.getClass()).indexOf(objectUnderTest));
 		
 		//check object exists
         assertEquals(childCount + 1, newParent.getChildren().size());

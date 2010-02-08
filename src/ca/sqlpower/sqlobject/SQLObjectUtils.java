@@ -158,7 +158,7 @@ public class SQLObjectUtils {
         for (T newChild : newChildren) {
             newChildNames.add(newChild.getName());
             if (oldChildNames.contains(newChild.getName())) {
-                parent.getChildByName(newChild.getName()).updateToMatch(newChild);
+                parent.getChildByName(newChild.getName(), childType).updateToMatch(newChild);
             } else {
                 if (newChild instanceof SQLRelationship) {
                 	SQLRelationship r = (SQLRelationship) newChild;

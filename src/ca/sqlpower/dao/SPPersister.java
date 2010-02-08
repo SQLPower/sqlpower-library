@@ -179,7 +179,7 @@ public interface SPPersister {
 	 *            The UUID of the parent {@link SPObject} of the object to
 	 *            persist. If the SPObject has no parent, then it can be set to null.
 	 * @param type
-	 *            A String of the simple class name of the SPObject to be persisted
+	 *            A String of the fully qualified class name of the SPObject to be persisted
 	 * @param uuid
 	 *            The UUID of the {@link SPObject} to actually persist
 	 * @param index

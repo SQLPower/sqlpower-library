@@ -20,10 +20,12 @@
 package ca.sqlpower.sqlobject;
 
 /**
- * Interface that listeners interested in knowing when a certain operation
- * on a source SQLObject has been requested but has not yet been performed.
- * Listeners implementing this interface have the opportunity to veto the
- * changes that are described by the events they receive.
+ * Interface that listeners interested in knowing when a certain operation on a
+ * source SQLObject has been requested but has not yet been performed. Listeners
+ * implementing this interface have the opportunity to veto the changes that are
+ * described by the events they receive. There may be additional events that
+ * will come between the calls to the pre-event listeners and the event that
+ * signals the operation requested has completed.
  */
 public interface SQLObjectPreEventListener {
     

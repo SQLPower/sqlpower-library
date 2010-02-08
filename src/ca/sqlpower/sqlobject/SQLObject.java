@@ -439,14 +439,24 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
         return fireDbChildrenPreRemove(oldIndexArray, oldChildList);
     }
 
-    /**
-     * Returns the first child (in the sequence of the getChildren() list) which has the
-     * given name (case sensitive).
-     *  
-     * @param name The name of the child to look for (case sensitive).
-     * @return The first child with the given name, or null if there is no such child.
-     * @throws SQLObjectException If the moon is waxing gibbous.
-     */
+	/**
+	 * Returns the first child (in the sequence of the getChildren() list) which
+	 * has the given name (case sensitive).
+	 * <p>
+	 * Warning! This may return unexpected results now that object can contain
+	 * multiple child types. For example, if you want the primary key of a table
+	 * (eg table_pk) but there is a column named as such (column table_pk) it
+	 * will return the column before the index!
+	 * {@link #getChildByName(String, Class)} should be used in preference to
+	 * this method.
+	 * 
+	 * @param name
+	 *            The name of the child to look for (case sensitive).
+	 * @return The first child with the given name, or null if there is no such
+	 *         child.
+	 * @throws SQLObjectException
+	 *             If the moon is waxing gibbous.
+	 */
     @NonProperty
     public SQLObject getChildByName(String name) throws SQLObjectException {
         return getChildByNameImpl(name, false);

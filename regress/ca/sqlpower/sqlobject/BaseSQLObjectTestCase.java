@@ -441,7 +441,7 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 		
 		// Test addChild(SQLObject, int)
 		getSQLObjectUnderTest().addChild(y, 0);
-		assertEquals(y, getSQLObjectUnderTest().getChild(0));
+		assertEquals(y, getSQLObjectUnderTest().getChildren(y.getClass()).get(0));
 		assertEquals(x, getSQLObjectUnderTest().getChildren(childType).get(
 				getSQLObjectUnderTest().getChildren(childType).size() - 1));
 		
