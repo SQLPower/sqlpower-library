@@ -19,7 +19,9 @@
 
 package ca.sqlpower.swingui.object;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -32,13 +34,15 @@ import java.util.Comparator;
 import java.util.List;
 
 import javax.swing.AbstractAction;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
-import javax.swing.JSeparator;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
@@ -50,7 +54,11 @@ import net.miginfocom.swing.MigLayout;
 import org.apache.commons.collections.map.MultiValueMap;
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.AbstractSPObject;
+import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.SPSimpleVariableResolver;
 import ca.sqlpower.object.SPVariableHelper;
+import ca.sqlpower.object.SPVariableResolverProvider;
 import ca.sqlpower.swingui.DataEntryPanel;
 
 /**
@@ -70,10 +78,14 @@ public class VariablesPanel implements DataEntryPanel {
 	private final JTextField varDefaultText;
 	private final JLabel varEditLabel;
 	private final JTextField varEditText;
+	private final JLabel previewLabel;
 	private final JLabel varPreviewLabel1;
 	private final JLabel varPreviewLabel2;
 	private boolean stuffToInsert = true;
 	private final VariableInserter action;
+	private final JLabel optionsLabel;
+	private final JLabel namespaceLabel;
+	private final JCheckBox namespaceBox;
 	private static final Logger logger = Logger.getLogger(VariablesPanel.class);
 	
 	public VariablesPanel(
@@ -101,6 +113,7 @@ public class VariablesPanel implements DataEntryPanel {
 		this.action = action;
 		
 		this.pickerLabel = new JLabel("Pick a variable");
+		this.pickerLabel.setFont(this.pickerLabel.getFont().deriveFont(Font.BOLD));
 		this.varNameText = new JTextField();
 		this.varNameText.setEditable(false);
 		this.varNameText.addMouseListener(new MouseListener() {
@@ -119,7 +132,10 @@ public class VariablesPanel implements DataEntryPanel {
 		});
 		this.varPicker = new JButton(new ShowPickerAction());
 		
-		this.varDefaultLabel = new JLabel("Default value (optional)");
+		this.optionsLabel = new JLabel("Options");
+		this.optionsLabel.setFont(this.optionsLabel.getFont().deriveFont(Font.BOLD));
+		
+		this.varDefaultLabel = new JLabel("Default value");
 		this.varDefaultText = new JTextField();
 		this.varDefaultText.addKeyListener(new KeyListener() {
 			public void keyTyped(KeyEvent e) {
@@ -136,7 +152,7 @@ public class VariablesPanel implements DataEntryPanel {
 			}
 		});
 		
-		this.varEditLabel = new JLabel("Customization (optional)");
+		this.varEditLabel = new JLabel("Customization");
 		this.varEditText = new JTextField();
 		this.varEditText.addKeyListener(new KeyListener() {
 			public void keyTyped(KeyEvent e) {
@@ -151,6 +167,11 @@ public class VariablesPanel implements DataEntryPanel {
 						currentDefValue = SPVariableHelper.getDefaultValue(text);
 						if (currentDefValue==null) {
 							currentDefValue = "";
+						}
+						if (SPVariableHelper.getNamespace(text) == null) {
+							namespaceBox.setSelected(false);
+						} else {
+							namespaceBox.setSelected(true);
 						}
 						updateGUI();
 						try {
@@ -167,7 +188,22 @@ public class VariablesPanel implements DataEntryPanel {
 			}
 		});
 		
-		this.varPreviewLabel1 = new JLabel("Current value : ");
+		this.namespaceLabel = new JLabel("Constrain to namespace");
+		this.namespaceBox = new JCheckBox("");
+		if (SPVariableHelper.getNamespace(varDefinition) != null || "".equals(varDefinition)) {
+			this.namespaceBox.setSelected(true);
+		} else {
+			this.namespaceBox.setSelected(false);
+		}
+		this.namespaceBox.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				updateGUI();
+			}
+		});
+		
+		this.previewLabel = new JLabel("Preview");
+		this.previewLabel.setFont(this.previewLabel.getFont().deriveFont(Font.BOLD));
+		this.varPreviewLabel1 = new JLabel("Current value is");
 		this.varPreviewLabel1.setForeground(Color.GRAY);
 		this.varPreviewLabel2 = new JLabel();
 		this.varPreviewLabel2.setForeground(Color.GRAY);
@@ -175,21 +211,29 @@ public class VariablesPanel implements DataEntryPanel {
 		
 		this.panel = new JPanel(new MigLayout());
 		
-		//this.panel.add(topLabel, "span, wrap");
+		this.panel.add(new JLabel("General"), "growx, span, wrap");
+		this.panel.add(new JLabel(" "), "wmin 20, wmax 20");
 		this.panel.add(this.pickerLabel);
-		this.panel.add(this.varNameText, "growx, wmin 175, wmax 175, gapright 0");
+		this.panel.add(this.varNameText, "growx, wmin 275, gapright 0");
 		this.panel.add(this.varPicker, "wmax 20, hmax 20, wrap, gapleft 0");
 		
-		this.panel.add(new JSeparator(), "growx, span, wrap, gaptop 10px, gapbottom 10px");
+		this.panel.add(this.optionsLabel, "growx, span, wrap");
 		
+		this.panel.add(new JLabel(" "), "wmin 20, wmax 20");
 		this.panel.add(this.varDefaultLabel);
-		this.panel.add(this.varDefaultText, "span, wrap, wmin 200, wmax 200");
+		this.panel.add(this.varDefaultText, "span, wrap, wmin 300, wmax 300");
+
+		this.panel.add(new JLabel(" "), "wmin 20, wmax 20");
+		this.panel.add(namespaceLabel);
+		this.panel.add(namespaceBox, "span, wrap");
 		
+		this.panel.add(new JLabel(" "), "wmin 20, wmax 20");
 		this.panel.add(this.varEditLabel);
-		this.panel.add(this.varEditText, "span, wmin 200, wmax 200, wrap");
+		this.panel.add(this.varEditText, "span, wmin 300, wmax 300, wrap");
 		
-		this.panel.add(new JSeparator(), "growx, span, wrap, gaptop 10px, gapbottom 10px");
+		this.panel.add(this.previewLabel, "growx, span, wrap");
 		
+		this.panel.add(new JLabel(" "), "wmin 20, wmax 20");
 		this.panel.add(this.varPreviewLabel1);
 		this.panel.add(this.varPreviewLabel2, "span, growx");
 		
@@ -200,7 +244,11 @@ public class VariablesPanel implements DataEntryPanel {
 	private void updateGUI() 
 	{
 		String text = "${";
-		text += currentPickedVariable;
+		if (this.namespaceBox.isSelected()) {
+			text += currentPickedVariable;
+		} else {
+			text += SPVariableHelper.getKey(currentPickedVariable);
+		}
 		if (!currentDefValue.trim().equals("")) {
 			text += SPVariableHelper.DEFAULT_VALUE_DELIMITER;
 			text += currentDefValue;
@@ -336,95 +384,95 @@ public class VariablesPanel implements DataEntryPanel {
 		}
 	}
 	
-//	public static void main(String[] args) {
-//        SwingUtilities.invokeLater(new Runnable() {
-//            public void run() {
-//                try {
-//                	
-//                	JFrame f = new JFrame("TEST PANEL");
-//                    JPanel outerPanel = new JPanel(new BorderLayout());
-//                    outerPanel.setBorder(BorderFactory.createLineBorder(Color.BLUE));
-//                	
-//                	MockSPObject root = new MockSPObject("root");
-//                	root.setResolver(new SPSimpleVariableResolver(root, root.getUUID(), root.getName()));
-//                	root.begin("Begin tree building...");
-//            		MockSPObject node1 = new MockSPObject("node1");
-//            		MockSPObject node2 = new MockSPObject("node2");
-//            		MockSPObject node3 = new MockSPObject("node3");
-//            		root.addChild(node1, 0);
-//            		root.addChild(node2, 1);
-//            		node2.addChild(node3, 0);
-//            		root.commit();
-//
-//            		node1.getVariableResolver().store("key1", "value1");
-//            		node2.getVariableResolver().store("key2", "value2");
-//            		node3.getVariableResolver().store("key3", "value3");
-//            		node3.getVariableResolver().store("key4", "value4");
-//            		
-//            		SPVariableHelper helper = new SPVariableHelper(node3);
-//                	
-//            		VariablesPanel panel = new VariablesPanel(helper, new VariableInserter() {
-//						public void insert(String variable) {
-//						}
-//					});
-//                	
-//                    
-//                    outerPanel.add(panel.getPanel(), BorderLayout.CENTER);
-//                    f.setContentPane(outerPanel);
-//                    f.pack();
-//                    f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//                    f.setVisible(true);
-//                    
-//                } catch (Exception ex) {
-//                    throw new RuntimeException(ex);
-//                }
-//            }
-//        });
-//    }
-//	
-//	private static class MockSPObject extends AbstractSPObject implements SPVariableResolverProvider {
-//		private List<SPObject> children = new ArrayList<SPObject>();
-//		private SPSimpleVariableResolver resolver = null;
-//		public MockSPObject(String name) {
-//			this.setName(name);
-//		}
-//		@Override
-//		public void setParent(SPObject parent) {
-//			super.setParent(parent);
-//			this.resolver = new SPSimpleVariableResolver(this, this.getUUID(), this.getName());
-//		}
-//		public void setResolver(SPSimpleVariableResolver resolver) {
-//			this.resolver = resolver;
-//		}
-//		protected boolean removeChildImpl(SPObject child) {
-//			return this.children.remove(child);
-//		}
-//		public boolean allowsChildren() {
-//			return true;
-//		}
-//		public int childPositionOffset(Class<? extends SPObject> childType) {
-//			return 0;
-//		}
-//		public List<? extends SPObject> getChildren() {
-//			return this.children;
-//		}
-//		public List<? extends SPObject> getDependencies() {
-//			return Collections.emptyList();
-//		}
-//		public void removeDependency(SPObject dependency) {
-//			return;
-//		}
-//		public SPSimpleVariableResolver getVariableResolver() {
-//			return this.resolver;
-//		}
-//		@Override
-//		protected void addChildImpl(SPObject child, int index) {
-//			this.children.add(child);
-//		}
-//		public List<Class<? extends SPObject>> getAllowedChildTypes() {
-//			List<Class<? extends SPObject>> types = new ArrayList<Class <? extends SPObject>>();
-//			types.add(SPObject.class);
-//			return types;
-//		}
-//	}
+	public static void main(String[] args) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                try {
+                	
+                	JFrame f = new JFrame("TEST PANEL");
+                    JPanel outerPanel = new JPanel(new BorderLayout());
+                    outerPanel.setBorder(BorderFactory.createLineBorder(Color.BLUE));
+                	
+                	MockSPObject root = new MockSPObject("root");
+                	root.setResolver(new SPSimpleVariableResolver(root, root.getUUID(), root.getName()));
+                	root.begin("Begin tree building...");
+            		MockSPObject node1 = new MockSPObject("node1");
+            		MockSPObject node2 = new MockSPObject("node2");
+            		MockSPObject node3 = new MockSPObject("node3");
+            		root.addChild(node1, 0);
+            		root.addChild(node2, 1);
+            		node2.addChild(node3, 0);
+            		root.commit();
+
+            		node1.getVariableResolver().store("key1", "value1");
+            		node2.getVariableResolver().store("key2", "value2");
+            		node3.getVariableResolver().store("key3", "value3");
+            		node3.getVariableResolver().store("key4", "value4");
+            		
+            		SPVariableHelper helper = new SPVariableHelper(node3);
+                	
+            		VariablesPanel panel = new VariablesPanel(helper, new VariableInserter() {
+						public void insert(String variable) {
+						}
+					});
+                	
+                    
+                    outerPanel.add(panel.getPanel(), BorderLayout.CENTER);
+                    f.setContentPane(outerPanel);
+                    f.pack();
+                    f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    f.setVisible(true);
+                    
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        });
+    }
+	
+	private static class MockSPObject extends AbstractSPObject implements SPVariableResolverProvider {
+		private List<SPObject> children = new ArrayList<SPObject>();
+		private SPSimpleVariableResolver resolver = null;
+		public MockSPObject(String name) {
+			this.setName(name);
+		}
+		@Override
+		public void setParent(SPObject parent) {
+			super.setParent(parent);
+			this.resolver = new SPSimpleVariableResolver(this, this.getUUID(), this.getName());
+		}
+		public void setResolver(SPSimpleVariableResolver resolver) {
+			this.resolver = resolver;
+		}
+		protected boolean removeChildImpl(SPObject child) {
+			return this.children.remove(child);
+		}
+		public boolean allowsChildren() {
+			return true;
+		}
+		public int childPositionOffset(Class<? extends SPObject> childType) {
+			return 0;
+		}
+		public List<? extends SPObject> getChildren() {
+			return this.children;
+		}
+		public List<? extends SPObject> getDependencies() {
+			return Collections.emptyList();
+		}
+		public void removeDependency(SPObject dependency) {
+			return;
+		}
+		public SPSimpleVariableResolver getVariableResolver() {
+			return this.resolver;
+		}
+		@Override
+		protected void addChildImpl(SPObject child, int index) {
+			this.children.add(child);
+		}
+		public List<Class<? extends SPObject>> getAllowedChildTypes() {
+			List<Class<? extends SPObject>> types = new ArrayList<Class <? extends SPObject>>();
+			types.add(SPObject.class);
+			return types;
+		}
+	}
 }
