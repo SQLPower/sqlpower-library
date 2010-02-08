@@ -210,7 +210,7 @@ public class VariablesPanel implements DataEntryPanel {
 		this.panel.add(this.generalLabel, "growx, span, wrap");
 		this.panel.add(new JLabel(" "), "wmin 20, wmax 20");
 		this.panel.add(this.pickerLabel);
-		this.panel.add(this.varNameText, "growx, wmin 275, gapright 0");
+		this.panel.add(this.varNameText, "growx, wmin 275, wmax 275, gapright 0");
 		this.panel.add(this.varPicker, "wmax 20, hmax 20, wrap, gapleft 0");
 		
 		this.panel.add(this.optionsLabel, "growx, span, wrap");
