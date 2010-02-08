@@ -57,6 +57,12 @@ public class SPServerInfoManager {
 	 * compatibility with servers
 	 */
 	private final Version clientVersion;
+	
+	/**
+	 * Default {@link SPServerInfo} settings for when making new SPServerInfo
+	 * settings
+	 */
+	private final SPServerInfo defaultSettings;
     
 	/**
 	 * Creates an {@link SPServerInfoManager} and populates it with existing
@@ -72,11 +78,12 @@ public class SPServerInfoManager {
 	 *             If there is a failure in the backing store while reading the
 	 *             Preferences node
 	 */
-	public SPServerInfoManager(Preferences prefs, Version clientVersion) throws BackingStoreException {
+	public SPServerInfoManager(Preferences prefs, Version clientVersion, SPServerInfo defaultSettings) throws BackingStoreException {
 		servers = new ArrayList<SPServerInfo>();
 		listeners = new ArrayList<ServerListListener>();
 		this.serverPrefs = prefs;
 		this.clientVersion = clientVersion;
+		this.defaultSettings = defaultSettings;
         for (String nodeName : serverPrefs.childrenNames()) {
             Preferences serverNode = serverPrefs.node(nodeName);
             servers.add(new SPServerInfo(
@@ -171,5 +178,17 @@ public class SPServerInfoManager {
 	 */
 	public Version getClientVersion() {
 		return clientVersion;
+	}
+
+	/**
+	 * Gets a default {@link SPServerInfo} configuration for new
+	 * {@link SPServerInfo}s.
+	 * 
+	 * @return An {@link SPServerInfo} instance that contains a default
+	 *         configuration that can be used when creating new
+	 *         {@link SPServerInfo} instances
+	 */
+	public SPServerInfo getDefaultSettings() {
+		return defaultSettings;
 	}
  }
