@@ -477,6 +477,107 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
             		basicValueBeforePersist, basicValueAfterPersist, readMethod.getReturnType());
         }
 	}
+
+	/**
+	 * Tests passing an object to an {@link SPPersisterListener} will persist
+	 * the object and all of the properties that have setters.
+	 */
+	public void testSPListenerPersistsNewObjects() throws Exception {
+		NewValueMaker valueMaker = new GenericNewValueMaker(root, getPLIni());
+		
+		CountingSPPersister persister = new CountingSPPersister();
+		
+		SessionPersisterSuperConverter converter = new SessionPersisterSuperConverter(
+				getPLIni(), root);
+		SPPersisterHelperFactory persisterFactory = new SPPersisterHelperFactoryImpl(persister, converter);
+		
+		SPObject objectUnderTest = getSPObjectUnderTest();
+		
+		Set<String> propertiesToPersist = findPersistableBeanProperties(false, false);
+		
+		List<PropertyDescriptor> settableProperties = Arrays.asList(
+				PropertyUtils.getPropertyDescriptors(objectUnderTest.getClass()));
+		
+		//set all properties of the object
+        for (PropertyDescriptor property : settableProperties) {
+            Object oldVal;
+            if (!propertiesToPersist.contains(property.getName())) continue;
+            if (property.getName().equals("parent")) continue; //Changing the parent causes headaches.
+            
+            try {
+                oldVal = PropertyUtils.getSimpleProperty(objectUnderTest, property.getName());
+
+                // check for a setter
+                if (property.getWriteMethod() == null) continue;
+                
+            } catch (NoSuchMethodException e) {
+                logger.debug("Skipping non-settable property " + property.getName() + " on " + 
+                		objectUnderTest.getClass().getName());
+                continue;
+            }
+            
+            Object newVal = valueMaker.makeNewValue(property.getPropertyType(), oldVal, property.getName());
+            
+            try {
+                logger.debug("Setting property '" + property.getName() + "' to '" + newVal + 
+                		"' (" + newVal.getClass().getName() + ")");
+                BeanUtils.copyProperty(objectUnderTest, property.getName(), newVal);
+                
+            } catch (InvocationTargetException e) {
+                logger.debug("(non-fatal) Failed to write property '" + property.getName() + 
+                		" to type " + objectUnderTest.getClass().getName());
+            }
+        }
+        
+        //persist the object to the new target root
+        new SPPersisterListener(persisterFactory).persistObject(objectUnderTest, 
+        		objectUnderTest.getParent().getChildren(objectUnderTest.getClass()).indexOf(objectUnderTest));
+		
+        assertTrue(persister.getPersistPropertyCount() > 0);
+        
+        assertEquals(getSPObjectUnderTest().getUUID(), persister.getPersistObjectList().get(0).getUUID());
+        
+        //set all properties of the object
+        for (PropertyDescriptor property : settableProperties) {
+            Object oldVal;
+            if (!propertiesToPersist.contains(property.getName())) continue;
+            if (property.getName().equals("parent")) continue; //Changing the parent causes headaches.
+            
+            try {
+                oldVal = PropertyUtils.getSimpleProperty(objectUnderTest, property.getName());
+
+                // check for a setter
+                if (property.getWriteMethod() == null) continue;
+                
+            } catch (NoSuchMethodException e) {
+                logger.debug("Skipping non-settable property " + property.getName() + " on " + 
+                		objectUnderTest.getClass().getName());
+                continue;
+            }
+            
+            Object newValue = null;
+            
+            boolean found = false;
+            for (PersistedSPOProperty persistedSPO : persister.getPersistPropertyList()) {
+            	if (persistedSPO.getPropertyName().equals(property.getName()) &&
+            			persistedSPO.getUUID().equals(getSPObjectUnderTest().getUUID())) {
+            		newValue = persistedSPO.getNewValue();
+            		found = true;
+            		break;
+            	}
+            }
+            
+            assertTrue("Could not find the persist call for property " + property.getName(), found);
+            
+            if (oldVal == null) {
+            	assertNull(newValue);
+            } else {
+            	assertPersistedValuesAreEqual(oldVal, 
+            			converter.convertToComplexType(newValue, oldVal.getClass()), 
+            			converter.convertToBasicType(oldVal), newValue, property.getPropertyType());
+            }
+        }
+	}
 	
 	/**
 	 * Taken from AbstractWabitObjectTest. When Wabit is using annotations
