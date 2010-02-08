@@ -79,6 +79,7 @@ public class VariablesPanel implements DataEntryPanel {
 	private final JLabel optionsLabel;
 	private final JLabel namespaceLabel;
 	private final JCheckBox namespaceBox;
+	private final JLabel generalLabel;
 	private static final Logger logger = Logger.getLogger(VariablesPanel.class);
 	
 	public VariablesPanel(
@@ -104,9 +105,11 @@ public class VariablesPanel implements DataEntryPanel {
 	{
 		this.variableHelper = variableHelper;
 		this.action = action;
+	
+		this.generalLabel = new JLabel("General");
+		this.generalLabel.setFont(this.generalLabel.getFont().deriveFont(Font.BOLD));
 		
 		this.pickerLabel = new JLabel("Pick a variable");
-		this.pickerLabel.setFont(this.pickerLabel.getFont().deriveFont(Font.BOLD));
 		this.varNameText = new JTextField();
 		this.varNameText.setEditable(false);
 		this.varNameText.addMouseListener(new MouseListener() {
@@ -204,7 +207,7 @@ public class VariablesPanel implements DataEntryPanel {
 		
 		this.panel = new JPanel(new MigLayout());
 		
-		this.panel.add(new JLabel("General"), "growx, span, wrap");
+		this.panel.add(this.generalLabel, "growx, span, wrap");
 		this.panel.add(new JLabel(" "), "wmin 20, wmax 20");
 		this.panel.add(this.pickerLabel);
 		this.panel.add(this.varNameText, "growx, wmin 275, gapright 0");
