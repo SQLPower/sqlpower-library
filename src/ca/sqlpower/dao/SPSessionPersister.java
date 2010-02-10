@@ -32,8 +32,8 @@ import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.dao.helper.SPPersisterHelper;
-import ca.sqlpower.dao.helper.SPPersisterHelperFactory;
+import ca.sqlpower.dao.helper.PersisterHelperFinder;
+import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
@@ -296,13 +296,6 @@ public class SPSessionPersister implements SPPersister {
 	 */
 	private List<RemovedObjectEntry> objectsToRemoveRollbackList = 
 		new LinkedList<RemovedObjectEntry>();
-	
-	/**
-	 * This factory creates {@link SPPersisterHelper}s for each type of
-	 * persistable {@link SPObject} and allows persistObject, commitObject,
-	 * commitProperty and findProperty method calls on it.
-	 */
-	private final SPPersisterHelperFactory persisterFactory;
 
 	/**
 	 * This root object is used to find other objects by UUID by walking the
@@ -320,6 +313,13 @@ public class SPSessionPersister implements SPPersister {
 	private boolean headingToWisconsin;
 
 	/**
+	 * A class that can convert a complex object into a basic representation
+	 * that can be placed in a string and can also convert the string
+	 * representation back into the complex object.
+	 */
+	private final SessionPersisterSuperConverter converter;
+
+	/**
 	 * Creates a session persister that can update an object at or a descendant
 	 * of the given root now. If the persist call involves an object that is
 	 * outside of the scope of the root node and its descendant tree an
@@ -333,23 +333,14 @@ public class SPSessionPersister implements SPPersister {
 	 *            The root of the tree of {@link SPObject}s. The tree rooted at
 	 *            this node will have objects added to it and properties changed
 	 *            on nodes in this tree.
-	 * @param persisterFactory
-	 *            The set of persisters that are used to modify the nodes in the
-	 *            tree based on persist calls. The
-	 *            {@link SPPersisterHelperFactory} does not need a
-	 *            {@link SPPersister} as this persister directly modifies an
-	 *            object tree and does not forward the calls again. The helpers
-	 *            are used to do object specific modifications. If a specific
-	 *            object in the tree needs a property set the tree object will
-	 *            be found and then a {@link SPPersisterHelper} will be
-	 *            found/created by the factory and that helper will be used to
-	 *            set the property.
+	 * @param converter
+	 *            Used to convert objects given in strings to complex objects to
+	 *            update the session with.
 	 */
-	public SPSessionPersister(String name, SPObject root, SPPersisterHelperFactory persisterFactory) {
+	public SPSessionPersister(String name, SPObject root, SessionPersisterSuperConverter converter) {
 		this.name = name;
 		this.root = root;
-		
-		this.persisterFactory = persisterFactory;
+		this.converter = converter;
 	}
 	
 	@Override
@@ -575,7 +566,11 @@ public class SPSessionPersister implements SPPersister {
 		} else {
 			if (spo != null) {
 				
-				propertyValue = persisterFactory.findProperty(spo, propertyName);
+				try {
+					propertyValue = PersisterHelperFinder.findPersister(spo.getClass()).findProperty(spo, propertyName, converter);
+				} catch (Exception e) {
+					throw new SPPersistenceException("Could not find the persister helper for " + spo.getClass(), e);
+				}
 
 				if (!unconditional && propertyValue != null && oldValue == null) {
 					throw new SPPersistenceException(uuid, "For property \""
@@ -723,8 +718,13 @@ public class SPSessionPersister implements SPPersister {
 				continue;
 			SPObject parent = SQLPowerUtils.findByUuid(root, pso.getParentUUID(), 
 					SPObject.class);
-			SPObject spo = persisterFactory.commitObject(pso, persistedProperties, 
-					persistedObjects);
+			SPObject spo;
+			try {
+				spo = PersisterHelperFinder.findPersister(pso.getType()).commitObject(pso, persistedProperties, 
+						persistedObjects, converter);
+			} catch (Exception ex) {
+				throw new SPPersistenceException("Could not find the persister helper for " + pso.getType(), ex);
+			}
 			if (spo != null) {
 				SPListener removeChildOnAddListener = new SPListener() {
 					public void propertyChanged(PropertyChangeEvent arg0) {
@@ -799,7 +799,11 @@ public class SPSessionPersister implements SPPersister {
 							spo.getClass().getSimpleName() + " at " + spo.getUUID());
 				}
 				
-				persisterFactory.commitProperty(spo, propertyName, newValue);
+				try {
+					PersisterHelperFinder.findPersister(spo.getClass()).commitProperty(spo, propertyName, newValue, converter);
+				} catch (Exception e) {
+					throw new SPPersistenceException("Could not find the persister helper for " + spo.getClass(), e);
+				}
 				
 				persistedPropertiesRollbackList.add(
 					new PersistedPropertiesEntry(
@@ -844,7 +848,7 @@ public class SPSessionPersister implements SPPersister {
 				final Object rollbackValue = entry.getRollbackValue();
 				final SPObject parent = SQLPowerUtils.findByUuid(root, parentUUID, SPObject.class);
 				if (parent != null) {
-					persisterFactory.commitProperty(parent, propertyName, rollbackValue);
+					PersisterHelperFinder.findPersister(parent.getClass()).commitProperty(parent, propertyName, rollbackValue, converter);
 				}
 			} catch (Throwable t) {
 				// Keep going. We need to rollback as much as we can.
@@ -956,13 +960,13 @@ public class SPSessionPersister implements SPPersister {
 	 * @throws SPPersistenceException
 	 */
 	public static void undoForSession(
-			SPPersisterHelperFactory persisterFactory,
+			SessionPersisterSuperConverter converter,
 			SPObject root,
 			List<PersistedObjectEntry> creations,
 			List<PersistedPropertiesEntry> properties,
 			List<RemovedObjectEntry> removals) throws SPPersistenceException
 	{
-		SPSessionPersister persister = new SPSessionPersister("undoer", root, persisterFactory);
+		SPSessionPersister persister = new SPSessionPersister("undoer", root, converter);
 		persister.setGodMode(true);
 		persister.setObjectsToRemoveRollbackList(removals);
 		persister.setPersistedObjectsRollbackList(creations);

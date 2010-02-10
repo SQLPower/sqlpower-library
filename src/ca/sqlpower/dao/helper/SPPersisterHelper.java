@@ -73,16 +73,16 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *            where the {@link SPPersisterHelper} factory finds the
 	 *            appropriate {@link SPPersisterHelper} for that child type and
 	 *            calls commitObject on that as well.
-	 * @param factory
-	 *            The {@link SPPersisterHelperFactory} to use to commit child
-	 *            objects.
+	 * @param converter
+	 *            The {@link SPPersisterHelperFactory} to use to convert complex
+	 *            properties into simple ones.
 	 * @return The created {@link SPObject} with the given required persisted
 	 *         properties.
 	 */
 	T commitObject(PersistedSPObject pso,
 			Multimap<String, PersistedSPOProperty> persistedProperties, 
 			List<PersistedSPObject> persistedObjects,
-			SPPersisterHelperFactory factory) throws SPPersistenceException;
+			SessionPersisterSuperConverter converter) throws SPPersistenceException;
 
 	/**
 	 * Applies a property change on the given {@link SPObject} and property
@@ -104,7 +104,7 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *             setter method for this property in the {@link SPObject} class
 	 *             must be annotated with {@link Mutator}.
 	 */
-	void commitProperty(T spo, String propertyName, Object newValue, 
+	void commitProperty(SPObject spo, String propertyName, Object newValue, 
 			SessionPersisterSuperConverter converter) throws SPPersistenceException;
 
 	/**
@@ -136,7 +136,7 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *             getter method for this property in the {@link SPObject} class
 	 *             must be annotated with {@link Accessor}.
 	 */
-	Object findProperty(T spo, String propertyName, 
+	Object findProperty(SPObject spo, String propertyName, 
 			SessionPersisterSuperConverter converter) throws SPPersistenceException;
 
 	/**
@@ -147,7 +147,7 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 * parameters are annotated with {@link ConstructorParameter} with reference
 	 * to the property it will set.
 	 * 
-	 * @param spo
+	 * @param o
 	 *            The {@link SPObject} to persist along with its required
 	 *            properties.
 	 * @param index
@@ -164,7 +164,7 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *             Thrown if the {@link SPPersister} cannot persist the object
 	 *             or any one of its properties.
 	 */
-	void persistObject(T spo, int index, SPPersister persister, 
+	void persistObject(SPObject o, int index, SPPersister persister, 
 			SessionPersisterSuperConverter converter) throws SPPersistenceException;
 	
 }

@@ -23,7 +23,8 @@ import java.beans.PropertyChangeEvent;
 import java.util.List;
 
 import ca.sqlpower.dao.SPPersister.DataType;
-import ca.sqlpower.dao.helper.SPPersisterHelperFactory;
+import ca.sqlpower.dao.helper.PersisterHelperFinder;
+import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
@@ -43,26 +44,25 @@ public class SPPersisterListener implements SPListener {
 	private final SPPersister target;
 
 	/**
-	 * This factory will be used to get a persister helper from when an event is
-	 * received. The persister helper will be used to convert the event into a
-	 * persist call for object specific types of events.
-	 * <p>
-	 * Note: This factory must contain the persister that will have persist
-	 * calls made to it.
+	 * A class that can convert a complex object into a basic representation
+	 * that can be placed in a string and can also convert the string
+	 * representation back into the complex object.
 	 */
-	private final SPPersisterHelperFactory helperFactory;
+	private final SessionPersisterSuperConverter converter;
 
 	/**
 	 * This listener can be attached to a hierarchy of objects to persist events
 	 * to the target persister contained in the given persister helper factory.
 	 * 
-	 * @param helperFactory
-	 *            The persister helper factory that will be used to make persist
-	 *            calls. This contains the target persister for the listener.
+	 * @param target
+	 *            The target persister that will be sent persist calls.
+	 * @param converter
+	 *            A converter to convert complex types of objects into simple
+	 *            objects so the object can be passed or persisted.
 	 */
-	public SPPersisterListener(SPPersisterHelperFactory helperFactory) {
-		this.target = helperFactory.getPersister();
-		this.helperFactory = helperFactory;
+	public SPPersisterListener(SPPersister target, SessionPersisterSuperConverter converter) {
+		this.target = target;
+		this.converter = converter;
 		
 	}
 
@@ -89,8 +89,8 @@ public class SPPersisterListener implements SPListener {
 			"Persisting " + o.getName() + " and its descendants."));
 
 		try {
-			helperFactory.persistObject(o, index);
-		} catch (SPPersistenceException e) {
+			PersisterHelperFinder.findPersister(o.getClass()).persistObject(o, index, target, converter);
+		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 

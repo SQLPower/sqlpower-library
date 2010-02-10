@@ -39,12 +39,9 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.dao.PersistedSPOProperty;
 import ca.sqlpower.dao.PersisterUtils;
-import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.dao.SPPersisterListener;
 import ca.sqlpower.dao.SPSessionPersister;
 import ca.sqlpower.dao.SPPersister.DataType;
-import ca.sqlpower.dao.helper.SPPersisterHelperFactory;
-import ca.sqlpower.dao.helper.generated.SPPersisterHelperFactoryImpl;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPChildEvent.EventType;
 import ca.sqlpower.object.annotation.Accessor;
@@ -52,15 +49,12 @@ import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
-import ca.sqlpower.sql.DataSourceCollection;
-import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.DatabaseConnectedTestCase;
 import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLObjectRoot;
 import ca.sqlpower.testutil.GenericNewValueMaker;
 import ca.sqlpower.testutil.NewValueMaker;
 import ca.sqlpower.testutil.SPObjectRoot;
-import ca.sqlpower.testutil.StubDataSourceCollection;
 import ca.sqlpower.util.SPSession;
 import ca.sqlpower.util.SessionNotFoundException;
 import ca.sqlpower.util.StubSPSession;
@@ -133,7 +127,35 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		
 	}
 	
+	/**
+	 * Used in roll back tests. If an exception is thrown due to failing a test
+	 * the rollback will catch the exception and try to roll back the object.
+	 * However, we want to know if the persist failed before rolling back. This
+	 * object will store the failed reason during persist.
+	 */
+	private Throwable failureReason;
+	
 	private SPObjectRoot root;
+
+	/**
+	 * A new value maker that works off the root object and pl.ini in this test.
+	 * This will need to be set as a different new value maker in tests that are
+	 * outside of the library.
+	 */
+	private NewValueMaker valueMaker;
+
+	/**
+	 * This is a generic converter that works off the root object and pl.ini in
+	 * this test. This will need to be set to a different converter in tests
+	 * that are outside of the library.
+	 */
+	private SessionPersisterSuperConverter converter;
+
+	/**
+	 * A default session persister that is used in testing, connected to the root
+	 * and persister factory.
+	 */
+	private SPSessionPersister persister;
 	
 	public PersistedSPObjectTest(String name) {
 		super(name);
@@ -154,6 +176,14 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		SQLObjectRoot sqlRoot = new SQLObjectRoot();
 		root.addChild(sqlRoot, 0);
 		sqlRoot.addDatabase(db, 0);
+		
+		valueMaker = new GenericNewValueMaker(root, getPLIni());
+		converter = new SessionPersisterSuperConverter(
+				getPLIni(), root);
+		
+		persister = new SPSessionPersister(
+				"Testing Persister", root, converter);
+		persister.setSession(root.getSession());
 	}
 
 	/**
@@ -167,21 +197,6 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		return root;
 	}
 
-	/**
-	 * Returns a persister helper factory that can properly persist an object of
-	 * the type returned by {@link #getSPObjectUnderTest()}. This can be overridden
-	 * if a different factory is required beyond the default one.
-	 * 
-	 * @param targetPersister
-	 *            The persister that will have persist calls made on it when the
-	 *            helper factory has methods called.
-	 * @param converter The converter for the factory.
-	 */
-	public SPPersisterHelperFactory getPersisterHelperFactory(
-			SPPersister targetPersister, SessionPersisterSuperConverter converter) {
-		return new SPPersisterHelperFactoryImpl(targetPersister, converter);
-	}
-	
 	/**
 	 * All {@link SPObject}s that are going to be persisted need to define
 	 * an absolute ordering of their child type classes. This method ensures
@@ -203,13 +218,8 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 * target persister.
 	 */
 	public void testSPListenerPersistsProperty() throws Exception {
-		NewValueMaker valueMaker = new GenericNewValueMaker(root);
-		DataSourceCollection<SPDataSource> dsCollection = new StubDataSourceCollection<SPDataSource>();
-		SessionPersisterSuperConverter converter = new SessionPersisterSuperConverter(
-				dsCollection, root);
 		CountingSPPersister countingPersister = new CountingSPPersister();
-		SPPersisterListener listener = new SPPersisterListener(
-				getPersisterHelperFactory(countingPersister, converter));
+		SPPersisterListener listener = new SPPersisterListener(countingPersister, converter);
 		
 		SPObject wo = getSPObjectUnderTest();
         wo.addSPListener(listener);
@@ -298,16 +308,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 * on an object based on a persist call.
 	 */
 	public void testSPPersisterPersistsProperties() throws Exception {
-		NewValueMaker valueMaker = new GenericNewValueMaker(root, getPLIni());
-		SessionPersisterSuperConverter converter = new SessionPersisterSuperConverter(
-				getPLIni(), root);
-		
 		SPObject objectUnderTest = getSPObjectUnderTest();
-		
-		SPPersisterHelperFactory persisterFactory = new SPPersisterHelperFactoryImpl(null, converter);
-		SPSessionPersister persister = new SPSessionPersister(
-				"Testing Persister", root, persisterFactory);
-		persister.setSession(root.getSession());
 		
 		List<PropertyDescriptor> settableProperties = Arrays.asList(
 				PropertyUtils.getPropertyDescriptors(objectUnderTest.getClass()));
@@ -378,19 +379,13 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		};
 		newRoot.setParent(stub.getWorkspace());
 		
-		NewValueMaker valueMaker = new GenericNewValueMaker(root, getPLIni());
 		NewValueMaker newValueMaker = new GenericNewValueMaker(newRoot, getPLIni());
 		
 		SessionPersisterSuperConverter newConverter = new SessionPersisterSuperConverter(
 				getPLIni(), newRoot);
-		SPPersisterHelperFactory newPersisterFactory = new SPPersisterHelperFactoryImpl(null, newConverter);
 		
-		SPSessionPersister persister = new SPSessionPersister("Test persister", newRoot, newPersisterFactory);
+		SPSessionPersister persister = new SPSessionPersister("Test persister", newRoot, newConverter);
 		persister.setSession(stub);
-		
-		SessionPersisterSuperConverter converter = new SessionPersisterSuperConverter(
-				getPLIni(), root);
-		SPPersisterHelperFactory persisterFactory = new SPPersisterHelperFactoryImpl(persister, converter);
 		
 		SPObject objectUnderTest = getSPObjectUnderTest();
 		
@@ -447,7 +442,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
         int childCount = newParent.getChildren().size();
         
 		//persist the object to the new target root
-        new SPPersisterListener(persisterFactory).persistObject(objectUnderTest, 
+        new SPPersisterListener(persister, converter).persistObject(objectUnderTest, 
         		objectUnderTest.getParent().getChildren(objectUnderTest.getClass()).indexOf(objectUnderTest));
 		
 		//check object exists
@@ -483,13 +478,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 * the object and all of the properties that have setters.
 	 */
 	public void testSPListenerPersistsNewObjects() throws Exception {
-		NewValueMaker valueMaker = new GenericNewValueMaker(root, getPLIni());
-		
 		CountingSPPersister persister = new CountingSPPersister();
-		
-		SessionPersisterSuperConverter converter = new SessionPersisterSuperConverter(
-				getPLIni(), root);
-		SPPersisterHelperFactory persisterFactory = new SPPersisterHelperFactoryImpl(persister, converter);
 		
 		SPObject objectUnderTest = getSPObjectUnderTest();
 		
@@ -530,7 +519,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
         }
         
         //persist the object to the new target root
-        new SPPersisterListener(persisterFactory).persistObject(objectUnderTest, 
+        new SPPersisterListener(persister, converter).persistObject(objectUnderTest, 
         		objectUnderTest.getParent().getChildren(objectUnderTest.getClass()).indexOf(objectUnderTest));
 		
         assertTrue(persister.getPersistPropertyCount() > 0);
@@ -578,6 +567,117 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
             }
         }
 	}
+
+	/**
+	 * This test will make changes to the {@link SPObject} under test and then
+	 * cause an exception forcing the persister to roll back the changes in the
+	 * object.
+	 * <p>
+	 * Both the changes have to come through the persister initially before the
+	 * exception and they have to be reset after the exception.
+	 */
+	//TODO add this back in after updating the persister helper generators
+//	public void testSessionPersisterRollsBackProperties() throws Exception {
+//		SPObject objectUnderTest = getSPObjectUnderTest();
+//		final Map<PropertyDescriptor, Object> initialProperties = new HashMap<PropertyDescriptor, Object>();
+//		final Map<PropertyDescriptor, Object> newProperties = new HashMap<PropertyDescriptor, Object>();
+//		
+//		List<PropertyDescriptor> settableProperties = Arrays.asList(
+//				PropertyUtils.getPropertyDescriptors(objectUnderTest.getClass()));
+//		
+//		Set<String> propertiesToPersist = findPersistableBeanProperties(false, false);
+//		
+//		failureReason = null;
+//		
+//		//Second factory to send the events to a black hole
+//		SPPersisterHelperFactory secondFactory = new SPPersisterHelperFactoryImpl(new CountingSPPersister(), converter);
+//		
+//		SPPersisterListener listener = new SPPersisterListener(secondFactory) {
+//			@Override
+//			public void transactionEnded(TransactionEvent e) {
+//				try {
+//					for (Map.Entry<PropertyDescriptor, Object> newProperty : newProperties.entrySet()) {
+//						Object objectUnderTest = getSPObjectUnderTest();
+//						Object newVal = newProperty.getValue();
+//						Object basicNewValue = converter.convertToBasicType(newVal);
+//
+//						Object newValAfterSet = PropertyUtils.getSimpleProperty(
+//								objectUnderTest, newProperty.getKey().getName());
+//						Object basicExpectedValue = converter.convertToBasicType(newValAfterSet);
+//
+//						assertPersistedValuesAreEqual(newVal, newValAfterSet, basicNewValue, 
+//								basicExpectedValue, newProperty.getKey().getPropertyType());
+//					}
+//				} catch (Throwable ex) {
+//					failureReason = ex;
+//					throw new RuntimeException(ex);
+//				}
+//				throw new RuntimeException("Forcing rollback.");
+//			}
+//		};
+//		//Transactions begin and commits are currently sent on the workspace.
+//		persister.getSession().getWorkspace().addSPListener(listener);
+//		
+//		persister.begin();
+//		for (PropertyDescriptor property : settableProperties) {
+//            Object oldVal;
+//
+//            //Changing the UUID of the object makes it referenced as a different object
+//            //and would make the check later in this test fail.
+//            if (property.getName().equals("UUID")) continue;
+//            
+//            if (!propertiesToPersist.contains(property.getName())) continue;
+//
+//            try {
+//                oldVal = PropertyUtils.getSimpleProperty(objectUnderTest, property.getName());
+//
+//                // check for a setter
+//                if (property.getWriteMethod() == null) continue;
+//                
+//            } catch (NoSuchMethodException e) {
+//                logger.debug("Skipping non-settable property " + property.getName() +
+//                		" on " + objectUnderTest.getClass().getName());
+//                continue;
+//            }
+//            
+//            initialProperties.put(property, oldVal);
+//            
+//            //special case for parent types. If a specific wabit object has a tighter parent then
+//            //WabitObject the getParentClass should return the parent type.
+//            Class<?> propertyType = property.getPropertyType();
+//            if (property.getName().equals("parent")) {
+//            	propertyType = getSPObjectUnderTest().getClass().getMethod("getParent").getReturnType();
+//            	logger.debug("Persisting parent, type is " + propertyType);
+//            }
+//            Object newVal = valueMaker.makeNewValue(propertyType, oldVal, property.getName());
+//            
+//            DataType type = PersisterUtils.getDataType(property.getPropertyType());
+//			Object basicNewValue = converter.convertToBasicType(newVal);
+//			persister.begin();
+//			persister.persistProperty(objectUnderTest.getUUID(), property.getName(), type, 
+//					converter.convertToBasicType(oldVal), 
+//					basicNewValue);
+//			persister.commit();
+//            
+//            newProperties.put(property, newVal);
+//    	}
+//		try {
+//			persister.commit();
+//			fail("An exception should make the persister hit the exception block.");
+//		} catch (Exception e) {
+//			//continue, exception expected.
+//		}
+//		
+//		if (failureReason != null) {
+//			throw new RuntimeException("Failed when asserting properties were " +
+//					"fully persisted.", failureReason);
+//		}
+//		
+//		for (Map.Entry<PropertyDescriptor, Object> entry : initialProperties.entrySet()) {
+//			assertEquals("Property " + entry.getKey().getName() + " did not match after rollback.", 
+//					entry.getValue(), PropertyUtils.getSimpleProperty(objectUnderTest, entry.getKey().getName()));
+//		}
+//	}
 	
 	/**
 	 * Taken from AbstractWabitObjectTest. When Wabit is using annotations
@@ -745,14 +845,10 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
     	Class<? extends SPObject> childClassType = getChildClassType();
     	if (childClassType == null) return;
     	
-    	SessionPersisterSuperConverter converter = new SessionPersisterSuperConverter(getPLIni(), getRootObject());
-    	SPPersisterHelperFactory converterHelperFactory = getPersisterHelperFactory(null, converter);
-    	SPSessionPersister persister = new SPSessionPersister("test", getSPObjectUnderTest(), converterHelperFactory);
+    	SPSessionPersister persister = new SPSessionPersister("test", getSPObjectUnderTest(), converter);
     	persister.setSession(getSPObjectUnderTest().getSession());
-    	SPPersisterHelperFactory persisterHelperFactory = getPersisterHelperFactory(persister, converter);
-    	SPPersisterListener listener = new SPPersisterListener(persisterHelperFactory);
+    	SPPersisterListener listener = new SPPersisterListener(persister, converter);
     	
-    	GenericNewValueMaker valueMaker = new GenericNewValueMaker(getRootObject(), getPLIni());
     	SQLObject newChild = (SQLObject) valueMaker.makeNewValue(childClassType, null, "child");
     	newChild.setParent(spObject);
     	
