@@ -30,9 +30,9 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
-import javax.swing.text.Style;
+import javax.swing.text.Element;
+import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
 
 import ca.sqlpower.object.SPVariableHelper;
 import ca.sqlpower.swingui.DataEntryPanelBuilder;
@@ -41,7 +41,6 @@ import ca.sqlpower.swingui.DataEntryPanelBuilder;
 
 public class VariableLabel extends JLabel {
 	
-	public final static String STYLE_NAME = "sqlp-variable-style";
 	public final static String VAR_VALUE = "sqlp-variable-value";
 	public final static String UUID = "sqlp-variable-uuid";
 	public final static String VARIABLE_CHAR = "\u0001";
@@ -90,11 +89,11 @@ public class VariableLabel extends JLabel {
 	
 	/**
 	 * Helper method to insert and register a styled label in
-	 * a AWT StyledDocument
+	 * a AWT Document
 	 * @param variableDef The variable unique key, including namespace, 
 	 * name and default value, but exclusing ${} markers.
 	 * @param helper The helper to use if this variable needs to be modified.
-	 * @param target The terget {@link StyledDocument} into which to insert
+	 * @param target The terget {@link Document} into which to insert
 	 * this variable.
 	 * @param insertPosition The position at whch to insert the variable.
 	 * @throws BadLocationException If the position supplied is not a valid
@@ -103,12 +102,12 @@ public class VariableLabel extends JLabel {
 	public static void insertLabel(
 			final String variableDef, 
 			final SPVariableHelper helper,
-			final StyledDocument target,
+			final Document target,
 			final int insertPosition,
 			final Component dialogOwner) throws BadLocationException 
 	{
 		final String uuid = java.util.UUID.randomUUID().toString();
-		final Style varStyle = target.addStyle(STYLE_NAME, null);
+		final SimpleAttributeSet varStyle = new SimpleAttributeSet();
 		
 		varStyle.addAttribute(VAR_VALUE, variableDef);
 		varStyle.addAttribute(UUID, uuid);
@@ -137,8 +136,8 @@ public class VariableLabel extends JLabel {
 									// by UUID attribute.
 									for (int i = 0; i < target.getLength(); i++) {
 										try {
-											if (target.getCharacterElement(i).getAttributes().isDefined(UUID)
-													&& target.getCharacterElement(i).getAttributes().getAttribute(UUID).equals(uuid)
+											if (getCharacterElement(target, i).getAttributes().isDefined(UUID)
+													&& getCharacterElement(target, i).getAttributes().getAttribute(UUID).equals(uuid)
 													&& target.getText(i, 1).equals(VARIABLE_CHAR)) {
 												// Gotcha!
 												target.remove(i, 1);
@@ -167,16 +166,16 @@ public class VariableLabel extends JLabel {
 	
 	
 	/**
-	 * Takes a {@link StyledDocument} object and switches all the
+	 * Takes a {@link Document} object and switches all the
 	 * variables labels for textual representations of the variables.
 	 * @param target
 	 */
-	public static void removeLabels(StyledDocument target) {
+	public static void removeLabels(Document target) {
 		try {
 			for (int i = 0; i < target.getLength(); i++) {
-				if (target.getCharacterElement(i).getAttributes().isDefined(VAR_VALUE)
+				if (getCharacterElement(target, i).getAttributes().isDefined(VAR_VALUE)
 						&& target.getText(i, 1).equals(VARIABLE_CHAR)) {
-					String varValue = (String)target.getCharacterElement(i).getAttributes().getAttribute(VAR_VALUE);
+					String varValue = (String)getCharacterElement(target, i).getAttributes().getAttribute(VAR_VALUE);
 					target.remove(i, 1);
 					target.insertString(
 							i, 
@@ -189,21 +188,47 @@ public class VariableLabel extends JLabel {
 			throw new RuntimeException(e);
 		}
 	}
-
 	
 	/**
-	 * This helper method parses the contents of an AWT StyledDocument
+	 * Takes a {@link Document} object and removes all
+	 * variables labels and returns the textual representation
+	 * of the contents with variables represented as ${bla}.
+	 * @param target The document to analyze
+	 * @return The string contents.
+	 */
+	public static String getText(Document target) {
+		try {
+			StringBuffer sb = new StringBuffer("");
+			for (int i = 0; i < target.getLength(); i++) {
+				if (getCharacterElement(target, i).getAttributes().isDefined(VAR_VALUE)
+						&& target.getText(i, 1).equals(VARIABLE_CHAR)) {
+					String varValue = (String)getCharacterElement(target, i).getAttributes().getAttribute(VAR_VALUE);
+					sb.append("${");
+					sb.append(varValue);
+					sb.append("}");
+				} else {
+					sb.append(target.getText(i, 1));
+				}
+			}
+			return sb.toString();
+		} catch (BadLocationException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	/**
+	 * This helper method parses the contents of an AWT Document
 	 * and inserts pretty variables labels in it.
 	 * @param helper The var helper to use if the variables are
 	 * modified after being inserted.
-	 * @param target The StyledDocument into which to perform the
+	 * @param target The Document into which to perform the
 	 * substitution
 	 * @param dialogOwner The owner of the dialog that will be displayed 
 	 * if the variables are edited.
 	 */
 	public static void insertLabels(
 			SPVariableHelper helper,
-			StyledDocument target,
+			Document target,
 			Component dialogOwner)
 	{
 		try {
@@ -235,10 +260,10 @@ public class VariableLabel extends JLabel {
 	
 	/**
 	 * Helper method to insert and register a styled label in
-	 * a AWT StyledDocument that will be rendered by the Picollo library.
+	 * a AWT Document that will be rendered by the Picollo library.
 	 * @param variableDef The variable unique key, including namespace, 
 	 * name and default value, but exclusing ${} markers.
-	 * @param target The terget {@link StyledDocument} into which to insert
+	 * @param target The terget {@link Document} into which to insert
 	 * this variable.
 	 * @param insertPosition The position at whch to insert the variable.
 	 * @throws BadLocationException If the position supplied is not a valid
@@ -246,10 +271,10 @@ public class VariableLabel extends JLabel {
 	 */
 	public static void insertLabelForPicollo(
 			final String variableDef, 
-			final StyledDocument target,
+			final Document target,
 			final int insertPosition) throws BadLocationException 
 	{
-		final Style varStyle = target.addStyle(STYLE_NAME, null);
+		final SimpleAttributeSet varStyle = new SimpleAttributeSet();
 		
 		// These attributes will help us convert to/from the nice label format
 		varStyle.addAttribute(VAR_VALUE, variableDef);
@@ -263,13 +288,13 @@ public class VariableLabel extends JLabel {
 	}
 	
 	/**
-	 * This helper method parses the contents of an AWT StyledDocument
+	 * This helper method parses the contents of an AWT Document
 	 * which will be rendered by the Picollo library
 	 * and inserts pretty variables labels in it.
-	 * @param target The StyledDocument into which to perform the
+	 * @param target The Document into which to perform the
 	 * substitution
 	 */
-	public static void insertLabelsForPicollo(StyledDocument target)
+	public static void insertLabelsForPicollo(Document target)
 	{
 		try {
 			
@@ -297,24 +322,24 @@ public class VariableLabel extends JLabel {
 	}
 	
 	/**
-	 * Takes a {@link StyledDocument} object who was crafted to be displayed
+	 * Takes a {@link Document} object who was crafted to be displayed
 	 * by the Picollo library and switches all the
 	 * variables labels for textual representations of the variables.
 	 * @param target
 	 */
-	public static void removeLabelsForPicollo(StyledDocument target) {
+	public static void removeLabelsForPicollo(Document target) {
 		try {
 			for (int i = 0; i < target.getLength(); i++) {
-				if (target.getCharacterElement(i).getAttributes().isDefined(VAR_VALUE)) {
+				if (getCharacterElement(target, i).getAttributes().isDefined(VAR_VALUE)) {
 					
 					// We must figure out the end of the var string.
 					int endIndex = i;
 					while (endIndex < target.getLength()
-							&& target.getCharacterElement(endIndex).getAttributes().isDefined(VAR_VALUE)) {
+							&& getCharacterElement(target, endIndex).getAttributes().isDefined(VAR_VALUE)) {
 						endIndex++;
 					}
 					
-					String varValue = (String)target.getCharacterElement(i).getAttributes().getAttribute(VAR_VALUE);
+					String varValue = (String)getCharacterElement(target, i).getAttributes().getAttribute(VAR_VALUE);
 					target.remove(i, endIndex - i);
 					target.insertString(
 							i, 
@@ -327,4 +352,17 @@ public class VariableLabel extends JLabel {
 			throw new RuntimeException(e);
 		}
 	}
+	
+	
+	///////////////////////////////////////////
+	/////  Private methods
+	
+	public static Element getCharacterElement(Document doc, int pos) {
+		Element e = null;
+		for (e = doc.getDefaultRootElement(); ! e.isLeaf(); ) {
+		    int index = e.getElementIndex(pos);
+		    e = e.getElement(index);
+		}
+		return e;
+    }
 }
