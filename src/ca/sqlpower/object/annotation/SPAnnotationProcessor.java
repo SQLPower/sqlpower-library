@@ -25,6 +25,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -117,57 +118,22 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			Set<String> propertiesToPersistOnlyIfNonNull = 
 				new HashSet<String>(visitor.getPropertiesToPersistOnlyIfNonNull());
 			
-			while ((superClass = (Class<? extends SPObject>) superClass.getSuperclass()) 
-					!= null) {
-				if (visitors.containsKey(superClass)) {
-					SPClassVisitor superClassVisitor = visitors.get(superClass);
-					
-					// Add inherited non-null only persistable properties.
-					propertiesToPersistOnlyIfNonNull.addAll(
-							superClassVisitor.getPropertiesToPersistOnlyIfNonNull());
-					
-					// Add inherited accessors.
-					for (Entry<String, Class<?>> accessorEntry
-							: superClassVisitor.getPropertiesToAccess().entrySet()) {
-						
-						String methodName = accessorEntry.getKey();
-						if (!propertiesToAccess.containsKey(methodName)) {
-							propertiesToAccess.put(methodName, accessorEntry.getValue());
-							
-							// Add inherited accessor required additional information.
-							accessorAdditionalInfo.putAll(methodName, 
-									superClassVisitor.getAccessorAdditionalInfo().get(methodName));
-							
-						}
-					}
-					
-					// Add inherited mutators.
-					for (Entry<String, Class<?>> mutatorEntry 
-							: superClassVisitor.getPropertiesToMutate().entrySet()) {
-						
-						String methodName = mutatorEntry.getKey();
-						if (!propertiesToMutate.containsKey(methodName)) {
-							propertiesToMutate.put(methodName, 
-									mutatorEntry.getValue());
-							
-							// Add inherited mutator thrown types.
-							mutatorThrownTypes.putAll(methodName, 
-									superClassVisitor.getMutatorThrownTypes().get(methodName));
-							
-							// Add inherited mutator imports.
-							mutatorImports.putAll(methodName, 
-									superClassVisitor.getMutatorImports().get(methodName));
-						}
-					}
-				}
-			}
-			
 			// Generate the persister helper file if the SPObject class is not abstract.
 			if (!Modifier.isAbstract(visitor.getVisitedClass().getModifiers())) {
 				generatePersisterHelperFile(
 						e.getKey(),
 						visitor.getConstructorImports(),
 						visitor.getConstructorParameters(), 
+						propertiesToAccess, 
+						accessorAdditionalInfo,
+						mutatorImports,
+						propertiesToMutate, 
+						mutatorExtraParameters, 
+						mutatorThrownTypes, 
+						propertiesToPersistOnlyIfNonNull);
+			} else {
+				generateAbstractPersisterHelperFile(e.getKey(),
+						visitor.getConstructorImports(),
 						propertiesToAccess, 
 						accessorAdditionalInfo,
 						mutatorImports,
@@ -265,6 +231,99 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 					accessorAdditionalInfo, tabs));
 			pw.print("\n");
 			pw.print(generatePersistObjectMethod(visitedClass, constructorParameters, 
+					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs));
+			pw.print("\n");
+			pw.print(generatePersistObjectMethodHelper(visitedClass, 
+					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs));
+			pw.print("\n");
+			
+			tabs--;
+			pw.print("}\n");
+			pw.close();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	/**
+	 * Generates the Java source file that is a helper of {@link SPPersisterHelper}.
+	 * These helpers are not true {@link SPPersisterHelper}s because they only do
+	 * part of a helper's job. They also do not implement the interface because nothing
+	 * outside of the {@link SPPersisterHelper}s should be using them directly.
+	 * 
+	 * @param visitedClass
+	 *            The {@link SPObject} class that is being visited by the
+	 *            annotation processor.
+	 * @param constructorImports
+	 *            The {@link Set} of imports that the generated persister helper
+	 *            requires for calling the {@link Constructor} annotated
+	 *            constructor.
+	 * @param constructorParameters
+	 *            The {@link List} of {@link ConstructorParameterObject}s that
+	 *            contain information about what the parameter should be used
+	 *            for.
+	 * @param propertiesToAccess
+	 *            The {@link Map} of getter method names of persistable
+	 *            properties to its property type.
+	 * @param accessorAdditionalInfo
+	 *            The {@link Multimap} of getter methods mapped to additional
+	 *            properties a session {@link SPPersister} requires to convert
+	 *            the getter's returned value from a complex to basic
+	 *            persistable type.
+	 * @param mutatorImports
+	 *            The {@link Multimap} of setter methods to imports that the
+	 *            generated persister helper requires for calling the
+	 *            {@link Mutator} annotated setters.
+	 * @param propertiesToMutate
+	 *            The {@link Map} of setter method names of persistable
+	 *            properties to its property type.
+	 * @param mutatorExtraParameters
+	 *            The {@link Multimap} of setter methods mapped to each of its
+	 *            extra parameters (second parameter and onwards).
+	 * @param mutatorThrownTypes
+	 *            The {@link Multimap} of {@link Exception}s thrown by each
+	 *            persistable property setter.
+	 * @param propertiesToPersistOnlyIfNonNull
+	 *            The {@link Set} of persistable properties that can only be
+	 *            persisted if its value is not null.
+	 */
+	private void generateAbstractPersisterHelperFile(
+			Class<? extends SPObject> visitedClass, 
+			Set<String> constructorImports,
+			Map<String, Class<?>> propertiesToAccess, 
+			Multimap<String, String> accessorAdditionalInfo,
+			Multimap<String, String> mutatorImports,
+			Map<String, Class<?>> propertiesToMutate,
+			Multimap<String, MutatorParameterObject> mutatorExtraParameters,
+			Multimap<String, Class<? extends Exception>> mutatorThrownTypes,
+			Set<String> propertiesToPersistOnlyIfNonNull) {
+		try {
+			final String helperPackage = visitedClass.getPackage().getName() + "." + PersisterHelperFinder.GENERATED_PACKAGE_NAME;
+			int tabs = 0;
+			
+			Filer f = environment.getFiler();
+			PrintWriter pw = f.createSourceFile(helperPackage + "." + 
+					visitedClass.getSimpleName() + "PersisterHelper");
+			
+			pw.print(generateWarning());
+			pw.print("\n");
+			pw.print(generateLicense());
+			pw.print("\n");
+			pw.print("package " + helperPackage + ";\n");
+			pw.print("\n");
+			pw.print(generateImports(visitedClass, constructorImports, mutatorImports));
+			pw.print("\n");
+			pw.print("public class " + visitedClass.getSimpleName() + "PersisterHelper {\n");
+			tabs++;
+			
+			pw.print("\n");
+			pw.print(generateCommitPropertyMethod(visitedClass, propertiesToMutate, 
+					mutatorExtraParameters, mutatorThrownTypes, tabs));
+			pw.print("\n");
+			pw.print(generateFindPropertyMethod(visitedClass, propertiesToAccess, 
+					accessorAdditionalInfo, tabs));
+			pw.print("\n");
+			pw.print(generatePersistObjectMethodHelper(visitedClass, 
 					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs));
 			pw.print("\n");
 			
@@ -369,6 +428,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		allImports.add(SPPersisterHelper.class.getName());
 		allImports.add(PersisterHelperFinder.class.getName());
 		allImports.add(List.class.getName());
+		allImports.add(ArrayList.class.getName());
 		allImports.add(visitedClass.getName());
 		allImports.add(PersistedSPOProperty.class.getName());
 		allImports.add(PersistedSPObject.class.getName());
@@ -680,7 +740,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 					sb.append(indent(tabs));
 					sb.append("throw new " + SPPersistenceException.class.getSimpleName() + 
 							"(" + objectField + ".getUUID(), " +
-									"createSPPersistenceExceptionMessage(" + 
+									AbstractSPPersisterHelper.class.getSimpleName() + ".createSPPersistenceExceptionMessage(" + 
 									objectField + ", " + propertyNameField + "), " + 
 									exceptionField + ");\n");
 					tabs--;
@@ -699,11 +759,21 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			tabs++;
 		}
 		
-		// Throw an SPPersistenceException if the property is not persistable or unrecognized.
-		sb.append(indent(tabs));
-		sb.append("throw new " + SPPersistenceException.class.getSimpleName() + 
-				"(" + objectField + ".getUUID(), createSPPersistenceExceptionMessage(" + 
-				objectField + ", " + propertyNameField + "));\n");
+		if (SPObject.class.isAssignableFrom(visitedClass.getSuperclass())) {
+			Class<?> superclass = visitedClass.getSuperclass();
+			final String parentHelper = "parentHelper";
+			final String persisterHelperClassName = PersisterHelperFinder.getPersisterHelperClassName(superclass.getName());
+			println(sb, tabs, persisterHelperClassName + " " + parentHelper + " = " + 
+					"new " + persisterHelperClassName + "();");
+			println(sb, tabs, parentHelper + ".commitProperty(" + genericObjectField + ", " +
+					propertyNameField + ", " + newValueField + ", " + converterField + ");");
+		} else {
+			// Throw an SPPersistenceException if the property is not persistable or unrecognized.
+			sb.append(indent(tabs));
+			sb.append("throw new " + SPPersistenceException.class.getSimpleName() + 
+					"(" + objectField + ".getUUID(), " + AbstractSPPersisterHelper.class.getSimpleName() + ".createSPPersistenceExceptionMessage(" + 
+					objectField + ", " + propertyNameField + "));\n");
+		}
 		
 		if (!firstIf) {
 			tabs--;
@@ -813,11 +883,21 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			tabs++;
 		}
 		
-		// Throw an SPPersistenceException if the property is not persistable or unrecognized.
-		sb.append(indent(tabs));
-		sb.append("throw new " + SPPersistenceException.class.getSimpleName() + 
-				"(" + objectField + ".getUUID(), createSPPersistenceExceptionMessage(" + 
-				objectField + ", " + propertyNameField + "));\n");
+		if (SPObject.class.isAssignableFrom(visitedClass.getSuperclass())) {
+			Class<?> superclass = visitedClass.getSuperclass();
+			final String parentHelper = "parentHelper";
+			final String persisterHelperClassName = PersisterHelperFinder.getPersisterHelperClassName(superclass.getName());
+			println(sb, tabs, persisterHelperClassName + " " + parentHelper + " = " + 
+					"new " + persisterHelperClassName + "();");
+			println(sb, tabs, "return " + parentHelper + ".findProperty(" + genericObjectField + ", " +
+					propertyNameField + ", " + converterField + ");");
+		} else {
+			// Throw an SPPersistenceException if the property is not persistable or unrecognized.
+			sb.append(indent(tabs));
+			sb.append("throw new " + SPPersistenceException.class.getSimpleName() + 
+					"(" + objectField + ".getUUID(), " + AbstractSPPersisterHelper.class.getSimpleName() + ".createSPPersistenceExceptionMessage(" + 
+					objectField + ", " + propertyNameField + "));\n");
+		}
 		
 		if (!firstIf) {
 			tabs--;
@@ -881,6 +961,10 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		final String uuidField = "uuid";
 		final String parentUUIDField = "parentUUID";
 		
+		//Properties already processed by the constructor, to be skipped
+		//by the helper persisters that are parent classes to this object class.
+		final String preProcessedProps = "preProcessedProperties";
+		
 		// persistObject method header.
 		sb.append(indent(tabs));
 		sb.append("public void persistObject(" + SPObject.class.getSimpleName() + " " + 
@@ -924,6 +1008,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		//TODO pass in the actual exception types on any accessors
 		//then replace this blanket try/catch with specifics for any accessor
 		//that throws an exception.
+		println(sb, tabs, "List<String> " + preProcessedProps + " = new ArrayList<String>();");
 		println(sb, tabs, "try {");
 		tabs++;
 		if (constructorParameters.isEmpty()) {
@@ -946,73 +1031,139 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 									cpo.getName(), 
 									cpo.getType()) + 
 							"()));\n");
+					println(sb, tabs, preProcessedProps + ".add(\"" + cpo.getName() + "\");");
 				}
 			}
 		}
 		sb.append("\n");
 		
+		println(sb, tabs, "persistObjectProperties(" + genericObjectField + ", " +
+				persisterField + ", " + converterField + ", " + preProcessedProps + ");");
+		
+		tabs--;
+		println(sb, tabs, "} catch (Exception ex) {");
+		tabs++;
+		println(sb, tabs, "throw new SPPersistenceException(" + uuidField + ", ex);");
+		tabs--;
+		println(sb, tabs, "}");
+		
+		tabs--;
+		sb.append(indent(tabs));
+		sb.append("}\n");
+		
+		return sb.toString();
+	}
+
+	/**
+	 * Generates and returns source code for persisting the remaining state not
+	 * done by {@link #generatePersistObjectMethod(Class, List, Map, Set, int)}.
+	 * This is for classes to allow properties that are not defined in a
+	 * sub-class to be persisted.
+	 * <p>
+	 * In the future we may want to have the parent classes persist properties
+	 * first and children to persist properties later. We can pool the property
+	 * changes in {@link PersistedSPOProperty} objects and persist them at the
+	 * end of the method call.
+	 * 
+	 * @param visitedClass
+	 *            The {@link SPObject} class that is being visited by the
+	 *            annotation processor.
+	 * @param accessors
+	 *            The {@link Map} of accessor method names to their property
+	 *            types which should be persisted into an {@link SPPersister} by
+	 *            a workspace persister {@link SPListener}.
+	 * @param propertiesToPersistOnlyIfNonNull
+	 *            The {@link Set} of persistable properties that can only be
+	 *            persisted if its value is not null.
+	 * @param tabs
+	 *            The number of tab characters to use to indent this generated
+	 *            method block.
+	 * @return The source code for the generated persistObject method.
+	 */
+	private String generatePersistObjectMethodHelper(
+			Class<? extends SPObject> visitedClass,
+			Map<String, Class<?>> accessors,
+			Set<String> propertiesToPersistOnlyIfNonNull,
+			int tabs) {
+		StringBuilder sb = new StringBuilder();
+		final String genericObjectField = "o";
+		final String objectField = "castedObject";
+		final String persisterField = "persister";
+		final String converterField = "converter";
+		final String uuidField = "uuid";
+		
+		//These are the properties on the sub-class helper calling this abstract
+		//helper that have already been persisted by the current persistObject
+		//call. These properties do not have to be persisted again.
+		final String preProcessedPropField = "preProcessedProps";
+		
+		// persistObject method header.
+		sb.append(indent(tabs));
+		sb.append("public void persistObjectProperties(" + SPObject.class.getSimpleName() + " " + 
+				genericObjectField + ", " + 
+				SPPersister.class.getSimpleName() + " " + persisterField + ", " +
+				SessionPersisterSuperConverter.class.getSimpleName() + " " + 
+				converterField + ", List<String> " + preProcessedPropField  + ") " +
+                "throws " + SPPersistenceException.class.getSimpleName() + 
+				" {\n");
+		tabs++;
+		println(sb, tabs, "final " + String.class.getSimpleName() + " " + uuidField + " = " + 
+				genericObjectField + ".getUUID();\n");
+		
+		println(sb, tabs, visitedClass.getSimpleName() + " " + objectField + " = " +
+				"(" + visitedClass.getSimpleName() + ") " + genericObjectField + ";");
+
 		boolean lastEntryInIfBlock = false;
 		
-		sb.append(indent(tabs));
-		if (accessors.isEmpty()) {
-			sb.append("// No remaining properties\n");
-		} else {
-			sb.append("// Remaining properties\n");
+		println(sb, tabs, "try {");
+		tabs++;
+		
+		// Persist all of its persistable properties.
+		for (Entry<String, Class<?>> e : accessors.entrySet()) {
+			String propertyName = SPAnnotationProcessorUtils.convertMethodToProperty(
+					e.getKey());
 			
-			// Persist all of its persistable properties.
-			for (Entry<String, Class<?>> e : accessors.entrySet()) {
-				String propertyName = SPAnnotationProcessorUtils.convertMethodToProperty(
-						e.getKey());
-				
-				// See if the property has already been persisted as a constructor argument.
-				boolean foundConstructorProperty = false;
-				for (ConstructorParameterObject cpo : constructorParameters) {
-					if (ParameterType.PROPERTY.equals(cpo.getProperty()) && 
-							cpo.getName().equals(propertyName)) {
-						foundConstructorProperty = true;
-						break;
-					}
-				}
-				
-				// Persist the property only if it has not been persisted yet
-				// and (if required) persist if the value is not null.
-				if (!foundConstructorProperty) {
-					boolean persistOnlyIfNonNull = 
-						propertiesToPersistOnlyIfNonNull.contains(propertyName);
-					String propertyField = objectField + "." + e.getKey() + "()";
-					
-					if (lastEntryInIfBlock) {
-						sb.append("\n");
-					}
-					
-					if (persistOnlyIfNonNull) {
-						sb.append(indent(tabs));
-						sb.append(e.getValue().getSimpleName() + " " + propertyName + 
-								" = " + propertyField + ";\n");
-						propertyField = propertyName;
-						
-						sb.append(indent(tabs));
-						sb.append("if (" + propertyField + " != null) {\n");
-						tabs++;
-					}
-					
-					sb.append(indent(tabs));
-					sb.append(persisterField + ".persistProperty(" + uuidField + ", \"" +
-							propertyName + "\", " + DataType.class.getSimpleName() + "." + 
-							PersisterUtils.getDataType(e.getValue()).name() +
-							", " + converterField + ".convertToBasicType(" + objectField + "." +
-							e.getKey() + "()));\n");
-					
-					if (persistOnlyIfNonNull) {
-						tabs--;
-						sb.append(indent(tabs));
-						sb.append("}\n");
-						lastEntryInIfBlock = true;
-					} else {
-						lastEntryInIfBlock = false;
-					}
-				}
+			// Persist the property only if it has not been persisted yet
+			// and (if required) persist if the value is not null.
+			println(sb, tabs, "if (!" + preProcessedPropField + ".contains(\"" + propertyName + "\")) {");
+			tabs++;
+			boolean persistOnlyIfNonNull = 
+				propertiesToPersistOnlyIfNonNull.contains(propertyName);
+			String propertyField = objectField + "." + e.getKey() + "()";
+
+			if (lastEntryInIfBlock) {
+				sb.append("\n");
 			}
+
+			if (persistOnlyIfNonNull) {
+				sb.append(indent(tabs));
+				sb.append(e.getValue().getSimpleName() + " " + propertyName + 
+						" = " + propertyField + ";\n");
+				propertyField = propertyName;
+
+				sb.append(indent(tabs));
+				sb.append("if (" + propertyField + " != null) {\n");
+				tabs++;
+			}
+
+			sb.append(indent(tabs));
+			sb.append(persisterField + ".persistProperty(" + uuidField + ", \"" +
+					propertyName + "\", " + DataType.class.getSimpleName() + "." + 
+					PersisterUtils.getDataType(e.getValue()).name() +
+					", " + converterField + ".convertToBasicType(" + objectField + "." +
+					e.getKey() + "()));\n");
+			println(sb, tabs, preProcessedPropField + ".add(\"" + propertyName + "\");");
+
+			if (persistOnlyIfNonNull) {
+				tabs--;
+				sb.append(indent(tabs));
+				sb.append("}\n");
+				lastEntryInIfBlock = true;
+			} else {
+				lastEntryInIfBlock = false;
+			}
+			tabs--;
+			println(sb, tabs, "}");
 		}
 		tabs--;
 		println(sb, tabs, "} catch (Exception ex) {");
@@ -1020,6 +1171,16 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		println(sb, tabs, "throw new SPPersistenceException(" + uuidField + ", ex);");
 		tabs--;
 		println(sb, tabs, "}");
+		
+		if (SPObject.class.isAssignableFrom(visitedClass.getSuperclass())) {
+			Class<?> superclass = visitedClass.getSuperclass();
+			final String parentHelper = "parentHelper";
+			final String persisterHelperClassName = PersisterHelperFinder.getPersisterHelperClassName(superclass.getName());
+			println(sb, tabs, persisterHelperClassName + " " + parentHelper + " = " + 
+					"new " + persisterHelperClassName + "();");
+			println(sb, tabs, parentHelper + ".persistObjectProperties(" + genericObjectField + ", " +
+					persisterField + ", " + converterField + ", " + preProcessedPropField + ");");
+		}
 		
 		tabs--;
 		sb.append(indent(tabs));

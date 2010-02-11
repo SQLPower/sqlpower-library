@@ -152,9 +152,6 @@
 	<target name="clean">
 		<delete dir="${build}"/>
 		<delete dir="${build_tmp}"/>
-		<delete includeemptydirs="true">
-			<fileset dir="${src}/ca/sqlpower/dao/helper/generated" includes="*"/>
-		</delete>
 	</target>
 
 	<target name="dist-clean" depends="clean">

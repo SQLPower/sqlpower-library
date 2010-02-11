@@ -73,7 +73,7 @@ public class PersisterHelperFinder {
 	 * current all persisters are located in the
 	 * ca.sqlpower.dao.helper.generated package but this will change.
 	 * 
-	 * @param persistClass
+	 * @param type
 	 *            The new persister helper will create and modify objects of
 	 *            this type. This must be the fully qualified class name.
 	 * @return A new persister helper that will create and modify objects of the
@@ -91,14 +91,24 @@ public class PersisterHelperFinder {
 	@SuppressWarnings("unchecked")
 	public static SPPersisterHelper<? extends SPObject> findPersister(
 			String type) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-		String packageName = type.substring(0, type.lastIndexOf("."));
-		String className = type.substring(type.lastIndexOf(".") + 1, type.length());
+		String persisterClassName = getPersisterHelperClassName(type);
+		Class<?> persisterClass = PersisterHelperFinder.class.getClassLoader().loadClass(persisterClassName);
+		return (SPPersisterHelper<? extends SPObject>) persisterClass.newInstance();
+	}
+	
+	/**
+	 * Returns the fully qualified class name of the persister helper for the fully
+	 * qualified class name given. This works for both {@link SPPersisterHelper}s 
+	 * and the abstract helper helpers.
+	 */
+	public static String getPersisterHelperClassName(String classNameToPersist) {
+		String packageName = classNameToPersist.substring(0, classNameToPersist.lastIndexOf("."));
+		String className = classNameToPersist.substring(classNameToPersist.lastIndexOf(".") + 1, classNameToPersist.length());
 		if (className.indexOf("$") != -1) {
 			className = className.substring(className.lastIndexOf("$") + 1);
 		}
 		String persisterClassName = packageName + "." + GENERATED_PACKAGE_NAME + "." + className + "PersisterHelper";
-		Class<?> persisterClass = PersisterHelperFinder.class.getClassLoader().loadClass(persisterClassName);
-		return (SPPersisterHelper<? extends SPObject>) persisterClass.newInstance();
+		return persisterClassName;
 	}
 	
 	private PersisterHelperFinder() {

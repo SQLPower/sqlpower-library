@@ -44,7 +44,7 @@ public abstract class AbstractSPPersisterHelper<T extends SPObject> implements S
 	 *            cannot be found.
 	 * @return An error message for exceptions that describes the above.
 	 */
-	protected String createSPPersistenceExceptionMessage(T spo,
+	public static String createSPPersistenceExceptionMessage(SPObject spo,
 			String propertyName) {
 		return "Cannot persist property \"" + propertyName + "\" on "
 				+ spo.getClass() + " with name \"" + spo.getName()

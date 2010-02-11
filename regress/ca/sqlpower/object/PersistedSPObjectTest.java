@@ -151,12 +151,6 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 */
 	private SessionPersisterSuperConverter converter;
 
-	/**
-	 * A default session persister that is used in testing, connected to the root
-	 * and persister factory.
-	 */
-	private SPSessionPersister persister;
-	
 	public PersistedSPObjectTest(String name) {
 		super(name);
 	}
@@ -180,10 +174,6 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		valueMaker = new GenericNewValueMaker(root, getPLIni());
 		converter = new SessionPersisterSuperConverter(
 				getPLIni(), root);
-		
-		persister = new SPSessionPersister(
-				"Testing Persister", root, converter);
-		persister.setSession(root.getSession());
 	}
 
 	/**
@@ -192,6 +182,15 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 * root object returned from {@link #getRootObject()}.
 	 */
 	public abstract SPObject getSPObjectUnderTest();
+
+	/**
+	 * Returns the converter to be used in persister tests. This can be
+	 * overridden by other test classes to specify a converter that is different
+	 * from the basic one in the library.
+	 */
+	public SessionPersisterSuperConverter getConverter() {
+		return converter;
+	}
 	
 	public SPObject getRootObject() {
 		return root;
@@ -219,7 +218,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 */
 	public void testSPListenerPersistsProperty() throws Exception {
 		CountingSPPersister countingPersister = new CountingSPPersister();
-		SPPersisterListener listener = new SPPersisterListener(countingPersister, converter);
+		SPPersisterListener listener = new SPPersisterListener(countingPersister, getConverter());
 		
 		SPObject wo = getSPObjectUnderTest();
         wo.addSPListener(listener);
@@ -285,7 +284,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 					assertTrue(Arrays.equals(PersisterUtils.convertImageToStreamAsPNG(
 								(Image) newVal).toByteArray(),
 							PersisterUtils.convertImageToStreamAsPNG(
-								(Image) converter.convertToComplexType(
+								(Image) getConverter().convertToComplexType(
 										propertyChange.getNewValue(), Image.class)).toByteArray()));
 				} else {
 					assertEquals(newVal, propertyChange.getNewValue());
@@ -308,6 +307,10 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 * on an object based on a persist call.
 	 */
 	public void testSPPersisterPersistsProperties() throws Exception {
+		SPSessionPersister persister = new SPSessionPersister(
+				"Testing Persister", root, getConverter());
+		persister.setSession(root.getSession());
+		
 		SPObject objectUnderTest = getSPObjectUnderTest();
 		
 		List<PropertyDescriptor> settableProperties = Arrays.asList(
@@ -348,15 +351,15 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
             System.out.println("Persisting property \"" + property.getName() + "\" from oldVal \"" + oldVal + "\" to newVal \"" + newVal + "\"");
             
             DataType type = PersisterUtils.getDataType(property.getPropertyType());
-			Object basicNewValue = converter.convertToBasicType(newVal);
+			Object basicNewValue = getConverter().convertToBasicType(newVal);
 			persister.begin();
 			persister.persistProperty(objectUnderTest.getUUID(), property.getName(), type, 
-					converter.convertToBasicType(oldVal), 
+					getConverter().convertToBasicType(oldVal), 
 					basicNewValue);
 			persister.commit();
 			
 			Object newValAfterSet = PropertyUtils.getSimpleProperty(objectUnderTest, property.getName());
-			Object basicExpectedValue = converter.convertToBasicType(newValAfterSet);
+			Object basicExpectedValue = getConverter().convertToBasicType(newValAfterSet);
 			
 			assertPersistedValuesAreEqual(newVal, newValAfterSet, basicNewValue, 
 					basicExpectedValue, property.getPropertyType());
@@ -442,7 +445,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
         int childCount = newParent.getChildren().size();
         
 		//persist the object to the new target root
-        new SPPersisterListener(persister, converter).persistObject(objectUnderTest, 
+        new SPPersisterListener(persister, getConverter()).persistObject(objectUnderTest, 
         		objectUnderTest.getParent().getChildren(objectUnderTest.getClass()).indexOf(objectUnderTest));
 		
 		//check object exists
@@ -465,7 +468,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
             
             Object valueBeforePersist = readMethod.invoke(objectUnderTest);
             Object valueAfterPersist = readMethod.invoke(newChild);
-            Object basicValueBeforePersist = converter.convertToBasicType(valueBeforePersist);
+            Object basicValueBeforePersist = getConverter().convertToBasicType(valueBeforePersist);
             Object basicValueAfterPersist = newConverter.convertToBasicType(valueAfterPersist);
             
             assertPersistedValuesAreEqual(valueBeforePersist, valueAfterPersist, 
@@ -519,7 +522,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
         }
         
         //persist the object to the new target root
-        new SPPersisterListener(persister, converter).persistObject(objectUnderTest, 
+        new SPPersisterListener(persister, getConverter()).persistObject(objectUnderTest, 
         		objectUnderTest.getParent().getChildren(objectUnderTest.getClass()).indexOf(objectUnderTest));
 		
         assertTrue(persister.getPersistPropertyCount() > 0);
@@ -562,8 +565,8 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
             	assertNull(newValue);
             } else {
             	assertPersistedValuesAreEqual(oldVal, 
-            			converter.convertToComplexType(newValue, oldVal.getClass()), 
-            			converter.convertToBasicType(oldVal), newValue, property.getPropertyType());
+            			getConverter().convertToComplexType(newValue, oldVal.getClass()), 
+            			getConverter().convertToBasicType(oldVal), newValue, property.getPropertyType());
             }
         }
 	}
@@ -845,9 +848,9 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
     	Class<? extends SPObject> childClassType = getChildClassType();
     	if (childClassType == null) return;
     	
-    	SPSessionPersister persister = new SPSessionPersister("test", getSPObjectUnderTest(), converter);
+    	SPSessionPersister persister = new SPSessionPersister("test", getSPObjectUnderTest(), getConverter());
     	persister.setSession(getSPObjectUnderTest().getSession());
-    	SPPersisterListener listener = new SPPersisterListener(persister, converter);
+    	SPPersisterListener listener = new SPPersisterListener(persister, getConverter());
     	
     	SQLObject newChild = (SQLObject) valueMaker.makeNewValue(childClassType, null, "child");
     	newChild.setParent(spObject);
