@@ -71,6 +71,13 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 * useful information about classes annotated with {@link Persistable}.
 	 */
 	private final AnnotationProcessorEnvironment environment;
+	
+	/**
+	 * This contains the additional fully qualified class names that need to be
+	 * imported into the persister for the persister helper methods. This set
+	 * will be cleared at the start of creating each file.
+	 */
+	private final Set<String> importedClassNames = new HashSet<String>();
 
 	/**
 	 * Creates a new {@link SPAnnotationProcessor} that deals exclusively with
@@ -117,6 +124,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				HashMultimap.create(visitor.getMutatorThrownTypes());
 			Set<String> propertiesToPersistOnlyIfNonNull = 
 				new HashSet<String>(visitor.getPropertiesToPersistOnlyIfNonNull());
+			
+			importedClassNames.clear();
 			
 			// Generate the persister helper file if the SPObject class is not abstract.
 			if (!Modifier.isAbstract(visitor.getVisitedClass().getModifiers())) {
@@ -208,13 +217,25 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			PrintWriter pw = f.createSourceFile(helperPackage + "." + 
 					visitedClass.getSimpleName() + "PersisterHelper");
 			
+			final String commitObjectMethod = generateCommitObjectMethod(visitedClass, constructorParameters, tabs);
+			final String commitPropertyMethod = generateCommitPropertyMethod(visitedClass, propertiesToMutate, 
+					mutatorExtraParameters, mutatorThrownTypes, tabs);
+			final String findPropertyMethod = generateFindPropertyMethod(visitedClass, propertiesToAccess, 
+					accessorAdditionalInfo, tabs);
+			final String persistObjectMethod = generatePersistObjectMethod(visitedClass, constructorParameters, 
+					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs);
+			final String PersistObjectMethodHelper = generatePersistObjectMethodHelper(visitedClass, 
+					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs);
+			importedClassNames.add(AbstractSPPersisterHelper.class.getName());
+			final String imports = generateImports(visitedClass, constructorImports, mutatorImports);
+			
 			pw.print(generateWarning());
 			pw.print("\n");
 			pw.print(generateLicense());
 			pw.print("\n");
 			pw.print("package " + helperPackage + ";\n");
 			pw.print("\n");
-			pw.print(generateImports(visitedClass, constructorImports, mutatorImports));
+			pw.print(imports);
 			pw.print("\n");
 			pw.print("public class " + visitedClass.getSimpleName() + "PersisterHelper" +
 					" extends " + AbstractSPPersisterHelper.class.getSimpleName() + 
@@ -222,19 +243,15 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			tabs++;
 			
 			pw.print("\n");
-			pw.print(generateCommitObjectMethod(visitedClass, constructorParameters, tabs));
+			pw.print(commitObjectMethod);
 			pw.print("\n");
-			pw.print(generateCommitPropertyMethod(visitedClass, propertiesToMutate, 
-					mutatorExtraParameters, mutatorThrownTypes, tabs));
+			pw.print(commitPropertyMethod);
 			pw.print("\n");
-			pw.print(generateFindPropertyMethod(visitedClass, propertiesToAccess, 
-					accessorAdditionalInfo, tabs));
+			pw.print(findPropertyMethod);
 			pw.print("\n");
-			pw.print(generatePersistObjectMethod(visitedClass, constructorParameters, 
-					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs));
+			pw.print(persistObjectMethod);
 			pw.print("\n");
-			pw.print(generatePersistObjectMethodHelper(visitedClass, 
-					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs));
+			pw.print(PersistObjectMethodHelper);
 			pw.print("\n");
 			
 			tabs--;
@@ -305,26 +322,31 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			PrintWriter pw = f.createSourceFile(helperPackage + "." + 
 					visitedClass.getSimpleName() + "PersisterHelper");
 			
+			final String commitPropertyMethod = generateCommitPropertyMethod(visitedClass, propertiesToMutate, 
+					mutatorExtraParameters, mutatorThrownTypes, tabs);
+			final String findPropertyMethod = generateFindPropertyMethod(visitedClass, propertiesToAccess, 
+					accessorAdditionalInfo, tabs);
+			final String persistObjectMethodHelper = generatePersistObjectMethodHelper(visitedClass, 
+					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs);
+			final String generateImports = generateImports(visitedClass, constructorImports, mutatorImports);
+			
 			pw.print(generateWarning());
 			pw.print("\n");
 			pw.print(generateLicense());
 			pw.print("\n");
 			pw.print("package " + helperPackage + ";\n");
 			pw.print("\n");
-			pw.print(generateImports(visitedClass, constructorImports, mutatorImports));
+			pw.print(generateImports);
 			pw.print("\n");
 			pw.print("public class " + visitedClass.getSimpleName() + "PersisterHelper {\n");
 			tabs++;
 			
 			pw.print("\n");
-			pw.print(generateCommitPropertyMethod(visitedClass, propertiesToMutate, 
-					mutatorExtraParameters, mutatorThrownTypes, tabs));
+			pw.print(commitPropertyMethod);
 			pw.print("\n");
-			pw.print(generateFindPropertyMethod(visitedClass, propertiesToAccess, 
-					accessorAdditionalInfo, tabs));
+			pw.print(findPropertyMethod);
 			pw.print("\n");
-			pw.print(generatePersistObjectMethodHelper(visitedClass, 
-					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs));
+			pw.print(persistObjectMethodHelper);
 			pw.print("\n");
 			
 			tabs--;
@@ -424,20 +446,13 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		// XXX Need to import any additional classes this generated persister helper
 		// class requires, aside from those needed in visitedClass.
-		allImports.add(AbstractSPPersisterHelper.class.getName());
-		allImports.add(SPPersisterHelper.class.getName());
-		allImports.add(PersisterHelperFinder.class.getName());
 		allImports.add(List.class.getName());
-		allImports.add(ArrayList.class.getName());
 		allImports.add(visitedClass.getName());
-		allImports.add(PersistedSPOProperty.class.getName());
-		allImports.add(PersistedSPObject.class.getName());
 		allImports.add(SPPersistenceException.class.getName());
 		allImports.add(SPPersister.class.getName());
-		allImports.add(DataType.class.getName());
 		allImports.add(SessionPersisterSuperConverter.class.getName());
-		allImports.add(Multimap.class.getName());
 		allImports.add(SPObject.class.getName());
+		allImports.addAll(importedClassNames);
 		
 		for (String pkg : allImports) {
 			// No need to import java.lang as it is automatically imported.
@@ -494,6 +509,9 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				List.class.getSimpleName() + "<" + 
 						PersistedSPObject.class.getSimpleName() + "> " + persistedObjectsListField + ", " +
 				SessionPersisterSuperConverter.class.getSimpleName() + " " + converterField + ") throws SPPersistenceException {\n");
+		importedClassNames.add(PersistedSPObject.class.getName());
+		importedClassNames.add(PersistedSPOProperty.class.getName());
+		importedClassNames.add(Multimap.class.getName());
 		tabs++;
 		
 		sb.append(indent(tabs));
@@ -555,19 +573,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				println(sb, tabs, parameterType + " " + parameterName + " = (" + parameterType + ") " + 
 						childPersisterHelperField + ".commitObject(" + childPersistedObject + ", " + 
 						persistedPropertiesField + ", " + persistedObjectsListField + ", " + converterField + ");");
-				
-				/*
-				String primaryKeyIndexUUID = (String) findPropertyAndRemove(uuid, "primaryKeyIndex", persistedProperties);
-				SPPersisterHelper<? extends SPObject> primaryKeyIndexHelper;
-				try {
-					 primaryKeyIndexHelper = PersisterHelperFinder.findPersister(SQLIndex.class);
-				} catch (Exception e) {
-					throw new SPPersistenceException(uuid, e);
-				}
-				PersistedSPObject primaryKeyIndexPSO = findPersistedSPObject(uuid, "SQLIndex", primaryKeyIndexUUID, persistedObjects);
-				SQLIndex primaryKeyIndex = (SQLIndex) primaryKeyIndexHelper.commitObject(primaryKeyIndexPSO, persistedProperties, persistedObjects, factory);
-				*/
-				
+				importedClassNames.add(PersisterHelperFinder.class.getName());
+				importedClassNames.add(SPPersisterHelper.class.getName());
 				
 			} else {
 				throw new IllegalStateException("Don't know how to handle " +
@@ -743,6 +750,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 									AbstractSPPersisterHelper.class.getSimpleName() + ".createSPPersistenceExceptionMessage(" + 
 									objectField + ", " + propertyNameField + "), " + 
 									exceptionField + ");\n");
+					importedClassNames.add(AbstractSPPersisterHelper.class.getName());
 					tabs--;
 				}
 				sb.append(indent(tabs));
@@ -773,6 +781,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			sb.append("throw new " + SPPersistenceException.class.getSimpleName() + 
 					"(" + objectField + ".getUUID(), " + AbstractSPPersisterHelper.class.getSimpleName() + ".createSPPersistenceExceptionMessage(" + 
 					objectField + ", " + propertyNameField + "));\n");
+			importedClassNames.add(AbstractSPPersisterHelper.class.getName());
 		}
 		
 		if (!firstIf) {
@@ -897,6 +906,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			sb.append("throw new " + SPPersistenceException.class.getSimpleName() + 
 					"(" + objectField + ".getUUID(), " + AbstractSPPersisterHelper.class.getSimpleName() + ".createSPPersistenceExceptionMessage(" + 
 					objectField + ", " + propertyNameField + "));\n");
+			importedClassNames.add(AbstractSPPersisterHelper.class.getName());
 		}
 		
 		if (!firstIf) {
@@ -1009,6 +1019,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		//then replace this blanket try/catch with specifics for any accessor
 		//that throws an exception.
 		println(sb, tabs, "List<String> " + preProcessedProps + " = new ArrayList<String>();");
+		importedClassNames.add(ArrayList.class.getName());
 		println(sb, tabs, "try {");
 		tabs++;
 		if (constructorParameters.isEmpty()) {
@@ -1032,6 +1043,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 									cpo.getType()) + 
 							"()));\n");
 					println(sb, tabs, preProcessedProps + ".add(\"" + cpo.getName() + "\");");
+					importedClassNames.add(DataType.class.getName());
 				}
 			}
 		}
@@ -1153,6 +1165,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 					", " + converterField + ".convertToBasicType(" + objectField + "." +
 					e.getKey() + "()));\n");
 			println(sb, tabs, preProcessedPropField + ".add(\"" + propertyName + "\");");
+			importedClassNames.add(DataType.class.getName());
 
 			if (persistOnlyIfNonNull) {
 				tabs--;
