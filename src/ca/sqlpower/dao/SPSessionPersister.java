@@ -721,11 +721,22 @@ public class SPSessionPersister implements SPPersister {
 			SPObject parent = SQLPowerUtils.findByUuid(root, pso.getParentUUID(), 
 					SPObject.class);
 			SPObject spo;
-			try {
-				spo = PersisterHelperFinder.findPersister(pso.getType()).commitObject(pso, persistedProperties, 
-						persistedObjects, converter);
-			} catch (Exception ex) {
-				throw new SPPersistenceException("Could not find the persister helper for " + pso.getType(), ex);
+			if (parent == null) { //parent only null for root object.
+				try {
+					PersisterHelperFinder.findPersister(pso.getType()).updateObject(root, pso, persistedProperties, 
+							persistedObjects, converter);
+					spo = root;
+					//TODO add an exception to the rollback. If you roll back the creation of the root node you just rolled back out of existence.
+				} catch (Exception ex) {
+					throw new SPPersistenceException("Could not find the persister helper for " + pso.getType(), ex);
+				}
+			} else {
+				try {
+					spo = PersisterHelperFinder.findPersister(pso.getType()).commitObject(pso, persistedProperties, 
+							persistedObjects, converter);
+				} catch (Exception ex) {
+					throw new SPPersistenceException("Could not find the persister helper for " + pso.getType(), ex);
+				}
 			}
 			if (spo != null) {
 				SPListener removeChildOnAddListener = new SPListener() {

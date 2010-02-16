@@ -109,6 +109,8 @@ public class PersisterUtils {
      * Gets the correct data type based on the given class for the {@link SPPersister}.
      */
     public static DataType getDataType(Class<? extends Object> classForDataType) {
+    	if (classForDataType == null) return DataType.NULL;
+    	
     	if (Integer.class.isAssignableFrom(classForDataType)) {
     		return DataType.INTEGER;
     	} else if (Boolean.class.isAssignableFrom(classForDataType)) {

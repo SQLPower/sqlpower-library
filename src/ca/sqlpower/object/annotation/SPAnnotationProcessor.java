@@ -217,6 +217,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			PrintWriter pw = f.createSourceFile(helperPackage + "." + 
 					visitedClass.getSimpleName() + "PersisterHelper");
 			
+			tabs++;
 			final String commitObjectMethod = generateCommitObjectMethod(visitedClass, constructorParameters, tabs);
 			final String commitPropertyMethod = generateCommitPropertyMethod(visitedClass, propertiesToMutate, 
 					mutatorExtraParameters, mutatorThrownTypes, tabs);
@@ -226,7 +227,9 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs);
 			final String PersistObjectMethodHelper = generatePersistObjectMethodHelper(visitedClass, 
 					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs);
+			final String updateObjectMethod = generateUpdateObjectMethod(visitedClass, constructorParameters, tabs);
 			importedClassNames.add(AbstractSPPersisterHelper.class.getName());
+			tabs--;
 			final String imports = generateImports(visitedClass, constructorImports, mutatorImports);
 			
 			pw.print(generateWarning());
@@ -240,10 +243,11 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			pw.print("public class " + visitedClass.getSimpleName() + "PersisterHelper" +
 					" extends " + AbstractSPPersisterHelper.class.getSimpleName() + 
 					"<" + visitedClass.getSimpleName() + "> {\n");
-			tabs++;
 			
 			pw.print("\n");
 			pw.print(commitObjectMethod);
+			pw.print("\n");
+			pw.print(updateObjectMethod);
 			pw.print("\n");
 			pw.print(commitPropertyMethod);
 			pw.print("\n");
@@ -254,7 +258,6 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			pw.print(PersistObjectMethodHelper);
 			pw.print("\n");
 			
-			tabs--;
 			pw.print("}\n");
 			pw.close();
 		} catch (IOException e) {
@@ -464,6 +467,96 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			}
 		}
 		
+		return sb.toString();
+	}
+
+	/**
+	 * Generates the source code for an updateObject method for the given
+	 * {@link SPObject} to match {@link SPPersisterHelper}.
+	 * 
+	 * @param visitedClass
+	 *            The class type that the persister helper will be able to
+	 *            return or modify.
+	 * @param constructorParameters
+	 *            The parameters in the constructor used to create a new object
+	 *            of the visitedClass type.
+	 * @param tabs
+	 *            The number of indentation marks to make when creating lines of
+	 *            text/code.
+	 * @return
+	 */
+	private String generateUpdateObjectMethod(
+			Class<? extends SPObject> visitedClass, 
+			List<ConstructorParameterObject> constructorParameters, 
+			int tabs) {
+		StringBuilder sb = new StringBuilder();
+		final String objectToUpdate = "objectToUpdate";
+		final String persistedSPO = "pso";
+		final String persistedProperties = "persistedProperties";
+		final String persistedObjects = "persistedObjects";
+		final String converter = "converter";
+		
+		println(sb, tabs, "public void updateObject(" + SPObject.class.getSimpleName() + " " + objectToUpdate + ", PersistedSPObject " + persistedSPO + ", " +
+			"Multimap<String, PersistedSPOProperty> " + persistedProperties + ", " + 
+			"List<PersistedSPObject> " + persistedObjects + ", " +
+			"SessionPersisterSuperConverter " + converter + ") throws SPPersistenceException {");
+		tabs++;
+		
+		final String castedObjToUpdate = "castedObject";
+		println(sb, tabs, visitedClass.getSimpleName() + " " + castedObjToUpdate + " = (" + 
+				visitedClass.getSimpleName() + ") " + objectToUpdate + ";");
+		
+		final String uuid = "uuid";
+		println(sb, tabs, "String " + uuid + " = " + persistedSPO + ".getUUID();");
+		
+		println(sb, tabs, objectToUpdate + ".setUUID(" + uuid + ");");
+		
+		final String persistedProperty = "persistedProperty";
+		final String childPersisterHelperField = "persisterHelper";
+		final String childSPO = "childSPO";
+		println(sb, tabs, "PersistedSPObject " + childSPO + ";");
+		println(sb, tabs, "Object " + persistedProperty + ";");
+		importedClassNames.add(SPPersisterHelper.class.getName());
+		println(sb, tabs, "SPPersisterHelper<? extends SPObject> " + childPersisterHelperField + ";");
+		for (ConstructorParameterObject constructorParam : constructorParameters) {
+			println(sb, tabs, persistedProperty + " = findPropertyAndRemove(" + 
+					uuid + ", \"" + constructorParam.getName() + "\", " + persistedProperties + ");");
+			if (constructorParam.getProperty().equals(ParameterType.CHILD)) {
+				println(sb, tabs, "try {");
+				tabs++;
+				println(sb, tabs, childPersisterHelperField + " = PersisterHelperFinder.findPersister(" + constructorParam.getType().getSimpleName() + ".class);");
+				println(sb, tabs, "if (" + castedObjToUpdate + "." + 
+						SPAnnotationProcessorUtils.convertPropertyToAccessor(
+								constructorParam.getName(), constructorParam.getType()) + "() != null) {");
+				tabs++;
+				println(sb, tabs, childSPO + " = findPersistedSPObject(" + uuid + ", \"" + constructorParam.getType().getName() + "\", " 
+						+ "(String) " + persistedProperty + ", " + persistedObjects + ");");
+				println(sb, tabs, childPersisterHelperField + ".updateObject(" + 
+						castedObjToUpdate + "." + 
+						SPAnnotationProcessorUtils.convertPropertyToAccessor(
+								constructorParam.getName(), constructorParam.getType()) + "(), " + 
+								childSPO + ", " + persistedProperties + ", " + persistedObjects + ", " + converter + ");");
+				tabs--;
+			    println(sb, tabs, "} else {");
+			    tabs++;
+			    
+			    //TODO create a new object as necessary.
+			    
+			    tabs--;
+			    println(sb, tabs, "}");
+			    tabs--;
+			    println(sb, tabs, "} catch (Exception e) {");
+			    tabs++;
+			    println(sb, tabs, "throw new SPPersistenceException(uuid, e);");
+			    tabs--;
+			    println(sb, tabs, "}");
+			} else {
+				println(sb, tabs, "commitProperty(" + castedObjToUpdate + ", \"" + constructorParam.getName() + "\", " + persistedProperty + ", " + converter + ");");
+			}
+		}
+		
+		tabs--;
+		println(sb, tabs, "}");
 		return sb.toString();
 	}
 
