@@ -33,6 +33,8 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.collections.map.MultiValueMap;
 import org.apache.log4j.Logger;
+import org.olap4j.OlapConnection;
+import org.olap4j.PreparedOlapStatement;
 
 /**
  * This is a helper class for resolving variables. It is a delegating
@@ -155,7 +157,7 @@ public class SPVariableHelper implements SPVariableResolver {
     
     /**
      * Helper method that takes a connection and a SQL statement which includes variable and 
-     * converts all that in a nifty prepared statement ready for execution, on time for christmas.
+     * converts all that in a nifty prepared statement ready for execution, on time for Christmas.
      * @param connection A connection object to use in order to generate the prepared statement.
      * @param sql A SQL string which might include variables.
      * @return A {@link PreparedStatement} object ready for execution.
@@ -167,7 +169,7 @@ public class SPVariableHelper implements SPVariableResolver {
     
     /**
      * Helper method that takes a connection and a SQL statement which includes variable and 
-     * converts all that in a nifty prepared statement ready for execution, on time for christmas.
+     * converts all that in a nifty prepared statement ready for execution, on time for Christmas.
      * @param connection A connection object to use in order to generate the prepared statement.
      * @param sql A SQL string which might include variables.
      * @param variableHelper A {@link SPVariableHelper} object to resolve the variables.
@@ -202,6 +204,71 @@ public class SPVariableHelper implements SPVariableResolver {
         
         // Now generate a prepared statement and inject it's variables.
         PreparedStatement ps = connection.prepareStatement(text.toString());
+        for (int i = 0; i < vars.size(); i++) {
+    		ps.setObject(i+1, vars.get(i));
+        }
+        
+        return ps;
+    }
+    
+    
+    /**
+     * Helper method that takes a connection and a MDX statement which includes variable and 
+     * converts all that in a nifty prepared statement ready for execution, on time for Christmas.
+     * @param connection A connection object to use in order to generate the prepared statement.
+     * @param sql A MDX string which might include variables.
+     * @return A {@link PreparedStatement} object ready for execution.
+     * @throws SQLException Might get thrown if we cannot generate a {@link PreparedStatement} with the supplied connection.
+     */
+    public PreparedOlapStatement substituteForDb(
+    		OlapConnection connection, 
+    		String mdxQuery) throws SQLException 
+    {
+    	return substituteForDb(connection, mdxQuery, this);
+    }
+    
+    
+    /**
+     * Helper method that takes a connection and a MDX statement which includes variable and 
+     * converts all that in a nifty prepared statement ready for execution, on time for Christmas.
+     * @param connection A connection object to use in order to generate the prepared statement.
+     * @param sql A MDX string which might include variables.
+     * @param variableHelper A {@link SPVariableHelper} object to resolve the variables.
+     * @return A {@link PreparedStatement} object ready for execution.
+     * @throws SQLException Might get thrown if we cannot generate a {@link PreparedStatement} with the supplied connection.
+     */
+    public static PreparedOlapStatement substituteForDb(
+    		OlapConnection connection, 
+    		String mdxQuery, 
+    		SPVariableHelper variableHelper) throws SQLException 
+    {
+    	
+    	// Make sure that the registry is ready.
+        SPResolverRegistry.init(variableHelper.getContextSource());
+        
+        StringBuilder text = new StringBuilder();
+        Matcher matcher = varPattern.matcher(mdxQuery);
+        List<Object> vars = new LinkedList<Object>();
+        
+        // First, change all vars to '?' markers.
+        int currentIndex = 0;
+        while (!matcher.hitEnd()) {
+            if (matcher.find()) {
+                String variableName = matcher.group(1);
+                if (variableName.equals("$")) {
+                	vars.add("$");
+                } else {
+                	vars.add(variableHelper.resolve(variableName));
+                }
+                text.append(mdxQuery.substring(currentIndex, matcher.start()));
+                text.append("?");
+                currentIndex = matcher.end();
+            }  
+        }
+        text.append(mdxQuery.substring(currentIndex));
+        
+        // Now generate a prepared statement and inject it's variables.
+        PreparedOlapStatement ps = connection.prepareOlapStatement(text.toString());
         for (int i = 0; i < vars.size(); i++) {
     		ps.setObject(i+1, vars.get(i));
         }

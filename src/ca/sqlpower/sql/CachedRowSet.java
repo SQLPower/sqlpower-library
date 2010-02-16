@@ -366,7 +366,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * Returns the list of rows in this result set.
 	 */
 	public List<Object[]> getData() {
-		return data == null ? new ArrayList<Object[]>() : data;
+		return data == null ? new ArrayList<Object[]>() : Collections.unmodifiableList(data);
 	}
 
 	/**
