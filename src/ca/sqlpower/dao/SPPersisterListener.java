@@ -22,6 +22,8 @@ package ca.sqlpower.dao;
 import java.beans.PropertyChangeEvent;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.helper.PersisterHelperFinder;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
@@ -36,6 +38,8 @@ import ca.sqlpower.util.TransactionEvent;
  * make persist calls when events are fired on the object being listened to.
  */
 public class SPPersisterListener implements SPListener {
+	
+	private static final Logger logger = Logger.getLogger(SPPersisterListener.class);
 
 	/**
 	 * This persister will have persist calls made on it when the object(s) this
@@ -100,6 +104,7 @@ public class SPPersisterListener implements SPListener {
 		} else {
 			children = o.getChildren();
 		}
+		logger.debug("Persisting children " + children + " of " + o);
 		for (SPObject child : children) {
 			int childIndex = 0;
 			if (o instanceof SQLObject) {

@@ -425,6 +425,7 @@ public class SPSessionPersister implements SPPersister {
 
 	public void persistObject(String parentUUID, String type, String uuid,
 			int index) throws SPPersistenceException {
+		logger.debug("Persisting object " + uuid + " of type " + type + " as a child to " + parentUUID);
 		synchronized (getSession()) {
 			enforeThreadSafety();
 			
@@ -484,6 +485,7 @@ public class SPSessionPersister implements SPPersister {
 	public void persistProperty(String uuid, String propertyName,
 			DataType propertyType, Object newValue)
 			throws SPPersistenceException {
+		logger.debug("Persisting property " + propertyName + ", changing to " + newValue);
 		if (transactionCount <= 0) {
 			rollback();
 			throw new SPPersistenceException("Cannot persist objects while outside " +
@@ -564,7 +566,7 @@ public class SPSessionPersister implements SPPersister {
 						+ lastPropertyValueFound + "\"");
 			}
 		} else {
-			if (spo != null) {
+			if (!unconditional && spo != null) {
 				
 				try {
 					propertyValue = PersisterHelperFinder.findPersister(spo.getClass()).findProperty(spo, propertyName, converter);
@@ -572,7 +574,7 @@ public class SPSessionPersister implements SPPersister {
 					throw new SPPersistenceException("Could not find the persister helper for " + spo.getClass(), e);
 				}
 
-				if (!unconditional && propertyValue != null && oldValue == null) {
+				if (propertyValue != null && oldValue == null) {
 					throw new SPPersistenceException(uuid, "For property \""
 							+ propertyName + "\" on SPObject of type "
 							+ spo.getClass() + " and UUID + " + spo.getUUID()

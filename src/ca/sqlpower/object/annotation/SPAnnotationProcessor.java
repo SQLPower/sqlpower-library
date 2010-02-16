@@ -1029,12 +1029,12 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			
 			// Persist all of its constructor argument properties.
 			for (ConstructorParameterObject cpo : constructorParameters) {
-				//XXX Should this only be properties and children?
-				if (ParameterType.PROPERTY.equals(cpo.getProperty())
-						|| ParameterType.CHILD.equals(cpo.getProperty())) {
+				//XXX Should this only be properties?
+				if (ParameterType.PROPERTY.equals(cpo.getProperty()) ||
+						ParameterType.CHILD.equals(cpo.getProperty())) {
 					sb.append(indent(tabs));
 					sb.append(persisterField + ".persistProperty(" + uuidField + ", \"" + 
-							cpo.getName() + "\", " + 
+							cpo.getName() + "\", " + //XXX we should convert this name as the constructor parameter name may be different than the property name defined by the accessor.
 							DataType.class.getSimpleName() + "." + 
 							PersisterUtils.getDataType(cpo.getType()).name() + 
 							", " + converterField + ".convertToBasicType(" + objectField + "." +
