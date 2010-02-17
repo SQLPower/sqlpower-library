@@ -184,6 +184,9 @@ public abstract class PreparedStatementDecorator implements PreparedStatement{
 	}
 
 	public ResultSet getResultSet() throws SQLException {
+		if (preparedStatement.getResultSet() == null) {
+			return null;
+		}
 		return makeResultSetDecorator(preparedStatement.getResultSet());
 	}
 
