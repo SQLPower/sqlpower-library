@@ -12,6 +12,14 @@ public class TransactionInformation {
     private final String versionAuthor;
     private final String versionDescription;
     
+    /**
+     * Create an TransactionInformation object
+     * 
+     * @param versionNumber
+     * @param timeCreated
+     * @param versionAuthor
+     * @param versionDescription
+     */
     public TransactionInformation(long versionNumber, Date timeCreated, String versionAuthor, String versionDescription) {
         this.versionNumber = versionNumber;
         this.timeCreated = timeCreated;

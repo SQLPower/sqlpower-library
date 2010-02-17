@@ -51,9 +51,10 @@ public class SimpleDiffChunkJSONConverter {
         for (DiffChunk<SQLObject> chunk : chunks) {
             
             JSONObject object = new JSONObject();            
-            object.put("dataType", chunk.getData().getClass().getName());
+            object.put("dataType", chunk.getData().getClass().getSimpleName());
             JSONObject data = new JSONObject();
             data.put("name", chunk.getData().getName());
+            System.out.println(chunk.getData().getName());
             if (chunk.getData() instanceof SQLTable) {
                 data.put("physicalName", chunk.getData().getPhysicalName());
             }
@@ -75,15 +76,17 @@ public class SimpleDiffChunkJSONConverter {
     public static List<DiffChunk<SQLObject>> decode(String message) throws JSONException {
         
         List<DiffChunk<SQLObject>> diffChunks = new ArrayList<DiffChunk<SQLObject>>();
+        System.out.println(message);
         JSONArray jsonArray = new JSONArray(message);
+        System.out.println(jsonArray.toString());
         for (int i = 0; i < jsonArray.length(); i++) {
             
             JSONObject object = jsonArray.getJSONObject(i);            
             
-            DiffType type = (DiffType) object.get("type");
+            SQLObject data = getImplementedType(object.getString("dataType"));
+            DiffType type = DiffType.valueOf(object.getString("type"));
             
             JSONObject jsonData = object.getJSONObject("data");
-            SQLObject data = getImplementedType(jsonData.getString("dataType"));
             data.setName(jsonData.getString("name"));
             if (data instanceof SQLTable) {
                 data.setPhysicalName(jsonData.getString("physicalName"));
