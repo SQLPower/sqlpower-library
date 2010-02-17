@@ -913,7 +913,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
     	listener.childAdded(new SPChildEvent(spObject, childClassType, newChild, 0, EventType.ADDED));
     	
     	assertEquals(oldChildCount + 1, spObject.getChildren().size());
-    	assertEquals(newChild, spObject.getChildren().get(0));
+    	assertEquals(newChild, spObject.getChildren(childClassType).get(0));
     }
     
     public void testAddChildFiresEvents() throws Exception {
