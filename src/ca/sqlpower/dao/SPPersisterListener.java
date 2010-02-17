@@ -54,6 +54,8 @@ public class SPPersisterListener implements SPListener {
 	 */
 	private final SessionPersisterSuperConverter converter;
 
+	private final SPSessionPersister dontEcho;
+	
 	/**
 	 * This listener can be attached to a hierarchy of objects to persist events
 	 * to the target persister contained in the given persister helper factory.
@@ -65,12 +67,19 @@ public class SPPersisterListener implements SPListener {
 	 *            objects so the object can be passed or persisted.
 	 */
 	public SPPersisterListener(SPPersister target, SessionPersisterSuperConverter converter) {
-		this.target = target;
-		this.converter = converter;
-		
+		this(target, null, converter);
 	}
 
+	public SPPersisterListener(SPPersister target, SPSessionPersister dontEcho, SessionPersisterSuperConverter converter) {
+		this.target = target;
+		this.converter = converter;
+		this.dontEcho = dontEcho;
+	}
+	
+	
 	public void childAdded(SPChildEvent e) {
+		if (dontEcho != null && dontEcho.isUpdatingWorkspace()) return;
+		
 		e.getChild().addSPListener(this);
 		persistObject(e.getChild(), e.getIndex());
 	}
@@ -89,6 +98,8 @@ public class SPPersisterListener implements SPListener {
 	 *            children of the same object type.
 	 */
 	public void persistObject(SPObject o, int index) {
+		if (dontEcho != null && dontEcho.isUpdatingWorkspace()) return;
+		
 		this.transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
 			"Persisting " + o.getName() + " and its descendants."));
 
@@ -119,6 +130,7 @@ public class SPPersisterListener implements SPListener {
 	}
 
 	public void childRemoved(SPChildEvent e) {
+		if (dontEcho != null && dontEcho.isUpdatingWorkspace()) return;
 		try {
 			target.removeObject(e.getSource().getUUID(), e.getChild().getUUID());
 			e.getChild().removeSPListener(this);
@@ -128,6 +140,7 @@ public class SPPersisterListener implements SPListener {
 	}
 
 	public void transactionEnded(TransactionEvent e) {
+		if (dontEcho != null && dontEcho.isUpdatingWorkspace()) return;
 		try {
 			target.commit();
 		} catch (SPPersistenceException ex) {
@@ -136,10 +149,12 @@ public class SPPersisterListener implements SPListener {
 	}
 
 	public void transactionRollback(TransactionEvent e) {
+		if (dontEcho != null && dontEcho.isUpdatingWorkspace()) return;
 		target.rollback();
 	}
 
 	public void transactionStarted(TransactionEvent e) {
+		if (dontEcho != null && dontEcho.isUpdatingWorkspace()) return;
 		try {
 			target.begin();
 		} catch (SPPersistenceException ex) {
@@ -148,6 +163,7 @@ public class SPPersisterListener implements SPListener {
 	}
 
 	public void propertyChanged(PropertyChangeEvent evt) {
+		if (dontEcho != null && dontEcho.isUpdatingWorkspace()) return;
 		DataType dataType;
 		if (evt.getNewValue() != null) {
 			dataType = PersisterUtils.getDataType(evt.getNewValue().getClass());

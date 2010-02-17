@@ -531,6 +531,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				tabs++;
 				println(sb, tabs, childSPO + " = findPersistedSPObject(" + uuid + ", \"" + constructorParam.getType().getName() + "\", " 
 						+ "(String) " + persistedProperty + ", " + persistedObjects + ");");
+				println(sb, tabs, childSPO + ".setLoaded(true);");
 				println(sb, tabs, childPersisterHelperField + ".updateObject(" + 
 						castedObjToUpdate + "." + 
 						SPAnnotationProcessorUtils.convertPropertyToAccessor(

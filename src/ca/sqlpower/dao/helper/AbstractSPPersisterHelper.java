@@ -65,7 +65,7 @@ public abstract class AbstractSPPersisterHelper<T extends SPObject> implements S
 	 *            remove the property from.
 	 * @return The value of the property.
 	 */
-	protected Object findPropertyAndRemove(
+	public static Object findPropertyAndRemove(
 			String uuid, 
 			String propertyName, 
 			Multimap<String, PersistedSPOProperty> persistedProperties) {
@@ -125,7 +125,7 @@ public abstract class AbstractSPPersisterHelper<T extends SPObject> implements S
 	 * @return The matching {@link PersistedSPObject}. If it cannot be found,
 	 *         null is returned.
 	 */
-	protected PersistedSPObject findPersistedSPObject(String parentUUID, String classType,
+	public static PersistedSPObject findPersistedSPObject(String parentUUID, String classType,
 			String childUUID,
 			List<PersistedSPObject> persistedObjects) {
 		for (PersistedSPObject pwo : persistedObjects) {

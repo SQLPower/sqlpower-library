@@ -46,7 +46,7 @@ import ca.sqlpower.util.TransactionEvent;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 
-public class SPSessionPersister implements SPPersister {
+public abstract class SPSessionPersister implements SPPersister {
 	
 	/**
 	 * The god mode means that this listener will output
@@ -71,7 +71,7 @@ public class SPSessionPersister implements SPPersister {
 	 * Persisted property buffer, mapping of {@link SPObject} UUIDs to each
 	 * individual persisted property
 	 */
-	private Multimap<String, PersistedSPOProperty> persistedProperties = 
+	protected Multimap<String, PersistedSPOProperty> persistedProperties = 
 		LinkedListMultimap.create();
 
 	/**
@@ -301,7 +301,7 @@ public class SPSessionPersister implements SPPersister {
 	 * This root object is used to find other objects by UUID by walking the
 	 * descendant tree when an object is required.
 	 */
-	private final SPObject root;
+	protected final SPObject root;
 	
 	/**
 	 * Name of this persister (for debugging purposes).
@@ -317,7 +317,7 @@ public class SPSessionPersister implements SPPersister {
 	 * that can be placed in a string and can also convert the string
 	 * representation back into the complex object.
 	 */
-	private final SessionPersisterSuperConverter converter;
+	protected final SessionPersisterSuperConverter converter;
 
 	/**
 	 * Creates a session persister that can update an object at or a descendant
@@ -720,16 +720,9 @@ public class SPSessionPersister implements SPPersister {
 				continue;
 			SPObject parent = SQLPowerUtils.findByUuid(root, pso.getParentUUID(), 
 					SPObject.class);
-			SPObject spo;
-			if (parent == null) { //parent only null for root object.
-				try {
-					PersisterHelperFinder.findPersister(pso.getType()).updateObject(root, pso, persistedProperties, 
-							persistedObjects, converter);
-					spo = root;
-					//TODO add an exception to the rollback. If you roll back the creation of the root node you just rolled back out of existence.
-				} catch (Exception ex) {
-					throw new SPPersistenceException("Could not find the persister helper for " + pso.getType(), ex);
-				}
+			SPObject spo = null;
+			if (parent == null && pso.getType().equals(root.getClass().getName())) {
+				refreshRootNode(pso);
 			} else {
 				try {
 					spo = PersisterHelperFinder.findPersister(pso.getType()).commitObject(pso, persistedProperties, 
@@ -782,7 +775,17 @@ public class SPSessionPersister implements SPPersister {
 		}
 		persistedObjects.clear();
 	}
-	
+
+	/**
+	 * Called when we get a persist object of the root node. This will reset the
+	 * object tree and update the root node and any final children within it to
+	 * values in the persisted objects and properties list.
+	 * 
+	 * @param pso
+	 *            The persist object call that would create the root object.
+	 */
+	protected abstract void refreshRootNode(PersistedSPObject pso);
+
 	/**
 	 * Commits the persisted {@link SPObject} property values
 	 * 
@@ -962,29 +965,6 @@ public class SPSessionPersister implements SPPersister {
 	 */
 	public void setGodMode(boolean godMode) {
 		this.godMode = godMode;
-	}
-	
-	/**
-	 * This static accessible method allows 
-	 * @param session
-	 * @param creations
-	 * @param properties
-	 * @param removals
-	 * @throws SPPersistenceException
-	 */
-	public static void undoForSession(
-			SessionPersisterSuperConverter converter,
-			SPObject root,
-			List<PersistedObjectEntry> creations,
-			List<PersistedPropertiesEntry> properties,
-			List<RemovedObjectEntry> removals) throws SPPersistenceException
-	{
-		SPSessionPersister persister = new SPSessionPersister("undoer", root, converter);
-		persister.setGodMode(true);
-		persister.setObjectsToRemoveRollbackList(removals);
-		persister.setPersistedObjectsRollbackList(creations);
-		persister.setPersistedPropertiesRollbackList(properties);
-		persister.rollback(true);
 	}
 	
 	private void setObjectsToRemoveRollbackList(

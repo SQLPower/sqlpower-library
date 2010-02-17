@@ -38,6 +38,7 @@ import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.dao.PersistedSPOProperty;
+import ca.sqlpower.dao.PersistedSPObject;
 import ca.sqlpower.dao.PersisterUtils;
 import ca.sqlpower.dao.SPPersisterListener;
 import ca.sqlpower.dao.SPSessionPersister;
@@ -67,6 +68,20 @@ import ca.sqlpower.util.TransactionEvent;
 public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	
 	private static final Logger logger = Logger.getLogger(PersistedSPObjectTest.class);
+	
+	private class TestingSessionPersister extends SPSessionPersister {
+
+		public TestingSessionPersister(String name, SPObject root,
+				SessionPersisterSuperConverter converter) {
+			super(name, root, converter);
+		}
+
+		@Override
+		protected void refreshRootNode(PersistedSPObject pso) {
+			//do nothing, this is not tested in a generic way.
+		}
+		
+	}
 	
 	/**
 	 * Returns a class that is one of the child types of the object under test. An
@@ -307,7 +322,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 * on an object based on a persist call.
 	 */
 	public void testSPPersisterPersistsProperties() throws Exception {
-		SPSessionPersister persister = new SPSessionPersister(
+		SPSessionPersister persister = new TestingSessionPersister(
 				"Testing Persister", root, getConverter());
 		persister.setSession(root.getSession());
 		
@@ -387,7 +402,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		SessionPersisterSuperConverter newConverter = new SessionPersisterSuperConverter(
 				getPLIni(), newRoot);
 		
-		SPSessionPersister persister = new SPSessionPersister("Test persister", newRoot, newConverter);
+		SPSessionPersister persister = new TestingSessionPersister("Test persister", newRoot, newConverter);
 		persister.setSession(stub);
 		
 		SPObject objectUnderTest = getSPObjectUnderTest();
@@ -848,7 +863,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
     	Class<? extends SPObject> childClassType = getChildClassType();
     	if (childClassType == null) return;
     	
-    	SPSessionPersister persister = new SPSessionPersister("test", getSPObjectUnderTest(), getConverter());
+    	SPSessionPersister persister = new TestingSessionPersister("test", getSPObjectUnderTest(), getConverter());
     	persister.setSession(getSPObjectUnderTest().getSession());
     	SPPersisterListener listener = new SPPersisterListener(persister, getConverter());
     	
