@@ -49,49 +49,6 @@ import com.google.common.collect.Multimap;
 public interface SPPersisterHelper<T extends SPObject> {
 
 	/**
-	 * Updates the given {@link SPObject} to match the object that would be
-	 * created based on the parameters if
-	 * {@link #commitObject(PersistedSPObject, Multimap, List, SessionPersisterSuperConverter)}
-	 * was called. The only use for updating an object is to update the root
-	 * object to match the object that would be created by persist calls when
-	 * the root is being initially created. Because the root object may have
-	 * values passed to its constructor that are final other objects that are
-	 * children of the root may need to be updated to match as well. There is
-	 * no way to reverse an update at current but only the root node and its final
-	 * parameters should be updated when the project is first created so the
-	 * reverse of this is to remove the project.
-	 * <p>
-	 * TODO For objects that are final properties that are not {@link SPObject}s
-	 * an updater similar to the converter classes will be needed.
-	 * 
-	 * @param objectToUpdate
-	 *            The object that will be updated to match the one that would be
-	 *            created by
-	 *            {@link #commitObject(PersistedSPObject, Multimap, List, SessionPersisterSuperConverter)}
-	 *            .
-	 * @param pso
-	 *            The persist call that would create the object.
-	 * @param persistedProperties
-	 *            All of the persist property calls in the current transaction.
-	 *            Persist calls may be removed if they are used to update the
-	 *            object to prevent updates from happening twice.
-	 * @param persistedObjects
-	 *            All of the persist object calls in the current transaction.
-	 *            Persist calls may be removed if they are used to create final
-	 *            children for the object being updated. Removing the persist
-	 *            call prevents the child from being created twice.
-	 * @param converter
-	 *            A converter that can take simple representation of objects in
-	 *            a persist call and create an {@link Object} to set properties
-	 *            to.
-	 * @throws SPPersistenceException
-	 */
-	void updateObject(SPObject objectToUpdate, PersistedSPObject pso, 
-			Multimap<String, PersistedSPOProperty> persistedProperties, 
-			List<PersistedSPObject> persistedObjects,
-			SessionPersisterSuperConverter converter) throws SPPersistenceException;
-
-	/**
 	 * Creates a new {@link SPObject} of type T given a {@link Multimap} of
 	 * {@link SPObject} UUIDs to persisted properties. The properties taken from
 	 * the {@link Multimap} of the given UUID to pass into the {@link SPObject}

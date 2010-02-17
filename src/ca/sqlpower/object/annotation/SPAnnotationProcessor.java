@@ -227,7 +227,6 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs);
 			final String PersistObjectMethodHelper = generatePersistObjectMethodHelper(visitedClass, 
 					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs);
-			final String updateObjectMethod = generateUpdateObjectMethod(visitedClass, constructorParameters, tabs);
 			importedClassNames.add(AbstractSPPersisterHelper.class.getName());
 			tabs--;
 			final String imports = generateImports(visitedClass, constructorImports, mutatorImports);
@@ -246,8 +245,6 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			
 			pw.print("\n");
 			pw.print(commitObjectMethod);
-			pw.print("\n");
-			pw.print(updateObjectMethod);
 			pw.print("\n");
 			pw.print(commitPropertyMethod);
 			pw.print("\n");
@@ -471,6 +468,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	}
 
 	/**
+<<<<<<< .mine
+=======
 	 * Generates the source code for an updateObject method for the given
 	 * {@link SPObject} to match {@link SPPersisterHelper}.
 	 * 
@@ -562,6 +561,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	}
 
 	/**
+>>>>>>> .r1366
 	 * Generates and returns source code for a commitObject method based on an
 	 * {@link SPObject} annotated constructor along with its annotated
 	 * constructor arguments.
