@@ -25,6 +25,7 @@ import ca.sqlpower.dao.PersistedSPOProperty;
 import ca.sqlpower.dao.PersistedSPObject;
 import ca.sqlpower.dao.SPPersistenceException;
 import ca.sqlpower.dao.SPPersister;
+import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
@@ -96,6 +97,9 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *            The new property value. This value must be converted through
 	 *            the {@link SessionPersisterSuperConverter} from simple type
 	 *            into a complex type before setting the property value.
+	 * @param type
+	 *            The object type that the new value is reported to be from the
+	 *            persist call.
 	 * @param converter
 	 *            The {@link SessionPersisterSuperConverter} class to use to
 	 *            convert newValue from a simple type to a complex type.
@@ -104,7 +108,7 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *             setter method for this property in the {@link SPObject} class
 	 *             must be annotated with {@link Mutator}.
 	 */
-	void commitProperty(SPObject spo, String propertyName, Object newValue, 
+	void commitProperty(SPObject spo, String propertyName, Object newValue, DataType type, 
 			SessionPersisterSuperConverter converter) throws SPPersistenceException;
 
 	/**

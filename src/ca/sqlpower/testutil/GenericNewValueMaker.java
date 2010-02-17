@@ -95,6 +95,8 @@ public class GenericNewValueMaker implements NewValueMaker {
         Object newVal;  // don't init here so compiler can warn if the following code doesn't always give it a value
         if (valueType == Integer.TYPE) {
             newVal = ((Integer) oldVal)+1;
+        } else if (valueType == Long.TYPE) {
+        	newVal = ((Long) oldVal) + 1;
         } else if (valueType == Double.TYPE) {
             newVal = ((Double) oldVal)+1;
         } else if (valueType == Integer.class) {

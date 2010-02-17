@@ -452,6 +452,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		allImports.add(SPPersister.class.getName());
 		allImports.add(SessionPersisterSuperConverter.class.getName());
 		allImports.add(SPObject.class.getName());
+		allImports.add(DataType.class.getName());
 		allImports.addAll(importedClassNames);
 		
 		for (String pkg : allImports) {
@@ -621,19 +622,30 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		sb.append("\n");
 		
 		// Assign each constructor parameter property to a variable.
+		final String parameterTypeField = "parameterType";
+		println(sb, tabs, PersistedSPOProperty.class.getSimpleName() + " " + parameterTypeField + ";");
 		for (ConstructorParameterObject cpo : constructorParameters) {
 			sb.append(indent(tabs));
 			
 			String parameterType = cpo.getType().getSimpleName();
 			String parameterName = cpo.getName();
-			
+
 			if (ParameterType.PROPERTY.equals(cpo.getProperty())) {
+				String parameterTypeClass;
+				if (cpo.getType() == Object.class) {
+					println(sb, 0, parameterTypeField + " = findProperty(" + uuidField + 
+							", \"" + parameterName + "\", " + persistedPropertiesField + ");");
+					parameterTypeClass = parameterTypeField + ".getDataType().getRepresentation()"; 
+					sb.append(indent(tabs));
+				} else {
+					parameterTypeClass = parameterType + ".class";
+				}
 				sb.append(parameterType + " " + parameterName + 
 						" = (" + parameterType + ") " + 
 						converterField + ".convertToComplexType(" + 
 						"findPropertyAndRemove(" + uuidField + ", " +
 						"\"" + parameterName + "\", " + 
-						persistedPropertiesField + "), " + parameterType + ".class);\n");
+						persistedPropertiesField + "), " + parameterTypeClass + ");\n");
 			} else if (ParameterType.PRIMITIVE.equals(cpo.getProperty())) {
 				sb.append(parameterType + " " + parameterName + " = " + 
 						parameterType + ".valueOf(");
@@ -764,6 +776,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		final String newValueField = "newValue";
 		final String converterField = "converter";
 		final String exceptionField = "e";
+		final String dataTypeField = "dataType";
 		
 		boolean firstIf = true;
 		
@@ -772,7 +785,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		sb.append("public void commitProperty(" + SPObject.class.getSimpleName() + " " + 
 				genericObjectField + ", " + String.class.getSimpleName() + " " + 
 				propertyNameField + ", " + Object.class.getSimpleName() + " " +
-				newValueField + ", " + SessionPersisterSuperConverter.class.getSimpleName() + 
+				newValueField + ", " + DataType.class.getSimpleName() + " " + dataTypeField + 
+				", " + SessionPersisterSuperConverter.class.getSimpleName() + 
 				" " + converterField + ") " + "throws " + 
 				SPPersistenceException.class.getSimpleName() + " {\n");
 		tabs++;
@@ -816,9 +830,15 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			
 			// Pass in the actual property value as the first argument to the setter.
 			sb.append(indent(tabs));
+			String conversionType;
+			if (type == Object.class) {
+				conversionType = dataTypeField + ".getRepresentation()";
+			} else {
+				conversionType = type.getSimpleName() + ".class";
+			}
 			sb.append(objectField + "." + methodName + "((" + type.getSimpleName() + 
 					") " + converterField + ".convertToComplexType(" + newValueField + 
-					", " + type.getSimpleName() + ".class)");
+					", " + conversionType + ")");
 			
 			// Pass in the variables holding the extra argument values.
 			for (MutatorParameterObject extraParam : mutatorExtraParameters.get(methodName)) {
@@ -868,7 +888,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			println(sb, tabs, persisterHelperClassName + " " + parentHelper + " = " + 
 					"new " + persisterHelperClassName + "();");
 			println(sb, tabs, parentHelper + ".commitProperty(" + genericObjectField + ", " +
-					propertyNameField + ", " + newValueField + ", " + converterField + ");");
+					propertyNameField + ", " + newValueField + ", " + dataTypeField + ", " + converterField + ");");
 		} else {
 			// Throw an SPPersistenceException if the property is not persistable or unrecognized.
 			sb.append(indent(tabs));
@@ -1121,16 +1141,30 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		} else {
 			sb.append("// Constructor arguments\n");
 			
+			final String dataTypeField = "dataType";
+			println(sb, tabs, "DataType " + dataTypeField + ";");
 			// Persist all of its constructor argument properties.
 			for (ConstructorParameterObject cpo : constructorParameters) {
 				//XXX Should this only be properties?
 				if (ParameterType.PROPERTY.equals(cpo.getProperty()) ||
 						ParameterType.CHILD.equals(cpo.getProperty())) {
+					
+					String getPersistedProperty = objectField + "." + 
+						SPAnnotationProcessorUtils.convertPropertyToAccessor(
+								cpo.getName(), cpo.getType()) + "()";
+					if (cpo.getType() == Object.class) {
+						println(sb, tabs, dataTypeField + " = " + PersisterUtils.class.getSimpleName() + 
+								".getDataType(" + getPersistedProperty +".getClass());");
+						importedClassNames.add(PersisterUtils.class.getName());
+					} else {
+						println(sb, tabs, dataTypeField + " = " + DataType.class.getSimpleName() + "." + 
+								PersisterUtils.getDataType(cpo.getType()).name() + ";");
+					}
+					
 					sb.append(indent(tabs));
 					sb.append(persisterField + ".persistProperty(" + uuidField + ", \"" + 
 							cpo.getName() + "\", " + //XXX we should convert this name as the constructor parameter name may be different than the property name defined by the accessor.
-							DataType.class.getSimpleName() + "." + 
-							PersisterUtils.getDataType(cpo.getType()).name() + 
+							dataTypeField + 
 							", " + converterField + ".convertToBasicType(" + objectField + "." +
 							SPAnnotationProcessorUtils.convertPropertyToAccessor(
 									cpo.getName(), 
@@ -1252,12 +1286,20 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				tabs++;
 			}
 
-			sb.append(indent(tabs));
+			final String dataTypeField = "dataType";
+			String getPersistedProperty = objectField + "." + e.getKey() + "()";
+			if (e.getValue() == Object.class) {
+				println(sb, tabs, "DataType " + dataTypeField + " = " + PersisterUtils.class.getSimpleName() + 
+						".getDataType(" + getPersistedProperty +".getClass());");
+				importedClassNames.add(PersisterUtils.class.getName());
+			} else {
+				println(sb, tabs, "DataType " + dataTypeField + " = " + DataType.class.getSimpleName() + "." + 
+						PersisterUtils.getDataType(e.getValue()).name() + ";");
+			}
+		    sb.append(indent(tabs));
 			sb.append(persisterField + ".persistProperty(" + uuidField + ", \"" +
-					propertyName + "\", " + DataType.class.getSimpleName() + "." + 
-					PersisterUtils.getDataType(e.getValue()).name() +
-					", " + converterField + ".convertToBasicType(" + objectField + "." +
-					e.getKey() + "()));\n");
+					propertyName + "\", " + dataTypeField +
+					", " + converterField + ".convertToBasicType(" + getPersistedProperty + "));\n");
 			println(sb, tabs, preProcessedPropField + ".add(\"" + propertyName + "\");");
 			importedClassNames.add(DataType.class.getName());
 

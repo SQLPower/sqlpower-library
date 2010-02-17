@@ -82,6 +82,34 @@ public abstract class AbstractSPPersisterHelper<T extends SPObject> implements S
 	}
 	
 	/**
+	 * Finds a property from a {@link Multimap} of persisted
+	 * properties of a given {@link SPObject} without removing the property.
+	 * 
+	 * @param uuid
+	 *            The UUID of the {@link SPObject} to find and remove the
+	 *            property from.
+	 * @param propertyName
+	 *            The JavaBean property name.
+	 * @param persistedProperties
+	 *            {@link Multimap} of persisted properties to retrieve and
+	 *            remove the property from.
+	 * @return The value of the property.
+	 */
+	public static PersistedSPOProperty findProperty(
+			String uuid, 
+			String propertyName, 
+			Multimap<String, PersistedSPOProperty> persistedProperties) {
+		for (PersistedSPOProperty property : persistedProperties.get(uuid)) {
+			if (property.getPropertyName().equals(propertyName)) {
+				return property;
+			}
+		}
+		// Property might not be persisted because it might be null. 
+		// We therefore need to return null.
+		return null;
+	}
+	
+	/**
 	 * Finds the {@link PersistedSPObject} in a {@link List} that matches the
 	 * given parent UUID and class type.
 	 * <p>

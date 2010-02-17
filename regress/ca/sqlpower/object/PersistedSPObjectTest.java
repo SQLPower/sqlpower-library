@@ -50,6 +50,8 @@ import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
+import ca.sqlpower.sql.DataSourceCollection;
+import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.DatabaseConnectedTestCase;
 import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLObjectRoot;
@@ -57,6 +59,7 @@ import ca.sqlpower.testutil.GenericNewValueMaker;
 import ca.sqlpower.testutil.NewValueMaker;
 import ca.sqlpower.testutil.SPObjectRoot;
 import ca.sqlpower.util.SPSession;
+import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.SessionNotFoundException;
 import ca.sqlpower.util.StubSPSession;
 import ca.sqlpower.util.TransactionEvent;
@@ -153,13 +156,6 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	private SPObjectRoot root;
 
 	/**
-	 * A new value maker that works off the root object and pl.ini in this test.
-	 * This will need to be set as a different new value maker in tests that are
-	 * outside of the library.
-	 */
-	private NewValueMaker valueMaker;
-
-	/**
 	 * This is a generic converter that works off the root object and pl.ini in
 	 * this test. This will need to be set to a different converter in tests
 	 * that are outside of the library.
@@ -186,7 +182,6 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		root.addChild(sqlRoot, 0);
 		sqlRoot.addDatabase(db, 0);
 		
-		valueMaker = new GenericNewValueMaker(root, getPLIni());
 		converter = new SessionPersisterSuperConverter(
 				getPLIni(), root);
 	}
@@ -205,6 +200,15 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 */
 	public SessionPersisterSuperConverter getConverter() {
 		return converter;
+	}
+
+	/**
+	 * Returns a new new-value-maker that will attach {@link SPObject}s to the given root.
+	 * Classes extending this test may want to override this method to create a different
+	 * type of new-value-maker that creates more types of new values.
+	 */
+	public NewValueMaker createNewValueMaker(SPObject root, DataSourceCollection<SPDataSource> dsCollection) {
+		return new GenericNewValueMaker(root, dsCollection);
 	}
 	
 	public SPObject getRootObject() {
@@ -234,6 +238,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	public void testSPListenerPersistsProperty() throws Exception {
 		CountingSPPersister countingPersister = new CountingSPPersister();
 		SPPersisterListener listener = new SPPersisterListener(countingPersister, getConverter());
+		NewValueMaker valueMaker = createNewValueMaker(root, getPLIni());
 		
 		SPObject wo = getSPObjectUnderTest();
         wo.addSPListener(listener);
@@ -325,6 +330,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		SPSessionPersister persister = new TestingSessionPersister(
 				"Testing Persister", root, getConverter());
 		persister.setSession(root.getSession());
+		NewValueMaker valueMaker = createNewValueMaker(root, getPLIni());
 		
 		SPObject objectUnderTest = getSPObjectUnderTest();
 		
@@ -387,7 +393,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 * @throws Exception
 	 */
 	public void testPersisterCreatesNewObjects() throws Exception {
-		SPObject newRoot = new SPObjectRoot();
+		SPObjectRoot newRoot = new SPObjectRoot();
 		SPSession stub = new StubSPSession() {
 			private final SPObject workspace = new StubWorkspace(this);
 			@Override
@@ -396,14 +402,22 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 			}
 		};
 		newRoot.setParent(stub.getWorkspace());
+		NewValueMaker valueMaker = createNewValueMaker(root, getPLIni());
 		
-		NewValueMaker newValueMaker = new GenericNewValueMaker(newRoot, getPLIni());
+		NewValueMaker newValueMaker = createNewValueMaker(newRoot, getPLIni());
 		
 		SessionPersisterSuperConverter newConverter = new SessionPersisterSuperConverter(
 				getPLIni(), newRoot);
 		
 		SPSessionPersister persister = new TestingSessionPersister("Test persister", newRoot, newConverter);
 		persister.setSession(stub);
+
+		List<SPObject> ancestorList = SQLPowerUtils.getAncestorList(getSPObjectUnderTest());
+		for (SPObject child : root.getChildren()) {
+			if (!ancestorList.contains(child)) {
+				copyToRoot(child, newValueMaker);
+			}
+		}
 		
 		SPObject objectUnderTest = getSPObjectUnderTest();
 		
@@ -492,11 +506,36 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	}
 
 	/**
+	 * Helper method for making one object tree contain the same values of the
+	 * other tree. The objects created in the new root are not guaranteed to
+	 * have the same hierarchy as the original parent-child ordering but is fine
+	 * for current testing.
+	 * 
+	 * @param child
+	 *            The child object that a new object of the same type will be
+	 *            created and added to the new root. All of its descendants will
+	 *            be added to the new root as well.
+	 * @param newValueMaker
+	 *            A {@link NewValueMaker} containing the root of the new object
+	 *            tree that can have new children added to it.
+	 */
+	private void copyToRoot(SPObject child, NewValueMaker newValueMaker) {
+		if (child != getSPObjectUnderTest()) {
+			SPObject newValue = (SPObject) newValueMaker.makeNewValue(child.getClass(), child, "Duplicated child");
+			newValue.setUUID(child.getUUID());
+			for (SPObject descendant : child.getChildren()) { 
+				copyToRoot(descendant, newValueMaker);
+			}
+		}
+	}
+
+	/**
 	 * Tests passing an object to an {@link SPPersisterListener} will persist
 	 * the object and all of the properties that have setters.
 	 */
 	public void testSPListenerPersistsNewObjects() throws Exception {
 		CountingSPPersister persister = new CountingSPPersister();
+		NewValueMaker valueMaker = createNewValueMaker(root, getPLIni());
 		
 		SPObject objectUnderTest = getSPObjectUnderTest();
 		
@@ -855,6 +894,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	}
 	
     public void testSPPersisterAddsChild() throws Exception {
+    	NewValueMaker valueMaker = createNewValueMaker(root, getPLIni());
     	
     	SPObject spObject = getSPObjectUnderTest();
     	int oldChildCount = spObject.getChildren().size();
@@ -867,7 +907,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
     	persister.setSession(getSPObjectUnderTest().getSession());
     	SPPersisterListener listener = new SPPersisterListener(persister, getConverter());
     	
-    	SQLObject newChild = (SQLObject) valueMaker.makeNewValue(childClassType, null, "child");
+    	SPObject newChild = (SPObject) valueMaker.makeNewValue(childClassType, null, "child");
     	newChild.setParent(spObject);
     	
     	listener.childAdded(new SPChildEvent(spObject, childClassType, newChild, 0, EventType.ADDED));
@@ -888,8 +928,8 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		
     	o.addSPListener(listener);
     	
-    	NewValueMaker valueMaker = new GenericNewValueMaker(getRootObject());
-    	SQLObject newChild = (SQLObject) valueMaker.makeNewValue(childClassType, null, "child");
+    	NewValueMaker valueMaker = createNewValueMaker(root, getPLIni());
+    	SPObject newChild = (SPObject) valueMaker.makeNewValue(childClassType, null, "child");
     	
     	o.addChild(newChild, 0);
     	

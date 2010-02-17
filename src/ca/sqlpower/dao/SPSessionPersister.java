@@ -816,7 +816,8 @@ public abstract class SPSessionPersister implements SPPersister {
 				}
 				
 				try {
-					PersisterHelperFinder.findPersister(spo.getClass()).commitProperty(spo, propertyName, newValue, converter);
+					PersisterHelperFinder.findPersister(spo.getClass()).commitProperty(
+							spo, propertyName, newValue, persistedProperty.getDataType(), converter);
 				} catch (Exception e) {
 					throw new SPPersistenceException("Could not find the persister helper for " + spo.getClass(), e);
 				}
@@ -864,7 +865,8 @@ public abstract class SPSessionPersister implements SPPersister {
 				final Object rollbackValue = entry.getRollbackValue();
 				final SPObject parent = SQLPowerUtils.findByUuid(root, parentUUID, SPObject.class);
 				if (parent != null) {
-					PersisterHelperFinder.findPersister(parent.getClass()).commitProperty(parent, propertyName, rollbackValue, converter);
+					PersisterHelperFinder.findPersister(parent.getClass()).commitProperty(
+							parent, propertyName, rollbackValue, entry.getPropertyType(), converter);
 				}
 			} catch (Throwable t) {
 				// Keep going. We need to rollback as much as we can.

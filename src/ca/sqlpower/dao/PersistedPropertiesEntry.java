@@ -26,6 +26,7 @@ public final class PersistedPropertiesEntry {
 	final Object rollbackValue;
 	final String propertyName;
 	final String uuid;
+	private final DataType propertyType;
 	
 	public PersistedPropertiesEntry(
 			String uuid, 
@@ -34,6 +35,7 @@ public final class PersistedPropertiesEntry {
 			Object rollbackValue) {
 				this.uuid = uuid;
 				this.propertyName = propertyName;
+				this.propertyType = propertyType;
 				this.rollbackValue = rollbackValue;
 	}
 	
@@ -53,6 +55,10 @@ public final class PersistedPropertiesEntry {
 	public String toString() {
 		return "PersistedPropertiesEntry [uuid=" + uuid + ", propertyName="
 				+ propertyName + ", rollbackValue=" + rollbackValue + "]";
+	}
+
+	public DataType getPropertyType() {
+		return propertyType;
 	}
 	
 }

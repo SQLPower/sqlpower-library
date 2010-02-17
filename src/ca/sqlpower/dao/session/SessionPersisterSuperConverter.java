@@ -19,7 +19,7 @@
 
 package ca.sqlpower.dao.session;
 
-import javax.sql.DataSource;
+import java.text.DecimalFormat;
 
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.DataSourceCollection;
@@ -92,11 +92,16 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom instanceof Boolean) {
 			return convertFrom;
 			
+		} else if (convertFrom instanceof Long) {
+			return convertFrom;
+			
 		} else if (convertFrom.getClass().isEnum()) {
 			return new EnumConverter(convertFrom.getClass()).convertToSimpleType((Enum) convertFrom);
 			
 		} else if (convertFrom instanceof JDBCDataSource) {
 			return ((JDBCDataSource) convertFrom).getName();
+		} else if (convertFrom instanceof DecimalFormat) {
+			return ((DecimalFormat) convertFrom).toPattern();
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + convertFrom + " of type " + 
 					convertFrom.getClass());
@@ -133,6 +138,8 @@ public class SessionPersisterSuperConverter {
 			
 		} else if (Boolean.class.isAssignableFrom(type)) {
 			return (Boolean) o;
+		} else if (Long.class.isAssignableFrom(type)) {
+			return (Long) o;
 			
 		} else if (Enum.class.isAssignableFrom(type)) {
 			return new EnumConverter(type).convertToComplexType((String) o);
@@ -150,6 +157,8 @@ public class SessionPersisterSuperConverter {
 				return new JDBCDataSource(ds);
 			}
 			
+		} else if (DecimalFormat.class.isAssignableFrom(type)) {
+			return new DecimalFormat((String) o);
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + o + " of type " + 
 					o.getClass() + " to the type " + type);
