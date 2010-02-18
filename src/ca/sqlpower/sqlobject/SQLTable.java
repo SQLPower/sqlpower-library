@@ -600,7 +600,7 @@ public class SQLTable extends SQLObject {
 		int index = importedKeys.indexOf(k);
 		if (index != -1) {
 			 importedKeys.remove(index);
-			 fireChildRemoved(SQLRelationship.class, k, index);
+			 fireChildRemoved(SQLImportedKey.class, k, index);
 			 return true;
 		}
 		return false;
