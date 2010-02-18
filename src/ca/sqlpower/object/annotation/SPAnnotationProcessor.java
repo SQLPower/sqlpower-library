@@ -1153,8 +1153,17 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 						SPAnnotationProcessorUtils.convertPropertyToAccessor(
 								cpo.getName(), cpo.getType()) + "()";
 					if (cpo.getType() == Object.class) {
+						println(sb, tabs, "if (" + getPersistedProperty + " == null) {");
+						tabs++;
+						println(sb, tabs, dataTypeField + " = " + PersisterUtils.class.getSimpleName() + 
+								".getDataType(null);");
+						tabs--;
+						println(sb, tabs, "} else {");
+						tabs++;
 						println(sb, tabs, dataTypeField + " = " + PersisterUtils.class.getSimpleName() + 
 								".getDataType(" + getPersistedProperty +".getClass());");
+						tabs--;
+						println(sb, tabs, "}");
 						importedClassNames.add(PersisterUtils.class.getName());
 					} else {
 						println(sb, tabs, dataTypeField + " = " + DataType.class.getSimpleName() + "." + 
@@ -1287,13 +1296,23 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			}
 
 			final String dataTypeField = "dataType";
+			println(sb, tabs, "DataType " + dataTypeField + ";");
 			String getPersistedProperty = objectField + "." + e.getKey() + "()";
 			if (e.getValue() == Object.class) {
-				println(sb, tabs, "DataType " + dataTypeField + " = " + PersisterUtils.class.getSimpleName() + 
+				println(sb, tabs, "if (" + getPersistedProperty + " == null) {");
+				tabs++;
+				println(sb, tabs, dataTypeField + " = " + PersisterUtils.class.getSimpleName() + 
+						".getDataType(null);");
+				tabs--;
+				println(sb, tabs, "} else {");
+				tabs++;
+				println(sb, tabs, dataTypeField + " = " + PersisterUtils.class.getSimpleName() + 
 						".getDataType(" + getPersistedProperty +".getClass());");
+				tabs--;
+				println(sb, tabs, "}");
 				importedClassNames.add(PersisterUtils.class.getName());
 			} else {
-				println(sb, tabs, "DataType " + dataTypeField + " = " + DataType.class.getSimpleName() + "." + 
+				println(sb, tabs, dataTypeField + " = " + DataType.class.getSimpleName() + "." + 
 						PersisterUtils.getDataType(e.getValue()).name() + ";");
 			}
 		    sb.append(indent(tabs));
