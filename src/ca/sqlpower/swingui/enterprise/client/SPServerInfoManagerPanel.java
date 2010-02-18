@@ -72,11 +72,9 @@ public class SPServerInfoManagerPanel {
 	};
 
 	private Action addAction = new AbstractAction("Add...") {
-
 		public void actionPerformed(ActionEvent e) {
 			showAddOrEditDialog(null);
 		}
-
 	};
 
 	private Action editAction = new AbstractAction("Edit...") {
@@ -100,7 +98,7 @@ public class SPServerInfoManagerPanel {
 	 *            panel.
 	 */
 	public SPServerInfoManagerPanel(SPServerInfoManager manager,
-			Component dialogOwner, final Action loginAction, Action closeAction) {
+			Component dialogOwner, Action closeAction) {
 		this.manager = manager;
 		this.dialogOwner = dialogOwner;
 		DefaultFormBuilder builder = new DefaultFormBuilder(new FormLayout(
@@ -120,18 +118,8 @@ public class SPServerInfoManagerPanel {
 		JScrollPane scrollPane = new JScrollPane(serverInfos);
 		scrollPane.setPreferredSize(new Dimension(400, 300));
 
+		this.connectButton = new JButton();
 		
-		this.connectButton = new JButton((String) loginAction.getValue(Action.NAME));
-		this.connectButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				SPServerInfo selectedItem = (SPServerInfo) serverInfos
-						.getSelectedValue();
-				if (selectedItem != null) {
-					loginAction.actionPerformed(e);
-				}
-			}
-		});
-
 		// Build the GUI
 		refreshInfoList();
 		CellConstraints cc = new CellConstraints();
@@ -207,10 +195,17 @@ public class SPServerInfoManagerPanel {
 	}
 
 	private void editSelectedServer() {
-		SPServerInfo selectedItem = (SPServerInfo) serverInfos
-				.getSelectedValue();
+		SPServerInfo selectedItem = getSelectedServer();
 		if (selectedItem != null) {
 			showAddOrEditDialog(selectedItem);
 		}
+	}
+	
+	public SPServerInfo getSelectedServer() {
+		return (SPServerInfo) serverInfos.getSelectedValue();
+	}
+	
+	public void setLoginAction(Action action) {
+		connectButton.setAction(action);
 	}
 }

@@ -31,6 +31,7 @@ import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLObject;
+import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.TransactionEvent;
 
 /**
@@ -80,7 +81,7 @@ public class SPPersisterListener implements SPListener {
 	public void childAdded(SPChildEvent e) {
 		if (dontEcho != null && dontEcho.isUpdatingWorkspace()) return;
 		
-		e.getChild().addSPListener(this);
+		SQLPowerUtils.listenToHierarchy(e.getChild(), this);
 		persistObject(e.getChild(), e.getIndex());
 	}
 
@@ -133,7 +134,7 @@ public class SPPersisterListener implements SPListener {
 		if (dontEcho != null && dontEcho.isUpdatingWorkspace()) return;
 		try {
 			target.removeObject(e.getSource().getUUID(), e.getChild().getUUID());
-			e.getChild().removeSPListener(this);
+			SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
 		} catch (SPPersistenceException ex) {
 			throw new RuntimeException(ex);
 		}
