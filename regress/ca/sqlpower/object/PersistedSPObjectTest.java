@@ -295,7 +295,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
                 assertEquals(property.getName(), propertyChange.getPropertyName());
                 
 				assertEquals("Old value of property " + property.getName() + " was wrong, value expected was  " + oldVal + 
-						" but is " + countingPersister.getLastOldValue(), oldVal, 
+						" but is " + countingPersister.getLastOldValue(), getConverter().convertToBasicType(oldVal), 
                 		propertyChange.getOldValue());
 				
 				//Input streams from images are being compared by hash code not values
@@ -307,7 +307,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 								(Image) getConverter().convertToComplexType(
 										propertyChange.getNewValue(), Image.class)).toByteArray()));
 				} else {
-					assertEquals(newVal, propertyChange.getNewValue());
+					assertEquals(getConverter().convertToBasicType(newVal), propertyChange.getNewValue());
 				}
                 Class<? extends Object> classType;
                 if (oldVal != null) {
@@ -892,16 +892,24 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		}
 		return beanNames;
 	}
-	
-    public void testSPPersisterAddsChild() throws Exception {
+
+	/**
+	 * Tests a child can be added to the {@link SPObject} under test. If the
+	 * object does not allow children then this test will return early. This
+	 * test is used as a start to the remove child test.
+	 * 
+	 * @return The child that was added or null if no child was added.
+	 * @throws Exception
+	 */
+    public SPObject testSPPersisterAddsChild() throws Exception {
     	NewValueMaker valueMaker = createNewValueMaker(root, getPLIni());
     	
     	SPObject spObject = getSPObjectUnderTest();
     	int oldChildCount = spObject.getChildren().size();
-    	if (!spObject.allowsChildren()) return;
+    	if (!spObject.allowsChildren()) return null;
     	
     	Class<? extends SPObject> childClassType = getChildClassType();
-    	if (childClassType == null) return;
+    	if (childClassType == null) return null;
     	
     	SPSessionPersister persister = new TestingSessionPersister("test", getSPObjectUnderTest(), getConverter());
     	persister.setSession(getSPObjectUnderTest().getSession());
@@ -914,7 +922,44 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
     	
     	assertEquals(oldChildCount + 1, spObject.getChildren().size());
     	assertEquals(newChild, spObject.getChildren(childClassType).get(0));
+    	
+    	return newChild;
     }
+    
+//    /**
+//     * Confirms a child can be removed from an object it was previously added to.
+//     * This uses {@link #testSPPersisterAddsChild()} as a starting point.
+//     */
+//    public void testSPPersisterRemovesChild() throws Exception {
+//    	if (!getSPObjectUnderTest().allowsChildren()) return;
+//		SPObject child = testSPPersisterAddsChild();
+//		if (child == null) return;
+//		
+//		SPSessionPersister persister = new TestingSessionPersister("test", getSPObjectUnderTest(), getConverter());
+//    	persister.setSession(getSPObjectUnderTest().getSession());
+//    	SPPersisterListener listener = new SPPersisterListener(persister, getConverter());
+//    	
+//    	int childCount = getSPObjectUnderTest().getChildren().size();
+//    	
+//    	listener.childRemoved(new SPChildEvent(getSPObjectUnderTest(), child.getClass(), child, 0, EventType.REMOVED));
+//    	
+//    	assertEquals(childCount - 1, getSPObjectUnderTest().getChildren().size());
+//    	assertFalse(getSPObjectUnderTest().getChildren().contains(child));
+//	}
+//    
+//    public void testRemoveChildFiresEvent() throws Exception {
+//    	if (!getSPObjectUnderTest().allowsChildren()) return;
+//		SPObject child = testSPPersisterAddsChild();
+//		if (child == null) return;
+//		
+//		CountingSPListener listener = new CountingSPListener();
+//		
+//		getSPObjectUnderTest().addSPListener(listener);
+//		
+//		getSPObjectUnderTest().removeChild(child);
+//		
+//		assertEquals(1, listener.childRemovedCount);
+//	}
     
     public void testAddChildFiresEvents() throws Exception {
     	SPObject o = getSPObjectUnderTest();

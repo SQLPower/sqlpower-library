@@ -460,7 +460,7 @@ public abstract class SPSessionPersister implements SPPersister {
 			throws SPPersistenceException {
 		if (transactionCount <= 0) {
 			rollback();
-			throw new SPPersistenceException("Cannot persist objects while outside " +
+			throw new SPPersistenceException(null, "Cannot persist objects while outside " +
 					"a transaction.");
 		}
 		synchronized (getSession()) {
@@ -1066,6 +1066,52 @@ public abstract class SPSessionPersister implements SPPersister {
 
 	public SPSession getSession() {
 		return session;
+	}
+
+	/**
+	 * Undoes the persist calls on the root object that are passed into this
+	 * method. This allows the persister listener to use the session persister's
+	 * roll back method. Nothing will be done on the persist of a root node when
+	 * rolling back. If we are rolling back a set of persist calls with the root
+	 * node then a load or refresh failed and there is no simple way to go back.
+	 * 
+	 * @param root
+	 *            The root of the object tree. The object tree will be searched
+	 *            for objects with corresponding UUIDs and will be updated based
+	 *            on the persist calls.
+	 * @param creations
+	 *            A set of persist object calls that created objects that needs
+	 *            to be reversed.
+	 * @param properties
+	 *            A set of persist property calls that updated objects that need
+	 *            to be reversed.
+	 * @param removals
+	 *            A set of remove object calls that need objects to be added
+	 *            back in.
+	 * @param converter
+	 *            An object converter that can convert the simple property types
+	 *            in the persist property calls to full objects to update the
+	 *            object tree.
+	 * @throws SPPersistenceException
+	 */
+	public static void undoForSession(
+			SPObject root,
+			List<PersistedObjectEntry> creations,
+			List<PersistedPropertiesEntry> properties,
+			List<RemovedObjectEntry> removals,
+			SessionPersisterSuperConverter converter) throws SPPersistenceException
+	{
+		SPSessionPersister persister = new SPSessionPersister("undoer", root, converter) {
+			@Override
+			protected void refreshRootNode(PersistedSPObject pso) {
+				//do nothing for refresh.
+			}
+		};
+		persister.setGodMode(true);
+		persister.setObjectsToRemoveRollbackList(removals);
+		persister.setPersistedObjectsRollbackList(creations);
+		persister.setPersistedPropertiesRollbackList(properties);
+		persister.rollback(true);
 	}
 
 }
