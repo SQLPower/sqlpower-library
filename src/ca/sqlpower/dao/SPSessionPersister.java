@@ -1107,6 +1107,7 @@ public abstract class SPSessionPersister implements SPPersister {
 				//do nothing for refresh.
 			}
 		};
+		persister.setSession(root.getSession());
 		persister.setGodMode(true);
 		persister.setObjectsToRemoveRollbackList(removals);
 		persister.setPersistedObjectsRollbackList(creations);
