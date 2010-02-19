@@ -495,6 +495,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			fireTransactionEnded();
 		} catch (Throwable t) {
 			fireTransactionRollback("Failed due to " + t.getMessage());
+			throw new RuntimeException(t);
 		}
 	}
 
