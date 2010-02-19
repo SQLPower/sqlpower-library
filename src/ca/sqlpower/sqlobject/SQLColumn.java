@@ -513,7 +513,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		int oldType = type;
 		this.type = argType;
         begin("Type change");
-        setSourceDataTypeName(null);
+        if (isMagicEnabled()) {
+        	setSourceDataTypeName(null);
+        }
 		firePropertyChange("type",oldType,argType);
         commit();
 	}

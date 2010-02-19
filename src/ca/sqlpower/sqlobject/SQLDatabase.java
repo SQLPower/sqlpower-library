@@ -344,12 +344,10 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	@Override
 	@Accessor
 	public String getName() {
-		if (isPlayPenDatabase()) {
-			return Messages.getString("SQLDatabase.playPenDB"); //$NON-NLS-1$
-		} else if (dataSource != null) {
-		    return dataSource.getDisplayName();
+		if (dataSource != null && !playPenDatabase) {
+			return dataSource.getDisplayName();
 		} else {
-		    return Messages.getString("SQLDatabase.disconnected"); //$NON-NLS-1$
+			return super.getName();
 		}
 	}
 	/**
@@ -359,11 +357,13 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	@Mutator
 	public void setName(String argName)
 	{
-		String oldName = getName();
 		if (dataSource != null) {
+			String oldName = getName();
 			dataSource.setName(argName);
+			firePropertyChange("name", oldName, argName);
+		} else {
+			super.setName(argName);
 		}
-		firePropertyChange("name", oldName, argName);
 	}
 
 	@Transient @Accessor
@@ -472,16 +472,29 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		dataSource = argDataSource;
 		dataSource.addPropertyChangeListener(this);		
 		firePropertyChange("dataSource",oldDataSource,argDataSource); //$NON-NLS-1$
+		if (dataSource == null && !playPenDatabase && isMagicEnabled()) {
+			setName(Messages.getString("SQLDatabase.disconnected")); //$NON-NLS-1$
+		}
 		commit();
 	}
 
 	@Mutator
 	public void setPlayPenDatabase(boolean v) {
-		boolean oldValue = playPenDatabase;
-		playPenDatabase = v;
-
-		if (oldValue != v) {
-			firePropertyChange("playPenDatabase", oldValue, v); //$NON-NLS-1$
+		try {
+			fireTransactionStarted("Setting database to be the play pen database");
+			boolean oldValue = playPenDatabase;
+			playPenDatabase = v;
+			if (oldValue != v) {
+				firePropertyChange("playPenDatabase", oldValue, v); //$NON-NLS-1$
+			}
+			if (playPenDatabase && isMagicEnabled()) {
+				setName(Messages.getString("SQLDatabase.playPenDB")); //$NON-NLS-1$
+			} else if (!playPenDatabase && dataSource == null && isMagicEnabled()) {
+				setName(Messages.getString("SQLDatabase.disconnected")); //$NON-NLS-1$
+			}
+			fireTransactionEnded();
+		} catch (Throwable t) {
+			fireTransactionRollback("Failed due to " + t.getMessage());
 		}
 	}
 

@@ -29,8 +29,10 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.beanutils.BeanUtils;
@@ -40,6 +42,7 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.dao.PersistedSPOProperty;
 import ca.sqlpower.dao.PersistedSPObject;
 import ca.sqlpower.dao.PersisterUtils;
+import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.dao.SPPersisterListener;
 import ca.sqlpower.dao.SPSessionPersister;
 import ca.sqlpower.dao.SPPersister.DataType;
@@ -53,7 +56,6 @@ import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.DatabaseConnectedTestCase;
-import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLObjectRoot;
 import ca.sqlpower.testutil.GenericNewValueMaker;
 import ca.sqlpower.testutil.NewValueMaker;
@@ -633,108 +635,116 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 * Both the changes have to come through the persister initially before the
 	 * exception and they have to be reset after the exception.
 	 */
-	//TODO add this back in after updating the persister helper generators
-//	public void testSessionPersisterRollsBackProperties() throws Exception {
-//		SPObject objectUnderTest = getSPObjectUnderTest();
-//		final Map<PropertyDescriptor, Object> initialProperties = new HashMap<PropertyDescriptor, Object>();
-//		final Map<PropertyDescriptor, Object> newProperties = new HashMap<PropertyDescriptor, Object>();
-//		
-//		List<PropertyDescriptor> settableProperties = Arrays.asList(
-//				PropertyUtils.getPropertyDescriptors(objectUnderTest.getClass()));
-//		
-//		Set<String> propertiesToPersist = findPersistableBeanProperties(false, false);
-//		
-//		failureReason = null;
-//		
-//		//Second factory to send the events to a black hole
-//		SPPersisterHelperFactory secondFactory = new SPPersisterHelperFactoryImpl(new CountingSPPersister(), converter);
-//		
-//		SPPersisterListener listener = new SPPersisterListener(secondFactory) {
-//			@Override
-//			public void transactionEnded(TransactionEvent e) {
-//				try {
-//					for (Map.Entry<PropertyDescriptor, Object> newProperty : newProperties.entrySet()) {
-//						Object objectUnderTest = getSPObjectUnderTest();
-//						Object newVal = newProperty.getValue();
-//						Object basicNewValue = converter.convertToBasicType(newVal);
-//
-//						Object newValAfterSet = PropertyUtils.getSimpleProperty(
-//								objectUnderTest, newProperty.getKey().getName());
-//						Object basicExpectedValue = converter.convertToBasicType(newValAfterSet);
-//
-//						assertPersistedValuesAreEqual(newVal, newValAfterSet, basicNewValue, 
-//								basicExpectedValue, newProperty.getKey().getPropertyType());
-//					}
-//				} catch (Throwable ex) {
-//					failureReason = ex;
-//					throw new RuntimeException(ex);
-//				}
-//				throw new RuntimeException("Forcing rollback.");
-//			}
-//		};
-//		//Transactions begin and commits are currently sent on the workspace.
-//		persister.getSession().getWorkspace().addSPListener(listener);
-//		
-//		persister.begin();
-//		for (PropertyDescriptor property : settableProperties) {
-//            Object oldVal;
-//
-//            //Changing the UUID of the object makes it referenced as a different object
-//            //and would make the check later in this test fail.
-//            if (property.getName().equals("UUID")) continue;
-//            
-//            if (!propertiesToPersist.contains(property.getName())) continue;
-//
-//            try {
-//                oldVal = PropertyUtils.getSimpleProperty(objectUnderTest, property.getName());
-//
-//                // check for a setter
-//                if (property.getWriteMethod() == null) continue;
-//                
-//            } catch (NoSuchMethodException e) {
-//                logger.debug("Skipping non-settable property " + property.getName() +
-//                		" on " + objectUnderTest.getClass().getName());
-//                continue;
-//            }
-//            
-//            initialProperties.put(property, oldVal);
-//            
-//            //special case for parent types. If a specific wabit object has a tighter parent then
-//            //WabitObject the getParentClass should return the parent type.
-//            Class<?> propertyType = property.getPropertyType();
-//            if (property.getName().equals("parent")) {
-//            	propertyType = getSPObjectUnderTest().getClass().getMethod("getParent").getReturnType();
-//            	logger.debug("Persisting parent, type is " + propertyType);
-//            }
-//            Object newVal = valueMaker.makeNewValue(propertyType, oldVal, property.getName());
-//            
-//            DataType type = PersisterUtils.getDataType(property.getPropertyType());
-//			Object basicNewValue = converter.convertToBasicType(newVal);
-//			persister.begin();
-//			persister.persistProperty(objectUnderTest.getUUID(), property.getName(), type, 
-//					converter.convertToBasicType(oldVal), 
-//					basicNewValue);
-//			persister.commit();
-//            
-//            newProperties.put(property, newVal);
-//    	}
-//		try {
-//			persister.commit();
-//			fail("An exception should make the persister hit the exception block.");
-//		} catch (Exception e) {
-//			//continue, exception expected.
-//		}
-//		
-//		if (failureReason != null) {
-//			throw new RuntimeException("Failed when asserting properties were " +
-//					"fully persisted.", failureReason);
-//		}
-//		
-//		for (Map.Entry<PropertyDescriptor, Object> entry : initialProperties.entrySet()) {
-//			assertEquals("Property " + entry.getKey().getName() + " did not match after rollback.", 
-//					entry.getValue(), PropertyUtils.getSimpleProperty(objectUnderTest, entry.getKey().getName()));
-//		}
-//	}
+	public void testSessionPersisterRollsBackProperties() throws Exception {
+		SPObject objectUnderTest = getSPObjectUnderTest();
+		final Map<PropertyDescriptor, Object> initialProperties = new HashMap<PropertyDescriptor, Object>();
+		final Map<PropertyDescriptor, Object> newProperties = new HashMap<PropertyDescriptor, Object>();
+		
+		List<PropertyDescriptor> settableProperties = Arrays.asList(
+				PropertyUtils.getPropertyDescriptors(objectUnderTest.getClass()));
+		
+		Set<String> propertiesToPersist = findPersistableBeanProperties(false, false);
+		
+		NewValueMaker valueMaker = createNewValueMaker(getRootObject(), getPLIni());
+		
+		SPSessionPersister persister = new TestingSessionPersister("tester", getRootObject(), getConverter());
+		persister.setSession(getRootObject().getSession());
+		
+		failureReason = null;
+		
+		SPPersisterListener listener = new SPPersisterListener(new CountingSPPersister(), converter) {
+			
+			private boolean transactionAlreadyFinished = false;
+			
+			@Override
+			public void transactionEnded(TransactionEvent e) {
+				if (transactionAlreadyFinished) return;
+				transactionAlreadyFinished = true;
+				try {
+					for (Map.Entry<PropertyDescriptor, Object> newProperty : newProperties.entrySet()) {
+						Object objectUnderTest = getSPObjectUnderTest();
+						Object newVal = newProperty.getValue();
+						Object basicNewValue = converter.convertToBasicType(newVal);
+
+						Object newValAfterSet = PropertyUtils.getSimpleProperty(
+								objectUnderTest, newProperty.getKey().getName());
+						Object basicExpectedValue = converter.convertToBasicType(newValAfterSet);
+
+						logger.debug("Testing property " + newProperty.getKey().getName());
+						assertPersistedValuesAreEqual(newVal, newValAfterSet, basicNewValue, 
+								basicExpectedValue, newProperty.getKey().getPropertyType());
+					}
+				} catch (Throwable ex) {
+					failureReason = ex;
+					throw new RuntimeException(ex);
+				}
+				throw new RuntimeException("Forcing rollback.");
+			}
+		};
+		//Transactions begin and commits are currently sent on the workspace.
+		getRootObject().getParent().addSPListener(listener);
+		
+		persister.begin();
+		for (PropertyDescriptor property : settableProperties) {
+            Object oldVal;
+
+            //Changing the UUID of the object makes it referenced as a different object
+            //and would make the check later in this test fail.
+            if (property.getName().equals("UUID")) continue;
+            
+            if (!propertiesToPersist.contains(property.getName())) continue;
+
+            try {
+                oldVal = PropertyUtils.getSimpleProperty(objectUnderTest, property.getName());
+
+                // check for a setter
+                if (property.getWriteMethod() == null) continue;
+                
+            } catch (NoSuchMethodException e) {
+                logger.debug("Skipping non-settable property " + property.getName() +
+                		" on " + objectUnderTest.getClass().getName());
+                continue;
+            }
+            
+            initialProperties.put(property, oldVal);
+            
+            //special case for parent types. If a specific wabit object has a tighter parent then
+            //WabitObject the getParentClass should return the parent type.
+            Class<?> propertyType = property.getPropertyType();
+            if (property.getName().equals("parent")) {
+            	propertyType = getSPObjectUnderTest().getClass().getMethod("getParent").getReturnType();
+            	logger.debug("Persisting parent, type is " + propertyType);
+            }
+            Object newVal = valueMaker.makeNewValue(propertyType, oldVal, property.getName());
+            
+            DataType type = PersisterUtils.getDataType(property.getPropertyType());
+			Object basicNewValue = converter.convertToBasicType(newVal);
+			persister.begin();
+			persister.persistProperty(objectUnderTest.getUUID(), property.getName(), type, 
+					converter.convertToBasicType(oldVal), 
+					basicNewValue);
+			persister.commit();
+            
+            newProperties.put(property, newVal);
+    	}
+		
+		try {
+			persister.commit();
+			fail("An exception should make the persister hit the exception block.");
+		} catch (Exception e) {
+			//continue, exception expected.
+		}
+		
+		if (failureReason != null) {
+			throw new RuntimeException("Failed when asserting properties were " +
+					"fully persisted.", failureReason);
+		}
+		
+		for (Map.Entry<PropertyDescriptor, Object> entry : initialProperties.entrySet()) {
+			assertEquals("Property " + entry.getKey().getName() + " did not match after rollback.", 
+					entry.getValue(), PropertyUtils.getSimpleProperty(objectUnderTest, entry.getKey().getName()));
+		}
+	}
 	
 	/**
 	 * Taken from AbstractWabitObjectTest. When Wabit is using annotations
