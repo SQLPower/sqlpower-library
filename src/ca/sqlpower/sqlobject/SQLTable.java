@@ -1693,11 +1693,18 @@ public class SQLTable extends SQLObject {
     	}
     	int index = indices.indexOf(sqlIndex);
     	if (index != -1) {
-    		indices.remove(index);
-    		sqlIndex.setParent(null);
-    		//Primary key is the first index in the first position.
-    		fireChildRemoved(SQLIndex.class, sqlIndex, index + 1);
-    		return true;
+    		try {
+    			begin("Removing index " + sqlIndex.getName());
+    			indices.remove(index);
+    			//Primary key is the first index in the first position.
+    			fireChildRemoved(SQLIndex.class, sqlIndex, index + 1);
+    			sqlIndex.setParent(null);
+    			commit();
+    			return true;
+    		} catch (Throwable t) {
+    			rollback("Failed to remove the index.");
+    			throw new RuntimeException(t);
+    		}
     	}
     	return false;
     }
