@@ -111,6 +111,12 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	private final List<SQLTable> tables = new ArrayList<SQLTable>();
 	
 	/**
+	 * The internal name of the database if the data source is null or if
+	 * it is the play pen database.
+	 */
+	private String name;
+	
+	/**
 	 * Constructor for instances that connect to a real database by JDBC.
 	 */
 	public SQLDatabase(JDBCDataSource dataSource) {
@@ -347,7 +353,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		if (dataSource != null && !playPenDatabase) {
 			return dataSource.getDisplayName();
 		} else {
-			return super.getName();
+			return name;
 		}
 	}
 	/**
@@ -357,13 +363,12 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	@Mutator
 	public void setName(String argName)
 	{
+		String oldName = getName();
 		if (dataSource != null) {
-			String oldName = getName();
 			dataSource.setName(argName);
-			firePropertyChange("name", oldName, argName);
-		} else {
-			super.setName(argName);
 		}
+		name = argName;
+		firePropertyChange("name", oldName, argName);
 	}
 
 	@Transient @Accessor
