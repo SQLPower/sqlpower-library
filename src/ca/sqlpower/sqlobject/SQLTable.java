@@ -1695,7 +1695,8 @@ public class SQLTable extends SQLObject {
     	if (index != -1) {
     		indices.remove(index);
     		sqlIndex.setParent(null);
-    		fireChildRemoved(SQLIndex.class, sqlIndex, index);
+    		//Primary key is the first index in the first position.
+    		fireChildRemoved(SQLIndex.class, sqlIndex, index + 1);
     		return true;
     	}
     	return false;
