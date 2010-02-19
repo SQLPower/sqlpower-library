@@ -137,9 +137,9 @@ public class SPPersisterListener implements SPListener {
 	
 	
 	public void childAdded(SPChildEvent e) {
+		SQLPowerUtils.listenToHierarchy(e.getChild(), this);
 		if (wouldEcho()) return;
 		
-		SQLPowerUtils.listenToHierarchy(e.getChild(), this);
 		persistObject(e.getChild(), e.getIndex());
 	}
 
@@ -250,8 +250,8 @@ public class SPPersisterListener implements SPListener {
 	}
 
 	public void childRemoved(SPChildEvent e) {
-		if (wouldEcho()) return;
 		SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
+		if (wouldEcho()) return;
 		transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
 				"Start of transaction triggered by wabitChildRemoved event"));
 		objectsToRemove.add(
