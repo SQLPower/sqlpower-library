@@ -171,4 +171,11 @@ public interface SPPersisterHelper<T extends SPObject> {
 	void persistObject(SPObject o, int index, SPPersister persister, 
 			SessionPersisterSuperConverter converter) throws SPPersistenceException;
 	
+	/**
+	 * Gets a list of all of the property names that this helper should persist
+	 * 
+	 * @return
+	 */
+	List<String> getPersistedProperties() throws SPPersistenceException; 
+	
 }

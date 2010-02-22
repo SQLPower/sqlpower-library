@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -227,6 +228,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs);
 			final String PersistObjectMethodHelper = generatePersistObjectMethodHelper(visitedClass, 
 					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs);
+			// -
+			final String getPersistedPropertiesMethod = generateGetPersistedPropertyListMethod(visitedClass, propertiesToMutate, tabs);
 			importedClassNames.add(AbstractSPPersisterHelper.class.getName());
 			tabs--;
 			final String imports = generateImports(visitedClass, constructorImports, mutatorImports);
@@ -253,6 +256,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			pw.print(persistObjectMethod);
 			pw.print("\n");
 			pw.print(PersistObjectMethodHelper);
+			pw.print("\n");
+			pw.print(getPersistedPropertiesMethod);
 			pw.print("\n");
 			
 			pw.print("}\n");
@@ -321,15 +326,16 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			Filer f = environment.getFiler();
 			PrintWriter pw = f.createSourceFile(helperPackage + "." + 
 					visitedClass.getSimpleName() + "PersisterHelper");
-			
+			tabs++;
 			final String commitPropertyMethod = generateCommitPropertyMethod(visitedClass, propertiesToMutate, 
 					mutatorExtraParameters, mutatorThrownTypes, tabs);
 			final String findPropertyMethod = generateFindPropertyMethod(visitedClass, propertiesToAccess, 
 					accessorAdditionalInfo, tabs);
 			final String persistObjectMethodHelper = generatePersistObjectMethodHelper(visitedClass, 
 					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs);
+			final String getPersistedPropertiesMethod = generateGetPersistedPropertyListMethod(visitedClass, propertiesToMutate, tabs);
 			final String generateImports = generateImports(visitedClass, constructorImports, mutatorImports);
-			
+			tabs--;
 			pw.print(generateWarning());
 			pw.print("\n");
 			pw.print(generateLicense());
@@ -339,7 +345,6 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			pw.print(generateImports);
 			pw.print("\n");
 			pw.print("public class " + visitedClass.getSimpleName() + "PersisterHelper {\n");
-			tabs++;
 			
 			pw.print("\n");
 			pw.print(commitPropertyMethod);
@@ -348,8 +353,9 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			pw.print("\n");
 			pw.print(persistObjectMethodHelper);
 			pw.print("\n");
+			pw.print(getPersistedPropertiesMethod);
+			pw.print("\n");
 			
-			tabs--;
 			pw.print("}\n");
 			pw.close();
 		} catch (IOException e) {
@@ -910,6 +916,50 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		return sb.toString();
 	}
+	
+	private String generateGetPersistedPropertyListMethod(
+			Class<? extends SPObject> visitedClass,
+			Map<String, Class<?>> setters,
+			int tabs) {
+
+		importedClassNames.add("java.util.ArrayList");
+		importedClassNames.add("java.util.Arrays");
+		
+		StringBuilder sb = new StringBuilder();
+		final String ppaField = "persistedPropertiesArray";
+		final String pplField = "persistedPropertiesList";
+		
+		println(sb, tabs, "public List<String> getPersistedProperties() throws " 
+				+ SPPersistenceException.class.getSimpleName() + " {");
+		// Create array of strings holding persisted properties
+		tabs++;
+		println(sb, tabs, "String [] " + ppaField + " = {");
+		Object [] properties = setters.keySet().toArray();
+		if (properties.length > 0) {
+			tabs++;
+			for (int i = 0; i < properties.length - 1; i++) {
+				println(sb, tabs, "\"" + properties[i] + "\",");
+			}
+			println(sb, tabs, "\"" + properties[properties.length-1] + "\"");
+			tabs--;
+		}
+		println(sb, tabs, "};");
+		// Put properties into list, along with the parent's persisted properties
+		println(sb, tabs, "List<String> " + pplField + " = new ArrayList<String>(Arrays.asList("+ppaField+"));");
+		if (SPObject.class.isAssignableFrom(visitedClass.getSuperclass())) {
+			Class<?> superclass = visitedClass.getSuperclass();
+			final String parentHelper = "parentHelper";
+			final String persisterHelperClassName = PersisterHelperFinder.getPersisterHelperClassName(superclass.getName());
+			println(sb, tabs, persisterHelperClassName + " " + parentHelper + " = " + 
+					"new " + persisterHelperClassName + "();");
+			println(sb, tabs, pplField + ".addAll(" + parentHelper + ".getPersistedProperties());");
+		}
+		println(sb, tabs, "return " + pplField + ";");
+		tabs--;
+		println(sb, tabs, "}");
+		return sb.toString();
+	}
+	
 
 	/**
 	 * Generates and returns source code for an

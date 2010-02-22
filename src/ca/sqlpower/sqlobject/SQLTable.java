@@ -333,6 +333,14 @@ public class SQLTable extends SQLObject {
      * @throws SQLObjectException
      */
     protected synchronized void populateColumns() throws SQLObjectException {
+    	
+//    	if (logger.isDebugEnabled()) {
+//    		try {
+//    			throw new RuntimeException();
+//    		} catch (RuntimeException e) {
+//    			logger.debug("Populating columns on table " + getName(), e);
+//    		}
+//    	}
 
 		if (columnsPopulated) return;
     	if (columns.size() > 0) {
@@ -1579,8 +1587,8 @@ public class SQLTable extends SQLObject {
 	 */
     @Transient @Accessor
     public SQLIndex getPrimaryKeyIndex() throws SQLObjectException {
-    	populateColumns();
-    	populateIndices();
+    	//populateColumns();
+    	//populateIndices();
     	return primaryKeyIndex;
     }
 

@@ -139,7 +139,7 @@ public class SPPersisterListener implements SPListener {
 	public void childAdded(SPChildEvent e) {
 		SQLPowerUtils.listenToHierarchy(e.getChild(), this);
 		if (wouldEcho()) return;
-		
+		logger.debug("Child added: " + e);
 		persistObject(e.getChild(), e.getIndex());
 	}
 
@@ -201,6 +201,7 @@ public class SPPersisterListener implements SPListener {
 		
 			public void persistObject(String parentUUID, String type, String uuid,
 					int index) throws SPPersistenceException {
+				logger.debug("Adding a " + type + " with UUID: " + uuid + " to persistedObjects");
 				persistedObjects.add(new PersistedSPObject(parentUUID, type, uuid, index));
 			}
 		
@@ -287,15 +288,26 @@ public class SPPersisterListener implements SPListener {
 	public void propertyChanged(PropertyChangeEvent evt) {
 		if (wouldEcho()) return;
 		
-		transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
-				"Creating start transaction event from propertyChange on object " + 
-				evt.getSource().getClass().getSimpleName() + " and property name " + evt.getPropertyName()));
-		
 		SPObject source = (SPObject) evt.getSource();
 		String uuid = source.getUUID();
 		String propertyName = evt.getPropertyName();
 		Object oldValue = evt.getOldValue();
 		Object newValue = evt.getNewValue();
+		
+		try {
+			if (!PersisterHelperFinder.findPersister(source.getClass())
+					.getPersistedProperties()
+					.contains(propertyName)) {
+				logger.debug("Tried to persist a property that shouldn't be. Ignoring the property: " + propertyName);
+				return;
+			}
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		
+		transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
+				"Creating start transaction event from propertyChange on object " + 
+				evt.getSource().getClass().getSimpleName() + " and property name " + evt.getPropertyName()));
 		
 		//Not persisting non-settable properties.
 		//TODO A method in the persister helpers would make more sense than
@@ -307,6 +319,7 @@ public class SPPersisterListener implements SPListener {
 			this.rollback();
 			throw new RuntimeException(ex);
 		}
+		
 		if (propertyDescriptor == null 
 				|| propertyDescriptor.getWriteMethod() == null) {
 			transactionEnded(TransactionEvent.createEndTransactionEvent(this));
@@ -444,7 +457,9 @@ public class SPPersisterListener implements SPListener {
 	 * @throws SPPersistenceException
 	 */
 	private void commitObjects() throws SPPersistenceException {
+		logger.debug("Committing objects");
 		for (PersistedSPObject pwo : persistedObjects) {
+			logger.debug("Commiting persist call: " + pwo);
 			target.persistObject(
 				pwo.getParentUUID(), 
 				pwo.getType(),
