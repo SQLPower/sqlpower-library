@@ -28,6 +28,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 
@@ -36,6 +37,7 @@ import ca.sqlpower.dao.session.BidirectionalConverter;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.sqlobject.SQLObject;
 
 /**
  * Utilities that are used by {@link SPPersister}s. 
@@ -111,6 +113,21 @@ public class PersisterUtils {
 		return pieces;
 	}
 	
+	/**
+	 * Returns a set of all the interesting property names of the given SQLObject type.
+	 * @param type
+	 * @return
+	 * @throws SecurityException
+	 * @throws IllegalArgumentException
+	 * @throws ClassNotFoundException
+	 * @throws IllegalAccessException
+	 * @throws InvocationTargetException
+	 */
+	public static Set<String> getInterestingPropertyNames(String type)
+	throws SecurityException, IllegalArgumentException, ClassNotFoundException, IllegalAccessException, InvocationTargetException {
+	    return getInterestingProperties(type, null, null).keySet();
+	}
+	
     /**
      * Returns a map containing all the interesting properties of the class type
      * given by the fully qualified name. An interesting property is a
@@ -127,11 +144,30 @@ public class PersisterUtils {
      * @throws IllegalAccessException 
      * @throws IllegalArgumentException 
      */
-    public static Map<String, Object> getInterestingProperties(Object object, SessionPersisterSuperConverter converter)
+	public static Map<String, Object> getInterestingProperties(SQLObject object, SessionPersisterSuperConverter converter)
+    throws SecurityException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+	    return getInterestingProperties(object.getClass().getName(), object, converter);
+	}
+	
+	/**
+	 * Does what the other getInterestingProperties says it does if passed a non-null object
+	 * Otherwise, it will return a map with a key set of all the property names, but no values.
+	 * 
+	 * @param type
+	 * @param object
+	 * @param converter
+	 * @return
+	 * @throws SecurityException
+	 * @throws ClassNotFoundException
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 * @throws InvocationTargetException
+	 */
+    private static Map<String, Object> getInterestingProperties(String type, SQLObject object, SessionPersisterSuperConverter converter)
 	throws SecurityException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
 	    Map<String, Object> propertyMap = new HashMap<String, Object>();
 	    
-	    Class<? extends Object> objectClass = object.getClass();
+	    Class<? extends Object> objectClass = Class.forName(type);
 	    for (Method m : objectClass.getMethods()) {
 	        
 	        if (m.getAnnotation(Accessor.class) != null
@@ -149,8 +185,12 @@ public class PersisterUtils {
 	            propertyName = propertyName.replaceFirst(
 	                    firstCharacter, firstCharacter.toLowerCase());
 	            
-	            propertyMap.put(propertyName, 
-	                    converter.convertToBasicType(m.invoke(object)));
+	            if (object != null) {
+	                propertyMap.put(propertyName, 
+	                        converter.convertToBasicType(m.invoke(object)));
+	            } else {
+	                propertyMap.put(propertyName, "");
+	            }
 	        }
 	        
 	    }

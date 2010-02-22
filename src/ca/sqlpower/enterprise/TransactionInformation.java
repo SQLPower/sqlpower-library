@@ -1,11 +1,15 @@
 package ca.sqlpower.enterprise;
 
+import java.text.DateFormat;
 import java.util.Date;
 
 /**
  * Simple container class for information regarding a particular revision.
  */
 public class TransactionInformation {
+    
+    public final static DateFormat DATE_FORMAT = 
+        DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
 
     private final long versionNumber;
     private final Date timeCreated;
@@ -50,5 +54,9 @@ public class TransactionInformation {
     public String getVersionDescription() {
         return versionDescription;
     }
+    
+    public String getTimeString() {
+        return DATE_FORMAT.format(timeCreated);
+    }        
     
 }

@@ -72,6 +72,11 @@ public class PersistedSPObject implements Comparable<PersistedSPObject> {
 	public String getType() {
 		return type;
 	}
+	
+	public String getSimpleType() {
+	    String[] s = type.split("\\.");
+	    return s[s.length - 1];
+	}
 
 	/**
 	 * Accessor for the UUID field

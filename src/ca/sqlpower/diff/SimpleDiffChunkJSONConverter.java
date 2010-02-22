@@ -22,6 +22,7 @@ package ca.sqlpower.diff;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -34,6 +35,8 @@ import org.json.JSONObject;
  * XXX Add reflection to decode method so that it is not limited to SQLTable, SQLColumn, and SQLRelationship
  */
 public class SimpleDiffChunkJSONConverter {
+    
+    public static final Logger logger = Logger.getLogger(SimpleDiffChunkJSONConverter.class);
     
     /**
      * Converts a list of DiffChunk to a JSONArray string.
@@ -81,9 +84,9 @@ public class SimpleDiffChunkJSONConverter {
     public static List<DiffChunk<DiffInfo>> decode(String message) throws JSONException {
         
         List<DiffChunk<DiffInfo>> diffChunks = new ArrayList<DiffChunk<DiffInfo>>();
-        System.out.println(message);
+        logger.debug(message);
         JSONArray jsonArray = new JSONArray(message);
-        System.out.println(jsonArray.toString());
+        logger.debug(jsonArray.toString());
         for (int i = 0; i < jsonArray.length(); i++) {
             
             JSONObject object = jsonArray.getJSONObject(i);            
@@ -96,7 +99,7 @@ public class SimpleDiffChunkJSONConverter {
             
             DiffChunk<DiffInfo> chunk = new DiffChunk<DiffInfo>(info, type);
             
-            JSONArray changes = jsonInfo.getJSONArray("changes");
+            JSONArray changes = object.getJSONArray("changes");
             for (int j = 0; j < changes.length(); j++) {
                 JSONObject change = changes.getJSONObject(j);                
                 chunk.addPropertyChange(new PropertyChange(change.getString("propertyName"),
