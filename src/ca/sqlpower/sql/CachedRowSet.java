@@ -80,7 +80,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	/**
 	 * Our cached copy of the original ResultSetMetaData.
 	 */
-	protected CachedResultSetMetaData rsmd;
+	protected CachedResultSetMetaData rsmd = new CachedResultSetMetaData();
 
     /**
      * Currently-registered listeners who are interested in knowing when new
