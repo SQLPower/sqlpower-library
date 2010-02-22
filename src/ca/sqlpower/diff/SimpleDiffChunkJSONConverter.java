@@ -26,11 +26,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import ca.sqlpower.sqlobject.SQLColumn;
-import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.sqlobject.SQLRelationship;
-import ca.sqlpower.sqlobject.SQLTable;
-
 /**
  * This class is used to convert DiffChunks to and from JSON-formatted strings.
  * It is simple because it only the name properties of the data in the chunks
@@ -45,21 +40,31 @@ public class SimpleDiffChunkJSONConverter {
      * @param chunks 
      * @throws JSONException 
      */
-    public static String encode(List<DiffChunk<SQLObject>> chunks) throws JSONException {
+    public static String encode(List<DiffChunk<DiffInfo>> chunks) throws JSONException {
         
         JSONArray jsonArray = new JSONArray();
-        for (DiffChunk<SQLObject> chunk : chunks) {
+        for (DiffChunk<DiffInfo> chunk : chunks) {
             
-            JSONObject object = new JSONObject();            
-            object.put("dataType", chunk.getData().getClass().getSimpleName());
-            JSONObject data = new JSONObject();
-            data.put("name", chunk.getData().getName());
-            System.out.println(chunk.getData().getName());
-            if (chunk.getData() instanceof SQLTable) {
-                data.put("physicalName", chunk.getData().getPhysicalName());
+            JSONObject object = new JSONObject();
+            
+            object.put("type", chunk.getType().toString());
+            
+            JSONArray changes = new JSONArray();
+            for (PropertyChange change : chunk.getPropertyChanges()) {
+                JSONObject json = new JSONObject();
+                json.put("propertyName", change.getPropertyName());
+                json.put("oldValue", change.getOldValue());
+                json.put("newValue", change.getNewValue());
+                changes.put(json);
             }
-            object.put("data", data);
-            object.put("type", chunk.getType());
+            object.put("changes", changes);
+            
+            JSONObject info = new JSONObject();
+            info.put("dataType", chunk.getData().getDataType());
+            info.put("name", chunk.getData().getName());
+            info.put("depth", chunk.getData().getDepth());            
+            object.put("info", info);                        
+            
             jsonArray.put(object);
             
         }
@@ -73,9 +78,9 @@ public class SimpleDiffChunkJSONConverter {
      * @param message
      * @throws JSONException 
      */
-    public static List<DiffChunk<SQLObject>> decode(String message) throws JSONException {
+    public static List<DiffChunk<DiffInfo>> decode(String message) throws JSONException {
         
-        List<DiffChunk<SQLObject>> diffChunks = new ArrayList<DiffChunk<SQLObject>>();
+        List<DiffChunk<DiffInfo>> diffChunks = new ArrayList<DiffChunk<DiffInfo>>();
         System.out.println(message);
         JSONArray jsonArray = new JSONArray(message);
         System.out.println(jsonArray.toString());
@@ -83,41 +88,26 @@ public class SimpleDiffChunkJSONConverter {
             
             JSONObject object = jsonArray.getJSONObject(i);            
             
-            SQLObject data = getImplementedType(object.getString("dataType"));
+            JSONObject jsonInfo = object.getJSONObject("info");
+            DiffInfo info = new DiffInfo(jsonInfo.getString("dataType"), jsonInfo.getString("name"));
+            info.setDepth(jsonInfo.getInt("depth"));                                   
+            
             DiffType type = DiffType.valueOf(object.getString("type"));
             
-            JSONObject jsonData = object.getJSONObject("data");
-            data.setName(jsonData.getString("name"));
-            if (data instanceof SQLTable) {
-                data.setPhysicalName(jsonData.getString("physicalName"));
-            }
+            DiffChunk<DiffInfo> chunk = new DiffChunk<DiffInfo>(info, type);
             
-            diffChunks.add(new DiffChunk<SQLObject>(data, type));
+            JSONArray changes = jsonInfo.getJSONArray("changes");
+            for (int j = 0; j < changes.length(); j++) {
+                JSONObject change = changes.getJSONObject(j);                
+                chunk.addPropertyChange(new PropertyChange(change.getString("propertyName"),
+                        change.getString("oldValue"), change.getString("newValue")));                
+            }            
+            
+            diffChunks.add(chunk);
         }
         
         return diffChunks;
         
-    }
-    
-    /**
-     * XXX Replace the necessity of this class with reflection
-     * Simple method to get a new object that is one of the SQLObject types that are implemented.
-     * 
-     * @param typeName The name of the type wanted. SQLTable, SQLColumn, and SQLRelationship are supported.
-     * @return A new object of the specified type, or null if it is not a supported type.
-     */
-    private static SQLObject getImplementedType(String typeName) {
-        if (typeName == null) {
-            return null;
-        } else if (typeName.equals("SQLTable")) {
-            return new SQLTable();            
-        } else if (typeName.equals("SQLColumn")) {
-            return new SQLColumn();
-        } else if(typeName.equals("SQLRelationship")) {
-            return new SQLRelationship();
-        } else {
-            return null;
-        }
     }
 
 }
