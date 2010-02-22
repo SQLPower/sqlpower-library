@@ -40,7 +40,11 @@ public class BrowseFileAction extends AbstractAction {
 			fileChooser.setCurrentDirectory(defaultFile);
 			fileChooser.setSelectedFile(defaultFile);
 		}
-		int returnVal = fileChooser.showOpenDialog(parentComponent);
+		// Reason I didn't just use showOpenDialog here is because on OS X, it
+		// doesn't allow for a custom filename to be given, meaning that you
+		// would have to specify an existing file as the log file, which is not
+		// what we want.
+		int returnVal = fileChooser.showDialog(parentComponent, "Open");
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			final File file = fileChooser.getSelectedFile();
 			field.setText(file.getPath());
