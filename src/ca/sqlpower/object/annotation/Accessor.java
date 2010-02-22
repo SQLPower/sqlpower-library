@@ -50,6 +50,12 @@ import ca.sqlpower.object.SPObject;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Accessor {
 
+    /**
+     * Set to true if the user would be interested in knowing about this
+     * property when we are displaying diffs between objects.
+     */
+    boolean isInteresting() default false;
+    
 	/**
 	 * Defines whether the property the annotated getter method returns should
 	 * be persisted if its value is null. A false value means the property

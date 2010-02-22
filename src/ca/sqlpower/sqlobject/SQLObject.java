@@ -130,7 +130,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      *         comparison, or the logical name (see {@link #getName()}) if no
      *         physical name has been set.
      */
-	@Accessor
+	@Accessor(isInteresting=true)
 	public final String getPhysicalName() {
 		if (physicalName != null) {
 			return physicalName;

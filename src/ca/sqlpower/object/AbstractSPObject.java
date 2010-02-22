@@ -159,7 +159,7 @@ public abstract class AbstractSPObject implements SPObject {
 		return children;
 	}
 
-	@Accessor
+	@Accessor(isInteresting=true)
 	public String getName() {
 		return name;
 	}

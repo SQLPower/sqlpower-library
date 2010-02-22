@@ -1270,7 +1270,7 @@ public class SQLTable extends SQLObject {
 	 *
 	 * @return the value of remarks
 	 */
-	@Accessor
+	@Accessor(isInteresting=true)
 	public String getRemarks()  {
 		return this.remarks;
 	}

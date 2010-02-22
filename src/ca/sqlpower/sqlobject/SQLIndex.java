@@ -697,7 +697,7 @@ public class SQLIndex extends SQLObject {
     	}
     }
 
-    @Accessor
+    @Accessor(isInteresting=true)
     public String getFilterCondition() {
         return filterCondition;
     }
@@ -709,7 +709,7 @@ public class SQLIndex extends SQLObject {
         firePropertyChange("filterCondition", oldValue, filterCondition);
     }
 
-    @Accessor
+    @Accessor(isInteresting=true)
     public String getQualifier() {
         return qualifier;
     }
@@ -721,7 +721,7 @@ public class SQLIndex extends SQLObject {
         firePropertyChange("qualifier", oldValue, qualifier);
     }
 
-    @Accessor
+    @Accessor(isInteresting=true)
     public String getType() {
         return type;
     }
@@ -733,12 +733,12 @@ public class SQLIndex extends SQLObject {
         firePropertyChange("type", oldValue, type);
     }
 
-    @Accessor
+    @Accessor(isInteresting=true)
     public boolean isUnique() {
         return unique;
     }
 
-    @Accessor
+    @Accessor(isInteresting=true)
     public boolean isClustered() {
         return clustered;
     }

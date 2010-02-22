@@ -20,7 +20,8 @@ package ca.sqlpower.diff;
 
 public enum DiffType {
 	LEFTONLY,
-	MODIFIED,
+	MODIFIED,      // Does not mean that the modifications are big enough to warrant generating new SQL script
+	SQL_MODIFIED,  // Similar to modified, but primarily for columns to generate altering SQL script. Also used to modify table remarks	   
 	SAME,		// Some implementations may not use this.
 	RIGHTONLY,
 	KEY_CHANGED,	// primary key changed or removed

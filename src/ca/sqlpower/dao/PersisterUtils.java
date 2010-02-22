@@ -24,12 +24,18 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 
 import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.session.BidirectionalConverter;
+import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
 
 /**
  * Utilities that are used by {@link SPPersister}s. 
@@ -103,6 +109,53 @@ public class PersisterUtils {
 			return allPieces;
 		}
 		return pieces;
+	}
+	
+    /**
+     * Returns a map containing all the interesting properties of the class type
+     * given by the fully qualified name. An interesting property is a
+     * non-transient accessor with the isInteresting flag set to true. The
+     * properties are mapped by their name, and contain their value, converted
+     * to a non-complex type
+     * 
+     * @param className
+     * @param converter
+     * @return
+     * @throws SecurityException
+     * @throws ClassNotFoundException
+     * @throws InvocationTargetException 
+     * @throws IllegalAccessException 
+     * @throws IllegalArgumentException 
+     */
+    public static Map<String, Object> getInterestingProperties(Object object, SessionPersisterSuperConverter converter)
+	throws SecurityException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+	    Map<String, Object> propertyMap = new HashMap<String, Object>();
+	    
+	    Class<? extends Object> objectClass = object.getClass();
+	    for (Method m : objectClass.getMethods()) {
+	        
+	        if (m.getAnnotation(Accessor.class) != null
+	                && m.getAnnotation(Accessor.class).isInteresting()) {
+	            String propertyName;
+	            if (m.getName().startsWith("get")) {
+                    propertyName = m.getName().substring(3);
+                } else if (m.getName().startsWith("is")) {
+                    propertyName = m.getName().substring(2);
+                } else {
+                    throw new RuntimeException("Accessor class with improper prefix");
+                }
+	            String firstCharacter = String.valueOf(propertyName.charAt(0));
+	            
+	            propertyName = propertyName.replaceFirst(
+	                    firstCharacter, firstCharacter.toLowerCase());
+	            
+	            propertyMap.put(propertyName, 
+	                    converter.convertToBasicType(m.invoke(object)));
+	        }
+	        
+	    }
+	    return propertyMap;
+	    
 	}
 	
     /**

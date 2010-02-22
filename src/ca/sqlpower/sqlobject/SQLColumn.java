@@ -498,7 +498,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of type
 	 */
-	@Accessor
+	@Accessor(isInteresting=true)
 	public int getType()  {
 		return this.type;
 	}
@@ -540,7 +540,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of scale
 	 */
-	@Accessor
+	@Accessor(isInteresting=true)
 	public int getScale()  {
 		return this.scale;
 	}
@@ -569,7 +569,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * @see #getType()
 	 * @see #getTypeName()
 	 */
-	@Accessor
+	@Accessor(isInteresting=true)
 	public int getPrecision()  {
 		return this.precision;
 	}
@@ -601,7 +601,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return whether or not primaryKeySeq is defined
 	 */
-	@NonBound
+	@Transient @Accessor(isInteresting=true)	
 	public boolean isPrimaryKey()  {
 		return getParent().isInPrimaryKey(this);
 	}
@@ -729,7 +729,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      *     <li>DatabaseMetaData.columnNullableUnknown - nullability unknown
      * </ul>
      */
-	@Accessor
+	@Accessor(isInteresting=true)
 	public int getNullable() {
 		return nullable;
 	}
@@ -828,7 +828,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of remarks
 	 */
-	@Accessor
+	@Accessor(isInteresting=true)
 	public String getRemarks()  {
 		return this.remarks;
 	}
@@ -850,7 +850,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of defaultValue
 	 */
-	@Accessor
+	@Accessor(isInteresting=true)
 	public String getDefaultValue()  {
 		return this.defaultValue;
 	}
@@ -872,7 +872,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of autoIncrement
 	 */
-	@Accessor
+	@Accessor(isInteresting=true)
 	public boolean isAutoIncrement()  {
 		return this.autoIncrement;
 	}

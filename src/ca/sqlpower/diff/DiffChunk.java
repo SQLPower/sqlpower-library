@@ -18,18 +18,27 @@
  */
 package ca.sqlpower.diff;
 
+import java.util.ArrayList;
+import java.util.List;
+
+
 public class DiffChunk<T> {
 	private DiffType type;
 	private T data;
+	
+    /**
+     * A list of property changes this object had.
+     */
+    final List<PropertyChange> changes;
 	
 	/**
 	 * @param data
 	 * @param type
 	 */
 	public DiffChunk(T data, DiffType type) {
-		super();
 		this.data = data;
 		this.type = type;
+		changes = new ArrayList<PropertyChange>();
 	}
 
 	public T getData() {
@@ -45,4 +54,13 @@ public class DiffChunk<T> {
 		
 		return super.toString() + "(" +type+")["+data+"]";
 	}
+	
+	public List<PropertyChange> getPropertyChanges() {
+	    return changes;
+	}
+	
+	public void addPropertyChange(PropertyChange change) {
+	    changes.add(change);
+	}
+	
 }
