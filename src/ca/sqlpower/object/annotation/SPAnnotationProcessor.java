@@ -938,9 +938,11 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		if (properties.length > 0) {
 			tabs++;
 			for (int i = 0; i < properties.length - 1; i++) {
-				println(sb, tabs, "\"" + properties[i] + "\",");
+				println(sb, tabs, "\"" + SPAnnotationProcessorUtils
+						.convertMethodToProperty((String) properties[i]) + "\",");
 			}
-			println(sb, tabs, "\"" + properties[properties.length-1] + "\"");
+			println(sb, tabs, "\"" + SPAnnotationProcessorUtils
+					.convertMethodToProperty((String) properties[properties.length - 1]) + "\"");
 			tabs--;
 		}
 		println(sb, tabs, "};");
