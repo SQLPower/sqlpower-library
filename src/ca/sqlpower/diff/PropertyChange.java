@@ -19,6 +19,8 @@
 
 package ca.sqlpower.diff;
 
+import ca.sqlpower.sqlobject.SQLType;
+
 /**
  * This class is used by DiffInfo to store information about property changes.
  */
@@ -55,15 +57,23 @@ public class PropertyChange {
     }
 
     public String getOldValue() {
-        return oldValue;
+        if (propertyName.equals("type")) {            
+            return SQLType.getTypeName(Integer.parseInt(oldValue));          
+        } else {
+            return oldValue;
+        }
     }
 
     public String getNewValue() {
-        return newValue;
+        if (propertyName.equals("type")) {                        
+            return SQLType.getTypeName(Integer.parseInt(newValue));           
+        } else {
+            return newValue;
+        }
     }
     
     public String toString() {
-        return propertyName + " changed from " + oldValue + " to " + newValue;
+        return propertyName + " changed from " + getOldValue() + " to " + getNewValue();
     }
     
 }

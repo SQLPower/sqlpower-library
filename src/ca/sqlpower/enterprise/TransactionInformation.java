@@ -15,6 +15,12 @@ public class TransactionInformation {
     private final Date timeCreated;
     private final String versionAuthor;
     private final String versionDescription;
+    private final String simpleDescription;
+    
+    public TransactionInformation(long versionNumber, Date timeCreated, 
+            String versionAuthor, String versionDescription) {
+        this(versionNumber, timeCreated, versionAuthor, versionDescription, versionDescription);
+    }
     
     /**
      * Create an TransactionInformation object
@@ -23,12 +29,15 @@ public class TransactionInformation {
      * @param timeCreated
      * @param versionAuthor
      * @param versionDescription
+     * @param simpleDescription
      */
-    public TransactionInformation(long versionNumber, Date timeCreated, String versionAuthor, String versionDescription) {
+    public TransactionInformation(long versionNumber, Date timeCreated, 
+            String versionAuthor, String versionDescription, String simpleDescription) {
         this.versionNumber = versionNumber;
         this.timeCreated = timeCreated;
         this.versionAuthor = versionAuthor;
         this.versionDescription = versionDescription;
+        this.simpleDescription = simpleDescription;
     }
     
     /**
@@ -36,7 +45,7 @@ public class TransactionInformation {
      */
     public String toString() {
         return "v" + versionNumber + " (" + timeCreated.toString() + ")" +
-                ", " + versionAuthor + ":" + versionDescription;
+                ", " + versionAuthor + ":" + simpleDescription;
     }
 
     public long getVersionNumber() {
@@ -53,6 +62,10 @@ public class TransactionInformation {
 
     public String getVersionDescription() {
         return versionDescription;
+    }
+    
+    public String getSimpleDescription() {
+        return simpleDescription;
     }
     
     public String getTimeString() {

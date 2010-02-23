@@ -163,7 +163,8 @@ public class PersisterUtils {
 	 * @throws IllegalAccessException
 	 * @throws InvocationTargetException
 	 */
-    private static Map<String, Object> getInterestingProperties(String type, SQLObject object, SessionPersisterSuperConverter converter)
+    private static Map<String, Object> getInterestingProperties(
+            String type, SQLObject object, SessionPersisterSuperConverter converter)
 	throws SecurityException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
 	    Map<String, Object> propertyMap = new HashMap<String, Object>();
 	    
