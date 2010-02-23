@@ -64,10 +64,9 @@ public abstract class AbstractSPListener implements SPListener {
     public final void transactionEnded(TransactionEvent e) {
     	Integer lastTransactionCount;
         if (inTransactionMap.get(e.getSource()) == null) {
-            logger.warn("An end transaction for object " + e.getSource() 
+            throw new IllegalStateException("An end transaction for object " + e.getSource() 
                     + " of type " + e.getSource().getClass() + " was called while it was " +
             		"not in a transaction.");
-            lastTransactionCount = 1;
         } else {
         	lastTransactionCount = inTransactionMap.get(e.getSource());
         	logger.debug("Transaction count on " + this +  " for:" + e.getSource() + ": " + inTransactionMap.get((SPObject) e.getSource()));
