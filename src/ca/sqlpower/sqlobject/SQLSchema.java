@@ -243,7 +243,7 @@ public class SQLSchema extends SQLObject {
 	 *
 	 * @return the value of nativeTerm
 	 */
-	@Accessor
+	@Accessor(isInteresting=true)
 	public String getNativeTerm()  {
 		return this.nativeTerm;
 	}

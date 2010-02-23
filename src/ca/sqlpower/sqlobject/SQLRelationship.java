@@ -1135,7 +1135,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 	// ----------------- accessors and mutators -------------------
 
-	@Accessor
+	@Accessor(isInteresting=true)
 	public UpdateDeleteRule getUpdateRule()  {
 		return this.updateRule;
 	}
@@ -1147,7 +1147,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		firePropertyChange("updateRule", oldRule, rule);
 	}
 
-	@Accessor
+	@Accessor(isInteresting=true)
 	public UpdateDeleteRule getDeleteRule()  {
 		return this.deleteRule;
 	}
@@ -1159,7 +1159,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
         firePropertyChange("deleteRule", oldRule, rule);
 	}
 
-	@Accessor
+	@Accessor(isInteresting=true)
 	public Deferrability getDeferrability()  {
 		return this.deferrability;
 	}
@@ -1226,7 +1226,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of identifying
 	 */
-	@Accessor
+	@Accessor(isInteresting=true)
 	public boolean isIdentifying()  {
 		return this.identifying;
 	}
