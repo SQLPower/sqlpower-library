@@ -1268,10 +1268,10 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 					firePropertyChange("identifying", oldIdentifying, argIdentifying);
 				}
 			}
+			
+			fireTransactionEnded();
 		} catch (RuntimeException e) {
 			fireTransactionRollback(e.getMessage());
-		} finally {
-			fireTransactionEnded();
 		}
 	}
 	
