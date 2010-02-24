@@ -333,14 +333,7 @@ public class SQLTable extends SQLObject {
      * @throws SQLObjectException
      */
     protected synchronized void populateColumns() throws SQLObjectException {
-    	
-//    	if (logger.isDebugEnabled()) {
-//    		try {
-//    			throw new RuntimeException();
-//    		} catch (RuntimeException e) {
-//    			logger.debug("Populating columns on table " + getName(), e);
-//    		}
-//    	}
+    	logger.debug("Populating columns on table " + getName(), new Exception());
 
 		if (columnsPopulated) return;
     	if (columns.size() > 0) {
@@ -1095,12 +1088,10 @@ public class SQLTable extends SQLObject {
 		if (populated) return;
 		
 		try {
-			begin("Populating Children of Table " + this);
 			populateColumns();
 			populateRelationships();
 			populateIndices();
 			populated = true;
-			commit();
 		} catch (SQLObjectException e) {
 			rollback(e.getMessage());
 			throw e;
