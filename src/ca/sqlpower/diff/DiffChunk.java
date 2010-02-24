@@ -18,6 +18,7 @@
  */
 package ca.sqlpower.diff;
 
+import ca.sqlpower.sqlobject.SQLColumn;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +26,7 @@ import java.util.List;
 public class DiffChunk<T> {
 	private DiffType type;
 	private T data;
-	
+	private T originalData;
     /**
      * A list of property changes this object had.
      */
@@ -41,6 +42,14 @@ public class DiffChunk<T> {
 		changes = new ArrayList<PropertyChange>();
 	}
 
+    public void setOriginalData(T old) {
+        originalData = old;
+    }
+
+    public T getOriginalData() {
+        return originalData;
+    }
+    
 	public T getData() {
 		return data;
 	}
@@ -51,7 +60,11 @@ public class DiffChunk<T> {
 	}
 	@Override
 	public String toString() {
-		
+		if (data instanceof SQLColumn) {
+			SQLColumn c = (SQLColumn)data;
+			String colname = c.getParent().getName() + "." + c.toString();
+			return super.toString() + "(" +type+")["+colname+"]";
+		}
 		return super.toString() + "(" +type+")["+data+"]";
 	}
 	

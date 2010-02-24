@@ -25,5 +25,6 @@ public enum DiffType {
 	SAME,		// Some implementations may not use this.
 	RIGHTONLY,
 	KEY_CHANGED,	// primary key changed or removed
-	DROP_KEY;       // the key with this type needs to be dropped
+	DROP_KEY,       // the key with this type needs to be dropped
+    NAME_CHANGED;
 }
