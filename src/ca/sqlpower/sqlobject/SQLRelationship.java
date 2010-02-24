@@ -1214,11 +1214,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 */
 	@Mutator
 	public void setFkCardinality(int argFkCardinality) {
-		begin("Modify the Foreign key cardinality");
 		int oldFkCardinality = this.fkCardinality;
 		this.fkCardinality = argFkCardinality;
 		firePropertyChange("fkCardinality",oldFkCardinality,argFkCardinality);
-		commit();
 	}
 
 	/**
