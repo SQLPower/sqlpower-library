@@ -25,6 +25,7 @@ import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sql.SpecificDataSourceCollection;
 
 /**
  * Converts any known object into a simple type of object that can be
@@ -38,7 +39,7 @@ public class SessionPersisterSuperConverter {
 	
 	private final FormatConverter formatConverter = new FormatConverter();
 	
-	private final DataSourceCollection <? extends SPDataSource> dsCollection;
+	private final DataSourceCollection <JDBCDataSource> dsCollection;
 
 	/**
 	 * This converter will allow changes between any complex object in the
@@ -54,7 +55,7 @@ public class SessionPersisterSuperConverter {
 	public SessionPersisterSuperConverter(DataSourceCollection<? extends SPDataSource> dsCollection, 
 			SPObject root) {
 		spObjectConverter = new SPObjectConverter(root);
-		this.dsCollection = dsCollection;
+		this.dsCollection = new SpecificDataSourceCollection(dsCollection, JDBCDataSource.class);
 	}
 
 	/**
@@ -149,18 +150,8 @@ public class SessionPersisterSuperConverter {
 			return new EnumConverter(type).convertToComplexType((String) o);
 			
 		} else if (JDBCDataSource.class.isAssignableFrom(type)) {
-			
-			//return jdbcDSConverter.convertToComplexType((String) o);
-			// TODO: There are BIG problems caused by trying to represent 
-			//       DataSourceCollection <JDBCDataSource> by DataSourceCollection <SPDataSource>
-			
-			SPDataSource ds = dsCollection.getDataSource((String) o);
-			if (ds instanceof JDBCDataSource) {
-				return ds;
-			} else {
-				return new JDBCDataSource(ds);
-			}
-			
+			return dsCollection.getDataSource((String) o, JDBCDataSource.class);
+
 		} else if (Format.class.isAssignableFrom(type)) {
 			return formatConverter.convertToComplexType((String) o);
 			
