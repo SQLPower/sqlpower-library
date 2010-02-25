@@ -57,19 +57,41 @@ public class PropertyChange {
     }
 
     public String getOldValue() {
-        if (propertyName.equals("type")) {            
-            return SQLType.getTypeName(Integer.parseInt(oldValue));          
-        } else {
-            return oldValue;
+        try {
+            if (propertyName.equals("type")) {            
+                return SQLType.getTypeName(Integer.parseInt(oldValue));          
+            } 
+        } catch (NumberFormatException e) {
+            // The oldValue field has already been parsed
+            // TODO Have a better solution than this.
         }
+        if (propertyName.equals("nullable")) {            
+            if (oldValue.equals("0")) {
+                return "false";
+            } else if (oldValue.equals("1")) {
+                return "true";
+            }
+        }
+        return oldValue;
     }
 
     public String getNewValue() {
-        if (propertyName.equals("type")) {                        
-            return SQLType.getTypeName(Integer.parseInt(newValue));           
-        } else {
-            return newValue;
+        try {
+            if (propertyName.equals("type")) {            
+                return SQLType.getTypeName(Integer.parseInt(newValue));          
+            }
+        } catch (NumberFormatException e) {
+            // The oldValue field has already been parsed
+            // TODO Have a better solution than this.
         }
+        if (propertyName.equals("nullable")) {            
+            if (newValue.equals("0")) {
+                return "false";
+            } else if (newValue.equals("1")) {
+                return "true";
+            }
+        }
+        return newValue;
     }
     
     public String toString() {
