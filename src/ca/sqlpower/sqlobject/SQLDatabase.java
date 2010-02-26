@@ -44,9 +44,12 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
+import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.JDBCDSConnectionFactory;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
@@ -115,6 +118,17 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 * it is the play pen database.
 	 */
 	private String name;
+	
+	@Constructor
+	public SQLDatabase(
+			@ConstructorParameter(isProperty=ParameterType.PROPERTY, 
+					propertyName="dataSource") JDBCDataSource dataSource, 
+			@ConstructorParameter(isProperty=ParameterType.PROPERTY, 
+					propertyName="populated") boolean populated) 
+	{
+		setDataSource(dataSource);
+		setPopulated(populated);
+	}
 	
 	/**
 	 * Constructor for instances that connect to a real database by JDBC.
