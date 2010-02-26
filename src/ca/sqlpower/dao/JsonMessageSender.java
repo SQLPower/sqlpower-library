@@ -30,14 +30,14 @@ import org.json.JSONObject;
  */
 public class JsonMessageSender implements MessageSender<JSONObject> {
 
-    List<JSONObject> jsonObjects;
+    private final List<JSONObject> jsonObjects;
     
     public JsonMessageSender() {
         jsonObjects = new ArrayList<JSONObject>();
     }
     
     public void clear() {
-        jsonObjects = new ArrayList<JSONObject>();
+        jsonObjects.clear();
     }
 
     public void flush() throws SPPersistenceException {
