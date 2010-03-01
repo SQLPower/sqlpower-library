@@ -1040,7 +1040,7 @@ public abstract class SPSessionPersister implements SPPersister {
 			index = siblings.indexOf(spo);
 		}
 		
-		return new PersistedSPObject(parentUUID, spo.getClass().getSimpleName(), 
+		return new PersistedSPObject(parentUUID, spo.getClass().getName(), 
 				spo.getUUID(), index);
 	}
 
