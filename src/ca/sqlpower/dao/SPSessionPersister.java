@@ -908,12 +908,12 @@ public abstract class SPSessionPersister implements SPPersister {
 	 * @return Whether or not the {@link SPObject} exists
 	 */
 	private boolean exists(String uuid) {
+        for (PersistedSPObject pso : persistedObjects) {
+            if (uuid.equals(pso.getUUID())) {
+                return true;
+            }
+        }
 		if (!objectsToRemove.containsKey(uuid)) {
-			for (PersistedSPObject pso : persistedObjects) {
-				if (uuid.equals(pso.getUUID())) {
-					return true;
-				}
-			}
 			if (SQLPowerUtils.findByUuid(root, uuid, SPObject.class) != null) {
 				return true;
 			}
