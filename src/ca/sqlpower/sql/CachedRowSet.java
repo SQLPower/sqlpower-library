@@ -126,17 +126,25 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 
 		int rowNum = 0;
 		while (rs.next()) {
-		    if (logger.isDebugEnabled()) {
+		    
+			if (logger.isDebugEnabled()) {
 		        logger.debug("crs@" + System.identityHashCode(this) + " populating Row " + rowNum);
 		    }
-			Object[] row = new Object[colCount];
+			
+		    Object[] row = new Object[colCount];
+			
 			for (int i = 0; i < rsColCount; i++) {
+				
 				Object o = rs.getObject(i+1);
-				if (o == null) {
-				    if (logger.isDebugEnabled()) logger.debug("   Col "+i+": null");
-				} else {
-				    if (logger.isDebugEnabled()) logger.debug("   Col "+i+": "+o+" ("+o.getClass()+")");
-				}				
+				
+				if (logger.isDebugEnabled()) {
+					if (o == null) {
+						logger.debug("   Col "+i+": null");
+					} else {
+						logger.debug("   Col "+i+": "+o+" ("+o.getClass()+")");
+					}								
+				}
+				
 				row[i] = o;
 			}
             
@@ -151,10 +159,30 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		}
 	}
 	
-	public void sort(RowComparator c) {
-		if (this.data != null) {
-			Collections.sort(this.data, c);
+	/**
+	 * Returs a sorted copy of this resultset. The result copy
+	 * will not be linked to the original one and will not be 
+	 * populated nor refreshed. It is a snapshot of the current state
+	 * of the resultset.
+	 * 
+	 * @param c
+	 * 
+	 * @return A copy of this rs, sorted
+	 */
+	public CachedRowSet sort(RowComparator c) {
+		
+		CachedRowSet newRs = new CachedRowSet();
+		try {
+			newRs.populate(this);
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
 		}
+		
+		if (this.data != null) {
+			Collections.sort(newRs.data, c);
+		}
+		
+		return newRs;
 	}
 
     /**
