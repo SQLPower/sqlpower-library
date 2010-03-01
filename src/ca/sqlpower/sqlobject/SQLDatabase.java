@@ -120,20 +120,9 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	private String name;
 	
 	@Constructor
-	public SQLDatabase(
-			@ConstructorParameter(isProperty=ParameterType.PROPERTY, 
-					propertyName="dataSource") JDBCDataSource dataSource, 
-			@ConstructorParameter(isProperty=ParameterType.PROPERTY, 
-					propertyName="populated") boolean populated) 
+	public SQLDatabase(@ConstructorParameter(isProperty=ParameterType.PROPERTY, 
+			propertyName="dataSource") JDBCDataSource dataSource)
 	{
-		setDataSource(dataSource);
-		setPopulated(populated);
-	}
-	
-	/**
-	 * Constructor for instances that connect to a real database by JDBC.
-	 */
-	public SQLDatabase(JDBCDataSource dataSource) {
 		setDataSource(dataSource);
 	}
 	
@@ -152,6 +141,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	protected synchronized void populateImpl() throws SQLObjectException {
 	    logger.debug("SQLDatabase: is populated " + populated); //$NON-NLS-1$
 		if (populated) return;
+
 		int oldSize = getChildrenWithoutPopulating().size();
 		
 		logger.debug("SQLDatabase: populate starting"); //$NON-NLS-1$
@@ -192,7 +182,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
                 	addTable(table);
                 }
             }
-            populated = true;
+            setPopulated(true);
             commit();
             
 		} catch (SQLException e) {
@@ -210,7 +200,6 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 				throw new SQLObjectException(Messages.getString("SQLDatabase.closeConFailed"), e2); //$NON-NLS-1$
 			}
 		}
-		
 		logger.debug("SQLDatabase: populate finished"); //$NON-NLS-1$
 	}
 	

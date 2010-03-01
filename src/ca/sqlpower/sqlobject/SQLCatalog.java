@@ -192,7 +192,7 @@ public class SQLCatalog extends SQLObject {
 				    }
 				}
 				
-				populated = true;
+				setPopulated(true);
 				commit();
 			} catch (SQLException e) {
 				rollback(e.getMessage());

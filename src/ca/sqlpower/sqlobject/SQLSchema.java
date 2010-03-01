@@ -214,7 +214,7 @@ public class SQLSchema extends SQLObject {
                     	addTable(table);
                     }
 				}
-				populated = true;
+				setPopulated(true);
 				commit();
 			}
 		} catch (SQLException e) {
