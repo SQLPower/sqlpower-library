@@ -146,7 +146,7 @@ private static final Logger logger = Logger.getLogger(EditablePStyledText.class)
 								public void insert(String variable) {
 									try {
 										getEditorPane().setText(getEditorPane().getText().trim());
-										getDocument().insertString(
+										getEditorPane().getDocument().insertString(
 												getEditorPane().getCaretPosition(), 
 												variable, 
 												null);
