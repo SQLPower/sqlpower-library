@@ -1091,7 +1091,8 @@ public class SQLTable extends SQLObject {
 			populateColumns();
 			populateRelationships();
 			populateIndices();
-			setPopulated(true);
+			populated = true;
+			firePropertyChange("populated", false, true);
 		} catch (SQLObjectException e) {
 			rollback(e.getMessage());
 			throw e;
