@@ -164,7 +164,6 @@ public class FontSelector implements DataEntryPanel {
                 updatingListSelection = true;
                 Integer newSize = (Integer) fontSizeSpinner.getValue();
                 int newSizeIndexInList = Arrays.binarySearch(FONT_SIZES, newSize);
-                System.out.println("New selection index: " + newSizeIndexInList);
                 if (newSizeIndexInList >= 0) {
                     fontSizeList.setSelectedIndex(newSizeIndexInList);
                     fontSizeList.ensureIndexIsVisible(newSizeIndexInList);
