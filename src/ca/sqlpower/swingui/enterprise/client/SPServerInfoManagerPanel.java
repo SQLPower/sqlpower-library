@@ -34,6 +34,7 @@ import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
@@ -56,7 +57,13 @@ public class SPServerInfoManagerPanel {
 	private final JPanel panel;
 	private JList serverInfos;
 	private final JButton connectButton;
-
+	private Action testAction = new AbstractAction() {
+		public void actionPerformed(ActionEvent e) {
+			JOptionPane.showMessageDialog(null, "Testing not implemented");
+		}
+	};
+	
+	
 	private Action removeAction = new AbstractAction("Remove") {
 
 		public void actionPerformed(ActionEvent e) {
@@ -167,6 +174,8 @@ public class SPServerInfoManagerPanel {
 		} else {
 			infoPanel = new SPServerInfoPanel(panel, manager.getClientVersion(), serverInfo);
 		}
+		
+		infoPanel.setTestAction(testAction);
 
 		Callable<Boolean> okCall = new Callable<Boolean>() {
 			public Boolean call() throws Exception {
@@ -192,6 +201,10 @@ public class SPServerInfoManagerPanel {
 				okCall, cancelCall);
 
 		dialog.setVisible(true);
+	}
+	
+	public void setTestAction(Action action) {
+		testAction = action;
 	}
 
 	private void editSelectedServer() {

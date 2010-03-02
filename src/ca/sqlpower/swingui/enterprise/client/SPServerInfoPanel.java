@@ -20,11 +20,10 @@
 package ca.sqlpower.swingui.enterprise.client;
 
 import java.awt.Component;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import javax.swing.Action;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
@@ -95,16 +94,13 @@ public class SPServerInfoPanel implements DataEntryPanel {
         builder.append(Messages.getString("SPServerInfoPanel.passwordField"), password = new JPasswordField(si.getPassword())); //$NON-NLS-1$
         
         builder.append(testButton = new JButton(Messages.getString("SPServerInfoPanel.testConnectionButton"))); //$NON-NLS-1$
-        this.testButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				//TODO: Implement connection testing. A Wabit specific example can be found at ServerInfoPanel.lookupServerInfo()
-				 JOptionPane.showMessageDialog(dialogOwner, "Connection Testing not yet implemented");
-			}
-		});
-        
         builder.appendParagraphGapRow();
         
         return builder.getPanel();
+    }
+    
+    public void setTestAction(Action action) {
+    	testButton.setAction(action);
     }
     
     /**
