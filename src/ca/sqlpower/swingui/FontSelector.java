@@ -169,7 +169,6 @@ public class FontSelector implements DataEntryPanel {
                     fontSizeList.ensureIndexIsVisible(newSizeIndexInList);
                 } else {
                     fontSizeList.clearSelection();
-                    System.out.println("Cleared selection");
                 }
             } finally {
                 updatingListSelection = false;
