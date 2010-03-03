@@ -21,7 +21,6 @@ package ca.sqlpower.object.annotation;
 
 import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.object.SPObject;
-import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 
 /**
  * This class represents a parameter annotated with {@link ConstructorParameter}
@@ -34,9 +33,9 @@ import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 public class ConstructorParameterObject {
 	
 	/**
-	 * @see #getProperty()
+	 * @see #isProperty()
 	 */
-	private final ParameterType property;
+	private final boolean property;
 	
 	/**
 	 * @see #getType()
@@ -53,7 +52,7 @@ public class ConstructorParameterObject {
 	 */
 	private final String value;
 	
-	public ConstructorParameterObject(ParameterType property, Class<?> type, 
+	public ConstructorParameterObject(boolean property, Class<?> type, 
 			String name, String value) {
 		this.property = property;
 		this.type = type;
@@ -66,7 +65,7 @@ public class ConstructorParameterObject {
 	 * 
 	 * @see ConstructorParameter#isProperty()
 	 */
-	public ParameterType getProperty() {
+	public boolean isProperty() {
 		return property;
 	}
 	
@@ -79,7 +78,7 @@ public class ConstructorParameterObject {
 
 	/**
 	 * Returns the property name this constructor refers to if
-	 * {@link #getProperty()} is true. Otherwise, it returns the name of the
+	 * {@link #isProperty()} is true. Otherwise, it returns the name of the
 	 * constructor parameter.
 	 * 
 	 * @see ConstructorParameter#propertyName()
@@ -91,7 +90,7 @@ public class ConstructorParameterObject {
 	/**
 	 * Returns the {@link String} representation of the primitive value to use
 	 * in an {@link SPPersister} to call the constructor if
-	 * {@link #getProperty()} is false and {@link #getType()} is not
+	 * {@link #isProperty()} is false and {@link #getType()} is not
 	 * {@link SPObject}.
 	 * 
 	 * @see ConstructorParameter#primitiveValue()

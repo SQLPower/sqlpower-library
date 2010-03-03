@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, SQL Power Group Inc.
+ * Copyright (c) 2008, SQL Power Group Inc.
  *
  * This file is part of SQL Power Library.
  *
@@ -17,31 +17,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-package ca.sqlpower.sqlobject;
+package ca.sqlpower.sql.jdbcwrapper;
 
-public class SQLObjectRootTest extends BaseSQLObjectTestCase {
-	
-	private SQLObjectRoot root;
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
-	public SQLObjectRootTest(String name) throws Exception {
-		super(name);
-	}
-	
-	@Override
-	protected void setUp() throws Exception {
-		super.setUp();
-		root = new SQLObjectRoot();
-		getRootObject().addChild(root, 0);
-	}
+public class AllTests {
 
-	@Override
-	protected Class<?> getChildClassType() {
-		return SQLDatabase.class;
-	}
-
-	@Override
-	protected SQLObject getSQLObjectUnderTest() throws SQLObjectException {
-		return root;
-	}
+    public static Test suite() {
+        TestSuite suite = new TestSuite("Test for ca.sqlpower.sql.jdbcwrapper");
+        //$JUnit-BEGIN$
+        suite.addTestSuite(GenericStatementDecoratorTest.class);
+        suite.addTestSuite(SQLServer2005DatabaseMetaDataDecoratorTest.class);
+        suite.addTestSuite(HSQLDBMDTest.class);
+        //$JUnit-END$
+        return suite;
+    }
 
 }

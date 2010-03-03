@@ -25,7 +25,6 @@ import ca.sqlpower.dao.PersistedSPOProperty;
 import ca.sqlpower.dao.PersistedSPObject;
 import ca.sqlpower.dao.SPPersistenceException;
 import ca.sqlpower.dao.SPPersister;
-import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
@@ -74,16 +73,16 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *            where the {@link SPPersisterHelper} factory finds the
 	 *            appropriate {@link SPPersisterHelper} for that child type and
 	 *            calls commitObject on that as well.
-	 * @param converter
-	 *            The {@link SPPersisterHelperFactory} to use to convert complex
-	 *            properties into simple ones.
+	 * @param factory
+	 *            The {@link SPPersisterHelperFactory} to use to commit child
+	 *            objects.
 	 * @return The created {@link SPObject} with the given required persisted
 	 *         properties.
 	 */
 	T commitObject(PersistedSPObject pso,
 			Multimap<String, PersistedSPOProperty> persistedProperties, 
 			List<PersistedSPObject> persistedObjects,
-			SessionPersisterSuperConverter converter) throws SPPersistenceException;
+			SPPersisterHelperFactory factory);
 
 	/**
 	 * Applies a property change on the given {@link SPObject} and property
@@ -97,9 +96,6 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *            The new property value. This value must be converted through
 	 *            the {@link SessionPersisterSuperConverter} from simple type
 	 *            into a complex type before setting the property value.
-	 * @param type
-	 *            The object type that the new value is reported to be from the
-	 *            persist call.
 	 * @param converter
 	 *            The {@link SessionPersisterSuperConverter} class to use to
 	 *            convert newValue from a simple type to a complex type.
@@ -108,7 +104,7 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *             setter method for this property in the {@link SPObject} class
 	 *             must be annotated with {@link Mutator}.
 	 */
-	void commitProperty(SPObject spo, String propertyName, Object newValue, DataType type, 
+	void commitProperty(T spo, String propertyName, Object newValue, 
 			SessionPersisterSuperConverter converter) throws SPPersistenceException;
 
 	/**
@@ -140,7 +136,7 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *             getter method for this property in the {@link SPObject} class
 	 *             must be annotated with {@link Accessor}.
 	 */
-	Object findProperty(SPObject spo, String propertyName, 
+	Object findProperty(T spo, String propertyName, 
 			SessionPersisterSuperConverter converter) throws SPPersistenceException;
 
 	/**
@@ -151,7 +147,7 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 * parameters are annotated with {@link ConstructorParameter} with reference
 	 * to the property it will set.
 	 * 
-	 * @param o
+	 * @param spo
 	 *            The {@link SPObject} to persist along with its required
 	 *            properties.
 	 * @param index
@@ -168,14 +164,7 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 *             Thrown if the {@link SPPersister} cannot persist the object
 	 *             or any one of its properties.
 	 */
-	void persistObject(SPObject o, int index, SPPersister persister, 
+	void persistObject(T spo, int index, SPPersister persister, 
 			SessionPersisterSuperConverter converter) throws SPPersistenceException;
-	
-	/**
-	 * Gets a list of all of the property names that this helper should persist
-	 * 
-	 * @return
-	 */
-	List<String> getPersistedProperties() throws SPPersistenceException; 
 	
 }

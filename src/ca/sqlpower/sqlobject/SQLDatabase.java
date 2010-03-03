@@ -25,7 +25,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -44,12 +43,9 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
-import ca.sqlpower.object.annotation.Constructor;
-import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
-import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.JDBCDSConnectionFactory;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
@@ -57,14 +53,6 @@ import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
 
 public class SQLDatabase extends SQLObject implements java.io.Serializable, PropertyChangeListener {
 	private static Logger logger = Logger.getLogger(SQLDatabase.class);
-	
-	/**
-	 * Defines an absolute ordering of the child types of this class.
-	 */
-	@SuppressWarnings("unchecked")
-	public static List<Class<? extends SPObject>> allowedChildTypes = 
-		Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
-				Arrays.asList(SQLCatalog.class, SQLSchema.class, SQLTable.class)));
 
 	/**
 	 * This SPDataSource describes how to connect to the 
@@ -114,15 +102,9 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	private final List<SQLTable> tables = new ArrayList<SQLTable>();
 	
 	/**
-	 * The internal name of the database if the data source is null or if
-	 * it is the play pen database.
+	 * Constructor for instances that connect to a real database by JDBC.
 	 */
-	private String name;
-	
-	@Constructor
-	public SQLDatabase(@ConstructorParameter(isProperty=ParameterType.PROPERTY, 
-			propertyName="dataSource") JDBCDataSource dataSource)
-	{
+	public SQLDatabase(JDBCDataSource dataSource) {
 		setDataSource(dataSource);
 	}
 	
@@ -141,7 +123,6 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	protected synchronized void populateImpl() throws SQLObjectException {
 	    logger.debug("SQLDatabase: is populated " + populated); //$NON-NLS-1$
 		if (populated) return;
-
 		int oldSize = getChildrenWithoutPopulating().size();
 		
 		logger.debug("SQLDatabase: populate starting"); //$NON-NLS-1$
@@ -182,7 +163,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
                 	addTable(table);
                 }
             }
-            setPopulated(true);
+            populated = true;
             commit();
             
 		} catch (SQLException e) {
@@ -200,6 +181,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 				throw new SQLObjectException(Messages.getString("SQLDatabase.closeConFailed"), e2); //$NON-NLS-1$
 			}
 		}
+		
 		logger.debug("SQLDatabase: populate finished"); //$NON-NLS-1$
 	}
 	
@@ -353,10 +335,12 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	@Override
 	@Accessor
 	public String getName() {
-		if (dataSource != null && !playPenDatabase) {
-			return dataSource.getDisplayName();
+		if (isPlayPenDatabase()) {
+			return Messages.getString("SQLDatabase.playPenDB"); //$NON-NLS-1$
+		} else if (dataSource != null) {
+		    return dataSource.getDisplayName();
 		} else {
-			return name;
+		    return Messages.getString("SQLDatabase.disconnected"); //$NON-NLS-1$
 		}
 	}
 	/**
@@ -370,7 +354,6 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		if (dataSource != null) {
 			dataSource.setName(argName);
 		}
-		name = argName;
 		firePropertyChange("name", oldName, argName);
 	}
 
@@ -480,30 +463,16 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		dataSource = argDataSource;
 		dataSource.addPropertyChangeListener(this);		
 		firePropertyChange("dataSource",oldDataSource,argDataSource); //$NON-NLS-1$
-		if (dataSource == null && !playPenDatabase && isMagicEnabled()) {
-			setName(Messages.getString("SQLDatabase.disconnected")); //$NON-NLS-1$
-		}
 		commit();
 	}
 
 	@Mutator
 	public void setPlayPenDatabase(boolean v) {
-		try {
-			fireTransactionStarted("Setting database to be the play pen database");
-			boolean oldValue = playPenDatabase;
-			playPenDatabase = v;
-			if (oldValue != v) {
-				firePropertyChange("playPenDatabase", oldValue, v); //$NON-NLS-1$
-			}
-			if (playPenDatabase && isMagicEnabled()) {
-				setName(Messages.getString("SQLDatabase.playPenDB")); //$NON-NLS-1$
-			} else if (!playPenDatabase && dataSource == null && isMagicEnabled()) {
-				setName(Messages.getString("SQLDatabase.disconnected")); //$NON-NLS-1$
-			}
-			fireTransactionEnded();
-		} catch (Throwable t) {
-			fireTransactionRollback("Failed due to " + t.getMessage());
-			throw new RuntimeException(t);
+		boolean oldValue = playPenDatabase;
+		playPenDatabase = v;
+
+		if (oldValue != v) {
+			firePropertyChange("playPenDatabase", oldValue, v); //$NON-NLS-1$
 		}
 	}
 
@@ -796,7 +765,6 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			throw new IllegalStateException("Cannot remove child " + child.getName() + 
 					" of type " + child.getClass() + " as its parent is not " + getName());
 		}
-		child.removeNotify();
 		int index = tables.indexOf(child);
 		if (index != -1) {
 			 tables.remove(index);
@@ -878,11 +846,6 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		fireChildAdded(SQLTable.class, table, index);
 	}
 
-	/**
-	 * The child types for a database change as children are added. This is
-	 * different from most other cases but the order of the allowed children
-	 * will remain the same as the order specified by {@link #allowedChildTypes}.
-	 */
 	@NonProperty
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();

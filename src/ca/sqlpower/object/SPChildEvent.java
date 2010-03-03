@@ -54,8 +54,6 @@ public class SPChildEvent extends EventObject {
     private final SPObject child;
 
     /**
-     * XXX Is this correct? 
-     * <p>
      * The index of the child that was added or removed. This index is the
      * overall position in the list returned by
      * <code>source.getChildren()</code>, not just the position within the
@@ -72,22 +70,21 @@ public class SPChildEvent extends EventObject {
      */
     private final EventType type;
 
-	/**
-	 * Creates a new event object that describes adding or removing a single
-	 * child of the given type to/from a parent.
-	 * 
-	 * @param source
-	 *            The parent that gained or lost a child.
-	 * @param childType
-	 *            The child type for which the parent gained or lost a child
-	 *            (SPObjects support multiple child types).
-	 * @param child
-	 *            The child that was added or removed.
-	 * @param index
-	 *            XXX is this correct? The index of the child that was added or
-	 *            removed (this is the overall index in the parent, not the
-	 *            index within one child type).
-	 */
+    /**
+     * Creates a new event object that describes adding or removing a single
+     * child of the given type to/from a parent.
+     * 
+     * @param source
+     *            The parent that gained or lost a child.
+     * @param childType
+     *            The child type for which the parent gained or lost a child
+     *            (SPObjects support multiple child types).
+     * @param child
+     *            The child that was added or removed.
+     * @param index
+     *            The index of the child that was added or removed (this is the
+     *            overall index in the parent, not the index within one child type).
+     */
     public SPChildEvent(SPObject source, 
     		Class<? extends SPObject> childType, 
     		SPObject child, int index, EventType type) {

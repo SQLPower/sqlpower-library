@@ -35,6 +35,7 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.MutatorParameter;
 import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
@@ -44,11 +45,6 @@ import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 public class SQLColumn extends SQLObject implements java.io.Serializable {
 
 	private static Logger logger = Logger.getLogger(SQLColumn.class);
-	
-	/**
-	 * Defines an absolute ordering of the child types of this class.
-	 */
-	public static final List<Class<? extends SPObject>> allowedChildTypes = Collections.emptyList();
 
 	// *** REMEMBER *** update the copyProperties method if you add new properties!
 
@@ -107,6 +103,13 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	protected String remarks ="";
 	protected String defaultValue;
 	
+	/**
+     * This property is the sort key for this column in primary key index. If
+     * the value is null, then it is not a primary key column.
+     * TODO make this private.
+     */
+	protected Integer primaryKeySeq;
+    
     /**
      * This property indicates that values stored in this column should
      * default to some automatcially-incrementing sequence of values.  Every
@@ -212,6 +215,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 			@ConstructorParameter(propertyName = "nullable") int nullable,
 			@ConstructorParameter(propertyName = "remarks") String remarks,
 			@ConstructorParameter(propertyName = "defaultValue") String defaultValue,
+			@ConstructorParameter(propertyName = "primaryKeySeq") Integer primaryKeySeq,
 			@ConstructorParameter(propertyName = "autoIncrement") boolean isAutoIncrement) {
 		if (parentTable != null) {
 			logger.debug("NEW COLUMN "+colName+"@"+hashCode()+" parent "+parentTable.getName()+"@"+parentTable.hashCode());
@@ -229,6 +233,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		this.nullable = nullable;
 		this.remarks = remarks;
 		this.defaultValue = defaultValue;
+		this.primaryKeySeq = primaryKeySeq;
 		this.autoIncrement = isAutoIncrement;
 
 		logger.debug("SQLColumn(.....) set ref count to 1");
@@ -236,7 +241,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
 	public SQLColumn(SQLTable parent, String colName, int type, int precision, int scale) {
-		this(parent, colName, type, null, precision, scale, DatabaseMetaData.columnNullable, null, null, false);
+		this(parent, colName, type, null, precision, scale, DatabaseMetaData.columnNullable, null, null, null, false);
 	}
 	
 	/**
@@ -313,6 +318,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		target.nullable = source.nullable;
 		target.remarks = source.remarks;
 		target.defaultValue = source.defaultValue;
+		target.primaryKeySeq = source.primaryKeySeq;
 		target.autoIncrement = source.autoIncrement;
         target.autoIncrementSequenceName = source.autoIncrementSequenceName;
 	}
@@ -367,6 +373,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 											  rs.getInt(11), // nullable
 											  rs.getString(12) == null ? "" : rs.getString(12), // remarks
 											  rs.getString(13), // default value
+											  null, // primaryKeySeq
 											  autoIncrement // isAutoIncrement
 											  );
 				logger.debug("Precision for the column " + rs.getString(4) + " is " + rs.getInt(7));
@@ -498,7 +505,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of type
 	 */
-	@Accessor(isInteresting=true)
+	@Accessor
 	public int getType()  {
 		return this.type;
 	}
@@ -513,9 +520,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		int oldType = type;
 		this.type = argType;
         begin("Type change");
-        if (isMagicEnabled()) {
-        	setSourceDataTypeName(null);
-        }
+        setSourceDataTypeName(null);
 		firePropertyChange("type",oldType,argType);
         commit();
 	}
@@ -540,7 +545,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of scale
 	 */
-	@Accessor(isInteresting=true)
+	@Accessor
 	public int getScale()  {
 		return this.scale;
 	}
@@ -569,7 +574,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * @see #getType()
 	 * @see #getTypeName()
 	 */
-	@Accessor(isInteresting=true)
+	@Accessor
 	public int getPrecision()  {
 		return this.precision;
 	}
@@ -601,9 +606,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return whether or not primaryKeySeq is defined
 	 */
-	@Transient @Accessor(isInteresting=true)	
+	@NonBound
 	public boolean isPrimaryKey()  {
-		return getParent().isInPrimaryKey(this);
+		return this.primaryKeySeq != null;
 	}
 
 	/**
@@ -729,7 +734,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      *     <li>DatabaseMetaData.columnNullableUnknown - nullability unknown
      * </ul>
      */
-	@Accessor(isInteresting=true)
+	@Accessor
 	public int getNullable() {
 		return nullable;
 	}
@@ -828,7 +833,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of remarks
 	 */
-	@Accessor(isInteresting=true)
+	@Accessor
 	public String getRemarks()  {
 		return this.remarks;
 	}
@@ -850,7 +855,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of defaultValue
 	 */
-	@Accessor(isInteresting=true)
+	@Accessor
 	public String getDefaultValue()  {
 		return this.defaultValue;
 	}
@@ -868,11 +873,148 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
 	/**
+	 * Gets the value of primaryKeySeq
+	 *
+	 * @return the value of primaryKeySeq
+	 */
+	@Accessor
+	public Integer getPrimaryKeySeq()  {
+		return this.primaryKeySeq;
+	}
+	
+    /**
+     * Sets the value of primaryKeySeq, and moves the column to the appropriate location in the
+     * parent table's column folder.  However, if magic is disabled on this column, this method
+     * simply sets the PrimaryKeySeq property to the given value, fires the change event, and
+     * returns without trying to re-order the columns. 
+     * 
+     * If there is no primary key on this column's table it will create a new key
+     * with default values.
+     */
+	@Transient @Mutator
+	public void setPrimaryKeySeq(Integer argPrimaryKeySeq) {
+	    setPrimaryKeySeqAndRearrangeCols(argPrimaryKeySeq, true);
+	}
+
+    /**
+     * Sets the value of primaryKeySeq, and moves the column to the appropriate location in the
+     * parent table's column folder.  However, if magic is disabled on this column, this method
+     * simply sets the PrimaryKeySeq property to the given value, fires the change event, and
+     * returns without trying to re-order the columns. 
+     * 
+     * If there is no primary key on this column's table it will create a new key
+     * with default values.
+     * 
+     * @param normalizeKey pass in false if the key should not be normalized when setting this
+     *      key's primary sequence.
+     */
+	@Transient @Mutator
+	public void setPrimaryKeySeqAndRearrangeCols(Integer argPrimaryKeySeq, boolean normalizeKey) {
+		setPrimaryKeySeq(argPrimaryKeySeq, normalizeKey, true);
+	}
+
+	/**
+	 * Sets the value of primaryKeySeq, and moves the column to the appropriate
+	 * location in the parent table's column folder. However, if magic is
+	 * disabled on this column or rearrangeColumns is false, this method simply
+	 * sets the PrimaryKeySeq property to the given value, fires the change
+	 * event, and returns without trying to re-order the columns.
+	 * 
+	 * If there is no primary key on this column's table it will create a new
+	 * key with default values.
+	 * 
+	 * @param normalizeKey
+	 *            pass in false if the key should not be normalized when setting
+	 *            this key's primary sequence.
+	 * @param rearrangeColumns
+	 *            If true and magic is enabled the columns will be rearranged to
+	 *            place the column in the correct position in the table as based
+	 *            on the key sequence values. If false then no column
+	 *            rearrangement will be done or normalization regardless of the
+	 *            normalizeKey value. This allows the primary key sequence to be
+	 *            set without needing to disable magic to get the same effect if
+	 *            we want to set the primary key with magic enabled.
+	 */
+	@Mutator
+	public void setPrimaryKeySeq(Integer argPrimaryKeySeq, @MutatorParameter("false") boolean normalizeKey, @MutatorParameter("false") boolean rearrangeColumns) {
+	    // do nothing if there's no change
+	    if ( (primaryKeySeq == null && argPrimaryKeySeq == null) ||
+	         (primaryKeySeq != null && primaryKeySeq.equals(argPrimaryKeySeq)) ) {
+            return;
+        }
+
+        Integer oldPrimaryKeySeq = primaryKeySeq;
+        //The check for setNullable() is not moved out is because it is
+        //needed to be part of the compound edit if isMagicEnabled is true
+        
+        if (!isMagicEnabled() || !rearrangeColumns) {
+            if (argPrimaryKeySeq != null && !this.autoIncrement) {
+                setNullable(DatabaseMetaData.columnNoNulls);    
+            }
+            this.primaryKeySeq = argPrimaryKeySeq;
+            firePropertyChange("primaryKeySeq",oldPrimaryKeySeq,argPrimaryKeySeq);
+        } else { 
+        	try {
+        		begin("Starting PrimaryKeySeq compound edit");
+
+        		if (argPrimaryKeySeq != null && !this.autoIncrement) { // FIXME don't worry about autoIncrement
+        			setNullable(DatabaseMetaData.columnNoNulls);	
+        		}
+
+        		// consider delaying this event until after the column has been put in place,
+        		// because firing the event at this point causes relationship managers to update the
+        		// child's PK before the parent's PK is properly formed
+        		// (such a change would require thorough testing of course!)
+        		this.primaryKeySeq = argPrimaryKeySeq;
+        		firePropertyChange("primaryKeySeq",oldPrimaryKeySeq,argPrimaryKeySeq);
+
+        		SQLTable p = getParent();
+        		if (p != null) {
+        			try {
+        				p.setMagicEnabled(false);
+        				if (p.getChildren().contains(this)) {
+        					p.removeChild(this);
+        				}
+        				int idx = 0;
+        				int targetPKS = primaryKeySeq == null ? Integer.MAX_VALUE : primaryKeySeq.intValue();
+        				logger.debug("Parent = "+p);
+        				logger.debug("Parent.children = "+p.getChildrenWithoutPopulating());
+        				for (SQLColumn col : p.getColumnsWithoutPopulating()) {
+        					if (col.getPrimaryKeySeq() == null ||
+        							col.getPrimaryKeySeq() > targetPKS) {
+        						logger.debug("idx is " + idx);
+        						break;
+        					}
+        					idx++;
+        				}                
+        				p.addChild(this, idx);
+        			} catch (IllegalArgumentException e) {
+        				rollback(e.getMessage());
+        				throw new RuntimeException(e);
+        			} catch (ObjectDependentException e) {
+        				rollback(e.getMessage());
+        				throw new RuntimeException(e);
+        			} finally {
+        				p.setMagicEnabled(true);
+        			}
+        			if (normalizeKey) {
+        				p.normalizePrimaryKey();
+        			}
+        		}
+        		commit();
+        	} catch (SQLObjectException e) {
+        		rollback(e.getMessage());
+        		throw new SQLObjectRuntimeException(e);
+        	}
+        }
+	}
+
+	/**
 	 * Gets the value of autoIncrement
 	 *
 	 * @return the value of autoIncrement
 	 */
-	@Accessor(isInteresting=true)
+	@Accessor
 	public boolean isAutoIncrement()  {
 		return this.autoIncrement;
 	}
@@ -939,6 +1081,25 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         return autoIncrementSequenceName != null;
     }
     
+	/**
+	 * This comparator helps you sort a list of columns so that the
+	 * primary key columns come first in their correct order, and all
+	 * the other columns come after.
+	 */
+	public static class CompareByPKSeq implements Comparator<SQLColumn> {
+		public int compare(SQLColumn c1, SQLColumn c2) {
+			if (c1.primaryKeySeq == null && c2.primaryKeySeq == null) {
+				return 0;
+			} else if (c1.primaryKeySeq == null && c2.primaryKeySeq != null) {
+				return 1;
+			} else if (c1.primaryKeySeq != null && c2.primaryKeySeq == null) {
+				return -1;
+			} else {
+				return c1.primaryKeySeq.intValue() - c2.primaryKeySeq.intValue();
+			}
+		}
+	}
+	
 	public void addReference() {
         int oldReference = referenceCount;
 		referenceCount++;
@@ -1026,7 +1187,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 
 	@NonProperty
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
-		return allowedChildTypes;
+		return Collections.emptyList();
 	}
 
 }

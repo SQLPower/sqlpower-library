@@ -27,7 +27,6 @@ import java.util.Set;
 
 import org.apache.commons.beanutils.BeanUtils;
 
-import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sql.PlDotIni;
@@ -93,7 +92,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	}
 	
 	@Override
-    protected Class<? extends SPObject> getChildClassType() {
+    protected Class<?> getChildClassType() {
     	return null;
     }
 	
@@ -192,7 +191,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		SQLColumn col = new SQLColumn(table0pk,
 				"test_column_2", Types.INTEGER, "my_test_integer",
 				44, 33, DatabaseMetaData.columnNullable, "test remarks",
-				"test default", true);
+				"test default", null, true);
 		assertEquals(table0pk, col.getParent());
 		assertEquals("test_column_2", col.getName());
 		assertEquals(Types.INTEGER, col.getType());
@@ -202,6 +201,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		assertEquals(DatabaseMetaData.columnNullable, col.getNullable());
 		assertEquals("test remarks", col.getRemarks());
 		assertEquals("test default", col.getDefaultValue());
+		assertEquals(null, col.getPrimaryKeySeq());
 		assertTrue(col.isAutoIncrement());
 		assertEquals(1, col.getReferenceCount());
 		assertEquals(0, col.getChildCount());
@@ -224,7 +224,6 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
         propsToIgnore.add("magicEnabled");
         propsToIgnore.add("referenceCount");
         propsToIgnore.add("UUID");
-        propsToIgnore.add("primaryKey");
 
 		TestUtils.setAllInterestingProperties(origCol, propsToIgnore);
 		origCol.setSourceDataTypeName("NUMERIC");
@@ -466,19 +465,17 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	 */
 	public void testIsPrimaryKey() throws Exception {
 		SQLColumn tmpCol = new SQLColumn();
-		SQLTable table = new SQLTable(db, true);
-		table.addColumnWithoutPopulating(tmpCol, false, 0);
 		assertEquals(false,tmpCol.isPrimaryKey());
-		table.addToPK(tmpCol);
+		tmpCol.setPrimaryKeySeq(new Integer(1));
 		assertEquals(true,tmpCol.isPrimaryKey());
-		table.moveAfterPK(tmpCol);
+		tmpCol.setPrimaryKeySeq(null);
 		assertEquals(false,tmpCol.isPrimaryKey());
 		
 		SQLColumn cowCol = table3pk.getColumn(0);
 		assertEquals(true,cowCol.isPrimaryKey());
-		table3pk.addToPK(cowCol);
+		cowCol.setPrimaryKeySeq(new Integer(2));
 		assertEquals(true,cowCol.isPrimaryKey());
-		table3pk.moveAfterPK(cowCol);
+		cowCol.setPrimaryKeySeq(null);
 		assertEquals(false,cowCol.isPrimaryKey());
 		
 	}
@@ -554,6 +551,29 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		assertEquals(null,cowCol.getDefaultValue());
 		cowCol.setDefaultValue("yyy");
 		assertEquals("yyy",cowCol.getDefaultValue());
+	}
+
+	/*
+	 * Test method for 'ca.sqlpower.sqlobject.SQLColumn.getPrimaryKeySeq()'
+	 */
+	public void testGetPrimaryKeySeq() throws Exception {
+		SQLColumn tmpCol = new SQLColumn();
+		assertEquals(null,tmpCol.getPrimaryKeySeq());
+		tmpCol.setPrimaryKeySeq(new Integer(2));
+		assertEquals(new Integer(2),tmpCol.getPrimaryKeySeq());
+
+        for (SQLColumn column : table1pk.getColumns()) {
+            System.out.println("column: " + column.getName() + "  seq="+column.getPrimaryKeySeq());
+        }
+        
+		SQLColumn cowCol = table1pk.getColumn(0);
+		assertEquals(Integer.valueOf(0),cowCol.getPrimaryKeySeq());
+		cowCol.setPrimaryKeySeq(new Integer(20));
+		assertEquals(new Integer(0),cowCol.getPrimaryKeySeq());
+		
+		table1pk.addColumn(tmpCol);
+		tmpCol.setPrimaryKeySeq(new Integer( cowCol.getPrimaryKeySeq().intValue()-1));
+		assertEquals(new Integer(1),cowCol.getPrimaryKeySeq());
 	}
 
 	/*

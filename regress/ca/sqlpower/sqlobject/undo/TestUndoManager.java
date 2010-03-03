@@ -35,7 +35,6 @@ import ca.sqlpower.sqlobject.SQLObjectRoot;
 import ca.sqlpower.sqlobject.SQLRelationship;
 import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.StubSQLObject;
-import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.undo.SQLObjectUndoManager.SQLObjectUndoableEventAdapter;
 import ca.sqlpower.util.TransactionEvent;
 
@@ -71,10 +70,10 @@ public class TestUndoManager extends TestCase {
 		pkTable.begin("Setting up test");
 		pkTable.addColumn(new SQLColumn());
 		pkTable.addColumn(new SQLColumn());
-		pkTable.getPrimaryKeyIndex().addIndexColumn(pkTable.getColumn(0), AscendDescend.UNSPECIFIED);
+		pkTable.getColumn(0).setPrimaryKeySeq(1);
 		pkTable.getColumn(0).setName("pk1");
 		pkTable.getColumn(0).setType(Types.INTEGER);
-		pkTable.getPrimaryKeyIndex().addIndexColumn(pkTable.getColumn(1), AscendDescend.UNSPECIFIED);
+		pkTable.getColumn(1).setPrimaryKeySeq(1);
 		pkTable.getColumn(1).setName("pk2");
 		pkTable.getColumn(1).setType(Types.INTEGER);
 		pkTable.commit();

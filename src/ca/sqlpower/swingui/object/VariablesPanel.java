@@ -20,7 +20,6 @@
 package ca.sqlpower.swingui.object;
 
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -34,12 +33,12 @@ import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JSeparator;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
@@ -71,23 +70,11 @@ public class VariablesPanel implements DataEntryPanel {
 	private final JTextField varDefaultText;
 	private final JLabel varEditLabel;
 	private final JTextField varEditText;
-	private final JLabel previewLabel;
 	private final JLabel varPreviewLabel1;
 	private final JLabel varPreviewLabel2;
 	private boolean stuffToInsert = true;
 	private final VariableInserter action;
-	private final JLabel optionsLabel;
-	private final JLabel namespaceLabel;
-	private final JCheckBox namespaceBox;
-	private final JLabel generalLabel;
 	private static final Logger logger = Logger.getLogger(VariablesPanel.class);
-	
-	public VariablesPanel(
-			SPVariableHelper variableHelper,
-    		VariableInserter action) 
-	{
-		this(variableHelper,action,"");
-	}
 	
 	/**
 	 * Default constructor for the variables panel.
@@ -96,18 +83,13 @@ public class VariablesPanel implements DataEntryPanel {
 	 * @param action An implementation of {@link VariableInserter} that 
 	 * gets called once the variable has been created. This action will be executed
 	 * on the Swing Event Dispatch Thread.
-	 * @param varDefinition The default variable definition string.
 	 */
 	public VariablesPanel(
 			SPVariableHelper variableHelper,
-    		VariableInserter action,
-    		String varDefinition) 
+    		VariableInserter action) 
 	{
 		this.variableHelper = variableHelper;
 		this.action = action;
-	
-		this.generalLabel = new JLabel("General");
-		this.generalLabel.setFont(this.generalLabel.getFont().deriveFont(Font.BOLD));
 		
 		this.pickerLabel = new JLabel("Pick a variable");
 		this.varNameText = new JTextField();
@@ -128,10 +110,7 @@ public class VariablesPanel implements DataEntryPanel {
 		});
 		this.varPicker = new JButton(new ShowPickerAction());
 		
-		this.optionsLabel = new JLabel("Options");
-		this.optionsLabel.setFont(this.optionsLabel.getFont().deriveFont(Font.BOLD));
-		
-		this.varDefaultLabel = new JLabel("Default value");
+		this.varDefaultLabel = new JLabel("Default value (optional)");
 		this.varDefaultText = new JTextField();
 		this.varDefaultText.addKeyListener(new KeyListener() {
 			public void keyTyped(KeyEvent e) {
@@ -148,7 +127,7 @@ public class VariablesPanel implements DataEntryPanel {
 			}
 		});
 		
-		this.varEditLabel = new JLabel("Customization");
+		this.varEditLabel = new JLabel("Customization (optional)");
 		this.varEditText = new JTextField();
 		this.varEditText.addKeyListener(new KeyListener() {
 			public void keyTyped(KeyEvent e) {
@@ -163,11 +142,6 @@ public class VariablesPanel implements DataEntryPanel {
 						currentDefValue = SPVariableHelper.getDefaultValue(text);
 						if (currentDefValue==null) {
 							currentDefValue = "";
-						}
-						if (SPVariableHelper.getNamespace(text) == null) {
-							namespaceBox.setSelected(false);
-						} else {
-							namespaceBox.setSelected(true);
 						}
 						updateGUI();
 						try {
@@ -184,22 +158,7 @@ public class VariablesPanel implements DataEntryPanel {
 			}
 		});
 		
-		this.namespaceLabel = new JLabel("Constrain to namespace");
-		this.namespaceBox = new JCheckBox("");
-		if (SPVariableHelper.getNamespace(varDefinition) != null || "".equals(varDefinition)) {
-			this.namespaceBox.setSelected(true);
-		} else {
-			this.namespaceBox.setSelected(false);
-		}
-		this.namespaceBox.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				updateGUI();
-			}
-		});
-		
-		this.previewLabel = new JLabel("Preview");
-		this.previewLabel.setFont(this.previewLabel.getFont().deriveFont(Font.BOLD));
-		this.varPreviewLabel1 = new JLabel("Current value is");
+		this.varPreviewLabel1 = new JLabel("Current value : ");
 		this.varPreviewLabel1.setForeground(Color.GRAY);
 		this.varPreviewLabel2 = new JLabel();
 		this.varPreviewLabel2.setForeground(Color.GRAY);
@@ -207,44 +166,31 @@ public class VariablesPanel implements DataEntryPanel {
 		
 		this.panel = new JPanel(new MigLayout());
 		
-		this.panel.add(this.generalLabel, "growx, span, wrap");
-		this.panel.add(new JLabel(" "), "wmin 20, wmax 20");
+		//this.panel.add(topLabel, "span, wrap");
 		this.panel.add(this.pickerLabel);
-		this.panel.add(this.varNameText, "growx, wmin 275, wmax 275, gapright 0");
+		this.panel.add(this.varNameText, "growx, wmin 175, wmax 175, gapright 0");
 		this.panel.add(this.varPicker, "wmax 20, hmax 20, wrap, gapleft 0");
 		
-		this.panel.add(this.optionsLabel, "growx, span, wrap");
+		this.panel.add(new JSeparator(), "growx, span, wrap, gaptop 10px, gapbottom 10px");
 		
-		this.panel.add(new JLabel(" "), "wmin 20, wmax 20");
 		this.panel.add(this.varDefaultLabel);
-		this.panel.add(this.varDefaultText, "span, wrap, wmin 300, wmax 300");
-
-		this.panel.add(new JLabel(" "), "wmin 20, wmax 20");
-		this.panel.add(namespaceLabel);
-		this.panel.add(namespaceBox, "span, wrap");
+		this.panel.add(this.varDefaultText, "span, wrap, wmin 200, wmax 200");
 		
-		this.panel.add(new JLabel(" "), "wmin 20, wmax 20");
 		this.panel.add(this.varEditLabel);
-		this.panel.add(this.varEditText, "span, wmin 300, wmax 300, wrap");
+		this.panel.add(this.varEditText, "span, wmin 200, wmax 200, wrap");
 		
-		this.panel.add(this.previewLabel, "growx, span, wrap");
+		this.panel.add(new JSeparator(), "growx, span, wrap, gaptop 10px, gapbottom 10px");
 		
-		this.panel.add(new JLabel(" "), "wmin 20, wmax 20");
 		this.panel.add(this.varPreviewLabel1);
 		this.panel.add(this.varPreviewLabel2, "span, growx");
 		
-		this.currentPickedVariable = varDefinition;
 		updateGUI();
 	}
 	
 	private void updateGUI() 
 	{
 		String text = "${";
-		if (this.namespaceBox.isSelected()) {
-			text += currentPickedVariable;
-		} else {
-			text += SPVariableHelper.getKey(currentPickedVariable);
-		}
+		text += currentPickedVariable;
 		if (!currentDefValue.trim().equals("")) {
 			text += SPVariableHelper.DEFAULT_VALUE_DELIMITER;
 			text += currentDefValue;

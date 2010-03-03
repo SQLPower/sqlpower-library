@@ -23,10 +23,11 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 
@@ -40,20 +41,12 @@ import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
-import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.CachedRowSet;
+import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 
 public class SQLTable extends SQLObject {
-	
-	/**
-	 * Defines an absolute ordering of the child types of this class.
-	 */
-	@SuppressWarnings("unchecked")
-	public static List<Class<? extends SPObject>> allowedChildTypes = 
-		Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
-				Arrays.asList(SQLColumn.class, SQLRelationship.class, SQLImportedKey.class, SQLIndex.class)));
 
 	private static Logger logger = Logger.getLogger(SQLTable.class);
 
@@ -92,14 +85,6 @@ public class SQLTable extends SQLObject {
 	 */
 	protected List<SQLImportedKey> importedKeys = new ArrayList<SQLImportedKey>();
 
-	/**
-	 * This index represents the primary key of this table. This will never be
-	 * null or changed to prevent confusion with the primary key becoming null.
-	 * If there are no columns in the primary key this index will not have
-	 * children representing columns.
-	 */
-	private final SQLIndex primaryKeyIndex;
-
     /**
      * A List for SQLIndex objects that describe the various database indices
      * that exist on this table.
@@ -125,33 +110,14 @@ public class SQLTable extends SQLObject {
      * Determinant of whether this table's imported keys have been populated.
      */
     private boolean importedKeysPopulated = false;
-    
-    public SQLTable(SQLObject parent, String name, String remarks, String objectType, 
-    		boolean startPopulated) throws SQLObjectException {
-    	this(parent, name, remarks, objectType, startPopulated, new SQLIndex());
-    }
 
     @Constructor
 	public SQLTable(@ConstructorParameter(propertyName = "parent") SQLObject parent,
 			@ConstructorParameter(propertyName = "name") String name,
 			@ConstructorParameter(propertyName = "remarks") String remarks,
 			@ConstructorParameter(propertyName = "objectType") String objectType,
-			@ConstructorParameter(propertyName = "populated") boolean startPopulated,
-			@ConstructorParameter(isProperty = ParameterType.CHILD, propertyName = "primaryKeyIndex") SQLIndex primaryKeyIndex) 
-    		throws SQLObjectException {
+			@ConstructorParameter(propertyName = "populated") boolean startPopulated) {
 		logger.debug("NEW TABLE "+name+"@"+hashCode());
-		for (Column wrapper : primaryKeyIndex.getChildrenWithoutPopulating()) {
-			if (wrapper.getColumn() == null) {
-				throw new SQLObjectException("The primary key of the table " + name + 
-						" is not allowed to have calculated columns");
-			} else if (!columns.contains(wrapper.getColumn())) {
-				throw new SQLObjectException("The primary key of the table " + name + 
-						" contains a column " + wrapper.getColumn() + " that is not " +
-								"part of the table.");
-			}
-		}
-		this.primaryKeyIndex = primaryKeyIndex;
-		primaryKeyIndex.setParent(this);
 		initFolders(startPopulated);
 		setup(parent, name, remarks, objectType);
 	}
@@ -165,7 +131,6 @@ public class SQLTable extends SQLObject {
 		this.remarks = remarks;
 		this.objectType = objectType;
 		super.setPhysicalName(name);
-		updatePKIndexNameToMatch(null, name);
 		if (this.objectType == null) throw new NullPointerException();
     }
 
@@ -183,26 +148,6 @@ public class SQLTable extends SQLObject {
 	}
 
 	/**
-	 * Creates a new SQLTable with parent as its parent and a null schema and
-	 * catalog. The table will contain the four default folders: "Columns"
-	 * "Exported Keys" "Imported Keys" and "Indices".
-	 * 
-	 * @param startPopulated
-	 *            The initial setting of this table's folders'
-	 *            <tt>populated</tt> flags. If this is set to false, the table
-	 *            will attempt to lazy-load the child folders. Otherwise, this
-	 *            table will not try to load its children from a database
-	 *            connection.
-	 * @param primaryKeyIndex
-	 *            the primary key of the table. This allows for a setup to
-	 *            create a primary key specific for this table.
-	 * @throws SQLObjectException 
-	 */
-	public SQLTable(SQLDatabase parent, boolean startPopulated, SQLIndex primaryKeyIndex) throws SQLObjectException {
-		this(parent, "", "", "TABLE", startPopulated, primaryKeyIndex);
-	}
-
-	/**
 	 * Creates a new SQLTable with no children, no parent, and all
 	 * properties set to their defaults.   Note this should never
      * Initialize the folders.
@@ -214,8 +159,6 @@ public class SQLTable extends SQLObject {
 	 *
 	 */
 	public SQLTable() {
-		primaryKeyIndex = new SQLIndex();
-		primaryKeyIndex.setParent(this);
         setup(null,null,null,"TABLE");
 	}
 
@@ -278,8 +221,7 @@ public class SQLTable extends SQLObject {
 		populateRelationships();
 		populateImportedKeys();
         populateIndices();
-        SQLIndex newPKIndex = new SQLIndex();
-		SQLTable t = new SQLTable(parent, true, newPKIndex);
+		SQLTable t = new SQLTable(parent, true);
 		t.setName(getName());
 		t.remarks = remarks;
 		t.setChildrenInaccessibleReason(getChildrenInaccessibleReason(), false);
@@ -306,23 +248,17 @@ public class SQLTable extends SQLObject {
 		throws SQLObjectException {
 		return createTableFromSource(parent, TransferStyles.COPY, preserveColumnSource);
 	}
-
-	/**
-	 * inherit indices from the source table. This will update the target's
-	 * primary key index to match the source table.
-	 * 
-	 * @param source
-	 * @param target
-	 * @throws SQLObjectException
-	 */
+    
+    /**
+     * inherit indices from the source table,
+     * @param source
+     * @param target    
+     * @throws SQLObjectException 
+     */
     private static void inheritIndices(SQLTable source, SQLTable target) throws SQLObjectException {
         for ( SQLIndex index : source.getIndices()) {
-        	if (index.isPrimaryKeyIndex()) {
-        		target.getPrimaryKeyIndex().updateToMatch(index);
-        	} else {
-        		SQLIndex index2 = SQLIndex.getDerivedInstance(index,target);
-        		target.addIndex(index2);
-        	}
+            SQLIndex index2 = SQLIndex.getDerivedInstance(index,target);
+            target.addIndex(index2);
         }
     }
 
@@ -333,7 +269,6 @@ public class SQLTable extends SQLObject {
      * @throws SQLObjectException
      */
     protected synchronized void populateColumns() throws SQLObjectException {
-    	logger.debug("Populating columns on table " + getName(), new Exception());
 
 		if (columnsPopulated) return;
     	if (columns.size() > 0) {
@@ -406,7 +341,7 @@ public class SQLTable extends SQLObject {
             DatabaseMetaData dbmd = con.getMetaData();
             logger.debug("before addIndicesToTable");
             
-            List<SQLIndex> indexes = SQLIndex.fetchIndicesForTableAndUpdatePK(dbmd, this);
+            List<SQLIndex> indexes = SQLIndex.fetchIndicesForTable(dbmd, this);
             
             begin("Populating Indices for Table " + this);
             for (SQLIndex i : indexes) {
@@ -427,7 +362,11 @@ public class SQLTable extends SQLObject {
                 logger.error("Closing connection failed. Squishing this exception: ", e);
             }
             
+            // FIXME this might change the order of columns without firing an event
+            Collections.sort(columns, new SQLColumn.CompareByPKSeq());
+            
         }
+        normalizePrimaryKey();
         logger.debug("index folder populate finished");
     }
 	
@@ -595,13 +534,10 @@ public class SQLTable extends SQLObject {
 			throw new IllegalStateException("Cannot remove child " + k.getName() + 
 					" of type " + k.getClass() + " as its parent is not " + getName());
 		}
-		
-		k.getRelationship().getRelationshipManager().disconnectRelationship(false);
-		
 		int index = importedKeys.indexOf(k);
 		if (index != -1) {
 			 importedKeys.remove(index);
-			 fireChildRemoved(SQLImportedKey.class, k, index);
+			 fireChildRemoved(SQLRelationship.class, k, index);
 			 return true;
 		}
 		return false;
@@ -622,8 +558,6 @@ public class SQLTable extends SQLObject {
 			throw new IllegalStateException("Cannot remove child " + r.getName() + 
 					" of type " + r.getClass() + " as its parent is not " + getName());
 		}
-		r.getRelationshipManager().disconnectRelationship(true);
-		
 		int index = exportedKeys.indexOf(r);
 		if (index != -1) {
 			 exportedKeys.remove(index);
@@ -635,13 +569,18 @@ public class SQLTable extends SQLObject {
 
 	/**
 	 * Counts the number of columns in the primary key of this table.
-	 * <p>
-	 * This does not populate the columns or indicies of the table. Either
-	 * the table should be populated already or populate may need to be called.
 	 */
 	@Transient @Accessor
 	public int getPkSize() {
-		return primaryKeyIndex.getChildrenWithoutPopulating().size();
+		int size = 0;
+		for (SQLColumn c : columns) {
+			if (c.getPrimaryKeySeq() != null) {
+				size++;
+			} else {
+				break;
+			}
+		}
+		return size;
 	}
 
 	/**
@@ -672,9 +611,13 @@ public class SQLTable extends SQLObject {
 
 		boolean addToPK;
 		int pkSize = getPkSize();
-		source.populateColumns();
-		if (pos < pkSize) {
+		int sourceSize = source.getColumns().size();
+		int originalSize = getColumns().size();
+		if (originalSize == 0 || pos < pkSize) {
 			addToPK = true;
+			for (int i = pos; i < pkSize; i++) {
+				columns.get(i).primaryKeySeq = new Integer(i + sourceSize);
+			}
 		} else {
 			addToPK = false;
 		}
@@ -691,7 +634,14 @@ public class SQLTable extends SQLObject {
 			default:
 				throw new IllegalStateException("Unknown transfer type of " + transferStyle);
 			}
-			addColumn(c, addToPK, pos);
+			if (originalSize > 0) {
+				if (addToPK) {
+					c.primaryKeySeq = new Integer(pos);
+				} else {
+					c.primaryKeySeq = null;
+				}
+			}
+			addColumn(c, pos, false);
 			pos++;
 		}
 		commit();
@@ -712,7 +662,12 @@ public class SQLTable extends SQLObject {
 		default:
 			throw new IllegalStateException("Unknown transfer type of " + transferStyle);
 		}
-		addColumn(c, addToPK, pos);
+		if (addToPK) {
+			c.primaryKeySeq = new Integer(1);
+		} else {
+			c.primaryKeySeq = null;
+		}
+		addChild(c, pos);
 	}
 
 	@NonProperty
@@ -788,44 +743,74 @@ public class SQLTable extends SQLObject {
 
 	/**
 	 * Adds a column to the given position in the table. If magic is enabled the
-	 * primary key sequence of the column may be updated depending on the
-	 * position of the column and the number of primary keys.If the column is
-	 * being added just after the primary key the column will not be added to
-	 * the primary key. If this decision has been already decided see
-	 * {@link #addColumn(SQLColumn, boolean, int)}.
+	 * primary key sequence of the column may be updated depending on the position
+	 * of the column and the number of primary keys. 
+	 */
+	public void addColumn(SQLColumn col, int pos) throws SQLObjectException {
+		addColumn(col, pos, true);
+	}
+
+	/**
+	 * Adds a column to the given position in the table. If magic is enabled and
+	 * correctPK is true the primary key sequence of the column may be updated
+	 * depending on the position of the column and the number of primary keys.
 	 * 
 	 * @param col
 	 *            The column to add.
 	 * @param pos
 	 *            The position to add the column to.
+	 * @param correctPK
+	 *            If true and magic is enabled the column will be placed in the
+	 *            primary key if it is above at least one primary key column in
+	 *            terms of position in the table. If false the primary key
+	 *            sequence of the column will be left as is and normalize will
+	 *            need to be called on the table to correct the sequence of
+	 *            columns in the primary key.
 	 * @throws SQLObjectException
 	 */
-	public void addColumn(SQLColumn col, int pos) throws SQLObjectException {
-		boolean addToPk = getPkSize() > pos;
-		
-		addColumnWithoutPopulating(col, addToPk, pos);
-	}
-	
-	/**
-	 * XXX The boolean is before the position to prevent it from having the same
-	 * signature of a recently removed method. This is mainly for refactoring
-	 * aid.
-	 * 
-	 * @param col
-	 *            The column to add to the table.
-	 * @param addToPk
-	 *            If true and the position is valid to be in the primary key the
-	 *            column will be added to the primary key. If false and the
-	 *            position is valid the column will not be added to the primary
-	 *            key. This is mainly for use in the edge case when adding a
-	 *            column just after the last column of the primary key to decide
-	 *            if the column should be in the primary key.
-	 * @param pos
-	 *            The position to add the column to.
-	 */
-	public void addColumn(SQLColumn col, boolean addToPk, int pos) throws SQLObjectException {
-		populateColumns();
-		addColumnWithoutPopulating(col, addToPk, pos);		
+	public void addColumn(SQLColumn col, int pos, boolean correctPK) throws SQLObjectException {
+		if (getColumnIndex(col) != -1) {
+			col.addReference();
+			return;
+		}
+
+		if (isMagicEnabled() && correctPK) {
+		    boolean addToPK = false;
+		    int pkSize = getPkSize();
+		    if (getColumns().size() > 0 && pos < pkSize) {
+		        addToPK = true;
+		        for (int i = pos; i < pkSize; i++) {
+		        	SQLColumn changingPKCol = getColumns().get(i);
+		        	try {
+		        		changingPKCol.setMagicEnabled(false);
+		        		changingPKCol.setPrimaryKeySeqAndRearrangeCols(new Integer(i + 1), false);
+		        	} finally {
+		        		changingPKCol.setMagicEnabled(true);
+		        	}
+		        }
+		    }
+
+		    col.setParent(null);
+		    if (addToPK) {
+		        col.nullable = DatabaseMetaData.columnNoNulls;
+		        try {
+		        	col.setMagicEnabled(false);
+		        	col.setPrimaryKeySeqAndRearrangeCols(new Integer(pos), false);
+		        } finally {
+		        	col.setMagicEnabled(true);
+		        }
+		    } else {
+		    	try {
+		    		col.setMagicEnabled(false);
+		    		col.setPrimaryKeySeqAndRearrangeCols(null, false);
+		    	} finally {
+		    		col.setMagicEnabled(true);
+		    	}
+		    }
+		}
+		columns.add(pos, col);
+		col.setParent(this);
+		fireChildAdded(SQLColumn.class, col, pos);
 	}
 	
 	/**
@@ -834,90 +819,37 @@ public class SQLTable extends SQLObject {
 	public void addColumnWithoutPopulating(SQLColumn col) {
 		addColumnWithoutPopulating(col, columns.size());
 	}
-
+	
 	/**
-	 * Adds a {@link SQLColumn} at a given index of the child list without
-	 * populating first. If the column is being added just after the primary key
-	 * the column will not be added to the primary key. If this decision has
-	 * been already decided see
-	 * {@link #addColumnWithoutPopulating(SQLColumn, boolean, int)}.
+	 * Adds a {@link SQLColumn} at a given index of the child list without populating first.
 	 */
-	public void addColumnWithoutPopulating(SQLColumn col, int pos) {
-		boolean addToPk = getPkSize() > pos;
-		
-		addColumnWithoutPopulating(col, addToPk, pos);
-	}
-
-	/**
-	 * Adds a {@link SQLColumn} at a given index of the child list without
-	 * populating first. This will throw an {@link IllegalArgumentException} if
-	 * the boolean to add to the pk and the position do not agree.
-	 * <p>
-	 * XXX The boolean is before the position to prevent it from having the same
-	 * signature of a recently removed method. This is mainly for refactoring
-	 * aid.
-	 * 
-	 * @param col
-	 *            The column to add to the table.
-	 * @param addToPk
-	 *            If true and the position is valid to be in the primary key the
-	 *            column will be added to the primary key. If false and the
-	 *            position is valid the column will not be added to the primary
-	 *            key. This is mainly for use in the edge case when adding a
-	 *            column just after the last column of the primary key to decide
-	 *            if the column should be in the primary key.
-	 * @param pos
-	 *            The position to add the column to.
-	 */
-	public void addColumnWithoutPopulating(SQLColumn col, boolean addToPk, int pos) {
-		int pkSize = getPkSize();
-		if ((pos < pkSize && !addToPk) || (pos > pkSize && addToPk)) {
-			throw new IllegalArgumentException("The column " + col + " is being " + (addToPk ? "" : "not") + " added to " +
-					"the primary key at position " + pos + " but there are " + pkSize + 
-					" pk column(s) so the add position is invalid.");
-		}
-		
-		if (columns.indexOf(col) != -1) {
-			col.addReference();
-			return;
-		}
-
-		columns.add(pos, col);
+	public void addColumnWithoutPopulating(SQLColumn col, int index) {
+		columns.add(index, col);
 		col.setParent(this);
-		fireChildAdded(SQLColumn.class, col, pos);
-
-		if (isMagicEnabled()) {
-			if (addToPk) {
-				primaryKeyIndex.addIndexColumn(col);
-			}
-		}
+		fireChildAdded(SQLColumn.class, col, index);
 	}
 
 	/**
      * Adds the given SQLIndex object to this table's index folder.
 	 */
     public void addIndex(SQLIndex sqlIndex) {
-    	addIndex(sqlIndex, indices.size() + 1);
+        if (sqlIndex.isPrimaryKeyIndex()) {
+        	addIndex(sqlIndex, 0);
+        } else {
+        	addIndex(sqlIndex, indices.size());
+        }
     }
-
-	/**
-	 * Adds the given SQLIndex object to this table's index list.
-	 * 
-	 * @param sqlIndex
-	 *            The index to add to this table
-	 * @param index
-	 *            The index to place the object at. This includes the primary
-	 *            key index.
-	 */
+    
     public void addIndex(SQLIndex sqlIndex, int index) {
-    	//The primary key index is not added to the index list.
-    	if (sqlIndex == primaryKeyIndex) return;
-    	
-    	indices.add(index - 1, sqlIndex);
+    	indices.add(index, sqlIndex);
     	sqlIndex.setParent(this);
     	fireChildAdded(SQLIndex.class, sqlIndex, index);
     }
 
+    /**
+     * Simply tries to add the child to this object without doing any side effects like
+     * correcting index sequences.
+     */
     @Override
     protected void addChildImpl(SPObject child, int index) {
 		if (child instanceof SQLColumn) {
@@ -973,11 +905,6 @@ public class SQLTable extends SQLObject {
 			throw new IllegalStateException("Cannot remove child " + col.getName() + 
 					" of type " + col.getClass() + " as its parent is not " + getName());
 		}
-		
-		if (isMagicEnabled()) {
-			primaryKeyIndex.removeColumn(col);
-		}
-		
 		try {
 			begin("Removing column " + col.getName());
 			int index = columns.indexOf(col);
@@ -992,52 +919,165 @@ public class SQLTable extends SQLObject {
 		}
 		return false;
 	}
+	
 
 	/**
 	 * Moves the column at index <code>oldIdx</code> to index
-	 * <code>newIdx</code>. This may cause the moved column to become part of
-	 * the primary key (or to be removed from the primary key).
-	 * 
-	 * @param oldIdx
-	 *            the present index of the column.
-	 * @param newIdx
-	 *            the index that the column will have when this
-	 * @param putInPK
-	 *            Used to decide if the column should go into the pk on corner
-	 *            cases. If the column is being moved to a position where it is
-	 *            above a column in the primary key it will be placed in the
-	 *            primary key. If the column is being moved to a position where
-	 *            it is below a column not in the primary key it will not be
-	 *            placed in the primary key. If the column is placed where it
-	 *            could be either in or out of the primary key the boolean will
-	 *            decide what to do. method returns.
+	 * <code>newIdx</code>.  This may cause the moved column to become
+	 * part of the primary key (or to be removed from the primary
+	 * key).
+	 *
+	 * @param oldIdx the present index of the column.
+	 * @param newIdx the index that the column will have when this
+	 * method returns.
 	 */
 	public void changeColumnIndex(int oldIdx, int newIdx, boolean putInPK) throws SQLObjectException {
-		SQLColumn col = columns.get(oldIdx);
-		int pkSize = getPkSize();
-		if ((newIdx < pkSize && !putInPK && !col.isPrimaryKey()) ||
-				(newIdx < pkSize - 1 && !putInPK && col.isPrimaryKey())) {
-			putInPK = true;
-		} else if ((newIdx > pkSize && putInPK && !col.isPrimaryKey()) ||
-				(newIdx > pkSize - 1 && putInPK && col.isPrimaryKey())) {
-			putInPK = false;
-		}
-		
+		// remove and add the column directly, then manually fire the event.
+	    // This is necessary because the relationships prevent deletion of locked keys.
         try {
             begin("Changing column index");
+            SQLColumn col = columns.get(oldIdx);
+            Integer interimPkSeq;
+            if (putInPK) {
+                interimPkSeq = new Integer(1); // will get sane value when normalized
+                col.setNullable(DatabaseMetaData.columnNoNulls);
+            } else {
+                interimPkSeq = null;
+            }
             
+            col.setPrimaryKeySeq(interimPkSeq, false, false);
+
             // If the indices are the same, then there's no point in moving the column
             if (oldIdx != newIdx) {
             	removeColumn(col);
-            	addColumn(col, putInPK, newIdx);
-            } else if (putInPK && !col.isPrimaryKey()) {
-            	primaryKeyIndex.addIndexColumn(col);
-            } else if (!putInPK && col.isPrimaryKey()) {
-            	primaryKeyIndex.removeColumn(col);
+            	addColumn(col, newIdx, false);
             }
 
+            normalizePrimaryKey();
         } finally {
         	commit();
+        }
+	}
+
+    private boolean normalizing = false;
+    private boolean normalizeAgain = false;
+	/**
+     * Renumbers the PrimaryKeySeq values of all columns in this table, then
+     * rebuilds this table's Primary Key Index so it correctly reflects the
+     * new PrimaryKeySeq column properties.
+     * <p>
+     * The process happens in three phases:
+     * <ol>
+     *  <li>Columns are assigned PrimaryKeySeq values starting with 0 and
+     *      increasing by 1 with each successive column. This phase ends when a
+     *      column with a null PrimaryKeySeq is encountered (of course, this could be
+     *      the very first column).
+     *  <li>The remaining columns all have their PrimaryKeySeq set to null.
+     *  <li>This table's PrimaryKeyIndex is rebuilt from scratch, created if
+     *      it did not previously exist, or deleted if there are no primary
+     *      key columns left after phases 1 and 2. The Primary Key index will
+     *      agree with the new set of columns that have a non-null PrimaryKeySeq.
+     * </ol>
+     * <p>
+     * Assumptions:
+     * <ul>
+     *  <li>The correct primary key information is the current column order,
+     *      <i>not</i> the contents of this table's PrimaryKey Index object.
+     *  <li>All columns that you want to keep in the primary key are already
+     *      contiguous starting from column 0, and they all have non-null
+     *      PrimaryKeySeq values. The actual numeric PrimaryKeySeq value is not
+     *      important.
+     *  <li>The first column that should not be in the Primary Key has a null
+     *      PrimaryKeySeq value.  For all successive columns, the nullity of
+     *      PrimaryKeySeq is not important. 
+     * </ul>
+     */
+	public void normalizePrimaryKey() throws SQLObjectException {
+        if (normalizing) {
+            logger.debug("Already normalizing! Original normalize should make a second pass", new Exception("Stack trace!"));
+//            normalizeAgain = true;
+            return;
+//            throw new RuntimeException("stack trace!");
+        }
+		try {
+            normalizing = true;
+            
+            begin("Normalizing Primary Key");
+
+            do {
+                normalizeAgain = false;
+
+                // Phase 1 and 2 (see doc comment)
+                int i = 0;  //Primary key count
+
+                // iterating over a copy of the column list because new columns can
+                // be added or removed from the table as a side effect of the
+                // primaryKeySeq change events. The effect of iterating over
+                // the copy is that new columns will be ignored in this normalize
+                // effort, and removed columns will be treated as if they were
+                // still in the table.
+                for (SQLColumn col : new ArrayList<SQLColumn>(getColumns())) {
+                    logger.debug("*** normalize " + getName() + " phase 1/2: " + col);
+                    if (col.getPrimaryKeySeq() != null) {
+                        Integer newPkSeq = new Integer(i);
+                        col.setPrimaryKeySeq(newPkSeq, false, false);
+                        i++;
+                    }
+                }
+
+                // Phase 3 (see doc comment)
+
+                if (getPrimaryKeyIndex() == null) {
+                    SQLIndex pkIndex = new SQLIndex(getPhysicalName()+"_pk", true, null, null ,null);
+                    pkIndex.setPrimaryKeyIndex(true);
+                    addIndex(pkIndex);
+                    logger.debug("new pkIndex.getChildCount()="+pkIndex.getChildCount());
+                }
+
+                SQLIndex pkIndex = getPrimaryKeyIndex();
+                Map<SQLColumn, Column> oldColumnInstances = new HashMap<SQLColumn, Column>();
+                for (int j = pkIndex.getChildCount()-1; j >= 0; j--) {
+                    Column child = (Column) pkIndex.getChild(j);
+                    pkIndex.removeChild(child);
+                    if (child.getColumn() == null) {
+                        throw new IllegalStateException(
+                                "Found a functional index column in PK." +
+                                " PK Name: " + pkIndex.getName() +
+                                ", Index Column name: " + child.getName());
+                    }
+                    oldColumnInstances.put(child.getColumn(),child);
+                }
+
+                assert pkIndex.getChildCount() == 0;
+
+                for (SQLColumn col : getColumns()) {
+                    if (col.getPrimaryKeySeq() == null) break;
+                    if (oldColumnInstances.get(col) != null) {
+                        pkIndex.addChild(oldColumnInstances.get(col));
+                    } else {
+                        pkIndex.addIndexColumn(col,AscendDescend.UNSPECIFIED);
+                    }
+                }
+                if (pkIndex.getChildCount() == 0) {
+                	removeIndex(pkIndex);
+                }
+            } while (normalizeAgain);
+            commit();
+		} catch (IllegalArgumentException e) {
+			rollback("Could not remove child: " + e.getMessage());
+			throw new RuntimeException(e);
+		} catch (ObjectDependentException e) {
+			rollback("Could not remove child: " + e.getMessage());
+			throw new RuntimeException(e);
+		} finally {
+            normalizing = false;
+            normalizeAgain = false;
+		}
+        if (logger.isDebugEnabled()) {
+            logger.debug("----Normalize Results for table " + getName() + "----");
+            for (SQLColumn col : getColumns()) {
+                logger.debug("Column Name " + col.getName() + " Key Sequence " +col.getPrimaryKeySeq() );
+            }
         }
 	}
 
@@ -1088,11 +1128,12 @@ public class SQLTable extends SQLObject {
 		if (populated) return;
 		
 		try {
+			begin("Populating Children of Table " + this);
 			populateColumns();
 			populateRelationships();
 			populateIndices();
 			populated = true;
-			firePropertyChange("populated", false, true);
+			commit();
 		} catch (SQLObjectException e) {
 			rollback(e.getMessage());
 			throw e;
@@ -1220,7 +1261,20 @@ public class SQLTable extends SQLObject {
             begin("Table Name Change");
             super.setPhysicalName(argName);
             
-            updatePKIndexNameToMatch(oldName, argName);
+            if (isIndicesPopulated()) {
+                SQLIndex primaryKeyIndex = getPrimaryKeyIndex();
+                if (argName != null &&
+                        primaryKeyIndex != null && 
+                        (primaryKeyIndex.getName() == null
+                                || "".equals(primaryKeyIndex.getName().trim())
+                                || (oldName + "_pk").equals(primaryKeyIndex.getName())) ) {
+                    // if the physical name is still null when forward engineer,
+                    // the DDLGenerator will generate the physical name from the 
+                    // logic name and this index will be updated.
+                    primaryKeyIndex.setName(getPhysicalName()+"_pk");
+
+                }
+            }
             
             if (isColumnsPopulated()) {
                 for (SQLColumn col : getColumns()) {
@@ -1237,40 +1291,13 @@ public class SQLTable extends SQLObject {
             commit();
         }
 	}
-	
-	@Mutator
-	@Override
-	public void setName(String name) {
-		if (getName() == null) {
-			updatePKIndexNameToMatch(null, name);
-		}
-		super.setName(name);
-	}
-	
-	/**
-	 * Simple helper that updates the PK Index name to match this table's name
-	 * if the user hasn't changed it.
-	 */
-	private void updatePKIndexNameToMatch(String oldName, String newName) {
-        if (newName != null &&
-        		primaryKeyIndex != null && 
-        		(primaryKeyIndex.getName() == null
-        				|| "".equals(primaryKeyIndex.getName().trim())
-        				|| (oldName + "_pk").equals(primaryKeyIndex.getName())) ) {
-        	// if the physical name is still null when forward engineer,
-        	// the DDLGenerator will generate the physical name from the 
-        	// logic name and this index will be updated.
-        	primaryKeyIndex.setName(newName + "_pk");
-
-        }
-	}
 
 	/**
 	 * Gets the value of remarks
 	 *
 	 * @return the value of remarks
 	 */
-	@Accessor(isInteresting=true)
+	@Accessor
 	public String getRemarks()  {
 		return this.remarks;
 	}
@@ -1390,7 +1417,6 @@ public class SQLTable extends SQLObject {
         populateColumns();
         populateIndices();
         List<SQLIndex> list = new ArrayList<SQLIndex>();
-        list.add(primaryKeyIndex);
         for (SQLIndex index : indices) {
         	if (index.isUnique()) {
         		list.add(index);
@@ -1422,10 +1448,6 @@ public class SQLTable extends SQLObject {
             populateIndices();
         }
         logger.debug("Looking for Index ["+name+"] in "+indices);
-        if (primaryKeyIndex.getName().equalsIgnoreCase(name)) {
-        	logger.debug("Found primary key");
-        	return primaryKeyIndex;
-        }
         for (SQLIndex index : indices) {
         	if (index.getName().equalsIgnoreCase(name)) {
         		logger.debug("FOUND");
@@ -1482,9 +1504,6 @@ public class SQLTable extends SQLObject {
     	boolean oldPop = this.columnsPopulated;
 		this.columnsPopulated = columnsPopulated;
 		firePropertyChange("columnsPopulated", oldPop, columnsPopulated);
-		if (!columnsPopulated) {
-		    setUnpopulatedIfPartiallyPopulated();
-		}
 	}
     
     @Mutator
@@ -1492,9 +1511,6 @@ public class SQLTable extends SQLObject {
     	boolean oldPop = this.importedKeysPopulated;
 		this.importedKeysPopulated = importedKeysPopulated;
 		firePropertyChange("importedKeysPopulated", oldPop, importedKeysPopulated);
-		if (!columnsPopulated) {
-            setUnpopulatedIfPartiallyPopulated();
-        }
 	}
     
     @Mutator
@@ -1502,9 +1518,6 @@ public class SQLTable extends SQLObject {
     	boolean oldPop = this.exportedKeysPopulated;
 		this.exportedKeysPopulated = exportedKeysPopulated;
 		firePropertyChange("exportedKeysPopulated", oldPop, exportedKeysPopulated);
-		if (!columnsPopulated) {
-            setUnpopulatedIfPartiallyPopulated();
-        }
 	}
     
     @Mutator
@@ -1512,27 +1525,8 @@ public class SQLTable extends SQLObject {
     	boolean oldPop = this.indicesPopulated;
 		this.indicesPopulated = indicesPopulated;
 		firePropertyChange("indicesPopulated", oldPop, indicesPopulated);
-		if (!columnsPopulated) {
-            setUnpopulatedIfPartiallyPopulated();
-        }
 	}
 
-    /**
-     * Helper method for setting one of the populated child types to be
-     * unpopulated. This will set the top level "populated" value to false if it
-     * was previously true.
-     * <p>
-     * XXX This may not be necessary if we can get rid of the top level
-     * populated flag and just keep a set of populated flags, one for each child
-     * type.
-     */
-    private void setUnpopulatedIfPartiallyPopulated() {
-        if (populated) {
-            populated = false;
-            firePropertyChange("populated", true, false);
-        }
-    }
-    
     /**
      * Gets the name of this table's Primary Key index if it has one, otherwise
      * returns null.
@@ -1572,16 +1566,17 @@ public class SQLTable extends SQLObject {
 		firePropertyChange("objectType",oldObjectType, argObjectType);
 	}
 
-	/**
-	 * Returns the primary key for this table. This will always be the same
-	 * index and never be null, though the index could have no columns
-	 * associated with it.
-	 */
+    /**
+     * Returns the primary key for this table, or null if none exists.
+     * 
+     * @throws SQLObjectException
+     */
     @Transient @Accessor
     public SQLIndex getPrimaryKeyIndex() throws SQLObjectException {
-    	//populateColumns();
-    	//populateIndices();
-    	return primaryKeyIndex;
+    	for (SQLIndex i : getIndices()) {
+    		if (i.isPrimaryKeyIndex()) return i;
+    	}
+        return null;
     }
 
     /**
@@ -1637,10 +1632,7 @@ public class SQLTable extends SQLObject {
     public List<SQLIndex> getIndices() throws SQLObjectException {
     	populateColumns();
     	populateIndices();
-    	List<SQLIndex> allIndices = new ArrayList<SQLIndex>();
-    	allIndices.add(primaryKeyIndex);
-    	allIndices.addAll(indices);
-        return Collections.unmodifiableList(allIndices);
+        return Collections.unmodifiableList(indices);
     }
     
     public String toQualifiedName() {
@@ -1673,6 +1665,9 @@ public class SQLTable extends SQLObject {
             DatabaseMetaData dbmd = con.getMetaData();
             List<SQLColumn> newCols = SQLColumn.fetchColumnsForTable(getCatalogName(), getSchemaName(), getName(), dbmd);
             SQLObjectUtils.refreshChildren(this, newCols, SQLColumn.class);
+            
+            normalizePrimaryKey();
+            
         } catch (SQLException e) {
             throw new SQLObjectException("Refresh failed", e);
         } finally {
@@ -1693,18 +1688,10 @@ public class SQLTable extends SQLObject {
     	}
     	int index = indices.indexOf(sqlIndex);
     	if (index != -1) {
-    		try {
-    			begin("Removing index " + sqlIndex.getName());
-    			indices.remove(index);
-    			//Primary key is the first index in the first position.
-    			fireChildRemoved(SQLIndex.class, sqlIndex, index + 1);
-    			sqlIndex.setParent(null);
-    			commit();
-    			return true;
-    		} catch (Throwable t) {
-    			rollback("Failed to remove the index.");
-    			throw new RuntimeException(t);
-    		}
+    		indices.remove(index);
+    		sqlIndex.setParent(null);
+    		fireChildRemoved(SQLIndex.class, sqlIndex, index);
+    		return true;
     	}
     	return false;
     }
@@ -1714,7 +1701,6 @@ public class SQLTable extends SQLObject {
 		children.addAll(columns);
 		children.addAll(exportedKeys);
 		children.addAll(importedKeys);
-		children.add(primaryKeyIndex);
 		children.addAll(indices);
 		return Collections.unmodifiableList(children);
 	}
@@ -1732,6 +1718,13 @@ public class SQLTable extends SQLObject {
             
             boolean removed = removeColumn((SQLColumn) child);
             
+            if (isMagicEnabled() && removed && getParent() != null) {
+                try {
+                    normalizePrimaryKey();
+                } catch (SQLObjectException e) {
+                    throw new SQLObjectRuntimeException(e);
+                }
+            }
 		} else if (child instanceof SQLRelationship) {
 			removeExportedKey((SQLRelationship) child);
 		} else if (child instanceof SQLImportedKey) {
@@ -1808,9 +1801,10 @@ public class SQLTable extends SQLObject {
             DatabaseMetaData dbmd = con.getMetaData();
             
             // indexes (incl. PK)
-            List<SQLIndex> newIndexes = SQLIndex.fetchIndicesForTableAndUpdatePK(dbmd, this);
-            newIndexes.add(0, getPrimaryKeyIndex());
+            List<SQLIndex> newIndexes = SQLIndex.fetchIndicesForTable(dbmd, this);
             SQLObjectUtils.refreshChildren(this, newIndexes, SQLIndex.class);
+            
+            normalizePrimaryKey();
             
         } catch (SQLException e) {
             throw new SQLObjectException("Refresh failed", e);
@@ -1826,109 +1820,11 @@ public class SQLTable extends SQLObject {
     }
 
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
-		return allowedChildTypes;
-	}
-
-	/**
-	 * Called when a table is being removed from its parent. This will be called
-	 * before the table is actually removed from its parent. Package private as
-	 * classes outside of the SQLObjects do not need to call this method.
-	 */
-	void removeNotify() {
-		for (int i = exportedKeys.size() - 1; i >= 0; i--) {
-			exportedKeys.get(i).getRelationshipManager().tableDisconnected();
-		}
-		for (int i = importedKeys.size() - 1; i >= 0; i--) {
-			importedKeys.get(i).getRelationship().getRelationshipManager().tableDisconnected();
-		}
-	}
-
-	/**
-	 * This method will move the given column to the last position just after
-	 * the primary key. This means that the column will be just below the
-	 * primary key line and not in the primary key.
-	 * 
-	 * @param col
-	 *            The column to move.
-	 */
-	public void moveAfterPK(SQLColumn col) throws SQLObjectException {
-		int targetIndex;
-		if (col.isPrimaryKey()) {
-			targetIndex = getPkSize() - 1;
-		} else {
-			targetIndex = getPkSize();
-		}
-		int currentIndex = columns.indexOf(col);
-		changeColumnIndex(columns.indexOf(col), targetIndex, false);
-	}
-
-	/**
-	 * If the given column is not part of the primary key the column will be
-	 * moved to the last position in the primary key and added to the primary
-	 * key. If the column is already part of the primary key this method will do
-	 * nothing.
-	 */
-	public void addToPK(SQLColumn col) throws SQLObjectException {
-		if (!col.isPrimaryKey()) {
-			moveAfterPK(col);
-			primaryKeyIndex.addIndexColumn(col);
-		}
-	}
-
-	/**
-	 * Updates the column mappings of relationships for changes to the primary
-	 * key index. This must be done on each column added to the primary key
-	 * index.
-	 * <p>
-	 * Package private because only the SQLIndex need to be concerned about this.
-	 */
-	void updateRelationshipsForNewIndexColumn(SQLColumn col) {
-		if (isMagicEnabled()) {
-			for (SQLRelationship r : exportedKeys) {
-				r.getRelationshipManager().fixMappingNewChildInParent(col);
-			}
-		}
-	}
-
-	/**
-	 * Updates the column mappings of relationships for each column that gets
-	 * removed from the primary key index. Must be called once per column
-	 * removal on the primary key index.
-	 * <p>
-	 * Package private because only the SQLIndex need to be concerned about this.
-	 */
-	void updateRelationshipsForRemovedIndexColumns(SQLColumn col) {
-		if (isMagicEnabled()) {
-			for (SQLRelationship r : exportedKeys) {
-				r.getRelationshipManager().fixMappingChildRemoved(col);
-			}
-		}
-	}
-
-	/**
-	 * Helper method for finding if an index is the primary key without causing
-	 * the table to populate.
-	 * <p>
-	 * Package private for use in SQLIndex. 
-	 */
-	boolean isPrimaryKey(SQLIndex index) {
-		return index == primaryKeyIndex;
-	}
-
-	/**
-	 * Helper method for finding if a column is in the primary key index without
-	 * causing the table to populate.
-	 * <p>
-	 * Package private for use in SQLColumn.
-	 * 
-	 * @param col
-	 * @return
-	 */
-	boolean isInPrimaryKey(SQLColumn col) {
-		return primaryKeyIndex.containsColumn(col);
-	}
-	
-	SQLIndex getPrimaryKeyIndexWithoutPopulating() {
-		return primaryKeyIndex;
+		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
+		types.add(SQLColumn.class);
+		types.add(SQLRelationship.class);
+		types.add(SQLImportedKey.class);
+		types.add(SQLIndex.class);
+		return Collections.unmodifiableList(types);
 	}
 }

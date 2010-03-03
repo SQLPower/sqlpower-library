@@ -221,6 +221,7 @@ public class ContainerPane extends PNode implements CleanupPNode {
 	private final PropertyChangeListener containerChangeListener = new PropertyChangeListener() {
 		public void propertyChange(PropertyChangeEvent evt) {
 			if (evt.getPropertyName().equals("position")) {
+				logger.error("Moving container");
 				translate(model.getPosition().getX() - getGlobalBounds().getX(), 
 						model.getPosition().getY() - getGlobalBounds().getY());
 			} else if (evt.getPropertyName().equals("alias")) {

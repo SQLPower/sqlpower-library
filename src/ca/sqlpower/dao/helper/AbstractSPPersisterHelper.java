@@ -44,7 +44,7 @@ public abstract class AbstractSPPersisterHelper<T extends SPObject> implements S
 	 *            cannot be found.
 	 * @return An error message for exceptions that describes the above.
 	 */
-	public static String createSPPersistenceExceptionMessage(SPObject spo,
+	protected String createSPPersistenceExceptionMessage(T spo,
 			String propertyName) {
 		return "Cannot persist property \"" + propertyName + "\" on "
 				+ spo.getClass() + " with name \"" + spo.getName()
@@ -65,7 +65,7 @@ public abstract class AbstractSPPersisterHelper<T extends SPObject> implements S
 	 *            remove the property from.
 	 * @return The value of the property.
 	 */
-	public static Object findPropertyAndRemove(
+	protected Object findPropertyAndRemove(
 			String uuid, 
 			String propertyName, 
 			Multimap<String, PersistedSPOProperty> persistedProperties) {
@@ -80,41 +80,10 @@ public abstract class AbstractSPPersisterHelper<T extends SPObject> implements S
 		// We therefore need to return null.
 		return null;
 	}
-	
-	/**
-	 * Finds a property from a {@link Multimap} of persisted
-	 * properties of a given {@link SPObject} without removing the property.
-	 * 
-	 * @param uuid
-	 *            The UUID of the {@link SPObject} to find and remove the
-	 *            property from.
-	 * @param propertyName
-	 *            The JavaBean property name.
-	 * @param persistedProperties
-	 *            {@link Multimap} of persisted properties to retrieve and
-	 *            remove the property from.
-	 * @return The value of the property.
-	 */
-	public static PersistedSPOProperty findProperty(
-			String uuid, 
-			String propertyName, 
-			Multimap<String, PersistedSPOProperty> persistedProperties) {
-		for (PersistedSPOProperty property : persistedProperties.get(uuid)) {
-			if (property.getPropertyName().equals(propertyName)) {
-				return property;
-			}
-		}
-		// Property might not be persisted because it might be null. 
-		// We therefore need to return null.
-		return null;
-	}
-	
+
 	/**
 	 * Finds the {@link PersistedSPObject} in a {@link List} that matches the
 	 * given parent UUID and class type.
-	 * <p>
-	 * XXX This is unused by the current persister helpers but exists in the
-	 * processor. Leaving it in until we decide it is not needed.
 	 * 
 	 * @param parentUUID
 	 *            The {@link SPObject}'s parent UUID.
@@ -126,42 +95,13 @@ public abstract class AbstractSPPersisterHelper<T extends SPObject> implements S
 	 * @return The matching {@link PersistedSPObject}. If it cannot be found,
 	 *         null is returned.
 	 */
-	protected PersistedSPObject findPersistedSPObject(String parentUUID, String classType,
+	protected PersistedSPObject findPersistedSPObject(String parentUUID, String classType, 
 			List<PersistedSPObject> persistedObjects) {
 		for (PersistedSPObject pwo : persistedObjects) {
 			if (pwo.isLoaded())
 				continue;
 			if (pwo.getType().equals(classType)
 					&& pwo.getParentUUID().equals(parentUUID)) {
-				return pwo;
-			}
-		}
-		return null;
-	}
-
-	/**
-	 * Finds the {@link PersistedSPObject} in a {@link List} that matches the
-	 * given parent UUID and class type.
-	 * 
-	 * @param parentUUID
-	 *            The {@link SPObject}'s parent UUID.
-	 * @param classType
-	 *            The fully qualified name of the {@link SPObject} type.
-	 * @param persistedObjects
-	 *            The {@link List} of {@link PersistedSPObject}s to search
-	 *            through.
-	 * @return The matching {@link PersistedSPObject}. If it cannot be found,
-	 *         null is returned.
-	 */
-	public static PersistedSPObject findPersistedSPObject(String parentUUID, String classType,
-			String childUUID,
-			List<PersistedSPObject> persistedObjects) {
-		for (PersistedSPObject pwo : persistedObjects) {
-			if (pwo.isLoaded())
-				continue;
-			if (pwo.getType().equals(classType)
-					&& pwo.getParentUUID().equals(parentUUID)
-					&& pwo.getUUID().equals(childUUID)) {
 				return pwo;
 			}
 		}

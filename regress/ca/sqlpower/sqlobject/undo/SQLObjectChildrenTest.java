@@ -44,7 +44,6 @@ public class SQLObjectChildrenTest extends TestCase {
     
     public void testAddChild() throws Exception {
     	SQLTable table = new SQLTable(new StubSQLObject(), "table", "", "", true);
-    	int childCount = table.getChildCount();
     	
     	SQLColumn col = new SQLColumn();
     	col.setName("cow");
@@ -52,14 +51,12 @@ public class SQLObjectChildrenTest extends TestCase {
     	SQLObjectChildEdit edit = new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, col, 0, EventType.ADDED));
     	edit.addChild();
     	
-    	assertEquals(childCount + 1, table.getChildCount());
+    	assertEquals(1, table.getChildCount());
     	assertEquals(col, table.getChild(0));
     }
     
     public void testAddChildren() throws Exception {
     	SQLTable table = new SQLTable(new StubSQLObject(), "table", "", "", true);
-    	int childCount = table.getChildCount();
-    	
     	CompoundEdit transaction = new CompEdit();
     	
         SQLColumn column1 = new SQLColumn();
@@ -91,14 +88,13 @@ public class SQLObjectChildrenTest extends TestCase {
         transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column7, 6, EventType.ADDED)));
         transaction.redo();
         
-        assertEquals(childCount + 7, table.getChildCount());
+        assertEquals(7, table.getChildCount());
         assertEquals(column1, table.getChild(0));
         assertEquals(column2, table.getChild(1));
     }
     
     public void testRemoveChild() throws Exception {
     	SQLTable table = new SQLTable(new StubSQLObject(), "table", "", "", true);
-    	int childCount = table.getChildCount();
     	
     	SQLColumn col = new SQLColumn();
     	col.setName("cow");
@@ -106,18 +102,16 @@ public class SQLObjectChildrenTest extends TestCase {
     	SQLObjectChildEdit edit = new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, col, 0, EventType.ADDED));
     	edit.addChild();
     	
-    	assertEquals(childCount + 1, table.getChildCount());
+    	assertEquals(1, table.getChildCount());
     	assertEquals(col, table.getChild(0));
     	
     	edit.removeChild();
     	
-    	assertEquals(childCount, table.getChildCount());
+    	assertEquals(0, table.getChildCount());
     }
     
     public void testRemoveChildren() throws Exception {
     	SQLTable table = new SQLTable(new StubSQLObject(), "table", "", "", true);
-    	int childCount = table.getChildCount();
-    	
     	CompoundEdit transaction = new CompEdit();
     	
         SQLColumn column1 = new SQLColumn();
@@ -155,7 +149,7 @@ public class SQLObjectChildrenTest extends TestCase {
         
         transaction.redo();
         
-        assertEquals(childCount + 3, table.getChildCount());
+        assertEquals(3, table.getChildCount());
         assertEquals(column1, table.getChild(0));
         assertEquals(column4, table.getChild(1));
         assertEquals(column5, table.getChild(2));

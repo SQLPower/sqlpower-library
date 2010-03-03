@@ -19,13 +19,10 @@
 
 package ca.sqlpower.dao.session;
 
-import java.text.Format;
-
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
-import ca.sqlpower.sql.SpecificDataSourceCollection;
 
 /**
  * Converts any known object into a simple type of object that can be
@@ -37,9 +34,7 @@ public class SessionPersisterSuperConverter {
 	
 	private final SPObjectConverter spObjectConverter;
 	
-	private final FormatConverter formatConverter = new FormatConverter();
-	
-	private final DataSourceCollection <JDBCDataSource> dsCollection;
+	private final JDBCDataSourceConverter jdbcDSConverter;
 
 	/**
 	 * This converter will allow changes between any complex object in the
@@ -52,10 +47,10 @@ public class SessionPersisterSuperConverter {
 	 *            look up connections, cubes, and {@link SPObject}s in the
 	 *            workspace.
 	 */
-	public SessionPersisterSuperConverter(DataSourceCollection<? extends SPDataSource> dsCollection, 
+	public SessionPersisterSuperConverter(DataSourceCollection<SPDataSource> dsCollection, 
 			SPObject root) {
 		spObjectConverter = new SPObjectConverter(root);
-		this.dsCollection = new SpecificDataSourceCollection(dsCollection, JDBCDataSource.class);
+		jdbcDSConverter = new JDBCDataSourceConverter(dsCollection);
 	}
 
 	/**
@@ -95,18 +90,11 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom instanceof Boolean) {
 			return convertFrom;
 			
-		} else if (convertFrom instanceof Long) {
-			return convertFrom;
-			
 		} else if (convertFrom.getClass().isEnum()) {
 			return new EnumConverter(convertFrom.getClass()).convertToSimpleType((Enum) convertFrom);
 			
 		} else if (convertFrom instanceof JDBCDataSource) {
-			return ((JDBCDataSource) convertFrom).getName();
-		
-		} else if (convertFrom instanceof Format) {
-			return formatConverter.convertToSimpleType((Format) convertFrom);
-		
+			return jdbcDSConverter.convertToSimpleType((JDBCDataSource) convertFrom);
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + convertFrom + " of type " + 
 					convertFrom.getClass());
@@ -143,17 +131,12 @@ public class SessionPersisterSuperConverter {
 			
 		} else if (Boolean.class.isAssignableFrom(type)) {
 			return (Boolean) o;
-		} else if (Long.class.isAssignableFrom(type)) {
-			return (Long) o;
 			
 		} else if (Enum.class.isAssignableFrom(type)) {
 			return new EnumConverter(type).convertToComplexType((String) o);
 			
 		} else if (JDBCDataSource.class.isAssignableFrom(type)) {
-			return dsCollection.getDataSource((String) o, JDBCDataSource.class);
-
-		} else if (Format.class.isAssignableFrom(type)) {
-			return formatConverter.convertToComplexType((String) o);
+			return jdbcDSConverter.convertToComplexType((String) o);
 			
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + o + " of type " + 

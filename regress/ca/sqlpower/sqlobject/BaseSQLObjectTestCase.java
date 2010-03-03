@@ -94,7 +94,7 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 	 * error. If the object under test does not allow children or all of the children
 	 * of the object are final so none can be added, null will be returned.
 	 */
-	protected abstract Class<? extends SPObject> getChildClassType();
+	protected abstract Class<?> getChildClassType();
 	
 	/**
 	 * XXX This test should use the {@link GenericNewValueMaker} as it has it's own mini
@@ -441,7 +441,7 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 		
 		// Test addChild(SQLObject, int)
 		getSQLObjectUnderTest().addChild(y, 0);
-		assertEquals(y, getSQLObjectUnderTest().getChildren(y.getClass()).get(0));
+		assertEquals(y, getSQLObjectUnderTest().getChild(0));
 		assertEquals(x, getSQLObjectUnderTest().getChildren(childType).get(
 				getSQLObjectUnderTest().getChildren(childType).size() - 1));
 		

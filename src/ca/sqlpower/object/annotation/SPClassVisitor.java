@@ -31,7 +31,6 @@ import java.util.Set;
 import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.object.SPObject;
-import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.LinkedHashMultimap;
@@ -49,7 +48,6 @@ import com.sun.mirror.declaration.FieldDeclaration;
 import com.sun.mirror.declaration.InterfaceDeclaration;
 import com.sun.mirror.declaration.MemberDeclaration;
 import com.sun.mirror.declaration.MethodDeclaration;
-import com.sun.mirror.declaration.Modifier;
 import com.sun.mirror.declaration.PackageDeclaration;
 import com.sun.mirror.declaration.ParameterDeclaration;
 import com.sun.mirror.declaration.TypeDeclaration;
@@ -256,9 +254,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 					SPAnnotationProcessorUtils.convertTypeDeclarationToQualifiedName(d);
 				visitedClass = (Class<? extends SPObject>) Class.forName(qualifiedName);
 				
-				if (java.lang.reflect.Modifier.isPrivate(visitedClass.getModifiers())) {
-					valid = false;
-				}
 			} catch (ClassNotFoundException e) {
 				valid = false;
 				e.printStackTrace();
@@ -293,10 +288,10 @@ public class SPClassVisitor implements DeclarationVisitor {
 						Class<?> c = SPAnnotationProcessorUtils.convertTypeMirrorToClass(type);
 						String value = null;
 						
-						ParameterType property = cp.isProperty();
+						boolean property = cp.isProperty();
 						String name;
 						
-						if (property.equals(ParameterType.PROPERTY)) {
+						if (property) {
 							name = cp.propertyName();
 						} else {
 							name = pd.getSimpleName();

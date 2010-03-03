@@ -39,7 +39,7 @@ public class SPServerInfo {
     private final String path;
 	private final String username;
 	private final String password;
-	
+
     /**
      * 
      * @param name The user-visible name for this server
@@ -145,4 +145,5 @@ public class SPServerInfo {
 	public String getPassword() {
 		return password;
 	}
+
 }

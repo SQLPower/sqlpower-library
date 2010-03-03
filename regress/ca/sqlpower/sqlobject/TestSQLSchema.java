@@ -18,8 +18,6 @@
  */
 package ca.sqlpower.sqlobject;
 
-import ca.sqlpower.object.SPObject;
-
 
 
 public class TestSQLSchema extends BaseSQLObjectTestCase {
@@ -43,7 +41,7 @@ public class TestSQLSchema extends BaseSQLObjectTestCase {
 	}
 	
 	@Override
-    protected Class<? extends SPObject> getChildClassType() {
+    protected Class<?> getChildClassType() {
     	return SQLTable.class;
     }
 	

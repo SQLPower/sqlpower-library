@@ -20,7 +20,6 @@
 package ca.sqlpower.sqlobject;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -35,15 +34,6 @@ import ca.sqlpower.object.annotation.Transient;
  * SQLDatabase objects.
  */
 public class SQLObjectRoot extends SQLObject {
-	
-	/**
-	 * Defines an absolute ordering of the child types of this class.
-	 */
-	@SuppressWarnings("unchecked")
-	public static List<Class<? extends SPObject>> allowedChildTypes = 
-		Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
-				Arrays.asList(SQLDatabase.class, SQLTable.class)));
-	
 	private List<SQLDatabase> databases = new ArrayList<SQLDatabase>();
 	private List<SQLTable> tables = new ArrayList<SQLTable>();
 	
@@ -173,6 +163,9 @@ public class SQLObjectRoot extends SQLObject {
 	}
 
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
-		return allowedChildTypes;
+		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
+		types.add(SQLDatabase.class);
+		types.add(SQLTable.class);
+		return Collections.unmodifiableList(types);
 	}
 }

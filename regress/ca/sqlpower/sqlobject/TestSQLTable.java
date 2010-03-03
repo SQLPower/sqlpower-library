@@ -37,7 +37,6 @@ import org.apache.commons.beanutils.BeanUtils;
 
 import ca.sqlpower.object.AbstractSPListener;
 import ca.sqlpower.object.SPChildEvent;
-import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
@@ -82,9 +81,9 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         table.addColumn(new SQLColumn(table, "four", Types.INTEGER, 10, 0));
         table.addColumn(new SQLColumn(table, "five", Types.INTEGER, 10, 0));
         table.addColumn(new SQLColumn(table, "six", Types.INTEGER, 10, 0));
-        table.getPrimaryKeyIndex().addIndexColumn(table.getColumn(0));
-        table.getPrimaryKeyIndex().addIndexColumn(table.getColumn(1));
-        table.getPrimaryKeyIndex().addIndexColumn(table.getColumn(2));
+        table.getColumn(0).setPrimaryKeySeq(0);        
+        table.getColumn(1).setPrimaryKeySeq(1);
+        table.getColumn(2).setPrimaryKeySeq(2);
         table.getColumn(0).setNullable(DatabaseMetaData.columnNullable);
         table.getColumn(0).setAutoIncrement(true); 
         
@@ -97,7 +96,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     }
     
     @Override
-    protected Class<? extends SPObject> getChildClassType() {
+    protected Class<?> getChildClassType() {
     	return SQLColumn.class;
     }
     
@@ -126,7 +125,6 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         table1PropertyMap.remove("shortDisplayName");
         table1PropertyMap.remove("UUID");
         table1PropertyMap.remove("session");
-        table1PropertyMap.remove("SPListeners");
         
         for (Map.Entry<String, Object> property : table1PropertyMap.entrySet()) {
         	assertEquals("Property \"" + property.getKey() + "\" has changed;", property.getValue(), derivedPropertyMap.get(property.getKey()));
@@ -223,7 +221,6 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     
     public void testAddColumn() throws SQLObjectException {
         SQLTable table1 = db.getTableByName("REGRESSION_TEST1");
-        assertEquals(2, table1.getColumns().size());
         SQLColumn newColumn = new SQLColumn(table1, "my new column", Types.INTEGER, 10, 0);
         table1.addColumn(newColumn, 2);
         SQLColumn addedCol = table1.getColumn(2);
@@ -269,23 +266,23 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         t.addColumn(at2,4);
         t.addColumn(at3,5);
         
-        t.getPrimaryKeyIndex().addIndexColumn(pk1);
-        t.getPrimaryKeyIndex().addIndexColumn(pk2);
-        t.getPrimaryKeyIndex().addIndexColumn(pk3);
+        pk1.setPrimaryKeySeq(1);
+        pk2.setPrimaryKeySeq(2);
+        pk3.setPrimaryKeySeq(3);
         
         assertEquals(3, t.getPkSize());
         
         SQLColumn newcol = new SQLColumn(t, "newcol", Types.INTEGER, 10, 0);
         t.addColumn(newcol, 3);
         assertEquals("New column should be at requested position", 3, t.getColumnIndex(newcol));
-        t.getPrimaryKeyIndex().addIndexColumn(newcol);
+        newcol.setPrimaryKeySeq(3);
         assertEquals("New column should still be at requested position", 3, t.getColumnIndex(newcol));
     }
     
     public void testMoveToPKClearsNullability() throws SQLObjectException{             
         SQLTable t = db.getTableByName("REGRESSION_TEST1");
         SQLColumn c = t.getColumnByName("t1_c1");
-        assertFalse("Column shouldn't be in PK to begin", c.isPrimaryKey());
+        assertNull("Column shouldn't be in PK to begin", c.getPrimaryKeySeq());
         c.setNullable(DatabaseMetaData.columnNullable);
 
         // Now c is not in the PK and is nullable.  Let's add it to PK
@@ -338,18 +335,60 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         assertNotNull("Should have thrown an exception", exc);
     }
     
+    public void testNormalizePrimaryKey() throws SQLObjectException {
+        SQLTable table1;
+        SQLColumn col2;
+        SQLColumn col1 = db.getTableByName("REGRESSION_TEST2").getColumn(0);
+        col1.setPrimaryKeySeq(new Integer(5));
+        table1 = db.getTableByName("REGRESSION_TEST1");
+        col2 = new SQLColumn(col1);
+        col2.setPrimaryKeySeq(new Integer(16));
+        table1.addColumn(col1, 2);
+        table1.addColumn(col2, 3);
+        table1.normalizePrimaryKey();
+        assertEquals("Wrong number of primary keys", table1.getPkSize(), 0);
+        
+        col1.setPrimaryKeySeq(new Integer(5));
+        col2.setPrimaryKeySeq(new Integer(16));
+        
+        assertEquals("Invalid key order", table1.getColumn(0), col1);
+        assertEquals("2nd key out of order", table1.getColumn(1), col2);
+        assertEquals("Too many or too few primary keys", table1.getPkSize(), 2);
+        
+    }
+    
     public void testGetPrimaryKey() throws SQLObjectException {
-    	SQLIndex i1 = new SQLIndex("name",true,null, "BTREE",null);
-        SQLTable t1 = new SQLTable(null,true, i1);
+        SQLTable t1 = new SQLTable(null,true);
         SQLColumn c1 = new SQLColumn(t1,"col1",1,0,0);
-        t1.addChild(c1);
+        SQLIndex i1 = new SQLIndex("name",true,null, "BTREE",null);
         i1.addIndexColumn(c1, AscendDescend.UNSPECIFIED);
+        t1.addChild(i1);
         SQLIndex i2 = new SQLIndex("name 2",true,null, "BTREE",null);
         i2.addChild(new Column("Index column string",AscendDescend.UNSPECIFIED));
         t1.addChild(i2);
         
-        assertEquals(i1, t1.getPrimaryKeyIndex());
-        assertEquals(1, t1.getPrimaryKeyIndex().getChildrenWithoutPopulating().size());
+        assertNull(t1.getPrimaryKeyIndex());
+        
+        i1.setPrimaryKeyIndex(true);
+        assertEquals(i1,t1.getPrimaryKeyIndex());
+        i1.setPrimaryKeyIndex(false);
+        assertNull(t1.getPrimaryKeyIndex());
+        
+    }
+    
+    public void testGetPrimaryKeyWhenPrimarykeyNotFirstIndex() throws SQLObjectException {
+        SQLTable t1 = new SQLTable(null,true);
+        SQLColumn c1 = new SQLColumn(t1,"col1",1,0,0);
+        SQLIndex i1 = new SQLIndex("name",true,null, "BTREE",null);
+        i1.addIndexColumn(c1, AscendDescend.UNSPECIFIED);
+        SQLIndex i2 = new SQLIndex("name 2",true,null, "BTREE",null);
+        i2.addChild(new Column("Index column string",AscendDescend.UNSPECIFIED));
+        t1.addChild(i2);
+        t1.addChild(i1);
+        i1.setPrimaryKeyIndex(true);
+        assertEquals(i1,t1.getPrimaryKeyIndex());
+        i1.setPrimaryKeyIndex(false);
+        assertNull(t1.getPrimaryKeyIndex());
     }
     
     public void testFireDbChildrenInserted() throws Exception {
@@ -618,7 +657,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     public void testChangeFirstColumnKey() throws SQLObjectException{
         SQLColumn col1 = table.getColumnByName("one");
         assertNotNull(col1);
-        table.moveAfterPK(col1);
+        col1.setPrimaryKeySeq(null);
         assertEquals(2, table.getPkSize());
         //We just want to make sure it's no longer the first or second 
         //column where the PK column lies
@@ -628,7 +667,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     public void testChangeThirdColumnKey() throws SQLObjectException{
         SQLColumn col3 = table.getColumnByName("three");
         assertNotNull(col3);
-        table.moveAfterPK(col3);
+        col3.setPrimaryKeySeq(null);
         assertEquals(2, table.getPkSize());
         
         assertEquals(0, table.getColumnIndex(table.getColumnByName("one")));
@@ -642,7 +681,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     public void testChangeFourthColumnKey() throws SQLObjectException{
         SQLColumn col4 = table.getColumnByName("four");
         assertNotNull(col4);
-        table.changeColumnIndex(table.getColumnIndex(col4), 1, true);
+        col4.setPrimaryKeySeq(0);
         assertEquals(4, table.getPkSize());
         
         assertEquals(0, table.getColumnIndex(table.getColumnByName("one")));
@@ -661,7 +700,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         SQLObjectSnapshot original = l.makeSQLObjectSnapshot(table);
         
         SQLPowerUtils.listenToHierarchy(table, l);
-        table.changeColumnIndex(table.getColumnIndex(col5), 1, true);
+        col5.setPrimaryKeySeq(0);
         SQLPowerUtils.unlistenToHierarchy(table, l);
 
         System.out.println("Event log:\n"+l);
@@ -1204,15 +1243,15 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
 	/**
 	 * This tests inheriting a column at the end of the primary key list and
 	 * defining the inherited column to be a primary key does indeed set the
-	 * column to be a member of the primary key.
+	 * primary key sequence number of the column to be a non-null value.
 	 */
     public void testInheritDefinesPK() throws Exception {
     	SQLTable t2 = new SQLTable(table.getParentDatabase(), true);
 		t2.setName("Another Test Table");
 		SQLColumn newcol = new SQLColumn(t2, "newcol", Types.INTEGER, 10, 0);
 		t2.addColumn(newcol, 0);
-		t2.addToPK(newcol);
-		assertTrue("Column should start in primary key", newcol.isPrimaryKey());
+		newcol.setPrimaryKeySeq(1);
+		assertNotNull("Column should start in primary key", newcol.getPrimaryKeySeq());
 		
 		List<SQLColumn> columns = new ArrayList<SQLColumn>(table.getColumns());
 		
@@ -1224,7 +1263,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
 
 		assertEquals(1, newColumns.size());
 		SQLColumn copyCol = newColumns.get(0);
-		assertTrue(copyCol.isPrimaryKey());
+		assertNotNull(copyCol.getPrimaryKeySeq());
 	}
 
 	/**
@@ -1235,19 +1274,12 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     public void testFirstPKMovedToLastPK() throws Exception {
     	SQLColumn col = table.getColumn(0);
     	assertEquals(3, table.getPkSize());
-		assertTrue(col.isPrimaryKey());
+		assertNotNull(col.getPrimaryKeySeq());
 		
 		table.changeColumnIndex(0, 2, true);
 		
-		assertTrue(col.isPrimaryKey());
-		Column wrapperForCol = null;
-		for (Column wrapper : table.getPrimaryKeyIndex().getChildren(Column.class)) {
-			if (wrapper.getColumn() == col) {
-				wrapperForCol = wrapper;
-				break;
-			}
-		}
-		assertEquals(2, table.getPrimaryKeyIndex().getChildren().indexOf(wrapperForCol));
+		assertNotNull(col.getPrimaryKeySeq());
+		assertEquals(new Integer(2), col.getPrimaryKeySeq());
 		assertEquals(3, table.getPkSize());
 	}
 }

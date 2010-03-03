@@ -25,7 +25,6 @@ import java.sql.SQLException;
 import java.util.List;
 
 import ca.sqlpower.object.ObjectDependentException;
-import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.testutil.MockJDBCDriver;
@@ -48,8 +47,8 @@ public class TestSQLDatabase extends BaseSQLObjectTestCase {
 	}
 	
 	@Override
-    protected Class<? extends SPObject> getChildClassType() {
-    	return SQLSchema.class;
+    protected Class<?> getChildClassType() {
+    	return SQLTable.class;
     }
 	
 	/*

@@ -137,7 +137,7 @@ public class EditablePStyledText extends PStyledText {
      * or maximum width values defined internally and the PStyledText recomputes the
      * layout every time the bounds are set.
      */
-    protected final int minCharCountSize;
+    private final int minCharCountSize;
     
     /**
      * This is the canvas this PStyledText node is placed on. The canvas is used to place

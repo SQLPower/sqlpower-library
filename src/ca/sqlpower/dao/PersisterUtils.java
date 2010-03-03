@@ -24,20 +24,12 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 import javax.imageio.ImageIO;
 
 import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.session.BidirectionalConverter;
-import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPObject;
-import ca.sqlpower.object.annotation.Accessor;
-import ca.sqlpower.sqlobject.SQLObject;
 
 /**
  * Utilities that are used by {@link SPPersister}s. 
@@ -113,98 +105,10 @@ public class PersisterUtils {
 		return pieces;
 	}
 	
-	/**
-	 * Returns a set of all the interesting property names of the given SQLObject type.
-	 * @param type
-	 * @return
-	 * @throws SecurityException
-	 * @throws IllegalArgumentException
-	 * @throws ClassNotFoundException
-	 * @throws IllegalAccessException
-	 * @throws InvocationTargetException
-	 */
-	public static Set<String> getInterestingPropertyNames(String type)
-	throws SecurityException, IllegalArgumentException, ClassNotFoundException, IllegalAccessException, InvocationTargetException {
-	    return getInterestingProperties(type, null, null).keySet();
-	}
-	
-    /**
-     * Returns a map containing all the interesting properties of the class type
-     * given by the fully qualified name. An interesting property is a
-     * non-transient accessor with the isInteresting flag set to true. The
-     * properties are mapped by their name, and contain their value, converted
-     * to a non-complex type
-     * 
-     * @param className
-     * @param converter
-     * @return
-     * @throws SecurityException
-     * @throws ClassNotFoundException
-     * @throws InvocationTargetException 
-     * @throws IllegalAccessException 
-     * @throws IllegalArgumentException 
-     */
-	public static Map<String, Object> getInterestingProperties(SQLObject object, SessionPersisterSuperConverter converter)
-    throws SecurityException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
-	    return getInterestingProperties(object.getClass().getName(), object, converter);
-	}
-	
-	/**
-	 * Does what the other getInterestingProperties says it does if passed a non-null object
-	 * Otherwise, it will return a map with a key set of all the property names, but no values.
-	 * 
-	 * @param type
-	 * @param object
-	 * @param converter
-	 * @return
-	 * @throws SecurityException
-	 * @throws ClassNotFoundException
-	 * @throws IllegalArgumentException
-	 * @throws IllegalAccessException
-	 * @throws InvocationTargetException
-	 */
-    private static Map<String, Object> getInterestingProperties(
-            String type, SQLObject object, SessionPersisterSuperConverter converter)
-	throws SecurityException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
-	    Map<String, Object> propertyMap = new HashMap<String, Object>();
-	    
-	    Class<? extends Object> objectClass = Class.forName(type);
-	    for (Method m : objectClass.getMethods()) {
-	        
-	        if (m.getAnnotation(Accessor.class) != null
-	                && m.getAnnotation(Accessor.class).isInteresting()) {
-	            String propertyName;
-	            if (m.getName().startsWith("get")) {
-                    propertyName = m.getName().substring(3);
-                } else if (m.getName().startsWith("is")) {
-                    propertyName = m.getName().substring(2);
-                } else {
-                    throw new RuntimeException("Accessor class with improper prefix");
-                }
-	            String firstCharacter = String.valueOf(propertyName.charAt(0));
-	            
-	            propertyName = propertyName.replaceFirst(
-	                    firstCharacter, firstCharacter.toLowerCase());
-	            
-	            if (object != null) {
-	                propertyMap.put(propertyName, 
-	                        converter.convertToBasicType(m.invoke(object)));
-	            } else {
-	                propertyMap.put(propertyName, "");
-	            }
-	        }
-	        
-	    }
-	    return propertyMap;
-	    
-	}
-	
     /**
      * Gets the correct data type based on the given class for the {@link SPPersister}.
      */
     public static DataType getDataType(Class<? extends Object> classForDataType) {
-    	if (classForDataType == null) return DataType.NULL;
-    	
     	if (Integer.class.isAssignableFrom(classForDataType)) {
     		return DataType.INTEGER;
     	} else if (Boolean.class.isAssignableFrom(classForDataType)) {

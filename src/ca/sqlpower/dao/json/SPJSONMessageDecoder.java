@@ -118,10 +118,7 @@ public class SPJSONMessageDecoder implements MessageDecoder<String> {
 						persister.commit();
 						break;
 					case persistObject:
-					    parentUUID = jsonObject.getString("parentUUID");
-					    if (parentUUID.equals("")) {
-					        //throw new SPPersistenceException(null, "Cannot persist object with null UUID, json is " + jsonObject);
-					    }
+						parentUUID = jsonObject.getString("parentUUID");
 						String type = jsonObject.getString("type");
 						int index = jsonObject.getInt("index");
 						persister.persistObject(parentUUID, type, uuid, index);
@@ -142,11 +139,8 @@ public class SPJSONMessageDecoder implements MessageDecoder<String> {
 						persister.persistProperty(uuid, propertyName,
 								propertyType, newValue);
 						break;
-					case removeObject:					    
+					case removeObject:
 						parentUUID = jsonObject.getString("parentUUID");
-                        if (parentUUID.equals("")) {
-                            throw new SPPersistenceException(null, "Cannot persist object with null UUID");
-                        }
 						persister.removeObject(parentUUID, uuid);
 						break;
 					case rollback:

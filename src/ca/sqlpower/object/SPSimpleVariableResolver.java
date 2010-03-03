@@ -50,6 +50,45 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	}
 	
 	/**
+	 * Stores a variable value. If a value with the same key already exists,
+	 * a new value will be added.
+	 * 
+	 * @param key The key to store the value under.
+	 * @param value The value to store.
+	 */
+	public void store(String key, Object value) {
+		if (this.namespace != null
+				&& SPVariableHelper.getNamespace(key) != null
+				&& !this.namespace.equals(SPVariableHelper.getNamespace(key))) {
+			throw new IllegalArgumentException("Cannot store a namespaced variable of a different namespace than this resolver is configured with.");
+		}
+		this.variables.put(SPVariableHelper.getKey(key), value);
+	}
+	
+	/**
+	 * Updates a variable value. This means that if a variable with the
+	 * same key was already stored, it will be wiped and replaced by
+	 * the new value.
+	 * 
+	 * @param key The key to store the value under.
+	 * @param value The value to store.
+	 */
+	public void update(String key, Object value) {
+		if (this.variables.containsKey(SPVariableHelper.getKey(key))) {
+			this.variables.remove(SPVariableHelper.getKey(key));
+		}
+		this.variables.put(SPVariableHelper.getKey(key), value);
+	}
+	
+	/**
+	 * Removes all values associated with the specified key. 
+	 * @param key The key for which we want to delete all occurences.
+	 */
+	public void delete(String key) {
+		this.variables.remove(SPVariableHelper.getKey(key));
+	}
+	
+	/**
 	 * This is a hook method that sub classes can override. It gets called
 	 * before all lookup operations (resolve, match and resolves).
 	 * @param key The key we were asked to lookup info on.
@@ -73,26 +112,6 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	 */
 	public void setNamespace(String namespace) {
 		this.namespace = namespace;
-	}
-	
-	public void store(String key, Object value) {
-		if (this.namespace != null
-				&& SPVariableHelper.getNamespace(key) != null
-				&& !this.namespace.equals(SPVariableHelper.getNamespace(key))) {
-			throw new IllegalArgumentException("Cannot store a namespaced variable of a different namespace than this resolver is configured with.");
-		}
-		this.variables.put(SPVariableHelper.getKey(key), value);
-	}
-	
-	public void update(String key, Object value) {
-		if (this.variables.containsKey(SPVariableHelper.getKey(key))) {
-			this.variables.remove(SPVariableHelper.getKey(key));
-		}
-		this.variables.put(SPVariableHelper.getKey(key), value);
-	}
-	
-	public void delete(String key) {
-		this.variables.remove(SPVariableHelper.getKey(key));
 	}
 
 	public Collection<Object> matches(String key, String partialValue) {

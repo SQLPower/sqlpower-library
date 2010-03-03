@@ -58,8 +58,6 @@ public class SQLQueryUIComponentsTest extends TestCase {
 	 * will reopen the connection.
 	 */
 	public void testClosedConnectionIsReopened() throws Exception {
-		boolean isSkipped = Boolean.getBoolean("ca.sqlpower.SKIP_DODGY_TESTS");
-	    if (isSkipped) return;
 		PlDotIni plini = new PlDotIni();
 		plini.read(new File("pl.regression.ini"));
 		StubDataSourceCollection dsCollection = new StubDataSourceCollection();

@@ -23,7 +23,6 @@ import java.sql.DatabaseMetaData;
 import java.util.Iterator;
 
 import ca.sqlpower.object.ObjectDependentException;
-import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.JDBCDataSource;
 
 public class TestSQLCatalog extends BaseSQLObjectTestCase {
@@ -46,7 +45,7 @@ public class TestSQLCatalog extends BaseSQLObjectTestCase {
 	}
 	
 	@Override
-    protected Class<? extends SPObject> getChildClassType() {
+    protected Class<?> getChildClassType() {
     	return SQLTable.class;
     }
 	

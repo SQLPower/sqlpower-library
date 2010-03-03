@@ -20,35 +20,21 @@
 package ca.sqlpower.dao;
 
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyDescriptor;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map.Entry;
-
-import org.apache.commons.beanutils.PropertyUtils;
-import org.apache.log4j.Logger;
 
 import ca.sqlpower.dao.SPPersister.DataType;
-import ca.sqlpower.dao.helper.PersisterHelperFinder;
-import ca.sqlpower.dao.helper.SPPersisterHelper;
-import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
+import ca.sqlpower.dao.helper.SPPersisterHelperFactory;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.TransactionEvent;
-
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 
 /**
  * This generic listener will use the persister helper factory given to it to
  * make persist calls when events are fired on the object being listened to.
  */
 public class SPPersisterListener implements SPListener {
-	
-	private static final Logger logger = Logger.getLogger(SPPersisterListener.class);
 
 	/**
 	 * This persister will have persist calls made on it when the object(s) this
@@ -57,90 +43,32 @@ public class SPPersisterListener implements SPListener {
 	private final SPPersister target;
 
 	/**
-	 * A class that can convert a complex object into a basic representation
-	 * that can be placed in a string and can also convert the string
-	 * representation back into the complex object.
+	 * This factory will be used to get a persister helper from when an event is
+	 * received. The persister helper will be used to convert the event into a
+	 * persist call for object specific types of events.
+	 * <p>
+	 * Note: This factory must contain the persister that will have persist
+	 * calls made to it.
 	 */
-	private final SessionPersisterSuperConverter converter;
+	private final SPPersisterHelperFactory helperFactory;
 
-	/**
-	 * This is the persister that is tied to the listener for echo cancellation.
-	 * If this persister is currently changing the object model we should not
-	 * send new persist calls.
-	 */
-	private final SPSessionPersister eventSource;
-	
-	/**
-	 * This will be the list we will use to rollback persisted properties
-	 */
-	private List<PersistedPropertiesEntry> persistedPropertiesRollbackList = new LinkedList<PersistedPropertiesEntry>();
-	
-	/**
-	 * This will be the list we use to rollback persisted objects.
-	 * It contains UUIDs of objects that were created.
-	 */
-	private List<PersistedObjectEntry> persistedObjectsRollbackList = new LinkedList<PersistedObjectEntry>();
-	
-	/**
-	 * This is the list we use to rollback object removal
-	 */
-	private List<RemovedObjectEntry> objectsToRemoveRollbackList = new LinkedList<RemovedObjectEntry>();
-	
-	/**
-	 * Persisted property buffer, mapping of {@link WabitObject} UUIDs to each
-	 * individual persisted property
-	 */
-	private Multimap<String, PersistedSPOProperty> persistedProperties = LinkedListMultimap.create();
-	
-	/**
-	 * Persisted {@link WabitObject} buffer, contains all the data that was
-	 * passed into the persistedObject call in the order of insertion
-	 */
-	private List<PersistedSPObject> persistedObjects = new LinkedList<PersistedSPObject>();
-	
-	/**
-	 * {@link WabitObject} removal buffer, mapping of {@link WabitObject} UUIDs
-	 * to their parents
-	 */
-	private List<RemovedObjectEntry> objectsToRemove = new LinkedList<RemovedObjectEntry>();
-
-	/**
-	 * The depth of the current transaction. When this goes from 1 to 0 we know we have exited the outer-most
-	 * transaction and need to send the pooled persist calls.
-	 */
-	private int transactionCount = 0;
-	
-	/**
-	 * If true the current persist calls in the roll back lists are being undone.
-	 */
-	private boolean rollingBack;
-	
 	/**
 	 * This listener can be attached to a hierarchy of objects to persist events
 	 * to the target persister contained in the given persister helper factory.
 	 * 
-	 * @param target
-	 *            The target persister that will be sent persist calls.
-	 * @param converter
-	 *            A converter to convert complex types of objects into simple
-	 *            objects so the object can be passed or persisted.
+	 * @param helperFactory
+	 *            The persister helper factory that will be used to make persist
+	 *            calls. This contains the target persister for the listener.
 	 */
-	public SPPersisterListener(SPPersister target, SessionPersisterSuperConverter converter) {
-		this(target, null, converter);
+	public SPPersisterListener(SPPersisterHelperFactory helperFactory) {
+		this.target = helperFactory.getPersister();
+		this.helperFactory = helperFactory;
+		
 	}
 
-	public SPPersisterListener(SPPersister target, SPSessionPersister dontEcho, SessionPersisterSuperConverter converter) {
-		this.target = target;
-		this.converter = converter;
-		this.eventSource = dontEcho;
-	}
-	
-	
 	public void childAdded(SPChildEvent e) {
-		SQLPowerUtils.listenToHierarchy(e.getChild(), this);
-		if (wouldEcho()) return;
-		logger.debug("Child added: " + e);
-		persistObject(e.getChild(), e.getIndex());
+		e.getChild().addSPListener(this);
+		persistObject(e.getChild());
 	}
 
 	/**
@@ -149,73 +77,15 @@ public class SPPersisterListener implements SPListener {
 	 * one persist object call made and any number of additional persist
 	 * property calls as needed. This can be useful for persisting an entire
 	 * tree of objects to the JCR as an initial commit.
-	 * 
-	 * @param o
-	 *            The object to be persisted.
-	 * @param index
-	 *            the index the object is located in its parent's list of
-	 *            children of the same object type.
 	 */
-	public void persistObject(final SPObject o, int index) {
-		if (wouldEcho()) return;
-		
+	public void persistObject(SPObject o) {
 		this.transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
 			"Persisting " + o.getName() + " and its descendants."));
-		
-		final SPPersisterHelper<? extends SPObject> persisterHelper;
-		try {
-			persisterHelper = PersisterHelperFinder.findPersister(o.getClass());
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		
-		//This persister is used to put persist calls to the pooled lists in this listener.
-		SPPersister poolingPersister = new SPPersister() {
-		
-			public void rollback() {
-				//do nothing, just looking for persist calls.
-			}
-		
-			public void removeObject(String parentUUID, String uuid)
-					throws SPPersistenceException {
-				throw new IllegalStateException("There was a remove object call when " +
-						"trying to persist an object. This should not happen.");
-			}
-		
-			public void persistProperty(String uuid, String propertyName,
-					DataType propertyType, Object newValue)
-					throws SPPersistenceException {
-				//unconditional properties in this case are only on new objects
-				//so undoing these properties will only come just before the object is
-				//removed and doesn't matter.
-				persistedProperties.put(uuid, new PersistedSPOProperty(uuid, propertyName, 
-						propertyType, newValue, newValue, true));
-			}
-		
-			public void persistProperty(String uuid, String propertyName,
-					DataType propertyType, Object oldValue, Object newValue)
-					throws SPPersistenceException {
-				persistedProperties.put(uuid, new PersistedSPOProperty(uuid, propertyName, 
-						propertyType, oldValue, newValue, false));		
-			}
-		
-			public void persistObject(String parentUUID, String type, String uuid,
-					int index) throws SPPersistenceException {
-				logger.debug("Adding a " + type + " with UUID: " + uuid + " to persistedObjects");
-				persistedObjects.add(new PersistedSPObject(parentUUID, type, uuid, index));
-			}
-		
-			public void commit() throws SPPersistenceException {
-				//do nothing, just looking for persist calls.
-			}
-		
-			public void begin() throws SPPersistenceException {
-				//do nothing, just looking for persist calls.		
-			}
-		};
+
+		int index = 0;
 
 		try {
-			persisterHelper.persistObject(o, index, poolingPersister, converter);
+			helperFactory.persistObject(o, index);
 		} catch (SPPersistenceException e) {
 			throw new RuntimeException(e);
 		}
@@ -226,299 +96,56 @@ public class SPPersisterListener implements SPListener {
 		} else {
 			children = o.getChildren();
 		}
-		logger.debug("Persisting children " + children + " of " + o);
 		for (SPObject child : children) {
-			int childIndex = 0;
-			childIndex = getIndexWithinSiblings(o, child);
-			persistObject(child, childIndex);
+			persistObject(child);
 		}
 
 		this.transactionEnded(TransactionEvent.createEndTransactionEvent(this));
 	}
 
-	/**
-	 * Find the index of the child {@link SPObject} within the list of children
-	 * of the same type contained in the parent object.
-	 */
-	private int getIndexWithinSiblings(SPObject parent, SPObject child) {
-		int childIndex;
-		if (parent instanceof SQLObject) {
-			childIndex = ((SQLObject) parent).getChildrenWithoutPopulating(child.getClass()).indexOf(child);
-		} else {
-			childIndex = parent.getChildren(child.getClass()).indexOf(child);
-		}
-		return childIndex;
-	}
-
 	public void childRemoved(SPChildEvent e) {
-		SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
-		if (wouldEcho()) return;
-		transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
-				"Start of transaction triggered by wabitChildRemoved event"));
-		objectsToRemove.add(
-				new RemovedObjectEntry(
-						e.getSource().getUUID(),
-						e.getChild(),
-						e.getIndex()));
-		transactionEnded(TransactionEvent.createEndTransactionEvent(this));
+		try {
+			target.removeObject(e.getSource().getUUID(), e.getChild().getUUID());
+			e.getChild().removeSPListener(this);
+		} catch (SPPersistenceException ex) {
+			throw new RuntimeException(ex);
+		}
 	}
 
 	public void transactionEnded(TransactionEvent e) {
-		if (wouldEcho()) return;
 		try {
-			logger.debug("transactionEnded " + ((e == null) ? null : e.getMessage()));
-			commit();
-		} catch (SPPersistenceException e1) {
-			throw new RuntimeException(e1);
+			target.commit();
+		} catch (SPPersistenceException ex) {
+			throw new RuntimeException(ex);
 		}
 	}
 
 	public void transactionRollback(TransactionEvent e) {
-		if (wouldEcho()) return;
-		logger.debug("transactionRollback " + ((e == null) ? null : e.getMessage()));
-		rollback();
+		target.rollback();
 	}
 
 	public void transactionStarted(TransactionEvent e) {
-		if (wouldEcho()) return;
-		logger.debug("transactionStarted " + ((e == null) ? null : e.getMessage()));
-		transactionCount++;
+		try {
+			target.begin();
+		} catch (SPPersistenceException ex) {
+			throw new RuntimeException(ex);
+		}
 	}
 
 	public void propertyChanged(PropertyChangeEvent evt) {
-		if (wouldEcho()) return;
-		
-		SPObject source = (SPObject) evt.getSource();
-		String uuid = source.getUUID();
-		String propertyName = evt.getPropertyName();
-		Object oldValue = evt.getOldValue();
-		Object newValue = evt.getNewValue();
-		
-		try {
-			if (!PersisterHelperFinder.findPersister(source.getClass())
-					.getPersistedProperties()
-					.contains(propertyName)) {
-				logger.debug("Tried to persist a property that shouldn't be. Ignoring the property: " + propertyName);
-				return;
-			}
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		
-		transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
-				"Creating start transaction event from propertyChange on object " + 
-				evt.getSource().getClass().getSimpleName() + " and property name " + evt.getPropertyName()));
-		
-		//Not persisting non-settable properties.
-		//TODO A method in the persister helpers would make more sense than
-		//using reflection here.
-		PropertyDescriptor propertyDescriptor;
-		try {
-			propertyDescriptor= PropertyUtils.getPropertyDescriptor(source, propertyName);
-		} catch (Exception ex) {
-			this.rollback();
-			throw new RuntimeException(ex);
-		}
-		
-		if (propertyDescriptor == null 
-				|| propertyDescriptor.getWriteMethod() == null) {
-			transactionEnded(TransactionEvent.createEndTransactionEvent(this));
-			return;
-		}
-		
-		DataType typeForClass = PersisterUtils.
-				getDataType(newValue == null ? Void.class : newValue.getClass());
-		
-		Object oldBasicType = converter.convertToBasicType(oldValue);
-		Object newBasicType = converter.convertToBasicType(newValue);
-		
-		logger.debug("persistProperty(" + uuid + ", " + propertyName + ", " + 
-				typeForClass.name() + ", " + oldValue + ", " + newValue + ")");
-		persistedProperties.put(
-				uuid,
-				new PersistedSPOProperty(
-					uuid,
-					propertyName, 
-					typeForClass, 
-					oldBasicType, 
-					newBasicType, 
-					false));
-		
-		this.transactionEnded(TransactionEvent.createEndTransactionEvent(this));
-	}
-	
-	/**
-	 * Returns true if the WabitSessionPersister that this listener complements
-	 * is currently in the middle of an update. In that case, none of the
-	 * WabitListener methods should make calls into the target persister.
-	 * 
-	 * @return True if forwarding an event to the target persister would
-	 *         constitute an echo.
-	 */
-	private boolean wouldEcho() {
-		if (rollingBack) return true;
-		return eventSource != null && eventSource.isUpdatingWorkspace();
-	}
-
-	/**
-	 * Does the actual commit when the transaction count reaches 0. This ensures
-	 * the persist calls are contained in a transaction if a lone change comes
-	 * through. This also allows us to roll back changes if an exception comes
-	 * from the server.
-	 * 
-	 * @throws SPPersistenceException
-	 */
-	private void commit() throws SPPersistenceException {
-		logger.debug("commit(): transactionCount = " + transactionCount);
-		if (transactionCount==1) {
-			try {
-				logger.debug("Calling commit...");
-				//If nothing actually changed in the transaction do not send
-				//the begin and commit to reduce server traffic.
-				if (objectsToRemove.isEmpty() && persistedObjects.isEmpty() && 
-						persistedProperties.isEmpty()) return;
-				
-				this.objectsToRemoveRollbackList.clear();
-				this.persistedObjectsRollbackList.clear();
-				this.persistedPropertiesRollbackList.clear();
-				target.begin();
-				commitRemovals();
-				commitObjects();
-				commitProperties();
-				target.commit();
-				logger.debug("...commit completed.");
-			} catch (Throwable t) {
-				this.rollback();
-				throw new SPPersistenceException(null,t);
-			} finally {
-				this.objectsToRemove.clear();
-				this.objectsToRemoveRollbackList.clear();
-				this.persistedObjects.clear();
-				this.persistedObjectsRollbackList.clear();
-				this.persistedProperties.clear();
-				this.persistedPropertiesRollbackList.clear();
-				this.transactionCount = 0;
-			}
+		DataType dataType;
+		if (evt.getNewValue() != null) {
+			dataType = PersisterUtils.getDataType(evt.getNewValue().getClass());
 		} else {
-			transactionCount--;
+			dataType = PersisterUtils.getDataType(evt.getOldValue() == null ? 
+					Void.class : evt.getOldValue().getClass());
 		}
-	}
-
-	/**
-	 * Performs the rollback if a problem occurred during the persist call.
-	 */
-	private void rollback() {
-		if (rollingBack) {
-			// This happens when we pick up our own events.
-			return;
-		}
-		if (eventSource == null ||
-				eventSource.isHeadingToWisconsin()) {
-			// This means that the SessionPersister is cleaning his stuff and
-			// we need to do the same. Close all current transactions... bla bla bla.
-			this.objectsToRemoveRollbackList.clear();
-			this.persistedObjectsRollbackList.clear();
-			this.persistedPropertiesRollbackList.clear();
-			this.objectsToRemove.clear();
-			this.persistedObjects.clear();
-			this.persistedProperties.clear();
-			this.transactionCount = 0;
-			target.rollback();
-			return;
-		}
-		rollingBack = true;
 		try {
-			SPSessionPersister.undoForSession(
-				eventSource.getSession().getWorkspace(), 
-				this.persistedObjectsRollbackList, 
-				this.persistedPropertiesRollbackList, 
-				this.objectsToRemoveRollbackList,
-				converter);
+			target.persistProperty(((SPObject) evt.getSource()).getUUID(), 
+					evt.getPropertyName(), dataType, evt.getOldValue(), 
+					evt.getNewValue());
 		} catch (SPPersistenceException e) {
-			logger.error(e);
-		} finally {
-			this.objectsToRemoveRollbackList.clear();
-			this.persistedObjectsRollbackList.clear();
-			this.persistedPropertiesRollbackList.clear();
-			this.objectsToRemove.clear();
-			this.persistedObjects.clear();
-			this.persistedProperties.clear();
-			this.transactionCount = 0;
-			rollingBack = false;
-			target.rollback();
-		}
-	}
-	
-	/**
-	 * Commits the persisted {@link SPObject}s that we pooled during
-	 * the transaction. Also updates the roll back list as we go in case
-	 * it is needed.
-	 * 
-	 * @throws SPPersistenceException
-	 */
-	private void commitObjects() throws SPPersistenceException {
-		logger.debug("Committing objects");
-		for (PersistedSPObject pwo : persistedObjects) {
-			logger.debug("Commiting persist call: " + pwo);
-			target.persistObject(
-				pwo.getParentUUID(), 
-				pwo.getType(),
-				pwo.getUUID(),
-				pwo.getIndex());
-			this.persistedObjectsRollbackList.add(
-				new PersistedObjectEntry(
-					pwo.getParentUUID(),
-					pwo.getUUID()));
-		}
-	}
-
-	/**
-	 * Commits the persisted properties that were pooled during the transaction.
-	 * Updates the roll back list as we go.
-	 * 
-	 * @throws SPPersistenceException
-	 */
-	private void commitProperties() throws SPPersistenceException {
-		logger.debug("commitProperties()");
-		for (Entry<String, PersistedSPOProperty> entry : persistedProperties.entries()) {
-			PersistedSPOProperty wop = entry.getValue();
-			String uuid = entry.getKey();
-			if (wop.isUnconditional()) {
-				target.persistProperty(
-					uuid,
-					wop.getPropertyName(),
-					wop.getDataType(),
-					wop.getNewValue());
-			} else {
-				target.persistProperty(
-					uuid, 
-					wop.getPropertyName(), 
-					wop.getDataType(), 
-					wop.getOldValue(),
-					wop.getNewValue());
-			}
-			this.persistedPropertiesRollbackList.add(
-				new PersistedPropertiesEntry(
-					uuid, 
-					wop.getPropertyName(),
-					wop.getDataType(), 
-					wop.getOldValue()));
-		}
-	}
-
-	/**
-	 * Commits the removals that were pooled during the transaction. Also
-	 * updates the roll back list.
-	 */
-	private void commitRemovals() throws SPPersistenceException {
-		logger.debug("commitRemovals()");
-		for (RemovedObjectEntry entry: this.objectsToRemove) {
-			logger.debug("target.removeObject(" + entry.getParentUUID() + ", " + 
-					entry.getRemovedChild().getUUID() + ")");
-			target.removeObject(
-				entry.getParentUUID(), 
-				entry.getRemovedChild().getUUID());
-			this.objectsToRemoveRollbackList.add(entry);
+			throw new RuntimeException(e);
 		}
 	}
 

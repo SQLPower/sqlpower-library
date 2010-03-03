@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, SQL Power Group Inc.
+ * Copyright (c) 2008, SQL Power Group Inc.
  *
  * This file is part of SQL Power Library.
  *
@@ -17,22 +17,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-package ca.sqlpower.enterprise.client;
+package ca.sqlpower.util.reservoir;
 
-/**
- * This interface defines methods that will be called when server information is
- * added or removed from a list of {@link SPServerInfo}, particularly in the
- * {@link SPServerInfoManager}.
- */
-public interface ServerListListener {
-	
-	/**
-	 * Called when an {@link SPServerInfo} gets added
-	 */
-	public void serverAdded(ServerListEvent e);
-	
-	/**
-	 * Called when an {@link SPServerInfo} gets removed.
-	 */
-	public void serverRemoved(ServerListEvent e);
+import junit.framework.Test;
+import junit.framework.TestSuite;
+
+public class AllTests {
+
+    public static Test suite() {
+        TestSuite suite = new TestSuite("Test for ca.sqlpower.util.reservoir");
+        //$JUnit-BEGIN$
+        suite.addTestSuite(BasicReservoirTest.class);
+        suite.addTestSuite(JDBCReservoirDataSourceTest.class);
+        //$JUnit-END$
+        return suite;
+    }
 }

@@ -1789,7 +1789,7 @@ public class SQLQueryUIComponents {
 	/**
 	 * This will create the an error Message String similar to the details in the Exception Dialog.
 	 */
-	public static String createErrorStringMessage(Throwable e) {
+	private static String createErrorStringMessage(Throwable e) {
 		StringWriter stringWriter = new StringWriter();
 		PrintWriter traceWriter = new PrintWriter(stringWriter);
 		stringWriter.write(Messages.getString("SQLQuery.queryFailed"));

@@ -79,32 +79,6 @@ public interface SPVariableResolver {
 	public static final String DEFAULT_VALUE_DELIMITER = "->";
 	
 	/**
-	 * Stores a variable value. If a value with the same key already exists,
-	 * a new value will be added.
-	 * 
-	 * @param key The key to store the value under.
-	 * @param value The value to store.
-	 */
-	public void store(String key, Object value);
-	
-	/**
-	 * Updates a variable value. This means that if a variable with the
-	 * same key was already stored, it will be wiped and replaced by
-	 * the new value.
-	 * 
-	 * @param key The key to store the value under.
-	 * @param value The value to store.
-	 */
-	public void update(String key, Object value);	
-	
-	/**
-	 * Removes all values associated with the specified key. 
-	 * @param key The key for which we want to delete all occurences.
-	 */
-	public void delete(String key);
-	
-	
-	/**
 	 * Resolves a variable to it's value by a String key.
 	 * Returns null if the variable cannot be resolved.
 	 * 

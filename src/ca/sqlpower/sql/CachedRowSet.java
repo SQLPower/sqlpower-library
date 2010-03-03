@@ -80,7 +80,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	/**
 	 * Our cached copy of the original ResultSetMetaData.
 	 */
-	protected CachedResultSetMetaData rsmd = new CachedResultSetMetaData();
+	protected CachedResultSetMetaData rsmd;
 
     /**
      * Currently-registered listeners who are interested in knowing when new
@@ -126,25 +126,17 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 
 		int rowNum = 0;
 		while (rs.next()) {
-		    
-			if (logger.isDebugEnabled()) {
+		    if (logger.isDebugEnabled()) {
 		        logger.debug("crs@" + System.identityHashCode(this) + " populating Row " + rowNum);
 		    }
-			
-		    Object[] row = new Object[colCount];
-			
+			Object[] row = new Object[colCount];
 			for (int i = 0; i < rsColCount; i++) {
-				
 				Object o = rs.getObject(i+1);
-				
-				if (logger.isDebugEnabled()) {
-					if (o == null) {
-						logger.debug("   Col "+i+": null");
-					} else {
-						logger.debug("   Col "+i+": "+o+" ("+o.getClass()+")");
-					}								
-				}
-				
+				if (o == null) {
+				    if (logger.isDebugEnabled()) logger.debug("   Col "+i+": null");
+				} else {
+				    if (logger.isDebugEnabled()) logger.debug("   Col "+i+": "+o+" ("+o.getClass()+")");
+				}				
 				row[i] = o;
 			}
             
@@ -159,30 +151,10 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		}
 	}
 	
-	/**
-	 * Returs a sorted copy of this resultset. The result copy
-	 * will not be linked to the original one and will not be 
-	 * populated nor refreshed. It is a snapshot of the current state
-	 * of the resultset.
-	 * 
-	 * @param c
-	 * 
-	 * @return A copy of this rs, sorted
-	 */
-	public CachedRowSet sort(RowComparator c) {
-		
-		CachedRowSet newRs = new CachedRowSet();
-		try {
-			newRs.populate(this);
-		} catch (SQLException e) {
-			throw new RuntimeException(e);
-		}
-		
+	public void sort(RowComparator c) {
 		if (this.data != null) {
-			Collections.sort(newRs.data, c);
+			Collections.sort(this.data, c);
 		}
-		
-		return newRs;
 	}
 
     /**
@@ -394,7 +366,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * Returns the list of rows in this result set.
 	 */
 	public List<Object[]> getData() {
-		return data == null ? new ArrayList<Object[]>() : Collections.unmodifiableList(data);
+		return data == null ? new ArrayList<Object[]>() : data;
 	}
 
 	/**

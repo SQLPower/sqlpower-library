@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, SQL Power Group Inc.
+ * Copyright (c) 2008, SQL Power Group Inc.
  *
  * This file is part of SQL Power Library.
  *
@@ -17,24 +17,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-package ca.sqlpower.enterprise.client;
+package ca.sqlpower.query;
 
-/**
- * An Event for notify changes of an {@link SPServerInfo} to a List of Servers,
- * particularly in the {@link SPServerInfoManager}
- */
-public class ServerListEvent {
+import junit.framework.Test;
+import junit.framework.TestSuite;
 
-	/**
-	 * The {@link SPServerInfo} instance that was changed/added/removed
-	 */
-	private final SPServerInfo serverInfo;
+public class AllTests {
 
-	public ServerListEvent(SPServerInfo serverInfo) {
-		this.serverInfo = serverInfo;
-	}
-
-	public SPServerInfo getServerInfo() {
-		return serverInfo;
-	}
+    public static Test suite() {
+        TestSuite suite = new TestSuite("Test for ca.sqlpower.query");
+        //$JUnit-BEGIN$
+        suite.addTestSuite(QueryImplTest.class);
+        suite.addTestSuite(SQLJoinTest.class);
+        suite.addTestSuite(TableContainerTest.class);
+        //$JUnit-END$
+        return suite;
+    }
 }

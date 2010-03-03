@@ -205,15 +205,7 @@ public class SQLPowerUtils {
         if (uuid.equals(startWith.getUUID())) {
             return startWith;
         }
-        
-        List<? extends SPObject> children;
-        if (startWith instanceof SQLObject) {
-        	children = ((SQLObject) startWith).getChildrenWithoutPopulating();
-        } else {
-        	children = startWith.getChildren();
-        }
-        
-        for (SPObject child : children) {
+        for (SPObject child : startWith.getChildren()) {
             SPObject found = findRecursively(child, uuid);
             if (found != null) {
                 return found;

@@ -32,7 +32,6 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonBound;
-import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Persistable;
 import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.util.SPSession;
@@ -148,7 +147,6 @@ public abstract class AbstractSPObject implements SPObject {
 		uuid = UUID.randomUUID().toString();
 	}
 
-	@NonProperty
 	public <T extends SPObject> List<T> getChildren(Class<T> type) {
 		List<T> children = new ArrayList<T>();
 		for (SPObject child : getChildren()) {
@@ -159,7 +157,7 @@ public abstract class AbstractSPObject implements SPObject {
 		return children;
 	}
 
-	@Accessor(isInteresting=true)
+	@Accessor
 	public String getName() {
 		return name;
 	}

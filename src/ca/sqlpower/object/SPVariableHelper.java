@@ -33,8 +33,6 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.collections.map.MultiValueMap;
 import org.apache.log4j.Logger;
-import org.olap4j.OlapConnection;
-import org.olap4j.PreparedOlapStatement;
 
 /**
  * This is a helper class for resolving variables. It is a delegating
@@ -157,7 +155,7 @@ public class SPVariableHelper implements SPVariableResolver {
     
     /**
      * Helper method that takes a connection and a SQL statement which includes variable and 
-     * converts all that in a nifty prepared statement ready for execution, on time for Christmas.
+     * converts all that in a nifty prepared statement ready for execution, on time for christmas.
      * @param connection A connection object to use in order to generate the prepared statement.
      * @param sql A SQL string which might include variables.
      * @return A {@link PreparedStatement} object ready for execution.
@@ -169,7 +167,7 @@ public class SPVariableHelper implements SPVariableResolver {
     
     /**
      * Helper method that takes a connection and a SQL statement which includes variable and 
-     * converts all that in a nifty prepared statement ready for execution, on time for Christmas.
+     * converts all that in a nifty prepared statement ready for execution, on time for christmas.
      * @param connection A connection object to use in order to generate the prepared statement.
      * @param sql A SQL string which might include variables.
      * @param variableHelper A {@link SPVariableHelper} object to resolve the variables.
@@ -212,71 +210,6 @@ public class SPVariableHelper implements SPVariableResolver {
     }
     
     
-    /**
-     * Helper method that takes a connection and a MDX statement which includes variable and 
-     * converts all that in a nifty prepared statement ready for execution, on time for Christmas.
-     * @param connection A connection object to use in order to generate the prepared statement.
-     * @param sql A MDX string which might include variables.
-     * @return A {@link PreparedStatement} object ready for execution.
-     * @throws SQLException Might get thrown if we cannot generate a {@link PreparedStatement} with the supplied connection.
-     */
-    public PreparedOlapStatement substituteForDb(
-    		OlapConnection connection, 
-    		String mdxQuery) throws SQLException 
-    {
-    	return substituteForDb(connection, mdxQuery, this);
-    }
-    
-    
-    /**
-     * Helper method that takes a connection and a MDX statement which includes variable and 
-     * converts all that in a nifty prepared statement ready for execution, on time for Christmas.
-     * @param connection A connection object to use in order to generate the prepared statement.
-     * @param sql A MDX string which might include variables.
-     * @param variableHelper A {@link SPVariableHelper} object to resolve the variables.
-     * @return A {@link PreparedStatement} object ready for execution.
-     * @throws SQLException Might get thrown if we cannot generate a {@link PreparedStatement} with the supplied connection.
-     */
-    public static PreparedOlapStatement substituteForDb(
-    		OlapConnection connection, 
-    		String mdxQuery, 
-    		SPVariableHelper variableHelper) throws SQLException 
-    {
-    	
-    	// Make sure that the registry is ready.
-        SPResolverRegistry.init(variableHelper.getContextSource());
-        
-        StringBuilder text = new StringBuilder();
-        Matcher matcher = varPattern.matcher(mdxQuery);
-        List<Object> vars = new LinkedList<Object>();
-        
-        // First, change all vars to '?' markers.
-        int currentIndex = 0;
-        while (!matcher.hitEnd()) {
-            if (matcher.find()) {
-                String variableName = matcher.group(1);
-                if (variableName.equals("$")) {
-                	vars.add("$");
-                } else {
-                	vars.add(variableHelper.resolve(variableName));
-                }
-                text.append(mdxQuery.substring(currentIndex, matcher.start()));
-                text.append("?");
-                currentIndex = matcher.end();
-            }  
-        }
-        text.append(mdxQuery.substring(currentIndex));
-        
-        // Now generate a prepared statement and inject it's variables.
-        PreparedOlapStatement ps = connection.prepareOlapStatement(text.toString());
-        for (int i = 0; i < vars.size(); i++) {
-    		ps.setObject(i+1, vars.get(i));
-        }
-        
-        return ps;
-    }
-    
-    
     
     /**
      * Returns the namespace of a variable. If there is
@@ -301,14 +234,14 @@ public class SPVariableHelper implements SPVariableResolver {
      */
     public static String getKey(String varDef) {
     	
+    	int namespaceIndex = varDef.indexOf(NAMESPACE_DELIMITER);
+    	int defValueIndex = varDef.indexOf(DEFAULT_VALUE_DELIMITER);
     	String returnValue = varDef;
     	
-    	int namespaceIndex = varDef.indexOf(NAMESPACE_DELIMITER);
 		if (namespaceIndex != -1) {
 			returnValue = returnValue.substring(namespaceIndex + NAMESPACE_DELIMITER.length(), varDef.length());
 		}
 		
-		int defValueIndex = returnValue.indexOf(DEFAULT_VALUE_DELIMITER);
 		if (defValueIndex != -1) {
 			returnValue = returnValue.substring(0, defValueIndex);
 		}
@@ -387,32 +320,27 @@ public class SPVariableHelper implements SPVariableResolver {
 		
 		String namespace = getNamespace(key);
 		
-		try {
-			if (namespace != null) {
-				SPVariableResolver resolver = 
+		if (namespace != null) {
+			SPVariableResolver resolver = 
 					SPResolverRegistry.getResolver(this.contextSource, namespace);
-				if (resolver==null) {
-					return defaultValue;
-				} else {
+			if (resolver==null) {
+				return defaultValue;
+			} else {
+				return resolver.resolve(key, defaultValue);
+			}
+		}
+		
+		SPObject node = this.contextSource;
+		while (true) {	
+			if (node instanceof SPVariableResolverProvider) {
+				SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
+				if (resolver.resolves(key)) {
 					return resolver.resolve(key, defaultValue);
 				}
 			}
-			
-			SPObject node = this.contextSource;
-			while (true) {	
-				if (node instanceof SPVariableResolverProvider) {
-					SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
-					if (resolver.resolves(key)) {
-						return resolver.resolve(key, defaultValue);
-					}
-				}
-				node = node.getParent();
-				if (node == null) return defaultValue;
-			}
-		} catch (StackOverflowError soe) {
-			throw new RecursiveVariableException();
+			node = node.getParent();
+			if (node == null) return defaultValue;
 		}
-		
 	}
 
 	
@@ -426,10 +354,21 @@ public class SPVariableHelper implements SPVariableResolver {
 		Collection<Object> results = new HashSet<Object>();
 		String namespace = getNamespace(key);
 		
-		try {
-			if (namespace != null) {
-				List<SPVariableResolver> resolvers = SPResolverRegistry.getResolvers(this.contextSource, namespace);
-				for (SPVariableResolver resolver : resolvers) {
+		if (namespace != null) {
+			List<SPVariableResolver> resolvers = SPResolverRegistry.getResolvers(this.contextSource, namespace);
+			for (SPVariableResolver resolver : resolvers) {
+				if (resolver.resolves(key)) {
+					results.addAll(resolver.resolveCollection(key));
+					if (!globalCollectionResolve) {
+						break;
+					}
+				}
+			}
+		} else {
+			SPObject node = this.contextSource;
+			while (true) {	
+				if (node instanceof SPVariableResolverProvider) {
+					SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
 					if (resolver.resolves(key)) {
 						results.addAll(resolver.resolveCollection(key));
 						if (!globalCollectionResolve) {
@@ -437,36 +376,20 @@ public class SPVariableHelper implements SPVariableResolver {
 						}
 					}
 				}
-			} else {
-				SPObject node = this.contextSource;
-				while (true) {	
-					if (node instanceof SPVariableResolverProvider) {
-						SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
-						if (resolver.resolves(key)) {
-							results.addAll(resolver.resolveCollection(key));
-							if (!globalCollectionResolve) {
-								break;
-							}
-						}
-					}
-					node = node.getParent();
-					if (node == null) break;
-				}
+				node = node.getParent();
+				if (node == null) break;
 			}
-			
-			if (results.size() == 0) {
-				if (defaultValue == null) {
-					return Collections.emptySet();
-				} else {
-					return Collections.singleton(defaultValue);			
-				}
-			} else {
-				return results;
-			}	
-		} catch (StackOverflowError soe) {
-			throw new RecursiveVariableException();
 		}
 		
+		if (results.size() == 0) {
+			if (defaultValue == null) {
+				return Collections.emptySet();
+			} else {
+				return Collections.singleton(defaultValue);			
+			}
+		} else {
+			return results;
+		}	
 	}
 
 	
@@ -503,9 +426,21 @@ public class SPVariableHelper implements SPVariableResolver {
 		Collection<Object> matches = new HashSet<Object>();
 		String namespace = getNamespace(key);
 		
-		try {
-			if (namespace != null) {
-				for (SPVariableResolver resolver : SPResolverRegistry.getResolvers(contextSource, namespace)) {
+		if (namespace != null) {
+			for (SPVariableResolver resolver : SPResolverRegistry.getResolvers(contextSource, namespace)) {
+				if (resolver.resolves(key)) {
+					matches.addAll(resolver.matches(key, partialValue));
+					if (!globalCollectionResolve) {
+						break;
+					}
+				}
+			}
+			return matches;
+		} else {
+			SPObject node = this.contextSource;
+			while (true) {	
+				if (node instanceof SPVariableResolverProvider) {
+					SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
 					if (resolver.resolves(key)) {
 						matches.addAll(resolver.matches(key, partialValue));
 						if (!globalCollectionResolve) {
@@ -513,28 +448,11 @@ public class SPVariableHelper implements SPVariableResolver {
 						}
 					}
 				}
-				return matches;
-			} else {
-				SPObject node = this.contextSource;
-				while (true) {	
-					if (node instanceof SPVariableResolverProvider) {
-						SPVariableResolver resolver = ((SPVariableResolverProvider)node).getVariableResolver();
-						if (resolver.resolves(key)) {
-							matches.addAll(resolver.matches(key, partialValue));
-							if (!globalCollectionResolve) {
-								break;
-							}
-						}
-					}
-					node = node.getParent();
-					if (node == null) break;
-				}
-				return matches;
+				node = node.getParent();
+				if (node == null) break;
 			}
-		} catch (StackOverflowError soe) {
-			throw new RecursiveVariableException();
+			return matches;
 		}
-		
 	}
 	
 	public Collection<String> keySet(String namespace) {
@@ -577,23 +495,5 @@ public class SPVariableHelper implements SPVariableResolver {
 
 	public String getUserFriendlyName() {
 		return null;
-	}
-	
-	/**
-	 * Wraps the RuntimeException to identify recursive variables resolutions.
-	 */
-	public class RecursiveVariableException extends RuntimeException {
-	}
-
-	public void delete(String key) {
-		throw new UnsupportedOperationException("SPVariableHelper cannot store variables.");
-	}
-
-	public void store(String key, Object value) {
-		throw new UnsupportedOperationException("SPVariableHelper cannot store variables.");
-	}
-
-	public void update(String key, Object value) {
-		throw new UnsupportedOperationException("SPVariableHelper cannot store variables.");
 	}
 }

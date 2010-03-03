@@ -28,6 +28,5 @@
 	<classpathentry kind="lib" path="lib/spring-security-core-2.0.5.RELEASE.jar"/>
 	<classpathentry kind="lib" path="lib/commons-codec-20041127.091804.jar"/>
 	<classpathentry kind="lib" path="lib/google-collections-1.0-rc4.jar"/>
-	<classpathentry kind="lib" path="lib/olap4j-0.9.8-SNAPSHOT.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

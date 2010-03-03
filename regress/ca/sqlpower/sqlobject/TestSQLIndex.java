@@ -19,10 +19,8 @@
 package ca.sqlpower.sqlobject;
 
 import java.sql.Types;
-import java.util.Arrays;
 
 import ca.sqlpower.object.ObjectDependentException;
-import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -99,7 +97,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     }
     
     @Override
-    protected Class<? extends SPObject> getChildClassType() {
+    protected Class<?> getChildClassType() {
     	return Column.class;
     }
 
@@ -135,8 +133,8 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         SQLTable testTable = new SQLTable(null,true);
         testTable.setName("Test Table");
         SQLColumn col = new SQLColumn(testTable, "pk", Types.INTEGER, 10, 0);
+        col.setPrimaryKeySeq(0);
         testTable.addColumn(col);
-        testTable.addToPK(col);
         
         SQLIndex ind = testTable.getPrimaryKeyIndex();
         
@@ -145,7 +143,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         testTable.removeChild(col);
         
         assertNull("The column was not removed from the index", ind.getChildByName("pk"));
-        assertEquals("The table should have an empty PK index", 0, testTable.getPkSize());
+        assertNull("The table should not have a PK index", testTable.getPrimaryKeyIndex());
     }
     
     public void testCopyConstructor() throws SQLObjectException{
@@ -163,6 +161,71 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         }
     }
     
+    public void testSetPrimaryKeyIndexTrueWithOnNonPkAndWithNoSetPK() throws SQLObjectException {
+        assertFalse("Test Index 1 already set as the pk", index.isPrimaryKeyIndex());
+        assertFalse("Test Index 2 already set as the pk", index2.isPrimaryKeyIndex());
+        assertNull("Table contained a pk index",table.getPrimaryKeyIndex());
+        index.setPrimaryKeyIndex(true);
+        assertTrue("Test Index 1 not set as the pk", index.isPrimaryKeyIndex());
+        assertFalse("Test Index 2 set as the pk", index2.isPrimaryKeyIndex());
+        assertEquals("Index 1 not the table's primary key",index, table.getPrimaryKeyIndex());
+    }
+    
+    public void testSetPrimaryKeyIndexTrueWithOnNonPkAndWithDifferentPKSet() throws SQLObjectException {
+        index2.setPrimaryKeyIndex(true);
+        assertFalse("Test Index 1 already set as the pk", index.isPrimaryKeyIndex());
+        assertTrue("Test Index 2 not set as the pk", index2.isPrimaryKeyIndex());
+        assertEquals("Table did not contain index 2 as a pk index",index2,table.getPrimaryKeyIndex());
+        index.setPrimaryKeyIndex(true);
+        assertTrue("Test Index 1 not set as the pk", index.isPrimaryKeyIndex());
+        assertFalse("Test Index 2 set as the pk", index2.isPrimaryKeyIndex());
+        assertEquals("Index 1 not the table's primary key",index, table.getPrimaryKeyIndex());
+    }
+    
+    public void testSetPrimaryKeyIndexTrueWithOnNonPkAndWithSameAsPK() throws SQLObjectException {
+        index.setPrimaryKeyIndex(true);
+        assertTrue("Test Index 1 not set as the pk", index.isPrimaryKeyIndex());
+        assertFalse("Test Index 2 set as the pk", index2.isPrimaryKeyIndex());
+        assertEquals("Table did not contain index as a pk index",index,table.getPrimaryKeyIndex());
+        index.setPrimaryKeyIndex(true);
+        assertTrue("Test Index 1 not set as the pk", index.isPrimaryKeyIndex());
+        assertFalse("Test Index 2 set as the pk", index2.isPrimaryKeyIndex());
+        assertEquals("Index 1 not the table's primary key",index, table.getPrimaryKeyIndex());
+    }
+    
+    public void testSetPrimaryKeyIndexFalseWithOnNonPkAndWithNoSetPK() throws SQLObjectException {
+        assertFalse("Test Index 1 already set as the pk", index.isPrimaryKeyIndex());
+        assertFalse("Test Index 2 already set as the pk", index2.isPrimaryKeyIndex());
+        assertNull("Table contained a pk index",table.getPrimaryKeyIndex());
+        index.setPrimaryKeyIndex(false);
+        assertFalse("Test Index 1 already set as the pk", index.isPrimaryKeyIndex());
+        assertFalse("Test Index 2 already set as the pk", index2.isPrimaryKeyIndex());
+        assertNull("Table contained a pk index",table.getPrimaryKeyIndex());
+    }
+    
+    public void testSetPrimaryKeyIndexFalseWithOnNonPkAndWithDifferentPKSet() throws SQLObjectException {
+        index2.setPrimaryKeyIndex(true);
+        assertFalse("Test Index 1 already set as the pk", index.isPrimaryKeyIndex());
+        assertTrue("Test Index 2 not set as the pk", index2.isPrimaryKeyIndex());
+        assertEquals("Table did not contain index 2 as a pk index",index2,table.getPrimaryKeyIndex());
+        index.setPrimaryKeyIndex(false);
+        assertFalse("Test Index 1 already set as the pk", index.isPrimaryKeyIndex());
+        assertTrue("Test Index 2 not set as the pk", index2.isPrimaryKeyIndex());
+        assertEquals("Table did not contain index 2 as a pk index",index2,table.getPrimaryKeyIndex());
+    }
+    
+    public void testSetPrimaryKeyIndexFalseWithOnNonPkAndWithSameAsPK() throws SQLObjectException {
+        index.setPrimaryKeyIndex(true);
+        assertTrue("Test Index 1 not set as the pk", index.isPrimaryKeyIndex());
+        assertFalse("Test Index 2 set as the pk", index2.isPrimaryKeyIndex());
+        assertEquals("Table did not contain index as a pk index",index,table.getPrimaryKeyIndex());
+        index.setPrimaryKeyIndex(false);
+        assertFalse("Test Index 1 set as the pk", index.isPrimaryKeyIndex());
+        assertFalse("Test Index 2 set as the pk", index2.isPrimaryKeyIndex());
+        assertNull("The table's primary key is not null", table.getPrimaryKeyIndex());
+    }
+    
+    
     public void testLoadFromDbGetsCorrectPK() throws SQLObjectException{
         assertNotNull("No primary key loaded",dbTable.getPrimaryKeyIndex());
         assertEquals("Wrong indices: " + dbTable.getIndices(),
@@ -171,7 +234,8 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     }
     
     public void testAddStringColumnToPKThrowsException() throws Exception {
-        SQLIndex i = table.getPrimaryKeyIndex();
+        SQLIndex i = new SQLIndex("Index",true,"","BTREE","");
+        i.setPrimaryKeyIndex(true);
         try {
             i.addChild(new Column("index column",AscendDescend.UNSPECIFIED));
             fail();
@@ -186,10 +250,10 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         SQLIndex i = new SQLIndex("Index",true,"", "BTREE","");
         i.addChild(new Column("index column",AscendDescend.UNSPECIFIED));
         try {
-            new SQLTable(db, true, i);
+            i.setPrimaryKeyIndex(true);
             fail();
         } catch (SQLObjectException e) {
-        	//Did not create a table as the index was not valid to be the primary key.
+            assertEquals("A PK must only refer to Index.Columns that contain SQLColumns",e.getMessage());
             return;
         }
     }
@@ -303,11 +367,8 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
      * that point to columns of other tables. This test ensures that it doesn't.
      */
     public void testUpdateToMatchBadColumnRefs() throws Exception {
-    	dbTable.populate();
         SQLIndex source = dbTable.getPrimaryKeyIndex();
         SQLIndex target = index3;
-        
-        assertEquals(3, source.getChildCount());
         
         target.updateToMatch(source);
         
@@ -326,111 +387,5 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     @Override
     public void testAddChildDoesNotPopulate() throws Exception {
     	//skip test
-    }
-    
-    /**
-     * Tests adding a column to an index through updateToMatch. The new
-     * column should be added in the second position of the index so the
-     * first index matches the second index in terms of order of columns.
-     */
-    public void testUpdateToMatchColAdded() throws Exception {
-    	SQLTable t1 = new SQLTable(db, true);
-    	SQLColumn c11 = new SQLColumn(t1, "col1", Types.VARCHAR, 10, 0);
-    	t1.addColumn(c11);
-    	SQLColumn c12 = new SQLColumn(t1, "col2", Types.VARCHAR, 10, 0);
-    	t1.addColumn(c12);
-    	SQLIndex idx1 = new SQLIndex();
-    	t1.addIndex(idx1);
-    	idx1.addIndexColumn(c11);
-    	
-    	SQLIndex idx2 = new SQLIndex();
-    	t1.addIndex(idx2);
-    	idx2.addIndexColumn(c11);
-    	idx2.addIndexColumn(c12);
-    	
-    	assertEquals(1, idx1.getChildCount());
-    	assertEquals(2, idx2.getChildCount());
-    	
-    	idx1.updateToMatch(idx2);
-    	
-    	assertEquals(2, idx1.getChildCount());
-    	assertEquals(2, idx2.getChildCount());
-    	
-    	assertEquals(c11, idx1.getChild(0).getColumn());
-    	assertEquals(c12, idx1.getChild(1).getColumn());
-    }
-    
-    public void testUpdateToMatchRemoveCol() throws Exception {
-    	SQLTable t1 = new SQLTable(db, true);
-    	SQLColumn c11 = new SQLColumn(t1, "col1", Types.VARCHAR, 10, 0);
-    	t1.addColumn(c11);
-    	SQLColumn c12 = new SQLColumn(t1, "col2", Types.VARCHAR, 10, 0);
-    	t1.addColumn(c12);
-    	SQLIndex idx1 = new SQLIndex();
-    	t1.addIndex(idx1);
-    	idx1.addIndexColumn(c11);
-    	
-    	SQLIndex idx2 = new SQLIndex();
-    	t1.addIndex(idx2);
-    	idx2.addIndexColumn(c11);
-    	idx2.addIndexColumn(c12);
-    	
-    	assertEquals(1, idx1.getChildCount());
-    	assertEquals(2, idx2.getChildCount());
-    	
-    	idx2.updateToMatch(idx1);
-    	
-    	assertEquals(1, idx1.getChildCount());
-    	assertEquals(1, idx2.getChildCount());
-    	
-    	assertEquals(c11, idx2.getChild(0).getColumn());
-	}
-    
-    /**
-     * Updates one index to match another index that has the same columns
-     * but in reverse order.
-     */
-    public void testUpdateToMatchFlipCols() throws Exception {
-    	SQLTable t1 = new SQLTable(db, true);
-    	SQLColumn c11 = new SQLColumn(t1, "col1", Types.VARCHAR, 10, 0);
-    	t1.addColumn(c11);
-    	SQLColumn c12 = new SQLColumn(t1, "col2", Types.VARCHAR, 10, 0);
-    	t1.addColumn(c12);
-    	SQLIndex idx1 = new SQLIndex();
-    	t1.addIndex(idx1);
-    	idx1.addIndexColumn(c12);
-    	idx1.addIndexColumn(c11);
-    	
-    	SQLIndex idx2 = new SQLIndex();
-    	t1.addIndex(idx2);
-    	idx2.addIndexColumn(c11);
-    	idx2.addIndexColumn(c12);
-    	
-    	assertEquals(2, idx1.getChildCount());
-    	assertEquals(2, idx2.getChildCount());
-
-    	idx1.updateToMatch(idx2);
-    	
-    	assertEquals(2, idx1.getChildCount());
-    	assertEquals(2, idx2.getChildCount());
-    	
-    	assertEquals(c11, idx1.getChild(0).getColumn());
-    	assertEquals(c12, idx1.getChild(1).getColumn());
-	}
-    
-    public void testMakeColumnsLikeChangeAllCols() throws Exception {
-    	SQLTable t1 = new SQLTable(db, true);
-    	SQLColumn c11 = new SQLColumn(t1, "col1", Types.VARCHAR, 10, 0);
-    	t1.addColumn(c11);
-    	SQLColumn c12 = new SQLColumn(t1, "col2", Types.VARCHAR, 10, 0);
-    	t1.addColumn(c12);
-    	SQLIndex idx1 = new SQLIndex();
-    	t1.addIndex(idx1);
-    	idx1.addIndexColumn(c11);
-    	
-    	idx1.makeColumnsLike(Arrays.asList(new Column(c12, AscendDescend.UNSPECIFIED)));
-    	
-    	assertEquals(1, idx1.getChildCount());
-    	assertEquals(c12, idx1.getChild(0).getColumn());
     }
 }

@@ -71,6 +71,8 @@ public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Seria
 	 */
 	public CachedResultSetMetaData(ResultSetMetaData source, boolean upcaseColumnNames)
 		throws SQLException {
+
+		logger.info("[34mCreating new CachedResultSetMetaData[0m");
 		this.upcaseColumnNames = upcaseColumnNames;
 		this.columnCount = source.getColumnCount();
 		createArrays(columnCount);

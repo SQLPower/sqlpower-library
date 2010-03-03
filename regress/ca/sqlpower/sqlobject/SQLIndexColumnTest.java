@@ -21,7 +21,6 @@ package ca.sqlpower.sqlobject;
 
 import java.sql.Types;
 
-import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 
@@ -48,17 +47,19 @@ public class SQLIndexColumnTest extends BaseSQLObjectTestCase {
         parentTable.addColumn(pkcol2);
 		parentTable.addColumn(new SQLColumn(parentTable, "attribute_1", Types.INTEGER, 10, 0));
 		
-		SQLIndex parentTablePK = parentTable.getPrimaryKeyIndex();
+		SQLIndex parentTablePK = new SQLIndex();
+		parentTablePK.setPrimaryKeyIndex(true);
 		column = new Column(pkcol1, AscendDescend.UNSPECIFIED);
 		parentTablePK.addChild(column);
 		parentTablePK.addChild(new Column(pkcol2, AscendDescend.UNSPECIFIED));
 		parentTablePK.setName("parentTable_pk");
+		parentTable.addIndex(parentTablePK);
 		database.addChild(parentTable);
 		
 	}
 
 	@Override
-	protected Class<? extends SPObject> getChildClassType() {
+	protected Class<?> getChildClassType() {
 		return null;
 	}
 
