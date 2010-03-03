@@ -287,9 +287,14 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
         }
         return LEXICAL_COMPARATOR;
     }
+    
+    private void updateArrays() {
 
-    private Row[] getViewToModel() {
-		if (viewToModel == null) {
+		viewToModel = null;
+		modelToView = null;
+		
+		synchronized (tableModel) {
+			
 			int tableModelRowCount = tableModel.getRowCount();
 			viewToModel = new Row[tableModelRowCount];
 			for (int row = 0; row < tableModelRowCount; row++) {
@@ -299,7 +304,19 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
 			if (isSorting()) {
 				Arrays.sort(viewToModel);
 			}
+			
+			int n = viewToModel.length;
+			modelToView = new int[n];
+			for (int i = 0; i < n; i++) {
+				modelToView[viewToModel[i].modelIndex] = i;
+			}
+			
 		}
+		
+    }
+
+    private Row[] getViewToModel() {
+    	updateArrays();
 		return viewToModel;
     }
 
@@ -307,19 +324,8 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
 		return getViewToModel()[viewIndex].modelIndex;			
     }
 
-    // Added - not proven.
-/*    public int viewIndex(int modelIndex) {
-        return getModelToView()[modelIndex];
-    }*/
-
     private int[] getModelToView() {
-		if (modelToView == null) {
-			int n = getViewToModel().length;
-			modelToView = new int[n];
-			for (int i = 0; i < n; i++) {
-				modelToView[modelIndex(i)] = i;
-			}
-		}
+		updateArrays();
 		return modelToView;
     }
 

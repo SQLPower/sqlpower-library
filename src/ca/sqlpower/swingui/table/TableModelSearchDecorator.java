@@ -115,43 +115,45 @@ public class TableModelSearchDecorator extends AbstractTableModel implements Cle
 
         List<Integer> newRowMap = new ArrayList<Integer>();
         String[] searchWords = (searchText == null ? null : searchText.split(" "));
-
-        for ( int row = 0; row < tableModel.getRowCount(); row++ ) {
-            boolean match = false;
-            if ( searchWords == null ) {
-                match = true;
-            } else {
-                
-                int i;
-                for ( i=0; i<searchWords.length; i++ ) {
-                    
-                    match = false;
-                    for ( int column = 0; column < tableModel.getColumnCount(); column++ ) {
-                        String value = tableTextConverter.getTextForCell(row, column);
-                        if ( value.toLowerCase().indexOf(searchWords[i].toLowerCase()) >= 0 ) {
-                            match = true;
-                            if (logger.isDebugEnabled()) {
-                                logger.debug("Match: "+value.toLowerCase()+" contains "+searchWords[i]+ "     "+value.toLowerCase().indexOf(searchWords[i].toLowerCase()));
-                            }
-                            break;
-                        }
-                    }
-                    if ( !match )
-                        break;
-                        
-                }
-                if ( i < searchWords.length )
-                    match = false;
-            }
-            if ( match ) {
-                newRowMap.add(tableTextConverter.modelIndex(row));
-            }
-        }
-        setSearchText(searchText);
-        rowMapping = newRowMap;
-        if (logger.isDebugEnabled()) {
-            logger.debug("new row mapping after search: "+rowMapping);
-        }
+        
+        synchronized (tableModel) {
+        	for ( int row = 0; row < tableModel.getRowCount(); row++ ) {
+        		boolean match = false;
+        		if ( searchWords == null ) {
+        			match = true;
+        		} else {
+        			
+        			int i;
+        			for ( i=0; i<searchWords.length; i++ ) {
+        				
+        				match = false;
+        				for ( int column = 0; column < tableModel.getColumnCount(); column++ ) {
+        					String value = tableTextConverter.getTextForCell(row, column);
+        					if ( value.toLowerCase().indexOf(searchWords[i].toLowerCase()) >= 0 ) {
+        						match = true;
+        						if (logger.isDebugEnabled()) {
+        							logger.debug("Match: "+value.toLowerCase()+" contains "+searchWords[i]+ "     "+value.toLowerCase().indexOf(searchWords[i].toLowerCase()));
+        						}
+        						break;
+        					}
+        				}
+        				if ( !match )
+        					break;
+        				
+        			}
+        			if ( i < searchWords.length )
+        				match = false;
+        		}
+        		if ( match ) {
+        			newRowMap.add(tableTextConverter.modelIndex(row));
+        		}
+        	}
+        	setSearchText(searchText);
+        	rowMapping = newRowMap;
+        	if (logger.isDebugEnabled()) {
+        		logger.debug("new row mapping after search: "+rowMapping);
+        	}
+		}
         fireTableDataChanged();
     }
 
