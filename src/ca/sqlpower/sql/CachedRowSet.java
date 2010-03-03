@@ -109,7 +109,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * @throws SQLException 
 	 */
 	public void follow(ResultSet rs, int rowLimit, String ... extraColNames) throws SQLException {
-	    data = new ArrayList<Object[]>();
+	    data = Collections.synchronizedList(new ArrayList<Object[]>());
 	    logger.debug("crs@" + System.identityHashCode(this) + " starting to follow...");
 	    
 		rsmd = new CachedResultSetMetaData(rs.getMetaData(), this.makeUppercase);
@@ -148,10 +148,11 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 				row[i] = o;
 			}
             
-			data.add(row);
-			
-			while (data.size() > rowLimit) { 
-				data.remove(0);
+			synchronized (data) {	
+				data.add(row);				
+				while (data.size() > rowLimit) { 
+					data.remove(0);
+				}
 			}
 			
 			fireRowAdded(row, rowNum);
@@ -178,8 +179,11 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 			throw new RuntimeException(e);
 		}
 		
+		
 		if (this.data != null) {
-			Collections.sort(newRs.data, c);
+			synchronized (data) {	
+				Collections.sort(newRs.data, c);
+			}
 		}
 		
 		return newRs;
@@ -233,7 +237,7 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		}
 
 		int rowNum = 0;
-		data = new ArrayList<Object[]>();
+		data = Collections.synchronizedList(new ArrayList<Object[]>());
 
 		if (rs.getType() != ResultSet.TYPE_FORWARD_ONLY) {
 			rs.beforeFirst();
@@ -253,8 +257,10 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 			}
             
             if (filter == null || filter.acceptsRow(row)) {
-                data.add(row);
-                rowNum++;
+            	synchronized (data) {
+            		data.add(row);
+            		rowNum++;					
+				}
             } else {
                 logger.debug("Skipped this row (rejected by filter)");
             }
@@ -367,7 +373,9 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
         	if (data == null) {
         		return true;
         	} else {
-        		return resultSetFilter.acceptsRow(data.get(row - 1));
+        		synchronized (data) {	
+        			return resultSetFilter.acceptsRow(data.get(row - 1));
+    			}
         	}
         }
     }
@@ -379,7 +387,9 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		if (data == null) {
 			return 0;
 		}
-		return data.size();
+		synchronized (data) {	
+			return data.size();
+		}
 	}
 	
 	/**
@@ -394,7 +404,13 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 * Returns the list of rows in this result set.
 	 */
 	public List<Object[]> getData() {
-		return data == null ? new ArrayList<Object[]>() : Collections.unmodifiableList(data);
+		if (data == null)
+			return new ArrayList<Object[]>();
+		else {			
+			synchronized (data) {	
+				return Collections.unmodifiableList(new ArrayList<Object[]>(data));
+			}
+		}
 	}
 
 	/**
@@ -1012,7 +1028,9 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 */
 	public boolean isAfterLast() throws SQLException {
 		if (data == null) return false;
-		return rownum >= data.size();
+		synchronized (data) {	
+			return rownum >= data.size();
+		}
 	}
 
  	/**
@@ -1030,7 +1048,9 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 */
     public boolean isLast() throws SQLException {
 		if (data == null) return false;
-		return rownum == (data.size() - 1);
+		synchronized (data) {	
+			return rownum == (data.size() - 1);
+		}
 	}
 
 	/**
@@ -1047,7 +1067,9 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 	 */ 
     public void afterLast() throws SQLException {
     	if (data != null) {
-    		absolute(data.size());
+    		synchronized (data) {	
+    			absolute(data.size());
+			}
     	}
 	}
 
@@ -1089,34 +1111,36 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
     public boolean absolute(int row) throws SQLException {
 		if (data == null) return false;
 
-		curCol = -1;
-		curRow = null;
-
-		// adjust row to be a 0-based index from beginning of data set
-		if (row < 0) {
-			rownum = data.size() + row;
-		} else {
-			rownum = row - 1;
-		}
-
-		// same as beforeFirst()
-		if (rownum < 0) {
-			rownum = BEFORE_FIRST_ROW;
-			return false;
-		}
-
-		// same as afterLast()
-		if (rownum >= data.size()) {
-			rownum = data.size();
-			return false;
-		}
-
-		// now do the positioning
-		if (data.size() > 0) {
-			curRow = (Object[]) data.get(rownum);
-			return true;
-		} else {
-			return false;
+		synchronized (data) {	
+			curCol = -1;
+			curRow = null;
+			
+			// adjust row to be a 0-based index from beginning of data set
+			if (row < 0) {
+				rownum = data.size() + row;
+			} else {
+				rownum = row - 1;
+			}
+			
+			// same as beforeFirst()
+			if (rownum < 0) {
+				rownum = BEFORE_FIRST_ROW;
+				return false;
+			}
+			
+			// same as afterLast()
+			if (rownum >= data.size()) {
+				rownum = data.size();
+				return false;
+			}
+			
+			// now do the positioning
+			if (data.size() > 0) {
+				curRow = (Object[]) data.get(rownum);
+				return true;
+			} else {
+				return false;
+			}
 		}
 	}
 
@@ -1157,23 +1181,25 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
     public boolean relative(int rows) throws SQLException {
 		if (data == null) return false;
 
-		curCol = -1;
-		curRow = null;
-
-		rownum += rows;
-
-		if (rownum < 0) {
-			rownum = BEFORE_FIRST_ROW;
-			return false;
+		synchronized (data) {	
+			curCol = -1;
+			curRow = null;
+			
+			rownum += rows;
+			
+			if (rownum < 0) {
+				rownum = BEFORE_FIRST_ROW;
+				return false;
+			}
+			
+			if (rownum >= data.size()) {
+				rownum = data.size();
+				return false;
+			}
+			
+			curRow = (Object[]) data.get(rownum);
+			return true;
 		}
-
-		if (rownum >= data.size()) {
-			rownum = data.size();
-			return false;
-		}
-
-		curRow = (Object[]) data.get(rownum);
-		return true;
 	}
 
 	/**
@@ -1778,14 +1804,16 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
     }
 
     public void insertRow() throws SQLException {
-        if (rownum != INSERT_ROW) {
-            throw new SQLException("Not on insert row");
-        }
-        if (insertRowAlreadyInserted) {
-            throw new SQLException("The insert row has already been inserted");
-        }
-        data.add(curRow);
-        insertRowAlreadyInserted = true;
+    	synchronized (data) {	
+    		if (rownum != INSERT_ROW) {
+    			throw new SQLException("Not on insert row");
+    		}
+    		if (insertRowAlreadyInserted) {
+    			throw new SQLException("The insert row has already been inserted");
+    		}
+    		data.add(curRow);
+    		insertRowAlreadyInserted = true;
+		}
     }
 
     public void moveToCurrentRow() throws SQLException {
