@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.Logger;
 
@@ -55,6 +56,12 @@ public class SQLSchema extends SQLObject {
 	private static final Logger logger = Logger.getLogger(SQLSchema.class);
 	
 	private final List<SQLTable> tables = new ArrayList<SQLTable>();
+	
+	/**
+	 * True if a thread has entered the {@link #populateImpl()} method and has either
+	 * not exited or the runnable pushed to the foreground thread has not completed.
+	 */
+	private AtomicBoolean isPopulating = new AtomicBoolean(false);
 
     /**
      * Creates a list of unpopulated Schema objects corresponding to the list of
@@ -187,7 +194,7 @@ public class SQLSchema extends SQLObject {
 	 * @throws NullPointerException if this schema has no parent database.
 	 */
 	protected void populateImpl() throws SQLObjectException {
-		if (populated) return;
+		if (populated || !isPopulating.compareAndSet(false, true)) return;
 		
 		logger.debug("SQLSchema: populate starting");
 
@@ -196,30 +203,28 @@ public class SQLSchema extends SQLObject {
 		
 		Connection con = null;
 		ResultSet rs = null;
+		final List<SQLTable> fetchedTables;
 		try {
 			synchronized (parentDatabase) {
-				begin("Populating schema");
 				con = parentDatabase.getConnection();
 				DatabaseMetaData dbmd = con.getMetaData();
 				
 				if ( getParent() instanceof SQLDatabase ) {
-                    List<SQLTable> fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, null, getName());
-                    for (SQLTable table : fetchedTables) {
-                        addTable(table);
-                    }
+					fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, null, getName());
+                    
 
 				} else if ( getParent() instanceof SQLCatalog ) {
-                    List<SQLTable> fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, getParent().getName(), getName());
-                    for (SQLTable table : fetchedTables) {
-                    	addTable(table);
-                    }
+					fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, getParent().getName(), getName());
+				} else {
+					throw new RuntimeException("Invalid parent " + getParent());
 				}
-				setPopulated(true);
-				commit();
 			}
 		} catch (SQLException e) {
-			rollback(e.getMessage());
+			isPopulating.set(false);
 			throw new SQLObjectException("schema.populate.fail", e);
+		} catch (Exception e) {
+			isPopulating.set(false);
+			throw new RuntimeException(e);
 		} finally {
 			try {
 				if ( rs != null ) rs.close();
@@ -232,6 +237,27 @@ public class SQLSchema extends SQLObject {
 				logger.error("Could not close connection", e2);
 			}
 		}
+		
+		runInForeground(new Runnable() {
+		
+			public void run() {
+				try {
+					begin("Populating schema");
+					for (SQLTable table : fetchedTables) {
+                        addTable(table);
+                    }
+					setPopulated(true);
+					commit();
+				} catch (Exception e) {
+					rollback(e.getMessage());
+					throw new RuntimeException(e);
+				} finally {
+					isPopulating.set(false);
+				}
+		
+			}
+		});
+		
 		logger.debug("SQLSchema: populate finished");
 	}
 

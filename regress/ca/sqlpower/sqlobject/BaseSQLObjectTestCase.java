@@ -616,7 +616,7 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
         	assertEquals(e, ex);
         }
         
-        assertEquals(e, o.getChildrenInaccessibleReason());
+        assertEquals(e, o.getChildrenInaccessibleReason(SQLObject.class));
             
     }
 

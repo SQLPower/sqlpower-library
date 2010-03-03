@@ -44,6 +44,7 @@ import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sql.SQL;
+import ca.sqlpower.util.SessionNotFoundException;
 import ca.sqlpower.util.TransactionEvent;
 
 /**
@@ -757,20 +758,29 @@ public class SQLIndex extends SQLObject {
         firePropertyChange("clustered", oldValue, clustered);
     }
 
-    /**
-     * Creates a list of new SQLIndex objects based on the indexes that exist on the
-     * given table in the given database metadata. The index child objects will have
-     * direct references to the columns of the given SQLTable, but nothing in the table
-     * will be modified. You can add the indexes to the table yourself when the list is
-     * returned.
-     * <p>
-     * As a side effect of calling this method the primary key of the table will be updated
-     * to match the primary key of the table in the database.
-     * 
-     * @param dbmd The metadata to read the index descriptions from
-     * @param targetTable The table the indexes are on. 
-     */
-    static List<SQLIndex> fetchIndicesForTableAndUpdatePK(DatabaseMetaData dbmd, SQLTable targetTable) throws SQLException,
+	/**
+	 * Creates a list of new SQLIndex objects based on the indexes that exist on
+	 * the given table in the given database metadata. The index child objects
+	 * will have direct references to the columns of the given SQLTable, but
+	 * nothing in the table will be modified. You can add the indexes to the
+	 * table yourself when the list is returned.
+	 * <p>
+	 * As a side effect of calling this method the primary key of the table will
+	 * be updated to match the primary key of the table in the database.
+	 * <p>
+	 * Note: Because the columns are added to the table in the foreground thread
+	 * and this method can be called by a background thread you cannot rely on
+	 * the columns to already exist while running on the background. If you push
+	 * {@link Runnable}s to the foreground that need the children the children
+	 * will exist by the time the foreground of the index is reached as the EDT
+	 * is a queue.
+	 * 
+	 * @param dbmd
+	 *            The metadata to read the index descriptions from
+	 * @param targetTable
+	 *            The table the indexes are on.
+	 */
+    static List<SQLIndex> fetchIndicesForTableAndUpdatePK(DatabaseMetaData dbmd, final SQLTable targetTable) throws SQLException,
             SQLObjectException {
         ResultSet rs = null;
 
@@ -783,7 +793,7 @@ public class SQLIndex extends SQLObject {
         try {
             String pkName = null;
             rs = dbmd.getPrimaryKeys(catalog, schema, tableName);
-            SortedMap<Integer, String> pkColPositionToName = new TreeMap<Integer, String>();
+            final SortedMap<Integer, String> pkColPositionToName = new TreeMap<Integer, String>();
             while (rs.next()) {
             	pkColPositionToName.put(rs.getInt(5) - 1, rs.getString(4));
             	String pkNameCheck = rs.getString(6);
@@ -796,17 +806,33 @@ public class SQLIndex extends SQLObject {
             	}
             }
             
-            for (Map.Entry<Integer, String> namedPositions : pkColPositionToName.entrySet()) {
-                SQLColumn col = targetTable.getColumnByName(namedPositions.getValue(), false, true);
-                if (col != null) {
-                	targetTable.changeColumnIndex(
-                			targetTable.getColumnsWithoutPopulating().indexOf(col), 
-                			namedPositions.getKey(), true);
-                } else {
-                	logger.error("Column " + namedPositions.getValue() + " not found in " + targetTable);
-                    throw new SQLException("Column " + rs.getString(4) + " not found in " + targetTable);
-                }
-            }
+            Runnable runner = new Runnable() {
+				public void run() {
+					for (Map.Entry<Integer, String> namedPositions : pkColPositionToName.entrySet()) {
+						if (!targetTable.isColumnsPopulated()) {
+							throw new IllegalStateException("Table " + targetTable + " is missing columns, cannot populate primary key.");
+						}
+						try {
+							SQLColumn col = targetTable.getColumnByName(namedPositions.getValue(), false, true);
+							if (col != null) {
+								targetTable.changeColumnIndex(
+										targetTable.getColumnsWithoutPopulating().indexOf(col), 
+										namedPositions.getKey(), true);
+							} else {
+								logger.error("Column " + namedPositions.getValue() + " not found in " + targetTable);
+								throw new RuntimeException("Column " + col.getName() + " not found in " + targetTable);
+							}
+						} catch (SQLObjectException e) {
+							throw new SQLObjectRuntimeException(e);
+						}
+					}
+				}
+			};
+			try {
+				targetTable.getSession().runInForeground(runner);
+			} catch (SessionNotFoundException e) {
+				runner.run();
+			}
             rs.close();
             rs = null;
 
@@ -845,13 +871,15 @@ public class SQLIndex extends SQLObject {
                     type = rs.getString(RS_INDEX_TYPE_COL);
                 }
                 int pos = rs.getInt(8);
-                String colName = rs.getString(9);
+                final String colName = rs.getString(9);
                 String ascDesc = rs.getString(10);
-                AscendDescend aOrD = AscendDescend.UNSPECIFIED;
+                final AscendDescend aOrD;
                 if (ascDesc != null && ascDesc.equals("A")) {
                     aOrD = AscendDescend.ASCENDING;
                 } else if (ascDesc != null && ascDesc.equals("D")) {
                     aOrD = AscendDescend.DESCENDING;
+                } else {
+                	aOrD = AscendDescend.UNSPECIFIED;
                 }
                 String filter = rs.getString(13);
 
@@ -863,7 +891,22 @@ public class SQLIndex extends SQLObject {
                     idx = new SQLIndex(name, !nonUnique, qualifier, type, filter);
                     idx.setClustered(isClustered);
                     if (name.equals(pkName)) {
-                    	targetTable.getPrimaryKeyIndexWithoutPopulating().updateToMatch(idx, false);
+                    	final SQLIndex pkIndex = idx;
+                    	Runnable pkIndexUpdate = new Runnable() {
+							public void run() {
+								try {
+									targetTable.getPrimaryKeyIndexWithoutPopulating().updateToMatch(pkIndex, false);
+								} catch (SQLObjectException e) {
+									throw new SQLObjectRuntimeException(e);
+								}
+							}
+						};
+						try {
+							targetTable.getSession().runInForeground(pkIndexUpdate);
+						} catch (SessionNotFoundException e) {
+							pkIndexUpdate.run();
+						}
+						
                     	idx = targetTable.getPrimaryKeyIndexWithoutPopulating();
                     } else {
                     	indexes.add(idx);
@@ -874,17 +917,35 @@ public class SQLIndex extends SQLObject {
                 if (!idx.isPrimaryKeyIndex()) {
                 	logger.debug("Adding column " + colName + " to index " + idx.getName());
 
+                	final SQLIndex nonPKIndex = idx;
+                	Runnable indexChildRunner = new Runnable() {
+					
+						public void run() {
+							if (!targetTable.isColumnsPopulated()) {
+								throw new IllegalStateException("Table " + targetTable + 
+										" is missing columns, cannot populate indices.");
+							}
+							SQLColumn tableCol;
+							try {
+								tableCol = targetTable.getColumnByName(colName, false, true);
+								Column indexCol;
+								if (tableCol != null) {
+									indexCol = new Column(tableCol, aOrD);
+								} else {
+									indexCol = new Column(colName, aOrD); // probably an expression like "col1+col2"
+								}
 
-                	SQLColumn tableCol = targetTable.getColumnByName(colName, false, true);
-                	Column indexCol;
-                	if (tableCol != null) {
-                		indexCol = new Column(tableCol, aOrD);
-                	} else {
-                		indexCol = new Column(colName, aOrD); // probably an expression like "col1+col2"
-                	}
-
-                	//                idx.children.add(indexCol); // direct access avoids possible recursive SQLObjectEvents
-                	idx.addChild(indexCol);
+								nonPKIndex.addChild(indexCol);
+							} catch (SQLObjectException e) {
+								throw new SQLObjectRuntimeException(e);
+							}
+						}
+					};
+					try {
+						targetTable.getSession().runInForeground(indexChildRunner);
+					} catch (SessionNotFoundException e) {
+						indexChildRunner.run();
+					}
                 }
             }
             rs.close();
@@ -998,7 +1059,9 @@ public class SQLIndex extends SQLObject {
         index.setQualifier(source.getQualifier());
         index.setPhysicalName(source.getPhysicalName());
         index.setClustered(source.isClustered());
-        index.setChildrenInaccessibleReason(source.getChildrenInaccessibleReason(), false);
+        for (Map.Entry<Class<? extends SQLObject>, Throwable> inaccessibleReason : source.getChildrenInaccessibleReasons().entrySet()) {
+        	index.setChildrenInaccessibleReason(inaccessibleReason.getValue(), inaccessibleReason.getKey(), false);
+        }
 
         for (Column column : source.getChildren(Column.class)) {
             Column newColumn;

@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 
@@ -44,6 +45,9 @@ import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
+import ca.sqlpower.util.SessionNotFoundException;
+
+import com.google.common.collect.ListMultimap;
 
 public class SQLTable extends SQLObject {
 	
@@ -282,7 +286,9 @@ public class SQLTable extends SQLObject {
 		SQLTable t = new SQLTable(parent, true, newPKIndex);
 		t.setName(getName());
 		t.remarks = remarks;
-		t.setChildrenInaccessibleReason(getChildrenInaccessibleReason(), false);
+		for (Map.Entry<Class<? extends SQLObject>, Throwable> inaccessibleReason : getChildrenInaccessibleReasons().entrySet()) {
+        	t.setChildrenInaccessibleReason(inaccessibleReason.getValue(), inaccessibleReason.getKey(), false);
+        }
 
 		t.setPhysicalName(getPhysicalName());
 
@@ -326,37 +332,87 @@ public class SQLTable extends SQLObject {
         }
     }
 
-    /**
-     * Populates the columns of this table from the database.  If successful, then the
-     * indices will also be populated.
-     * 
-     * @throws SQLObjectException
-     */
+	/**
+	 * Populates the columns of all tables from the database that are not
+	 * already populated. If successful, then the indices for just this table
+	 * will also be populated.
+	 * 
+	 * @throws SQLObjectException
+	 */
     protected synchronized void populateColumns() throws SQLObjectException {
     	logger.debug("Populating columns on table " + getName(), new Exception());
+    	synchronized (SQLTable.class) {
 
-		if (columnsPopulated) return;
-    	if (columns.size() > 0) {
-    		throw new IllegalStateException("Can't populate table because it already contains columns");
+    		if (columnsPopulated) return;
+    		if (columns.size() > 0) {
+    			throw new IllegalStateException("Can't populate table because it already contains columns");
+    		}
+
+    		logger.debug("column folder populate starting for table " + getName());
+
+    		List<SQLTable> tables = getParent().getChildrenWithoutPopulating(SQLTable.class);
+    		populateAllColumns(getCatalogName(), getSchemaName(), getParentDatabase(), tables);
+
+    		logger.debug("column folder populate finished for table " + getName());
+
+    		populateIndices();
     	}
+	}
 
-		logger.debug("column folder populate starting for table " + getName());
-
-		Connection con = null;
+	/**
+	 * This method will populate all of the columns in all of the tables with
+	 * one database call. This is done for optimization as making one database
+	 * call for each table for just the columns in that table can become very
+	 * slow with network traffic. At the end of this method all of the tables
+	 * passed in will be populated with all of the columns found for the tables
+	 * in the database. No additional tables will be created even if columns
+	 * exist for missing tables.
+	 * <p>
+	 * This is a helper method for {@link #populateColumns()}.
+	 * 
+	 * @param catalogName
+	 *            The catalog name the tables are contained in, may be null.
+	 * @param schemaName
+	 *            The schema name the tables are contained in, may be null.
+	 * @param parentDB
+	 *            The parent database object. Will be used to connect to the
+	 *            database with.
+	 * @param tables
+	 *            A list of tables that need columns added to them.
+	 * @throws SQLObjectException
+	 */
+    private synchronized static void populateAllColumns(String catalogName, String schemaName, 
+    		final SQLDatabase parentDB, List<SQLTable> tables) throws SQLObjectException {
+    	Connection con = null;
 		try {
-		    con = getParentDatabase().getConnection();
+		    con = parentDB.getConnection();
 		    DatabaseMetaData dbmd = con.getMetaData();
-			List<SQLColumn> cols = SQLColumn.fetchColumnsForTable(
-			        getCatalogName(), getSchemaName(), getName(), dbmd);
-			begin("Populating columns for Table " + this);
-			for (SQLColumn col : cols) {
-			    addColumnWithoutPopulating(col);
+		    final ListMultimap<SQLTable, SQLColumn> cols = SQLColumn.fetchColumnsForTable(
+		    		catalogName, schemaName, dbmd, tables);
+		    Runnable runner = new Runnable() {
+				public void run() {
+					try {
+						parentDB.begin("Populating all columns");
+						for (SQLTable table : cols.keySet()) {
+							for (SQLColumn col : cols.get(table)) {
+								table.addColumnWithoutPopulating(col);
+							}
+							table.setColumnsPopulated(true);
+						}
+						parentDB.commit();
+					} catch (Throwable t) {
+						parentDB.rollback(t.getMessage());
+						throw new RuntimeException(t);
+					}
+				}
+			};
+			try {
+				parentDB.getSession().runInForeground(runner);
+			} catch (SessionNotFoundException e) {
+				runner.run();
 			}
-			columnsPopulated = true;
-			commit();
 		} catch (SQLException e) {
-			rollback(e.getMessage());
-			throw new SQLObjectException("Failed to populate columns of table "+getName(), e);
+			throw new SQLObjectException("Failed to populate columns of tables", e);
 		} finally {
 			if (con != null) {
 			    try {
@@ -366,11 +422,7 @@ public class SQLTable extends SQLObject {
 			    }
 			}
 		}
-
-		logger.debug("column folder populate finished for table " + getName());
-
-        populateIndices();
-	}
+    }
 
     /**
      * Retrieves all index information about this table from the source database
@@ -387,14 +439,16 @@ public class SQLTable extends SQLObject {
         if (indicesPopulated) return;
 		if (indices.size() > 0) {
 			throw new IllegalStateException("Can't populate indices because it already contains children!");
-		} else if (!columnsPopulated) {
-			throw new IllegalStateException("Columns must be populated");
-		}
+		} 
         
         // If the SQLTable is a view, simply indicated folder is populated and then leave
         // Since Views don't have indices (and Oracle throws an error)
         if (objectType.equals("VIEW")) { 
-            indicesPopulated = true;
+        	runInForeground(new Runnable() {
+				public void run() {
+					setIndicesPopulated(true);
+				}
+			});
             return;
         }
         
@@ -406,18 +460,31 @@ public class SQLTable extends SQLObject {
             DatabaseMetaData dbmd = con.getMetaData();
             logger.debug("before addIndicesToTable");
             
-            List<SQLIndex> indexes = SQLIndex.fetchIndicesForTableAndUpdatePK(dbmd, this);
+            final List<SQLIndex> indexes = SQLIndex.fetchIndicesForTableAndUpdatePK(dbmd, this);
             
-            begin("Populating Indices for Table " + this);
-            for (SQLIndex i : indexes) {
-            	addIndex(i);
-            }
-            commit();
+            runInForeground(new Runnable() {
+				public void run() {
+					if (!columnsPopulated) {
+						throw new IllegalStateException("Columns must be populated");
+					}
+					//someone beat us to this already
+					if (indicesPopulated) return;
+					try {
+						begin("Populating Indices for Table " + this);
+						for (SQLIndex i : indexes) {
+							addIndex(i);
+						}
+						commit();
+						setIndicesPopulated(true);
+					} catch (Throwable t) {
+						rollback(t.getMessage());
+						throw new RuntimeException(t);
+					}
+				}
+			});
             logger.debug("found "+indices.size()+" indices.");
           
-            indicesPopulated = true;
         } catch (SQLException e) {
-        	rollback(e.getMessage());
             throw new SQLObjectException("Failed to populate indices of table "+getName(), e);
         } finally {
 
@@ -475,7 +542,7 @@ public class SQLTable extends SQLObject {
 				pkTable.populateColumns();
 				pkTable.populateRelationships(this);
 			}
-			importedKeysPopulated = true;
+			setImportedKeysPopulated(true);
 		} catch (SQLException ex) {
 			throw new SQLObjectException("Couldn't locate related tables", ex);
 		} finally {
@@ -517,64 +584,61 @@ public class SQLTable extends SQLObject {
 	 *            parent will be added. If this is null than all relationships
 	 *            will be added regardless of the parent.
 	 */
-    protected synchronized void populateRelationships(SQLTable fkTable) throws SQLObjectException {
-    	if (!columnsPopulated) {
-    		throw new IllegalStateException("Table must be populated before relationships are added");
-    	} else if (exportedKeysPopulated) {
+    protected synchronized void populateRelationships(final SQLTable fkTable) throws SQLObjectException {
+    	if (exportedKeysPopulated) {
     		return;
     	}
 
 		logger.debug("SQLTable: relationship populate starting");
 
-		/* this must come before
-		 * SQLRelationship.addImportedRelationshipsToTable because
-		 * addImportedRelationshipsToTable causes SQLObjectEvents to be fired,
-		 * which in turn could cause infinite recursion when listeners
-		 * query the size of the relationships folder.
-		 */
-		exportedKeysPopulated = true;
-		boolean allRelationshipsAdded = true;
-		try {
-			List<SQLRelationship> newKeys = SQLRelationship.fetchExportedKeys(this);
-			begin("Populating relationships for Table " + this);
-			
-			/* now attach the new SQLRelationship objects to their tables,
-             * which may already be partially populated (we avoid adding the
-			 * same relationship if it's already there). We also filter by
-			 * pkTable if that was requested.
-			 */
-			List<SQLRelationship> addedRels = new ArrayList<SQLRelationship>();
-            for (SQLRelationship addMe : newKeys) {
-                if (fkTable != null && addMe.getFkTable() != fkTable) {
-                    allRelationshipsAdded = false;
-                    continue;
-                }
-                if (!addMe.getFkTable().getImportedKeysWithoutPopulating().contains(addMe.getForeignKey())) {
-                    addMe.attachRelationship(addMe.getParent(), addMe.getFkTable(), false);
-                    addedRels.add(addMe);
-                }
-            }
+		final List<SQLRelationship> newKeys = SQLRelationship.fetchExportedKeys(this);
+		runInForeground(new Runnable() {
+			public void run() {
+				if (!columnsPopulated) {
+		    		throw new IllegalStateException("Table must be populated before relationships are added");
+		    	}
+				//Someone beat us to populating the relationships
+				if (exportedKeysPopulated) return;
+				try {
+					begin("Populating relationships for Table " + this);
 
-			// XXX Review above code, and make sure everything is firing
-			// events where it should be. The above block is surrounded
-			// within a transaction, so all events should be fired
-			// there.
-            commit();
-            
-            // This call attaches listeners to this table. It must be called
-			// outside of all transactions, otherwise the listener would start
-			// with the wrong transaction count, and throw an exception on
-			// commit()
-		} catch (SQLObjectException e) {
-			rollback(e.getMessage());
-			throw e;
-		} finally {
-			//The imported keys folder will only be guaranteed to be completely populated if
-			//any table can be the pkTable not a specific table.
-			if (fkTable != null && !allRelationshipsAdded) {
-				exportedKeysPopulated = false;
+					/* now attach the new SQLRelationship objects to their tables,
+					 * which may already be partially populated (we avoid adding the
+					 * same relationship if it's already there). We also filter by
+					 * pkTable if that was requested.
+					 */
+					boolean allRelationshipsAdded = true;
+					List<SQLRelationship> addedRels = new ArrayList<SQLRelationship>();
+					for (SQLRelationship addMe : newKeys) {
+						if (fkTable != null && addMe.getFkTable() != fkTable) {
+							allRelationshipsAdded = false;
+							continue;
+						}
+						if (!addMe.getFkTable().getImportedKeysWithoutPopulating().contains(addMe.getForeignKey())) {
+							addMe.attachRelationship(addMe.getParent(), addMe.getFkTable(), false);
+							addedRels.add(addMe);
+						}
+					}
+					//The imported keys folder will only be guaranteed to be completely populated if
+					//any table can be the pkTable not a specific table.
+					if (fkTable == null || allRelationshipsAdded) {
+						setExportedKeysPopulated(true);
+					}
+
+					// XXX Review above code, and make sure everything is firing
+					// events where it should be. The above block is surrounded
+					// within a transaction, so all events should be fired
+					// there.
+					commit();
+				} catch (SQLObjectException e) {
+					rollback(e.getMessage());
+					throw new SQLObjectRuntimeException(e);
+				} catch (Throwable t) {
+					rollback(t.getMessage());
+					throw new RuntimeException(t);
+				}
 			}
-		}
+		});
 
 		logger.debug("SQLTable: relationship populate finished");
 
@@ -1092,7 +1156,11 @@ public class SQLTable extends SQLObject {
 			populateRelationships();
 			populateIndices();
 			populated = true;
-			firePropertyChange("populated", false, true);
+			runInForeground(new Runnable() {
+				public void run() {
+					firePropertyChange("populated", false, true);
+				}
+			});
 		} catch (SQLObjectException e) {
 			rollback(e.getMessage());
 			throw e;
@@ -1664,25 +1732,45 @@ public class SQLTable extends SQLObject {
         // since parent ought to be the table container we're looking for...
         throw new UnsupportedOperationException("Individual tables can't be refreshed.");
     }
-    
-    void refreshColumns() throws SQLObjectException {
-        if (!isColumnsPopulated()) return;
+
+	/**
+	 * Refreshes all of the columns in the list of tables passed in. All of the
+	 * columns need to be populated in the list of tables before this method is
+	 * called for their columns to be refreshed. If the table does not have its
+	 * columns populated it will be skipped.
+	 * 
+	 * @param catalogName
+	 *            The catalog name to look up columns for. Can be null if the
+	 *            database does not support catalogs.
+	 * @param schemaName
+	 *            The schemas name to look up columns for. Can be null if the
+	 *            database does not support schemas.
+	 * @param dbmd
+	 *            The database meta data that describes the columns in the
+	 *            tables.
+	 * @param tables
+	 *            The tables that will be updated with new columns or modify
+	 *            existing ones. These tables will very likely be changed at the
+	 *            end of this method unless the tables match the database
+	 *            already.
+	 */
+    static void refreshAllColumns(String catalogName, String schemaName, DatabaseMetaData dbmd, 
+    		List<SQLTable> tables) throws SQLObjectException {
+    	List<SQLTable> populatedTables = new ArrayList<SQLTable>();
+    	for (SQLTable table : tables) {
+    		if (table.isColumnsPopulated()) {
+    			populatedTables.add(table);
+    		}
+    	}
         Connection con = null;
         try {
-            con = getParentDatabase().getConnection();
-            DatabaseMetaData dbmd = con.getMetaData();
-            List<SQLColumn> newCols = SQLColumn.fetchColumnsForTable(getCatalogName(), getSchemaName(), getName(), dbmd);
-            SQLObjectUtils.refreshChildren(this, newCols, SQLColumn.class);
+            ListMultimap<SQLTable, SQLColumn> newCols = SQLColumn.fetchColumnsForTable(
+            		catalogName, schemaName, dbmd, populatedTables);
+            for (SQLTable table : populatedTables) {
+            	SQLObjectUtils.refreshChildren(table, newCols.get(table), SQLColumn.class);
+            }
         } catch (SQLException e) {
             throw new SQLObjectException("Refresh failed", e);
-        } finally {
-            if (con != null) {
-                try {
-                    con.close();
-                } catch (SQLException e) {
-                    logger.error("Failed to close connection. Squishing this exception: ", e);
-                }
-            }
         }
     }
     

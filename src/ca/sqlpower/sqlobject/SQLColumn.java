@@ -22,12 +22,14 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
 import org.apache.log4j.Logger;
+
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
 
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
@@ -303,18 +305,22 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * @param target The instance to copy properties into.
 	 * @param source The instance to copy properties from.
 	 */
-	private static final void copyProperties(SQLColumn target, SQLColumn source) {
-		target.setName(source.getName());
-		target.type = source.type;
-		target.sourceDataTypeName = source.sourceDataTypeName;
-		target.setPhysicalName(source.getPhysicalName());
-		target.precision = source.precision;
-		target.scale = source.scale;
-		target.nullable = source.nullable;
-		target.remarks = source.remarks;
-		target.defaultValue = source.defaultValue;
-		target.autoIncrement = source.autoIncrement;
-        target.autoIncrementSequenceName = source.autoIncrementSequenceName;
+	private static final void copyProperties(final SQLColumn target, final SQLColumn source) {
+		target.runInForeground(new Runnable() {
+			public void run() {
+				target.setName(source.getName());
+				target.setType(source.type);
+				target.setSourceDataTypeName(source.sourceDataTypeName);
+				target.setPhysicalName(source.getPhysicalName());
+				target.setPrecision(source.precision);
+				target.setScale(source.scale);
+				target.setNullable(source.nullable);
+				target.setRemarks(source.remarks);
+				target.setDefaultValue(source.defaultValue);
+				target.setAutoIncrement(source.autoIncrement);
+				target.setAutoIncrementSequenceName(source.autoIncrementSequenceName);
+			}
+		});
 	}
 
     /**
@@ -333,23 +339,35 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * Creates a list of unparented SQLColumn objects based on the current
 	 * information from the given DatabaseMetaData.
 	 */
-	static List<SQLColumn> fetchColumnsForTable(
+	static ListMultimap<SQLTable, SQLColumn> fetchColumnsForTable(
 	                                String catalog,
 	                                String schema,
-	                                String tableName,
-	                                DatabaseMetaData dbmd) 
+	                                DatabaseMetaData dbmd,
+	                                List<SQLTable> tables) 
 		throws SQLException, DuplicateColumnException, SQLObjectException {
 		ResultSet rs = null;
-		List<SQLColumn> cols = new ArrayList<SQLColumn>();
-		try {
-			logger.debug("SQLColumn.addColumnsToTable: catalog="+catalog+"; schema="+schema+"; tableName="+tableName);
-			rs = dbmd.getColumns(catalog, schema, tableName, "%");
+		final ListMultimap<SQLTable, SQLColumn> multimap = ArrayListMultimap.create();
+ 		try {
+			logger.debug("SQLColumn.addColumnsToTables: catalog="+catalog+"; schema="+schema);
+			rs = dbmd.getColumns(catalog, schema, null, "%");
 			
 			int autoIncCol = SQL.findColumnIndex(rs, "is_autoincrement");
 			logger.debug("Auto-increment info column: " + autoIncCol);
 			
 			while (rs.next()) {
 				logger.debug("addColumnsToTable SQLColumn constructor invocation.");
+				
+				String tableName = rs.getString(3);
+				
+				SQLTable parentTable = null;
+				for (SQLTable table : tables) {
+					if (table.getName().equals(tableName)) {
+						parentTable = table;
+						break;
+					}
+				}
+				//The column may be part of a system or temporary table we are not interested in.
+				if (parentTable == null) continue;
 				
 				boolean autoIncrement;
                 if (autoIncCol > 0) {
@@ -386,12 +404,12 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 				}
 
 				logger.debug("Adding column "+col.getName());
-				cols.add(col);
+				
+	        	multimap.put(parentTable, col);
 
 			}
-
-			return cols;
 			
+			return multimap;
 		} finally {
 			try {
 				if (rs != null) rs.close();

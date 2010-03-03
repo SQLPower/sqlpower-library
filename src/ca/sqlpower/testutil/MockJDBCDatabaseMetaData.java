@@ -854,60 +854,65 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
             }
             qualifier.append(schemaPattern).append(".");
         }
-        String fqTableName = qualifier + tableNamePattern;
-        String colListPropName = "columns." + qualifier + tableNamePattern;
         
-        logger.debug("getColumns: property name for column list is '"+colListPropName+"'");
-        String columnList = connection.getProperties().getProperty(colListPropName.toString());
-        logger.debug("getColumns: user-supplied column list is '"+columnList+"'");
-        if (columnList == null) {
-            columnList = tableNamePattern+"_col_1,"
-                        +tableNamePattern+"_col_2,"
-                        +tableNamePattern+"_col_3,"
-                        +tableNamePattern+"_col_4";
-        }
-        
-        Set<String> autoIncCols = new HashSet<String>();
-        if (connection.getProperties().getProperty("autoincrement_cols") != null) {
-        	String[] colList = connection.getProperties()
+        ResultSet tables = getTables(catalog, schemaPattern, tableNamePattern, new String[] {"TABLE"});
+        while (tables.next()) {
+        	String tableName = tables.getString(3);
+        	String fqTableName = qualifier + tableName;
+        	String colListPropName = "columns." + qualifier + tableName;
+
+        	logger.debug("getColumns: property name for column list is '"+colListPropName+"'");
+        	String columnList = connection.getProperties().getProperty(colListPropName.toString());
+        	logger.debug("getColumns: user-supplied column list is '"+columnList+"'");
+        	if (columnList == null) {
+        		columnList = tableName + "_col_1," + 
+                             tableName + "_col_2," + 
+                             tableName + "_col_3," + 
+                             tableName + "_col_4";
+        	}
+
+        	Set<String> autoIncCols = new HashSet<String>();
+        	if (connection.getProperties().getProperty("autoincrement_cols") != null) {
+        		String[] colList = connection.getProperties()
         		.getProperty("autoincrement_cols").split(",");
-        	autoIncCols.addAll(Arrays.asList(colList));
-        }
-        System.err.println("autoincCols=" + autoIncCols);
-        int colNo = 1;
-        for (String colName : Arrays.asList(columnList.split(","))) {
-            rs.addRow();
-            rs.updateObject(1, catalog);
-            rs.updateObject(2, schemaPattern);
-            rs.updateObject(3, tableNamePattern);
-            rs.updateObject(4, colName);
-            rs.updateInt(5, Types.VARCHAR);
-            rs.updateObject(6, "VARCHAR");
-            rs.updateInt(7, 20);
-            rs.updateObject(8, null);
-            rs.updateInt(9, 0);
-            rs.updateInt(10, 0);
-            rs.updateInt(11, columnNoNulls);
-            rs.updateObject(12, null);
-            rs.updateObject(13, null);
-            rs.updateInt(14, 0);
-            rs.updateInt(15, 0);
-            rs.updateInt(16, 20);
-            rs.updateInt(17, colNo);
-            rs.updateObject(18, "NO");
-            rs.updateObject(19, null);
-            rs.updateObject(20, null);
-            rs.updateObject(21, null);
-            rs.updateObject(22, null);
-            System.err.println(" checking " + fqTableName + "." + colName);
-            if (autoIncCols.contains(fqTableName + "." + colName)) {
-            	System.err.println("  FOUND");
-            	rs.updateObject(23, "YES");
-            } else {
-            	System.err.println("  NOT FOUND");
-            	rs.updateObject(23, "NO");
-            }
-            colNo++;
+        		autoIncCols.addAll(Arrays.asList(colList));
+        	}
+        	System.err.println("autoincCols=" + autoIncCols);
+        	int colNo = 1;
+        	for (String colName : Arrays.asList(columnList.split(","))) {
+        		rs.addRow();
+        		rs.updateObject(1, catalog);
+        		rs.updateObject(2, schemaPattern);
+        		rs.updateObject(3, tableName);
+        		rs.updateObject(4, colName);
+        		rs.updateInt(5, Types.VARCHAR);
+        		rs.updateObject(6, "VARCHAR");
+        		rs.updateInt(7, 20);
+        		rs.updateObject(8, null);
+        		rs.updateInt(9, 0);
+        		rs.updateInt(10, 0);
+        		rs.updateInt(11, columnNoNulls);
+        		rs.updateObject(12, null);
+        		rs.updateObject(13, null);
+        		rs.updateInt(14, 0);
+        		rs.updateInt(15, 0);
+        		rs.updateInt(16, 20);
+        		rs.updateInt(17, colNo);
+        		rs.updateObject(18, "NO");
+        		rs.updateObject(19, null);
+        		rs.updateObject(20, null);
+        		rs.updateObject(21, null);
+        		rs.updateObject(22, null);
+        		System.err.println(" checking " + fqTableName + "." + colName);
+        		if (autoIncCols.contains(fqTableName + "." + colName)) {
+        			System.err.println("  FOUND");
+        			rs.updateObject(23, "YES");
+        		} else {
+        			System.err.println("  NOT FOUND");
+        			rs.updateObject(23, "NO");
+        		}
+        		colNo++;
+        	}
         }
 
         rs.beforeFirst();

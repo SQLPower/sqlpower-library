@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.Logger;
 
@@ -86,7 +87,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	private static Logger logger = Logger.getLogger(SQLObject.class);
 	protected boolean populated = false;
 	
-	private boolean populating = false;
+	private AtomicBoolean populating = new AtomicBoolean(false);
 	
 	/**
 	 * The name used for this object in a physical database system. This name may have
@@ -102,13 +103,19 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 * firing events and other such bookkeeping.
 	 */
 	private final Map<String, Object> clientProperties = new HashMap<String, Object>();
-	
+
 	/**
-	 * This is the throwable that tells if the children of this component can be reached
-	 * or not. If this is null then the children can be reached. If it is not null
-	 * then there was an exception the last time the children were attempted to be accessed.
+	 * This is the throwable that tells if the children of this component can be
+	 * reached or not. If the exception at the child type is null then the
+	 * children can be reached. If it is not null then there was an exception
+	 * the last time the children were attempted to be accessed. There can also
+	 * be an exception at SQLObject itself if an exception occurred that
+	 * prevented the children from populating and was either not tied to a
+	 * specific child type or not enough information is known to tell which
+	 * child type it actually failed on.
 	 */
-	private Throwable childrenInaccessibleReason = null;
+	private final Map<Class<? extends SQLObject>, Throwable> childrenInaccessibleReason = 
+		new HashMap<Class<? extends SQLObject>, Throwable>();
 	
     /**
      * Returns the name used for this object in a physical database system. This
@@ -165,24 +172,38 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      * This will do nothing if the object is already populated.
      */
 	public final void populate() throws SQLObjectException {
-	    if (populated || populating) return;
-	    
-	    populating = true;
+	    if (populated || !populating.compareAndSet(false, true)) return;
 	    
         // We're going to just leave caching on all the time and see how it pans out
         DatabaseMetaDataDecorator.putHint(
                 DatabaseMetaDataDecorator.CACHE_TYPE,
                 DatabaseMetaDataDecorator.CacheType.EAGER_CACHE);
 
-	    childrenInaccessibleReason = null;
+	    childrenInaccessibleReason.clear();
 	    try {
 	        populateImpl();
-	    } catch (SQLObjectException e) {
-	        setChildrenInaccessibleReason(e, true);
-	    } catch (RuntimeException e) {
-	        setChildrenInaccessibleReason(e, true);
+	    } catch (final SQLObjectException e) {
+	    	runInForeground(new Runnable() {
+				public void run() {
+					try {
+						setChildrenInaccessibleReason(e, SQLObject.class, true);
+					} catch (SQLObjectException e) {
+						throw new RuntimeException(e);
+					}
+				}
+			});
+	    } catch (final RuntimeException e) {
+	    	runInForeground(new Runnable() {
+				public void run() {
+					try {
+						setChildrenInaccessibleReason(e, SQLObject.class, true);
+					} catch (SQLObjectException e) {
+						throw new RuntimeException(e);
+					}
+				}
+			});
 	    } finally {
-	    	populating = false;
+	    	populating.set(false);
 	    }
 	}
 
@@ -594,27 +615,36 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
     }
     
     @Transient @Accessor
-    public Throwable getChildrenInaccessibleReason() {
-        return childrenInaccessibleReason;
+    public Throwable getChildrenInaccessibleReason(Class<? extends SQLObject> childType) {
+        return childrenInaccessibleReason.get(childType);
+    }
+    
+    @Transient @Accessor
+    public Map<Class<? extends SQLObject>, Throwable> getChildrenInaccessibleReasons() {
+    	return Collections.unmodifiableMap(childrenInaccessibleReason);
     }
 
 	/**
-	 * This setter will take in either a Throwable to set the inaccessible
-	 * reason to, for things like copy methods, or a string of the exception
-	 * message, for things like loading the exception.
+	 * This setter will take in a Throwable to set the inaccessible reason to,
+	 * for things like copy methods. See {@link SQLObject#childrenInaccessibleReason};
 	 * 
 	 * @param cause
 	 *            The throwable that made the children of this object
 	 *            inaccessible
+	 * @param childType
+	 *            The type of child that is inaccessible. Can be
+	 *            {@link SQLObject} if the exception covers all of the children.
 	 * @param rethrow
 	 *            Decides if the cause should be rethrown wrapped in a
 	 *            SQLObjectException. Set this to true to have the exception be
 	 *            rethrown.
 	 */
     @Transient @Mutator
-    public void setChildrenInaccessibleReason(Throwable cause, boolean rethrow) throws SQLObjectException {
-        Throwable oldVal = this.childrenInaccessibleReason;
-        this.childrenInaccessibleReason = cause;
+    public void setChildrenInaccessibleReason(Throwable cause, 
+    		Class<? extends SQLObject> childType, boolean rethrow) throws SQLObjectException {
+        Map<Class<? extends SQLObject>, Throwable> oldVal = 
+        	new HashMap<Class<? extends SQLObject>, Throwable>(this.childrenInaccessibleReason);
+        this.childrenInaccessibleReason.put(childType, cause);
         firePropertyChange("childrenInaccessibleReason", oldVal, childrenInaccessibleReason);
         if (rethrow) {
         	if (cause instanceof SQLObjectException) {
@@ -650,18 +680,17 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
                 SQLDatabase db = SPObjectUtils.getAncestor(this, SQLDatabase.class);
                 SQLCatalog cat = SPObjectUtils.getAncestor(this, SQLCatalog.class);
                 SQLSchema sch = SPObjectUtils.getAncestor(this, SQLSchema.class);
+                String catName = cat == null ? null : cat.getName();
+                String schName = sch == null ? null : sch.getName();
                 
                 con = db.getConnection();
                 DatabaseMetaData dbmd = con.getMetaData();
                 List<SQLTable> newChildren = SQLTable.fetchTablesForTableContainer(
-                        dbmd,
-                        cat == null ? null : cat.getName(),
-                        sch == null ? null : sch.getName());
+                        dbmd, catName, schName);
                 SQLObjectUtils.refreshChildren(this, newChildren, SQLTable.class);
 
-                for (SQLTable t : getChildrenWithoutPopulating(SQLTable.class)) {
-                    t.refreshColumns();
-                }
+                SQLTable.refreshAllColumns(catName, schName, dbmd, 
+                		getChildrenWithoutPopulating(SQLTable.class));
                 for (SQLTable t : getChildrenWithoutPopulating(SQLTable.class)) {
                     t.refreshIndexes();
                 }

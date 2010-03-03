@@ -141,15 +141,15 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	protected synchronized void populateImpl() throws SQLObjectException {
 	    logger.debug("SQLDatabase: is populated " + populated); //$NON-NLS-1$
 		if (populated) return;
-
-		int oldSize = getChildrenWithoutPopulating().size();
 		
 		logger.debug("SQLDatabase: populate starting"); //$NON-NLS-1$
 		
 		Connection con = null;
 		ResultSet rs = null;
+		final List<SQLCatalog> fetchedCatalogs;
+		final List<SQLSchema> fetchedSchemas;
+		final List<SQLTable> fetchedTables;
 		try {
-			begin("Populating Database " + this);
 			con = getConnection();
 			DatabaseMetaData dbmd = con.getMetaData();
 			
@@ -159,34 +159,26 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			schemaTerm = dbmd.getSchemaTerm();
 			if ("".equals(schemaTerm)) schemaTerm = null; //$NON-NLS-1$
 			
-			List<SQLCatalog> fetchedCatalogs = SQLCatalog.fetchCatalogs(dbmd);
-			for (SQLCatalog cat : fetchedCatalogs) {
-				addCatalog(cat);
-			}
+			fetchedCatalogs = SQLCatalog.fetchCatalogs(dbmd);
 
 			// If there were no catalogs, we should look for schemas
 			// instead (i.e. this database has no catalogs, and schemas
             // may be attached directly to the database)
-			if (getChildrenWithoutPopulating().size() == oldSize) {
-				List<SQLSchema> fetchedSchemas = SQLSchema.fetchSchemas(dbmd, null);
-				for (SQLSchema schema : fetchedSchemas) {
-					addSchema(schema);
-				}
+			if (fetchedCatalogs.isEmpty()) {
+				fetchedSchemas = SQLSchema.fetchSchemas(dbmd, null);
+			} else {
+				fetchedSchemas = null;
 			}
             
             // Finally, look for tables directly under the database (this
             // could be a platform without catalogs or schemas at all)
-            if (getChildrenWithoutPopulating().size() == oldSize) {
-                List<SQLTable> fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, "", ""); //$NON-NLS-1$ //$NON-NLS-2$
-                for (SQLTable table : fetchedTables) {
-                	addTable(table);
-                }
+            if (fetchedCatalogs.isEmpty() && fetchedSchemas.isEmpty()) {
+				fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, "", ""); //$NON-NLS-1$ //$NON-NLS-2$
+            } else {
+            	fetchedTables = null;
             }
-            setPopulated(true);
-            commit();
             
 		} catch (SQLException e) {
-			rollback(e.getMessage());
 			throw new SQLObjectException(Messages.getString("SQLDatabase.populateFailed"), e); //$NON-NLS-1$
 		} finally {
 			try {
@@ -200,6 +192,40 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 				throw new SQLObjectException(Messages.getString("SQLDatabase.closeConFailed"), e2); //$NON-NLS-1$
 			}
 		}
+		runInForeground(new Runnable() {
+		
+			public void run() {
+				synchronized(SQLDatabase.this) {
+					if (populated == true) return;
+					try {
+						begin("Populating Database " + this);
+
+						for (SQLCatalog cat : fetchedCatalogs) {
+							addCatalog(cat);
+						}
+
+						if (fetchedSchemas != null) {
+							for (SQLSchema schema : fetchedSchemas) {
+								addSchema(schema);
+							}
+						}
+
+						if (fetchedTables != null) {
+							for (SQLTable table : fetchedTables) {
+								addTable(table);
+							}
+						}
+
+						setPopulated(true);
+						commit();
+					} catch (Exception e) {
+						rollback(e.getMessage());
+						throw new RuntimeException(e);
+					}
+				}
+			}
+		});
+		
 		logger.debug("SQLDatabase: populate finished"); //$NON-NLS-1$
 	}
 	
@@ -600,10 +626,18 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			    }
 				return (Connection) getConnectionPool().borrowObject();
 			} catch (Exception e) {
-			    SQLObjectException ex = new SQLObjectException(
+			    final SQLObjectException ex = new SQLObjectException(
 			            "Couldn't connect to database: "+e.getMessage(), e); //$NON-NLS-1$
-			    setChildrenInaccessibleReason(ex, true);
-			    throw new AssertionError("Unreachable code");
+			    runInForeground(new Runnable() {
+					public void run() {
+						try {
+							setChildrenInaccessibleReason(ex, SQLObject.class, false);
+						} catch (SQLObjectException e) {
+							throw new SQLObjectRuntimeException(e);
+						}
+					}
+				});
+			    throw ex;
 			}
 		}
 	}
