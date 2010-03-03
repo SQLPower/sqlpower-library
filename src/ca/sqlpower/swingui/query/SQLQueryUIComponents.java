@@ -33,6 +33,7 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
@@ -63,6 +64,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -89,6 +91,7 @@ import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.UndoableEditEvent;
@@ -962,6 +965,18 @@ public class SQLQueryUIComponents {
 	 */
 	private class StreamingRowSetListener implements RowSetChangeListener {
 
+		private AtomicBoolean hasUpdates = new AtomicBoolean(false);
+    	
+    	private final Timer timer = new Timer(1000, new ActionListener() {
+			
+    		public void actionPerformed(ActionEvent e) {				
+				if (hasUpdates.get()) {
+					listeningTableModel.dataChanged();
+					hasUpdates.set(false);
+				}
+			}
+		});
+    	
 		/**
 		 * The result set this listener is listening to.
 		 */
@@ -979,6 +994,10 @@ public class SQLQueryUIComponents {
 		public StreamingRowSetListener(CachedRowSet rowSet, ResultSetTableModel tableModel) {
 			this.rowSet = rowSet;
 			listeningTableModel = tableModel;
+			this.timer.setInitialDelay(0);
+    		this.timer.setCoalesce(true);
+    		this.timer.setRepeats(true);
+    		this.timer.start();
 		}
 		
 		/**
@@ -986,15 +1005,12 @@ public class SQLQueryUIComponents {
 		 * all of the tables listening to this listener.
 		 */
 		public void disconnect() {
+			this.timer.stop();
 			rowSet.removeRowSetListener(this);
 		}
 		
 		public void rowAdded(RowSetChangeEvent e) {
-			SwingUtilities.invokeLater(new Runnable() {
-	            public void run() {
-	            	listeningTableModel.dataChanged();
-	            }
-			});
+			hasUpdates.set(true);
 		}
 	}
     
