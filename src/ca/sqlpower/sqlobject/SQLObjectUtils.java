@@ -172,7 +172,7 @@ public class SQLObjectUtils {
         // get rid of removed children
         oldChildNames.removeAll(newChildNames);
         for (String removedColName : oldChildNames) {
-        	SQLObject removeMe = parent.getChildByName(removedColName);
+        	SQLObject removeMe = parent.getChildByName(removedColName, childType);
         	try {
         		parent.removeChild(removeMe);
         	} catch (IllegalArgumentException e) {
@@ -223,7 +223,7 @@ public class SQLObjectUtils {
                         "The schema container ("+schemaContainer+
                         ") can't actually contain children of type SQLSchema.");
         	}
-            tableContainer = schemaContainer.getChildByName(schema);
+            tableContainer = schemaContainer.getChildByName(schema, SQLSchema.class);
             if (tableContainer == null) {
                 tableContainer = new SQLSchema(schemaContainer, schema, true);
                 schemaContainer.addChild(tableContainer);
@@ -417,7 +417,7 @@ public class SQLObjectUtils {
         SQLObject tableContainer;
         if (schema != null){
             if (schemaContainer.allowsChildType(SQLSchema.class)){
-                tableContainer = schemaContainer.getChildByName(schema);
+                tableContainer = schemaContainer.getChildByName(schema, SQLSchema.class);
                 if (tableContainer == null) {
                     return true;
                 }
@@ -472,7 +472,7 @@ public class SQLObjectUtils {
                throw new IllegalArgumentException("Schema name was expected but none was given.");
            }
            
-           return (SQLSchema) db.getChildByNameIgnoreCase(schemaName);
+           return (SQLSchema) db.getChildByNameIgnoreCase(schemaName, SQLSchema.class);
         } else if (db.isCatalogContainer()) {
             if (catName == null) {
                 throw new IllegalArgumentException("Catalog name was expected but none was given.");
@@ -489,7 +489,7 @@ public class SQLObjectUtils {
                     throw new IllegalArgumentException("Schema name was expected but none was given.");
                 }
                 
-                return (SQLSchema) tempCat.getChildByNameIgnoreCase(schemaName);
+                return (SQLSchema) tempCat.getChildByNameIgnoreCase(schemaName, SQLSchema.class);
             }
             
             if (schemaName != null) {

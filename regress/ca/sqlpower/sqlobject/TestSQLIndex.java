@@ -140,11 +140,11 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
         
         SQLIndex ind = testTable.getPrimaryKeyIndex();
         
-        assertTrue("The column should be added to the index", ind.getChildByName("pk") != null);
+        assertTrue("The column should be added to the index", ind.getChildByName("pk", Column.class) != null);
         
         testTable.removeChild(col);
         
-        assertNull("The column was not removed from the index", ind.getChildByName("pk"));
+        assertNull("The column was not removed from the index", ind.getChildByName("pk", Column.class));
         assertEquals("The table should have an empty PK index", 0, testTable.getPkSize());
     }
     
