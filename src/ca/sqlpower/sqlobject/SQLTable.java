@@ -112,9 +112,25 @@ public class SQLTable extends SQLObject {
     private boolean columnsPopulated = false;
     
     /**
+     * If true the current thread is already populating the columns and has come back
+     * around to try and populate the columns again before it has completed populating.
+     * {@link #populateColumns()} is synchronized which prevents more than one thread from 
+     * entering and causing this flag to be set by someone else.
+     */
+    private boolean columnsPopulating = false;
+    
+    /**
      * Determinant of whether this table's {@link SQLIndex}s have been populated.
      */
     private boolean indicesPopulated = false;
+    
+    /**
+     * If true the current thread is already populating the indices and has come back
+     * around to try and populate the indices again before it has completed populating.
+     * {@link #populateIndices()} is synchronized which prevents more than one thread from 
+     * entering and causing this flag to be set by someone else.
+     */
+    private boolean indicesPopulating = false;
     
     /**
      * Determinant of whether this table's exported keys have been populated.
@@ -335,7 +351,7 @@ public class SQLTable extends SQLObject {
     protected synchronized void populateColumns() throws SQLObjectException {
     	logger.debug("Populating columns on table " + getName(), new Exception());
 
-		if (columnsPopulated) return;
+		if (columnsPopulated || columnsPopulating) return;
     	if (columns.size() > 0) {
     		throw new IllegalStateException("Can't populate table because it already contains columns");
     	}
@@ -344,6 +360,7 @@ public class SQLTable extends SQLObject {
 
 		Connection con = null;
 		try {
+		    columnsPopulating = true;
 		    con = getParentDatabase().getConnection();
 		    DatabaseMetaData dbmd = con.getMetaData();
 			List<SQLColumn> cols = SQLColumn.fetchColumnsForTable(
@@ -358,6 +375,7 @@ public class SQLTable extends SQLObject {
 			rollback(e.getMessage());
 			throw new SQLObjectException("Failed to populate columns of table "+getName(), e);
 		} finally {
+		    columnsPopulating = false;
 			if (con != null) {
 			    try {
 			        con.close();
@@ -384,7 +402,7 @@ public class SQLTable extends SQLObject {
      * index folder is both non-empty and non-populated
      */
 	protected synchronized void populateIndices() throws SQLObjectException {
-        if (indicesPopulated) return;
+        if (indicesPopulated || indicesPopulating) return;
 		if (indices.size() > 0) {
 			throw new IllegalStateException("Can't populate indices because it already contains children!");
 		} else if (!columnsPopulated) {
@@ -402,6 +420,7 @@ public class SQLTable extends SQLObject {
 
         Connection con = null;
         try {
+            indicesPopulating = true;
             con = getParentDatabase().getConnection();
             DatabaseMetaData dbmd = con.getMetaData();
             logger.debug("before addIndicesToTable");
@@ -420,7 +439,7 @@ public class SQLTable extends SQLObject {
         	rollback(e.getMessage());
             throw new SQLObjectException("Failed to populate indices of table "+getName(), e);
         } finally {
-
+            indicesPopulating = false;
             try {
                 if (con != null) con.close();
             } catch (SQLException e) {
@@ -1091,10 +1110,11 @@ public class SQLTable extends SQLObject {
 			populateColumns();
 			populateRelationships();
 			populateIndices();
-			populated = true;
+			if (columnsPopulated && indicesPopulated && exportedKeysPopulated) {
+			    populated = true;
+			}
 			firePropertyChange("populated", false, true);
 		} catch (SQLObjectException e) {
-			rollback(e.getMessage());
 			throw e;
 		}
 	}
@@ -1707,6 +1727,23 @@ public class SQLTable extends SQLObject {
     		}
     	}
     	return false;
+    }
+    
+    @Override
+    public <T extends SPObject> List<T> getChildren(Class<T> type) {
+        try {
+            if (type == SQLColumn.class) {
+                populateColumns();
+            } else if (type == SQLIndex.class) {
+                populateColumns();
+                populateIndices();
+            } else {
+                populate();
+            }
+            return getChildrenWithoutPopulating(type);
+        } catch (SQLObjectException e) {
+            throw new RuntimeException("Could not populate " + getName(), e);
+        }
     }
 
 	public List<? extends SQLObject> getChildrenWithoutPopulating() {

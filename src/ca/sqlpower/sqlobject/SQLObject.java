@@ -164,7 +164,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      * Causes this SQLObject to load its children through populateImpl (if any exist).
      * This will do nothing if the object is already populated.
      */
-	public final void populate() throws SQLObjectException {
+	public final synchronized void populate() throws SQLObjectException {
 	    if (populated || populating) return;
 	    
 	    populating = true;
