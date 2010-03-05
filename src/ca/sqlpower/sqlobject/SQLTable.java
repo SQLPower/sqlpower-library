@@ -1055,8 +1055,13 @@ public class SQLTable extends SQLObject {
             	primaryKeyIndex.removeColumn(col);
             }
 
-        } finally {
-        	commit();
+            commit();
+        } catch (SQLObjectException e) {
+            rollback(e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            rollback(e.getMessage());
+            throw new RuntimeException(e);
         }
 	}
 
