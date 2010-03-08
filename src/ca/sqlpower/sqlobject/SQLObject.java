@@ -32,6 +32,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.Logger;
 
+import com.google.common.collect.ListMultimap;
+
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.ObjectDependentException;
@@ -685,12 +687,43 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
                 
                 con = db.getConnection();
                 DatabaseMetaData dbmd = con.getMetaData();
-                List<SQLTable> newChildren = SQLTable.fetchTablesForTableContainer(
+                final List<SQLTable> newChildren = SQLTable.fetchTablesForTableContainer(
                         dbmd, catName, schName);
-                SQLObjectUtils.refreshChildren(this, newChildren, SQLTable.class);
+                runInForeground(new Runnable() {
+                    public void run() {
+                        try {
+                            SQLObjectUtils.refreshChildren(SQLObject.this, newChildren, SQLTable.class);
+                        } catch (SQLObjectException e) {
+                            throw new SQLObjectRuntimeException(e);
+                        }
+                    }
+                });
 
-                SQLTable.refreshAllColumns(catName, schName, dbmd, 
-                		getChildrenWithoutPopulating(SQLTable.class));
+                try {
+                    final ListMultimap<String, SQLColumn> newCols = SQLColumn.fetchColumnsForTable(
+                            catName, schName, dbmd);
+                    
+                    runInForeground(new Runnable() {
+                        public void run() {
+                            List<SQLTable> populatedTables = new ArrayList<SQLTable>();
+                            for (SQLTable table : getChildrenWithoutPopulating(SQLTable.class)) {
+                                if (table.isColumnsPopulated()) {
+                                    populatedTables.add(table);
+                                }
+                            }
+                            for (SQLTable table : populatedTables) {
+                                try {
+                                    SQLObjectUtils.refreshChildren(table, newCols.get(table.getName()), SQLColumn.class);
+                                } catch (SQLObjectException e) {
+                                    throw new SQLObjectRuntimeException(e);
+                                }
+                            }
+                        }
+                    });
+                } catch (SQLException e) {
+                    throw new SQLObjectException("Refresh failed", e);
+                }
+                
                 for (SQLTable t : getChildrenWithoutPopulating(SQLTable.class)) {
                     t.refreshIndexes();
                 }

@@ -196,7 +196,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		
 			public void run() {
 				synchronized(SQLDatabase.this) {
-					if (populated == true) return;
+					if (populated) return;
 					try {
 						begin("Populating Database " + this);
 
@@ -712,19 +712,47 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 
         Connection con = null;
         try {
-            begin(Messages.getString("SQLDatabase.refreshDatabase", getName())); //$NON-NLS-1$
+            runInForeground(new Runnable() {
+                public void run() {
+                    begin(Messages.getString("SQLDatabase.refreshDatabase", getName())); //$NON-NLS-1$
+                }
+            });
 
             con = getConnection();
             DatabaseMetaData dbmd = con.getMetaData();
             
             if (catalogTerm != null) {
                 logger.debug("refresh: catalogTerm is '"+catalogTerm+"'. refreshing catalogs!"); //$NON-NLS-1$ //$NON-NLS-2$
-                List<SQLCatalog> newCatalogs = SQLCatalog.fetchCatalogs(dbmd);
-                SQLObjectUtils.refreshChildren(this, newCatalogs, SQLCatalog.class);
+                final List<SQLCatalog> newCatalogs = SQLCatalog.fetchCatalogs(dbmd);
+                runInForeground(new Runnable() {
+                    public void run() {
+                        try {
+                            SQLObjectUtils.refreshChildren(SQLDatabase.this, newCatalogs, SQLCatalog.class);
+                        } catch (SQLObjectException e) {
+                            rollback(e.getMessage());
+                            throw new SQLObjectRuntimeException(e);
+                        } catch (RuntimeException e) {
+                            rollback(e.getMessage());
+                            throw e;
+                        }
+                    }
+                });
             } else if (schemaTerm != null) {
                 logger.debug("refresh: schemaTerm is '"+schemaTerm+"'. refreshing schemas!"); //$NON-NLS-1$ //$NON-NLS-2$
-                List<SQLSchema> newSchemas = SQLSchema.fetchSchemas(dbmd, null);
-                SQLObjectUtils.refreshChildren(this, newSchemas, SQLSchema.class);
+                final List<SQLSchema> newSchemas = SQLSchema.fetchSchemas(dbmd, null);
+                runInForeground(new Runnable() {
+                    public void run() {
+                        try {
+                            SQLObjectUtils.refreshChildren(SQLDatabase.this, newSchemas, SQLSchema.class);
+                        } catch (SQLObjectException e) {
+                            rollback(e.getMessage());
+                            throw new SQLObjectRuntimeException(e);
+                        } catch (RuntimeException e) {
+                            rollback(e.getMessage());
+                            throw e;
+                        }
+                    }
+                });
             }
             
             // close connection before invoking the super refresh,
@@ -735,11 +763,26 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
             // bootstrap: if this database is a catalog or schema container, 
             super.refresh();
 
-        } catch (SQLException e) {
+            runInForeground(new Runnable() {
+                public void run() {
+                    commit();
+                }
+            });
+        } catch (final SQLException e) {
+            runInForeground(new Runnable() {
+                public void run() {
+                    rollback(e.getMessage());
+                }
+            });
             throw new SQLObjectException(Messages.getString("SQLDatabase.refreshFailed"), e); //$NON-NLS-1$
+        } catch (final RuntimeException e) {
+            runInForeground(new Runnable() {
+                public void run() {
+                    rollback(e.getMessage());
+                }
+            });
+            throw e;
         } finally {
-            commit();
-            
             try {
                 if (con != null) con.close();
             } catch (SQLException ex) {

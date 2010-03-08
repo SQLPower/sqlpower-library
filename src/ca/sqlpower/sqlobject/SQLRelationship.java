@@ -1846,7 +1846,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	public boolean removeColumnMapping(ColumnMapping child) {
 		if (isMagicEnabled() && child.getParent() != this) {
 			throw new IllegalStateException("Cannot remove child " + child.getName() + 
-					" of type " + child.getClass() + " as its parent is not " + getName());
+					" of type " + child.getClass() + " as its parent is not " + getName() + "." +
+							" The parent is " + child.getParent());
 		}
 		int index = mappings.indexOf(child);
 		if (index != -1) {

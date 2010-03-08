@@ -335,18 +335,23 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         copyProperties(this, (SQLColumn) source);
     }
 
-	/**
-	 * Creates a list of unparented SQLColumn objects based on the current
-	 * information from the given DatabaseMetaData.
-	 */
-	static ListMultimap<SQLTable, SQLColumn> fetchColumnsForTable(
+    /**
+     * Creates a list of unparented SQLColumn objects based on the current
+     * information from the given DatabaseMetaData.
+     * 
+     * @return A map of table names to a list of SQLColumns that the table
+     *         should contain in the order the columns should appear in the
+     *         table. This will contain the names and columns of tables that
+     *         are system tables which may not be interesting for all calling
+     *         methods.
+     */
+	static ListMultimap<String, SQLColumn> fetchColumnsForTable(
 	                                String catalog,
 	                                String schema,
-	                                DatabaseMetaData dbmd,
-	                                List<SQLTable> tables) 
+	                                DatabaseMetaData dbmd) 
 		throws SQLException, DuplicateColumnException, SQLObjectException {
 		ResultSet rs = null;
-		final ListMultimap<SQLTable, SQLColumn> multimap = ArrayListMultimap.create();
+		final ListMultimap<String, SQLColumn> multimap = ArrayListMultimap.create();
  		try {
 			logger.debug("SQLColumn.addColumnsToTables: catalog="+catalog+"; schema="+schema);
 			rs = dbmd.getColumns(catalog, schema, null, "%");
@@ -358,16 +363,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 				logger.debug("addColumnsToTable SQLColumn constructor invocation.");
 				
 				String tableName = rs.getString(3);
-				
-				SQLTable parentTable = null;
-				for (SQLTable table : tables) {
-					if (table.getName().equals(tableName)) {
-						parentTable = table;
-						break;
-					}
-				}
-				//The column may be part of a system or temporary table we are not interested in.
-				if (parentTable == null) continue;
 				
 				boolean autoIncrement;
                 if (autoIncCol > 0) {
@@ -405,7 +400,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 
 				logger.debug("Adding column "+col.getName());
 				
-	        	multimap.put(parentTable, col);
+	        	multimap.put(dbTableName, col);
 
 			}
 			

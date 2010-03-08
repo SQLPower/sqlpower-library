@@ -350,8 +350,7 @@ public class SQLTable extends SQLObject {
 
     		logger.debug("column folder populate starting for table " + getName());
 
-    		List<SQLTable> tables = getParent().getChildrenWithoutPopulating(SQLTable.class);
-    		populateAllColumns(getCatalogName(), getSchemaName(), getParentDatabase(), tables);
+    		populateAllColumns(getCatalogName(), getSchemaName(), getParentDatabase(), getParent());
 
     		logger.debug("column folder populate finished for table " + getName());
 
@@ -377,24 +376,30 @@ public class SQLTable extends SQLObject {
 	 * @param parentDB
 	 *            The parent database object. Will be used to connect to the
 	 *            database with.
-	 * @param tables
-	 *            A list of tables that need columns added to them.
+	 * @param tableContainer
+	 *            The SQLObject that contains all of the tables in the system.
 	 * @throws SQLObjectException
 	 */
     private synchronized static void populateAllColumns(String catalogName, String schemaName, 
-    		final SQLDatabase parentDB, List<SQLTable> tables) throws SQLObjectException {
+    		final SQLDatabase parentDB, final SQLObject tableContainer) throws SQLObjectException {
     	Connection con = null;
 		try {
 		    con = parentDB.getConnection();
 		    DatabaseMetaData dbmd = con.getMetaData();
-		    final ListMultimap<SQLTable, SQLColumn> cols = SQLColumn.fetchColumnsForTable(
-		    		catalogName, schemaName, dbmd, tables);
+		    final ListMultimap<String, SQLColumn> cols = SQLColumn.fetchColumnsForTable(
+		    		catalogName, schemaName, dbmd);
 		    Runnable runner = new Runnable() {
 				public void run() {
 					try {
 						parentDB.begin("Populating all columns");
-						for (SQLTable table : cols.keySet()) {
-							for (SQLColumn col : cols.get(table)) {
+						for (String tableName : cols.keySet()) {
+						    SQLTable table = tableContainer.getChildByName(tableName, SQLTable.class);
+						    //The multimap will contain table names of system tables 
+						    //that are not contained in the table container. Skipping 
+						    //these tables. If a table is missed due to an error it will
+						    //at least not be marked as populated.
+						    if (table == null) continue; 
+							for (SQLColumn col : cols.get(tableName)) {
 								table.addColumnWithoutPopulating(col);
 							}
 							table.setColumnsPopulated(true);
@@ -1762,12 +1767,11 @@ public class SQLTable extends SQLObject {
     			populatedTables.add(table);
     		}
     	}
-        Connection con = null;
         try {
-            ListMultimap<SQLTable, SQLColumn> newCols = SQLColumn.fetchColumnsForTable(
-            		catalogName, schemaName, dbmd, populatedTables);
+            ListMultimap<String, SQLColumn> newCols = SQLColumn.fetchColumnsForTable(
+            		catalogName, schemaName, dbmd);
             for (SQLTable table : populatedTables) {
-            	SQLObjectUtils.refreshChildren(table, newCols.get(table), SQLColumn.class);
+            	SQLObjectUtils.refreshChildren(table, newCols.get(table.getName()), SQLColumn.class);
             }
         } catch (SQLException e) {
             throw new SQLObjectException("Refresh failed", e);
@@ -1881,11 +1885,19 @@ public class SQLTable extends SQLObject {
             return;
         }
 
-        List<SQLRelationship> newRels = SQLRelationship.fetchExportedKeys(this);
+        final List<SQLRelationship> newRels = SQLRelationship.fetchExportedKeys(this);
         if (logger.isDebugEnabled()) {
             logger.debug("New imported keys of " + getName() + ": " + newRels);
         }
-        SQLObjectUtils.refreshChildren(this, newRels, SQLRelationship.class);
+        runInForeground(new Runnable() {
+            public void run() {
+                try {
+                    SQLObjectUtils.refreshChildren(SQLTable.this, newRels, SQLRelationship.class);
+                } catch (SQLObjectException e) {
+                    throw new SQLObjectRuntimeException(e);
+                }
+            }
+        });
     }
 
     void refreshIndexes() throws SQLObjectException {
@@ -1896,9 +1908,17 @@ public class SQLTable extends SQLObject {
             DatabaseMetaData dbmd = con.getMetaData();
             
             // indexes (incl. PK)
-            List<SQLIndex> newIndexes = SQLIndex.fetchIndicesForTableAndUpdatePK(dbmd, this);
+            final List<SQLIndex> newIndexes = SQLIndex.fetchIndicesForTableAndUpdatePK(dbmd, this);
             newIndexes.add(0, getPrimaryKeyIndex());
-            SQLObjectUtils.refreshChildren(this, newIndexes, SQLIndex.class);
+            runInForeground(new Runnable() {
+                public void run() {
+                    try {
+                        SQLObjectUtils.refreshChildren(SQLTable.this, newIndexes, SQLIndex.class);
+                    } catch (SQLObjectException e) {
+                        throw new SQLObjectRuntimeException(e);
+                    }
+                }
+            });
             
         } catch (SQLException e) {
             throw new SQLObjectException("Refresh failed", e);
