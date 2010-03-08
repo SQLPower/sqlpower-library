@@ -399,6 +399,7 @@ public class SQLTable extends SQLObject {
 						    //these tables. If a table is missed due to an error it will
 						    //at least not be marked as populated.
 						    if (table == null) continue; 
+						    if (table.isColumnsPopulated()) continue;
 							for (SQLColumn col : cols.get(tableName)) {
 								table.addColumnWithoutPopulating(col);
 							}
