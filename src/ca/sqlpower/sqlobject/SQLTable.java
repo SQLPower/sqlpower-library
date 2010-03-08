@@ -279,9 +279,9 @@ public class SQLTable extends SQLObject {
 	private SQLTable createTableFromSource(SQLDatabase parent, TransferStyles transferStyle, boolean preserveColumnSource)
 		throws SQLObjectException {
 		populateColumns();
+		populateIndices();
 		populateRelationships();
 		populateImportedKeys();
-        populateIndices();
         SQLIndex newPKIndex = new SQLIndex();
 		SQLTable t = new SQLTable(parent, true, newPKIndex);
 		t.setName(getName());
@@ -545,6 +545,7 @@ public class SQLTable extends SQLObject {
                             "\""+cat+"\".\""+sch+"\".\""+tab+"\"");
                 }
 				pkTable.populateColumns();
+				pkTable.populateIndices();
 				pkTable.populateRelationships(this);
 			}
 			setImportedKeysPopulated(true);
@@ -602,6 +603,9 @@ public class SQLTable extends SQLObject {
 				if (!columnsPopulated) {
 		    		throw new IllegalStateException("Table must be populated before relationships are added");
 		    	}
+				if (!indicesPopulated) {
+				    throw new IllegalStateException("Table indices must be populated before relationships are added");
+				}
 				//Someone beat us to populating the relationships
 				if (exportedKeysPopulated) return;
 				try {
@@ -742,6 +746,7 @@ public class SQLTable extends SQLObject {
 		boolean addToPK;
 		int pkSize = getPkSize();
 		source.populateColumns();
+		source.populateIndices();
 		if (pos < pkSize) {
 			addToPK = true;
 		} else {
@@ -1158,8 +1163,8 @@ public class SQLTable extends SQLObject {
 		
 		try {
 			populateColumns();
-			populateRelationships();
 			populateIndices();
+			populateRelationships();
 			populated = true;
 			runInForeground(new Runnable() {
 				public void run() {
