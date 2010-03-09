@@ -295,6 +295,16 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 		}
 	}
 	
+	/**
+	 * Returns a new and unmodifiable list of all SQLObjects currently children
+	 * of this object. The list of objects is unmodifiable as children cannot
+	 * be added or removed through it. The list is a new list instead of wrapping
+	 * the list in an unmodifiable list to let the list be updated on one thread
+	 * while it is being iterated over on another thread. 
+	 * <p>
+	 * Calling this method will not cause the object to populate. 
+	 * @return
+	 */
 	@NonProperty
 	public abstract List<? extends SQLObject> getChildrenWithoutPopulating();
 	

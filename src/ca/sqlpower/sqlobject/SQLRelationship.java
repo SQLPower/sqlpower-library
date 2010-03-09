@@ -1830,7 +1830,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 	@Override
 	public List<ColumnMapping> getChildrenWithoutPopulating() {
-		return Collections.unmodifiableList(mappings);
+		return Collections.unmodifiableList(new ArrayList<ColumnMapping>(mappings));
 	}
 	
 	@Override

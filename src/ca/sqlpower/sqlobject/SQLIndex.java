@@ -547,7 +547,7 @@ public class SQLIndex extends SQLObject {
     @Override
     @NonProperty
     public List<Column> getChildrenWithoutPopulating() {
-    	return Collections.unmodifiableList(columns);
+    	return Collections.unmodifiableList(new ArrayList<Column>(columns));
     }
     
     /**

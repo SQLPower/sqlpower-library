@@ -294,7 +294,7 @@ public class SQLSchema extends SQLObject {
 
 	@Override
 	public List<SQLTable> getChildrenWithoutPopulating() {
-		return Collections.unmodifiableList(tables);
+		return Collections.unmodifiableList(new ArrayList<SQLTable>(tables));
 	}
 
 	@Override
