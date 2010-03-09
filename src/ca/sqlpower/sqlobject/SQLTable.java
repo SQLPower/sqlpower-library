@@ -341,22 +341,20 @@ public class SQLTable extends SQLObject {
 	 */
     protected synchronized void populateColumns() throws SQLObjectException {
     	logger.debug("Populating columns on table " + getName(), new Exception());
-    	synchronized (SQLTable.class) {
 
-    		if (columnsPopulated) return;
-    		if (columns.size() > 0) {
-    			throw new IllegalStateException("Can't populate table because it already contains columns");
-    		}
-
-    		logger.debug("column folder populate starting for table " + getName());
-
-    		populateAllColumns(getCatalogName(), getSchemaName(), getParentDatabase(), getParent());
-
-    		logger.debug("column folder populate finished for table " + getName());
-
-    		populateIndices();
+    	if (columnsPopulated) return;
+    	if (columns.size() > 0) {
+    	    throw new IllegalStateException("Can't populate table because it already contains columns");
     	}
-	}
+
+    	logger.debug("column folder populate starting for table " + getName());
+
+    	populateAllColumns(getCatalogName(), getSchemaName(), getParentDatabase(), getParent());
+
+    	logger.debug("column folder populate finished for table " + getName());
+
+    	populateIndices();
+    }
 
 	/**
 	 * This method will populate all of the columns in all of the tables with
@@ -475,6 +473,7 @@ public class SQLTable extends SQLObject {
 					}
 					//someone beat us to this already
 					if (indicesPopulated) return;
+					logger.debug("index populate on foreground start.");
 					try {
 						begin("Populating Indices for Table " + this);
 						for (SQLIndex i : indexes) {
@@ -486,6 +485,7 @@ public class SQLTable extends SQLObject {
 						rollback(t.getMessage());
 						throw new RuntimeException(t);
 					}
+					logger.debug("index populate on foreground end.");
 				}
 			});
             logger.debug("found "+indices.size()+" indices.");
@@ -1842,6 +1842,11 @@ public class SQLTable extends SQLObject {
 	            populate();
 	            for (SQLImportedKey i : importedKeys) {
 	                children.add(type.cast(i));
+	            }
+	        } else if (SQLObject.class.equals(type) || SPObject.class.equals(type)) {
+	            populate();
+	            for (SQLObject child : getChildrenWithoutPopulating()) {
+	                children.add(type.cast(child));
 	            }
 	        }
 	    } catch (SQLObjectException e) {
