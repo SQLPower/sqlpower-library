@@ -82,6 +82,11 @@ public class SPSUtils {
             MULTISELECT_MASK = InputEvent.CTRL_DOWN_MASK;
         }
     }
+    
+    /**
+     * The URL for the SQL Power Architect page.
+     */
+    public static final String SQLP_ARCHITECT_URL = "http://www.sqlpower.ca/page/architect"; //$NON-NLS-1$
 	
 	/**
      * The URL for the SQL Power main page.

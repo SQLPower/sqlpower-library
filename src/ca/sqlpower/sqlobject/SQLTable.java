@@ -479,8 +479,8 @@ public class SQLTable extends SQLObject {
 						for (SQLIndex i : indexes) {
 							addIndex(i);
 						}
-						commit();
 						setIndicesPopulated(true);
+						commit();
 					} catch (Throwable t) {
 						rollback(t.getMessage());
 						throw new RuntimeException(t);
@@ -493,7 +493,6 @@ public class SQLTable extends SQLObject {
         } catch (SQLException e) {
             throw new SQLObjectException("Failed to populate indices of table "+getName(), e);
         } finally {
-
             try {
                 if (con != null) con.close();
             } catch (SQLException e) {
@@ -569,6 +568,7 @@ public class SQLTable extends SQLObject {
 	 */
 	protected synchronized void populateExportedKeys() throws SQLObjectException {
 		populateColumns();
+		populateIndices();
 		populateRelationships();
 	}
 
@@ -1111,8 +1111,13 @@ public class SQLTable extends SQLObject {
             	primaryKeyIndex.removeColumn(col);
             }
 
-        } finally {
-        	commit();
+            commit();
+        } catch (SQLObjectException e) {
+            rollback(e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            rollback(e.getMessage());
+            throw new RuntimeException(e);
         }
 	}
 
@@ -1166,14 +1171,15 @@ public class SQLTable extends SQLObject {
 			populateColumns();
 			populateIndices();
 			populateRelationships();
-			populated = true;
+			if (columnsPopulated && indicesPopulated && exportedKeysPopulated) {
+			    populated = true;
+			}
 			runInForeground(new Runnable() {
 				public void run() {
 					firePropertyChange("populated", false, true);
 				}
 			});
 		} catch (SQLObjectException e) {
-			rollback(e.getMessage());
 			throw e;
 		}
 	}
@@ -1806,6 +1812,23 @@ public class SQLTable extends SQLObject {
     	}
     	return false;
     }
+    
+    @Override
+    public <T extends SPObject> List<T> getChildren(Class<T> type) {
+        try {
+            if (type == SQLColumn.class) {
+                populateColumns();
+            } else if (type == SQLIndex.class) {
+                populateColumns();
+                populateIndices();
+            } else {
+                populate();
+            }
+            return getChildrenWithoutPopulating(type);
+        } catch (SQLObjectException e) {
+            throw new RuntimeException("Could not populate " + getName(), e);
+        }
+    }
 
 	public List<? extends SQLObject> getChildrenWithoutPopulating() {
 		List<SQLObject> children = new ArrayList<SQLObject>();
@@ -1817,44 +1840,6 @@ public class SQLTable extends SQLObject {
 		return Collections.unmodifiableList(children);
 	}
 	
-	@Override
-	public <T extends SPObject> List<T> getChildren(Class<T> type) {
-	    List<T> children = new ArrayList<T>();
-	    //populating only the necessary parts of the table for the children.
-	    try {
-	        if (SQLColumn.class.equals(type)) {
-	            populateColumns();
-	            for (SQLColumn c : columns) {
-	                children.add(type.cast(c));
-	            }
-	        } else if (SQLIndex.class.equals(type)) {
-	            populateColumns();
-	            populateIndices();
-	            for (SQLIndex i : indices) {
-	                children.add(type.cast(i));
-	            }
-	        } else if (SQLRelationship.class.equals(type)) {
-	            populate();
-	            for (SQLRelationship r : exportedKeys) {
-	                children.add(type.cast(r));
-	            }
-	        } else if (SQLImportedKey.class.equals(type)) {
-	            populate();
-	            for (SQLImportedKey i : importedKeys) {
-	                children.add(type.cast(i));
-	            }
-	        } else if (SQLObject.class.equals(type) || SPObject.class.equals(type)) {
-	            populate();
-	            for (SQLObject child : getChildrenWithoutPopulating()) {
-	                children.add(type.cast(child));
-	            }
-	        }
-	    } catch (SQLObjectException e) {
-	        throw new SQLObjectRuntimeException(e);
-	    }
-	    return Collections.unmodifiableList(children);
-	}
-
 	@Override
 	protected boolean removeChildImpl(SPObject child) {
 		if (child instanceof SQLColumn) {

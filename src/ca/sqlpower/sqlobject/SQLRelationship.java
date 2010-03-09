@@ -1318,6 +1318,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			fireTransactionEnded();
 		} catch (RuntimeException e) {
 			fireTransactionRollback(e.getMessage());
+			throw e;
 		}
 	}
 	

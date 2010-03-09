@@ -21,7 +21,7 @@ package ca.sqlpower.object;
 
 import java.beans.PropertyChangeEvent;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -50,7 +50,7 @@ public abstract class AbstractSPListener implements SPListener {
      * object could be attached to several objects as a hierarchy listener.
      */
     private final Map<SPObject, Integer> inTransactionMap = 
-        new HashMap<SPObject, Integer>();
+        new IdentityHashMap<SPObject, Integer>();
 
     /**
      * Tracks the e that occur while an object is in a transaction state. These
@@ -59,7 +59,7 @@ public abstract class AbstractSPListener implements SPListener {
      * {@link SPChildEvent}s.
      */
     private final Map<SPObject, List<Object>> eventMap = 
-        new HashMap<SPObject, List<Object>>();
+        new IdentityHashMap<SPObject, List<Object>>();
 
     public final void transactionEnded(TransactionEvent e) {
     	Integer lastTransactionCount;

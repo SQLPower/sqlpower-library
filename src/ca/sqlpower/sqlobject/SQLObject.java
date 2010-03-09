@@ -173,7 +173,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      * Causes this SQLObject to load its children through populateImpl (if any exist).
      * This will do nothing if the object is already populated.
      */
-	public final void populate() throws SQLObjectException {
+	public final synchronized void populate() throws SQLObjectException {
 	    if (populated || !populating.compareAndSet(false, true)) return;
 	    
         // We're going to just leave caching on all the time and see how it pans out
@@ -472,63 +472,14 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
         return fireDbChildrenPreRemove(oldIndexArray, oldChildList);
     }
 
-	/**
-	 * Returns the first child (in the sequence of the getChildren() list) which
-	 * has the given name (case sensitive).
-	 * <p>
-	 * Warning! This may return unexpected results now that object can contain
-	 * multiple child types. For example, if you want the primary key of a table
-	 * (eg table_pk) but there is a column named as such (column table_pk) it
-	 * will return the column before the index!
-	 * {@link #getChildByName(String, Class)} should be used in preference to
-	 * this method.
-	 * 
-	 * @param name
-	 *            The name of the child to look for (case sensitive).
-	 * @return The first child with the given name, or null if there is no such
-	 *         child.
-	 * @throws SQLObjectException
-	 *             If the moon is waxing gibbous.
-	 */
-    @NonProperty
-    public SQLObject getChildByName(String name) throws SQLObjectException {
-        return getChildByNameImpl(name, false);
-    }
-    
     @NonProperty
     public <T extends SQLObject> T getChildByName(String name, Class<T> childType) {
     	return getChildByNameImpl(name, false, childType);
     }
     
-    /**
-     * Returns the first child (in the sequence of the getChildren() list) which has the
-     * given name (case insensitive).
-     *  
-     * @param name The name of the child to look for (case insensitive).
-     * @return The first child with the given name, or null if there is no such child.
-     * @throws SQLObjectException If the moon is waxing gibbous.
-     */
-    @NonProperty
-    public SQLObject getChildByNameIgnoreCase(String name) throws SQLObjectException {
-        return getChildByNameImpl(name, true);
-    }
-    
     @NonProperty
     public <T extends SQLObject> T getChildByNameIgnoreCase(String name, Class<T> childType) {
     	return getChildByNameImpl(name, true, childType);
-    }
-
-	/**
-	 * Searches for a child object through the entire list of children based on
-	 * its name and case sensitivity.
-	 * 
-	 * @param name The name of the child
-	 * @param ignoreCase Whether the name search should be case sensitive
-	 * @return The found child with the given name, or null if it does not exist.
-	 */
-    @NonProperty
-    private SQLObject getChildByNameImpl(String name, boolean ignoreCase) {
-        return getChildByNameImpl(name, ignoreCase, SQLObject.class);
     }
 
 	/**

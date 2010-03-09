@@ -134,7 +134,7 @@ public class RefreshTablesTest extends TestCase {
     public void testAddTableInEmptyCatalog() throws Exception {
         con.setProperty("dbmd.catalogTerm", "Catalog");
         con.setProperty("catalogs", "moo");
-        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        SQLCatalog cat = db.getChildByName("moo", SQLCatalog.class);
         assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
         
         con.setProperty("tables.moo", "");
@@ -151,7 +151,7 @@ public class RefreshTablesTest extends TestCase {
     public void testAddTableInNonEmptyCatalog() throws Exception {
         con.setProperty("dbmd.catalogTerm", "Catalog");
         con.setProperty("catalogs", "moo");
-        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        SQLCatalog cat = db.getChildByName("moo", SQLCatalog.class);
         assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
 
         con.setProperty("tables.moo", "cows");
@@ -169,7 +169,7 @@ public class RefreshTablesTest extends TestCase {
     public void testRemoveTableInCatalog() throws Exception {
         con.setProperty("dbmd.catalogTerm", "Catalog");
         con.setProperty("catalogs", "moo");
-        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        SQLCatalog cat = db.getChildByName("moo", SQLCatalog.class);
         assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
 
         con.setProperty("tables.moo", "cows,chickens");
@@ -186,7 +186,7 @@ public class RefreshTablesTest extends TestCase {
     public void testRemoveLastTableInCatalog() throws Exception {
         con.setProperty("dbmd.catalogTerm", "Catalog");
         con.setProperty("catalogs", "moo");
-        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        SQLCatalog cat = db.getChildByName("moo", SQLCatalog.class);
         assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
 
         con.setProperty("tables.moo", "cows");
@@ -202,7 +202,7 @@ public class RefreshTablesTest extends TestCase {
     public void testAddCatalogInDatabase() throws Exception {
         con.setProperty("dbmd.catalogTerm", "Catalog");
         con.setProperty("catalogs", "moo");
-        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        SQLCatalog cat = db.getChildByName("moo", SQLCatalog.class);
         assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
         assertEquals(1, db.getChildCount());
         
@@ -256,7 +256,7 @@ public class RefreshTablesTest extends TestCase {
     public void testAddTableInEmptySchema() throws Exception {
         con.setProperty("dbmd.schemaTerm", "Schema");
         con.setProperty("schemas", "moo");
-        SQLSchema schema = (SQLSchema) db.getChildByName("moo");
+        SQLSchema schema = db.getChildByName("moo", SQLSchema.class);
         assertNotNull("Didn't find schema in db: "+db.getChildNames(), schema);
         
         con.setProperty("tables.moo", "");
@@ -273,7 +273,7 @@ public class RefreshTablesTest extends TestCase {
     public void testAddTableInNonEmptySchema() throws Exception {
         con.setProperty("dbmd.schemaTerm", "Schema");
         con.setProperty("schemas", "moo");
-        SQLSchema schema = (SQLSchema) db.getChildByName("moo");
+        SQLSchema schema = db.getChildByName("moo", SQLSchema.class);
         assertNotNull("Didn't find schema in db: "+db.getChildNames(), schema);
 
         con.setProperty("tables.moo", "cows");
@@ -291,7 +291,7 @@ public class RefreshTablesTest extends TestCase {
     public void testRemoveTableInSchema() throws Exception {
         con.setProperty("dbmd.schemaTerm", "Schema");
         con.setProperty("schemas", "moo");
-        SQLSchema schema = (SQLSchema) db.getChildByName("moo");
+        SQLSchema schema = db.getChildByName("moo", SQLSchema.class);
         assertNotNull("Didn't find schema in db: "+db.getChildNames(), schema);
 
         con.setProperty("tables.moo", "cows,chickens");
@@ -308,7 +308,7 @@ public class RefreshTablesTest extends TestCase {
     public void testRemoveLastTableInSchema() throws Exception {
         con.setProperty("dbmd.schemaTerm", "Schema");
         con.setProperty("schemas", "moo");
-        SQLSchema schema = (SQLSchema) db.getChildByName("moo");
+        SQLSchema schema = db.getChildByName("moo", SQLSchema.class);
         assertNotNull("Didn't find schema in db: "+db.getChildNames(), schema);
 
         con.setProperty("tables.moo", "cows");
@@ -324,7 +324,7 @@ public class RefreshTablesTest extends TestCase {
     public void testAddSchemaInDatabase() throws Exception {
         con.setProperty("dbmd.schemaTerm", "Schema");
         con.setProperty("schemas", "moo");
-        SQLSchema schema = (SQLSchema) db.getChildByName("moo");
+        SQLSchema schema = db.getChildByName("moo", SQLSchema.class);
         assertNotNull("Didn't find schema in db: "+db.getChildNames(), schema);
         assertEquals(1, db.getChildCount());
         
@@ -383,10 +383,10 @@ public class RefreshTablesTest extends TestCase {
         con.setProperty("dbmd.schemaTerm", "Schema");
         con.setProperty("catalogs", "moo");
         con.setProperty("schemas.moo", "cow");
-        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        SQLCatalog cat = db.getChildByName("moo", SQLCatalog.class);
         assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
         
-        SQLSchema sch = (SQLSchema) cat.getChildByName("cow");
+        SQLSchema sch = cat.getChildByName("cow", SQLSchema.class);
         assertNotNull("Didn't find schema in catalog: "+cat.getChildNames(), sch);
         
         con.setProperty("tables.moo.cow", "");
@@ -405,10 +405,10 @@ public class RefreshTablesTest extends TestCase {
         con.setProperty("dbmd.schemaTerm", "Schema");
         con.setProperty("catalogs", "moo");
         con.setProperty("schemas.moo", "cow");
-        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        SQLCatalog cat = db.getChildByName("moo", SQLCatalog.class);
         assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
 
-        SQLSchema sch = (SQLSchema) cat.getChildByName("cow");
+        SQLSchema sch = cat.getChildByName("cow", SQLSchema.class);
         assertNotNull("Didn't find schema in catalog: "+cat.getChildNames(), sch);
 
         con.setProperty("tables.moo.cow", "cows");
@@ -428,10 +428,10 @@ public class RefreshTablesTest extends TestCase {
         con.setProperty("dbmd.schemaTerm", "Schema");
         con.setProperty("catalogs", "moo");
         con.setProperty("schemas.moo", "cow");
-        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        SQLCatalog cat = db.getChildByName("moo", SQLCatalog.class);
         assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
 
-        SQLSchema sch = (SQLSchema) cat.getChildByName("cow");
+        SQLSchema sch = cat.getChildByName("cow", SQLSchema.class);
         assertNotNull("Didn't find schema in catalog: "+cat.getChildNames(), sch);
 
         con.setProperty("tables.moo.cow", "cows,chickens");
@@ -450,10 +450,10 @@ public class RefreshTablesTest extends TestCase {
         con.setProperty("dbmd.schemaTerm", "Schema");
         con.setProperty("catalogs", "moo");
         con.setProperty("schemas.moo", "cow");
-        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        SQLCatalog cat = db.getChildByName("moo", SQLCatalog.class);
         assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
 
-        SQLSchema sch = (SQLSchema) cat.getChildByName("cow");
+        SQLSchema sch = cat.getChildByName("cow", SQLSchema.class);
         assertNotNull("Didn't find schema in catalog: "+cat.getChildNames(), sch);
 
         con.setProperty("tables.moo.cow", "cows");
@@ -471,7 +471,7 @@ public class RefreshTablesTest extends TestCase {
         con.setProperty("dbmd.schemaTerm", "Schema");
         con.setProperty("catalogs", "moo");
         con.setProperty("schemas.moo", "cow");
-        SQLCatalog cat = (SQLCatalog) db.getChildByName("moo");
+        SQLCatalog cat = db.getChildByName("moo", SQLCatalog.class);
         assertNotNull("Didn't find catalog in db: "+db.getChildNames(), cat);
         assertEquals(1, db.getChildCount());
         
