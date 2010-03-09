@@ -1816,6 +1816,39 @@ public class SQLTable extends SQLObject {
 		children.addAll(indices);
 		return Collections.unmodifiableList(children);
 	}
+	
+	@Override
+	public <T extends SPObject> List<T> getChildren(Class<T> type) {
+	    List<T> children = new ArrayList<T>();
+	    //populating only the necessary parts of the table for the children.
+	    try {
+	        if (SQLColumn.class.equals(type)) {
+	            populateColumns();
+	            for (SQLColumn c : columns) {
+	                children.add(type.cast(c));
+	            }
+	        } else if (SQLIndex.class.equals(type)) {
+	            populateColumns();
+	            populateIndices();
+	            for (SQLIndex i : indices) {
+	                children.add(type.cast(i));
+	            }
+	        } else if (SQLRelationship.class.equals(type)) {
+	            populate();
+	            for (SQLRelationship r : exportedKeys) {
+	                children.add(type.cast(r));
+	            }
+	        } else if (SQLImportedKey.class.equals(type)) {
+	            populate();
+	            for (SQLImportedKey i : importedKeys) {
+	                children.add(type.cast(i));
+	            }
+	        }
+	    } catch (SQLObjectException e) {
+	        throw new SQLObjectRuntimeException(e);
+	    }
+	    return Collections.unmodifiableList(children);
+	}
 
 	@Override
 	protected boolean removeChildImpl(SPObject child) {
