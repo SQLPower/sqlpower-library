@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.Logger;
 
@@ -57,12 +56,6 @@ public class SQLSchema extends SQLObject {
 	
 	private final List<SQLTable> tables = new ArrayList<SQLTable>();
 	
-	/**
-	 * True if a thread has entered the {@link #populateImpl()} method and has either
-	 * not exited or the runnable pushed to the foreground thread has not completed.
-	 */
-	private AtomicBoolean isPopulating = new AtomicBoolean(false);
-
     /**
      * Creates a list of unpopulated Schema objects corresponding to the list of
      * schemas in the given database metadata.
@@ -194,7 +187,7 @@ public class SQLSchema extends SQLObject {
 	 * @throws NullPointerException if this schema has no parent database.
 	 */
 	protected void populateImpl() throws SQLObjectException {
-		if (populated || !isPopulating.compareAndSet(false, true)) return;
+		if (populated) return;
 		
 		logger.debug("SQLSchema: populate starting");
 
@@ -220,11 +213,7 @@ public class SQLSchema extends SQLObject {
 				}
 			}
 		} catch (SQLException e) {
-			isPopulating.set(false);
 			throw new SQLObjectException("schema.populate.fail", e);
-		} catch (Exception e) {
-			isPopulating.set(false);
-			throw new RuntimeException(e);
 		} finally {
 			try {
 				if ( rs != null ) rs.close();
@@ -242,6 +231,7 @@ public class SQLSchema extends SQLObject {
 		
 			public void run() {
 				try {
+				    if (populated) return;
 					begin("Populating schema");
 					for (SQLTable table : fetchedTables) {
                         addTable(table);
@@ -251,8 +241,6 @@ public class SQLSchema extends SQLObject {
 				} catch (Exception e) {
 					rollback(e.getMessage());
 					throw new RuntimeException(e);
-				} finally {
-					isPopulating.set(false);
 				}
 		
 			}
