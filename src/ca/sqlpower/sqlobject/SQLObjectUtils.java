@@ -262,10 +262,14 @@ public class SQLObjectUtils {
     }
 
     /**
-     * Recursively count tables in the project, including ones that have not been
-     * expanded in the DBTree.
-     *
-     * @param source the source object (usually the database)
+     * Recursively count tables in the project, including ones that have not
+     * been expanded in the DBTree.
+     * <p>
+     * This has the side effect of populating all of the objects from the given
+     * object to the object containing {@link SQLTable}s.
+     * 
+     * @param source
+     *            the source object (usually the database)
      */
     public static int countTablesSnapshot(SQLObject so) throws SQLObjectException {
     	if (so instanceof SQLTable) {

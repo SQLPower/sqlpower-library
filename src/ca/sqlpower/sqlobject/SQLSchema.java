@@ -55,7 +55,7 @@ public class SQLSchema extends SQLObject {
 	private static final Logger logger = Logger.getLogger(SQLSchema.class);
 	
 	private final List<SQLTable> tables = new ArrayList<SQLTable>();
-
+	
     /**
      * Creates a list of unpopulated Schema objects corresponding to the list of
      * schemas in the given database metadata.
@@ -196,29 +196,23 @@ public class SQLSchema extends SQLObject {
 		
 		Connection con = null;
 		ResultSet rs = null;
+		final List<SQLTable> fetchedTables;
 		try {
 			synchronized (parentDatabase) {
-				begin("Populating schema");
 				con = parentDatabase.getConnection();
 				DatabaseMetaData dbmd = con.getMetaData();
 				
 				if ( getParent() instanceof SQLDatabase ) {
-                    List<SQLTable> fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, null, getName());
-                    for (SQLTable table : fetchedTables) {
-                        addTable(table);
-                    }
+					fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, null, getName());
+                    
 
 				} else if ( getParent() instanceof SQLCatalog ) {
-                    List<SQLTable> fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, getParent().getName(), getName());
-                    for (SQLTable table : fetchedTables) {
-                    	addTable(table);
-                    }
+					fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, getParent().getName(), getName());
+				} else {
+					throw new RuntimeException("Invalid parent " + getParent());
 				}
-				setPopulated(true);
-				commit();
 			}
 		} catch (SQLException e) {
-			rollback(e.getMessage());
 			throw new SQLObjectException("schema.populate.fail", e);
 		} finally {
 			try {
@@ -232,6 +226,26 @@ public class SQLSchema extends SQLObject {
 				logger.error("Could not close connection", e2);
 			}
 		}
+		
+		runInForeground(new Runnable() {
+		
+			public void run() {
+				try {
+				    if (populated) return;
+					begin("Populating schema");
+					for (SQLTable table : fetchedTables) {
+                        addTable(table);
+                    }
+					setPopulated(true);
+					commit();
+				} catch (Exception e) {
+					rollback(e.getMessage());
+					throw new RuntimeException(e);
+				}
+		
+			}
+		});
+		
 		logger.debug("SQLSchema: populate finished");
 	}
 
@@ -280,7 +294,7 @@ public class SQLSchema extends SQLObject {
 
 	@Override
 	public List<SQLTable> getChildrenWithoutPopulating() {
-		return Collections.unmodifiableList(tables);
+		return Collections.unmodifiableList(new ArrayList<SQLTable>(tables));
 	}
 
 	@Override

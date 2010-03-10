@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 
@@ -47,6 +48,7 @@ import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
+import ca.sqlpower.util.SessionNotFoundException;
 
 /**
  * The SQLRelationship class represents a foreign key relationship between
@@ -335,7 +337,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
         setUpdateRule(relationshipToCopy.getUpdateRule());
         setDeleteRule(relationshipToCopy.getDeleteRule());
         setDeferrability(relationshipToCopy.getDeferrability());
-        setChildrenInaccessibleReason(relationshipToCopy.getChildrenInaccessibleReason(), false);
+        for (Map.Entry<Class<? extends SQLObject>, Throwable> inaccessibleReason : source.getChildrenInaccessibleReasons().entrySet()) {
+        	setChildrenInaccessibleReason(inaccessibleReason.getValue(), inaccessibleReason.getKey(), false);
+        }
         setTextForChildLabel(relationshipToCopy.getTextForChildLabel());
         setTextForParentLabel(relationshipToCopy.getTextForParentLabel());
         
@@ -595,24 +599,29 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
      * this method; it requires that all referenced tables are represented by
      * in-memory SQLTable objects. The tables this table imports its keys from
      * will be populated as a side effect of this call.
+     * <p>
+     * Also note that the table may not have had its children populated at this
+     * point. If this method is being called in a background thread the columns
+     * and indices will be added to the table in the foreground thread. Any
+     * section that requires the table to have the correct children and indices
+     * needs to be run on the foreground thread to ensure the objects exist.
      * 
      * @throws SQLObjectException
      *             if a database error occurs or if the given table's parent
      *             database is not marked as populated.
      */
-	static List<SQLRelationship> fetchExportedKeys(SQLTable table)
+	static List<SQLRelationship> fetchExportedKeys(final SQLTable table)
 	throws SQLObjectException {
-		SQLDatabase db = table.getParentDatabase();
+		final SQLDatabase db = table.getParentDatabase();
 		if (!db.isPopulated()) {
 			throw new SQLObjectException("relationship.unpopulatedTargetDatabase");
 		}
-		CachedRowSet crs = null;
+		CachedRowSet crs = new CachedRowSet();
 		ResultSet tempRS = null; // just a temporary place for the live result set. use crs instead.
 		Connection con = null;
 		try {
 		    con = table.getParentDatabase().getConnection();
 		    DatabaseMetaData dbmd = con.getMetaData();
-			crs = new CachedRowSet();
 			tempRS = dbmd.getExportedKeys(table.getCatalogName(),
                         			      table.getSchemaName(),
                         			      table.getName());
@@ -642,59 +651,98 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			SQLRelationship r = null;
 			while (crs.next()) {
 				currentKeySeq = crs.getInt(9);
+				final String pkCat = crs.getString(1);
+				final String pkSchema = crs.getString(2);
+				final String pkTableName = crs.getString(3);
+				final String pkColName = crs.getString(4);
+				final SQLTable parentTable = db.getTableByName(pkCat, pkSchema, pkTableName);
+				final String fkCat = crs.getString(5);
+				final String fkSchema = crs.getString(6);
+				final String fkTableName = crs.getString(7);
+				final String fkColName = crs.getString(8);
+				final SQLTable fkTable = db.getTableByName(fkCat,fkSchema,fkTableName);
+				final int updateRule = crs.getInt(10);
+				final int deleteRule = crs.getInt(11);
+				final String fkName = crs.getString(12);
+				final int deferrability = crs.getInt(14);
 				if (currentKeySeq == 1) {
 					r = new SQLRelationship();
-					r.setFkTable(db.getTableByName(	crs.getString(5),  // catalog
-							crs.getString(6), // schema
-							crs.getString(7))); // table
+					final SQLRelationship finalRelation = r;
+					Runnable fkTableRunner = new Runnable() {
+						public void run() {
+							finalRelation.setFkTable(fkTable);
+						}
+					};
+					try {
+						table.getSession().runInForeground(fkTableRunner);
+					} catch (SessionNotFoundException e) {
+						fkTableRunner.run();
+					}
+					
+					//must be done on current thread
 					newKeys.add(r);
 				}
+				if (parentTable == null) {
+					logger.error("addImportedRelationshipsToTable: Couldn't find exporting table "
+							+pkCat+"."+pkSchema+"."+pkTableName
+							+" in target database!");
+					continue;
+				}
+				
+				final SQLRelationship relToModify = r;
+				Runnable runner = new Runnable() {
+					public void run() {
+						if (!parentTable.isColumnsPopulated()) {
+							throw new IllegalStateException("FK table " + parentTable + 
+									" is missing columns, cannot populate relationships.");
+						}
+						if (!fkTable.isColumnsPopulated()) {
+							throw new IllegalStateException("FK table " + fkTable + 
+									" is missing columns, cannot populate relationships.");
+						}
+						try {
+							relToModify.setMagicEnabled(false);
+							ColumnMapping m = new ColumnMapping();
+							relToModify.addMapping(m);
+							
+							relToModify.setParent(parentTable); 
+							
+							if (relToModify.getParent() != table) {
+								throw new IllegalStateException("fkTable did not match requested table");
+							}
+							
+							logger.debug("Looking for pk column '"+pkColName+"' in table '"+relToModify.getParent()+"'");
+							m.pkColumn = relToModify.getParent().getColumnByName(pkColName);
+							if (m.pkColumn == null) {
+								throw new SQLObjectException("relationship.populate.nullPkColumn");
+							}
+							
+							m.fkColumn = relToModify.getFkTable().getColumnByName(fkColName);
+							if (m.fkColumn == null) {
+								throw new SQLObjectException("relationship.populate.nullFkColumn");
+							}
+							// column 9 (currentKeySeq) handled above
+							relToModify.updateRule = UpdateDeleteRule.ruleForCode(updateRule);
+							relToModify.deleteRule = UpdateDeleteRule.ruleForCode(deleteRule);
+							relToModify.setName(fkName);
+							try {
+								relToModify.deferrability = Deferrability.ruleForCode(deferrability);
+							} catch (IllegalArgumentException ex) {
+								logger.warn("Invalid code when reverse engineering" +
+										" relationship. Defaulting to NOT_DEFERRABLE.", ex);
+								relToModify.deferrability = Deferrability.NOT_DEFERRABLE;
+							}
+						} catch (SQLObjectException e) {
+							throw new SQLObjectRuntimeException(e);
+						} finally {
+							relToModify.setMagicEnabled(true);
+						}
+					}
+				};
 				try {
-					r.setMagicEnabled(false);
-					ColumnMapping m = new ColumnMapping();
-					r.addMapping(m);
-					String pkCat = crs.getString(1);
-					String pkSchema = crs.getString(2);
-					String pkTableName = crs.getString(3);
-
-					r.setParent(db.getTableByName(pkCat,  // catalog
-							pkSchema,  // schema
-							pkTableName)); // table
-
-					if (r.getParent() == null) {
-						logger.error("addImportedRelationshipsToTable: Couldn't find exporting table "
-								+pkCat+"."+pkSchema+"."+pkTableName
-								+" in target database!");
-						continue;
-					}
-
-					if (r.getParent() != table) {
-						throw new IllegalStateException("fkTable did not match requested table");
-					}
-					
-					logger.debug("Looking for pk column '"+crs.getString(4)+"' in table '"+r.getParent()+"'");
-					m.pkColumn = r.getParent().getColumnByName(crs.getString(4));
-					if (m.pkColumn == null) {
-						throw new SQLObjectException("relationship.populate.nullPkColumn");
-					}
-					
-					m.fkColumn = r.getFkTable().getColumnByName(crs.getString(8));
-					if (m.fkColumn == null) {
-						throw new SQLObjectException("relationship.populate.nullFkColumn");
-					}
-					// column 9 (currentKeySeq) handled above
-					r.updateRule = UpdateDeleteRule.ruleForCode(crs.getInt(10));
-					r.deleteRule = UpdateDeleteRule.ruleForCode(crs.getInt(11));
-					r.setName(crs.getString(12));
-					try {
-						r.deferrability = Deferrability.ruleForCode(crs.getInt(14));
-					} catch (IllegalArgumentException ex) {
-						logger.warn("Invalid code when reverse engineering" +
-								" relationship. Defaulting to NOT_DEFERRABLE.", ex);
-						r.deferrability = Deferrability.NOT_DEFERRABLE;
-					}
-				} finally {
-					r.setMagicEnabled(true);
+					table.getSession().runInForeground(runner);
+				} catch (SessionNotFoundException e) {
+					runner.run();
 				}
 			}
 
@@ -1445,6 +1493,29 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		public final void updateToMatch(SQLObject source) throws SQLObjectException {
 			//Do nothing, this is handled by the SQLRelationship
 		}
+
+		/**
+		 * The equals method for {@link SQLImportedKey} needs to keep in line
+		 * with {@link SQLRelationship}.
+		 */
+		@Override
+		public boolean equals(Object obj) {
+			if (obj instanceof SQLImportedKey) {
+				SQLImportedKey key = (SQLImportedKey) obj;
+				return (((getName() == null && key.getName() == null) || 
+							getName().equals(key.getName())) && 
+						relationship.equals(key.getRelationship()));
+			}
+			return false;
+		}
+		
+		@Override
+		public int hashCode() {
+			int result = 17;
+	    	result = 31 * result + (getName() == null? 0 : getName().hashCode());
+	    	result = 31 * relationship.hashCode();
+			return result;
+		}
 	}
 	
 	// -------------------------- COLUMN MAPPING ------------------------
@@ -1707,7 +1778,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     				fkCardinality == rel.fkCardinality &&
     				getFkTable() == rel.getFkTable() &&
     				identifying == rel.identifying &&
-    				physicalName == rel.physicalName &&
+    				((physicalName == null && rel.physicalName == null) || 
+    						physicalName.equals(rel.physicalName)) &&
     				pkCardinality == rel.pkCardinality &&
     				getParent() == rel.getParent() &&
     				updateRule == rel.updateRule) {
@@ -1759,7 +1831,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 	@Override
 	public List<ColumnMapping> getChildrenWithoutPopulating() {
-		return Collections.unmodifiableList(mappings);
+		return Collections.unmodifiableList(new ArrayList<ColumnMapping>(mappings));
 	}
 	
 	@Override
@@ -1775,7 +1847,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	public boolean removeColumnMapping(ColumnMapping child) {
 		if (isMagicEnabled() && child.getParent() != this) {
 			throw new IllegalStateException("Cannot remove child " + child.getName() + 
-					" of type " + child.getClass() + " as its parent is not " + getName());
+					" of type " + child.getClass() + " as its parent is not " + getName() + "." +
+							" The parent is " + child.getParent());
 		}
 		int index = mappings.indexOf(child);
 		if (index != -1) {

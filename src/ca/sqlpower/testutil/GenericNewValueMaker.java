@@ -40,6 +40,7 @@ import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLIndex;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLObjectRoot;
+import ca.sqlpower.sqlobject.SQLObjectRuntimeException;
 import ca.sqlpower.sqlobject.SQLRelationship;
 import ca.sqlpower.sqlobject.SQLSchema;
 import ca.sqlpower.sqlobject.SQLTable;
@@ -147,7 +148,11 @@ public class GenericNewValueMaker implements NewValueMaker {
         	SQLColumn sqlCol = new SQLColumn();
         	sqlCol.setName("testing!");
         	SQLTable table = (SQLTable) makeNewValue(SQLTable.class, null, "Parent of column");
-        	table.addColumnWithoutPopulating(sqlCol);
+        	try {
+				table.addColumn(sqlCol);
+			} catch (SQLObjectException e) {
+				throw new SQLObjectRuntimeException(e);
+			}
         	table.setPopulated(true);
         	newVal = sqlCol;
         } else if (valueType.isAssignableFrom(SQLTable.class)) {

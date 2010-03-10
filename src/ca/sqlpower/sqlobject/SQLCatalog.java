@@ -170,32 +170,25 @@ public class SQLCatalog extends SQLObject {
 
 		logger.debug("SQLCatalog: populate starting");
 	
-		int oldSize = getChildrenWithoutPopulating().size();
+		final List<SQLSchema> fetchedSchemas;
+        final List<SQLTable> fetchedTables;
 		synchronized (getParent()) {
 			Connection con = null;
 			try {
-				begin("Populating Catalog " + this);
 				con = ((SQLDatabase) getParent()).getConnection();
 				DatabaseMetaData dbmd = con.getMetaData();	
 				
 				// Try to find schemas in this catalog
-				List<SQLSchema> fetchedSchemas = SQLSchema.fetchSchemas(dbmd, getName());
-				for (SQLSchema schema : fetchedSchemas) {
-				    addSchema(schema);
-				}
+				fetchedSchemas = SQLSchema.fetchSchemas(dbmd, getName());
 
 				// No schemas found--fall through and check for tables
-				if (oldSize == getChildrenWithoutPopulating().size()) {
-				    List<SQLTable> fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, getName(), null);
-				    for (SQLTable table : fetchedTables) {
-				    	addTable(table);
-				    }
+				if (fetchedSchemas.isEmpty()) {
+					fetchedTables = SQLTable.fetchTablesForTableContainer(dbmd, getName(), null);
+				} else {
+					fetchedTables = null;
 				}
 				
-				setPopulated(true);
-				commit();
 			} catch (SQLException e) {
-				rollback(e.getMessage());
 				throw new SQLObjectException("catalog.populate.fail", e);
 			} finally {
 				try {
@@ -206,6 +199,31 @@ public class SQLCatalog extends SQLObject {
 					throw new SQLObjectException("Couldn't close connection", e);
 				}
 			}
+			
+			runInForeground(new Runnable() {
+				public void run() {
+					synchronized(SQLCatalog.this) {
+						if (populated) return;
+						try {
+							begin("Populating Catalog " + this);
+							for (SQLSchema schema : fetchedSchemas) {
+								addSchema(schema);
+							}
+
+							if (fetchedTables != null) {
+								for (SQLTable table : fetchedTables) {
+									addTable(table);
+								}
+							}
+							setPopulated(true);
+							commit();
+						} catch (Exception e) {
+							rollback(e.getMessage());
+							throw new RuntimeException(e);
+						}
+					}
+				}
+			});
 		}
 		
 		logger.debug("SQLCatalog: populate finished");

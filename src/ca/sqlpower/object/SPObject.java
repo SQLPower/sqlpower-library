@@ -30,6 +30,7 @@ import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.util.SPSession;
+import ca.sqlpower.util.SessionNotFoundException;
 
 /**
  * This interface represents any kind of object within this library or extending
@@ -207,7 +208,8 @@ public interface SPObject {
     void commit();
 
     /**
-     * Gets the session that contains this SPObject
+     * Gets the session that contains this SPObject. If the session is null a
+     * {@link SessionNotFoundException} will be thrown.
      */
     @Transient @Accessor
     SPSession getSession();

@@ -58,7 +58,7 @@ public interface SPSession {
      *            The runnable to run in the foreground.
      */
     void runInForeground(Runnable runner);
-	
+
 	/**
      * This will execute the runnable in a manner that will try to avoid
      * blocking the user interface. This will be done by creating a new thread
