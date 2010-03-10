@@ -36,6 +36,8 @@ public class InsertVariableAction extends AbstractAction {
 	private final SPVariableHelper variablesHelper;
 	private final VariableInserter callback;
 	private final Component dialogOwner;
+	private final String windowTitle;
+	private final String defaultVarKey;
 
 	public InsertVariableAction(
 			String actionLabel,
@@ -44,7 +46,28 @@ public class InsertVariableAction extends AbstractAction {
 			VariableInserter callback,
 			Component dialogOwner) 
 	{
+		this(
+			actionLabel,
+			"Insert a variable",
+			"",
+			variablesHelper,
+			variableNamespace,
+			callback,
+			dialogOwner);
+	}
+	
+	public InsertVariableAction(
+			String actionLabel,
+			String windowTitle,
+			String defaultVarKey,
+			SPVariableHelper variablesHelper, 
+			String variableNamespace,
+			VariableInserter callback,
+			Component dialogOwner) 
+	{
 		super(actionLabel);
+		this.windowTitle = windowTitle;
+		this.defaultVarKey = defaultVarKey;
 		this.variablesHelper = variablesHelper;
 		this.callback = callback;
 		this.dialogOwner = dialogOwner;
@@ -62,13 +85,14 @@ public class InsertVariableAction extends AbstractAction {
 		VariablesPanel vp = 
 			new VariablesPanel(
 					this.variablesHelper,
-					this.callback);
+					this.callback,
+					this.defaultVarKey);
 		
 		JDialog dialog = 
 			DataEntryPanelBuilder.createDataEntryPanelDialog(
 				vp,
 		        this.dialogOwner, 
-		        "Insert a variable", 
+		        this.windowTitle, 
 		        "Insert");
 		
 		dialog.setVisible(true);
