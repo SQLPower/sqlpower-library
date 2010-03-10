@@ -309,13 +309,19 @@ public class VariablesPanel implements DataEntryPanel {
 		sortedNames.addAll(namespaces.keySet());
 		Collections.sort(sortedNames, new Comparator<String>() {
 			public int compare(String o1, String o2) {
+				if (o1 == null) {
+					return -1;
+				}
+				if (o2 == null) {
+					return 1;
+				}
 				return o1.compareTo(o2);
 			};
 		});
 		
     	final JPopupMenu menu = new JPopupMenu();
         for (final String name : sortedNames) {
-        	final JMenu subMenu = new JMenu(name.toString());
+        	final JMenu subMenu = new JMenu(name);
     		menu.add(subMenu);
     		subMenu.addMenuListener(new MenuListener() {
 				private Timer timer;
