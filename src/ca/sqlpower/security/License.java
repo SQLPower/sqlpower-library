@@ -53,6 +53,7 @@ public class License implements java.io.Serializable {
 	protected java.util.Date issueDate;
 	protected java.util.Date expiryDate;
 	protected Properties limits;
+	
 
 	/**
 	 * Creates a license object.
@@ -80,11 +81,12 @@ public class License implements java.io.Serializable {
 	}
 	
 	protected void parseFile(InputStream xmlStream, InputStream licenseStream, @Nullable short[] salt)
-		throws LicenseReadException {
+			throws LicenseReadException 
+	{
 
 		DateFormat df = new SimpleDateFormat("yyyyMMdd");
 		ByteColonFormat bcf = new ByteColonFormat();
-
+	
 		try {
 			// Some random salt for the hash function
 			final short[] n = { 0xeb, 0x9c, 0xa5, 0xe8, 0x93, 0x6c, 0x06, 0x9c, 0x97, 
@@ -97,12 +99,12 @@ public class License implements java.io.Serializable {
 			}
 			
 			MessageDigest md = MessageDigest.getInstance("MD5");
-
+	
 			DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 			db.setEntityResolver(new LicenseDTDResolver(licenseStream));
 			Document d = db.parse(xmlStream);
 			Element de = d.getDocumentElement();
-
+	
 			Element elem = (Element) de.getElementsByTagName("licensee").item(0);
 			licenseeName = elem.getFirstChild().getNodeValue();
 			md.update(licenseeName.getBytes());
@@ -112,11 +114,11 @@ public class License implements java.io.Serializable {
 			productName = elem.getFirstChild().getNodeValue();
 			minVersion = new Version(elem.getAttribute("min-version"));
 			maxVersion = new Version(elem.getAttribute("max-version"));
-
+	
 			md.update(productName.getBytes());
 			md.update(minVersion.toString().getBytes());
 			md.update(maxVersion.toString().getBytes());
-
+	
 			elem = (Element) de.getElementsByTagName("issued").item(0);
 			if (true) {
 				int year = Integer.parseInt(elem.getAttribute("year"));
@@ -125,7 +127,7 @@ public class License implements java.io.Serializable {
 				issueDate = new GregorianCalendar(year, month-1, day, 0, 0).getTime();
 				md.update(df.format(issueDate).getBytes());
 			}
-
+	
 			elem = (Element) de.getElementsByTagName("expires").item(0);
 			if (elem != null) {
 				int year = Integer.parseInt(elem.getAttribute("year"));
@@ -134,11 +136,11 @@ public class License implements java.io.Serializable {
 				expiryDate = new GregorianCalendar(year, month-1, day, 23, 59).getTime();
 				md.update(df.format(expiryDate).getBytes());
 			}
-
+	
 			elem = (Element) de.getElementsByTagName("key").item(0);
 			String licenseKey = elem.getFirstChild().getNodeValue();
 			byte[] k = bcf.parse(licenseKey);
-
+	
 			// Arbitrary-length list of 'limit' elements
 			NodeList limitNodeList = d.getElementsByTagName("limit");
 			limits = new Properties();
@@ -150,18 +152,97 @@ public class License implements java.io.Serializable {
 				md.update(propName.getBytes());
 				md.update(propValue.getBytes());
 			}
-
+	
 			// Check that the key is correct
 			byte[] m = md.digest();
 			if ( ! Arrays.equals(k,m) ) {
 				throw new LicenseReadException("Invalid key", null);
 			}
-
+	
 		} catch(Exception e){
 			throw new LicenseReadException("Could not load product license descriptor", e);
 		}
 	}
-
+	
+	
+	public static byte[] computeDigest(InputStream xmlStream, InputStream licenseStream, @Nullable short[] salt)
+			throws LicenseReadException 
+	{
+	
+		try {
+			
+			DateFormat df = new SimpleDateFormat("yyyyMMdd");
+		
+			// Some random salt for the hash function
+			final short[] n = { 0xeb, 0x9c, 0xa5, 0xe8, 0x93, 0x6c, 0x06, 0x9c, 0x97, 
+						  0x9b, 0x36, 0xd0, 0x37, 0x8d, 0x43, 0xef, 0xeb, 0xf3, 
+						  0x45, 0xcf, 0x40, 0x81, 0xc8, 0xa3, 0x3f, 0x70, 0x09, 
+						  0x0b, 0x11, 0xca };
+			
+			if (salt == null) {
+				salt = n;
+			}
+			
+			MessageDigest md = MessageDigest.getInstance("MD5");
+		
+			DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+			db.setEntityResolver(new LicenseDTDResolver(licenseStream));
+			Document d = db.parse(xmlStream);
+			Element de = d.getDocumentElement();
+		
+			Element elem = (Element) de.getElementsByTagName("licensee").item(0);
+			String licenseeName = elem.getFirstChild().getNodeValue();
+			md.update(licenseeName.getBytes());
+			md.update((byte) salt[licenseeName.length() % salt.length]);
+			
+			elem = (Element) de.getElementsByTagName("product").item(0);
+			String productName = elem.getFirstChild().getNodeValue();
+			Version minVersion = new Version(elem.getAttribute("min-version"));
+			Version maxVersion = new Version(elem.getAttribute("max-version"));
+		
+			md.update(productName.getBytes());
+			md.update(minVersion.toString().getBytes());
+			md.update(maxVersion.toString().getBytes());
+		
+			elem = (Element) de.getElementsByTagName("issued").item(0);
+			if (true) {
+				int year = Integer.parseInt(elem.getAttribute("year"));
+			    int month = Integer.parseInt(elem.getAttribute("month"));
+				int day = Integer.parseInt(elem.getAttribute("day"));
+				Date issueDate = new GregorianCalendar(year, month-1, day, 0, 0).getTime();
+				md.update(df.format(issueDate).getBytes());
+			}
+		
+			elem = (Element) de.getElementsByTagName("expires").item(0);
+			if (elem != null) {
+				int year = Integer.parseInt(elem.getAttribute("year"));
+			    int month = Integer.parseInt(elem.getAttribute("month"));
+				int day = Integer.parseInt(elem.getAttribute("day"));
+				Date expiryDate = new GregorianCalendar(year, month-1, day, 23, 59).getTime();
+				md.update(df.format(expiryDate).getBytes());
+			}
+		
+			// Arbitrary-length list of 'limit' elements
+			NodeList limitNodeList = d.getElementsByTagName("limit");
+			Properties limits = new Properties();
+			for(int i=0; i < limitNodeList.getLength(); i++) {
+				Element limitNode = (Element) limitNodeList.item(i);
+				String propName = limitNode.getAttribute("property");
+				String propValue = limitNode.getAttribute("value");
+				limits.setProperty(propName, propValue);
+				md.update(propName.getBytes());
+				md.update(propValue.getBytes());
+			}
+		
+			// Check that the key is correct
+			return md.digest();
+			
+		} catch(Exception e){
+			throw new LicenseReadException("Could not load product license descriptor", e);
+		}
+	}
+	
+	
 	/**
 	 * The XML parser needs help to find the license.dtd file.  This
 	 * little class provides.
