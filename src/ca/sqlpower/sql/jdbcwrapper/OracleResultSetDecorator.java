@@ -95,7 +95,9 @@ public class OracleResultSetDecorator extends ResultSetDecorator {
 			throws SQLException 
 	{
 		try {
-			if (oracleTimestamp.getClass().getCanonicalName().equals("oracle.sql.TIMESTAMP")) {
+			if (oracleTimestamp == null) {
+				return null;
+			} else if (oracleTimestamp.getClass().getCanonicalName().equals("oracle.sql.TIMESTAMP")) {
 				if (cal == null) {
 					Method getter = oracleTimestamp.getClass().getDeclaredMethod("timestampValue");
 					return (Timestamp)getter.invoke(oracleTimestamp);
