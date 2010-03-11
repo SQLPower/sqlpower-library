@@ -253,7 +253,9 @@ public class VariablesPanel implements DataEntryPanel {
 		this.varNameText.setText(currentPickedVariable);
 		this.varDefaultText.setText(currentDefValue);
 		this.varEditText.setText(text);
-		this.varPreviewLabel2.setText(" " + variableHelper.resolve(currentPickedVariable, currentDefValue.equals("") ? "null" : currentDefValue).toString());
+		
+		Object resolvedValue = variableHelper.resolve(currentPickedVariable, currentDefValue == null ? "null" : currentDefValue);	
+		this.varPreviewLabel2.setText(resolvedValue == null ? "null" : resolvedValue.toString());
 	}
 	
 	private final class ShowPickerAction extends AbstractAction {
