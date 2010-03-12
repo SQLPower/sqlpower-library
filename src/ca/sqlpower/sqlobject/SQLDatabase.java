@@ -504,11 +504,15 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			}
 		}
 		dataSource = argDataSource;
-		dataSource.addPropertyChangeListener(this);		
-		firePropertyChange("dataSource",oldDataSource,argDataSource); //$NON-NLS-1$
-		if (dataSource == null && !playPenDatabase && isMagicEnabled()) {
+		if (dataSource != null) {
+		    dataSource.addPropertyChangeListener(this);
+		}
+		if (playPenDatabase && isMagicEnabled()) {
+            setName(Messages.getString("SQLDatabase.playPenDB")); //$NON-NLS-1$
+        } else if (dataSource == null && !playPenDatabase && isMagicEnabled()) {
 			setName(Messages.getString("SQLDatabase.disconnected")); //$NON-NLS-1$
 		}
+		firePropertyChange("dataSource",oldDataSource,argDataSource); //$NON-NLS-1$
 		commit();
 	}
 
