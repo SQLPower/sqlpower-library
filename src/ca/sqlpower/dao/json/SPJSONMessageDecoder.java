@@ -175,7 +175,7 @@ public class SPJSONMessageDecoder implements MessageDecoder<String> {
 		}
 	}
 	
-	private static Object getWithType(@Nonnull JSONObject jo, DataType type, String propName) throws JSONException {
+	public static Object getWithType(@Nonnull JSONObject jo, DataType type, String propName) throws JSONException {
 		if (getNullable(jo, propName) == null) return null;
 		
 		switch (type) {

@@ -407,7 +407,7 @@ public class SPPersisterListener implements SPListener {
 	/**
 	 * Performs the rollback if a problem occurred during the persist call.
 	 */
-	private void rollback() {
+	public void rollback() {
 		if (rollingBack) {
 			// This happens when we pick up our own events.
 			return;
@@ -521,5 +521,28 @@ public class SPPersisterListener implements SPListener {
 			this.objectsToRemoveRollbackList.add(entry);
 		}
 	}
+	
+	public Multimap<String, PersistedSPOProperty> getPersistedProperties() {
+		return persistedProperties;
+	}
 
+	public List<PersistedSPObject> getPersistedObjects() {
+		return persistedObjects;
+	}
+
+	public List<RemovedObjectEntry> getObjectsToRemove() {
+		return objectsToRemove;
+	}
+	
+	public List<PersistedObjectEntry> getObjectsRollbackList() {
+		return persistedObjectsRollbackList;
+	}
+	
+	public List<PersistedPropertiesEntry> getPropertiesRollbackList() {
+		return persistedPropertiesRollbackList;
+	}
+	
+	public List<RemovedObjectEntry> getRemovedRollbackList() {
+		return objectsToRemoveRollbackList;
+	}
 }

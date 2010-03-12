@@ -39,6 +39,8 @@ import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLObject;
+import ca.sqlpower.sqlobject.SQLRelationship;
+import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.util.SPSession;
 import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.TransactionEvent;
@@ -156,11 +158,9 @@ public abstract class SPSessionPersister implements SPPersister {
 			
 			if (ancestor1.equals(ancestor2)) {
 				c = ancestorList1.size() - ancestorList2.size();
-				
 			} else if (ancestor1.getType().equals(ancestor2.getType())) {
 				c = ancestor1.getIndex() - ancestor2.getIndex();
 			} else {
-				
 				//Looking at the highest ancestor that is different in the list and finding the order
 				//of these ancestors based on the absolute ordering defined in their shared parent class type.
 				try {
@@ -291,6 +291,19 @@ public abstract class SPSessionPersister implements SPPersister {
 	protected Map<String, String> objectsToRemove = 
 		new TreeMap<String, String>(removedObjectComparator);
 	
+	private void setPersistedProperties(
+			Multimap<String, PersistedSPOProperty> persistedProperties) {
+		this.persistedProperties = persistedProperties;
+	}
+
+	private void setPersistedObjects(List<PersistedSPObject> persistedObjects) {
+		this.persistedObjects = persistedObjects;
+	}
+
+	private void setObjectsToRemove(Map<String, String> objectsToRemove) {
+		this.objectsToRemove = objectsToRemove;
+	}
+
 	/**
 	 * This is the list we use to rollback object removal
 	 */
@@ -715,6 +728,18 @@ public abstract class SPSessionPersister implements SPPersister {
 	private void commitObjects() throws SPPersistenceException {
 		Collections.sort(persistedObjects, persistedObjectComparator);
 		
+		// importedKeys must be persisted after relationships. This is a bit of a ridiculous hack, so
+		// we may want to change it!
+		List<PersistedSPObject> rImportedKeys = new ArrayList<PersistedSPObject>();
+		for (int i = 0; i < persistedObjects.size(); i++) {
+			if (persistedObjects.get(i).getType().equals(SQLRelationship.SQLImportedKey.class.getName())) {
+				rImportedKeys.add(persistedObjects.get(i));
+			}
+		}
+		persistedObjects.removeAll(rImportedKeys);
+		persistedObjects.addAll(rImportedKeys);
+		// --------------------------------------------------------------------------------------------
+		
 		for (PersistedSPObject pso : persistedObjects) {
 			if (pso.isLoaded())
 				continue;
@@ -1115,4 +1140,32 @@ public abstract class SPSessionPersister implements SPPersister {
 		persister.rollback(true);
 	}
 
+	public static void redoForSession(
+			SPObject root,
+			List<PersistedSPObject> creations,
+			Multimap<String, PersistedSPOProperty> properties,
+			List<RemovedObjectEntry> removals,
+			SessionPersisterSuperConverter converter) throws SPPersistenceException
+	{
+		SPSessionPersister persister = new SPSessionPersister("redoer", root, converter) {
+			@Override
+			protected void refreshRootNode(PersistedSPObject pso) {
+				//do nothing for refresh.
+			}
+		};
+		
+		Map<String, String> objToRmv = new TreeMap<String, String>(persister.removedObjectComparator);
+		for (RemovedObjectEntry roe : removals) {
+			objToRmv.put(roe.getRemovedChild().getUUID(), roe.getParentUUID());
+		}
+		
+		persister.setSession(root.getSession());
+		persister.setGodMode(true);
+		persister.setPersistedObjects(creations);
+		persister.setPersistedProperties(properties);
+		persister.setObjectsToRemove(objToRmv);
+
+		persister.begin();
+		persister.commit();
+	}
 }

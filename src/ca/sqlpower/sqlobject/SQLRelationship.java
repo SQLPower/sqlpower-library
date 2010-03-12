@@ -87,7 +87,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
      * to the child table to let the relationship exist as a child of both the
      * parent and child tables.
      */
-    private final SQLImportedKey foreignKey;
+    private SQLImportedKey foreignKey;
 
     /**
      * The enumeration of all referential integrity constraint checking
@@ -1299,14 +1299,14 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 					firePropertyChange("identifying", oldIdentifying, argIdentifying);
 					
 					for (ColumnMapping m : getChildren(ColumnMapping.class)) {
-						if (!m.getFkColumn().isPrimaryKey()) {
+						if (m.getFkColumn() != null && !m.getFkColumn().isPrimaryKey()) {
 							getFkTable().addToPK(m.getFkColumn());
 						}
 					}	
 					
 				} else {
 					for (ColumnMapping m : getChildren(ColumnMapping.class)) {
-						if (m.getFkColumn().isPrimaryKey()) {
+						if (m.getFkColumn() != null && m.getFkColumn().isPrimaryKey()) {
 							getFkTable().moveAfterPK(m.getFkColumn());
 						}
 					}
@@ -1346,6 +1346,13 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	@Transient @Accessor
 	public SQLImportedKey getForeignKey() {
 		return foreignKey;
+	}
+	
+	@Transient @Mutator
+	public void setForeignKey(SQLImportedKey newKey) {
+		SQLImportedKey oldKey = foreignKey;
+		this.foreignKey = newKey;
+		firePropertyChange("foreignKey", oldKey, newKey);
 	}
 	
 	@Mutator
@@ -1400,6 +1407,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				@ConstructorParameter(propertyName="relationship") SQLRelationship relationship) {
 			super();
 			this.relationship = relationship;
+			relationship.setForeignKey(this);
 		}
 		
 		@Override
