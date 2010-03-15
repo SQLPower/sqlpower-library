@@ -609,6 +609,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
         	new HashMap<Class<? extends SQLObject>, Throwable>(this.childrenInaccessibleReason);
         this.childrenInaccessibleReason.put(childType, cause);
         firePropertyChange("childrenInaccessibleReason", oldVal, childrenInaccessibleReason);
+        setPopulated(true);
         if (rethrow) {
         	if (cause instanceof SQLObjectException) {
         		throw (SQLObjectException) cause;
