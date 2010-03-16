@@ -44,9 +44,20 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	private String userFriendlyName;
 	
 	public SPSimpleVariableResolver(SPObject owner, String namespace, String userFriendlyName) {
+		this(owner, namespace, userFriendlyName, true);
+	}
+	
+	public SPSimpleVariableResolver(
+			SPObject owner, 
+			String namespace, 
+			String userFriendlyName,
+			boolean register) 
+	{
 		this.namespace = namespace;
 		this.userFriendlyName = userFriendlyName;
-		SPResolverRegistry.register(owner, this);
+		if (register) {
+			SPResolverRegistry.register(owner, this);
+		}
 	}
 	
 	/**
