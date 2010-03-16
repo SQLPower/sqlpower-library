@@ -64,7 +64,7 @@ import ca.sqlpower.sqlobject.SQLIndex;
  */
 public class PlDotIni implements DataSourceCollection<SPDataSource> {
 	
-	private class AddDSTypeUndoableEdit extends AbstractUndoableEdit {
+	public class AddDSTypeUndoableEdit extends AbstractUndoableEdit {
 
 		private final JDBCDataSourceType type;
 
@@ -83,9 +83,13 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 			super.undo();
 			fileSections.remove(type);
 		}
+		
+		public JDBCDataSourceType getType() {
+			return type;
+		}
 	}
 
-	private class RemoveDSTypeUndoableEdit extends AbstractUndoableEdit {
+	public class RemoveDSTypeUndoableEdit extends AbstractUndoableEdit {
 
 		private final JDBCDataSourceType type;
 
@@ -103,6 +107,10 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 		public void undo() throws CannotUndoException {
 			super.undo();
 			fileSections.add(type);
+		}
+		
+		public JDBCDataSourceType getType() {
+			return type;
 		}
 	}
 

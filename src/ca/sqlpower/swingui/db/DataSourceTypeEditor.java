@@ -92,6 +92,11 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      */
 	private DefaultListModel dsTypeListModel;
     
+	/**
+	 * 
+	 */
+	private final boolean enterprise;
+	
     /**
      * Creates a multi-tabbed panel with facilities for configuring all the
      * database types defined in a particular data source collection.
@@ -101,8 +106,9 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      * @param owner The Window that should own any dialogs created within the editor GUI.
      * @see DefaultDataSourceTypeDialogFactory for a more out-of-the-box setup
      */
-    public DataSourceTypeEditor(DataSourceCollection<JDBCDataSource> dataSourceCollection, final Window owner) {
+    public DataSourceTypeEditor(DataSourceCollection<JDBCDataSource> dataSourceCollection, final Window owner, boolean enterprise) {
         this.dataSourceCollection = dataSourceCollection;
+        this.enterprise = enterprise;
         
         dsTypeListModel = new DefaultListModel();
         dataSourceCollection.addUndoableEditListener(undoManager);
@@ -152,6 +158,19 @@ public class DataSourceTypeEditor implements DataEntryPanel {
             }
         });
         panel = createPanel();
+    }
+    
+    /**
+     * Creates a multi-tabbed panel with facilities for configuring all the
+     * database types defined in a particular data source collection.
+     * 
+     * @param collection
+     *            The data source collection to edit.
+     * @param owner The Window that should own any dialogs created within the editor GUI.
+     * @see DefaultDataSourceTypeDialogFactory for a more out-of-the-box setup
+     */
+    public DataSourceTypeEditor(DataSourceCollection<JDBCDataSource> dataSourceCollection, final Window owner) {
+        this(dataSourceCollection, owner, false);
     }
     
     /**
@@ -215,10 +234,13 @@ public class DataSourceTypeEditor implements DataEntryPanel {
             JDBCDataSourceType dst = (JDBCDataSourceType) lm.getElementAt(i);
             dataSourceCollection.mergeDataSourceType(dst);
         }
-        try {
-        	dataSourceCollection.write();
-        } catch (IOException ex) {
-        	SPSUtils.showExceptionDialogNoReport(panel, Messages.getString("DataSourceTypeEditor.errorSavingToPlDotIni"), ex); //$NON-NLS-1$
+        
+        if (!enterprise) {
+        	try {
+        		dataSourceCollection.write();
+        	} catch (IOException ex) {
+        		SPSUtils.showExceptionDialogNoReport(panel, Messages.getString("DataSourceTypeEditor.errorSavingToPlDotIni"), ex); //$NON-NLS-1$
+        	}
         }
         undoManager.discardAllEdits();
         return true;
