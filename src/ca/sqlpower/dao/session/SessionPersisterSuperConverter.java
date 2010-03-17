@@ -150,8 +150,11 @@ public class SessionPersisterSuperConverter {
 			return new EnumConverter(type).convertToComplexType((String) o);
 			
 		} else if (JDBCDataSource.class.isAssignableFrom(type)) {
-			return dsCollection.getDataSource((String) o, JDBCDataSource.class);
-
+			if (((String) o).equals("PlayPen Database")) {
+				return new JDBCDataSource(dsCollection);
+			} else {
+				return dsCollection.getDataSource((String) o, JDBCDataSource.class);
+			}
 		} else if (Format.class.isAssignableFrom(type)) {
 			return formatConverter.convertToComplexType((String) o);
 			

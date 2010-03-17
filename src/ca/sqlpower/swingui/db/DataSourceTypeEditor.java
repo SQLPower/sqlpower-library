@@ -93,7 +93,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
 	private DefaultListModel dsTypeListModel;
     
 	/**
-	 * 
+	 * If true, then this editor will not try to save settings locally. It assumes that they will be sent to a server.
 	 */
 	private final boolean enterprise;
 	
