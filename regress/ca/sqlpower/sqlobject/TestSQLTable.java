@@ -35,7 +35,7 @@ import java.util.TreeMap;
 
 import org.apache.commons.beanutils.BeanUtils;
 
-import ca.sqlpower.object.AbstractSPListener;
+import ca.sqlpower.object.AbstractPoolingSPListener;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.JDBCDataSource;
@@ -722,7 +722,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
      * in any way), and compared to older snapshots.  Old snapshots can also be rolled forward
      * (like an undo manager redo operation) to test that a stream of events is fully redoable.
      */
-    public static class EventLogger extends AbstractSPListener {
+    public static class EventLogger extends AbstractPoolingSPListener {
 
         /**
          * The list of events captured from the SQLObject tree.  Events are stored in the order they
@@ -1171,7 +1171,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
      */
     public void testInsertEventsConsistentWithReality() throws Exception {
         
-        class InsertListener extends AbstractSPListener {
+        class InsertListener extends AbstractPoolingSPListener {
 
         	@Override
             public void childAddedImpl(SPChildEvent e) {

@@ -33,7 +33,7 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.object.AbstractSPListener;
+import ca.sqlpower.object.AbstractPoolingSPListener;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
@@ -852,7 +852,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 * columns in the pk table. This listener only needs to be attached to the
 	 * pk table.
 	 */
-	protected SPListener fkColumnUpdater = new AbstractSPListener() {
+	protected SPListener fkColumnUpdater = new AbstractPoolingSPListener() {
 		@Override
 		public void propertyChangeImpl(PropertyChangeEvent e) {
 			if (!((SQLObject) e.getSource()).isMagicEnabled()){

@@ -272,34 +272,40 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
             int oldChangeCount = countingPersister.getPersistPropertyCount();
             
             try {
-                logger.debug("Setting property '" + property.getName() + "' to '" + newVal + 
-                		"' (" + newVal.getClass().getName() + ")");
-                BeanUtils.copyProperty(wo, property.getName(), newVal);
-
-                assertTrue("Did not persist property " + property.getName(), 
-                		oldChangeCount < countingPersister.getPersistPropertyCount());
-                
                 //The first property change at current is always the property change we are
                 //looking for, this may need to be changed in the future to find the correct
                 //property.
                 PersistedSPOProperty propertyChange = null;
                 
-                for (PersistedSPOProperty nextPropertyChange : countingPersister.getPersistPropertyList()) {
-                	if (nextPropertyChange.getPropertyName().equals(property.getName())) {
-                		propertyChange = nextPropertyChange;
-                		break;
-                	}
-                }
-                assertNotNull("A property change event cannot be found for the property " + 
-                		property.getName(), propertyChange);
-                
-                assertEquals(wo.getUUID(), propertyChange.getUUID());
-                assertEquals(property.getName(), propertyChange.getPropertyName());
-                
-				assertEquals("Old value of property " + property.getName() + " was wrong, value expected was  " + oldVal + 
-						" but is " + countingPersister.getLastOldValue(), getConverter().convertToBasicType(oldVal), 
-                		propertyChange.getOldValue());
+                try {                    
+                    logger.debug("Setting property '" + property.getName() + "' to '" + newVal + 
+                            "' (" + newVal.getClass().getName() + ")");
+                    wo.setMagicEnabled(false);
+                    BeanUtils.copyProperty(wo, property.getName(), newVal);
+
+                    assertTrue("Did not persist property " + property.getName(), 
+                            oldChangeCount < countingPersister.getPersistPropertyCount());               
+
+                    for (PersistedSPOProperty nextPropertyChange : countingPersister.getPersistPropertyList()) {
+                        if (nextPropertyChange.getPropertyName().equals(property.getName())) {
+                            propertyChange = nextPropertyChange;
+                            break;
+                        }
+                    }
+                    assertNotNull("A property change event cannot be found for the property " + 
+                            property.getName(), propertyChange);
+
+                    assertEquals(wo.getUUID(), propertyChange.getUUID());
+                    assertEquals(property.getName(), propertyChange.getPropertyName());
+
+                    assertEquals("Old value of property " + property.getName() + " was wrong, value expected was  " + oldVal + 
+                            " but is " + countingPersister.getLastOldValue(), getConverter().convertToBasicType(oldVal), 
+                            propertyChange.getOldValue());
 				
+                } finally {
+                    wo.setMagicEnabled(true);
+                }
+                    
 				//Input streams from images are being compared by hash code not values
 				if (Image.class.isAssignableFrom(property.getPropertyType())) {
 					logger.debug(propertyChange.getNewValue().getClass());

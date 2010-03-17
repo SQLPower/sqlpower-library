@@ -123,7 +123,7 @@ public class SPResolverRegistry {
 		}
 	}
 	
-	private static class TreeListener extends AbstractSPListener {
+	private static class TreeListener extends AbstractPoolingSPListener {
 		protected void propertyChangeImpl(PropertyChangeEvent e) {
 			if (e.getPropertyName().equalsIgnoreCase("uuid")
 					&& resolvers.containsKey(e.getOldValue())) {

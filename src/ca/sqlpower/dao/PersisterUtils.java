@@ -223,5 +223,39 @@ public class PersisterUtils {
     		return DataType.STRING;
     	}
     }
+    
+    /**
+     * Produces and int array from a String containing comma-separated values
+     * @param data A String containing comma-separated values, eg: "-1, 7, 2", "-1,7,2", "-1", ""
+     * @return {-1, 7, 2}, {-1, 7, 2}, {-1}, {}
+     */
+    public static int[] convertStringToIntArray(String data) {
+        String[] s = data.split(",");
+        int[] ints = new int[s.length];
+        for (int i = 0; i < s.length; i++) {
+            try {
+                ints[i] = Integer.parseInt(s[i]);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+        return ints;
+    }
+    
+    /**
+     * Produces a String containing the given integers, separated by commas.
+     * @param data An int array, eg: {-1, 7, 2}, {-1}, {}
+     * @return A String of comma-separated values, eg: "-1,7,2", "-1", ""
+     */
+    public static String convertIntArrayToString(int[] data) {
+        String s = "";
+        for (int i = 0; i < data.length; i++) {
+            s += String.valueOf(data[i]);
+            if (i != data.length - 1) {
+                s += ",";
+            }
+        }
+        return s;
+    }
 
 }

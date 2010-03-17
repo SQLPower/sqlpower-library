@@ -20,12 +20,12 @@ package ca.sqlpower.sqlobject;
 
 import java.beans.PropertyChangeEvent;
 
-import ca.sqlpower.object.AbstractSPListener;
+import ca.sqlpower.object.AbstractPoolingSPListener;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.sqlobject.undo.CompoundEvent;
 import ca.sqlpower.util.TransactionEvent;
 
-public class CountingCompoundEventListener extends AbstractSPListener {
+public class CountingCompoundEventListener extends AbstractPoolingSPListener {
 
 	// ========= Undo Compound Listener ==========
 	private int editDepth;

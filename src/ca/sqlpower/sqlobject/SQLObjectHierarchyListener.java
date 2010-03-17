@@ -21,7 +21,7 @@ package ca.sqlpower.sqlobject;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.object.AbstractSPListener;
+import ca.sqlpower.object.AbstractPoolingSPListener;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.util.SQLPowerUtils;
 
@@ -36,7 +36,7 @@ import ca.sqlpower.util.SQLPowerUtils;
  * This class is meant to be extended by listeners that wish to listen to the
  * hierarchy of SQLObjects.
  */
-public class SQLObjectHierarchyListener extends AbstractSPListener {
+public class SQLObjectHierarchyListener extends AbstractPoolingSPListener {
     private static final Logger logger = Logger.getLogger(SQLObjectHierarchyListener.class);
 
     public void childAddedImpl(SPChildEvent e) {

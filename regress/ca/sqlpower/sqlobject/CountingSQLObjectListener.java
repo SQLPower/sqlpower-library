@@ -21,7 +21,7 @@ package ca.sqlpower.sqlobject;
 import java.beans.PropertyChangeEvent;
 import java.util.EventObject;
 
-import ca.sqlpower.object.AbstractSPListener;
+import ca.sqlpower.object.AbstractPoolingSPListener;
 import ca.sqlpower.object.SPChildEvent;
 
 
@@ -31,7 +31,7 @@ import ca.sqlpower.object.SPChildEvent;
  * 
  * @version $Id: CountingSQLObjectListener.java 2909 2009-01-08 20:38:27Z thomasobrien95 $
  */
-public class CountingSQLObjectListener extends AbstractSPListener {
+public class CountingSQLObjectListener extends AbstractPoolingSPListener {
 	
 	/**
 	 * The number of times dbChildredInserted has been called.

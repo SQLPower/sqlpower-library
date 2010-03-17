@@ -21,11 +21,11 @@ package ca.sqlpower.sqlobject;
 
 import java.beans.PropertyChangeEvent;
 
-import ca.sqlpower.object.AbstractSPListener;
+import ca.sqlpower.object.AbstractPoolingSPListener;
 import ca.sqlpower.object.SPChildEvent;
 
 
-public class TestingSQLObjectListener extends AbstractSPListener {
+public class TestingSQLObjectListener extends AbstractPoolingSPListener {
 
     private int insertedCount;
     private int removedCount;

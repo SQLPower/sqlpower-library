@@ -19,8 +19,11 @@
 
 package ca.sqlpower.testutil;
 
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.Image;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -65,8 +68,8 @@ public class GenericNewValueMaker implements NewValueMaker {
 	/**
 	 * See doc comment on constructor.
 	 */
-	private final SPObject root;
-	private final DataSourceCollection<SPDataSource> pl;
+	protected final SPObject root;
+	protected final DataSourceCollection<SPDataSource> pl;
 
 	/**
 	 * @param root
@@ -132,19 +135,20 @@ public class GenericNewValueMaker implements NewValueMaker {
             if (newVal.equals(oldVal)) {
                 newVal = ((Font) newVal).deriveFont(((Font) newVal).getSize2D() + 1f);
             }
-        }  else if (valueType.isAssignableFrom(NumberFormat.class)) {
+        }  else if (valueType == NumberFormat.class) {
         	if(oldVal == NumberFormat.getCurrencyInstance()) {
         		newVal = NumberFormat.getPercentInstance();
         	} else {
         		newVal = NumberFormat.getCurrencyInstance();
         	}
-        } else if(valueType.isAssignableFrom(SimpleDateFormat.class)) {
+        } else if(valueType == SimpleDateFormat.class) {
         	if(oldVal == SimpleDateFormat.getDateTimeInstance()) {
         		newVal = SimpleDateFormat.getDateInstance();
         	} else {
         		newVal = SimpleDateFormat.getDateTimeInstance();
-        	}
-        } else if (valueType == SQLColumn.class) {
+        	}        	
+        } else if (valueType.isAssignableFrom(SQLColumn.class)) {
+            // Objects like SPObject or SQLObject may come in here
         	SQLColumn sqlCol = new SQLColumn();
         	sqlCol.setName("testing!");
         	SQLTable table = (SQLTable) makeNewValue(SQLTable.class, null, "Parent of column");
@@ -155,14 +159,14 @@ public class GenericNewValueMaker implements NewValueMaker {
 			}
         	table.setPopulated(true);
         	newVal = sqlCol;
-        } else if (valueType.isAssignableFrom(SQLTable.class)) {
+        } else if (valueType == SQLTable.class) {
         	SQLTable table = new SQLTable();
         	table.setName("Generated testing table");
         	table.setPopulated(true);
         	SQLDatabase db = (SQLDatabase) makeNewValue(SQLDatabase.class, null, "parent of table");
         	db.addTable(table);
         	newVal = table;
-        } else if (valueType.isAssignableFrom(SQLDatabase.class)) {
+        } else if (valueType == SQLDatabase.class) {
         	JDBCDataSource argDataSource = new JDBCDataSource(this.pl);
             argDataSource.setName("Testing data source");
         	SQLDatabase db = new SQLDatabase();
@@ -170,31 +174,31 @@ public class GenericNewValueMaker implements NewValueMaker {
         	SQLObjectRoot sqlRoot = (SQLObjectRoot) makeNewValue(SQLObjectRoot.class, null, "parent of db");
         	sqlRoot.addDatabase(db, 0);
         	newVal = db;
-        } else if (valueType.isAssignableFrom(SQLObjectRoot.class)) {
+        } else if (valueType == SQLObjectRoot.class) {
         	SQLObjectRoot sqlRoot = new SQLObjectRoot();
         	root.addChild(sqlRoot, 0);
         	newVal = sqlRoot;
-        } else if (valueType.isAssignableFrom(Column.class)) {
+        } else if (valueType == Column.class) {
         	Column col = new Column();
         	col.setName("Generated testing column index");
         	SQLIndex index = (SQLIndex) makeNewValue(SQLIndex.class, null, "parent of column");
         	index.setPopulated(true);
         	index.addIndexColumn(col);
         	newVal = col;
-        } else if (valueType.isAssignableFrom(SQLIndex.class)) {
+        } else if (valueType == SQLIndex.class) {
         	SQLIndex index = new SQLIndex();
         	index.setName("a new index");
         	SQLTable table = (SQLTable) makeNewValue(SQLTable.class, null, "parent of index");
         	table.addIndex(index);
         	table.setPopulated(true);
         	newVal = index;
-        } else if (valueType.isAssignableFrom(ColumnMapping.class)) {
+        } else if (valueType == ColumnMapping.class) {
         	ColumnMapping mapping = new ColumnMapping();
         	mapping.setName("Generated testing mapping");
         	SQLRelationship rel = (SQLRelationship) makeNewValue(SQLRelationship.class, null, "parent of column mapping");
         	rel.addMapping(mapping);
         	newVal = mapping;
-        } else if (valueType.isAssignableFrom(SQLRelationship.class)) {
+        } else if (valueType == SQLRelationship.class) {
         	SQLRelationship rel = new SQLRelationship();
         	SQLTable parent = (SQLTable) makeNewValue(SQLTable.class, null, "parent of relationship");
         	SQLTable child = (SQLTable) makeNewValue(SQLTable.class, null, "child of relationship");
@@ -204,18 +208,18 @@ public class GenericNewValueMaker implements NewValueMaker {
 				throw new RuntimeException("Trying to create a new relationship for testing", e);
 			}
         	newVal = rel;
-        } else if (valueType.isAssignableFrom(SQLSchema.class)) {
+        } else if (valueType == SQLSchema.class) {
         	SQLSchema schema = new SQLSchema(true);
         	schema.setName("A new schema for testing");
         	SQLDatabase db = (SQLDatabase) makeNewValue(SQLDatabase.class, null, "Schema database");
         	db.addSchema(schema);
         	newVal = schema;
-        } else if (valueType.isAssignableFrom(SQLCatalog.class)) {
+        } else if (valueType == SQLCatalog.class) {
         	SQLDatabase db = (SQLDatabase) makeNewValue(SQLDatabase.class, null, "Schema database");
         	SQLCatalog catalog = new SQLCatalog(db, "catalog for test", true);
         	db.addCatalog(catalog);
         	newVal = catalog;
-        } else if (valueType.isAssignableFrom(Throwable.class)) {
+        } else if (valueType == Throwable.class) {
         	newVal = new SQLObjectException("Test Exception");
         } else if (valueType == UserPrompter.class) {
             newVal = new DefaultUserPrompter(UserPromptOptions.OK_NEW_NOTOK_CANCEL, UserPromptResponse.CANCEL, null);
@@ -259,30 +263,48 @@ public class GenericNewValueMaker implements NewValueMaker {
         	} else {
         		newVal = SQLGroupFunction.COUNT;
         	}
-        } else if (valueType.isAssignableFrom(Deferrability.class)) {
+        } else if (valueType == Deferrability.class) {
         	if (oldVal.equals(Deferrability.INITIALLY_DEFERRED)) {
         		newVal = Deferrability.INITIALLY_IMMEDIATE;
         	} else {
         		newVal = Deferrability.INITIALLY_DEFERRED;
         	}
-        } else if (valueType.isAssignableFrom(UpdateDeleteRule.class)) {
+        } else if (valueType == UpdateDeleteRule.class) {
         	if (oldVal.equals(UpdateDeleteRule.CASCADE)) {
         		newVal = UpdateDeleteRule.NO_ACTION;
         	} else {
         		newVal = UpdateDeleteRule.CASCADE;
         	}
-        } else if (valueType.isAssignableFrom(SQLImportedKey.class)) {
-        	SQLRelationship relationship = (SQLRelationship) makeNewValue(SQLTable.class, null, "parent of importedKey");
+        } else if (valueType == SQLImportedKey.class) {
+        	SQLRelationship relationship = (SQLRelationship) makeNewValue(SQLRelationship.class, null, "parent of importedKey");
         	SQLImportedKey key = relationship.getForeignKey();
         	SQLTable table = (SQLTable) makeNewValue(SQLTable.class, null, "parent of imported key");
         	table.addImportedKey(key);
         	newVal = key;
-        } else if (valueType.isAssignableFrom(AscendDescend.class)) {
+        } else if (valueType == AscendDescend.class) {
         	if (oldVal.equals(AscendDescend.ASCENDING)) {
         		newVal = AscendDescend.DESCENDING;
         	} else {
         		newVal = AscendDescend.ASCENDING;
         	}
+        } else if (valueType == Point.class) {
+            Point p = new Point(24, 42);
+            if (p.equals(oldVal)) {
+                p.translate(1, 1);
+            }
+            newVal = p;
+        } else if (valueType == Rectangle.class) {
+            Rectangle r = new Rectangle(12, 34, 56, 78);
+            if (r.equals(oldVal)) {
+                r.translate(1, 1);
+            }
+            newVal = r;
+        } else if (valueType == Color.class) {
+            Color rgb = new Color(33, 66, 99);
+            if (rgb.getRGB() == ((Color) oldVal).getRGB()) {
+                rgb = rgb.brighter();
+            }
+            newVal = rgb;
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +

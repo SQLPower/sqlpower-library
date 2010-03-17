@@ -19,8 +19,12 @@
 
 package ca.sqlpower.dao.session;
 
+import java.awt.Color;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.text.Format;
 
+import ca.sqlpower.dao.PersisterUtils;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.JDBCDataSource;
@@ -106,6 +110,24 @@ public class SessionPersisterSuperConverter {
 		
 		} else if (convertFrom instanceof Format) {
 			return formatConverter.convertToSimpleType((Format) convertFrom);
+			
+	     } else if (convertFrom instanceof Point) {
+             Point p = (Point) convertFrom;
+             return PersisterUtils.convertIntArrayToString(
+                     new int[] {p.x, p.y}
+             );
+
+	     } else if (convertFrom instanceof Rectangle) {
+	         Rectangle r = (Rectangle) convertFrom;
+	         return PersisterUtils.convertIntArrayToString(
+	                 new int[] {r.x, r.y, r.width, r.height}
+	         );
+
+	     } else if (convertFrom instanceof Color) {
+             Color c = (Color) convertFrom;
+             return PersisterUtils.convertIntArrayToString(
+                     new int[] {c.getRed(), c.getGreen(), c.getBlue()}
+             );
 		
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + convertFrom + " of type " + 
@@ -158,6 +180,18 @@ public class SessionPersisterSuperConverter {
 		} else if (Format.class.isAssignableFrom(type)) {
 			return formatConverter.convertToComplexType((String) o);
 			
+		} else if (Point.class.isAssignableFrom(type)) {
+		    int[] p = PersisterUtils.convertStringToIntArray((String) o);
+			return new Point(p[0], p[1]);
+			
+	     } else if (Rectangle.class.isAssignableFrom(type)) {
+	            int[] r = PersisterUtils.convertStringToIntArray((String) o);
+	            return new Rectangle(r[0], r[1], r[2], r[3]);
+	            
+	       } else if (Color.class.isAssignableFrom(type)) {
+	            int[] rgb = PersisterUtils.convertStringToIntArray((String) o);
+	            return new Color(rgb[0], rgb[1], rgb[2]);
+		    
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + o + " of type " + 
 					o.getClass() + " to the type " + type);
