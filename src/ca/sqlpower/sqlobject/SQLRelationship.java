@@ -1101,12 +1101,14 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
                     fkcol = getFkTable().getColumnByName(pkcol.getName());
                     if (fkcol == null) fkcol = new SQLColumn(pkcol);
                 }
-                
-                // this either adds the new column or bumps up the refcount on existing col
-		        getFkTable().addColumn(fkcol);
-                
+                                		
 		        if (identifying && getParent() != getFkTable()) {
-		        	getFkTable().addToPK(fkcol);
+		            // this either adds the new column or bumps up the refcount on existing col
+		            getFkTable().addColumn(fkcol, getFkTable().getPkSize());
+		            getFkTable().addToPK(fkcol);
+		        } else {
+		            // this either adds the new column or bumps up the refcount on existing col
+		            getFkTable().addColumn(fkcol);
 		        }
 		        logger.debug("ensureInMapping("+getName()+"): added fkcol " + fkcol);
 		        fkcol.setAutoIncrement(false);
