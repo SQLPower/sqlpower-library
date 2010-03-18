@@ -135,7 +135,7 @@ public class GenericNewValueMaker implements NewValueMaker {
             if (newVal.equals(oldVal)) {
                 newVal = ((Font) newVal).deriveFont(((Font) newVal).getSize2D() + 1f);
             }
-        }  else if (valueType == NumberFormat.class) {
+        } else if (valueType.isAssignableFrom(NumberFormat.class)) {
         	if(oldVal == NumberFormat.getCurrencyInstance()) {
         		newVal = NumberFormat.getPercentInstance();
         	} else {
@@ -222,7 +222,13 @@ public class GenericNewValueMaker implements NewValueMaker {
         } else if (valueType == Throwable.class) {
         	newVal = new SQLObjectException("Test Exception");
         } else if (valueType == UserPrompter.class) {
-            newVal = new DefaultUserPrompter(UserPromptOptions.OK_NEW_NOTOK_CANCEL, UserPromptResponse.CANCEL, null);
+            newVal = new DefaultUserPrompter(UserPromptOptions.OK_NEW_NOTOK_CANCEL, UserPromptResponse.CANCEL, null);            
+        } else if (valueType == Point.class) {
+            Point p = new Point(24, 42);
+            if (p.equals(oldVal)) {
+                p.translate(1, 1);
+            }
+            newVal = p;
         } else if (valueType == Point2D.class) {
         	Point2D point = new Point2D(){
 			
@@ -287,12 +293,6 @@ public class GenericNewValueMaker implements NewValueMaker {
         	} else {
         		newVal = AscendDescend.ASCENDING;
         	}
-        } else if (valueType == Point.class) {
-            Point p = new Point(24, 42);
-            if (p.equals(oldVal)) {
-                p.translate(1, 1);
-            }
-            newVal = p;
         } else if (valueType == Rectangle.class) {
             Rectangle r = new Rectangle(12, 34, 56, 78);
             if (r.equals(oldVal)) {

@@ -22,9 +22,9 @@ package ca.sqlpower.dao.session;
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.geom.Point2D;
 import java.text.Format;
 
-import ca.sqlpower.dao.PersisterUtils;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.JDBCDataSource;
@@ -42,6 +42,12 @@ public class SessionPersisterSuperConverter {
 	private final SPObjectConverter spObjectConverter;
 	
 	private final FormatConverter formatConverter = new FormatConverter();
+	
+	private final Point2DConverter point2DConverter = new Point2DConverter();
+	
+	private final RectangleConverter rectangleConverter = new RectangleConverter();
+	
+	private final ColorConverter colorConverter = new ColorConverter();
 	
 	private final DataSourceCollection <JDBCDataSource> dsCollection;
 
@@ -111,27 +117,21 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom instanceof Format) {
 			return formatConverter.convertToSimpleType((Format) convertFrom);
 			
-	     } else if (convertFrom instanceof Point) {
-             Point p = (Point) convertFrom;
-             return PersisterUtils.convertIntArrayToString(
-                     new int[] {p.x, p.y}
-             );
+		} else if (convertFrom instanceof Point2D) {
+		    Point2D p = (Point2D) convertFrom;
+		    return point2DConverter.convertToSimpleType(p);
 
-	     } else if (convertFrom instanceof Rectangle) {
-	         Rectangle r = (Rectangle) convertFrom;
-	         return PersisterUtils.convertIntArrayToString(
-	                 new int[] {r.x, r.y, r.width, r.height}
-	         );
+		} else if (convertFrom instanceof Rectangle) {
+		    Rectangle r = (Rectangle) convertFrom;
+		    return rectangleConverter.convertToSimpleType(r);
 
-	     } else if (convertFrom instanceof Color) {
-             Color c = (Color) convertFrom;
-             return PersisterUtils.convertIntArrayToString(
-                     new int[] {c.getRed(), c.getGreen(), c.getBlue()}
-             );
-		
+		} else if (convertFrom instanceof Color) {
+		    Color c = (Color) convertFrom;
+		    return colorConverter.convertToSimpleType(c);
+
 		} else {
-			throw new IllegalArgumentException("Cannot convert " + convertFrom + " of type " + 
-					convertFrom.getClass());
+		    throw new IllegalArgumentException("Cannot convert " + convertFrom + " of type " + 
+		            convertFrom.getClass());
 		}
 		
 	}
@@ -181,16 +181,17 @@ public class SessionPersisterSuperConverter {
 			return formatConverter.convertToComplexType((String) o);
 			
 		} else if (Point.class.isAssignableFrom(type)) {
-		    int[] p = PersisterUtils.convertStringToIntArray((String) o);
-			return new Point(p[0], p[1]);
-			
-	     } else if (Rectangle.class.isAssignableFrom(type)) {
-	            int[] r = PersisterUtils.convertStringToIntArray((String) o);
-	            return new Rectangle(r[0], r[1], r[2], r[3]);
-	            
-	       } else if (Color.class.isAssignableFrom(type)) {
-	            int[] rgb = PersisterUtils.convertStringToIntArray((String) o);
-	            return new Color(rgb[0], rgb[1], rgb[2]);
+		    Point2D p2d = point2DConverter.convertToComplexType((String) o);
+		    return new Point((int) p2d.getX(), (int) p2d.getY());
+
+        } else if (Point2D.class.isAssignableFrom(type)) {
+            return point2DConverter.convertToComplexType((String) o);
+
+        } else if (Rectangle.class.isAssignableFrom(type)) {
+            return rectangleConverter.convertToComplexType((String) o);
+
+        } else if (Color.class.isAssignableFrom(type)) {
+            return colorConverter.convertToComplexType((String) o);
 		    
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + o + " of type " + 
