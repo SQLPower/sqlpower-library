@@ -19,6 +19,10 @@
 
 package ca.sqlpower.object.annotation;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+
 import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.object.SPObject;
 
@@ -125,29 +129,36 @@ public class SPAnnotationProcessorUtils {
 		return propertyName;
 	}
 
-	/**
-	 * Converts a property name to its JavaBean getter method name depending on
-	 * what type the property is.
-	 * 
-	 * @param propertyName
-	 *            The property name to convert to its JavaBean getter method
-	 *            name.
-	 * @param type
-	 *            The property type.
-	 * @return The JavaBean getter method name. If the property type is a
-	 *         {@link Boolean} value, then the getter method name is prefixed
-	 *         with "is". Otherwise, it is prefixed with "get".
-	 */
+    /**
+     * Converts a property name to its JavaBean getter method name depending on
+     * what type the property is.
+     * 
+     * @param propertyName
+     *            The property name to convert to its JavaBean getter method
+     *            name.
+     * @param type
+     *            The parent type that we are looking for accessors on.
+     * @return The JavaBean getter method name. If the property type is a
+     *         {@link Boolean} value, then the getter method name is prefixed
+     *         with "is" or "get" depending on the method found. Otherwise, it
+     *         is prefixed with "get". If no accessor is found an exception will
+     *         be thrown.
+     */
 	public static String convertPropertyToAccessor(String propertyName, Class<?> type) {
-		String prefix;
-		if (type == Boolean.class) {
-			prefix = "is";
-		} else {
-			prefix = "get";
-		}
-		
-		return prefix + propertyName.substring(0, 1).toUpperCase() + 
-				((propertyName.length() > 1)? propertyName.substring(1) : "");
+	    String regex = "(get|is)";
+	    for (char c : propertyName.toCharArray()) {
+	        String stringC = new String(new char[]{c});
+	        regex += "[" + stringC.toLowerCase() + stringC.toUpperCase() + "]";
+	    }
+	    List<String> methodNames = new ArrayList<String>();
+	    for (Method m : type.getMethods()) {
+	        methodNames.add(m.getName());
+	        if (m.getName().matches(regex)) {
+	            return m.getName();
+	        }
+	    }
+	    throw new IllegalArgumentException("The class " + type + 
+	            " does not have an accessor for " + propertyName);
 	}
 
 	/**

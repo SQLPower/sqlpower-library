@@ -106,7 +106,6 @@ public abstract class SPSessionPersister implements SPPersister {
 		// children of the same parent, the one with the lower index should go
 		// first. Otherwise, the one with the smaller ancestor tree should go first
 		// (e.g. Report should go before Page).
-		@SuppressWarnings("unchecked")
 		public int compare(PersistedSPObject o1, PersistedSPObject o2) {
 
 			if (o1.getParentUUID() == null && o2.getParentUUID() == null) {
@@ -123,11 +122,18 @@ public abstract class SPSessionPersister implements SPPersister {
 			List<PersistedSPObject> ancestorList1 = buildAncestorListFromPersistedObjects(o1);
 			List<PersistedSPObject> ancestorList2 = buildAncestorListFromPersistedObjects(o2);
 			
+			if (ancestorList1.contains(o2)) {
+			    return 1;
+			} else if (ancestorList2.contains(o1)) {
+			    return -1;
+			}
+			
 			PersistedSPObject previousAncestor = null;
 			PersistedSPObject ancestor1 = null;
 			PersistedSPObject ancestor2 = null;
 			boolean compareWithAncestor = false;
 			
+			//Looking at the highest ancestor that is different in the list
 			for (int i = 0, j = 0; i < ancestorList1.size() && j < ancestorList2.size(); i++, j++) {
 				ancestor1 = ancestorList1.get(i);
 				ancestor2 = ancestorList2.get(j);
@@ -152,34 +158,54 @@ public abstract class SPSessionPersister implements SPPersister {
 					ancestor2 = o2;
 				}
 			}
+			if (ancestor1.equals(ancestor2)) {
+			    throw new IllegalStateException("The ancestors of " + o1 + " and " + o2 + 
+			            " is the same object but should not be by checks above. The ancestor is " + ancestor1);
+			}
 			
 			int c;
 			
-			if (ancestor1.equals(ancestor2)) {
-				c = ancestorList1.size() - ancestorList2.size();
-			} else if (ancestor1.getType().equals(ancestor2.getType())) {
+			if (ancestor1.getType().equals(ancestor2.getType())) {
 				c = ancestor1.getIndex() - ancestor2.getIndex();
 			} else {
 				//Looking at the highest ancestor that is different in the list and finding the order
 				//of these ancestors based on the absolute ordering defined in their shared parent class type.
 				try {
-					Class<?> ancestorType1 = ClassLoader.getSystemClassLoader().loadClass(ancestor1.getType());
-					Class<?> ancestorType2 = ClassLoader.getSystemClassLoader().loadClass(ancestor2.getType());
-					Class<?> sharedAncestorType = ClassLoader.getSystemClassLoader().loadClass(previousAncestor.getType());
-					List<Class<? extends SPObject>> allowedChildTypes = (List<Class<? extends SPObject>>) 
-						sharedAncestorType.getDeclaredField("allowedChildTypes").get(null);
-					c = allowedChildTypes.indexOf(ancestorType1) - allowedChildTypes.indexOf(ancestorType2);
 					
-					if (c == 0) throw new IllegalStateException("This should be impossible.");
+					int ancestorType1Index = PersisterUtils.getTypePosition(ancestor1.getType(),
+					        previousAncestor.getType());
+					if (ancestorType1Index == -1) {
+					    throw new IllegalStateException("Allowed child types for " + previousAncestor + 
+					            " does not contain " + ancestor1);
+					}
+					int ancestorType2Index = PersisterUtils.getTypePosition(ancestor2.getType(),
+					        previousAncestor.getType());
+                    if (ancestorType2Index == -1) {
+                        throw new IllegalStateException("Allowed child types for " + previousAncestor + 
+                                " does not contain " + ancestor2);
+                    }
+					c = ancestorType1Index - ancestorType2Index;
+
+					if (c == 0 && ancestor1.getParentUUID().equals(ancestor2.getParentUUID())) {
+					    //If you reach this point the two objects are subclasses of the same
+					    //object type contained in the allowedChildTypes list and their order
+					    //is decided by their index locations.
+					    c = ancestor1.getIndex() - ancestor2.getIndex();
+					    if (c == 0) {
+					        throw new IllegalStateException("The objects " + ancestor1 + " and " + 
+					                ancestor2 + " are defined as equal but shouldn't be.");
+					    }
+					} else if (c == 0) {
+					    throw new IllegalStateException("Error comparing " + o1 + " to " + o2);
+					}
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}
 			}
-			
 			return Integer.signum(c);
 		}
 	};
-	
+
 	/**
 	 * This comparator sorts buffered removeObject calls by each
 	 * {@link SPObject} UUID. The UUIDs being compared must matchup with an
@@ -740,6 +766,7 @@ public abstract class SPSessionPersister implements SPPersister {
 		// --------------------------------------------------------------------------------------------
 		
 		for (PersistedSPObject pso : persistedObjects) {
+		    logger.info("Persisting " + pso);
 			if (pso.isLoaded())
 				continue;
 			SPObject parent = SQLPowerUtils.findByUuid(root, pso.getParentUUID(), 
@@ -747,6 +774,9 @@ public abstract class SPSessionPersister implements SPPersister {
 			SPObject spo = null;
 			if (parent == null && pso.getType().equals(root.getClass().getName())) {
 				refreshRootNode(pso);
+			} else if (parent == null) {
+			    throw new IllegalStateException("Missing parent with uuid " + pso.getParentUUID() + 
+			            " when trying to load " + pso);
 			} else {
 				try {
 					spo = PersisterHelperFinder.findPersister(pso.getType()).commitObject(pso, persistedProperties, 

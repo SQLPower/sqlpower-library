@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -256,6 +257,59 @@ public class PersisterUtils {
             }
         }
         return s;
+    }
+    
+    /**
+     * Returns the first index of this childType in the child type list of
+     * the parentType. If a superclass or interface of the childType exists
+     * in the list of acceptable child types of the parent this index may be
+     * returned, depending if it is the first. If the childType is not a
+     * valid child type of the parentType -1 will be returned.
+     */
+    @SuppressWarnings("unchecked")
+    public static int getTypePosition(String childClassName, String parentClassName) 
+            throws IllegalArgumentException, SecurityException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException {
+        Class<? extends SPObject> childType = (Class<? extends SPObject>) ClassLoader.getSystemClassLoader().loadClass(childClassName);
+        Class<? extends SPObject> parentType = (Class<? extends SPObject>) ClassLoader.getSystemClassLoader().loadClass(parentClassName);
+        
+        List<Class<? extends SPObject>> allowedChildTypes = (List<Class<? extends SPObject>>) 
+            parentType.getDeclaredField("allowedChildTypes").get(null);
+        for (int i = 0; i < allowedChildTypes.size(); i++) {
+            Class<? extends SPObject> allowedType = allowedChildTypes.get(i);
+            if (allowedType.isAssignableFrom(childType)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Returns the class type that the given parent class allows that is either
+     * the same or a superclass or interface of the given child class. Returns
+     * the child class if the parent class is null or the empty string. Returns
+     * null if the parent class has no valid child type of the given child
+     * class.
+     */
+    @SuppressWarnings("unchecked")
+    public static Class<? extends SPObject> getParentAllowedChildType(String childClassName, String parentClassName) 
+            throws IllegalArgumentException, SecurityException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException {
+        Class<? extends SPObject> childType = (Class<? extends SPObject>) PersisterUtils.class.getClassLoader().loadClass(childClassName);
+        
+        if (parentClassName == null || parentClassName.trim().length() == 0) {
+            return childType;
+        }
+        
+        Class<? extends SPObject> parentType = (Class<? extends SPObject>) PersisterUtils.class.getClassLoader().loadClass(parentClassName);
+        List<Class<? extends SPObject>> allowedChildTypes = (List<Class<? extends SPObject>>) 
+            parentType.getDeclaredField("allowedChildTypes").get(null);
+        if (allowedChildTypes.contains(childType)) return childType;
+        for (int i = 0; i < allowedChildTypes.size(); i++) {
+            Class<? extends SPObject> allowedType = allowedChildTypes.get(i);
+            if (allowedType.isAssignableFrom(childType)) {
+                return allowedType;
+            }
+        }
+        return null;
     }
 
 }

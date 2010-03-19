@@ -241,11 +241,18 @@ public class SPPersisterListener implements SPListener {
 	 * of the same type contained in the parent object.
 	 */
 	private int getIndexWithinSiblings(SPObject parent, SPObject child) {
+	    Class<? extends SPObject> parentAllowedChildType;
+        try {
+            parentAllowedChildType = PersisterUtils.getParentAllowedChildType(child.getClass().getName(), 
+                    parent.getClass().getName());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 		int childIndex;
 		if (parent instanceof SQLObject) {
-			childIndex = ((SQLObject) parent).getChildrenWithoutPopulating(child.getClass()).indexOf(child);
+			childIndex = ((SQLObject) parent).getChildrenWithoutPopulating(parentAllowedChildType).indexOf(child);
 		} else {
-			childIndex = parent.getChildren(child.getClass()).indexOf(child);
+			childIndex = parent.getChildren(parentAllowedChildType).indexOf(child);
 		}
 		return childIndex;
 	}

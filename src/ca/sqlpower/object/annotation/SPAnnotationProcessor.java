@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -475,100 +474,6 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	}
 
 	/**
-<<<<<<< .mine
-=======
-	 * Generates the source code for an updateObject method for the given
-	 * {@link SPObject} to match {@link SPPersisterHelper}.
-	 * 
-	 * @param visitedClass
-	 *            The class type that the persister helper will be able to
-	 *            return or modify.
-	 * @param constructorParameters
-	 *            The parameters in the constructor used to create a new object
-	 *            of the visitedClass type.
-	 * @param tabs
-	 *            The number of indentation marks to make when creating lines of
-	 *            text/code.
-	 * @return
-	 */
-	private String generateUpdateObjectMethod(
-			Class<? extends SPObject> visitedClass, 
-			List<ConstructorParameterObject> constructorParameters, 
-			int tabs) {
-		StringBuilder sb = new StringBuilder();
-		final String objectToUpdate = "objectToUpdate";
-		final String persistedSPO = "pso";
-		final String persistedProperties = "persistedProperties";
-		final String persistedObjects = "persistedObjects";
-		final String converter = "converter";
-		
-		println(sb, tabs, "public void updateObject(" + SPObject.class.getSimpleName() + " " + objectToUpdate + ", PersistedSPObject " + persistedSPO + ", " +
-			"Multimap<String, PersistedSPOProperty> " + persistedProperties + ", " + 
-			"List<PersistedSPObject> " + persistedObjects + ", " +
-			"SessionPersisterSuperConverter " + converter + ") throws SPPersistenceException {");
-		tabs++;
-		
-		final String castedObjToUpdate = "castedObject";
-		println(sb, tabs, visitedClass.getSimpleName() + " " + castedObjToUpdate + " = (" + 
-				visitedClass.getSimpleName() + ") " + objectToUpdate + ";");
-		
-		final String uuid = "uuid";
-		println(sb, tabs, "String " + uuid + " = " + persistedSPO + ".getUUID();");
-		
-		println(sb, tabs, objectToUpdate + ".setUUID(" + uuid + ");");
-		
-		final String persistedProperty = "persistedProperty";
-		final String childPersisterHelperField = "persisterHelper";
-		final String childSPO = "childSPO";
-		println(sb, tabs, "PersistedSPObject " + childSPO + ";");
-		println(sb, tabs, "Object " + persistedProperty + ";");
-		importedClassNames.add(SPPersisterHelper.class.getName());
-		println(sb, tabs, "SPPersisterHelper<? extends SPObject> " + childPersisterHelperField + ";");
-		for (ConstructorParameterObject constructorParam : constructorParameters) {
-			println(sb, tabs, persistedProperty + " = findPropertyAndRemove(" + 
-					uuid + ", \"" + constructorParam.getName() + "\", " + persistedProperties + ");");
-			if (constructorParam.getProperty().equals(ParameterType.CHILD)) {
-				println(sb, tabs, "try {");
-				tabs++;
-				println(sb, tabs, childPersisterHelperField + " = PersisterHelperFinder.findPersister(" + constructorParam.getType().getSimpleName() + ".class);");
-				println(sb, tabs, "if (" + castedObjToUpdate + "." + 
-						SPAnnotationProcessorUtils.convertPropertyToAccessor(
-								constructorParam.getName(), constructorParam.getType()) + "() != null) {");
-				tabs++;
-				println(sb, tabs, childSPO + " = findPersistedSPObject(" + uuid + ", \"" + constructorParam.getType().getName() + "\", " 
-						+ "(String) " + persistedProperty + ", " + persistedObjects + ");");
-				println(sb, tabs, childSPO + ".setLoaded(true);");
-				println(sb, tabs, childPersisterHelperField + ".updateObject(" + 
-						castedObjToUpdate + "." + 
-						SPAnnotationProcessorUtils.convertPropertyToAccessor(
-								constructorParam.getName(), constructorParam.getType()) + "(), " + 
-								childSPO + ", " + persistedProperties + ", " + persistedObjects + ", " + converter + ");");
-				tabs--;
-			    println(sb, tabs, "} else {");
-			    tabs++;
-			    
-			    //TODO create a new object as necessary.
-			    
-			    tabs--;
-			    println(sb, tabs, "}");
-			    tabs--;
-			    println(sb, tabs, "} catch (Exception e) {");
-			    tabs++;
-			    println(sb, tabs, "throw new SPPersistenceException(uuid, e);");
-			    tabs--;
-			    println(sb, tabs, "}");
-			} else {
-				println(sb, tabs, "commitProperty(" + castedObjToUpdate + ", \"" + constructorParam.getName() + "\", " + persistedProperty + ", " + converter + ");");
-			}
-		}
-		
-		tabs--;
-		println(sb, tabs, "}");
-		return sb.toString();
-	}
-
-	/**
->>>>>>> .r1366
 	 * Generates and returns source code for a commitObject method based on an
 	 * {@link SPObject} annotated constructor along with its annotated
 	 * constructor arguments.
@@ -630,6 +535,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		// Assign each constructor parameter property to a variable.
 		final String parameterTypeField = "parameterType";
 		println(sb, tabs, PersistedSPOProperty.class.getSimpleName() + " " + parameterTypeField + ";");
+		String classToLoadField = "classToLoad";
+        println(sb, tabs, "Class<? extends SPObject> " + classToLoadField + ";");
 		for (ConstructorParameterObject cpo : constructorParameters) {
 			sb.append(indent(tabs));
 			
@@ -666,22 +573,32 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				String childPersisterHelperField = parameterName + "Helper";
 				String childPersistedObject = parameterName + "PSO";
 				
-				
 				println(sb, tabs, "String " + objectUUIDField + " = (String) findPropertyAndRemove(" + 
 						uuidField + ", \"" + parameterName + "\", " + persistedPropertiesField + ");");
+				println(sb, tabs, "PersistedSPObject " + childPersistedObject + 
+				        " = findPersistedSPObject(" + uuidField + ", \"" + cpo.getType().getName() + "\", " + 
+				        objectUUIDField + ", " + persistedObjectsListField + ");");
+				println(sb, tabs, "try {");
+				tabs++;
+				println(sb, tabs, classToLoadField + " = (Class<? extends SPObject>) " + visitedClass.getSimpleName() + 
+				        ".class.getClassLoader().loadClass(" + childPersistedObject + ".getType());");
+				tabs--;
+		        println(sb, tabs, "} catch (ClassNotFoundException e) {");
+		        tabs++;
+		        println(sb, tabs, "throw new SPPersistenceException(null, e);");
+		        tabs--;
+		        println(sb, tabs, "}");
+				
 				println(sb, tabs, "SPPersisterHelper<? extends SPObject> " + childPersisterHelperField + ";");
 				println(sb, tabs, "try {");
 				tabs++;
-				println(sb, tabs, childPersisterHelperField + " = PersisterHelperFinder.findPersister(" + parameterType + ".class);");
+				println(sb, tabs, childPersisterHelperField + " = PersisterHelperFinder.findPersister(" + classToLoadField + ");");
 				tabs--;
 				println(sb, tabs, "} catch (Exception e) {");
 				tabs++;
 				println(sb, tabs, "throw new SPPersistenceException(uuid, e);");
 				tabs--;
 				println(sb, tabs, "}");
-				println(sb, tabs, "PersistedSPObject " + childPersistedObject + 
-						" = findPersistedSPObject(" + uuidField + ", \"" + cpo.getType().getName() + "\", " + 
-						objectUUIDField + ", " + persistedObjectsListField + ");");
 				println(sb, tabs, parameterType + " " + parameterName + " = (" + parameterType + ") " + 
 						childPersisterHelperField + ".commitObject(" + childPersistedObject + ", " + 
 						persistedPropertiesField + ", " + persistedObjectsListField + ", " + converterField + ");");
@@ -1042,7 +959,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			
 			for (String additionalProperty : accessorAdditionalInfo.get(methodName)) {
 				sb.append(", " + objectField + "." + 
-						SPAnnotationProcessorUtils.convertPropertyToAccessor(additionalProperty, null) +
+						SPAnnotationProcessorUtils.convertPropertyToAccessor(additionalProperty, visitedClass) +
 						"()");
 			}
 			
@@ -1203,7 +1120,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 					
 					String getPersistedProperty = objectField + "." + 
 						SPAnnotationProcessorUtils.convertPropertyToAccessor(
-								cpo.getName(), cpo.getType()) + "()";
+								cpo.getName(), visitedClass) + "()";
 					if (cpo.getType() == Object.class) {
 						println(sb, tabs, "if (" + getPersistedProperty + " == null) {");
 						tabs++;
@@ -1229,7 +1146,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 							", " + converterField + ".convertToBasicType(" + objectField + "." +
 							SPAnnotationProcessorUtils.convertPropertyToAccessor(
 									cpo.getName(), 
-									cpo.getType()) + 
+									visitedClass) + 
 							"()));\n");
 					println(sb, tabs, preProcessedProps + ".add(\"" + cpo.getName() + "\");");
 					importedClassNames.add(DataType.class.getName());
