@@ -124,7 +124,7 @@
 				<configuration>
 		        	<testFailureIgnore>true</testFailureIgnore>
 					<reportsDirectory>build/reports</reportsDirectory>
-					<argLine>-Xmx1024m -Xms512m</argLine>
+					<argLine>-Xmx1024m -Xms512m -Dca.sqlpower.SKIP_DODGY_TESTS=${ca.sqlpower.SKIP_DODGY_TESTS}</argLine>
 					<systemProperties>
 						<property>
 							<name>java.util.prefs.PreferencesFactory</name>
