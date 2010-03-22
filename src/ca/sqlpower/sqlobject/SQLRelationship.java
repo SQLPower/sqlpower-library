@@ -34,6 +34,7 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.AbstractPoolingSPListener;
+import ca.sqlpower.object.AbstractSPListener;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
@@ -49,6 +50,7 @@ import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.SessionNotFoundException;
+import ca.sqlpower.util.TransactionEvent;
 
 /**
  * The SQLRelationship class represents a foreign key relationship between
@@ -919,7 +921,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		
 		@Override
 		protected void childRemovedImpl(SPChildEvent e) {
-			e.getChild().removeSPListener(this);
+		    e.getChild().removeSPListener(this);
 		}
 	};
 
@@ -1404,6 +1406,63 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 		private final SQLRelationship relationship;
 
+		/**
+		 * This listener is for when an fk-column is moved from one index to another.
+         * A reference is preserved, so it is not an issue for the person moving the column.
+         * However, for other clients on a server project, the old column is deleted, and a new one is made.
+         * Therefore, the reference in the column mapping will need to be updated.
+		 */
+		private final SPListener fkTableListener = new AbstractSPListener() {
+
+		    SQLColumn removedFkColumn = null;
+		    int transactionLevel = 0;
+
+		    @Override
+		    public void transactionStarted(TransactionEvent e) {
+		        if (transactionLevel == 0) {
+		            removedFkColumn = null;
+		        }
+		        transactionLevel++;
+		    }
+
+		    @Override
+		    public void childRemoved(SPChildEvent e) {
+		        if (e.getChild() instanceof SQLColumn) {
+		            SQLColumn col = (SQLColumn) e.getChild();
+		            if (relationship.getMappingByFkCol(col) != null) {
+		                if (transactionLevel == 0) {
+		                    throw new IllegalStateException("Cannot remove an fkColumn outside of a transaction " +
+		                    "(it needs to be done in a transaction so that column mappings may be updated)");
+		                } else {
+		                    removedFkColumn = col;
+		                }
+		            }
+		        }
+		    }
+
+		    @Override
+		    public void childAdded(SPChildEvent e) {
+		        if (e.getChild() instanceof SQLColumn) {
+		            SQLColumn col = (SQLColumn) e.getChild();
+		            if (removedFkColumn != null && removedFkColumn != col
+		                    && removedFkColumn.getUUID().equals(col.getUUID())) {
+		                ColumnMapping mapping = relationship.getMappingByFkCol(removedFkColumn);
+		                if (mapping != null && mapping.getFkColumn() != col) {
+		                    mapping.setFkColumn(col);
+		                }
+		            }
+		        }
+		    }
+
+		    @Override
+		    public void transactionEnded(TransactionEvent e) {
+		        if (transactionLevel < 1) {
+		            throw new IllegalStateException("Transaction ended before it was started");
+		        }		        
+		        transactionLevel--;
+		    }
+		};
+
 		@Constructor
 		public SQLImportedKey(
 				@ConstructorParameter(propertyName="relationship") SQLRelationship relationship) {
@@ -1439,7 +1498,13 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		 */
 		@Mutator
 		public void setParent(SQLTable parent) {
-			super.setParent(parent);
+		    if (getParent() != null) {
+		        getParent().removeSPListener(fkTableListener);
+		    }
+		    super.setParent(parent);
+		    if (parent != null) {		            
+		        parent.addSPListener(fkTableListener);
+		    }		
 		}
 		
 		@Override
