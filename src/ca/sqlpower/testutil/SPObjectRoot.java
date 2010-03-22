@@ -20,6 +20,7 @@
 package ca.sqlpower.testutil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -31,6 +32,14 @@ import ca.sqlpower.object.annotation.NonProperty;
  * A generic root implementation to contain any type of SPObject implementation.
  */
 public class SPObjectRoot extends AbstractSPObject {
+    
+    /**
+     * Defines an absolute ordering of the child types of this class.
+     */
+    @SuppressWarnings("unchecked")
+    public static List<Class<? extends SPObject>> allowedChildTypes = 
+        Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
+                Arrays.asList(SPObject.class)));
 	
 	private final List<SPObject> children = new ArrayList<SPObject>();
 
