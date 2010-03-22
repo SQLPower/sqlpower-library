@@ -202,6 +202,12 @@ public class SPPersisterListener implements SPListener {
 			public void persistObject(String parentUUID, String type, String uuid,
 					int index) throws SPPersistenceException {
 				logger.debug("Adding a " + type + " with UUID: " + uuid + " to persistedObjects");
+				// Check to see this object has not already been added.
+				if (getPersistedObject(uuid) != null) {
+                    throw new SPPersistenceException(uuid, "Cannot add object of type " 
+                                + type + " with UUID " + uuid + " because an object with "
+                                + " the same UUID has already been added");                    
+                }
 				persistedObjects.add(new PersistedSPObject(parentUUID, type, uuid, index));
 			}
 		
@@ -260,14 +266,29 @@ public class SPPersisterListener implements SPListener {
 	public void childRemoved(SPChildEvent e) {
 		SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
 		if (wouldEcho()) return;
-		transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
-				"Start of transaction triggered by wabitChildRemoved event"));
-		objectsToRemove.add(
-				new RemovedObjectEntry(
-						e.getSource().getUUID(),
-						e.getChild(),
-						e.getIndex()));
-		transactionEnded(TransactionEvent.createEndTransactionEvent(this));
+		String uuid = e.getChild().getUUID();
+		if (getRemovedObject(uuid) != null) {
+		    throw new IllegalStateException("Cannot add object of type " 
+                    + e.getChildType() + " with UUID " + uuid + " because an object with "
+                    + " the same UUID has already been added");     
+		}
+		PersistedSPObject pso = getPersistedObject(uuid);
+		if (pso != null) {
+		    // Remove the object from the list of objects to be persisted
+		    // This way, addition-removal sequences are cancelled out.
+		    if (!persistedObjects.remove(pso)) {
+		        throw new RuntimeException("This shouldn't have happened");
+		    }
+		} else {
+		    transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
+		    "Start of transaction triggered by childRemoved event"));
+		    objectsToRemove.add(
+		            new RemovedObjectEntry(
+		                    e.getSource().getUUID(),
+		                    e.getChild(),
+		                    e.getIndex()));
+		    transactionEnded(TransactionEvent.createEndTransactionEvent(this));
+		}
 	}
 
 	public void transactionEnded(TransactionEvent e) {
@@ -551,5 +572,35 @@ public class SPPersisterListener implements SPListener {
 	
 	public List<RemovedObjectEntry> getRemovedRollbackList() {
 		return objectsToRemoveRollbackList;
+	}
+	
+	/**
+	 * This method cycles through the given list of pooled objects that
+	 * are being persisted to see if it contains the object with the given uuid
+	 * @param uuid
+	 * @return The object with the given uuid, or null if it cannot be found
+	 */
+	public PersistedSPObject getPersistedObject(String uuid) {
+        for (PersistedSPObject o : persistedObjects) {
+            if (o.getUUID().equals(uuid)) {
+                return o;
+            }
+        }
+        return null;
+	}
+	
+	/**
+     * This method cycles through the given list of pooled objects that
+     * are being removed to see if it contains the object with the given uuid
+     * @param uuid
+     * @return The object with the given uuid, or null if it cannot be found
+     */
+	public RemovedObjectEntry getRemovedObject(String uuid) {
+	    for (RemovedObjectEntry o : objectsToRemove) {
+	        if (o.getRemovedChild().getUUID().equals(uuid)) {
+	            return o;
+	        }
+	    }
+	    return null;
 	}
 }
