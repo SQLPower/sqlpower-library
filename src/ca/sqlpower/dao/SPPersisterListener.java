@@ -21,9 +21,9 @@ package ca.sqlpower.dao;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyDescriptor;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map.Entry;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.log4j.Logger;
@@ -38,9 +38,6 @@ import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.TransactionEvent;
-
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 
 /**
  * This generic listener will use the persister helper factory given to it to
@@ -87,10 +84,17 @@ public class SPPersisterListener implements SPListener {
 	private List<RemovedObjectEntry> objectsToRemoveRollbackList = new LinkedList<RemovedObjectEntry>();
 	
 	/**
-	 * Persisted property buffer, mapping of {@link WabitObject} UUIDs to each
-	 * individual persisted property
+	 * Persisted property buffer, mapping of {@link SPObject} UUIDs 
+	 * concatenated with a property name to the given property.
 	 */
-	private Multimap<String, PersistedSPOProperty> persistedProperties = LinkedListMultimap.create();
+	private HashMap<String, PersistedSPOProperty> persistedProperties = new HashMap<String, PersistedSPOProperty>();
+	
+	/**
+	 * A map keeping track of the most recent old value of property changes,
+	 * mapped by the concatenation of their uuid and property name.
+	 * Used for verifying property changes when condensing them.
+	 */
+	private HashMap<String, Object> lastOldValue = new HashMap<String, Object>();
 	
 	/**
 	 * Persisted {@link WabitObject} buffer, contains all the data that was
@@ -187,17 +191,18 @@ public class SPPersisterListener implements SPListener {
 					throws SPPersistenceException {
 				//unconditional properties in this case are only on new objects
 				//so undoing these properties will only come just before the object is
-				//removed and doesn't matter.
-				persistedProperties.put(uuid, new PersistedSPOProperty(uuid, propertyName, 
+				//removed and doesn't matter.			    
+				persistedProperties.put(uuid + propertyName, new PersistedSPOProperty(uuid, propertyName, 
 						propertyType, newValue, newValue, true));
 			}
 		
 			public void persistProperty(String uuid, String propertyName,
 					DataType propertyType, Object oldValue, Object newValue)
 					throws SPPersistenceException {
-				persistedProperties.put(uuid, new PersistedSPOProperty(uuid, propertyName, 
-						propertyType, oldValue, newValue, false));		
+			    persistedProperties.put(uuid + propertyName, new PersistedSPOProperty(
+                        uuid, propertyName, propertyType, oldValue, newValue, false));			
 			}
+
 		
 			public void persistObject(String parentUUID, String type, String uuid,
 					int index) throws SPPersistenceException {
@@ -355,22 +360,33 @@ public class SPPersisterListener implements SPListener {
 		}
 		
 		DataType typeForClass = PersisterUtils.
-				getDataType(newValue == null ? Void.class : newValue.getClass());
+				getDataType(newValue == null ? Void.class : newValue.getClass());	
 		
-		Object oldBasicType = converter.convertToBasicType(oldValue);
-		Object newBasicType = converter.convertToBasicType(newValue);
-		
-		logger.debug("persistProperty(" + uuid + ", " + propertyName + ", " + 
-				typeForClass.name() + ", " + oldValue + ", " + newValue + ")");
-		persistedProperties.put(
-				uuid,
-				new PersistedSPOProperty(
-					uuid,
-					propertyName, 
-					typeForClass, 
-					oldBasicType, 
-					newBasicType, 
-					false));
+        String key = uuid + propertyName;
+        PersistedSPOProperty property = persistedProperties.get(key);
+        if (property != null) {
+            // Hang on to the oldest value
+            
+            if (property.getNewValue().equals(lastOldValue.get(key))) {        
+                try {
+                    throw new RuntimeException("Multiple property changes do not follow after each other properly");
+                } finally {
+                    this.rollback();
+                }
+            }
+        }
+        
+        Object oldBasicType = converter.convertToBasicType(oldValue);
+        Object newBasicType = converter.convertToBasicType(newValue);
+        
+        lastOldValue.put(key, oldBasicType);        
+        if (property != null) {
+            oldBasicType = property.getOldValue();
+        }    
+        logger.debug("persistProperty(" + uuid + ", " + propertyName + ", " + 
+                typeForClass.name() + ", " + oldValue + ", " + newValue + ")");
+        persistedProperties.put(key, new PersistedSPOProperty(
+                uuid, propertyName, typeForClass, oldBasicType, newBasicType, false));  
 		
 		this.transactionEnded(TransactionEvent.createEndTransactionEvent(this));
 	}
@@ -508,29 +524,27 @@ public class SPPersisterListener implements SPListener {
 	 */
 	private void commitProperties() throws SPPersistenceException {
 		logger.debug("commitProperties()");
-		for (Entry<String, PersistedSPOProperty> entry : persistedProperties.entries()) {
-			PersistedSPOProperty wop = entry.getValue();
-			String uuid = entry.getKey();
-			if (wop.isUnconditional()) {
+		for (PersistedSPOProperty property : persistedProperties.values()) {
+			if (property.isUnconditional()) {
 				target.persistProperty(
-					uuid,
-					wop.getPropertyName(),
-					wop.getDataType(),
-					wop.getNewValue());
+					property.getUUID(),
+					property.getPropertyName(),
+					property.getDataType(),
+					property.getNewValue());
 			} else {
 				target.persistProperty(
-					uuid, 
-					wop.getPropertyName(), 
-					wop.getDataType(), 
-					wop.getOldValue(),
-					wop.getNewValue());
+				    property.getUUID(), 
+					property.getPropertyName(), 
+					property.getDataType(), 
+					property.getOldValue(),
+					property.getNewValue());
 			}
 			this.persistedPropertiesRollbackList.add(
 				new PersistedPropertiesEntry(
-					uuid, 
-					wop.getPropertyName(),
-					wop.getDataType(), 
-					wop.getOldValue()));
+				    property.getUUID(), 
+					property.getPropertyName(),
+					property.getDataType(), 
+					property.getOldValue()));
 		}
 	}
 
@@ -550,7 +564,7 @@ public class SPPersisterListener implements SPListener {
 		}
 	}
 	
-	public Multimap<String, PersistedSPOProperty> getPersistedProperties() {
+	public HashMap<String, PersistedSPOProperty> getPersistedProperties() {
 		return persistedProperties;
 	}
 
