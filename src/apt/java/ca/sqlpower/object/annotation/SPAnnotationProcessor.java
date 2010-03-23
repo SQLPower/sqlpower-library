@@ -65,6 +65,7 @@ import com.sun.mirror.util.DeclarationVisitors;
  */
 public class SPAnnotationProcessor implements AnnotationProcessor {
 
+	private final static String LICENSE_COMMENT_FILE_PATH = "src/main/java/license_in_comment.txt";
 	/**
 	 * The {@link AnnotationProcessorEnvironment} this
 	 * {@link AnnotationProcessor} will work with. The environment will give
@@ -405,7 +406,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	private String generateLicense() {
 		StringBuilder sb = new StringBuilder();
 		try {
-			FileReader fr = new FileReader("src/license_in_comment.txt");
+			FileReader fr = new FileReader(LICENSE_COMMENT_FILE_PATH);
 			BufferedReader br = new BufferedReader(fr);
 			String line;
 			while ((line = br.readLine()) != null) {

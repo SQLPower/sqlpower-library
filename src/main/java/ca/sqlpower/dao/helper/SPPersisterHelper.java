@@ -33,7 +33,6 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
-import ca.sqlpower.object.annotation.SPAnnotationProcessorFactory;
 
 import com.google.common.collect.Multimap;
 

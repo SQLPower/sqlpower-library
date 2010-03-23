@@ -3,6 +3,7 @@
 	<!-- $Id$ -->
 	<property name="dist.dir" value="dist"/>
 	<property name="src" value="src/main/java"/>
+	<property name="src.apt" value="src/apt/java"/>
 	<property name="build" value="build"/>
 	<property name="build_tmp" value="build_tmp"/>
 	<property name="build.compiler" value="modern"/>
@@ -72,6 +73,7 @@
 	
 	<target name="compile-with-annotations" depends="init">
 		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
+		<javac srcdir="${src.apt}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
 		<apt srcdir="${src}"
 			destdir="${build_tmp}"
 			classpathref="apt.classpath"
