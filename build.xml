@@ -57,14 +57,14 @@
 	<target name="compile" depends="init">
 		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
 		<copy tofile="${build}/ca/sqlpower/sql/default_database_types.ini"
-				     file="src/ca/sqlpower/sql/default_database_types.ini"/>
+				     file="${src}/ca/sqlpower/sql/default_database_types.ini"/>
 		<copy todir="${build}">
 			<fileset dir="${src}">
 				<include name="**/*.png"/>
 			</fileset>
 		</copy>
 		<copy todir="${build}/">
-			<fileset dir="src">
+			<fileset dir="${src}">
 				<include name="**/messages*.properties"/>
 			</fileset>
 		</copy>
@@ -78,21 +78,21 @@
 			debug="true"
 			compile="true"
 			factory="ca.sqlpower.object.annotation.SPAnnotationProcessorFactory"
-			preprocessdir="src">
+			preprocessdir="${src}">
 		</apt>
 		<delete dir="${build}"/>
 		<move todir="${build}">
 			<fileset dir="${build_tmp}"/>
 		</move>
 		<copy tofile="${build}/ca/sqlpower/sql/default_database_types.ini"
-				     file="src/ca/sqlpower/sql/default_database_types.ini"/>
+				     file="${src}/ca/sqlpower/sql/default_database_types.ini"/>
 		<copy todir="${build}">
 			<fileset dir="${src}">
 				<include name="**/*.png"/>
 			</fileset>
 		</copy>
 		<copy todir="${build}/">
-			<fileset dir="src">
+			<fileset dir="${src}">
 				<include name="**/messages*.properties"/>
 			</fileset>
 		</copy>
