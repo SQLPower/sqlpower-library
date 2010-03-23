@@ -2,7 +2,7 @@
 
 	<!-- $Id$ -->
 	<property name="dist.dir" value="dist"/>
-	<property name="src" value="src"/>
+	<property name="src" value="java"/>
 	<property name="build" value="build"/>
 	<property name="build_tmp" value="build_tmp"/>
 	<property name="build.compiler" value="modern"/>
