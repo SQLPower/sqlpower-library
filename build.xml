@@ -8,6 +8,7 @@
 	<property name="build_tmp" value="build_tmp"/>
 	<property name="build.compiler" value="modern"/>
 	<property name="dist.jar" value="sqlpower_library.jar"/>
+	<property name="test.jar" value="sqlpower_library-tests.jar"/>
 	<property name="tests" value="src/test/java"/>
 	<property name="reports.dir" value="${dist.dir}/reports"/>
 	
@@ -143,8 +144,8 @@
 	
 	<target name="jar" depends="compile-with-annotations, test">
 		<mkdir dir="${dist.dir}"/>
-		<jar jarfile="${dist.dir}/${dist.jar}" basedir="${build}">
-		</jar>
+		<jar jarfile="${dist.dir}/${dist.jar}" basedir="${build}"></jar>
+		<jar jarfile="${dist.dir}/${test.jar}" basedir="${build.tests}"></jar>
 	</target>
 
 	<target name="dist" depends="jar, pmd, pmd-cpd, findbugs, javadoc">
