@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="src" path="regress"/>
+	<classpathentry kind="src" path="java"/>
 	<classpathentry kind="src" path="src/main/java"/>
 	<classpathentry kind="lib" path="lib/annotations.jar"/>
 	<classpathentry kind="lib" path="lib/commons-beanutils.jar"/>
@@ -29,5 +29,6 @@
 	<classpathentry kind="lib" path="lib/commons-codec-20041127.091804.jar"/>
 	<classpathentry kind="lib" path="lib/google-collections-1.0-rc4.jar"/>
 	<classpathentry kind="lib" path="lib/olap4j-0.9.8-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="lib/commons-lang-2.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
