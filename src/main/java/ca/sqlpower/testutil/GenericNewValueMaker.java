@@ -120,6 +120,12 @@ public class GenericNewValueMaker implements NewValueMaker {
             newVal = "new " + oldVal;
         } else if (valueType == Boolean.TYPE){
             newVal = new Boolean(! ((Boolean) oldVal).booleanValue());
+        } else if (valueType == Boolean.class) {
+            if (oldVal == null) {
+                newVal = Boolean.TRUE;
+            } else {
+                newVal = new Boolean(! ((Boolean) oldVal).booleanValue());
+            }
         } else if (valueType == File.class) {
             newVal = new File("temp" + System.currentTimeMillis());
         } else if (valueType == JDBCDataSource.class || valueType == SPDataSource.class) {
