@@ -7,7 +7,7 @@
 	<property name="build_tmp" value="build_tmp"/>
 	<property name="build.compiler" value="modern"/>
 	<property name="dist.jar" value="sqlpower_library.jar"/>
-	<property name="tests" value="regress"/>
+	<property name="tests" value="src/test/java"/>
 	<property name="reports.dir" value="${dist.dir}/reports"/>
 	
 	<!--
@@ -178,7 +178,7 @@
 			>
 			<packageset dir="${src}" defaultexcludes="yes">
 				<include name="ca/sqlpower/**" />
-				<exclude name="regress/**"/>
+				<exclude name="${tests}/**"/>
 			</packageset>
 			<bottom><![CDATA[<i>Copyright &#169; 2003-2008 SQL Power Group Inc. <a href="http://www.sqlpower.ca/">www.sqlpower.ca</a>]]></bottom>
 		</javadoc>
@@ -206,7 +206,7 @@
     	    </doclet>
 			<packageset dir="${src}" defaultexcludes="yes">
 				<include name="ca/sqlpower/**" />
-				<exclude name="regress/**"/>
+				<exclude name="${tests}/**"/>
 			</packageset>
 			<bottom><![CDATA[<i>Copyright &#169; 2003-2008 SQL Power Group Inc. <a href="http://www.sqlpower.ca/">www.sqlpower.ca</a>]]></bottom>
 		</javadoc>
