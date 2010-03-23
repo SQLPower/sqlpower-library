@@ -34,7 +34,6 @@ import org.apache.log4j.Logger;
 
 import com.google.common.collect.ListMultimap;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPListener;
@@ -808,6 +807,6 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      *             SQLObject.
      */
     public void updateToMatch(SQLObject source) throws SQLObjectException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 }

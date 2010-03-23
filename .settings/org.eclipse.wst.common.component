@@ -3,5 +3,7 @@
     <wb-module deploy-name="sqlpower_library">
         <wb-resource deploy-path="/" source-path="/regress"/>
         <wb-resource deploy-path="/" source-path="/java"/>
+        <wb-resource deploy-path="/" source-path="/src/main/java"/>
+        <wb-resource deploy-path="/" source-path="/src/test/java"/>
     </wb-module>
 </project-modules>
