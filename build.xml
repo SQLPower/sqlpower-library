@@ -3,6 +3,7 @@
 	<!-- $Id$ -->
 	<property name="dist.dir" value="dist"/>
 	<property name="src" value="src/main/java"/>
+	<property name="resources" value="src/main/resources"/>
 	<property name="src.apt" value="src/apt/java"/>
 	<property name="build" value="build"/>
 	<property name="build_tmp" value="build_tmp"/>
@@ -10,6 +11,7 @@
 	<property name="dist.jar" value="sqlpower_library.jar"/>
 	<property name="test.jar" value="sqlpower_library-tests.jar"/>
 	<property name="tests" value="src/test/java"/>
+	<property name="tests-resources" value="src/test/resources"/>
 	<property name="reports.dir" value="${dist.dir}/reports"/>
 	
 	<!--
@@ -57,19 +59,15 @@
 	</target>
 	
 	<target name="compile" depends="init">
+		
 		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
-		<copy tofile="${build}/ca/sqlpower/sql/default_database_types.ini"
-				     file="${src}/ca/sqlpower/sql/default_database_types.ini"/>
-		<copy todir="${build}">
-			<fileset dir="${src}">
-				<include name="**/*.png"/>
+		
+		<copy flatten="false" todir="${build}">
+			<fileset dir="${resources}">
+				<include name="**/*"/>
 			</fileset>
 		</copy>
-		<copy todir="${build}/">
-			<fileset dir="${src}">
-				<include name="**/messages*.properties"/>
-			</fileset>
-		</copy>
+		
 	</target>
 	
 	<target name="compile-with-annotations" depends="init">
@@ -83,28 +81,36 @@
 			factory="ca.sqlpower.object.annotation.SPAnnotationProcessorFactory"
 			preprocessdir="${src}">
 		</apt>
+		
 		<delete dir="${build}"/>
+		
 		<move todir="${build}">
 			<fileset dir="${build_tmp}"/>
 		</move>
-		<copy tofile="${build}/ca/sqlpower/sql/default_database_types.ini"
-				     file="${src}/ca/sqlpower/sql/default_database_types.ini"/>
-		<copy todir="${build}">
-			<fileset dir="${src}">
-				<include name="**/*.png"/>
+
+		<copy flatten="false" todir="${build}">
+			<fileset dir="${resources}">
+				<include name="**/*"/>
 			</fileset>
 		</copy>
-		<copy todir="${build}/">
-			<fileset dir="${src}">
-				<include name="**/messages*.properties"/>
-			</fileset>
-		</copy>
+		
 	</target>
 
+	
 	<target name="compile-tests" depends="compile-with-annotations">
+		
 		<property name="build.tests" value="${build}/tests"/>
+		
 		<mkdir dir="${build.tests}"/>
+		
 		<javac srcdir="${tests}" destdir="${build.tests}" classpathref="test.classpath" debug="true"/>
+		
+		<copy flatten="false" todir="${build.tests}">
+			<fileset dir="${tests-resources}">
+				<include name="**/*"/>
+			</fileset>
+		</copy>
+		
 	</target>
 	
 	<target name="test" depends="compile-tests">

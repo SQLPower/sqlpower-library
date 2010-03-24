@@ -65,7 +65,7 @@ import com.sun.mirror.util.DeclarationVisitors;
  */
 public class SPAnnotationProcessor implements AnnotationProcessor {
 
-	private final static String LICENSE_COMMENT_FILE_PATH = "src/main/java/license_in_comment.txt";
+	private final static String LICENSE_COMMENT_FILE_PATH = "src/main/resources/license_in_comment.txt";
 	/**
 	 * The {@link AnnotationProcessorEnvironment} this
 	 * {@link AnnotationProcessor} will work with. The environment will give
