@@ -116,7 +116,7 @@
 		<property name="reports.junit" value="${reports.dir}/junit"/>
 		<mkdir dir="${reports.junit}"/>
 		<!-- Output all System.out and System.err messages -->
-	   <junit printsummary="on" showoutput="no">
+	   <junit printsummary="on" showoutput="no" maxmemory="1024m">
 	   	   <sysproperty key="ca.sqlpower.architect.test.dir" value="${build.tests}"/>
 	       <classpath>
 	       		<path refid="test.classpath"/>
@@ -148,7 +148,6 @@
 	</target>
 	
 	<target name="jar" depends="compile-with-annotations, test">
-		<mkdir dir="${dist.dir}"/>
 		<jar jarfile="${dist.dir}/${dist.jar}" basedir="${build}"></jar>
 		<jar jarfile="${dist.dir}/${test.jar}" basedir="${build.tests}"></jar>
 	</target>
