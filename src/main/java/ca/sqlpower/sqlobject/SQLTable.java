@@ -143,6 +143,7 @@ public class SQLTable extends SQLObject {
 			@ConstructorParameter(propertyName = "populated") boolean startPopulated,
 			@ConstructorParameter(isProperty = ParameterType.CHILD, propertyName = "primaryKeyIndex") SQLIndex primaryKeyIndex) 
     		throws SQLObjectException {
+        super();
 		logger.debug("NEW TABLE "+name+"@"+hashCode());
 		for (Column wrapper : primaryKeyIndex.getChildrenWithoutPopulating()) {
 			if (wrapper.getColumn() == null) {
@@ -218,6 +219,7 @@ public class SQLTable extends SQLObject {
 	 *
 	 */
 	public SQLTable() {
+	    super();
 		primaryKeyIndex = new SQLIndex();
 		primaryKeyIndex.setParent(this);
         setup(null,null,null,"TABLE");

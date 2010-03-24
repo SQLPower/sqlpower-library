@@ -90,13 +90,6 @@ public class SPPersisterListener implements SPListener {
 	private HashMap<String, PersistedSPOProperty> persistedProperties = new HashMap<String, PersistedSPOProperty>();
 	
 	/**
-	 * A map keeping track of the most recent old value of property changes,
-	 * mapped by the concatenation of their uuid and property name.
-	 * Used for verifying property changes when condensing them.
-	 */
-	private HashMap<String, Object> lastOldValue = new HashMap<String, Object>();
-	
-	/**
 	 * Persisted {@link WabitObject} buffer, contains all the data that was
 	 * passed into the persistedObject call in the order of insertion
 	 */
@@ -362,12 +355,22 @@ public class SPPersisterListener implements SPListener {
 		DataType typeForClass = PersisterUtils.
 				getDataType(newValue == null ? Void.class : newValue.getClass());	
 		
+		Object oldBasicType = converter.convertToBasicType(oldValue);
+		Object newBasicType = converter.convertToBasicType(newValue);
+		
         String key = uuid + propertyName;
         PersistedSPOProperty property = persistedProperties.get(key);
         if (property != null) {
-            // Hang on to the oldest value
-            
-            if (property.getNewValue().equals(lastOldValue.get(key))) {        
+            boolean valuesMatch;
+            if (property.getNewValue() == null) {
+                valuesMatch = oldBasicType == null;
+            } else {
+                // Check that the old property's new value is equal to the new change's old value.
+                // Also, accept the change if it is the same as the last one.
+                valuesMatch = property.getNewValue().equals(oldBasicType) || 
+                (property.getOldValue().equals(oldBasicType) && property.getNewValue().equals(newBasicType));
+            }
+            if (!valuesMatch) {
                 try {
                     throw new RuntimeException("Multiple property changes do not follow after each other properly");
                 } finally {
@@ -375,18 +378,20 @@ public class SPPersisterListener implements SPListener {
                 }
             }
         }
-        
-        Object oldBasicType = converter.convertToBasicType(oldValue);
-        Object newBasicType = converter.convertToBasicType(newValue);
-        
-        lastOldValue.put(key, oldBasicType);        
+
+        boolean unconditional = false;
         if (property != null) {
+            // Hang on to the old value
             oldBasicType = property.getOldValue();
-        }    
+            // If an object was created, and unconditional properties are being sent,
+            // this will maintain that flag in the event of additional property changes
+            // to the same property in the same transaction.
+            unconditional = property.isUnconditional();
+        }
         logger.debug("persistProperty(" + uuid + ", " + propertyName + ", " + 
                 typeForClass.name() + ", " + oldValue + ", " + newValue + ")");
         persistedProperties.put(key, new PersistedSPOProperty(
-                uuid, propertyName, typeForClass, oldBasicType, newBasicType, false));  
+                uuid, propertyName, typeForClass, oldBasicType, newBasicType, unconditional));
 		
 		this.transactionEnded(TransactionEvent.createEndTransactionEvent(this));
 	}

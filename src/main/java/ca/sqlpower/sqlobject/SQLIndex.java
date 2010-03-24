@@ -33,6 +33,7 @@ import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.AbstractSPListener;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
@@ -431,30 +432,14 @@ public class SQLIndex extends SQLObject {
     }
 
     public SQLIndex() {
-        removeColumnListener = new SPListener() {
+        super();
+        removeColumnListener = new AbstractSPListener() {
 
             public void childRemoved(SPChildEvent e) {
-            	if (e.getChildType() == SQLColumn.class) {
-            		removeColumnFromIndices(e);
-            	}
+                if (e.getChildType() == SQLColumn.class) {
+                    removeColumnFromIndices(e);
+                }
             }
-            
-            public void childAdded(SPChildEvent e) {
-            	// no-op
-            }
-            public void propertyChanged(PropertyChangeEvent evt) {
-            	// no-op
-            }
-            public void transactionStarted(TransactionEvent e) {
-            	// no-op
-            }
-            public void transactionEnded(TransactionEvent e) {
-            	// no-op
-            }
-            public void transactionRollback(TransactionEvent e) {
-            	// no-op
-            }
-            
         };
     }
 
