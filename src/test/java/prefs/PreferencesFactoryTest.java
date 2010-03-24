@@ -25,10 +25,8 @@ import ca.sqlpower.sql.PlDotIni;
 
 public class PreferencesFactoryTest extends TestCase {
 	
-	public final void testPreReqs() {
-		System.out.println("PreferencesFactoryTest.testPreReqs()");
+	public void testPreReqs() {
 		String n = System.getProperty(PreferencesFactory.PREFS_FACTORY_SYSTEM_PROPERTY);
-		System.out.println(n);
 		assertNotNull(MemoryPreferences.SYSTEM_PROPS_ERROR_MESSAGE, n);
 		assertEquals(MemoryPreferences.SYSTEM_PROPS_ERROR_MESSAGE, PreferencesFactory.MY_CLASS_NAME, n);		
 	}
@@ -36,8 +34,7 @@ public class PreferencesFactoryTest extends TestCase {
 	/*
 	 * Test method for 'regress.prefs.PreferencesFactory.systemRoot()'
 	 */
-	public final void testSystemRoot() {
-		System.out.println("PreferencesFactoryTest.testSystemRoot()");
+	public void testSystemRoot() {
 		Object o = null;
 		try {
 			o = Preferences.systemRoot();
@@ -45,17 +42,14 @@ public class PreferencesFactoryTest extends TestCase {
 			bleah.printStackTrace();
 			return;
 		}
-		System.out.println("Default preferences.systemRoot = " + o);
 		assertNotNull(o);
 	}
 
 	/*
 	 * Test method for 'regress.prefs.PreferencesFactory.userRoot()'
 	 */
-	public final void testUserRoot() {
-		System.out.println("PreferencesFactoryTest.testUserRoot()");
+	public void testUserRoot() {
 		Object o = Preferences.userNodeForPackage(PlDotIni.class);
-		System.out.println(o);
 		assertNotNull(o);
 	}
 }
