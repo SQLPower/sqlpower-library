@@ -118,6 +118,7 @@
 		<!-- Output all System.out and System.err messages -->
 	   <junit printsummary="on" showoutput="no" maxmemory="1024m">
 	   	   <sysproperty key="ca.sqlpower.architect.test.dir" value="${build.tests}"/>
+	   		<sysproperty key="java.util.prefs.PreferencesFactory" value="prefs.PreferencesFactory"/>
 	       <classpath>
 	       		<path refid="test.classpath"/>
 	       		<path path="${build.tests}"/>
