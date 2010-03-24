@@ -73,7 +73,7 @@
 		
 	</target>
 	
-	<target name="compile-with-annotations" depends="init">
+	<target name="compile-with-annotations" depends="clean, init">
 		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
 		<javac srcdir="${src.apt}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
 		<apt srcdir="${src}"
@@ -112,7 +112,7 @@
 		
 	</target>
 	
-	<target name="test" depends="compile-tests">
+	<target name="test" depends="compile-tests" description="Runs the test suite.">
 		<property name="reports.junit" value="${reports.dir}/junit"/>
 		<mkdir dir="${reports.junit}"/>
 		<!-- Output all System.out and System.err messages -->
@@ -147,7 +147,7 @@
 		</junitreport>
 	</target>
 	
-	<target name="jar" depends="compile-with-annotations, test">
+	<target name="jar" depends="compile-with-annotations, test" description="Generates JAR archives.">
 		<jar jarfile="${dist.dir}/${dist.jar}" basedir="${build}"></jar>
 		<jar jarfile="${dist.dir}/${test.jar}" basedir="${build.tests}"></jar>
 	</target>
@@ -156,7 +156,7 @@
 		<!-- just a metatarget that brings the dependencies together -->
 	</target>
 
-	<target name="clean">
+	<target name="clean" description="Cleans...">
 		<delete dir="${build}" includeemptydirs="true"/>
 		<delete dir="${build.tests}" includeemptydirs="true"/>
 		<delete dir="${build_tmp}" includeemptydirs="true"/>
