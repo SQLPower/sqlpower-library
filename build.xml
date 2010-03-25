@@ -14,7 +14,7 @@
 	<property name="tests" value="src/test/java"/>
 	<property name="tests-resources" value="src/test/resources"/>
 	<property name="reports.dir" value="${dist.dir}/reports"/>
-	
+	<property name="ca.sqlpower.SKIP_DODGY_TESTS" value="false"/>
 	<!--
 		Set the format of the findbugs report to html by default
 	-->
@@ -117,7 +117,8 @@
 		<mkdir dir="${reports.junit}"/>
 		<!-- Output all System.out and System.err messages -->
 	   <junit printsummary="on" showoutput="no" maxmemory="1024m">
-	   	   <sysproperty key="ca.sqlpower.architect.test.dir" value="${build.tests}"/>
+	   		<sysproperty key="ca.sqlpower.architect.test.dir" value="${build.tests}"/>
+			<sysproperty key="ca.sqlpower.SKIP_DODGY_TESTS" value="${ca.sqlpower.SKIP_DODGY_TESTS}" />
 	   		<sysproperty key="java.util.prefs.PreferencesFactory" value="prefs.PreferencesFactory"/>
 	       <classpath>
 	       		<path refid="test.classpath"/>
