@@ -854,7 +854,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 * columns in the pk table. This listener only needs to be attached to the
 	 * pk table.
 	 */
-	protected SPListener fkColumnUpdater = new AbstractPoolingSPListener() {
+	protected SPListener fkColumnUpdater = new AbstractPoolingSPListener(false) {
 		@Override
 		public void propertyChangeImpl(PropertyChangeEvent e) {
 			if (!((SQLObject) e.getSource()).isMagicEnabled()){

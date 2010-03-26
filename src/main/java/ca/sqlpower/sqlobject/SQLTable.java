@@ -1170,6 +1170,11 @@ public class SQLTable extends SQLObject {
 		if (populated) return;
 		
 		try {
+		    runInForeground(new Runnable() {
+                public void run() {
+                    begin("Populating");
+                }
+            });
 			populateColumns();
 			populateIndices();
 			populateRelationships();
@@ -1181,8 +1186,25 @@ public class SQLTable extends SQLObject {
 					firePropertyChange("populated", false, true);
 				}
 			});
-		} catch (SQLObjectException e) {
+			runInForeground(new Runnable() {
+                public void run() {
+                    commit();
+                }
+            });
+		} catch (final SQLObjectException e) {
+		    runInForeground(new Runnable() {
+                public void run() {
+                    rollback(e.getMessage());
+                }
+            });
 			throw e;
+		} catch (final RuntimeException e) {
+		    runInForeground(new Runnable() {
+                public void run() {
+                    rollback(e.getMessage());
+                }
+            });
+		    throw e;
 		}
 	}
 

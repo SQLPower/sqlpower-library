@@ -63,10 +63,12 @@ public abstract class AbstractPoolingSPListener implements SPListener {
 
     public final void transactionEnded(TransactionEvent e) {
     	Integer lastTransactionCount;
-        if (inTransactionMap.get(e.getSource()) == null) {
+        if (errorOnDanglingCommit && inTransactionMap.get(e.getSource()) == null) {
             throw new IllegalStateException("An end transaction for object " + e.getSource() 
                     + " of type " + e.getSource().getClass() + " was called while it was " +
             		"not in a transaction.");
+        } else if (!errorOnDanglingCommit && inTransactionMap.get(e.getSource()) == null) {
+            return;
         } else {
         	lastTransactionCount = inTransactionMap.get(e.getSource());
         	logger.debug("Transaction count on " + this +  " for:" + e.getSource() + ": " + inTransactionMap.get((SPObject) e.getSource()));
@@ -104,6 +106,23 @@ public abstract class AbstractPoolingSPListener implements SPListener {
             transactionEndedImpl(e);
             finalCommitImpl(e);
         }
+    }
+    
+    /**
+     * For almost all pooling listeners we want an error to occur if there
+     * is a commit outside of a transaction. However, in some specific listeners
+     * it is possible to add them to a parent object inside of a transaction
+     * which always results in a dangling commit at the end. For these specific
+     * cases we will disable the error.
+     */
+    private final boolean errorOnDanglingCommit;
+    
+    public AbstractPoolingSPListener() {
+        errorOnDanglingCommit = true;
+    }
+    
+    public AbstractPoolingSPListener(boolean errorOnDanglingCommit) {
+        this.errorOnDanglingCommit = errorOnDanglingCommit;
     }
     
     /**
