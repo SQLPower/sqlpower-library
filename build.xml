@@ -43,6 +43,7 @@
 	
 	<path id="apt.classpath">
 		<pathelement location="${build}"/>
+		<pathelement location="${build.apt}"/>
 		<fileset dir="lib">
 			<include name="*.jar"/>
 		</fileset>
@@ -90,8 +91,6 @@
 				destdir="${build.apt}" 
 				classpathref="apt.classpath" 
 				debug="true"/>
-		
-		<jar jarfile="${dist.dir}/${apt.jar}" basedir="${build.apt}" />
 		
 		<apt srcdir="${src}"
 			destdir="${build_tmp}"
@@ -167,8 +166,9 @@
 	</target>
 	
 	<target name="jar" depends="compile-with-annotations, test" description="Generates JAR archives.">
-		<jar jarfile="${dist.dir}/${dist.jar}" basedir="${build}"></jar>
-		<jar jarfile="${dist.dir}/${test.jar}" basedir="${build.tests}"></jar>
+		<jar jarfile="${dist.dir}/${dist.jar}" basedir="${build}" />
+		<jar jarfile="${dist.dir}/${test.jar}" basedir="${build.tests}" />
+		<jar jarfile="${dist.dir}/${apt.jar}" basedir="${build.apt}" />
 	</target>
 
 	<target name="dist" depends="jar, pmd, pmd-cpd, findbugs, javadoc">
