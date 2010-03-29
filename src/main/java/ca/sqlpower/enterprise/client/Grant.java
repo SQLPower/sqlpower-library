@@ -39,6 +39,8 @@ import ca.sqlpower.object.annotation.Mutator;
  */
 public class Grant extends AbstractSPObject {
 
+	public static List<Class<? extends SPObject>> allowedChildTypes = Collections.emptyList();
+	
     private final String type;
     private final String subject;
     private final boolean createPrivilege;
@@ -134,23 +136,28 @@ public class Grant extends AbstractSPObject {
     public void removeDependency(SPObject dependency) {
         // no-op
     }
-
+    
+    @Accessor
     public boolean isCreatePrivilege() {
         return createPrivilege;
     }
 
+    @Accessor
     public boolean isModifyPrivilege() {
         return modifyPrivilege;
     }
 
+    @Accessor
     public boolean isDeletePrivilege() {
         return deletePrivilege;
     }
 
+    @Accessor
     public boolean isExecutePrivilege() {
         return executePrivilege;
     }
 
+    @Accessor
     public boolean isGrantPrivilege() {
         return grantPrivilege;
     }
@@ -165,10 +172,12 @@ public class Grant extends AbstractSPObject {
 				|| deletePrivilege || grantPrivilege);
     }
 
+    @Accessor
     public String getType() {
         return type;
     }
 
+    @Accessor
     public String getSubject() {
         return subject;
     }

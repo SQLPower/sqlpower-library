@@ -20,6 +20,7 @@
 package ca.sqlpower.enterprise.client;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,6 +33,11 @@ import ca.sqlpower.object.annotation.ConstructorParameter;
 
 public class Group extends AbstractSPObject implements GrantedAuthority {
 
+	@SuppressWarnings("unchecked")
+	public static List<Class<? extends SPObject>> allowedChildTypes = 
+        Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
+        		Arrays.asList(Grant.class, GroupMember.class)));
+	
     private final List<Grant> grants = new ArrayList<Grant>();
     private final List<GroupMember> members = new ArrayList<GroupMember>();
 
@@ -114,8 +120,8 @@ public class Group extends AbstractSPObject implements GrantedAuthority {
         if (this.grants.contains(grant)) {
             int index = this.grants.indexOf(grant);
             wasRemoved = this.grants.remove(grant);
-            grant.setParent(null);
             fireChildRemoved(Grant.class, grant, index);
+            grant.setParent(null);
         }
         return wasRemoved;
     }
@@ -135,8 +141,8 @@ public class Group extends AbstractSPObject implements GrantedAuthority {
         if (this.members.contains(member)) {
             int index = this.members.indexOf(member);
             wasRemoved = this.members.remove(member);
-            member.setParent(null);
             fireChildRemoved(GroupMember.class, member, index);
+            member.setParent(null);
         }
         return wasRemoved;
     }

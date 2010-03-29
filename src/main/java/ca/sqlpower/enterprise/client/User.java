@@ -20,6 +20,7 @@
 package ca.sqlpower.enterprise.client;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -35,6 +36,11 @@ import ca.sqlpower.object.annotation.Mutator;
 
 public class User extends AbstractSPObject implements UserDetails {
 
+	@SuppressWarnings("unchecked")
+    public static List<Class<? extends SPObject>> allowedChildTypes = 
+        Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
+                Arrays.asList(Grant.class)));
+	
     private final List<Grant> grants;
     private String password;
     private GrantedAuthority[] authorities = null;
@@ -197,7 +203,7 @@ public class User extends AbstractSPObject implements UserDetails {
 	
 	@Override
 	public String toString() {
-		return "Wabit User \"" + getName() + "\"";
+		return getName();
 	}
 
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
