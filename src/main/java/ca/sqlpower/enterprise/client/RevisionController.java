@@ -28,7 +28,15 @@ import org.json.JSONException;
 
 import ca.sqlpower.enterprise.TransactionInformation;
 
-public interface ClientSideSession {       
+/**
+ * This interface defines a few methods for controlling
+ * revisions of a server workspace. It is implemented
+ * by ArchitectClientSideSession and the test class
+ * ResourcefulClientSideSession to access information
+ * about the current revision, all revisions, and to
+ * revert the current workspace to another revision.
+ */
+public interface RevisionController {       
 
     /**
      * Reverts the server workspace to the given revision number.
@@ -53,5 +61,7 @@ public interface ClientSideSession {
      */
     public List<TransactionInformation> getTransactionList(long fromRevision, long toRevision)
     throws IOException, URISyntaxException, JSONException, ParseException;    
+    
+    public int getCurrentRevisionNumber();
 
 }

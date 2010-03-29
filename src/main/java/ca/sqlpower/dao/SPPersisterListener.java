@@ -22,8 +22,10 @@ package ca.sqlpower.dao;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyDescriptor;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.log4j.Logger;
@@ -100,6 +102,13 @@ public class SPPersisterListener implements SPListener {
 	 * to their parents
 	 */
 	private List<RemovedObjectEntry> objectsToRemove = new LinkedList<RemovedObjectEntry>();
+	
+	/**
+     * Keeps track of the UUIDs of all removed objects and all their descendants
+     * so that when properties are being persisted, this can be used to check
+     * whether the object the property belongs to has been removed or not.
+     */
+	private Set<String> removedObjectsUUIDs = new HashSet<String>();
 
 	/**
 	 * The depth of the current transaction. When this goes from 1 to 0 we know we have exited the outer-most
@@ -268,7 +277,7 @@ public class SPPersisterListener implements SPListener {
 		if (getRemovedObject(uuid) != null) {
 		    throw new IllegalStateException("Cannot add object of type " 
                     + e.getChildType() + " with UUID " + uuid + " because an object with "
-                    + " the same UUID has already been added");     
+                    + " the same UUID has already been removed");     
 		}
 		PersistedSPObject pso = getPersistedObject(uuid);
 		if (pso != null) {
@@ -285,6 +294,7 @@ public class SPPersisterListener implements SPListener {
 		                    e.getSource().getUUID(),
 		                    e.getChild(),
 		                    e.getIndex()));
+		    removedObjectsUUIDs.addAll(getDescendantUUIDs(e.getSource()));
 		    transactionEnded(TransactionEvent.createEndTransactionEvent(this));
 		}
 	}
@@ -441,6 +451,7 @@ public class SPPersisterListener implements SPListener {
 				throw new SPPersistenceException(null,t);
 			} finally {
 				this.objectsToRemove.clear();
+				this.removedObjectsUUIDs.clear();
 				this.objectsToRemoveRollbackList.clear();
 				this.persistedObjects.clear();
 				this.persistedObjectsRollbackList.clear();
@@ -469,6 +480,7 @@ public class SPPersisterListener implements SPListener {
 			this.persistedObjectsRollbackList.clear();
 			this.persistedPropertiesRollbackList.clear();
 			this.objectsToRemove.clear();
+			this.removedObjectsUUIDs.clear();
 			this.persistedObjects.clear();
 			this.persistedProperties.clear();
 			this.transactionCount = 0;
@@ -490,6 +502,7 @@ public class SPPersisterListener implements SPListener {
 			this.persistedObjectsRollbackList.clear();
 			this.persistedPropertiesRollbackList.clear();
 			this.objectsToRemove.clear();
+			this.removedObjectsUUIDs.clear();
 			this.persistedObjects.clear();
 			this.persistedProperties.clear();
 			this.transactionCount = 0;
@@ -530,6 +543,7 @@ public class SPPersisterListener implements SPListener {
 	private void commitProperties() throws SPPersistenceException {
 		logger.debug("commitProperties()");
 		for (PersistedSPOProperty property : persistedProperties.values()) {
+		    if (removedObjectsUUIDs.contains(property.getUUID())) continue;
 			if (property.isUnconditional()) {
 				target.persistProperty(
 					property.getUUID(),
@@ -621,5 +635,14 @@ public class SPPersisterListener implements SPListener {
 	        }
 	    }
 	    return null;
+	}
+	
+	public Set<String> getDescendantUUIDs(SPObject parent) {
+	    Set<String> uuids = new HashSet<String>();
+	    for (SPObject child : parent.getChildren()) {
+	        uuids.add(child.getUUID());
+	        uuids.addAll(getDescendantUUIDs(child));
+	    }	  
+	    return uuids;
 	}
 }
