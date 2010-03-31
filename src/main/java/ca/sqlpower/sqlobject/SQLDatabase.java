@@ -880,10 +880,17 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		child.removeNotify();
 		int index = tables.indexOf(child);
 		if (index != -1) {
-			 tables.remove(index);
-			 fireChildRemoved(SQLTable.class, child, index);
-			 child.setParent(null);
-			 return true;
+		    try {
+		        begin("Removing a table and setting its parent to null.");
+		        tables.remove(index);
+		        fireChildRemoved(SQLTable.class, child, index);
+		        child.setParent(null);
+		        commit();
+		        return true;
+		    } catch (RuntimeException e) {
+		        rollback(e.getMessage());
+		        throw e;
+		    }
 		}
 		return false;
 	}
