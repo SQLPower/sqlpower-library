@@ -129,13 +129,24 @@ public class GenericNewValueMaker implements NewValueMaker {
         } else if (valueType == File.class) {
             newVal = new File("temp" + System.currentTimeMillis());
         } else if (valueType == JDBCDataSource.class || valueType == SPDataSource.class) {
-            newVal = new JDBCDataSource(this.pl);
-            String name = "Testing data source";
-            while (pl.getDataSource(name) != null) {
-            	name = (String) makeNewValue(String.class, name, "");
+            String name = "regression_test";
+            if (oldVal != null && ((SPDataSource) oldVal).getName().equals(name)) {
+                name = "Testing data source";
+                if (pl.getDataSource(name) != null) {
+                    newVal = pl.getDataSource(name);
+                } else {
+                    newVal = new JDBCDataSource(this.pl);
+                    ((SPDataSource)newVal).setName(name);
+                    this.pl.addDataSource((JDBCDataSource)newVal);
+                }
+            } else {
+                newVal = pl.getDataSource(name);
+                if (newVal == null) {
+                    newVal = new JDBCDataSource(this.pl);
+                    ((SPDataSource)newVal).setName(name);
+                    this.pl.addDataSource((JDBCDataSource)newVal);
+                }
             }
-            ((SPDataSource)newVal).setName(name);
-            this.pl.addDataSource((JDBCDataSource)newVal);
         } else if (valueType == Font.class) {
             newVal = Font.decode("Dialog");
             if (newVal.equals(oldVal)) {
