@@ -940,7 +940,16 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
     	assertEquals(newChild, spObject.getChildren(childClassType).get(0));
     	
     	newChild.removeSPListener(listener);
-    	return newChild;
+    	
+    	//Find the actual child under the object under test as the persister will make a new,
+    	//different object to add not the newChild object. This lets the objects compare
+    	//equal by reference.
+    	for (SPObject existingChild : spObject.getChildren(childClassType)) {
+    	    if (existingChild.getUUID().equals(newChild.getUUID())) {
+    	        return existingChild;
+    	    }
+    	}
+    	return null;
     }
     
     /**
