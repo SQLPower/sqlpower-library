@@ -250,6 +250,11 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 *            The {@link ClassDeclaration} of the class to visit.
 	 */
 	public void visitClassDeclaration(ClassDeclaration d) {
+	    for (TypeDeclaration nestedType : typeDecl.getNestedTypes()) {
+	        if (nestedType.getQualifiedName().equals(d.getQualifiedName())) {
+	            return;
+	        }
+	    }
 		if (d.getAnnotation(Persistable.class) != null) {
 			try {
 				String qualifiedName = 
