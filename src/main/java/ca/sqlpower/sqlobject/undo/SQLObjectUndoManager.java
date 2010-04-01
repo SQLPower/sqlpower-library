@@ -34,8 +34,10 @@ import javax.swing.undo.UndoableEdit;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.AbstractSPListener;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLObjectException;
@@ -98,6 +100,26 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
             }
         }
 
+        /**
+         * This listener needs to be attached to all of the ancestors of the
+         * root node this outer class listener listens to. This listener will
+         * listen for compound event start and finish points and update the
+         * transaction count. This ensures if an ancestor is in a transaction
+         * and updates the nodes we are interested in undoing the events are
+         * collected correctly.
+         */
+        private final SPListener ancestorListener = new AbstractSPListener() {
+            @Override
+            public void transactionStarted(TransactionEvent e) {
+                compoundGroupStart(e.getMessage());
+            }
+            
+            @Override
+            public void transactionEnded(TransactionEvent e) {
+                compoundGroupEnd();
+            }
+        };
+
         private CompoundEdit ce;
 
         private int compoundEditStackCount;
@@ -107,17 +129,46 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
          */
         protected boolean addListenerToChildren = true;
 
+        /**
+         * {@link #attachToObject(SPObject)} must be called after this
+         * constructor has been called to ensure the ancestors are correctly
+         * listened to.
+         */
         public SQLObjectUndoableEventAdapter() {
 
             ce = null;
             compoundEditStackCount = 0;
         }
-        
+
+        /**
+         * {@link #attachToObject(SPObject)} must be called after this
+         * constructor has been called to ensure the ancestors are correctly
+         * listened to.
+         */
         public SQLObjectUndoableEventAdapter(boolean addListenerToChildren) {
             this();
             this.addListenerToChildren = addListenerToChildren;
         }
 
+        /**
+         * Attaches the listener to listen for transactions in the ancestor.
+         * 
+         * @param root
+         *            The ancestors of this root will be listened to along with
+         *            the root itself. This ensures the transactions will be
+         *            taken into account correctly. In order for the ancestors
+         *            to be listened to correctly this object must be connected
+         *            to the SPObject tree already. The root is the object this
+         *            listener was just added to. Because the undo manager's lives
+         *            for the life of the object tree this listener does not need
+         *            to be removed to ensure memory cleanup.
+         */
+        public void attachToObject(SPObject root) {
+            for (SPObject ancestor : SQLPowerUtils.getAncestorList(root)) {
+                ancestor.addSPListener(ancestorListener);
+            }
+        }
+        
         /**
          * You should not undo when in a compound edit
          * 
@@ -180,7 +231,9 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
 
             // if we are not in a compound edit
             if (compoundEditStackCount == 0) {
-                SQLObjectUndoManager.this.addEdit(undoEdit);
+                if (!loading) {
+                    SQLObjectUndoManager.this.addEdit(undoEdit);
+                }
             } else {
                 ce.addEdit(undoEdit);
             }
@@ -211,6 +264,10 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
         public void propertyChanged(PropertyChangeEvent e) {
             if (SQLObjectUndoManager.this.isUndoOrRedoing())
                 return;
+            if (!loading && e.getPropertyName().equals("UUID")) {
+                throw new IllegalStateException("Cannot undo UUID changes. " +
+                		"This event can only occur during loading. Event " + e);
+            }
             if (e.getSource() instanceof SQLDatabase && 
             		e.getPropertyName().equals("shortDisplayName")) {
                 // this is not undoable at this time.
@@ -229,6 +286,10 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
             if (SQLObjectUndoManager.this.isUndoOrRedoing()) {
                 return;
             }
+            if (!loading && evt.getPropertyName().equals("UUID")) {
+                throw new IllegalStateException("Cannot undo UUID changes. " +
+                    "This event can only occur during loading. Event " + evt);
+            }
             PropertyChangeEdit edit = new PropertyChangeEdit(evt);
             addEdit(edit);
         }
@@ -242,7 +303,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
             }
             if (ce != null) {
                 ce.end();
-                if (ce.canUndo()) {
+                if (ce.canUndo() && !loading) {
                     if (logger.isDebugEnabled())
                         logger.debug("Adding compound edit " + ce + " to undo manager");
                     SQLObjectUndoManager.this.addEdit(ce);
@@ -276,6 +337,15 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
 
     private boolean redoing;
 
+    /**
+     * The undo manager behaves slightly differently when a project is being
+     * loaded. Edits will not be created while the undo manager is loading a
+     * project because they do not represent the true undos of the project.
+     * Additionally, UUID changes will be allowed, which are not allowed at
+     * other times.
+     */
+    private boolean loading = false;
+
     private List<ChangeListener> changeListeners = new ArrayList<ChangeListener>();
 
     public SQLObjectUndoManager(SQLObject sqlObjectRoot) throws SQLObjectException {
@@ -284,6 +354,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
 
     private final void init(SQLObject sqlObjectRoot) throws SQLObjectException {
         SQLPowerUtils.listenToHierarchy(sqlObjectRoot, eventAdapter);
+        eventAdapter.attachToObject(sqlObjectRoot);
     }
 
     /**
@@ -417,6 +488,10 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
         }
 
         return sb.toString();
+    }
+    
+    public void setLoading(boolean loading) {
+        this.loading = loading;
     }
 
 }
