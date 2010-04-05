@@ -20,6 +20,7 @@
 package ca.sqlpower.testutil;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Image;
 import java.awt.Point;
@@ -322,6 +323,12 @@ public class GenericNewValueMaker implements NewValueMaker {
                 rgb = rgb.brighter();
             }
             newVal = rgb;
+        } else if (valueType == Dimension.class) {
+            Dimension d = new Dimension(12, 34);
+            if (d.equals(oldVal)) {
+                d.width++;
+            }
+            newVal = d;
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +

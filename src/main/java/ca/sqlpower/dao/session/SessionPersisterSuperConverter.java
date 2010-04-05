@@ -20,6 +20,7 @@
 package ca.sqlpower.dao.session;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.Point2D;
@@ -45,7 +46,9 @@ public class SessionPersisterSuperConverter {
 	
 	private final Point2DConverter point2DConverter = new Point2DConverter();
 	
-	private final RectangleConverter rectangleConverter = new RectangleConverter();
+    private final RectangleConverter rectangleConverter = new RectangleConverter();
+
+    private final DimensionConverter dimensionConverter = new DimensionConverter();
 	
 	private final ColorConverter colorConverter = new ColorConverter();
 	
@@ -121,9 +124,13 @@ public class SessionPersisterSuperConverter {
 		    Point2D p = (Point2D) convertFrom;
 		    return point2DConverter.convertToSimpleType(p);
 
-		} else if (convertFrom instanceof Rectangle) {
-		    Rectangle r = (Rectangle) convertFrom;
-		    return rectangleConverter.convertToSimpleType(r);
+        } else if (convertFrom instanceof Rectangle) {
+            Rectangle r = (Rectangle) convertFrom;
+            return rectangleConverter.convertToSimpleType(r);
+
+        } else if (convertFrom instanceof Dimension) {
+            Dimension d = (Dimension) convertFrom;
+            return dimensionConverter.convertToSimpleType(d);
 
 		} else if (convertFrom instanceof Color) {
 		    Color c = (Color) convertFrom;
@@ -192,6 +199,9 @@ public class SessionPersisterSuperConverter {
 
         } else if (Color.class.isAssignableFrom(type)) {
             return colorConverter.convertToComplexType((String) o);
+            
+        } else if (Dimension.class.isAssignableFrom(type)) {
+            return dimensionConverter.convertToComplexType((String) o);
 		    
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + o + " of type " + 
