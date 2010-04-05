@@ -311,6 +311,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     	pkCardinality = ONE;
 		fkCardinality = ZERO | ONE | MANY;
 		fkColumnManager = new RelationshipManager();
+		setName("New SQL Relationship");
+		setPopulated(true);
 		foreignKey = new SQLImportedKey(this);
 	}
     
@@ -1406,6 +1408,23 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 		private final SQLRelationship relationship;
 
+        /**
+         * Listens for changes to the properties of the relationship this imported key
+         * is attached to. This keeps the properties of the two relationship ends the
+         * same where necessary.
+         */
+		private final SPListener relationshipPropertyListener = new AbstractSPListener() {
+		    
+		    @Override
+		    public void propertyChanged(PropertyChangeEvent evt) {
+		        if (evt.getPropertyName().equals("name")) {
+		            setName((String) evt.getNewValue());
+		        } else if (evt.getPropertyName().equals("populated")) {
+		            setPopulated((Boolean) evt.getNewValue());
+		        }
+		    }
+		};
+
 		/**
 		 * This listener is for when an fk-column is moved from one index to another.
          * A reference is preserved, so it is not an issue for the person moving the column.
@@ -1469,20 +1488,14 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			super();
 			this.relationship = relationship;
 			relationship.setForeignKey(this);
+			setName(relationship.getName());
+			setPopulated(relationship.isPopulated());
+			relationship.addSPListener(relationshipPropertyListener);
 		}
 		
 		@Override
 		public boolean allowsChildren() {
 			return false;
-		}
-		
-		@Override
-		public String getName() {
-			if (relationship != null) {
-				return relationship.getName();
-			} else {
-				return super.getName();
-			}
 		}
 		
 		@Override
@@ -1557,11 +1570,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		@Override
 		public String toString() {
 			return getShortDisplayName();
-		}
-		
-		@Override
-		public boolean isPopulated() {
-			return relationship.isPopulated();
 		}
 		
 		@Override

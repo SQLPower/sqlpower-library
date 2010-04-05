@@ -384,7 +384,8 @@ public class SPPersisterListener implements SPListener {
             if (!valuesMatch) {
                 try {
                     throw new RuntimeException("Multiple property changes do not follow after each other properly. " +
-                    		"Old " + oldBasicType + ", new " + property.getNewValue());
+                    		"Property " + property.getPropertyName() + ", on object " + source + " of type " + 
+                    		source.getClass() + ", Old " + oldBasicType + ", new " + property.getNewValue());
                 } finally {
                     this.rollback();
                 }
