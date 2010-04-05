@@ -189,6 +189,7 @@ public class SQLIndex extends SQLObject {
         		AscendDescend ad) {
             setName(name);
 
+            setPopulated(true);
             ascendingOrDescending = ad;
         }
 
@@ -433,6 +434,7 @@ public class SQLIndex extends SQLObject {
 
     public SQLIndex() {
         super();
+        setPopulated(true);
         removeColumnListener = new AbstractSPListener() {
 
             public void childRemoved(SPChildEvent e) {

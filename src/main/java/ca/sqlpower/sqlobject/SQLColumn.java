@@ -162,6 +162,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		autoIncrement = defaultAutoInc;
 		setRemarks(defaultRemarks);
 		setDefaultValue(defaultForDefaultValue);
+		setPopulated(true);
 	}
 
 	/**
@@ -203,6 +204,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
             setParent(parentTable);
         }
 		this.setName(colName);
+		setPopulated(true);
 		
 		this.sqlType = new JDBCSQLType(nativeType, BasicSQLType.convertToBasicSQLType(dataType));
 		sqlType.setType(dataType);
@@ -227,6 +229,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 */
 	public SQLColumn(SQLColumn col) {
 		super();
+		setPopulated(true);
 		sqlType = new JDBCSQLType("", BasicSQLType.convertToBasicSQLType(defaultType));
 		copyProperties(this, col);
 		logger.debug("SQLColumn(SQLColumn col ["+col+" "+col.hashCode()+"]) set ref count to 1");

@@ -1609,6 +1609,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		@Constructor
 		public ColumnMapping() {
 			setName("Column Mapping");
+			setPopulated(true);
 		}
 
 		/**

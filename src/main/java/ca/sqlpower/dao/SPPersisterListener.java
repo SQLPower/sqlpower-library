@@ -147,6 +147,7 @@ public class SPPersisterListener implements SPListener {
 		if (wouldEcho()) return;
 		logger.debug("Child added: " + e);
 		persistObject(e.getChild(), e.getIndex());
+		removedObjectsUUIDs.removeAll(getDescendantUUIDs(e.getChild()));
 	}
 
 	/**
@@ -294,7 +295,7 @@ public class SPPersisterListener implements SPListener {
 		                    e.getSource().getUUID(),
 		                    e.getChild(),
 		                    e.getIndex()));
-		    removedObjectsUUIDs.addAll(getDescendantUUIDs(e.getSource()));
+		    removedObjectsUUIDs.addAll(getDescendantUUIDs(e.getChild()));
 		    transactionEnded(TransactionEvent.createEndTransactionEvent(this));
 		}
 	}
@@ -382,7 +383,8 @@ public class SPPersisterListener implements SPListener {
             }
             if (!valuesMatch) {
                 try {
-                    throw new RuntimeException("Multiple property changes do not follow after each other properly");
+                    throw new RuntimeException("Multiple property changes do not follow after each other properly. " +
+                    		"Old " + oldBasicType + ", new " + property.getNewValue());
                 } finally {
                     this.rollback();
                 }
@@ -636,11 +638,15 @@ public class SPPersisterListener implements SPListener {
 	    }
 	    return null;
 	}
-	
+
+    /**
+     * Returns a list of UUIDs that contains this object's UUID and all of the
+     * children's uuid.
+     */
 	public Set<String> getDescendantUUIDs(SPObject parent) {
 	    Set<String> uuids = new HashSet<String>();
+	    uuids.add(parent.getUUID());
 	    for (SPObject child : parent.getChildren()) {
-	        uuids.add(child.getUUID());
 	        uuids.addAll(getDescendantUUIDs(child));
 	    }	  
 	    return uuids;

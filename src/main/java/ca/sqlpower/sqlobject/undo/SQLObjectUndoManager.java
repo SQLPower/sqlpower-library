@@ -98,6 +98,44 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
 
                 return sb.toString();
             }
+            
+            @Override
+            public void undo() throws CannotUndoException {
+                List<SPObject> ancestorList = SQLPowerUtils.getAncestorList(sqlObjectRoot);
+                SPObject absoluteRoot;
+                if (ancestorList.isEmpty()) {
+                    absoluteRoot = sqlObjectRoot;
+                } else {
+                    absoluteRoot = ancestorList.get(0);
+                }
+                try {
+                    absoluteRoot.begin("Undoing compound edit " + getUndoPresentationName());
+                    super.undo();
+                    absoluteRoot.commit();
+                } catch (RuntimeException e) {
+                    absoluteRoot.rollback(e.getMessage());
+                    throw e;
+                }
+            }
+            
+            @Override
+            public void redo() throws CannotRedoException {
+                List<SPObject> ancestorList = SQLPowerUtils.getAncestorList(sqlObjectRoot);
+                SPObject absoluteRoot;
+                if (ancestorList.isEmpty()) {
+                    absoluteRoot = sqlObjectRoot;
+                } else {
+                    absoluteRoot = ancestorList.get(0);
+                }
+                try {
+                    absoluteRoot.begin("Redoing compound edit " + getRedoPresentationName());
+                    super.redo();
+                    absoluteRoot.commit();
+                } catch (RuntimeException e) {
+                    absoluteRoot.rollback(e.getMessage());
+                    throw e;
+                }
+            }
         }
 
         /**
@@ -331,7 +369,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
         }
     }
 
-    protected SQLObjectUndoableEventAdapter eventAdapter = new SQLObjectUndoableEventAdapter();
+    protected final SQLObjectUndoableEventAdapter eventAdapter = new SQLObjectUndoableEventAdapter();
 
     private boolean undoing;
 
@@ -348,7 +386,15 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
 
     private List<ChangeListener> changeListeners = new ArrayList<ChangeListener>();
 
+    /**
+     * The root object that this undo manager is listening to. More objects
+     * may be listened to by undo managers that extend this class so this
+     * may not be the only 'root'.
+     */
+    private final SQLObject sqlObjectRoot;
+
     public SQLObjectUndoManager(SQLObject sqlObjectRoot) throws SQLObjectException {
+        this.sqlObjectRoot = sqlObjectRoot;
         init(sqlObjectRoot);
     }
 

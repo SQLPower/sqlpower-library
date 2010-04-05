@@ -809,12 +809,20 @@ public abstract class SPSessionPersister implements SPPersister {
 					}
 				};
 				parent.addSPListener(removeChildOnAddListener);
+				
 				// FIXME Terrible hack, see bug 2326
+				Class<? extends SPObject> parentAllowedChildType;
+		        try {
+		            parentAllowedChildType = PersisterUtils.getParentAllowedChildType(spo.getClass().getName(), 
+		                    parent.getClass().getName());
+		        } catch (Exception e) {
+		            throw new RuntimeException(e);
+		        }
 				List<? extends SPObject> siblings;
 				if (parent instanceof SQLObject) {
-					siblings = ((SQLObject) parent).getChildrenWithoutPopulating(spo.getClass());
+					siblings = ((SQLObject) parent).getChildrenWithoutPopulating(parentAllowedChildType);
 				} else {
-					siblings = parent.getChildren(spo.getClass());
+					siblings = parent.getChildren(parentAllowedChildType);
 				}
 				
 				//XXX This appears to shuffle columns up which will cause columns to be rearranged
