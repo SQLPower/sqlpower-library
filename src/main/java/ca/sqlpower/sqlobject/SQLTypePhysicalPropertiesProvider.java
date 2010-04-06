@@ -32,6 +32,9 @@ import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
  * Provides a set of physical properties for a SQL column type.
  */
 public interface SQLTypePhysicalPropertiesProvider extends SPObject {
+	
+	public static final String GENERIC_PLATFORM = "GENERIC";
+	
 	/**
 	 * A enumeration of platform-independent high-level basic SQL data types
 	 */
@@ -121,13 +124,67 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	}
 
 	/**
+	 * Primarily used to specify how a type's uses certain properties, in
+	 * particular, scale and precisions, as not all types use them, and some may
+	 * want to set them as constant values.
+	 */
+	public enum PropertyType {
+		/**
+		 * This type uses a constant value for this property and it cannot be
+		 * changed by client code
+		 */
+		CONSTANT,
+
+		/**
+		 * The client using this type will set the value for this field
+		 */
+		VARIABLE,
+
+		/**
+		 * This type does not use this field
+		 */
+		NOT_APPLICABLE
+	}
+
+	/**
+	 * Indicates how this type uses the precision property.
+	 * {@link RowSetMetaData} {@link #setPrecision(int)} defines it as 'the
+	 * total number of decimal digits'.
+	 * 
+	 * @return <ul>
+	 *         <li>If it returns {@value PropertyType#CONSTANT}, then the value
+	 *         returned by {@link #getPrecision()} is constant and should not be
+	 *         changed. {@link #setPrecision(int)} will have no effect.</li>
+	 *         <li>If it returns {@link PropertyType#VARIABLE}, then the value
+	 *         is variable, so using {@link #setPrecision(int)} can change its
+	 *         value</li>
+	 *         <li>If it returns {@link PropertyType#NOT_APPLICABLE}, then the
+	 *         precision is not used, and its value has no meaning for this
+	 *         type, and anything that {@link #getPrecision()} returns should be
+	 *         ignored.</li>
+	 *         </ul>
+	 */
+	public PropertyType getPrecisionType(String platform);
+	
+	/**
+	 * Sets how this . {@link RowSetMetaData}
+	 * {@link #setPrecision(int)} defines it as 'the total number of decimal
+	 * digits'. This also determines whether the value returned by
+	 * {@link #getPrecision()} means anything.
+	 * 
+	 * @param usingPrecision
+	 *            Set to true if this type uses precision. False if it does not.
+	 */
+	public void setPrecisionType(String platform, PropertyType precisionType);
+	
+	/**
 	 * Get the precision physical property for this type. {@link RowSetMetaData}
 	 * {@link #setPrecision(int)} defines it as 'the total number of decimal
 	 * digits'.
 	 * 
 	 * @return The precision physical property for this type.
 	 */
-	public int getPrecision();
+	public int getPrecision(String platform);
 
 	/**
 	 * Sets the precision physical property for this type.
@@ -137,8 +194,39 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * @param precision
 	 *            The new precision value
 	 */
-	public void setPrecision(int precision);
+	public void setPrecision(String platform, int precision);
 
+	/**
+	 * Indicates how this type uses the scale property. {@link RowSetMetaData}
+	 * {@link #setScale(int)} defines it as 'the number of digits to right of
+	 * decimal point'.
+	 * 
+	 * @return <ul>
+	 *         <li>If it returns {@value PropertyType#CONSTANT}, then the value
+	 *         returned by {@link #getScale()} is constant and should not be
+	 *         changed. {@link #setScale(int)} will have no effect.</li>
+	 *         <li>If it returns {@link PropertyType#VARIABLE}, then the value
+	 *         is variable, so using {@link #setScale(int)} can change its
+	 *         value</li>
+	 *         <li>If it returns {@link PropertyType#NOT_APPLICABLE}, then the
+	 *         precision is not used, and its value has no meaning for this
+	 *         type, and anything that {@link #getScale()} returns should be
+	 *         ignored.</li>
+	 *         </ul>
+	 */
+	public PropertyType getScaleType(String platform);
+	
+	/**
+	 * Sets how this . {@link RowSetMetaData}
+	 * {@link #setScale(int)} defines it as 'the number of digits to right of
+	 * decimal point'. This also determines whether the value returned by
+	 * {@link #getScale()} means anything.
+	 * 
+	 * @param usingPrecision
+	 *            Set to true if this type uses precision. False if it does not.
+	 */
+	public void setScaleType(String platform, PropertyType scaleType);
+	
 	/**
 	 * Get the precision physical property for this type. {@link RowSetMetaData}
 	 * {@link #setScale(int)} defines it as 'the number of digits to right of
@@ -146,7 +234,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * 
 	 * @return The scale physical property for this type.
 	 */
-	public int getScale();
+	public int getScale(String platform);
 
 	/**
 	 * Sets the scale physical property for this type. {@link RowSetMetaData}
@@ -156,14 +244,14 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * @param precision
 	 *            The new scale value
 	 */
-	public void setScale(int scale);
+	public void setScale(String platform, int scale);
 
 	/**
 	 * Returns the default value of this type
 	 * 
 	 * @return The default type as a String
 	 */
-	public String getDefaultValue();
+	public String getDefaultValue(String platform);
 
 	/**
 	 * Set the default value of this type
@@ -171,7 +259,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * @param defaultValue
 	 *            The new default value as a String
 	 */
-	public void setDefaultValue(String defaultValue);
+	public void setDefaultValue(String platform, String defaultValue);
 
 	/**
 	 * Gets the check constraint value of this type. The check constraint is
@@ -180,7 +268,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * 
 	 * @return The check constraint as a String
 	 */
-	public String getCheckConstraint();
+	public String getCheckConstraint(String platform);
 
 	/**
 	 * Sets the check constraint value of this type. The check constraint is
@@ -189,7 +277,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * 
 	 * @param checkConstraint
 	 */
-	public void setCheckConstraint(String checkConstraint);
+	public void setCheckConstraint(String platform, String checkConstraint);
 
 	/**
 	 * Gets the List ('enumeration') of allowed values of this type. The
@@ -198,7 +286,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * 
 	 * @return The enumeration constraint as a String
 	 */
-	public List<String> getEnumeration();
+	public List<String> getEnumeration(String platform);
 
 	/**
 	 * Gets the List ('enumeration') of allowed values of this type. The
@@ -207,7 +295,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * 
 	 * @return The enumeration constraint as a String
 	 */
-	public void setEnumeration(List<String> enumeration);
+	public void setEnumeration(String platform, List<String> enumeration);
 
 	/**
 	 * Sets the {@link SQLTypeConstraint} for this type.
@@ -215,14 +303,14 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * @param constraint
 	 *            The new {@link SQLTypeConstraint} value for this type.
 	 */
-	public void setConstraint(SQLTypeConstraint constraint);
+	public void setConstraintType(String platform, SQLTypeConstraint constraint);
 
 	/**
 	 * Gets the {@link SQLTypeConstraint} value for this type.
 	 * 
 	 * @return the {@link SQLTypeConstraint} value for this type
 	 */
-	public SQLTypeConstraint getConstraint();
+	public SQLTypeConstraint getConstraintType(String platform);
 
 	/**
 	 * Gets the JDBC type of this SQLType as defined in {@link Types}
@@ -230,7 +318,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * @return An int that corresponds to one of the type constants in
 	 *         {@link Types}.
 	 */
-	public int getType();
+	public int getType(String platform);
 
 	/**
 	 * Sets the JDBC type of this SQLType as defined in {@link Types}

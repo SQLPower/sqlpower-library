@@ -51,7 +51,7 @@ public class JDBCSQLType extends SQLObject implements SQLTypePhysicalPropertiesP
      * An unmodifiable {@link List} of allowed child types
      */
     public static List<Class<? extends SPObject>> allowedChildTypes = 
-        Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(Arrays.asList(SQLTypePhysicalProperties.class)));
+        Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(Arrays.asList(SQLTypePhysicalProperties.class)));    
     
     public JDBCSQLType() {
 	}
@@ -71,6 +71,7 @@ public class JDBCSQLType extends SQLObject implements SQLTypePhysicalPropertiesP
         setName(name);
         this.setBasicType(basicType);
         physicalProperties = new SQLTypePhysicalProperties("default");
+        physicalProperties.setParent(this);
     }
     
     public SQLTypePhysicalProperties getPhysicalProperties(String dsTypeName) {
@@ -127,59 +128,75 @@ public class JDBCSQLType extends SQLObject implements SQLTypePhysicalPropertiesP
         return basicType;
     }
 
-    public String getCheckConstraint() {
+    public String getCheckConstraint(String platform) {
         return physicalProperties.getCheckConstraint();
     }
 
-    public SQLTypeConstraint getConstraint() {
-        return physicalProperties.getConstraint();
+    public SQLTypeConstraint getConstraintType(String platform) {
+        return physicalProperties.getConstraintType();
     }
 
-    public String getDefaultValue() {
+    public String getDefaultValue(String platform) {
         return physicalProperties.getDefaultValue();
     }
 
-    public List<String> getEnumeration() {
+    public List<String> getEnumeration(String platform) {
         return physicalProperties.getEnumeration();
     }
 
-    public int getPrecision() {
+    public int getPrecision(String platform) {
         return physicalProperties.getPrecision();
     }
 
-    public int getScale() {
+    public int getScale(String platform) {
         return physicalProperties.getScale();
     }
 
-    public void setCheckConstraint(String checkConstraint) {
+    public void setCheckConstraint(String platform, String checkConstraint) {
         physicalProperties.setCheckConstraint(checkConstraint);
     }
 
-    public void setConstraint(SQLTypeConstraint constraint) {
-        physicalProperties.setConstraint(constraint);
+    public void setConstraintType(String platform, SQLTypeConstraint constraint) {
+        physicalProperties.setConstraintType(constraint);
     }
 
-    public void setDefaultValue(String defaultValue) {
+    public void setDefaultValue(String platform, String defaultValue) {
         physicalProperties.setDefaultValue(defaultValue);
     }
 
-    public void setEnumeration(List<String> enumeration) {
+    public void setEnumeration(String platform, List<String> enumeration) {
         physicalProperties.setEnumeration(enumeration);
     }
 
-    public void setPrecision(int precision) {
+    public void setPrecision(String platform, int precision) {
         physicalProperties.setPrecision(precision);
     }
 
-    public void setScale(int scale) {
+    public void setScale(String platform, int scale) {
         physicalProperties.setScale(scale);
     }
 
-	public int getType() {
+	public int getType(String platform) {
 		return type;
 	}
 
 	public void setType(int type) {
 		this.type = type;
+	}
+
+	public PropertyType getPrecisionType(String platform) {
+		return PropertyType.VARIABLE;
+	}
+
+	public PropertyType getScaleType(String platform) {
+		return PropertyType.VARIABLE;
+	}
+
+	public void setPrecisionType(String platform, PropertyType precisionType) {
+		// Base type does not support changing Precision Type
+	}
+
+	public void setScaleType(String platform, PropertyType precisionType) {
+		// Base type does not support changing Precision Type
 	}
 }

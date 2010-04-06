@@ -26,8 +26,7 @@ import javax.sql.RowSetMetaData;
 
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.JDBCDataSourceType;
-import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.sqlobject.SQLObjectException;
+import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
 
 /**
  * A container class that stores several specific database platform-dependent
@@ -40,10 +39,10 @@ public class SQLTypePhysicalProperties extends SQLObject {
      * enumeration constraints, but not both
      */
     public enum SQLTypeConstraint {
-        /**
-         * This SQLType has neither check nor enumration constraints on this
-         * platform
-         */
+		/**
+		 * This SQLType has neither check nor enumeration constraints on this
+		 * platform
+		 */
         NONE,
 
         /**
@@ -81,7 +80,7 @@ public class SQLTypePhysicalProperties extends SQLObject {
     /**
      * Indicates which constraint type applies to this physical type.
      */
-    private SQLTypeConstraint constraint;
+    private SQLTypeConstraint constraintType;
     
     /**
      * Check constraint on this SQLType. Note that you cannot use both this AND
@@ -103,7 +102,11 @@ public class SQLTypePhysicalProperties extends SQLObject {
      * {@link JDBCDataSourceType#getName()} on the {@link JDBCDataSourceType}
      * representing the physical platform of this type.
      */
-    private String platform;
+    private String platform = "";
+    
+    private PropertyType precisionType;
+    
+    private PropertyType scaleType;
     
     public SQLTypePhysicalProperties() {
 	}
@@ -152,12 +155,12 @@ public class SQLTypePhysicalProperties extends SQLObject {
         this.enumeration = enumeration;
     }
 
-    public void setConstraint(SQLTypeConstraint constraint) {
-        this.constraint = constraint;
+    public void setConstraintType(SQLTypeConstraint constraint) {
+        this.constraintType = constraint;
     }
 
-    public SQLTypeConstraint getConstraint() {
-        return constraint;
+    public SQLTypeConstraint getConstraintType() {
+        return constraintType;
     }
 
     @Override
@@ -205,5 +208,21 @@ public class SQLTypePhysicalProperties extends SQLObject {
     public String getPlatform() {
         return platform;
     }
+    
+    public PropertyType getPrecisionType() {
+        return precisionType;
+    }
+
+    public PropertyType getScaleType() {
+        return scaleType;
+    }
+    
+    public void setPrecisionType(PropertyType precisionType) {
+		this.precisionType = precisionType;
+	}
+    
+    public void setScaleType(PropertyType scaleType) {
+		this.scaleType = scaleType;
+	}
 }
 
