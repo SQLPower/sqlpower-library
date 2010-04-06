@@ -647,7 +647,15 @@ public class SPPersisterListener implements SPListener {
 	public Set<String> getDescendantUUIDs(SPObject parent) {
 	    Set<String> uuids = new HashSet<String>();
 	    uuids.add(parent.getUUID());
-	    for (SPObject child : parent.getChildren()) {
+	    List<? extends SPObject> children;
+	    //XXX We need a way to get the children of SQLObjects for persistence
+	    //without causing them to populate.
+	    if (parent instanceof SQLObject) {
+	        children = ((SQLObject) parent).getChildrenWithoutPopulating();
+	    } else {
+	        children = parent.getChildren();
+	    }
+	    for (SPObject child : children) {
 	        uuids.addAll(getDescendantUUIDs(child));
 	    }	  
 	    return uuids;
