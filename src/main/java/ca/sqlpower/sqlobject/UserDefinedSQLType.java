@@ -214,29 +214,37 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     }
 
     public int getPrecision(String platform) {
-        int precision = 0;
+        Integer precision = null;
         SQLTypePhysicalProperties properties = physicalProperties.get(platform);
         
         if (properties != null) {
             precision = properties.getPrecision();
+            if (precision == null && upstreamType != null) {
+            	precision = upstreamType.getPrecision(platform);
+            }
         } else if (upstreamType != null) {
             precision = upstreamType.getPrecision(platform);
         }
         
-        return precision;
+        // If precision is null and all upstream types also return null, then just return 0 to prevent an NPE
+        return precision == null ? 0 : precision;
     }
 
     public int getScale(String platform) {
-        int scale = 0;
+        Integer scale = null;
         SQLTypePhysicalProperties properties = physicalProperties.get(platform);
         
         if (properties != null) {
             scale = properties.getScale();
+            if (scale == null && upstreamType != null) {
+                scale = upstreamType.getScale(platform);
+            }
         } else if (upstreamType != null) {
             scale = upstreamType.getScale(platform);
         }
         
-        return scale;
+        // If scale is null and all upstream types also return null, then just return 0 to prevent an NPE
+        return scale == null ? 0 : scale;
     }
 
     public int getType(String platform) {

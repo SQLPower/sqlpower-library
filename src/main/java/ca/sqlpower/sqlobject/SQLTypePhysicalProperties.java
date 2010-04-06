@@ -61,14 +61,14 @@ public class SQLTypePhysicalProperties extends SQLObject {
      * {@link #setPrecision(int)} defines it as 'the total number of decimal
      * digits'.
      */
-    private int precision;
+    private Integer precision;
     
     /**
      * The physical scale property for this type. {@link RowSetMetaData}
      * {@link #setScale(int)} defines it as 'the number of digits to right of
      * decimal point'.
      */
-    private int scale;
+    private Integer scale;
     
     /**
      * A String representation of the Default value for the physical type. Note
@@ -115,7 +115,14 @@ public class SQLTypePhysicalProperties extends SQLObject {
         this.platform = platformName;
     }
     
-    public int getPrecision() {
+	/**
+	 * Returns the precision property as an Integer.
+	 * 
+	 * @return An Integer instance representing the precision property value. If it
+	 *         returns null, then the precision has not been set for this
+	 *         {@link SQLTypePhysicalProperties} instance.
+	 */
+    public Integer getPrecision() {
         return precision;
     }
 
@@ -123,7 +130,14 @@ public class SQLTypePhysicalProperties extends SQLObject {
         this.precision = precision;
     }
 
-    public int getScale() {
+	/**
+	 * Returns the scale property as an Integer.
+	 * 
+	 * @return An Integer instance representing the scale property value. If it
+	 *         returns null, then the scale has not been set for this
+	 *         {@link SQLTypePhysicalProperties} instance.
+	 */
+    public Integer getScale() {
         return scale;
     }
 
