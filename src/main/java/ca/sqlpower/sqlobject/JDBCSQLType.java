@@ -31,6 +31,7 @@ import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 /**
  * Base implemention of {@link SQLType}
  */
+//TODO: With the implementation UserDefinedSQLType, this class's days may be numbered.
 public class JDBCSQLType extends SQLObject implements SQLTypePhysicalPropertiesProvider {
 
     /**
@@ -176,7 +177,7 @@ public class JDBCSQLType extends SQLObject implements SQLTypePhysicalPropertiesP
         physicalProperties.setScale(scale);
     }
 
-	public int getType(String platform) {
+	public int getType() {
 		return type;
 	}
 

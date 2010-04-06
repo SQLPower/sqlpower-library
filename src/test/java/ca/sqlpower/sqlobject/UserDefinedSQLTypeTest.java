@@ -73,15 +73,17 @@ public class UserDefinedSQLTypeTest extends TestCase {
         super.setUp();
         
         udt = new UserDefinedSQLType();
-        udtProperties = new SQLTypePhysicalProperties();
+        udtProperties = new SQLTypePhysicalProperties("Oracle");
         udt.putPhysicalProperties("Oracle", udtProperties);
         
-        domain = new UserDefinedSQLType(udt);
-        domainProperties = new SQLTypePhysicalProperties();
+        domain = new UserDefinedSQLType();
+        domain.setUpstreamType(udt);
+        domainProperties = new SQLTypePhysicalProperties("Oracle");
         domain.putPhysicalProperties("Oracle", domainProperties);
         
-        typeProxy = new UserDefinedSQLType(domain);
-        proxyProperties = new SQLTypePhysicalProperties();
+        typeProxy = new UserDefinedSQLType();
+        typeProxy.setUpstreamType(domain);
+        proxyProperties = new SQLTypePhysicalProperties("Generic");
         typeProxy.putPhysicalProperties("Generic", proxyProperties);
     }
 

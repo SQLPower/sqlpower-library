@@ -29,11 +29,10 @@ import java.util.Map;
 
 import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.sql.JDBCDataSourceType;
-import ca.sqlpower.sqlobject.SQLObject;
-import ca.sqlpower.sqlobject.SQLObjectException;
-import ca.sqlpower.sqlobject.SQLTypePhysicalProperties;
-import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 
 /**
@@ -85,13 +84,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     public static List<Class<? extends SPObject>> allowedChildTypes = 
         Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(Arrays.asList(SQLTypePhysicalProperties.class)));
     
-    public UserDefinedSQLType() {
-    }
-    
-    public UserDefinedSQLType(UserDefinedSQLType upstreamType) {
-        this.upstreamType = upstreamType;
-    }
-    
+    @NonProperty
     public SQLTypePhysicalProperties getPhysicalProperties(String platformName) {
         return physicalProperties.get(platformName);
     }
@@ -103,7 +96,11 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Override
     public List<? extends SQLObject> getChildrenWithoutPopulating() {
-        return null;
+    	List<SQLTypePhysicalProperties> list = new ArrayList<SQLTypePhysicalProperties>();
+    	for (String key: physicalProperties.keySet()) {
+    		list.add(physicalProperties.get(key));
+    	}
+    	return list;
     }
 
     @Override
@@ -134,199 +131,224 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     }
 
     public List<? extends SPObject> getDependencies() {
-        return Collections.emptyList();
+        return Collections.singletonList(getUpstreamType());
     }
 
     public void removeDependency(SPObject dependency) {
-        // no-op
+        if (dependency == getUpstreamType()) {
+        	setUpstreamType(null);
+        }
     }
 
+    @Mutator
     public void setBasicType(BasicSQLType basicType) {
         this.basicType = basicType;
     }
 
+    @Accessor
     public BasicSQLType getBasicType() {
         return basicType;
     }
 
+    @NonProperty
     public String getCheckConstraint(String platform) {
         String checkConstraint = null;
         SQLTypePhysicalProperties properties = physicalProperties.get(platform);
         
         if (properties != null) {
             checkConstraint = properties.getCheckConstraint();
-            if (checkConstraint == null && upstreamType != null) {
-                checkConstraint = upstreamType.getCheckConstraint(platform);
+            if (checkConstraint == null && getUpstreamType() != null) {
+                checkConstraint = getUpstreamType().getCheckConstraint(platform);
             }
-        } else if (upstreamType != null) {
-            checkConstraint = upstreamType.getCheckConstraint(platform);
+        } else if (getUpstreamType() != null) {
+            checkConstraint = getUpstreamType().getCheckConstraint(platform);
         }
         
         return checkConstraint;
     }
 
+    @NonProperty
     public SQLTypeConstraint getConstraintType(String platform) {
         SQLTypeConstraint constraintType = null;
         SQLTypePhysicalProperties properties = physicalProperties.get(platform);
         
         if (properties != null) {
             constraintType = properties.getConstraintType();
-            if (constraintType == null && upstreamType != null) {
-                constraintType = upstreamType.getConstraintType(platform);
+            if (constraintType == null && getUpstreamType() != null) {
+                constraintType = getUpstreamType().getConstraintType(platform);
             }
-        } else if (upstreamType != null) {
-            constraintType = upstreamType.getConstraintType(platform);
+        } else if (getUpstreamType() != null) {
+            constraintType = getUpstreamType().getConstraintType(platform);
         }
         
         return constraintType;
     }
 
+    @NonProperty
     public String getDefaultValue(String platform) {
         String defaultValue = null;
         SQLTypePhysicalProperties properties = physicalProperties.get(platform);
         
         if (properties != null) {
             defaultValue = properties.getDefaultValue();
-            if (defaultValue == null && upstreamType != null) {
-                defaultValue = upstreamType.getDefaultValue(platform);
+            if (defaultValue == null && getUpstreamType() != null) {
+                defaultValue = getUpstreamType().getDefaultValue(platform);
             }
-        } else if (upstreamType != null) {
-            defaultValue = upstreamType.getDefaultValue(platform);
+        } else if (getUpstreamType() != null) {
+            defaultValue = getUpstreamType().getDefaultValue(platform);
         }
         
         return defaultValue;
     }
 
+    @NonProperty
     public List<String> getEnumeration(String platform) {
         List<String> enumeration = null;
         SQLTypePhysicalProperties properties = physicalProperties.get(platform);
         
         if (properties != null) {
             enumeration = properties.getEnumeration();
-            if (enumeration == null && upstreamType != null) {
-                enumeration = upstreamType.getEnumeration(platform);
+            if (enumeration == null && getUpstreamType() != null) {
+                enumeration = getUpstreamType().getEnumeration(platform);
             }
-        } else if (upstreamType != null) {
-            enumeration = upstreamType.getEnumeration(platform);
+        } else if (getUpstreamType() != null) {
+            enumeration = getUpstreamType().getEnumeration(platform);
         }
         
         return enumeration;
     }
 
+    @NonProperty
     public int getPrecision(String platform) {
         Integer precision = null;
         SQLTypePhysicalProperties properties = physicalProperties.get(platform);
         
         if (properties != null) {
             precision = properties.getPrecision();
-            if (precision == null && upstreamType != null) {
-            	precision = upstreamType.getPrecision(platform);
+            if (precision == null && getUpstreamType() != null) {
+            	precision = getUpstreamType().getPrecision(platform);
             }
-        } else if (upstreamType != null) {
-            precision = upstreamType.getPrecision(platform);
+        } else if (getUpstreamType() != null) {
+            precision = getUpstreamType().getPrecision(platform);
         }
         
         // If precision is null and all upstream types also return null, then just return 0 to prevent an NPE
         return precision == null ? 0 : precision;
     }
 
+    @NonProperty
     public int getScale(String platform) {
         Integer scale = null;
         SQLTypePhysicalProperties properties = physicalProperties.get(platform);
         
         if (properties != null) {
             scale = properties.getScale();
-            if (scale == null && upstreamType != null) {
-                scale = upstreamType.getScale(platform);
+            if (scale == null && getUpstreamType() != null) {
+                scale = getUpstreamType().getScale(platform);
             }
-        } else if (upstreamType != null) {
-            scale = upstreamType.getScale(platform);
+        } else if (getUpstreamType() != null) {
+            scale = getUpstreamType().getScale(platform);
         }
         
         // If scale is null and all upstream types also return null, then just return 0 to prevent an NPE
         return scale == null ? 0 : scale;
     }
 
-    public int getType(String platform) {
+    @Accessor
+    public int getType() {
          return type;
     }
 
+    @NonProperty
     public void setCheckConstraint(String platform, String checkConstraint) {
         getOrCreatePhysicalProperties(platform).setCheckConstraint(checkConstraint);
     }
 
+    @NonProperty
     public void setConstraintType(String platform, SQLTypeConstraint constraint) {
         getOrCreatePhysicalProperties(platform).setConstraintType(constraint);
     }
 
+    @NonProperty
     public void setDefaultValue(String platform, String defaultValue) {
         getOrCreatePhysicalProperties(platform).setDefaultValue(defaultValue);
     }
 
+    @NonProperty
     public void setEnumeration(String platform, List<String> enumeration) {
         getOrCreatePhysicalProperties(platform).setEnumeration(enumeration);
     }
 
+    @NonProperty
     public void setPhysicalDataType(String platform, String physicalDataType) {
         getOrCreatePhysicalProperties(platform).setPhysicalName(physicalDataType);
     }
 
+    @NonProperty
     public void setPrecision(String platform, int precision) {
         getOrCreatePhysicalProperties(platform).setPrecision(precision);
     }
 
+    @NonProperty
     public void setScale(String platform, int scale) {
         getOrCreatePhysicalProperties(platform).setScale(scale);
     }
 
+    @Mutator
     public void setType(int type) {
         this.type = type;
     }
 
+    @NonProperty
     public PropertyType getPrecisionType(String platform) {
         PropertyType precisionType = null;
         SQLTypePhysicalProperties properties = physicalProperties.get(platform);
         
         if (properties != null) {
             precisionType = properties.getPrecisionType();
-            if (precisionType == null && upstreamType != null) {
-                precisionType = upstreamType.getPrecisionType(platform);
+            if (precisionType == null && getUpstreamType() != null) {
+                precisionType = getUpstreamType().getPrecisionType(platform);
             }
-        } else if (upstreamType != null) {
-            precisionType = upstreamType.getPrecisionType(platform);
+        } else if (getUpstreamType() != null) {
+            precisionType = getUpstreamType().getPrecisionType(platform);
         }
         
         return precisionType;
     }
 
+    @NonProperty
     public PropertyType getScaleType(String platform) {
         PropertyType scaleType = null;
         SQLTypePhysicalProperties properties = physicalProperties.get(platform);
         
         if (properties != null) {
             scaleType = properties.getScaleType();
-            if (scaleType == null && upstreamType != null) {
-                scaleType = upstreamType.getScaleType(platform);
+            if (scaleType == null && getUpstreamType() != null) {
+                scaleType = getUpstreamType().getScaleType(platform);
             }
-        } else if (upstreamType != null) {
-            scaleType = upstreamType.getScaleType(platform);
+        } else if (getUpstreamType() != null) {
+            scaleType = getUpstreamType().getScaleType(platform);
         }
         
         return scaleType;
     }
 
+    @NonProperty
     public void setPrecisionType(String platform, PropertyType precisionType) {
         getOrCreatePhysicalProperties(platform).setPrecisionType(precisionType);
     }
 
+    @NonProperty
     public void setScaleType(String platform, PropertyType scaleType) {
         getOrCreatePhysicalProperties(platform).setScaleType(scaleType);
     }
 
+    @Mutator
     public void setDescription(String description) {
         this.description = description;
     }
 
+    @Accessor
     public String getDescription() {
         return description;
     }
@@ -334,6 +356,8 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     public void putPhysicalProperties(String platform, SQLTypePhysicalProperties properties) {
         physicalProperties.put(platform, properties);
     }
+    
+    
     
     /**
      * Gets a {@link SQLTypePhysicalProperties} instance for the given platform
@@ -354,4 +378,14 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
         }
         return properties;
     }
+
+    @Mutator
+	public void setUpstreamType(UserDefinedSQLType upstreamType) {
+		this.upstreamType = upstreamType;
+	}
+
+    @Accessor
+	public UserDefinedSQLType getUpstreamType() {
+		return upstreamType;
+	}
 }

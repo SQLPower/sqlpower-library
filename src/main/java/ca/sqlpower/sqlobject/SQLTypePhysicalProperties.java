@@ -25,6 +25,11 @@ import java.util.List;
 import javax.sql.RowSetMetaData;
 
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
 
@@ -104,14 +109,24 @@ public class SQLTypePhysicalProperties extends SQLObject {
      */
     private String platform = "";
     
+    /**
+     * The {@link PropertyType} of the precision. It determines if it is meant to
+	 * be variable ({@link PropertyType#VARIABLE}), have a constant value (
+	 * {@link PropertyType#CONSTANT}), or it doesn't apply to this type (
+	 * {@link PropertyType#NOT_APPLICABLE}).
+     */
     private PropertyType precisionType;
     
+	/**
+	 * The {@link PropertyType} value for scale. It determines if it is meant to
+	 * be variable ({@link PropertyType#VARIABLE}), have a constant value (
+	 * {@link PropertyType#CONSTANT}), or it doesn't apply to this type (
+	 * {@link PropertyType#NOT_APPLICABLE}).
+	 */
     private PropertyType scaleType;
     
-    public SQLTypePhysicalProperties() {
-	}
-    
-    public SQLTypePhysicalProperties(String platformName) {
+    @Constructor
+    public SQLTypePhysicalProperties(@ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="platform") String platformName) {
         this.platform = platformName;
     }
     
@@ -122,10 +137,12 @@ public class SQLTypePhysicalProperties extends SQLObject {
 	 *         returns null, then the precision has not been set for this
 	 *         {@link SQLTypePhysicalProperties} instance.
 	 */
+    @Accessor
     public Integer getPrecision() {
         return precision;
     }
 
+    @Mutator
     public void setPrecision(int precision) {
         this.precision = precision;
     }
@@ -137,44 +154,54 @@ public class SQLTypePhysicalProperties extends SQLObject {
 	 *         returns null, then the scale has not been set for this
 	 *         {@link SQLTypePhysicalProperties} instance.
 	 */
+    @Accessor
     public Integer getScale() {
         return scale;
     }
 
+    @Mutator
     public void setScale(int scale) {
         this.scale = scale;
     }
 
+    @Accessor
     public String getDefaultValue() {
         return defaultValue;
     }
 
+    @Mutator
     public void setDefaultValue(String defaultValue) {
         this.defaultValue = defaultValue;
     }
 
+    @Accessor
     public String getCheckConstraint() {
         return checkConstraint;
     }
 
+    @Mutator
     public void setCheckConstraint(String checkConstraint) {
         this.checkConstraint = checkConstraint;
     }
 
+    @Accessor
     public List<String> getEnumeration() {
         return enumeration;
     }
 
+    @Mutator
     public void setEnumeration(List<String> enumeration) {
         this.enumeration = enumeration;
     }
 
-    public void setConstraintType(SQLTypeConstraint constraint) {
-        this.constraintType = constraint;
+    @Accessor
+    public SQLTypeConstraint getConstraintType() {
+    	return constraintType;
     }
 
-    public SQLTypeConstraint getConstraintType() {
-        return constraintType;
+    @Mutator
+    public void setConstraintType(SQLTypeConstraint constraint) {
+        this.constraintType = constraint;
     }
 
     @Override
@@ -219,22 +246,27 @@ public class SQLTypePhysicalProperties extends SQLObject {
         // No dependencies, so no-op
     }
 
+    @Accessor
     public String getPlatform() {
         return platform;
     }
     
+    @Accessor
     public PropertyType getPrecisionType() {
         return precisionType;
     }
 
+    @Mutator
+    public void setPrecisionType(PropertyType precisionType) {
+    	this.precisionType = precisionType;
+    }
+
+    @Accessor
     public PropertyType getScaleType() {
         return scaleType;
     }
     
-    public void setPrecisionType(PropertyType precisionType) {
-		this.precisionType = precisionType;
-	}
-    
+    @Mutator
     public void setScaleType(PropertyType scaleType) {
 		this.scaleType = scaleType;
 	}

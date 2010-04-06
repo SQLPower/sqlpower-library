@@ -318,7 +318,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * @return An int that corresponds to one of the type constants in
 	 *         {@link Types}.
 	 */
-	public int getType(String platform);
+	public int getType();
 
 	/**
 	 * Sets the JDBC type of this SQLType as defined in {@link Types}
