@@ -42,6 +42,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	protected final MultiValueMap variables = new MultiValueMap();
 	private String namespace = null;
 	private String userFriendlyName;
+	private final SPObject owner;
 	
 	public SPSimpleVariableResolver(SPObject owner, String namespace, String userFriendlyName) {
 		this(owner, namespace, userFriendlyName, true);
@@ -53,6 +54,7 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 			String userFriendlyName,
 			boolean register) 
 	{
+		this.owner = owner;
 		this.namespace = namespace;
 		this.userFriendlyName = userFriendlyName;
 		if (register) {
@@ -84,6 +86,21 @@ public class SPSimpleVariableResolver implements SPVariableResolver {
 	 */
 	public void setNamespace(String namespace) {
 		this.namespace = namespace;
+	}
+	
+	/**
+	 * Clears all currently stored variables.
+	 */
+	public void clear() {
+		this.variables.clear();
+	}
+	
+	/**
+	 * Closes this resolver and removes it from the registry
+	 */
+	public void cleanup() {
+		SPResolverRegistry.deregister(owner, this);
+		this.clear();
 	}
 	
 	public void store(String key, Object value) {
