@@ -29,6 +29,7 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
@@ -125,6 +126,12 @@ public class SQLTypePhysicalProperties extends SQLObject {
 	 */
     private PropertyType scaleType;
     
+	/**
+	 * List of allowed child types, which is empty since
+	 * {@link SQLTypePhysicalProperties} has no children
+	 */
+	public static final List<Class<? extends SPObject>> allowedChildTypes = Collections.emptyList();
+
     @Constructor
     public SQLTypePhysicalProperties(@ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="platform") String platformName) {
         this.platform = platformName;
@@ -144,7 +151,9 @@ public class SQLTypePhysicalProperties extends SQLObject {
 
     @Mutator
     public void setPrecision(int precision) {
+    	int oldValue = this.precision;
         this.precision = precision;
+        firePropertyChange("precision", oldValue, precision);
     }
 
 	/**
@@ -171,7 +180,9 @@ public class SQLTypePhysicalProperties extends SQLObject {
 
     @Mutator
     public void setDefaultValue(String defaultValue) {
+    	String oldValue = this.defaultValue;
         this.defaultValue = defaultValue;
+        firePropertyChange("defaultValue", oldValue, defaultValue);
     }
 
     @Accessor
@@ -181,7 +192,9 @@ public class SQLTypePhysicalProperties extends SQLObject {
 
     @Mutator
     public void setCheckConstraint(String checkConstraint) {
+    	String oldValue = this.checkConstraint;
         this.checkConstraint = checkConstraint;
+        firePropertyChange("checkConstraint", oldValue, checkConstraint);
     }
 
     @Accessor
@@ -191,7 +204,9 @@ public class SQLTypePhysicalProperties extends SQLObject {
 
     @Mutator
     public void setEnumeration(List<String> enumeration) {
+    	List<String> oldValue = this.enumeration;
         this.enumeration = enumeration;
+        firePropertyChange("enumeration", oldValue, enumeration);
     }
 
     @Accessor
@@ -201,7 +216,9 @@ public class SQLTypePhysicalProperties extends SQLObject {
 
     @Mutator
     public void setConstraintType(SQLTypeConstraint constraint) {
+    	SQLTypeConstraint oldValue = this.constraintType;
         this.constraintType = constraint;
+        firePropertyChange("constraintType", oldValue, constraintType);
     }
 
     @Override
@@ -234,8 +251,9 @@ public class SQLTypePhysicalProperties extends SQLObject {
         return 0;
     }
 
+    @NonProperty
     public List<Class<? extends SPObject>> getAllowedChildTypes() {
-        return Collections.emptyList();
+        return allowedChildTypes;
     }
 
     public List<? extends SPObject> getDependencies() {
@@ -258,7 +276,9 @@ public class SQLTypePhysicalProperties extends SQLObject {
 
     @Mutator
     public void setPrecisionType(PropertyType precisionType) {
+    	PropertyType oldValue = this.precisionType;
     	this.precisionType = precisionType;
+    	firePropertyChange("precisionType", oldValue, precisionType);
     }
 
     @Accessor
@@ -268,7 +288,9 @@ public class SQLTypePhysicalProperties extends SQLObject {
     
     @Mutator
     public void setScaleType(PropertyType scaleType) {
+    	PropertyType oldValue = this.scaleType;
 		this.scaleType = scaleType;
+		firePropertyChange("scaleType", oldValue, scaleType);
 	}
 }
 
