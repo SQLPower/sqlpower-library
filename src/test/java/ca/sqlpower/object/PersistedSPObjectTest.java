@@ -422,6 +422,9 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 
 		List<SPObject> ancestorList = SQLPowerUtils.getAncestorList(getSPObjectUnderTest());
 		for (SPObject child : root.getChildren()) {
+		    // Do not copy ancestors of the object under test.
+		    // All dependencies of the object under test must be located
+		    // under objects that are not its ancestors (except the root, of course)
 			if (!ancestorList.contains(child)) {
 				copyToRoot(child, newValueMaker);
 			}
