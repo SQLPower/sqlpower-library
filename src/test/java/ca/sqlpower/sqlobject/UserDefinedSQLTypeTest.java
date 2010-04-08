@@ -21,10 +21,9 @@ package ca.sqlpower.sqlobject;
 
 import java.util.Collections;
 
-import ca.sqlpower.sqlobject.SQLTypePhysicalProperties;
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
-import junit.framework.TestCase;
 
 /**
  * This particular test case is to ensure that {@link UserDefinedSQLType}
@@ -45,7 +44,11 @@ import junit.framework.TestCase;
  * types. This allows upstream data types to remain unedited.</li>
  * </ul>
  */
-public class UserDefinedSQLTypeTest extends TestCase {
+public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
+
+	public UserDefinedSQLTypeTest(String name) throws Exception {
+		super(name);
+	}
 
 	/**
 	 * The 'type proxy' that would typically be the instance that a SQLColumn
@@ -85,6 +88,8 @@ public class UserDefinedSQLTypeTest extends TestCase {
         typeProxy.setUpstreamType(domain);
         proxyProperties = new SQLTypePhysicalProperties("Generic");
         typeProxy.putPhysicalProperties("Generic", proxyProperties);
+        
+        typeProxy.setParent(getRootObject());
     }
 
     public void testGetScale() throws Exception {
@@ -112,8 +117,10 @@ public class UserDefinedSQLTypeTest extends TestCase {
     }
     
     public void testGetEnumeration() throws Exception {
-        proxyProperties.setEnumeration(Collections.singletonList("proxy"));
-        udtProperties.setEnumeration(Collections.singletonList("udt"));
+    	String[] proxyEnum = {"proxy"};
+        proxyProperties.setEnumeration(proxyEnum);
+        String[] udtEnum = {"udt"};
+        udtProperties.setEnumeration(udtEnum);
         
         assertEquals("udt", typeProxy.getEnumeration("Oracle").get(0));
     }
@@ -170,4 +177,14 @@ public class UserDefinedSQLTypeTest extends TestCase {
         typeProxy.setPrecisionType("Oracle", PropertyType.NOT_APPLICABLE);
         assertEquals(PropertyType.NOT_APPLICABLE, typeProxy.getPrecisionType("Oracle"));
     }
+
+	@Override
+	protected Class<? extends SPObject> getChildClassType() {
+		return SQLTypePhysicalProperties.class;
+	}
+
+	@Override
+	protected SQLObject getSQLObjectUnderTest() throws SQLObjectException {
+		return typeProxy;
+	}
 }

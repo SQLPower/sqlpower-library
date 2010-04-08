@@ -48,12 +48,18 @@ import ca.sqlpower.sqlobject.SQLObjectRuntimeException;
 import ca.sqlpower.sqlobject.SQLRelationship;
 import ca.sqlpower.sqlobject.SQLSchema;
 import ca.sqlpower.sqlobject.SQLTable;
+import ca.sqlpower.sqlobject.SQLTypePhysicalProperties;
+import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider;
+import ca.sqlpower.sqlobject.UserDefinedSQLType;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.sqlobject.SQLRelationship.ColumnMapping;
 import ca.sqlpower.sqlobject.SQLRelationship.Deferrability;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 import ca.sqlpower.sqlobject.SQLRelationship.UpdateDeleteRule;
+import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
+import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.BasicSQLType;
+import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
 import ca.sqlpower.util.DefaultUserPrompter;
 import ca.sqlpower.util.UserPrompter;
 import ca.sqlpower.util.UserPrompter.UserPromptOptions;
@@ -329,6 +335,31 @@ public class GenericNewValueMaker implements NewValueMaker {
                 d.width++;
             }
             newVal = d;
+        } else if (valueType == BasicSQLType.class) {
+        	if (oldVal != BasicSQLType.OTHER) {
+        		newVal = BasicSQLType.OTHER;
+        	} else {
+        		newVal = BasicSQLType.TEXT;
+        	}
+        } else if (valueType == UserDefinedSQLType.class) {
+        	newVal = new UserDefinedSQLType();
+        } else if (valueType == SQLTypePhysicalProperties.class) {
+        	newVal = new SQLTypePhysicalProperties(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
+        } else if (valueType == SQLTypeConstraint.class) {
+        	if (oldVal != SQLTypeConstraint.NONE) {
+        		newVal = SQLTypeConstraint.NONE;
+        	} else {
+        		newVal = SQLTypeConstraint.CHECK;
+        	}
+        } else if (valueType == String[].class) {
+        	String[] array = {"test1", "test2", "test3"};
+        	newVal = array;
+        } else if (valueType == PropertyType.class) {
+        	if (oldVal != PropertyType.NOT_APPLICABLE) {
+        		newVal = PropertyType.NOT_APPLICABLE;
+        	} else {
+        		newVal = PropertyType.VARIABLE;
+        	}
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +

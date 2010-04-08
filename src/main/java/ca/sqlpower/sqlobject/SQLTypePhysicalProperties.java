@@ -99,7 +99,7 @@ public class SQLTypePhysicalProperties extends SQLObject {
      * type is constrained to. Note that you cannot use both this AND the
      * checkConstraint.
      */
-    private List<String> enumeration;
+    private String[] enumeration;
 
     /**
      * The logical name of the physical database platform.
@@ -150,10 +150,10 @@ public class SQLTypePhysicalProperties extends SQLObject {
     }
 
     @Mutator
-    public void setPrecision(int precision) {
-    	int oldValue = this.precision;
+    public void setPrecision(Integer precision) {
+    	Integer oldValue = this.precision;
         this.precision = precision;
-        firePropertyChange("precision", oldValue, precision);
+        firePropertyChange("precision", (Integer) oldValue, (Integer) precision);
     }
 
 	/**
@@ -169,8 +169,10 @@ public class SQLTypePhysicalProperties extends SQLObject {
     }
 
     @Mutator
-    public void setScale(int scale) {
+    public void setScale(Integer scale) {
+    	Integer oldValue = this.scale;
         this.scale = scale;
+        firePropertyChange("scale", (Integer) oldValue, (Integer) scale);
     }
 
     @Accessor
@@ -198,13 +200,13 @@ public class SQLTypePhysicalProperties extends SQLObject {
     }
 
     @Accessor
-    public List<String> getEnumeration() {
+    public String[] getEnumeration() {
         return enumeration;
     }
 
     @Mutator
-    public void setEnumeration(List<String> enumeration) {
-    	List<String> oldValue = this.enumeration;
+    public void setEnumeration(String[] enumeration) {
+    	String[] oldValue = this.enumeration;
         this.enumeration = enumeration;
         firePropertyChange("enumeration", oldValue, enumeration);
     }

@@ -463,7 +463,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		for (String pkg : allImports) {
 			// No need to import java.lang as it is automatically imported.
-			if (!pkg.startsWith("java.lang")) {
+			// Also want to keep array classes out
+			if (!pkg.startsWith("java.lang") && !pkg.startsWith("[L")) {
 				// Nested classes, enums, etc. will be separated by the "$"
 				// character but we need to change them to "." so it can be
 				// imported correctly.

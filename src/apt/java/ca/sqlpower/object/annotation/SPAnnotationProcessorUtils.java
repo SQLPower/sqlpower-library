@@ -32,6 +32,7 @@ import com.sun.mirror.type.InterfaceType;
 import com.sun.mirror.type.PrimitiveType;
 import com.sun.mirror.type.TypeMirror;
 import com.sun.mirror.type.PrimitiveType.Kind;
+import com.sun.mirror.type.ArrayType;
 
 public class SPAnnotationProcessorUtils {
 	
@@ -91,6 +92,9 @@ public class SPAnnotationProcessorUtils {
 		} else if (type instanceof InterfaceType) {
 			String qualifiedName = 
 				convertTypeDeclarationToQualifiedName(((InterfaceType) type).getDeclaration());
+			return Class.forName(qualifiedName);
+		} else if (type instanceof ArrayType) {
+			String qualifiedName = "[L" + convertTypeMirrorToClass(((ArrayType) type).getComponentType()).getName() + ";";
 			return Class.forName(qualifiedName);
 		} else {
 			return null;

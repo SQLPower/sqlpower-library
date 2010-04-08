@@ -142,7 +142,7 @@ public class JDBCSQLType extends SQLObject implements SQLTypePhysicalPropertiesP
     }
 
     public List<String> getEnumeration(String platform) {
-        return physicalProperties.getEnumeration();
+        return Arrays.asList(physicalProperties.getEnumeration());
     }
 
     public int getPrecision(String platform) {
@@ -166,7 +166,8 @@ public class JDBCSQLType extends SQLObject implements SQLTypePhysicalPropertiesP
     }
 
     public void setEnumeration(String platform, List<String> enumeration) {
-        physicalProperties.setEnumeration(enumeration);
+    	String[] array = new String[enumeration.size()];
+        physicalProperties.setEnumeration(enumeration.toArray(array));
     }
 
     public void setPrecision(String platform, int precision) {

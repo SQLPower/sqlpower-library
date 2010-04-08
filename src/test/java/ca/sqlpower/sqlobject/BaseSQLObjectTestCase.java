@@ -35,6 +35,9 @@ import ca.sqlpower.object.PersistedSPObjectTest;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
+import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.BasicSQLType;
+import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
 import ca.sqlpower.sqlobject.undo.SQLObjectUndoManager;
 import ca.sqlpower.testutil.GenericNewValueMaker;
 import ca.sqlpower.testutil.MockJDBCDriver;
@@ -152,7 +155,11 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 			}
 			Object newVal;  // don't init here so compiler can warn if the following code doesn't always give it a value
 			if (property.getPropertyType() == Integer.TYPE ||property.getPropertyType() == Integer.class ) {
-				newVal = ((Integer)oldVal)+1;
+				if (oldVal != null) {
+					newVal = ((Integer)oldVal)+1;
+				} else {
+					newVal = 1;
+				}
 			} else if (property.getPropertyType() == String.class) {
 				// make sure it's unique
 				newVal ="new " + oldVal;
@@ -206,6 +213,28 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
             	}
             } else if (property.getPropertyType() == Throwable.class) {
                 newVal = new Throwable();
+            } else if (property.getPropertyType() == BasicSQLType.class) {
+            	if (oldVal != BasicSQLType.OTHER) {
+            		newVal = BasicSQLType.OTHER;
+            	} else {
+            		newVal = BasicSQLType.TEXT;
+            	}
+            } else if (property.getPropertyType() == UserDefinedSQLType.class) {
+            	newVal = new UserDefinedSQLType();
+            } else if (property.getPropertyType() == SQLTypeConstraint.class) {
+            	if (oldVal != SQLTypeConstraint.NONE) {
+            		newVal = SQLTypeConstraint.NONE;
+            	} else {
+            		newVal = SQLTypeConstraint.CHECK;
+            	}
+            } else if (property.getPropertyType() == String[].class) {
+            	newVal = new String[3];
+            } else if (property.getPropertyType() == PropertyType.class) {
+            	if (oldVal != PropertyType.NOT_APPLICABLE) {
+            		newVal = PropertyType.NOT_APPLICABLE;
+            	} else {
+            		newVal = PropertyType.VARIABLE;
+            	}
             } else {
 				throw new RuntimeException("This test case lacks a value for "+
 						property.getName()+
@@ -303,7 +332,11 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 			}
 			Object newVal;  // don't init here so compiler can warn if the following code doesn't always give it a value
 			if (property.getPropertyType() == Integer.TYPE  || property.getPropertyType() == Integer.class) {
-				newVal = ((Integer)oldVal)+1;
+				if (oldVal != null) {
+					newVal = ((Integer) oldVal) + 1;
+				} else {
+					newVal = 1;
+				}
 			} else if (property.getPropertyType() == String.class) {
 				// make sure it's unique
 				newVal ="new " + oldVal;
@@ -351,6 +384,28 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
             	}
             } else if (property.getPropertyType() == Throwable.class) {
                 newVal = new Throwable();
+            } else if (property.getPropertyType() == BasicSQLType.class) {
+            	if (oldVal != BasicSQLType.OTHER) {
+            		newVal = BasicSQLType.OTHER;
+            	} else {
+            		newVal = BasicSQLType.TEXT;
+            	}
+            } else if (property.getPropertyType() == UserDefinedSQLType.class) {
+            	newVal = new UserDefinedSQLType();
+            } else if (property.getPropertyType() == SQLTypeConstraint.class) {
+            	if (oldVal != SQLTypeConstraint.NONE) {
+            		newVal = SQLTypeConstraint.NONE;
+            	} else {
+            		newVal = SQLTypeConstraint.CHECK;
+            	}
+            } else if (property.getPropertyType() == String[].class) {
+            	newVal = new String[3];
+            } else if (property.getPropertyType() == PropertyType.class) {
+            	if (oldVal != PropertyType.NOT_APPLICABLE) {
+            		newVal = PropertyType.NOT_APPLICABLE;
+            	} else {
+            		newVal = PropertyType.VARIABLE;
+            	}
             } else {
 				throw new RuntimeException("This test case lacks a value for "+
 						property.getName()+
