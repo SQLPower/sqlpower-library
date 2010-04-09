@@ -67,8 +67,13 @@ public class QueryPenSelectionEventHandler extends PSelectionEventHandler {
 
 			if (node instanceof ContainerPane || node instanceof ConstantsPane) {
 				gDist.setSize(d);
-				node.getParent().globalToLocal(gDist);
-				node.offset(gDist.getWidth(), gDist.getHeight());
+				if (node.getParent() != null) {
+					// This check is necessary because the parent might
+					// be null if we are hadling an event that was queued
+					// after a node deletion. The parent will be null and throw a NPE.
+					node.getParent().globalToLocal(gDist);
+					node.offset(gDist.getWidth(), gDist.getHeight());
+				}
 			}
 		}	
 	}
