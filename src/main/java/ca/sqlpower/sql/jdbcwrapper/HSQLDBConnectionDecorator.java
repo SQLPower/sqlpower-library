@@ -21,7 +21,9 @@ package ca.sqlpower.sql.jdbcwrapper;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class HSQLDBConnectionDecorator extends GenericConnectionDecorator {
 
@@ -37,5 +39,16 @@ public class HSQLDBConnectionDecorator extends GenericConnectionDecorator {
     	}
         
     	return databaseMetaDataDecorator;
+    }
+    
+    @Override
+    protected PreparedStatement makePreparedStatementDecorator(
+    		PreparedStatement pstmt) {
+    	return new HSQLDBPreparedStatementDecorator(this, pstmt);
+    }
+    
+    @Override
+    protected Statement makeStatementDecorator(Statement stmt) {
+    	return new HSQLDBStatementDecorator(this, stmt);
     }
 }
