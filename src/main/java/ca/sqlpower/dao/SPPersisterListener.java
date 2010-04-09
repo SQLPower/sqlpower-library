@@ -577,6 +577,9 @@ public class SPPersisterListener implements SPListener {
 	private void commitRemovals() throws SPPersistenceException {
 		logger.debug("commitRemovals()");
 		for (RemovedObjectEntry entry: this.objectsToRemove) {
+		    // Don't make removal persist calls for children of
+		    // objects that are also being removed, since the JCR handles that.
+		    if (removedObjectsUUIDs.contains(entry.getParentUUID())) continue;
 			logger.debug("target.removeObject(" + entry.getParentUUID() + ", " + 
 					entry.getRemovedChild().getUUID() + ")");
 			target.removeObject(
