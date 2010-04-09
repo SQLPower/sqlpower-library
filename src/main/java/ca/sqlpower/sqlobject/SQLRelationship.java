@@ -678,7 +678,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 						}
 					};
 					try {
-						table.getSession().runInForeground(fkTableRunner);
+						table.getRunnableDispatcher().runInForeground(fkTableRunner);
 					} catch (SessionNotFoundException e) {
 						fkTableRunner.run();
 					}
@@ -744,7 +744,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 					}
 				};
 				try {
-					table.getSession().runInForeground(runner);
+					table.getRunnableDispatcher().runInForeground(runner);
 				} catch (SessionNotFoundException e) {
 					runner.run();
 				}

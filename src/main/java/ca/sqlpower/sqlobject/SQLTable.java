@@ -413,7 +413,7 @@ public class SQLTable extends SQLObject {
 				}
 			};
 			try {
-				parentDB.getSession().runInForeground(runner);
+				parentDB.getRunnableDispatcher().runInForeground(runner);
 			} catch (SessionNotFoundException e) {
 				runner.run();
 			}

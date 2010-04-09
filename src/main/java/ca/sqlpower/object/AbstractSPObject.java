@@ -35,9 +35,10 @@ import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Persistable;
 import ca.sqlpower.object.annotation.Transient;
-import ca.sqlpower.util.SPSession;
+import ca.sqlpower.util.RunnableDispatcher;
 import ca.sqlpower.util.SessionNotFoundException;
 import ca.sqlpower.util.TransactionEvent;
+import ca.sqlpower.util.WorkspaceContainer;
 
 @Persistable
 public abstract class AbstractSPObject implements SPObject {
@@ -232,17 +233,32 @@ public abstract class AbstractSPObject implements SPObject {
 	}
 
 	/**
-	 * Gets the current session by passing the request up the tree.
+	 * Gets the current workspace container by passing the request up the tree.
 	 */
 	@Transient @Accessor
-	public SPSession getSession() throws SessionNotFoundException {
+	public WorkspaceContainer getWorkspaceContainer() throws SessionNotFoundException {
 		// The root object of the tree model should have a reference back to the
 		// session (like WabitWorkspace), and should therefore override this
 		// method. If it does not, a SessionNotFoundException will be thrown.
 		if (getParent() != null) {
-			return getParent().getSession();
+			return getParent().getWorkspaceContainer();
 		} else {
-			throw new SessionNotFoundException("Root object does not have a session reference");
+			throw new SessionNotFoundException("Root object does not have a workspace container reference");
+		}
+	}
+	
+	/**
+	 * Gets the current runnable dispatcher by passing the request up the tree.
+	 */
+	@Transient @Accessor
+	public RunnableDispatcher getRunnableDispatcher() throws SessionNotFoundException {
+		// The root object of the tree model should have a reference back to the
+		// session (like WabitWorkspace), and should therefore override this
+		// method. If it does not, a SessionNotFoundException will be thrown.
+		if (getParent() != null) {
+			return getParent().getRunnableDispatcher();
+		} else {
+			throw new SessionNotFoundException("Root object does not have a runnable dispatcher reference");
 		}
 	}
 	
@@ -502,7 +518,7 @@ public abstract class AbstractSPObject implements SPObject {
     
     protected boolean isForegroundThread() {
 		try {
-			return getSession().isForegroundThread();
+			return getRunnableDispatcher().isForegroundThread();
 		} catch (SessionNotFoundException e) {
 			return true;
 		}
@@ -520,7 +536,7 @@ public abstract class AbstractSPObject implements SPObject {
      */
 	protected void runInBackground(Runnable runner) {
 	    try {
-	        getSession().runInBackground(runner);
+	        getRunnableDispatcher().runInBackground(runner);
 	    } catch (SessionNotFoundException e) {
 	        runner.run();
 	    }
@@ -538,7 +554,7 @@ public abstract class AbstractSPObject implements SPObject {
      */
 	protected void runInForeground(Runnable runner) {
 	    try {
-	        getSession().runInForeground(runner);
+	        getRunnableDispatcher().runInForeground(runner);
 	    } catch (SessionNotFoundException e) {
 	        runner.run();
 	    }

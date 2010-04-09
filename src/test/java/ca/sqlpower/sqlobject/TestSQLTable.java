@@ -125,7 +125,8 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         table1PropertyMap.remove("parentDatabase");
         table1PropertyMap.remove("shortDisplayName");
         table1PropertyMap.remove("UUID");
-        table1PropertyMap.remove("session");
+        table1PropertyMap.remove("workspaceContainer");
+        table1PropertyMap.remove("runnableDispatcher");
         table1PropertyMap.remove("SPListeners");
         
         for (Map.Entry<String, Object> property : table1PropertyMap.entrySet()) {

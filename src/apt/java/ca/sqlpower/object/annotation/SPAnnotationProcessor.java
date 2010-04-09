@@ -47,7 +47,6 @@ import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
-import ca.sqlpower.util.SPSession;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.LinkedHashMultimap;

@@ -40,9 +40,9 @@ import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLRelationship;
-import ca.sqlpower.util.SPSession;
 import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.TransactionEvent;
+import ca.sqlpower.util.WorkspaceContainer;
 
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
@@ -61,7 +61,7 @@ public abstract class SPSessionPersister implements SPPersister {
 	/**
 	 * An {@link SPSession} to persist objects and properties onto.
 	 */
-	private SPSession session;
+	private WorkspaceContainer workspaceContainer;
 	
 	/**
 	 * A count of transactions, mainly to keep track of nested transactions.
@@ -387,7 +387,7 @@ public abstract class SPSessionPersister implements SPPersister {
 	}
 
 	public void begin() throws SPPersistenceException {
-		synchronized (getSession()) {
+		synchronized (getWorkspaceContainer()) {
 			enforeThreadSafety();
 			transactionCount++;
 			
@@ -398,14 +398,14 @@ public abstract class SPSessionPersister implements SPPersister {
 	}
 
 	public void commit() throws SPPersistenceException {
-		synchronized (getSession()) {
+		synchronized (getWorkspaceContainer()) {
 			enforeThreadSafety();
 			
 			if (logger.isDebugEnabled()) {
 				logger.debug("spsp.commit(); - transaction count : " + transactionCount);
 			}
 			
-			final SPObject workspace = getSession().getWorkspace();
+			final SPObject workspace = getWorkspaceContainer().getWorkspace();
 			synchronized (workspace) {
 				try {
 					workspace.setMagicEnabled(false);
@@ -464,7 +464,7 @@ public abstract class SPSessionPersister implements SPPersister {
 	public void persistObject(String parentUUID, String type, String uuid,
 			int index) throws SPPersistenceException {
 		logger.debug("Persisting object " + uuid + " of type " + type + " as a child to " + parentUUID);
-		synchronized (getSession()) {
+		synchronized (getWorkspaceContainer()) {
 			enforeThreadSafety();
 			
 			if (logger.isDebugEnabled()) {
@@ -501,7 +501,7 @@ public abstract class SPSessionPersister implements SPPersister {
 			throw new SPPersistenceException(null, "Cannot persist objects while outside " +
 					"a transaction.");
 		}
-		synchronized (getSession()) {
+		synchronized (getWorkspaceContainer()) {
 			enforeThreadSafety();
 			
 			if (logger.isDebugEnabled()) {
@@ -529,7 +529,7 @@ public abstract class SPSessionPersister implements SPPersister {
 			throw new SPPersistenceException("Cannot persist objects while outside " +
 					"a transaction.");
 		}
-		synchronized (getSession()) {
+		synchronized (getWorkspaceContainer()) {
 			enforeThreadSafety();
 			
 			if (logger.isDebugEnabled()) {
@@ -637,7 +637,7 @@ public abstract class SPSessionPersister implements SPPersister {
 
 	public void removeObject(String parentUUID, String uuid)
 			throws SPPersistenceException {
-		synchronized (getSession()) {
+		synchronized (getWorkspaceContainer()) {
 			enforeThreadSafety();
 			
 			if (logger.isDebugEnabled()) {
@@ -668,7 +668,7 @@ public abstract class SPSessionPersister implements SPPersister {
 	}
 	
 	public void rollback(boolean force) {
-		final SPObject workspace = getSession().getWorkspace();
+		final SPObject workspace = getWorkspaceContainer().getWorkspace();
 		synchronized (workspace) {
 			if (headingToWisconsin) {
 				return;
@@ -1122,12 +1122,12 @@ public abstract class SPSessionPersister implements SPPersister {
 		return null;
 	}
 
-	public void setSession(SPSession session) {
-		this.session = session;
+	public void setWorkspaceContainer(WorkspaceContainer workspaceContainer) {
+		this.workspaceContainer = workspaceContainer;
 	}
 
-	public SPSession getSession() {
-		return session;
+	public WorkspaceContainer getWorkspaceContainer() {
+		return workspaceContainer;
 	}
 
 	/**
@@ -1169,7 +1169,7 @@ public abstract class SPSessionPersister implements SPPersister {
 				//do nothing for refresh.
 			}
 		};
-		persister.setSession(root.getSession());
+		persister.setWorkspaceContainer(root.getWorkspaceContainer());
 		persister.setGodMode(true);
 		persister.setObjectsToRemoveRollbackList(removals);
 		persister.setPersistedObjectsRollbackList(creations);
@@ -1196,7 +1196,7 @@ public abstract class SPSessionPersister implements SPPersister {
 			objToRmv.put(roe.getRemovedChild().getUUID(), roe.getParentUUID());
 		}
 		
-		persister.setSession(root.getSession());
+		persister.setWorkspaceContainer(root.getWorkspaceContainer());
 		persister.setGodMode(true);
 		persister.setPersistedObjects(creations);
 		persister.setPersistedProperties(properties);

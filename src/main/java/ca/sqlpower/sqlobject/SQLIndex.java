@@ -816,7 +816,7 @@ public class SQLIndex extends SQLObject {
 				}
 			};
 			try {
-				targetTable.getSession().runInForeground(runner);
+				targetTable.getRunnableDispatcher().runInForeground(runner);
 			} catch (SessionNotFoundException e) {
 				runner.run();
 			}
@@ -889,7 +889,7 @@ public class SQLIndex extends SQLObject {
 							}
 						};
 						try {
-							targetTable.getSession().runInForeground(pkIndexUpdate);
+							targetTable.getRunnableDispatcher().runInForeground(pkIndexUpdate);
 						} catch (SessionNotFoundException e) {
 							pkIndexUpdate.run();
 						}
@@ -929,7 +929,7 @@ public class SQLIndex extends SQLObject {
 						}
 					};
 					try {
-						targetTable.getSession().runInForeground(indexChildRunner);
+						targetTable.getRunnableDispatcher().runInForeground(indexChildRunner);
 					} catch (SessionNotFoundException e) {
 						indexChildRunner.run();
 					}

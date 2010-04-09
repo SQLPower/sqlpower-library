@@ -23,8 +23,9 @@ import java.util.Collections;
 import java.util.List;
 
 import ca.sqlpower.object.SPObject;
-import ca.sqlpower.util.SPSession;
-import ca.sqlpower.util.StubSPSession;
+import ca.sqlpower.util.RunnableDispatcher;
+import ca.sqlpower.util.StubWorkspaceContainer;
+import ca.sqlpower.util.WorkspaceContainer;
 
 /**
  * The StubSQLObject is a general-purpose SQLObject that you can use for testing
@@ -35,7 +36,7 @@ public class StubSQLObject extends SQLObject {
 	
 	private List<SQLObject> children = new ArrayList<SQLObject>();
 	
-	private SPSession session = new StubSPSession();
+	private StubWorkspaceContainer workspaceContainer = new StubWorkspaceContainer();
 
     /**
      * Keeps track of how many times populate() has been called.
@@ -114,10 +115,16 @@ public class StubSQLObject extends SQLObject {
 		fireChildAdded(child.getClass(), child, index);
 	}
 	
-	public SPSession getSession() {
-		return session;
+	@Override
+	public WorkspaceContainer getWorkspaceContainer() {
+		return workspaceContainer;
 	}
-
+	
+	@Override
+	public RunnableDispatcher getRunnableDispatcher() {
+		return workspaceContainer;
+	}
+	
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
 		types.add(SQLObject.class);

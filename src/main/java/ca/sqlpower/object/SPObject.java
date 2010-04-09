@@ -29,8 +29,9 @@ import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
-import ca.sqlpower.util.SPSession;
+import ca.sqlpower.util.RunnableDispatcher;
 import ca.sqlpower.util.SessionNotFoundException;
+import ca.sqlpower.util.WorkspaceContainer;
 
 /**
  * This interface represents any kind of object within this library or extending
@@ -208,11 +209,18 @@ public interface SPObject {
     void commit();
 
     /**
-     * Gets the session that contains this SPObject. If the session is null a
+     * Gets the WorkspaceContainer that contains this SPObject. If the session is null a
      * {@link SessionNotFoundException} will be thrown.
      */
     @Transient @Accessor
-    SPSession getSession();
+    WorkspaceContainer getWorkspaceContainer();
+    
+    /**
+     * Gets the RunnableDispacher that contains this SPObject. If the session is null a
+     * {@link SessionNotFoundException} will be thrown.
+     */
+    @Transient @Accessor
+    RunnableDispatcher getRunnableDispatcher();
     
 	/**
 	 * Signals the roll back of a transaction. The events of the transaction

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, SQL Power Group Inc.
+ * Copyright (c) 2010, SQL Power Group Inc.
  *
  * This file is part of SQL Power Library.
  *
@@ -22,21 +22,9 @@ package ca.sqlpower.util;
 import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.SPObject;
 
-/**
- * A generic version of the WabitSession, used by the JCRPersister to run events
- * on appropriate threads. This interface can be extended as necessary in the
- * future.
- */
-public interface SPSession {
+public interface RunnableDispatcher {
 
 	/**
-	 * This will return the root object of the object model used by this
-	 * Session. Every SPObject contained in this session will be a descendant of
-	 * this root object.
-	 */
-	SPObject getWorkspace();
-	
-	 /**
      * This will force the given runnable to execute in the 'foreground'. If
      * something is executed in the foreground then the thread that called this
      * method will pass the runner to the thread that updates the user

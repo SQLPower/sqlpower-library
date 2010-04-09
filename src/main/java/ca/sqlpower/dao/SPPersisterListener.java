@@ -493,7 +493,7 @@ public class SPPersisterListener implements SPListener {
 		rollingBack = true;
 		try {
 			SPSessionPersister.undoForSession(
-				eventSource.getSession().getWorkspace(), 
+				eventSource.getWorkspaceContainer().getWorkspace(), 
 				this.persistedObjectsRollbackList, 
 				this.persistedPropertiesRollbackList, 
 				this.objectsToRemoveRollbackList,

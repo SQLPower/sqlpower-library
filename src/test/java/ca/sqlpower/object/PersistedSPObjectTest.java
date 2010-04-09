@@ -42,7 +42,6 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.dao.PersistedSPOProperty;
 import ca.sqlpower.dao.PersistedSPObject;
 import ca.sqlpower.dao.PersisterUtils;
-import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.dao.SPPersisterListener;
 import ca.sqlpower.dao.SPSessionPersister;
 import ca.sqlpower.dao.SPPersister.DataType;
@@ -60,11 +59,11 @@ import ca.sqlpower.sqlobject.SQLObjectRoot;
 import ca.sqlpower.testutil.GenericNewValueMaker;
 import ca.sqlpower.testutil.NewValueMaker;
 import ca.sqlpower.testutil.SPObjectRoot;
-import ca.sqlpower.util.SPSession;
+import ca.sqlpower.util.RunnableDispatcher;
 import ca.sqlpower.util.SQLPowerUtils;
-import ca.sqlpower.util.SessionNotFoundException;
-import ca.sqlpower.util.StubSPSession;
+import ca.sqlpower.util.StubWorkspaceContainer;
 import ca.sqlpower.util.TransactionEvent;
+import ca.sqlpower.util.WorkspaceContainer;
 
 /**
  * Classes that implement SPObject and need to be persisted must implement
@@ -103,10 +102,12 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 */
 	private class StubWorkspace extends AbstractSPObject {
 		
-		private final SPSession session;
+		private final WorkspaceContainer workspaceContainer;
+		private final RunnableDispatcher dispatcher;
 
-		public StubWorkspace(SPSession session) {
-			this.session = session;
+		public StubWorkspace(WorkspaceContainer workspaceContainer, RunnableDispatcher dispatcher) {
+			this.workspaceContainer = workspaceContainer;
+			this.dispatcher = dispatcher;
 		}
 
 		@Override
@@ -141,8 +142,13 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		}
 		
 		@Override
-		public SPSession getSession() throws SessionNotFoundException {
-			return session;
+		public WorkspaceContainer getWorkspaceContainer() {
+			return workspaceContainer;
+		}
+		
+		@Override
+		public RunnableDispatcher getRunnableDispatcher() {
+			return dispatcher;
 		}
 		
 	}
@@ -172,8 +178,8 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	protected void setUp() throws Exception {
 		super.setUp();
 		root = new SPObjectRoot();
-		SPSession stub = new StubSPSession() {
-			private final SPObject workspace = new StubWorkspace(this);
+		StubWorkspaceContainer stub = new StubWorkspaceContainer() {
+			private final SPObject workspace = new StubWorkspace(this, this);
 			@Override
 			public SPObject getWorkspace() {
 				return workspace;
@@ -337,7 +343,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	public void testSPPersisterPersistsProperties() throws Exception {
 		SPSessionPersister persister = new TestingSessionPersister(
 				"Testing Persister", root, getConverter());
-		persister.setSession(root.getSession());
+		persister.setWorkspaceContainer(root.getWorkspaceContainer());
 		NewValueMaker valueMaker = createNewValueMaker(root, getPLIni());
 		
 		SPObject objectUnderTest = getSPObjectUnderTest();
@@ -402,8 +408,8 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 */
 	public void testPersisterCreatesNewObjects() throws Exception {
 		SPObjectRoot newRoot = new SPObjectRoot();
-		SPSession stub = new StubSPSession() {
-			private final SPObject workspace = new StubWorkspace(this);
+		WorkspaceContainer stub = new StubWorkspaceContainer() {
+			private final SPObject workspace = new StubWorkspace(this, this);
 			@Override
 			public SPObject getWorkspace() {
 				return workspace;
@@ -418,7 +424,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 				getPLIni(), newRoot);
 		
 		SPSessionPersister persister = new TestingSessionPersister("Test persister", newRoot, newConverter);
-		persister.setSession(stub);
+		persister.setWorkspaceContainer(stub);
 		
 		for (SPObject child : root.getChildren()) {
 			copyToRoot(child, newValueMaker);
@@ -651,7 +657,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		NewValueMaker valueMaker = createNewValueMaker(getRootObject(), getPLIni());
 		
 		SPSessionPersister persister = new TestingSessionPersister("tester", getRootObject(), getConverter());
-		persister.setSession(getRootObject().getSession());
+		persister.setWorkspaceContainer(getRootObject().getWorkspaceContainer());
 		
 		failureReason = null;
 		
@@ -925,7 +931,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
     	if (childClassType == null) return null;
     	
     	SPSessionPersister persister = new TestingSessionPersister("test", getSPObjectUnderTest(), getConverter());
-    	persister.setSession(getSPObjectUnderTest().getSession());
+    	persister.setWorkspaceContainer(getSPObjectUnderTest().getWorkspaceContainer());
     	SPPersisterListener listener = new SPPersisterListener(persister, getConverter());
     	
     	SPObject newChild = (SPObject) valueMaker.makeNewValue(childClassType, null, "child");
@@ -959,7 +965,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		if (child == null) return;
 		
 		SPSessionPersister persister = new TestingSessionPersister("test", getSPObjectUnderTest(), getConverter());
-    	persister.setSession(getSPObjectUnderTest().getSession());
+    	persister.setWorkspaceContainer(getSPObjectUnderTest().getWorkspaceContainer());
     	SPPersisterListener listener = new SPPersisterListener(persister, getConverter());
     	
     	int childCount = getSPObjectUnderTest().getChildren().size();
