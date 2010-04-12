@@ -30,6 +30,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.util.UUID;
 
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.query.SQLGroupFunction;
@@ -343,8 +344,11 @@ public class GenericNewValueMaker implements NewValueMaker {
         	}
         } else if (valueType == UserDefinedSQLType.class) {
         	newVal = new UserDefinedSQLType();
+        	root.addChild((SPObject) newVal, root.getChildren(UserDefinedSQLType.class).size());
         } else if (valueType == SQLTypePhysicalProperties.class) {
-        	newVal = new SQLTypePhysicalProperties(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
+        	// XXX Uses a random string so that each platform will be different. The interaction
+        	// of identical platforms is tested for specifically.
+        	newVal = new SQLTypePhysicalProperties(UUID.randomUUID().toString());
         } else if (valueType == SQLTypeConstraint.class) {
         	if (oldVal != SQLTypeConstraint.NONE) {
         		newVal = SQLTypeConstraint.NONE;

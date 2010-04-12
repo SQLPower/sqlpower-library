@@ -87,6 +87,8 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
         ignored.add("magicEnabled");
         ignored.add("tableContainer");
         ignored.add("session");
+        ignored.add("workspaceContainer");
+        ignored.add("runnableDispatcher");
         ignored.add("foregroundThread");
 		return ignored;
 	}
@@ -301,6 +303,8 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
         propertiesToIgnoreForUndo.add("updateRule");
         propertiesToIgnoreForUndo.add("tableContainer");
         propertiesToIgnoreForUndo.add("session");
+        propertiesToIgnoreForUndo.add("workspaceContainer");
+        propertiesToIgnoreForUndo.add("runnableDispatcher");
         propertiesToIgnoreForUndo.add("foregroundThread");
 
 		if(so instanceof SQLDatabase)

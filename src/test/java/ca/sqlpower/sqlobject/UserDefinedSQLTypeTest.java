@@ -88,8 +88,10 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
         typeProxy.setUpstreamType(domain);
         proxyProperties = new SQLTypePhysicalProperties("Generic");
         typeProxy.putPhysicalProperties("Generic", proxyProperties);
-        
-        typeProxy.setParent(getRootObject());
+
+        getRootObject().addChild(udt, 0);
+        getRootObject().addChild(typeProxy, 0);
+        getRootObject().addChild(domain, 0);
     }
 
     public void testGetScale() throws Exception {
@@ -178,6 +180,22 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
         assertEquals(PropertyType.NOT_APPLICABLE, typeProxy.getPrecisionType("Oracle"));
     }
 
+    /**
+     * this test ensures that the new physical properties object replaces the
+     * old when they have the same platform
+     */
+    public void testSamePlatformOverwritesOld() throws Exception {
+    	UserDefinedSQLType obj = (UserDefinedSQLType) getSQLObjectUnderTest();
+    	
+    	SQLTypePhysicalProperties props0 = new SQLTypePhysicalProperties(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
+    	SQLTypePhysicalProperties props1 = new SQLTypePhysicalProperties(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
+    	
+    	obj.putPhysicalProperties(props0.getPlatform(), props0);
+    	assertEquals(props0.getUUID(), obj.getPhysicalProperties(props0.getPlatform()).getUUID());
+    	obj.putPhysicalProperties(props0.getPlatform(), props1);
+    	assertEquals(props1.getUUID(), obj.getPhysicalProperties(props0.getPlatform()).getUUID());
+    }
+    
 	@Override
 	protected Class<? extends SPObject> getChildClassType() {
 		return SQLTypePhysicalProperties.class;

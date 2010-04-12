@@ -120,8 +120,9 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     @Override
     protected boolean removeChildImpl(SPObject child) {
     	SQLTypePhysicalProperties childProperty = (SQLTypePhysicalProperties) child;
-        boolean removedFromList = physicalProperties.remove(child);
-		boolean removedFromMap = (physicalPropertiesMap.remove(childProperty.getPlatform()) == null);
+        int childIndex = physicalProperties.indexOf(child);
+    	boolean removedFromList = physicalProperties.remove(child);
+		boolean removedFromMap = (physicalPropertiesMap.remove(childProperty.getPlatform()) != null);
 		
 		// If the property is found in one of the map and list and not the other, then we're in an inconsistent state
 		if (removedFromList == true && removedFromMap == false) {
@@ -131,6 +132,8 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 		}
 		
 		if (child != null && removedFromList && removedFromMap) {
+			fireChildRemoved(SQLTypePhysicalProperties.class, child, childIndex);
+			child.setParent(null);
             return true;
         } else {
             return false;
@@ -381,7 +384,9 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
         SQLTypePhysicalProperties oldValue = physicalPropertiesMap.put(platform, properties);
         if (oldValue != null) {
         	physicalProperties.remove(oldValue);
+        	oldValue.setParent(null);
         }
+        properties.setParent(this);
         physicalProperties.add(properties);
     }
     
@@ -401,7 +406,6 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
         SQLTypePhysicalProperties properties = physicalPropertiesMap.get(platform);
         if (properties == null) {
             properties = new SQLTypePhysicalProperties(platform);
-            properties.setParent(this);
             putPhysicalProperties(platform, properties);
         }
         return properties;
@@ -428,8 +432,10 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     		int oldIndex = physicalProperties.indexOf(oldProperties);
     		physicalProperties.remove(oldProperties);
     		fireChildRemoved(SQLTypePhysicalProperties.class, oldProperties, oldIndex);
+    		oldProperties.setParent(null);
     	}
     	physicalProperties.add(index, newProperties);
+    	newProperties.setParent(this);
     	fireChildAdded(SQLTypePhysicalProperties.class, newProperties, index);
     }
 }

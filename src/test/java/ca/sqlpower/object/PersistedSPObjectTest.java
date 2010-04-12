@@ -743,7 +743,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		} catch (Exception e) {
 			//continue, exception expected.
 		}
-		
+
 		if (failureReason != null) {
 			throw new RuntimeException("Failed when asserting properties were " +
 					"fully persisted.", failureReason);

@@ -32,6 +32,7 @@ public class SQLTypePhysicalPropertiesTest extends BaseSQLObjectTestCase {
 	protected void setUp() throws Exception {
 		super.setUp();
 		properties = new SQLTypePhysicalProperties(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
+		getRootObject().addChild(properties, 0);
 	}
 
 	@Override
