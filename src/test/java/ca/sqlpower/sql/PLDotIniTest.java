@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.util.List;
 
 import junit.framework.TestCase;
+import ca.sqlpower.sqlobject.UserDefinedSQLType;
 
 public class PLDotIniTest extends TestCase {
 
@@ -81,6 +82,19 @@ public class PLDotIniTest extends TestCase {
         buf.append("L Schema Owner=" + DataSourceCollection.DOS_CR_LF);
         buf.append("DSN=" + DataSourceCollection.DOS_CR_LF);
         buf.append("JDBC URL=jdbc:postgresql://:5432/" + DataSourceCollection.DOS_CR_LF);
+        buf.append("[Data Types_1]" + DataSourceCollection.DOS_CR_LF);
+        buf.append("Name=VARCHAR" + DataSourceCollection.DOS_CR_LF);
+        buf.append("Basic Type=TEXT" + DataSourceCollection.DOS_CR_LF);
+        buf.append("Description=Test Type" + DataSourceCollection.DOS_CR_LF);
+        buf.append("JDBC Type=12" + DataSourceCollection.DOS_CR_LF);
+        buf.append("Check Constraint=" + DataSourceCollection.DOS_CR_LF);
+        buf.append("Constraint Type=NONE" + DataSourceCollection.DOS_CR_LF);
+        buf.append("Default Value=" + DataSourceCollection.DOS_CR_LF);
+        buf.append("Enumerated Constraint=" + DataSourceCollection.DOS_CR_LF);
+        buf.append("Precision Type=VARIABLE" + DataSourceCollection.DOS_CR_LF);
+        buf.append("Scale Type=NOT_APPLICABLE" + DataSourceCollection.DOS_CR_LF);
+        buf.append("Precision=0" + DataSourceCollection.DOS_CR_LF);
+        buf.append("Scale=0" + DataSourceCollection.DOS_CR_LF);
         return buf.toString();
     }
 	/*
@@ -99,7 +113,7 @@ public class PLDotIniTest extends TestCase {
     /* ensures we read all sections in the correct order */
     public void testReadSections() throws Exception {
         testRead();
-        assertEquals(5, target.getSectionCount());
+        assertEquals(6, target.getSectionCount());
         
         // the nameless first section
         Object s = target.getSection(0);
@@ -117,6 +131,9 @@ public class PLDotIniTest extends TestCase {
 
         s = target.getSection(4);
         assertEquals(JDBCDataSource.class, s.getClass());
+        
+        s = target.getSection(5);
+        assertEquals(UserDefinedSQLType.class, s.getClass());
     }
 
     /* simple test of getDataSource() which assumes addDataSource() works. */
@@ -150,6 +167,8 @@ public class PLDotIniTest extends TestCase {
                 sb.append(((SPDataSource) o).getPropertiesMap().toString());
             } else if (o instanceof JDBCDataSourceType) {
                 sb.append(((JDBCDataSourceType) o).getProperties().toString());
+            } else if (o instanceof UserDefinedSQLType) {
+            	sb.append(plini.createSQLTypePropertiesMap(((UserDefinedSQLType) o)).toString());
             } else {
                 throw new IllegalArgumentException("Unknown pl.ini section type: "+o);
             }

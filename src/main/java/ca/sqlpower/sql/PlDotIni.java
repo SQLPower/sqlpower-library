@@ -34,6 +34,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -49,6 +50,11 @@ import javax.swing.undo.CannotUndoException;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.sqlobject.SQLIndex;
+import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider;
+import ca.sqlpower.sqlobject.UserDefinedSQLType;
+import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
+import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.BasicSQLType;
+import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
 
 /**
  * The PlDotIni class represents the contents of a PL.INI file; despit
@@ -324,7 +330,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
     /**
      * The enumeration of states that the read() method's INI file parser can be in.
      */
-    private enum ReadState {READ_DS, READ_GENERIC, READ_TYPE}
+    private enum ReadState {READ_DS, READ_GENERIC, READ_TYPE, READ_SQLTYPE}
 
     public void read(File location) throws IOException {
         if (!location.canRead()) {
@@ -348,6 +354,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 
             JDBCDataSourceType currentType = null;
             SPDataSource currentDS = null;
+            UserDefinedSQLType currentSQLType = null;
             Section currentSection = new Section(null);  // this accounts for any properties before the first named section
 
             // Can't use Reader to read this file because the encrypted passwords contain non-ASCII characters
@@ -363,7 +370,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
                 logger.debug("Read in new line: "+line);
                 
                 if (line.startsWith("[")) {
-                    mergeFileData(mode, currentType, currentDS, currentSection);
+                    mergeFileData(mode, currentType, currentDS, currentSQLType, currentSection);
                 }
                 if (line.startsWith("[Databases_")) {
                     logger.debug("It's a new database connection spec!" +fileSections);
@@ -377,6 +384,10 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
                     logger.debug("It's a new database type!" + fileSections);
                     currentType =  new JDBCDataSourceType(getServerBaseURI());
                     mode = ReadState.READ_TYPE;
+                } else if (line.startsWith("[Data Types_")) {
+                	logger.debug("It's a new data type!" + fileSections);
+                	currentSQLType = new UserDefinedSQLType();
+                	mode = ReadState.READ_SQLTYPE;
                 } else if (line.startsWith("[")) {
                     logger.debug("It's a new generic section!");
                     currentSection = new Section(line.substring(1, line.length()-1));
@@ -409,11 +420,13 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
                         currentType.putProperty(key, value);
                     } else if (mode == ReadState.READ_GENERIC) {
                         currentSection.put(key, value);
+                    } else if (mode == ReadState.READ_SQLTYPE) {
+                    	putPropertyIntoSQLType(currentSQLType, key, value);
                     }
                 }
             }
             in.close();
-            mergeFileData(mode, currentType, currentDS, currentSection);
+            mergeFileData(mode, currentType, currentDS, currentSQLType, currentSection);
 
             // hook up database type hierarchy, and assign parentType pointers to data sources themselves
             for (Object o : fileSections) {
@@ -478,13 +491,16 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
      * which argument is passed in.
      * @param currentType Only used when mode = READ_TYPE
      * @param currentDS Only used when mode = READ_DS
+	 * @param currentSQLType Only used when mode = READ_SQLTYPE 
      * @param currentSection Only used when mode = READ_GENERIC
      */
-    private void mergeFileData(ReadState mode, JDBCDataSourceType currentType, SPDataSource currentDS, Section currentSection) {
+    private void mergeFileData(ReadState mode, JDBCDataSourceType currentType, SPDataSource currentDS, UserDefinedSQLType currentSQLType, Section currentSection) {
         if (mode == ReadState.READ_DS) {
             mergeDataSource(currentDS);
         } else if (mode == ReadState.READ_GENERIC) {
             mergeSection(currentSection);
+        } else if (mode == ReadState.READ_SQLTYPE) {
+        	mergeSQLType(currentSQLType);
         } else if (mode == ReadState.READ_TYPE) {
             // special case: sometimes the parser ends up thinking there was
             // an empty ds type section at the end of the file. we can't merge it.
@@ -587,6 +603,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
         int dbNum = 1;
         int typeNum = 1;
         int olapNum = 1;
+        int sqlTypeNum = 1;
 
         Iterator it = fileSections.iterator();
 	    while (it.hasNext()) {
@@ -602,6 +619,10 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
                 typeNum++;
             } else if (next instanceof Olap4jDataSource) {
                 writeSection(out, "OLAP_databases_"+olapNum, ((Olap4jDataSource) next).getPropertiesMap());
+                olapNum++;
+            } else if (next instanceof UserDefinedSQLType) {
+            	writeSection(out, "Data Types_" + sqlTypeNum, createSQLTypePropertiesMap((UserDefinedSQLType) next));
+            	sqlTypeNum++;
 	        } else if (next == null) {
 	            logger.error("write: Null section");
 	        } else {
@@ -610,6 +631,73 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 	    }
 	}
 
+	/**
+	 * A helper method that given a {@link UserDefinedSQLType}, it returns an
+	 * unmodifiable map of properties that are compatible with the expected key
+	 * values for the Data Types section in the PL.INI
+	 */
+	// Left this package private so that the PLDotIniTest can use it
+	Map<String,String> createSQLTypePropertiesMap(UserDefinedSQLType next) {
+		String platform = SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM;
+		Map<String, String> properties = new LinkedHashMap<String, String>();
+		properties.put("Name", next.getName());
+		properties.put("Basic Type", next.getBasicType().toString());
+		properties.put("Description", next.getDescription());
+		properties.put("JDBC Type", String.valueOf(next.getType()));
+		properties.put("Check Constraint", next.getCheckConstraint(platform));
+		properties.put("Constraint Type", next.getConstraintType(platform).toString());
+		properties.put("Default Value", next.getDefaultValue(platform));
+		StringBuilder enumString = new StringBuilder();
+		List<String> enums = next.getEnumeration(platform);
+		if (enums != null) {
+			boolean first = true;
+			for (String value: enums) {
+				if (!first) enumString.append(",");
+				enumString.append(value);
+				first = false;
+			}
+		}
+		properties.put("Enumerated Constraint", enumString.toString());
+		properties.put("Precision Type", next.getPrecisionType(platform).toString());
+		properties.put("Scale Type", next.getScaleType(platform).toString());
+		properties.put("Precision", String.valueOf(next.getPrecision(platform)));
+		properties.put("Scale", String.valueOf(next.getScale(platform)));
+		return Collections.unmodifiableMap(properties);
+	}
+
+	/**
+	 * A helper method that takes a value/key pair associate with a new Data
+	 * Type and sets them on the given {@link UserDefinedSQLType}.
+	 */
+	private void putPropertyIntoSQLType(UserDefinedSQLType sqlType, String key, String value) {
+		String platform = SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM;
+		if (key.equals("Name")) {
+			sqlType.setName(value);
+		} else if (key.equals("Basic Type")) {
+			sqlType.setBasicType(BasicSQLType.valueOf(value));
+		} else if (key.equals("Description")) {
+			sqlType.setDescription(value);
+		} else if (key.equals("JDBC Type")) {
+			sqlType.setType(Integer.valueOf(value));
+		} else if (key.equals("Check Constraint")) {
+			sqlType.setCheckConstraint(platform, value);
+		} else if (key.equals("Constraint Type")) {
+			sqlType.setConstraintType(platform, SQLTypeConstraint.valueOf(value));
+		} else if (key.equals("Default Value")) {
+			sqlType.setDefaultValue(platform, value);
+		} else if (key.equals("Enumerated Constraint")) {
+			sqlType.setEnumeration(platform, value != null ? Arrays.asList(value.split(",")) : new ArrayList<String>());
+		} else if (key.equals("Precision Type")) {
+			sqlType.setPrecisionType(platform, PropertyType.valueOf(value));
+		} else if (key.equals("Scale Type")) {
+			sqlType.setScaleType(platform, PropertyType.valueOf(value));
+		} else if (key.equals("Precision")) {
+			sqlType.setPrecision(platform, Integer.valueOf(value));
+		} else if (key.equals("Scale")) {
+			sqlType.setScale(platform, Integer.valueOf(value));
+		}
+	}
+	
 	/**
 	 * Writes out the named section header, followed by all the properties, one per line.  Each
 	 * line is terminated with a CRLF, regardless of the current platform default.
@@ -914,6 +1002,30 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
         return fileSections.remove(dataSourceType);
     }
 
+	/**
+	 * If a section with the same name as the given sqlType exists, then merge
+	 * the properties. Otherwise, add a new section for this type.
+	 */
+	public void mergeSQLType(UserDefinedSQLType sqlType) {
+		String name = sqlType.getName();
+		for (Object o : fileSections) {
+			if (o instanceof UserDefinedSQLType) {
+				UserDefinedSQLType existingType = (UserDefinedSQLType) o;
+				if (sqlType.getName().equals(name)) {
+					for (Map.Entry<String, String> entry : createSQLTypePropertiesMap(sqlType).entrySet()) {
+						putPropertyIntoSQLType(existingType, entry.getKey(), entry.getValue());
+					}
+					return;
+				}
+			}
+		}
+		addSQLType(sqlType);
+	}
+    
+    private void addSQLType(UserDefinedSQLType sqlType) {
+    	fileSections.add(sqlType);
+    }
+    
     private void fireAddEvent(SPDataSource dbcs) {
 		int index = fileSections.size()-1;
 		DatabaseListChangeEvent e = new DatabaseListChangeEvent(this, index, dbcs);
