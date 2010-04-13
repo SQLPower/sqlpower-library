@@ -1011,7 +1011,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 		for (Object o : fileSections) {
 			if (o instanceof UserDefinedSQLType) {
 				UserDefinedSQLType existingType = (UserDefinedSQLType) o;
-				if (sqlType.getName().equals(name)) {
+				if (existingType.getName().equals(name)) {
 					for (Map.Entry<String, String> entry : createSQLTypePropertiesMap(sqlType).entrySet()) {
 						putPropertyIntoSQLType(existingType, entry.getKey(), entry.getValue());
 					}
