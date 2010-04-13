@@ -21,7 +21,6 @@ package ca.sqlpower.dao;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyDescriptor;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -40,6 +39,9 @@ import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.TransactionEvent;
+
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 
 /**
  * This generic listener will use the persister helper factory given to it to
@@ -86,10 +88,10 @@ public class SPPersisterListener implements SPListener {
 	private List<RemovedObjectEntry> objectsToRemoveRollbackList = new LinkedList<RemovedObjectEntry>();
 	
 	/**
-	 * Persisted property buffer, mapping of {@link SPObject} UUIDs 
-	 * concatenated with a property name to the given property.
+	 * Persisted property buffer, mapping a {@link SPObject} uuid 
+	 * to a list of persisted properties for that uuid.
 	 */
-	private HashMap<String, PersistedSPOProperty> persistedProperties = new HashMap<String, PersistedSPOProperty>();
+	private Multimap<String, PersistedSPOProperty> persistedProperties = LinkedListMultimap.create();
 	
 	/**
 	 * Persisted {@link WabitObject} buffer, contains all the data that was
@@ -195,14 +197,14 @@ public class SPPersisterListener implements SPListener {
 				//unconditional properties in this case are only on new objects
 				//so undoing these properties will only come just before the object is
 				//removed and doesn't matter.			    
-				persistedProperties.put(uuid + propertyName, new PersistedSPOProperty(uuid, propertyName, 
+				persistedProperties.put(uuid, new PersistedSPOProperty(uuid, propertyName, 
 						propertyType, newValue, newValue, true));
 			}
 		
 			public void persistProperty(String uuid, String propertyName,
 					DataType propertyType, Object oldValue, Object newValue)
 					throws SPPersistenceException {
-			    persistedProperties.put(uuid + propertyName, new PersistedSPOProperty(
+			    persistedProperties.put(uuid, new PersistedSPOProperty(
                         uuid, propertyName, propertyType, oldValue, newValue, false));			
 			}
 
@@ -287,6 +289,7 @@ public class SPPersisterListener implements SPListener {
 		    if (!persistedObjects.remove(pso)) {
 		        throw new RuntimeException("This shouldn't have happened");
 		    }
+		    persistedProperties.removeAll(uuid);
 		} else {
 		    transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
 		    "Start of transaction triggered by childRemoved event"));
@@ -369,8 +372,13 @@ public class SPPersisterListener implements SPListener {
 		Object oldBasicType = converter.convertToBasicType(oldValue);
 		Object newBasicType = converter.convertToBasicType(newValue);
 		
-        String key = uuid + propertyName;
-        PersistedSPOProperty property = persistedProperties.get(key);
+		PersistedSPOProperty property = null;
+		for (PersistedSPOProperty p : persistedProperties.get(uuid))  {
+		    if (p.getPropertyName().equals(propertyName)) {
+		        property = p;
+		        break;
+		    }
+		}
         if (property != null) {
             boolean valuesMatch;
             if (property.getNewValue() == null) {
@@ -400,10 +408,11 @@ public class SPPersisterListener implements SPListener {
             // this will maintain that flag in the event of additional property changes
             // to the same property in the same transaction.
             unconditional = property.isUnconditional();
+            persistedProperties.remove(uuid, property);
         }
         logger.debug("persistProperty(" + uuid + ", " + propertyName + ", " + 
                 typeForClass.name() + ", " + oldValue + ", " + newValue + ")");
-        persistedProperties.put(key, new PersistedSPOProperty(
+        persistedProperties.put(uuid, new PersistedSPOProperty(
                 uuid, propertyName, typeForClass, oldBasicType, newBasicType, unconditional));
 		
 		this.transactionEnded(TransactionEvent.createEndTransactionEvent(this));
@@ -544,30 +553,30 @@ public class SPPersisterListener implements SPListener {
 	 * @throws SPPersistenceException
 	 */
 	private void commitProperties() throws SPPersistenceException {
-		logger.debug("commitProperties()");
-		for (PersistedSPOProperty property : persistedProperties.values()) {
-		    if (removedObjectsUUIDs.contains(property.getUUID())) continue;
-			if (property.isUnconditional()) {
-				target.persistProperty(
-					property.getUUID(),
-					property.getPropertyName(),
-					property.getDataType(),
-					property.getNewValue());
-			} else {
-				target.persistProperty(
-				    property.getUUID(), 
-					property.getPropertyName(), 
-					property.getDataType(), 
-					property.getOldValue(),
-					property.getNewValue());
-			}
-			this.persistedPropertiesRollbackList.add(
-				new PersistedPropertiesEntry(
-				    property.getUUID(), 
-					property.getPropertyName(),
-					property.getDataType(), 
-					property.getOldValue()));
-		}
+        logger.debug("commitProperties()");
+        for (PersistedSPOProperty property : persistedProperties.values()) {
+            if (removedObjectsUUIDs.contains(property.getUUID())) continue;
+            if (property.isUnconditional()) {
+                target.persistProperty(
+                    property.getUUID(),
+                    property.getPropertyName(),
+                    property.getDataType(),
+                    property.getNewValue());
+            } else {
+                target.persistProperty(
+                    property.getUUID(), 
+                    property.getPropertyName(), 
+                    property.getDataType(), 
+                    property.getOldValue(),
+                    property.getNewValue());
+            }
+            this.persistedPropertiesRollbackList.add(
+                new PersistedPropertiesEntry(
+                    property.getUUID(), 
+                    property.getPropertyName(),
+                    property.getDataType(), 
+                    property.getOldValue()));
+        }
 	}
 
 	/**
@@ -589,8 +598,8 @@ public class SPPersisterListener implements SPListener {
 		}
 	}
 	
-	public HashMap<String, PersistedSPOProperty> getPersistedProperties() {
-		return persistedProperties;
+	public List<PersistedSPOProperty> getPersistedProperties() {
+	    return new LinkedList<PersistedSPOProperty>(persistedProperties.values());
 	}
 
 	public List<PersistedSPObject> getPersistedObjects() {
