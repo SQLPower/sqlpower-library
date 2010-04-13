@@ -97,6 +97,12 @@ public class SPSUtils {
      * The URL for the SQL Power forum where users can get help and ask questions.
      */
     public static final String FORUM_URL = "http://www.sqlpower.ca/forum/"; //$NON-NLS-1$
+    
+    /**
+     * The URL for the SQL Power FAQ page
+     */
+    public static final String FAQ_URL = "http://www.sqlpower.ca/page/FAQ"; //$NON-NLS-1$
+    
 	
 	public static final Action forumAction = new AbstractAction(Messages.getString("SPSUtils.webSupportActionName"), //$NON-NLS-1$
             // Alas this is now static so the size can't be gotten from sprefs...
