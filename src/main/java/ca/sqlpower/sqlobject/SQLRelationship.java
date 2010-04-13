@@ -335,43 +335,49 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	
 	@Override
 	public final void updateToMatch(SQLObject source) throws SQLObjectException {
-	    SQLRelationship relationshipToCopy = (SQLRelationship) source;
-        setName(relationshipToCopy.getName());
-        setIdentifying(relationshipToCopy.determineIdentifyingStatus());
-        setUpdateRule(relationshipToCopy.getUpdateRule());
-        setDeleteRule(relationshipToCopy.getDeleteRule());
-        setDeferrability(relationshipToCopy.getDeferrability());
-        for (Map.Entry<Class<? extends SQLObject>, Throwable> inaccessibleReason : source.getChildrenInaccessibleReasons().entrySet()) {
-        	setChildrenInaccessibleReason(inaccessibleReason.getValue(), inaccessibleReason.getKey(), false);
-        }
-        setTextForChildLabel(relationshipToCopy.getTextForChildLabel());
-        setTextForParentLabel(relationshipToCopy.getTextForParentLabel());
-        
-        List<ColumnMapping> columnsToRemove = new ArrayList<ColumnMapping>(getChildrenWithoutPopulating());
-        for (ColumnMapping newColMapping : relationshipToCopy.getChildrenWithoutPopulating()) {
-        	boolean foundColumn = false;
-        	for (int i = columnsToRemove.size() - 1; i >= 0; i--) {
-        		ColumnMapping existingMapping = columnsToRemove.get(i);
-        		if (existingMapping.getPkColumn().equals(newColMapping.getPkColumn())
-        				&& existingMapping.getFkColumn().equals(newColMapping.getFkColumn())) {
-        			columnsToRemove.remove(existingMapping);
-        			foundColumn = true;
-        			break;
-        		}
-        	}
-        	if (!foundColumn) {
-        		addChild(newColMapping);
-        	}
-        }
-        for (ColumnMapping removeMe : columnsToRemove) {
-        	try {
-				removeChild(removeMe);
-			} catch (Exception e) {
-				throw new SQLObjectException(e);
-			}
-        }
+	    updateToMatch(source, false);
 	}
 	
+	public final void updateToMatch(SQLObject source, boolean ignoreColumnMappings) throws SQLObjectException {
+	    SQLRelationship relationshipToCopy = (SQLRelationship) source;
+	    setName(relationshipToCopy.getName());
+	    setIdentifying(relationshipToCopy.determineIdentifyingStatus());
+	    setUpdateRule(relationshipToCopy.getUpdateRule());
+	    setDeleteRule(relationshipToCopy.getDeleteRule());
+	    setDeferrability(relationshipToCopy.getDeferrability());
+	    for (Map.Entry<Class<? extends SQLObject>, Throwable> inaccessibleReason : source.getChildrenInaccessibleReasons().entrySet()) {
+	        setChildrenInaccessibleReason(inaccessibleReason.getValue(), inaccessibleReason.getKey(), false);
+	    }
+	    setTextForChildLabel(relationshipToCopy.getTextForChildLabel());
+	    setTextForParentLabel(relationshipToCopy.getTextForParentLabel());
+
+	    if (ignoreColumnMappings) return;
+
+	    List<ColumnMapping> columnsToRemove = new ArrayList<ColumnMapping>(getChildrenWithoutPopulating());
+	    for (ColumnMapping newColMapping : relationshipToCopy.getChildrenWithoutPopulating()) {
+	        boolean foundColumn = false;
+	        for (int i = columnsToRemove.size() - 1; i >= 0; i--) {
+	            ColumnMapping existingMapping = columnsToRemove.get(i);
+	            if (existingMapping.getPkColumn().equals(newColMapping.getPkColumn())
+	                    && existingMapping.getFkColumn().equals(newColMapping.getFkColumn())) {
+	                columnsToRemove.remove(existingMapping);
+	                foundColumn = true;
+	                break;
+	            }
+	        }
+	        if (!foundColumn) {
+	            addChild(newColMapping);
+	        }
+	    }
+	    for (ColumnMapping removeMe : columnsToRemove) {
+	        try {
+	            removeChild(removeMe);
+	        } catch (Exception e) {
+	            throw new SQLObjectException(e);
+	        }
+	    }
+	}
+
 	/**
 	 *  Adds a counter to the end of the default column name until
 	 *  it is unique in the given table.
