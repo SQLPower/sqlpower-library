@@ -28,6 +28,8 @@ import java.util.List;
 
 import javax.swing.event.UndoableEditListener;
 
+import ca.sqlpower.sqlobject.UserDefinedSQLType;
+
 public class SpecificDataSourceCollection<T extends SPDataSource> implements DataSourceCollection<T> {
     
     private final DataSourceCollection<? super T> delegate;
@@ -125,6 +127,14 @@ public class SpecificDataSourceCollection<T extends SPDataSource> implements Dat
 
 	public URI getMondrianServerBaseURI() {
 		return delegate.getMondrianServerBaseURI();
+	}
+
+	public UserDefinedSQLType getSQLType(String name) {
+		return delegate.getSQLType(name);
+	}
+
+	public List<UserDefinedSQLType> getSQLTypes() {
+		return delegate.getSQLTypes();
 	}
 
 }

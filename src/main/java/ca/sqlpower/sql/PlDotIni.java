@@ -34,7 +34,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -387,6 +386,15 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
                 } else if (line.startsWith("[Data Types_")) {
                 	logger.debug("It's a new data type!" + fileSections);
                 	currentSQLType = new UserDefinedSQLType();
+                	String platform = SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM; 
+                	currentSQLType.setConstraintType(platform, SQLTypeConstraint.NONE);
+                	currentSQLType.setEnumeration(platform, new String[0]);
+                	currentSQLType.setCheckConstraint(platform, "");
+                	currentSQLType.setDefaultValue(platform, "");
+                	currentSQLType.setPrecision(platform, 0);
+                	currentSQLType.setPrecisionType(platform, PropertyType.VARIABLE);
+                	currentSQLType.setScale(platform, 0);
+                	currentSQLType.setScaleType(platform, PropertyType.VARIABLE);
                 	mode = ReadState.READ_SQLTYPE;
                 } else if (line.startsWith("[")) {
                     logger.debug("It's a new generic section!");
@@ -603,7 +611,6 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
         int dbNum = 1;
         int typeNum = 1;
         int olapNum = 1;
-        int sqlTypeNum = 1;
 
         Iterator it = fileSections.iterator();
 	    while (it.hasNext()) {
@@ -621,8 +628,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
                 writeSection(out, "OLAP_databases_"+olapNum, ((Olap4jDataSource) next).getPropertiesMap());
                 olapNum++;
             } else if (next instanceof UserDefinedSQLType) {
-            	writeSection(out, "Data Types_" + sqlTypeNum, createSQLTypePropertiesMap((UserDefinedSQLType) next));
-            	sqlTypeNum++;
+            	logger.debug("Skipping sql types");
 	        } else if (next == null) {
 	            logger.error("write: Null section");
 	        } else {
@@ -644,24 +650,6 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 		properties.put("Basic Type", next.getBasicType().toString());
 		properties.put("Description", next.getDescription());
 		properties.put("JDBC Type", String.valueOf(next.getType()));
-		properties.put("Check Constraint", next.getCheckConstraint(platform));
-		properties.put("Constraint Type", next.getConstraintType(platform).toString());
-		properties.put("Default Value", next.getDefaultValue(platform));
-		StringBuilder enumString = new StringBuilder();
-		String[] enums = next.getEnumeration(platform);
-		if (enums != null) {
-			boolean first = true;
-			for (String value: enums) {
-				if (!first) enumString.append(",");
-				enumString.append(value);
-				first = false;
-			}
-		}
-		properties.put("Enumerated Constraint", enumString.toString());
-		properties.put("Precision Type", next.getPrecisionType(platform).toString());
-		properties.put("Scale Type", next.getScaleType(platform).toString());
-		properties.put("Precision", String.valueOf(next.getPrecision(platform)));
-		properties.put("Scale", String.valueOf(next.getScale(platform)));
 		return Collections.unmodifiableMap(properties);
 	}
 
@@ -679,22 +667,6 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 			sqlType.setDescription(value);
 		} else if (key.equals("JDBC Type")) {
 			sqlType.setType(Integer.valueOf(value));
-		} else if (key.equals("Check Constraint")) {
-			sqlType.setCheckConstraint(platform, value);
-		} else if (key.equals("Constraint Type")) {
-			sqlType.setConstraintType(platform, SQLTypeConstraint.valueOf(value));
-		} else if (key.equals("Default Value")) {
-			sqlType.setDefaultValue(platform, value);
-		} else if (key.equals("Enumerated Constraint")) {
-			sqlType.setEnumeration(platform, value != null ? value.split(",") : new String[0]);
-		} else if (key.equals("Precision Type")) {
-			sqlType.setPrecisionType(platform, PropertyType.valueOf(value));
-		} else if (key.equals("Scale Type")) {
-			sqlType.setScaleType(platform, PropertyType.valueOf(value));
-		} else if (key.equals("Precision")) {
-			sqlType.setPrecision(platform, Integer.valueOf(value));
-		} else if (key.equals("Scale")) {
-			sqlType.setScale(platform, Integer.valueOf(value));
 		}
 	}
 	
@@ -1022,8 +994,10 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 		addSQLType(sqlType);
 	}
     
-    private void addSQLType(UserDefinedSQLType sqlType) {
-    	fileSections.add(sqlType);
+	private void addSQLType(UserDefinedSQLType sqlType) {
+		// TODO: If this method is made public for client code to add new types,
+		// there will probably have to be events fired for UI
+		fileSections.add(sqlType);
     }
     
     private void fireAddEvent(SPDataSource dbcs) {
@@ -1079,4 +1053,24 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 		return mondrianServerBaseURI;
 	}
 
+	public UserDefinedSQLType getSQLType(String name) {
+		for (Object o : fileSections) {
+			if (o instanceof UserDefinedSQLType) {
+				if (((UserDefinedSQLType) o).getName().equals(name)) {
+					return (UserDefinedSQLType) o;
+				}
+			}
+		}
+		return null;
+	}
+
+	public List<UserDefinedSQLType> getSQLTypes() {
+		List<UserDefinedSQLType> list = new ArrayList<UserDefinedSQLType>();
+		for (Object o : fileSections) {
+			if (o instanceof UserDefinedSQLType) {
+				list.add((UserDefinedSQLType) o);
+			}
+		}
+		return list;
+	}
 }

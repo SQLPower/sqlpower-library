@@ -34,6 +34,7 @@ import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.DatabaseListChangeListener;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sql.SPDataSource;
+import ca.sqlpower.sqlobject.UserDefinedSQLType;
 
 public class StubDataSourceCollection<T extends SPDataSource> implements DataSourceCollection<T> {
 	
@@ -152,4 +153,13 @@ public class StubDataSourceCollection<T extends SPDataSource> implements DataSou
     	return null;
     }
 
+	public UserDefinedSQLType getSQLType(String name) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public List<UserDefinedSQLType> getSQLTypes() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

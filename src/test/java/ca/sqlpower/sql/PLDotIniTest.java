@@ -27,6 +27,7 @@ import java.util.List;
 
 import junit.framework.TestCase;
 import ca.sqlpower.sqlobject.UserDefinedSQLType;
+import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.BasicSQLType;
 
 public class PLDotIniTest extends TestCase {
 
@@ -87,21 +88,13 @@ public class PLDotIniTest extends TestCase {
         buf.append("Basic Type=TEXT" + DataSourceCollection.DOS_CR_LF);
         buf.append("Description=Test Type" + DataSourceCollection.DOS_CR_LF);
         buf.append("JDBC Type=12" + DataSourceCollection.DOS_CR_LF);
-        buf.append("Check Constraint=" + DataSourceCollection.DOS_CR_LF);
-        buf.append("Constraint Type=NONE" + DataSourceCollection.DOS_CR_LF);
-        buf.append("Default Value=" + DataSourceCollection.DOS_CR_LF);
-        buf.append("Enumerated Constraint=" + DataSourceCollection.DOS_CR_LF);
-        buf.append("Precision Type=VARIABLE" + DataSourceCollection.DOS_CR_LF);
-        buf.append("Scale Type=NOT_APPLICABLE" + DataSourceCollection.DOS_CR_LF);
-        buf.append("Precision=0" + DataSourceCollection.DOS_CR_LF);
-        buf.append("Scale=0" + DataSourceCollection.DOS_CR_LF);
         return buf.toString();
     }
 	/*
 	 * Test method for 'ca.sqlpower.architect.PlDotIni.write(OutputStream)'
 	 */
 	public void testWriteOutputStream() throws IOException {
-        String orig = makePlIniString();
+        String orig = makePlIniString().split("\\[Data Types_")[0];
 		InputStream in = makeInputStream(orig);
 		target.read(in);
 		
@@ -290,4 +283,16 @@ public class PLDotIniTest extends TestCase {
         }
     }
 
+    public void testSQLTypeRead() throws Exception {
+    	testRead();
+    	UserDefinedSQLType sqlType = target.getSQLType("VARCHAR");
+    	assertNotNull(sqlType);
+    	assertEquals("VARCHAR", sqlType.getName());
+    	assertEquals(BasicSQLType.TEXT, sqlType.getBasicType());
+    	assertEquals("Test Type", sqlType.getDescription());
+    	assertEquals(12, sqlType.getType());
+    	
+    	UserDefinedSQLType sqlTypeInList = target.getSQLTypes().get(0);
+    	assertEquals(sqlType, sqlTypeInList);
+    }
 }

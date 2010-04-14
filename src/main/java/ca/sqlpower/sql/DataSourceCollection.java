@@ -27,6 +27,8 @@ import java.util.List;
 
 import javax.swing.event.UndoableEditListener;
 
+import ca.sqlpower.sqlobject.UserDefinedSQLType;
+
 public interface DataSourceCollection<T extends SPDataSource> {
 
     public static final String DOS_CR_LF = "\r\n";
@@ -170,5 +172,23 @@ public interface DataSourceCollection<T extends SPDataSource> {
     
     public void removeUndoableEditListener(UndoableEditListener l);
 
-
+	/**
+	 * Retrieves a {@link UserDefinedSQLType} with the given name.
+	 * 
+	 * @param name
+	 *            The name of the {@link UserDefinedSQLType}
+	 * @return If an instance of {@link UserDefinedSQLType} with the given name
+	 *         exists, return that instance. Otherwise, return null.
+	 */
+    public UserDefinedSQLType getSQLType(String name);
+    
+	/**
+	 * Retrieves a {@link List} of all {@link UserDefinedSQLType}s contained in
+	 * this {@link DataSourceCollection}
+	 * 
+	 * @return A {@link List} of all {@link UserDefinedSQLType}s in this
+	 *         {@link DataSourceCollection}. If there are none, it will return
+	 *         an empty List.
+	 */
+    public List<UserDefinedSQLType> getSQLTypes();
 }
