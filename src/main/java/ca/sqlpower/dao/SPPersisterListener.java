@@ -21,6 +21,7 @@ package ca.sqlpower.dao;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyDescriptor;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -166,6 +167,29 @@ public class SPPersisterListener implements SPListener {
 	 *            children of the same object type.
 	 */
 	public void persistObject(final SPObject o, int index) {
+	    persistObject(o, index, true);
+	}
+
+    /**
+     * This persists a given object and all of its descendants to the target
+     * persister in this listener. Each object in the descendant tree will have
+     * one persist object call made and any number of additional persist
+     * property calls as needed. This can be useful for persisting an entire
+     * tree of objects to the JCR as an initial commit.
+     * 
+     * @param o
+     *            The object to be persisted.
+     * @param index
+     *            the index the object is located in its parent's list of
+     *            children of the same object type.
+     * @param includeRootPersistObject
+     *            If set to false the persist object for 'o' that is passed in
+     *            will not be sent. The persist properties of final values will
+     *            also not be sent. This is useful if we want to use the
+     *            persister listener to update an object tree but the root
+     *            already exists and we cannot or do not want to recreate it.
+     */
+	public void persistObject(final SPObject o, int index, final boolean includeRootPersistObject) {
 		if (wouldEcho()) return;
 		
 		this.transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
@@ -231,7 +255,12 @@ public class SPPersisterListener implements SPListener {
 		};
 
 		try {
-			persisterHelper.persistObject(o, index, poolingPersister, converter);
+		    if (includeRootPersistObject) {
+		        persisterHelper.persistObject(o, index, poolingPersister, converter);
+		    } else {
+		        List<String> emptyList = new ArrayList<String>();
+		        persisterHelper.persistObjectProperties(o, poolingPersister, converter, emptyList);
+		    }
 		} catch (SPPersistenceException e) {
 			throw new RuntimeException(e);
 		}
@@ -459,6 +488,7 @@ public class SPPersisterListener implements SPListener {
 				target.commit();
 				logger.debug("...commit completed.");
 			} catch (Throwable t) {
+			    logger.warn("Rolling back due to " + t, t);
 				this.rollback();
 				throw new SPPersistenceException(null,t);
 			} finally {

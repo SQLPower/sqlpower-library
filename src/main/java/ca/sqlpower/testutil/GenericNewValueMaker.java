@@ -365,6 +365,8 @@ public class GenericNewValueMaker implements NewValueMaker {
         	} else {
         		newVal = PropertyType.VARIABLE;
         	}
+        } else if (Exception.class.isAssignableFrom(valueType)) {
+            return new Exception("Testing Exception");
         } else if (valueType == List.class) {
         	newVal = Arrays.asList("one","two","three");
         } else {

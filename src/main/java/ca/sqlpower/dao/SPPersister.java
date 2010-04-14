@@ -38,6 +38,7 @@ public interface SPPersister {
 		INTEGER("Integer", Integer.class),
 		DOUBLE("Double", Double.class),
 		BOOLEAN("Boolean", Boolean.class),
+		LONG("Long", Long.class),
 		
 		/**
 		 * This is an {@link SPObject} reference.

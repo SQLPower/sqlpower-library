@@ -175,6 +175,26 @@ public interface SPPersisterHelper<T extends SPObject> {
 	 * 
 	 * @return
 	 */
-	List<String> getPersistedProperties() throws SPPersistenceException; 
+	List<String> getPersistedProperties() throws SPPersistenceException;
+
+    /**
+     * Persists all of the properties on an object that have a setter. This is
+     * helpful if all non-final properties need to be persisted without actually
+     * persisting the object itself.
+     * 
+     * @param o
+     *            The object to persist the properties of.
+     * @param persister
+     *            The persister to persist the properties to.
+     * @param converter
+     *            Converts complex objects to simple form.
+     * @param preProcessedProps
+     *            These properties will be skipped in case they were processed
+     *            by a different helper method.
+     * @throws SPPersistenceException
+     */
+	void persistObjectProperties(SPObject o, SPPersister persister, 
+	        SessionPersisterSuperConverter converter, List<String> preProcessedProps) 
+	        throws SPPersistenceException;
 	
 }

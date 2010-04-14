@@ -226,7 +226,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			final String persistObjectMethod = generatePersistObjectMethod(visitedClass, constructorParameters, 
 					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs);
 			final String PersistObjectMethodHelper = generatePersistObjectMethodHelper(visitedClass, 
-					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs);
+					propertiesToAccess, propertiesToMutate, propertiesToPersistOnlyIfNonNull, tabs);
 			// -
 			final String getPersistedPropertiesMethod = generateGetPersistedPropertyListMethod(visitedClass, propertiesToMutate, tabs);
 			importedClassNames.add(AbstractSPPersisterHelper.class.getName());
@@ -331,7 +331,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			final String findPropertyMethod = generateFindPropertyMethod(visitedClass, propertiesToAccess, 
 					accessorAdditionalInfo, tabs);
 			final String persistObjectMethodHelper = generatePersistObjectMethodHelper(visitedClass, 
-					propertiesToAccess, propertiesToPersistOnlyIfNonNull, tabs);
+					propertiesToAccess, propertiesToMutate, propertiesToPersistOnlyIfNonNull, tabs);
 			final String getPersistedPropertiesMethod = generateGetPersistedPropertyListMethod(visitedClass, propertiesToMutate, tabs);
 			final String generateImports = generateImports(visitedClass, constructorImports, mutatorImports);
 			tabs--;
@@ -549,17 +549,31 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				if (cpo.getType() == Object.class) {
 					println(sb, 0, parameterTypeField + " = findProperty(" + uuidField + 
 							", \"" + parameterName + "\", " + persistedPropertiesField + ");");
-					parameterTypeClass = parameterTypeField + ".getDataType().getRepresentation()"; 
-					sb.append(indent(tabs));
+					parameterTypeClass = parameterTypeField + ".getDataType().getRepresentation()";
+					println(sb, tabs, parameterType + " " + parameterName + ";");
+					println(sb, tabs, "if (" + parameterTypeField + " != null) {");
+					tabs++;
+					println(sb, tabs, parameterName + 
+					        " = (" + parameterType + ") " + 
+					        converterField + ".convertToComplexType(" + 
+					        "findPropertyAndRemove(" + uuidField + ", " +
+					        "\"" + parameterName + "\", " + 
+					        persistedPropertiesField + "), " + parameterTypeClass + ");");
+					tabs--;
+					println(sb, tabs, "} else {");
+					tabs++;
+					println(sb, tabs, parameterName + " = null;");
+					tabs--;
+					println(sb, tabs, "}");
 				} else {
 					parameterTypeClass = parameterType + ".class";
+					sb.append(parameterType + " " + parameterName + 
+					        " = (" + parameterType + ") " + 
+					        converterField + ".convertToComplexType(" + 
+					        "findPropertyAndRemove(" + uuidField + ", " +
+					        "\"" + parameterName + "\", " + 
+					        persistedPropertiesField + "), " + parameterTypeClass + ");\n");
 				}
-				sb.append(parameterType + " " + parameterName + 
-						" = (" + parameterType + ") " + 
-						converterField + ".convertToComplexType(" + 
-						"findPropertyAndRemove(" + uuidField + ", " +
-						"\"" + parameterName + "\", " + 
-						persistedPropertiesField + "), " + parameterTypeClass + ");\n");
 			} else if (ParameterType.PRIMITIVE.equals(cpo.getProperty())) {
 				sb.append(parameterType + " " + parameterName + " = " + 
 						parameterType + ".valueOf(");
@@ -1202,6 +1216,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	private String generatePersistObjectMethodHelper(
 			Class<? extends SPObject> visitedClass,
 			Map<String, Class<?>> accessors,
+			Map<String, Class<?>> mutators,
 			Set<String> propertiesToPersistOnlyIfNonNull,
 			int tabs) {
 		StringBuilder sb = new StringBuilder();
@@ -1216,16 +1231,20 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		//call. These properties do not have to be persisted again.
 		final String preProcessedPropField = "preProcessedProps";
 		
+		final String staticPreProcessedPropField = "staticPreProcessedProps";
+		
 		// persistObject method header.
 		sb.append(indent(tabs));
 		sb.append("public void persistObjectProperties(" + SPObject.class.getSimpleName() + " " + 
 				genericObjectField + ", " + 
 				SPPersister.class.getSimpleName() + " " + persisterField + ", " +
 				SessionPersisterSuperConverter.class.getSimpleName() + " " + 
-				converterField + ", List<String> " + preProcessedPropField  + ") " +
+				converterField + ", List<String> " + staticPreProcessedPropField  + ") " +
                 "throws " + SPPersistenceException.class.getSimpleName() + 
 				" {\n");
 		tabs++;
+		println(sb, tabs, "final List<String> " + preProcessedPropField + " = new ArrayList<String>(" + 
+		        staticPreProcessedPropField + ");");
 		println(sb, tabs, "final " + String.class.getSimpleName() + " " + uuidField + " = " + 
 				genericObjectField + ".getUUID();\n");
 		
@@ -1237,10 +1256,15 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		println(sb, tabs, "try {");
 		tabs++;
 		
+		Set<String> getterPropertyNames = new HashSet<String>();
+		for (Entry<String, Class<?>> e : mutators.entrySet()) {
+		    getterPropertyNames.add(SPAnnotationProcessorUtils.convertMethodToProperty(e.getKey()));
+		}
 		// Persist all of its persistable properties.
 		for (Entry<String, Class<?>> e : accessors.entrySet()) {
 			String propertyName = SPAnnotationProcessorUtils.convertMethodToProperty(
 					e.getKey());
+			if (!getterPropertyNames.contains(propertyName)) continue;
 			
 			// Persist the property only if it has not been persisted yet
 			// and (if required) persist if the value is not null.

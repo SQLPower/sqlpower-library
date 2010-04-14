@@ -185,6 +185,8 @@ public class SPJSONMessageDecoder implements MessageDecoder<String> {
 			return Double.valueOf(jo.getDouble(propName));
 		case INTEGER:	
 			return Integer.valueOf(jo.getInt(propName));
+		case LONG:
+		    return Long.valueOf(jo.getLong(propName));
 		case PNG_IMG:
 			getNullable(jo, propName);
 			String base64Data = jo.getString(propName);

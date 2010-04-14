@@ -24,6 +24,11 @@ import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.Point2D;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.text.Format;
 
 import ca.sqlpower.object.SPObject;
@@ -113,6 +118,21 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom instanceof Long) {
 			return convertFrom;
 			
+		} else if (convertFrom instanceof BigDecimal) {
+		    return ((BigDecimal) convertFrom).toPlainString();
+		    
+		} else if (convertFrom instanceof BigInteger) {
+		    return ((BigInteger) convertFrom).toString();
+		    
+		} else if (convertFrom instanceof Timestamp) {
+		    return ((Timestamp) convertFrom).toString();
+		    
+		} else if (convertFrom instanceof Time) {
+		    return ((Time) convertFrom).toString();
+		    
+		} else if (convertFrom instanceof Date) {
+		    return ((Date) convertFrom).toString();
+		    
 		} else if (convertFrom.getClass().isEnum()) {
 			return new EnumConverter(convertFrom.getClass()).convertToSimpleType((Enum) convertFrom);
 			
@@ -140,6 +160,8 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom instanceof String[]) {
 			String[] array = (String[]) convertFrom;
 			return stringArrayConverter.convertToSimpleType(array);
+		} else if (convertFrom instanceof Exception) {
+		    return ((Exception) convertFrom).getMessage();
 		} else {
 		    throw new IllegalArgumentException("Cannot convert " + convertFrom + " of type " + 
 		            convertFrom.getClass());
@@ -179,6 +201,21 @@ public class SessionPersisterSuperConverter {
 		} else if (Long.class.isAssignableFrom(type)) {
 			return (Long) o;
 			
+		} else if (BigDecimal.class.isAssignableFrom(type)) {
+		    return new BigDecimal((String) o);
+		    
+		} else if (BigInteger.class.isAssignableFrom(type)) {
+		    return new BigInteger((String) o);
+		    
+		} else if (Timestamp.class.isAssignableFrom(type)) {
+		    return Timestamp.valueOf((String) o);
+		    
+		} else if (Time.class.isAssignableFrom(type)) {
+		    return Time.valueOf((String) o);
+		    
+		} else if (Date.class.isAssignableFrom(type)) {
+		    return Date.valueOf((String) o);
+			
 		} else if (Enum.class.isAssignableFrom(type)) {
 			return new EnumConverter(type).convertToComplexType((String) o);
 			
@@ -208,6 +245,8 @@ public class SessionPersisterSuperConverter {
             return dimensionConverter.convertToComplexType((String) o);
         } else if (String[].class.isAssignableFrom(type)) {
         	return stringArrayConverter.convertToComplexType((String) o);
+        } else if (Exception.class.isAssignableFrom(type)) {
+            return new Exception((String) o);
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + o + " of type " + 
 					o.getClass() + " to the type " + type);
