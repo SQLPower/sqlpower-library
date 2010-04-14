@@ -57,6 +57,8 @@ public class SessionPersisterSuperConverter {
 	
 	private final ColorConverter colorConverter = new ColorConverter();
 	
+	private final DateConverter dateConverter = new DateConverter();
+	
 	private final StringArrayConverter stringArrayConverter = new StringArrayConverter();
 	
 	private final DataSourceCollection <JDBCDataSource> dsCollection;
@@ -157,6 +159,11 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom instanceof Color) {
 		    Color c = (Color) convertFrom;
 		    return colorConverter.convertToSimpleType(c);
+		    
+		} else if (convertFrom instanceof java.util.Date) {
+			java.util.Date d = (java.util.Date) convertFrom;
+		    return dateConverter.convertToSimpleType(d);
+
 		} else if (convertFrom instanceof String[]) {
 			String[] array = (String[]) convertFrom;
 			return stringArrayConverter.convertToSimpleType(array);
@@ -240,6 +247,9 @@ public class SessionPersisterSuperConverter {
 
         } else if (Color.class.isAssignableFrom(type)) {
             return colorConverter.convertToComplexType((String) o);
+            
+        } else if (java.util.Date.class.isAssignableFrom(type)) {
+            return dateConverter.convertToComplexType((String) o);
             
         } else if (Dimension.class.isAssignableFrom(type)) {
             return dimensionConverter.convertToComplexType((String) o);
