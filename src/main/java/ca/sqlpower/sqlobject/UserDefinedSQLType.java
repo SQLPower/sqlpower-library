@@ -23,7 +23,6 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 
 import ca.sqlpower.dao.SPPersister;
@@ -57,22 +56,9 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
      */
     private BasicSQLType basicType;
     
-    /**
-     * A Map of a {@link JDBCDataSourceType}'s Logical Name to
-     * {@link SQLTypePhysicalProperties}.
-     * 
-     * The String value is expected to be the Logical Name of a
-     * {@link JDBCDataSourceType}, which you would get using
-     * {@link JDBCDataSourceType#getName()}.
-     */
-    private LinkedHashMap<String, SQLTypePhysicalProperties> physicalPropertiesMap = new LinkedHashMap<String, SQLTypePhysicalProperties>();
-    
 	/**
-	 * A list of the same properties as in {@link #physicalPropertiesMap} so
-	 * that {@link #addChild(SPObject, int)} can work with the given index,
-	 * since Maps do not support putting new entries with an index. It is VERY
-	 * important that the contents of the {@link #physicalPropertiesMap}'s
-	 * values and this list are kept in sync.
+	 * A list of {@link SQLTypePhyisicalProperties} that are the children of this object.
+	 * Only one physical properties object should be listed per platform.
 	 */
     private List<SQLTypePhysicalProperties> physicalProperties = new ArrayList<SQLTypePhysicalProperties>(); 
     
@@ -102,7 +88,10 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     
     @NonProperty
     public SQLTypePhysicalProperties getPhysicalProperties(String platformName) {
-        return physicalPropertiesMap.get(platformName);
+        for (SQLTypePhysicalProperties properties : physicalProperties) {
+        	if (properties.getPlatform().equals(platformName)) return properties;
+        }
+        return null;
     }
     
     @Override
@@ -127,19 +116,10 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Override
     protected boolean removeChildImpl(SPObject child) {
-    	SQLTypePhysicalProperties childProperty = (SQLTypePhysicalProperties) child;
         int childIndex = physicalProperties.indexOf(child);
     	boolean removedFromList = physicalProperties.remove(child);
-		boolean removedFromMap = (physicalPropertiesMap.remove(childProperty.getPlatform()) != null);
 		
-		// If the property is found in one of the map and list and not the other, then we're in an inconsistent state
-		if (removedFromList == true && removedFromMap == false) {
-			throw new IllegalStateException("Child object " + child + " of type " + child.getClass() + "was found in the properties list but not the map!");
-		} else if (removedFromList == false && removedFromMap == true) {
-			throw new IllegalStateException("Child object " + child + " of type " + child.getClass() + "was found in the properties map but not the list!");
-		}
-		
-		if (child != null && removedFromList && removedFromMap) {
+		if (child != null && removedFromList) {
 			fireChildRemoved(SQLTypePhysicalProperties.class, child, childIndex);
 			child.setParent(null);
             return true;
@@ -181,7 +161,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     @NonProperty
     public String getCheckConstraint(String platform) {
         String checkConstraint = null;
-        SQLTypePhysicalProperties properties = physicalPropertiesMap.get(platform);
+        SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
         
         if (properties != null) {
             checkConstraint = properties.getCheckConstraint();
@@ -198,7 +178,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     @NonProperty
     public SQLTypeConstraint getConstraintType(String platform) {
         SQLTypeConstraint constraintType = null;
-        SQLTypePhysicalProperties properties = physicalPropertiesMap.get(platform);
+        SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
         
         if (properties != null) {
             constraintType = properties.getConstraintType();
@@ -215,7 +195,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     @NonProperty
     public String getDefaultValue(String platform) {
         String defaultValue = null;
-        SQLTypePhysicalProperties properties = physicalPropertiesMap.get(platform);
+        SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
         
         if (properties != null) {
             defaultValue = properties.getDefaultValue();
@@ -232,7 +212,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     @NonProperty
     public String[] getEnumeration(String platform) {
         String[] enumeration = null;
-        SQLTypePhysicalProperties properties = physicalPropertiesMap.get(platform);
+        SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
         
         if (properties != null) {
         	String[] array = properties.getEnumeration();
@@ -251,7 +231,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     @NonProperty
     public int getPrecision(String platform) {
         Integer precision = null;
-        SQLTypePhysicalProperties properties = physicalPropertiesMap.get(platform);
+        SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
         
         if (properties != null) {
             precision = properties.getPrecision();
@@ -269,7 +249,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     @NonProperty
     public int getScale(String platform) {
         Integer scale = null;
-        SQLTypePhysicalProperties properties = physicalPropertiesMap.get(platform);
+        SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
         
         if (properties != null) {
             scale = properties.getScale();
@@ -348,7 +328,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     @NonProperty
     public PropertyType getPrecisionType(String platform) {
         PropertyType precisionType = null;
-        SQLTypePhysicalProperties properties = physicalPropertiesMap.get(platform);
+        SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
         
         if (properties != null) {
             precisionType = properties.getPrecisionType();
@@ -365,7 +345,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     @NonProperty
     public PropertyType getScaleType(String platform) {
         PropertyType scaleType = null;
-        SQLTypePhysicalProperties properties = physicalPropertiesMap.get(platform);
+        SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
         
         if (properties != null) {
             scaleType = properties.getScaleType();
@@ -417,7 +397,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
      *         given platform, or a new one created if none existed previously
      */
     private SQLTypePhysicalProperties getOrCreatePhysicalProperties(String platform) {
-        SQLTypePhysicalProperties properties = physicalPropertiesMap.get(platform);
+        SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
         if (properties == null) {
             properties = new SQLTypePhysicalProperties(platform);
             putPhysicalProperties(platform, properties);
@@ -438,32 +418,40 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	}
     
     public void putPhysicalProperties(String platform, SQLTypePhysicalProperties properties) {
-    	SQLTypePhysicalProperties oldProperties = physicalPropertiesMap.put(platform, properties);
+    	SQLTypePhysicalProperties oldProperties = getPhysicalProperties(platform);
+    	// Add new properties
+    	physicalProperties.add(properties);
+    	int index = physicalProperties.indexOf(properties);
+    	properties.setParent(this);
+    	fireChildAdded(SQLTypePhysicalProperties.class, properties, index);
+    	// Remove old properties
     	if (oldProperties != null) {
     		int oldIndex = physicalProperties.indexOf(oldProperties);
     		physicalProperties.remove(oldProperties);
     		fireChildRemoved(SQLTypePhysicalProperties.class, oldProperties, oldIndex);
     		oldProperties.setParent(null);
     	}
-    	physicalProperties.add(properties);
-    	int index = physicalProperties.indexOf(properties);
-    	properties.setParent(this);
-    	fireChildAdded(SQLTypePhysicalProperties.class, properties, index);
     }
 
     @Override
     protected void addChildImpl(SPObject child, int index) {
     	// super.addChild() should already be checking for type
-    	SQLTypePhysicalProperties newProperties = (SQLTypePhysicalProperties) child;
-    	SQLTypePhysicalProperties oldProperties = physicalPropertiesMap.put(newProperties.getPlatform(), newProperties);
-    	if (oldProperties != null) {
-    		int oldIndex = physicalProperties.indexOf(oldProperties);
-    		physicalProperties.remove(oldProperties);
-    		fireChildRemoved(SQLTypePhysicalProperties.class, oldProperties, oldIndex);
-    		oldProperties.setParent(null);
+    	if (child instanceof SQLTypePhysicalProperties) {
+    		SQLTypePhysicalProperties newProperties = (SQLTypePhysicalProperties) child;
+    		SQLTypePhysicalProperties oldProperties = getPhysicalProperties(newProperties.getPlatform());
+    		// Add new properties
+    		physicalProperties.add(index, newProperties);
+    		newProperties.setParent(this);
+    		fireChildAdded(SQLTypePhysicalProperties.class, newProperties, index);
+    		// Remove old properties
+    		if (oldProperties != null) {
+    			int oldIndex = physicalProperties.indexOf(oldProperties);
+    			physicalProperties.remove(oldProperties);
+    			fireChildRemoved(SQLTypePhysicalProperties.class, oldProperties, oldIndex);
+    			oldProperties.setParent(null);
+    		}
+    	} else {
+    		throw new IllegalArgumentException("Children Must be of type SQLTypePhysicalProperties");
     	}
-    	physicalProperties.add(index, newProperties);
-    	newProperties.setParent(this);
-    	fireChildAdded(SQLTypePhysicalProperties.class, newProperties, index);
     }
 }
