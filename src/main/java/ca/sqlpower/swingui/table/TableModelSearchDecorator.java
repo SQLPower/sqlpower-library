@@ -18,9 +18,13 @@
  */
 package ca.sqlpower.swingui.table;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.swing.Timer;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.TableModelEvent;
@@ -55,29 +59,69 @@ public class TableModelSearchDecorator extends AbstractTableModel implements Cle
     private Document doc;
     private String searchText = null;
 
-    private DocumentListener docListener = new DocumentListener(){
+    /**
+     * This is a coalescing timed document listener. It does not support
+     * listening to multiple documents. You must instanciate it for each
+     * document. You dont need to explicitely add it as it will self
+     * register a a document listener.
+     */
+    private class TimedDocumentListener implements DocumentListener {
+    	
+    	private AtomicBoolean hasUpdates = new AtomicBoolean(false);
+    	
+    	private final Timer timer;
 
-        private String getSearchText(DocumentEvent e) {
+		private final Document d;
+    	
+    	public TimedDocumentListener(Document d) {
+    		
+    		this.d = d;
+    		
+    		this.timer = new Timer(2000, new ActionListener() {
+        		public void actionPerformed(ActionEvent e) {				
+    				if (hasUpdates.get()) {
+    					hasUpdates.set(false);
+    					search(getSearchText(TimedDocumentListener.this.d));
+    				}
+    			}
+    		});
+
+    		d.addDocumentListener(this);
+    		
+    		this.timer.setInitialDelay(0);
+    		this.timer.setCoalesce(true);
+    		this.timer.setRepeats(true);
+    		this.timer.start();
+		}
+    	
+    	public void cleanup() {
+    		this.timer.stop();
+    		d.removeDocumentListener(this);
+    	}
+    	
+        private String getSearchText(Document e) {
             String searchText = null;
             try {
-                searchText = e.getDocument().getText(0,e.getDocument().getLength());
+                searchText = e.getText(0,e.getLength());
             } catch (BadLocationException e1) {
                 throw new RuntimeException(e1);
             }
             return searchText;
         }
         public void insertUpdate(DocumentEvent e) {
-            search(getSearchText(e));
+            hasUpdates.set(true);
         }
 
         public void removeUpdate(DocumentEvent e) {
-            search(getSearchText(e));
+        	hasUpdates.set(true);
         }
 
         public void changedUpdate(DocumentEvent e) {
-            search(getSearchText(e));
+        	hasUpdates.set(true);
         }
     };
+    
+    private TimedDocumentListener docListener = null;
     
     /**
      * This table model listener sends events from the model it wraps up to the parent.
@@ -208,14 +252,15 @@ public class TableModelSearchDecorator extends AbstractTableModel implements Cle
     }
 
     public void setDoc(Document doc) {
-        if ( this.doc != null ) {
-            doc.removeDocumentListener(docListener);
+        if ( this.doc != null
+        		&& this.docListener != null) {
+            this.docListener.cleanup();
         }
 
         this.doc = doc;
 
         if (doc != null) {
-            doc.addDocumentListener(docListener);
+            docListener = new TimedDocumentListener(doc);
         }
     }
 
@@ -236,7 +281,7 @@ public class TableModelSearchDecorator extends AbstractTableModel implements Cle
     }
 
 	public void cleanup() {
-		doc.removeDocumentListener(docListener);
+		docListener.cleanup();
 		if (tableModel instanceof CleanupTableModel) {
 			((CleanupTableModel) tableModel).cleanup();
 		}
