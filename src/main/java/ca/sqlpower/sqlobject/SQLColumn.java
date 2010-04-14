@@ -22,16 +22,16 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
-
 import ca.sqlpower.object.ObjectDependentException;
+import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
@@ -40,18 +40,27 @@ import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
+import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.SQL;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
+import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
+import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
+
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
 
 public class SQLColumn extends SQLObject implements java.io.Serializable {
 
 	private static Logger logger = Logger.getLogger(SQLColumn.class);
 	
-	/**
-	 * Defines an absolute ordering of the child types of this class.
-	 */
-	public static final List<Class<? extends SPObject>> allowedChildTypes = Collections.emptyList();
+	@SuppressWarnings("unchecked")
+    public static List<Class<? extends SPObject>> allowedChildTypes = 
+        Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
+                Arrays.asList(SQLTypePhysicalPropertiesProvider.class)));
 
+	protected final UserDefinedSQLType userDefinedSQLType;
+	protected String platform;
+	
 	// *** REMEMBER *** update the copyProperties method if you add new properties!
 
 	/**
@@ -60,12 +69,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 */
 	protected SQLColumn sourceColumn;
 	
-	/**
-	 * Must be a type defined in java.sql.Types.  Move to enum in 1.5
-	 * (we hope!).
-	 */
-	protected int type;
-
 	/**
 	 * This is the native name for the column's type in its source
 	 * database.  See {@link #type} for system-independant type.
@@ -85,18 +88,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * to forward engineer into the same target database as the source.
 	 */
     
-    /**
-     * The maximum length of the field in digits or characters. For numeric types,
-     * this value includes all significant digits on both sides of the decimal point.
-     */
-	protected int precision;
-    
-    /**
-     * The maximum number of digits after the decimal point. For non-numeric data types,
-     * this value should be set to 0.
-     */
-	protected int scale;
-	
 	/**
 	 * This column's nullability type.  One of:
 	 * <ul><li>DatabaseMetaData.columnNoNulls - might not allow NULL values
@@ -107,7 +98,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	protected int nullable;
 	// set to empty string so that we don't generate spurious undos
 	protected String remarks ="";
-	protected String defaultValue;
 	
     /**
      * This property indicates that values stored in this column should
@@ -167,6 +157,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	protected int referenceCount;
 	
 	public SQLColumn() {
+		userDefinedSQLType = new UserDefinedSQLType();
+		userDefinedSQLType.setParent(this);
+		setPlatform(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
 		logger.debug("NEW COLUMN (noargs) @"+hashCode());
 		logger.debug("SQLColumn() set ref count to 1");
 		referenceCount = 1;
@@ -186,6 +179,22 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		setPopulated(true);
 	}
 
+	public SQLColumn(SQLTable parentTable,
+			String colName, 
+			int dataType,
+			String nativeType,
+			int precision, 
+			int scale, 
+			int nullable,
+			String remarks, 
+			String defaultValue, 
+			boolean isAutoIncrement) {
+		
+		this(parentTable, colName, dataType, nativeType, precision, scale, 
+				nullable, remarks, defaultValue, isAutoIncrement, 
+				new UserDefinedSQLType());
+	}
+	
 	/**
 	 * Constructs a SQLColumn that will be a part of the given SQLTable.
 	 *
@@ -215,7 +224,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 			@ConstructorParameter(propertyName = "nullable") int nullable,
 			@ConstructorParameter(propertyName = "remarks") String remarks,
 			@ConstructorParameter(propertyName = "defaultValue") String defaultValue,
-			@ConstructorParameter(propertyName = "autoIncrement") boolean isAutoIncrement) {
+			@ConstructorParameter(propertyName = "autoIncrement") boolean isAutoIncrement,
+			@ConstructorParameter(isProperty=ParameterType.CHILD, propertyName="userDefinedSQLType")
+			UserDefinedSQLType userDefinedSQLType) {
 		if (parentTable != null) {
 			logger.debug("NEW COLUMN "+colName+"@"+hashCode()+" parent "+parentTable.getName()+"@"+parentTable.hashCode());
 		} else {
@@ -224,15 +235,18 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         if (parentTable != null) {
             setParent(parentTable);
         }
+        this.userDefinedSQLType = userDefinedSQLType;
+        userDefinedSQLType.setParent(this);
+        setPlatform(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
 		this.setName(colName);
 		setPopulated(true);
-		this.type = dataType;
+		setType(dataType);
 		this.sourceDataTypeName = nativeType;
-		this.scale = scale;
-		this.precision = precision;
+		setScale(scale);
+		setPrecision(precision);
 		this.nullable = nullable;
 		this.remarks = remarks;
-		this.defaultValue = defaultValue;
+		setDefaultValue(defaultValue);
 		this.autoIncrement = isAutoIncrement;
 
 		logger.debug("SQLColumn(.....) set ref count to 1");
@@ -240,7 +254,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
 	public SQLColumn(SQLTable parent, String colName, int type, int precision, int scale) {
-		this(parent, colName, type, null, precision, scale, DatabaseMetaData.columnNullable, null, null, false);
+		this(parent, colName, type, null, precision, scale, DatabaseMetaData.columnNullable, null, null, false, new UserDefinedSQLType());
 	}
 	
 	/**
@@ -248,6 +262,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 */
 	public SQLColumn(SQLColumn col) {
 		super();
+		userDefinedSQLType = new UserDefinedSQLType();
+		userDefinedSQLType.setParent(this);
+		setPlatform(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
 		setPopulated(true);
 		copyProperties(this, col);
 		logger.debug("SQLColumn(SQLColumn col ["+col+" "+col.hashCode()+"]) set ref count to 1");
@@ -311,15 +328,19 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	private static final void copyProperties(final SQLColumn target, final SQLColumn source) {
 		target.runInForeground(new Runnable() {
 			public void run() {
+				target.setPlatform(source.getPlatform());
 				target.setName(source.getName());
-				target.setType(source.type);
+				target.setType(source.getType());
 				target.setSourceDataTypeName(source.sourceDataTypeName);
 				target.setPhysicalName(source.getPhysicalName());
-				target.setPrecision(source.precision);
-				target.setScale(source.scale);
+				target.setPrecision(source.getPrecision());
+				target.setPrecisionType(source.getPrecisionType());
+				target.setScale(source.getScale());
+				target.setScaleType(source.getScaleType());
+				target.setEnumeration(source.getEnumeration());
 				target.setNullable(source.nullable);
 				target.setRemarks(source.remarks);
-				target.setDefaultValue(source.defaultValue);
+				target.setDefaultValue(source.getDefaultValue());
 				target.setAutoIncrement(source.autoIncrement);
 				target.setAutoIncrementSequenceName(source.autoIncrementSequenceName);
 			}
@@ -383,8 +404,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 											  rs.getInt(11), // nullable
 											  rs.getString(12) == null ? "" : rs.getString(12), // remarks
 											  rs.getString(13), // default value
-											  autoIncrement // isAutoIncrement
-											  );
+											  autoIncrement, // isAutoIncrement
+											  new UserDefinedSQLType());
 				logger.debug("Precision for the column " + rs.getString(4) + " is " + rs.getInt(7));
 
 				// work around oracle 8i bug: when table names are long and similar,
@@ -466,16 +487,16 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	@Transient @Accessor
 	public String getTypeName() {
 		if (sourceDataTypeName != null) {
-			if (precision > 0 && scale > 0) {
-				return sourceDataTypeName+"("+precision+","+scale+")";
-			} else if (precision > 0) {
-				return sourceDataTypeName+"("+precision+")"; // XXX: should we display stuff like (18,0) for decimals?
+			if (getPrecision() > 0 && getScale() > 0) {
+				return sourceDataTypeName+"("+getPrecision()+","+getScale()+")";
+			} else if (getPrecision() > 0) {
+				return sourceDataTypeName+"("+getPrecision()+")"; // XXX: should we display stuff like (18,0) for decimals?
 			} else {
 				return sourceDataTypeName;
 			}			
 		} else {
-			return SQLType.getTypeName(type) // XXX: replace with TypeDescriptor
-				+"("+precision+")";
+			return SQLType.getTypeName(getType()) // XXX: replace with TypeDescriptor
+				+"("+getPrecision()+")";
 		}
 	}
 
@@ -490,11 +511,103 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
 	public boolean allowsChildren() {
-		return false;
+		return true;
 	}
 
 	// ------------------------- accessors and mutators --------------------------
 
+	@Accessor(isInteresting=true)
+	public String getPlatform() {
+		return platform;
+	}
+
+	@Mutator
+	public void setPlatform(String newPlatform) {
+		String oldPlatform = platform;
+		platform = newPlatform;
+		fireTransactionStarted("Setting platform");
+		firePropertyChange("platform", oldPlatform, newPlatform);
+		if (userDefinedSQLType.getPhysicalProperties(newPlatform) == null) {
+			userDefinedSQLType.putPhysicalProperties(newPlatform, new SQLTypePhysicalProperties(newPlatform));
+		}
+		fireTransactionEnded();
+	}
+	
+	@Accessor
+	public UserDefinedSQLType getUserDefinedSQLType() {
+		return userDefinedSQLType;
+	}
+	
+	@Transient @Accessor(isInteresting = true)
+	public String getCheckConstraint() {
+		return userDefinedSQLType.getCheckConstraint(getPlatform());
+	}
+	
+	@Transient @Mutator
+	public void setCheckConstraint(String argCheckConstraint) {
+		begin("Set checkConstraint");
+		String oldConstraint = getCheckConstraint();
+		userDefinedSQLType.setCheckConstraint(getPlatform(), argCheckConstraint);
+		firePropertyChange("checkConstraint", oldConstraint, argCheckConstraint);
+		commit();
+	}
+	
+	@Transient @Accessor(isInteresting = true)
+	public SQLTypeConstraint getConstraintType() {
+		return userDefinedSQLType.getConstraintType(getPlatform());
+	}
+
+	@Transient @Mutator
+	public void setConstraintType(SQLTypeConstraint constraint) {
+		begin("Set constraintType");
+		SQLTypeConstraint oldConstraint = getConstraintType();
+		userDefinedSQLType.setConstraintType(getPlatform(), constraint);
+		firePropertyChange("constraintType", oldConstraint, constraint);
+		commit();
+	}
+	
+	@Transient @Accessor(isInteresting = true)
+    public String[] getEnumeration() {
+        return userDefinedSQLType.getEnumeration(getPlatform());
+    }
+
+	@Transient @Mutator
+    public void setEnumeration(String[] enumeration) {
+		begin("Set enumeration");
+		String[] oldEnumeration = getEnumeration();
+		userDefinedSQLType.setEnumeration(getPlatform(), enumeration);
+		firePropertyChange("enumeration", oldEnumeration, enumeration);
+		commit();
+	}
+	
+	@Transient @Accessor(isInteresting = true)
+	public PropertyType getPrecisionType() {
+		return userDefinedSQLType.getPrecisionType(getPlatform());
+	}
+
+	@Transient @Mutator
+	public void setPrecisionType(PropertyType precisionType) {
+		begin("Set precisionType");
+		PropertyType oldPrecisionType = getPrecisionType();
+		userDefinedSQLType.setPrecisionType(getPlatform(), precisionType);
+		firePropertyChange("precisionType", oldPrecisionType, precisionType);
+		commit();
+	}
+	
+	@Transient @Accessor(isInteresting = true)
+    public PropertyType getScaleType() {
+        return userDefinedSQLType.getScaleType(getPlatform());
+    }
+    
+	@Transient @Mutator
+    public void setScaleType(PropertyType scaleType) {
+		begin("Set scaleType");
+		PropertyType oldScaleType = getScaleType();
+		userDefinedSQLType.setScaleType(getPlatform(), scaleType);
+		firePropertyChange("scaleType", oldScaleType, scaleType);
+        commit();
+	}
+	
 	@Accessor
 	public SQLColumn getSourceColumn() {
 		return sourceColumn;
@@ -514,9 +627,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of type
 	 */
-	@Accessor(isInteresting=true)
+	@Transient @Accessor(isInteresting = true)
 	public int getType()  {
-		return this.type;
+		return userDefinedSQLType.getType();
 	}
 
 	/**
@@ -524,16 +637,13 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @param argType Value to assign to this.type
 	 */
-	@Mutator
+	@Transient @Mutator
 	public void setType(int argType) {
-		int oldType = type;
-		this.type = argType;
-        begin("Type change");
-        if (isMagicEnabled()) {
-        	setSourceDataTypeName(null);
-        }
-		firePropertyChange("type",oldType,argType);
-        commit();
+		begin("Set type");
+		int oldType = getType();
+		userDefinedSQLType.setType(argType);
+		firePropertyChange("type", oldType, argType);
+		commit();
 	}
 
 	/**
@@ -556,9 +666,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of scale
 	 */
-	@Accessor(isInteresting=true)
+	@Transient @Accessor(isInteresting = true)
 	public int getScale()  {
-		return this.scale;
+		return userDefinedSQLType.getScale(getPlatform());
 	}
 
 	/**
@@ -566,12 +676,13 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @param argScale Value to assign to this.scale
 	 */
-	@Mutator
+	@Transient @Mutator
 	public void setScale(int argScale) {
-		int oldScale = this.scale;
-		logger.debug("scale changed from "+scale+" to "+argScale);
-		this.scale = argScale;
-		firePropertyChange("scale",oldScale,argScale);
+		begin("Set scale");
+		int oldScale = getScale();
+		userDefinedSQLType.setScale(getPlatform(), argScale);
+		firePropertyChange("scale", oldScale, argScale);
+		commit();
 	}
 
 	/**
@@ -585,9 +696,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * @see #getType()
 	 * @see #getTypeName()
 	 */
-	@Accessor(isInteresting=true)
+	@Transient @Accessor(isInteresting = true)
 	public int getPrecision()  {
-		return this.precision;
+		return userDefinedSQLType.getPrecision(getPlatform());
 	}
 
 	/**
@@ -595,11 +706,13 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @param argPrecision Value to assign to this.precision
 	 */
-	@Mutator
+	@Transient @Mutator
 	public void setPrecision(int argPrecision) {
-		int oldPrecision = this.precision;
-		this.precision = argPrecision;
-		firePropertyChange("precision",oldPrecision,argPrecision);
+		begin("Set precision");
+		int oldPrecision = getPrecision();
+		userDefinedSQLType.setPrecision(getPlatform(), argPrecision);
+		firePropertyChange("precision", oldPrecision, argPrecision);
+		commit();
 	}
 
 	/**
@@ -866,9 +979,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of defaultValue
 	 */
-	@Accessor(isInteresting=true)
+	@NonProperty
 	public String getDefaultValue()  {
-		return this.defaultValue;
+		return userDefinedSQLType.getDefaultValue(getPlatform());
 	}
 
 	/**
@@ -876,11 +989,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @param argDefaultValue Value to assign to this.defaultValue
 	 */
-	@Mutator
+	@NonProperty
 	public void setDefaultValue(String argDefaultValue) {
-		String oldDefaultValue = this.defaultValue;
-		this.defaultValue = argDefaultValue;
-		firePropertyChange("defaultValue",oldDefaultValue,argDefaultValue);
+		userDefinedSQLType.setDefaultValue(getPlatform(), argDefaultValue);
 	}
 
 	/**
@@ -1018,12 +1129,12 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	@Override
 	@NonProperty
 	public List<? extends SQLObject> getChildrenWithoutPopulating() {
-		return Collections.emptyList();
+		return Collections.singletonList(userDefinedSQLType);
 	}
 
 	@Override
 	protected boolean removeChildImpl(SPObject child) {
-		return false;
+		throw new IllegalStateException("Cannot remove children!!!");
 	}
 
 	public int childPositionOffset(Class<? extends SPObject> childType) {

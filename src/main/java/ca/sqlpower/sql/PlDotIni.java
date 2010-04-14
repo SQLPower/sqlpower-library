@@ -648,7 +648,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 		properties.put("Constraint Type", next.getConstraintType(platform).toString());
 		properties.put("Default Value", next.getDefaultValue(platform));
 		StringBuilder enumString = new StringBuilder();
-		List<String> enums = next.getEnumeration(platform);
+		String[] enums = next.getEnumeration(platform);
 		if (enums != null) {
 			boolean first = true;
 			for (String value: enums) {
@@ -686,7 +686,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 		} else if (key.equals("Default Value")) {
 			sqlType.setDefaultValue(platform, value);
 		} else if (key.equals("Enumerated Constraint")) {
-			sqlType.setEnumeration(platform, value != null ? Arrays.asList(value.split(",")) : new ArrayList<String>());
+			sqlType.setEnumeration(platform, value != null ? value.split(",") : new String[0]);
 		} else if (key.equals("Precision Type")) {
 			sqlType.setPrecisionType(platform, PropertyType.valueOf(value));
 		} else if (key.equals("Scale Type")) {

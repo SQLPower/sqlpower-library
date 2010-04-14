@@ -286,7 +286,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * 
 	 * @return The enumeration constraint as a String
 	 */
-	public List<String> getEnumeration(String platform);
+	public String[] getEnumeration(String platform);
 
 	/**
 	 * Gets the List ('enumeration') of allowed values of this type. The
@@ -295,7 +295,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * 
 	 * @return The enumeration constraint as a String
 	 */
-	public void setEnumeration(String platform, List<String> enumeration);
+	public void setEnumeration(String platform, String[] enumeration);
 
 	/**
 	 * Sets the {@link SQLTypeConstraint} for this type.

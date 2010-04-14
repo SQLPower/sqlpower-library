@@ -150,7 +150,6 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		public RunnableDispatcher getRunnableDispatcher() {
 			return dispatcher;
 		}
-		
 	}
 	
 	/**

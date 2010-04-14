@@ -42,6 +42,7 @@ import ca.sqlpower.sqlobject.undo.SQLObjectUndoManager;
 import ca.sqlpower.testutil.GenericNewValueMaker;
 import ca.sqlpower.testutil.MockJDBCDriver;
 import ca.sqlpower.testutil.NewValueMaker;
+import ca.sqlpower.util.SQLPowerUtils;
 
 /**
  * Extends the basic database-connected test class with some test methods that
@@ -115,7 +116,6 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 	public void testAllSettersGenerateEvents()
 	throws IllegalArgumentException, IllegalAccessException, 
 	InvocationTargetException, NoSuchMethodException, SQLObjectException {
-		
 		SQLObject so = getSQLObjectUnderTest();
 		so.populate();
 		
@@ -127,14 +127,14 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
         propertiesToIgnoreForEventGeneration.add("columnsPopulated");
         propertiesToIgnoreForEventGeneration.add("indicesPopulated");
 		
-		if (so instanceof SQLDatabase) {
+        CountingSQLObjectListener listener = new CountingSQLObjectListener();
+        SQLPowerUtils.listenToHierarchy(so, listener);
+        
+        if (so instanceof SQLDatabase) {
 			// should be handled in the Datasource
 			propertiesToIgnoreForEventGeneration.add("name");
 		}
 		
-		CountingSQLObjectListener listener = new CountingSQLObjectListener();
-		so.addSPListener(listener);
-
 		List<PropertyDescriptor> settableProperties;
 		
 		settableProperties = Arrays.asList(PropertyUtils.getPropertyDescriptors(so.getClass()));
@@ -237,10 +237,12 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
             	} else {
             		newVal = PropertyType.VARIABLE;
             	}
+            } else if (property.getPropertyType() == List.class) {
+            	newVal = Arrays.asList("one", "two");
             } else {
 				throw new RuntimeException("This test case lacks a value for "+
 						property.getName()+
-						" (type "+property.getPropertyType().getName()+") from "+so.getClass()+" on property"+property.getDisplayName());
+						" (type "+property.getPropertyType().getName()+") from "+so.getClass()+" on property "+property.getDisplayName());
 			}
 			
 			int oldChangeCount = listener.getChangedCount();
@@ -312,6 +314,7 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 			// should be handled in the Datasource
 			propertiesToIgnoreForUndo.add("name");
 		}
+		
 		SQLObjectUndoManager undoManager= new SQLObjectUndoManager(so);
 		List<PropertyDescriptor> settableProperties;
 		settableProperties = Arrays.asList(PropertyUtils.getPropertyDescriptors(so.getClass()));
@@ -477,9 +480,9 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 	 * Note that setChildren copies elements, does not assign the list, and
 	 * getChildren returns an unmodifiable copy of the current list.
 	 */
-	public final void testAllChildHandlingMethods() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
+	public void testAllChildHandlingMethods() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
 		if (!getSQLObjectUnderTest().allowsChildren()) return;
-		
+
 		getSQLObjectUnderTest().populate();
 		
 		NewValueMaker newValueMaker = new GenericNewValueMaker(getRootObject());
@@ -512,7 +515,7 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 		assertEquals(childCount, getSQLObjectUnderTest().getChildCount());
 	}
 
-	public final void testFiresAddEvent() throws SQLObjectException {
+	public void testFiresAddEvent() throws SQLObjectException {
 		if (!getSQLObjectUnderTest().allowsChildren()) return;
 		
 		CountingSQLObjectListener l = new CountingSQLObjectListener();

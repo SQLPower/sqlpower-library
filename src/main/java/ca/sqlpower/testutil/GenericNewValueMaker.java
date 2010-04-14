@@ -30,6 +30,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import ca.sqlpower.object.SPObject;
@@ -50,7 +52,6 @@ import ca.sqlpower.sqlobject.SQLRelationship;
 import ca.sqlpower.sqlobject.SQLSchema;
 import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties;
-import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider;
 import ca.sqlpower.sqlobject.UserDefinedSQLType;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
@@ -364,6 +365,8 @@ public class GenericNewValueMaker implements NewValueMaker {
         	} else {
         		newVal = PropertyType.VARIABLE;
         	}
+        } else if (valueType == List.class) {
+        	newVal = Arrays.asList("one","two","three");
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +

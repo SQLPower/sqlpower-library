@@ -124,12 +124,12 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
         String[] udtEnum = {"udt"};
         udtProperties.setEnumeration(udtEnum);
         
-        assertEquals("udt", typeProxy.getEnumeration("Oracle").get(0));
+        assertEquals("udt", typeProxy.getEnumeration("Oracle")[0]);
     }
     
     public void testSetEnumeration() throws Exception {
-        typeProxy.setEnumeration("Oracle", Collections.singletonList("enum"));
-        assertEquals("enum", typeProxy.getEnumeration("Oracle").get(0));
+        typeProxy.setEnumeration("Oracle", new String[]{"enum"});
+        assertEquals("enum", typeProxy.getEnumeration("Oracle")[0]);
     }
     
     public void testGetDefaultValue() throws Exception {

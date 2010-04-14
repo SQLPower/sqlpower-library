@@ -175,7 +175,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	public void testNoArgConstructor() throws Exception {
 		SQLColumn col = new SQLColumn();
 		assertEquals("Reference count init", 1, col.getReferenceCount());
-		assertEquals(0, col.getChildCount());
+		assertEquals(1, col.getChildCount());
 	}
 	public void testSmallConstructor() throws Exception {
 		SQLColumn col = new SQLColumn(table0pk, "test_column", Types.INTEGER, 10, 30);
@@ -185,7 +185,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		assertEquals(10, col.getPrecision());
 		assertEquals(30, col.getScale());
 		assertEquals(1, col.getReferenceCount());
-		assertEquals(0, col.getChildCount());
+		assertEquals(1, col.getChildCount());
 	}
 	
 	public void testMegaConstructor() throws Exception {
@@ -204,7 +204,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		assertEquals("test default", col.getDefaultValue());
 		assertTrue(col.isAutoIncrement());
 		assertEquals(1, col.getReferenceCount());
-		assertEquals(0, col.getChildCount());
+		assertEquals(1, col.getChildCount());
 	}
 	
 	public void testGetDerivedInstance() throws Exception {
@@ -225,6 +225,10 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
         propsToIgnore.add("referenceCount");
         propsToIgnore.add("UUID");
         propsToIgnore.add("primaryKey");
+        
+        propsToIgnore.add("children");
+        propsToIgnore.add("childrenWithoutPopulating");
+        propsToIgnore.add("userDefinedSQLType");
 
 		TestUtils.setAllInterestingProperties(origCol, propsToIgnore);
 		origCol.setSourceDataTypeName("NUMERIC");
@@ -315,10 +319,10 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	 */
 	public void testAllowsChildren() throws Exception {
 		SQLColumn tmpCol = new SQLColumn();
-		assertEquals(false,tmpCol.allowsChildren());
+		assertEquals(true,tmpCol.allowsChildren());
 		
 		SQLColumn cowCol = table1pk.getColumn(0);
-		assertEquals(false,cowCol.allowsChildren());
+		assertEquals(true,cowCol.allowsChildren());
 	}
 
 	/*
@@ -327,7 +331,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	public void testAddColumnsToTable() throws Exception {
 		SQLColumn mooCol = table3pk.getColumn(1);
 		assertEquals(table3pk, mooCol.getParent());
-		assertEquals(0, mooCol.getChildCount());
+		assertEquals(1, mooCol.getChildCount());
 		assertEquals("MOO", mooCol.getName());
 		assertEquals(0, mooCol.getScale());
 		assertEquals(10, mooCol.getPrecision());
@@ -595,6 +599,10 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
         propsToIgnore.add("uniqueIndexed");
         propsToIgnore.add("UUID");
 		
+        propsToIgnore.add("children");
+        propsToIgnore.add("childrenWithoutPopulating");
+        propsToIgnore.add("userDefinedSQLType");
+        
 		Map<String,Object> origProps = (Map<String,Object>) BeanUtils.describe(cowCol);
 		Map<String,Object> derivProps = (Map<String,Object>) BeanUtils.describe(tmpCol);
 		
@@ -666,26 +674,23 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	 */
 	public void testGetChildren() throws Exception {
 		SQLColumn tmpCol = new SQLColumn();
-		assertEquals(tmpCol.getChildren().isEmpty(),true);
 		
 		try {
-			tmpCol.addChild(new SQLColumn(),1);
+			tmpCol.addChild(new SQLColumn(),0);
 			fail("SQLColumn should not have child");
 		} catch (IllegalArgumentException e) {
 			/* it's normal */
 		}
-		assertEquals(tmpCol.getChildren().size(),0);
+		assertEquals(tmpCol.getChildren().size(),1);
 		
 		SQLColumn cowCol = table3pk.getColumn(0);
-		assertEquals(cowCol.getChildren().isEmpty(),true);
-		
 		try {
 			cowCol.addChild(new SQLColumn(),1);
 			fail("SQLColumn should not have child");
 		} catch (IllegalArgumentException e) {
 			/* it's normal */
 		}
-		assertEquals(cowCol.getChildren().size(),0);
+		assertEquals(cowCol.getChildren().size(),1);
 		
 	}
 
@@ -716,11 +721,11 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	public void testGetChildCount() throws Exception {
 		SQLColumn tmpCol = new SQLColumn();
 		int count = tmpCol.getChildCount();
-		assertEquals(count,0);
+		assertEquals(count,1);
 
 		SQLColumn cowCol = table3pk.getColumn(0);
 		count = cowCol.getChildCount();
-		assertEquals(count,0);
+		assertEquals(count,1);
 	}
 
 	/*
@@ -818,4 +823,34 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
         assertFalse(normalcol.isAutoIncrement());
     }
     
+    @Override
+    public void testAllChildHandlingMethods() throws SQLObjectException {
+    	/*
+    	 * Make sure that SQLColumn cannot add or remove children.
+    	 */
+    	SQLColumn col = (SQLColumn) getSQLObjectUnderTest();
+    	
+    	Exception cannotAddChild = null;
+    	try {
+    		col.addChild(new UserDefinedSQLType());
+    	} catch (Exception e) {
+    		cannotAddChild = e;
+    	}
+    	assertNotNull(cannotAddChild);
+    	
+    	Exception cannotRemoveChild = null;
+    	try {
+    		col.removeChild(col.getChildren().get(0));
+    	} catch (Exception e) {
+    		cannotRemoveChild = e;
+    	}
+    	assertNotNull(cannotRemoveChild);
+    }
+    
+    @Override
+    public void testFiresAddEvent() {}
+    @Override
+    public void testPreRemoveEventNoVeto() {}
+    @Override
+    public void testPreRemoveEventVeto() {}
 }

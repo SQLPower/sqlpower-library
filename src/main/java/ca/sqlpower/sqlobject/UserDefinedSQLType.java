@@ -29,6 +29,7 @@ import java.util.List;
 import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.sql.JDBCDataSourceType;
@@ -91,6 +92,13 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
      */
     public static List<Class<? extends SPObject>> allowedChildTypes = 
         Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(Arrays.asList(SQLTypePhysicalProperties.class)));
+    
+    @Constructor
+    public UserDefinedSQLType() {
+    	super();
+    	setName("UserDefinedSQLType");
+    	setPopulated(true);
+    }
     
     @NonProperty
     public SQLTypePhysicalProperties getPhysicalProperties(String platformName) {
@@ -222,14 +230,14 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     }
 
     @NonProperty
-    public List<String> getEnumeration(String platform) {
-        List<String> enumeration = null;
+    public String[] getEnumeration(String platform) {
+        String[] enumeration = null;
         SQLTypePhysicalProperties properties = physicalPropertiesMap.get(platform);
         
         if (properties != null) {
         	String[] array = properties.getEnumeration();
         	if (array != null) {
-        		enumeration = Arrays.asList(array);
+        		enumeration = array;
         	} else if (getUpstreamType() != null) {
                 enumeration = getUpstreamType().getEnumeration(platform);
             }
@@ -283,38 +291,51 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @NonProperty
     public void setCheckConstraint(String platform, String checkConstraint) {
+    	begin("Setting checkConstraint");
         getOrCreatePhysicalProperties(platform).setCheckConstraint(checkConstraint);
+        commit();
     }
 
     @NonProperty
     public void setConstraintType(String platform, SQLTypeConstraint constraint) {
+    	begin("Setting constraintType");
         getOrCreatePhysicalProperties(platform).setConstraintType(constraint);
+        commit();
     }
 
     @NonProperty
     public void setDefaultValue(String platform, String defaultValue) {
+    	begin("Setting defaultValue");
         getOrCreatePhysicalProperties(platform).setDefaultValue(defaultValue);
+        commit();
     }
 
     @NonProperty
-    public void setEnumeration(String platform, List<String> enumeration) {
-    	String[] array = new String[enumeration.size()];
-        getOrCreatePhysicalProperties(platform).setEnumeration(enumeration.toArray(array));
+    public void setEnumeration(String platform, String[] enumeration) {
+    	begin("Setting enumeration");
+        getOrCreatePhysicalProperties(platform).setEnumeration(enumeration);
+        commit();
     }
 
     @NonProperty
     public void setPhysicalDataType(String platform, String physicalDataType) {
+    	begin("Setting physicalName");
         getOrCreatePhysicalProperties(platform).setPhysicalName(physicalDataType);
+        commit();
     }
 
     @NonProperty
     public void setPrecision(String platform, int precision) {
+    	begin("Setting precision");
         getOrCreatePhysicalProperties(platform).setPrecision(precision);
+        commit();
     }
 
     @NonProperty
     public void setScale(String platform, int scale) {
+    	begin("Setting scale");
         getOrCreatePhysicalProperties(platform).setScale(scale);
+        commit();
     }
 
     @Mutator
@@ -360,12 +381,16 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @NonProperty
     public void setPrecisionType(String platform, PropertyType precisionType) {
+    	begin("Setting precisionType");
         getOrCreatePhysicalProperties(platform).setPrecisionType(precisionType);
+        commit();
     }
 
     @NonProperty
     public void setScaleType(String platform, PropertyType scaleType) {
+    	begin("Setting scaleType");
         getOrCreatePhysicalProperties(platform).setScaleType(scaleType);
+        commit();
     }
 
     @Mutator
@@ -379,17 +404,6 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     public String getDescription() {
         return description;
     }
-    
-    public void putPhysicalProperties(String platform, SQLTypePhysicalProperties properties) {
-        SQLTypePhysicalProperties oldValue = physicalPropertiesMap.put(platform, properties);
-        if (oldValue != null) {
-        	physicalProperties.remove(oldValue);
-        	oldValue.setParent(null);
-        }
-        properties.setParent(this);
-        physicalProperties.add(properties);
-    }
-    
     
     
     /**
@@ -423,6 +437,20 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 		return upstreamType;
 	}
     
+    public void putPhysicalProperties(String platform, SQLTypePhysicalProperties properties) {
+    	SQLTypePhysicalProperties oldProperties = physicalPropertiesMap.put(platform, properties);
+    	if (oldProperties != null) {
+    		int oldIndex = physicalProperties.indexOf(oldProperties);
+    		physicalProperties.remove(oldProperties);
+    		fireChildRemoved(SQLTypePhysicalProperties.class, oldProperties, oldIndex);
+    		oldProperties.setParent(null);
+    	}
+    	physicalProperties.add(properties);
+    	int index = physicalProperties.indexOf(properties);
+    	properties.setParent(this);
+    	fireChildAdded(SQLTypePhysicalProperties.class, properties, index);
+    }
+
     @Override
     protected void addChildImpl(SPObject child, int index) {
     	// super.addChild() should already be checking for type

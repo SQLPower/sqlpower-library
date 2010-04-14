@@ -134,7 +134,8 @@ public class SQLTypePhysicalProperties extends SQLObject {
 
     @Constructor
     public SQLTypePhysicalProperties(@ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="platform") String platformName) {
-        this.platform = platformName;
+    	this.platform = platformName;
+    	setName("SQLTypePhysicalProperties for " + platform);
     }
     
 	/**
