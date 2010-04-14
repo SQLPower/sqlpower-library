@@ -77,7 +77,7 @@ public class TableModelSearchDecorator extends AbstractTableModel implements Cle
     		
     		this.d = d;
     		
-    		this.timer = new Timer(2000, new ActionListener() {
+    		this.timer = new Timer(500, new ActionListener() {
         		public void actionPerformed(ActionEvent e) {				
     				if (hasUpdates.get()) {
     					hasUpdates.set(false);
@@ -192,12 +192,13 @@ public class TableModelSearchDecorator extends AbstractTableModel implements Cle
         			newRowMap.add(tableTextConverter.modelIndex(row));
         		}
         	}
-        	setSearchText(searchText);
-        	rowMapping = newRowMap;
-        	if (logger.isDebugEnabled()) {
-        		logger.debug("new row mapping after search: "+rowMapping);
-        	}
 		}
+        
+        setSearchText(searchText);
+        rowMapping = newRowMap;
+        if (logger.isDebugEnabled()) {
+        	logger.debug("new row mapping after search: "+rowMapping);
+        }
         fireTableDataChanged();
     }
 

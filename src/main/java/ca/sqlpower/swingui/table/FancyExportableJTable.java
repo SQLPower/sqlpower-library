@@ -33,7 +33,6 @@ import java.util.concurrent.Callable;
 import javax.swing.AbstractAction;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
-import javax.swing.JFrame;
 import javax.swing.JPopupMenu;
 import javax.swing.JTable;
 import javax.swing.event.TableModelEvent;

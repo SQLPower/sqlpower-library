@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.Icon;
 import javax.swing.JLabel;
@@ -97,6 +98,9 @@ import org.apache.log4j.Logger;
  */
 
 public class TableModelSortDecorator extends AbstractTableModel implements CleanupTableModel, TableModelWrapper {
+	
+	private final AtomicBoolean arraysUpToDate = new AtomicBoolean(false);
+	
 	private static final Logger logger = Logger.getLogger(TableModelSortDecorator.class);
 	
     protected TableModel tableModel;
@@ -172,7 +176,9 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
             this.tableModel.removeTableModelListener(tableModelListener);
         }
 
+        arraysUpToDate.set(false);
         this.tableModel = tableModel;
+        
         if (this.tableModel != null) {
             this.tableModel.addTableModelListener(tableModelListener);
         }
@@ -310,23 +316,27 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
 			for (int i = 0; i < n; i++) {
 				modelToView[viewToModel[i].modelIndex] = i;
 			}
-			
-		}
 		
+			arraysUpToDate.set(true);
+		}
     }
 
     private Row[] getViewToModel() {
-    	updateArrays();
-		return viewToModel;
+    	if (!arraysUpToDate.get() || viewToModel == null) {
+    		updateArrays();
+    	}
+    	return viewToModel;
     }
 
     public int modelIndex(int viewIndex) {
-		return getViewToModel()[viewIndex].modelIndex;			
+		return getViewToModel()[viewIndex].modelIndex;
     }
 
     private int[] getModelToView() {
-		updateArrays();
-		return modelToView;
+    	if (!arraysUpToDate.get() || modelToView == null) {
+    		updateArrays();
+    	}
+    	return modelToView;
     }
 
     // TableModel interface methods
@@ -398,6 +408,9 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
 
     private class TableModelHandler implements TableModelListener {
         public void tableChanged(TableModelEvent e) {
+        	
+        	arraysUpToDate.set(false);
+        	
             // If we're not sorting by anything, just pass the event along.
             if (!isSorting()) {
                 clearSortingState();
