@@ -23,7 +23,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -47,10 +46,8 @@ public class SQLSchema extends SQLObject {
 	/**
 	 * Defines an absolute ordering of the child types of this class.
 	 */
-	@SuppressWarnings("unchecked")
-	public static List<Class<? extends SPObject>> allowedChildTypes = 
-		Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
-				Arrays.asList(SQLTable.class)));
+	public static final List<Class<? extends SPObject>> allowedChildTypes = 
+		Collections.<Class<? extends SPObject>>singletonList(SQLTable.class);
 	
 	private static final Logger logger = Logger.getLogger(SQLSchema.class);
 	

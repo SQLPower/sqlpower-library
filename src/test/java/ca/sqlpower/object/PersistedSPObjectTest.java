@@ -60,7 +60,6 @@ import ca.sqlpower.testutil.GenericNewValueMaker;
 import ca.sqlpower.testutil.NewValueMaker;
 import ca.sqlpower.testutil.SPObjectRoot;
 import ca.sqlpower.util.RunnableDispatcher;
-import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.StubWorkspaceContainer;
 import ca.sqlpower.util.TransactionEvent;
 import ca.sqlpower.util.WorkspaceContainer;
@@ -222,19 +221,41 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		return root;
 	}
 
-	/**
-	 * All {@link SPObject}s that are going to be persisted need to define
-	 * an absolute ordering of their child type classes. This method ensures
-	 * that list is retrievable by reflection from the object.
-	 */
+    /**
+     * All persistable {@link SPObject} implementations must define a static
+     * final field which is a list defining the absolute ordering of that
+     * class's child type classes. This method ensures that list is retrievable
+     * by reflection from the object, that the field is public, static, and
+     * final, and that it is nonempty for classes that allow children and empty
+     * for classes that do not allow children.
+     */
 	@SuppressWarnings("unchecked")
-	public void testStaticOrdering() throws Exception {
-		Field absoluteChildOrder = getSPObjectUnderTest().getClass().getDeclaredField("allowedChildTypes");
-		List<Class<? extends SPObject>> children = (List<Class<? extends SPObject>>) absoluteChildOrder.get(null);
+	public void testAllowedChildTypesField() throws Exception {
+		Class<? extends SPObject> classUnderTest = getSPObjectUnderTest().getClass();
+		Field childOrderField;
+		try {
+            childOrderField = classUnderTest.getDeclaredField("allowedChildTypes");
+		} catch (NoSuchFieldException ex) {
+		    fail("Persistent " + classUnderTest + " must have a static final field called allowedChildTypes");
+		    throw new AssertionError(); // NOTREACHED
+		}
+        
+        assertEquals("The allowedChildTypes field must be final",
+                true, Modifier.isFinal(childOrderField.getModifiers()));
+
+        assertEquals("The allowedChildTypes field must be static",
+                true, Modifier.isStatic(childOrderField.getModifiers()));
+
+        // Note: in the future, we will change this to require that the field is private
+        assertEquals("The allowedChildTypes field must be public",
+                true, Modifier.isPublic(childOrderField.getModifiers()));
+        
+		List<Class<? extends SPObject>> allowedChildTypes =
+		    (List<Class<? extends SPObject>>) childOrderField.get(null);
 		if (getSPObjectUnderTest().allowsChildren()) {
-			assertFalse(children.isEmpty());
+			assertFalse(allowedChildTypes.isEmpty());
 		} else {
-			assertTrue(children.isEmpty());
+			assertTrue(allowedChildTypes.isEmpty());
 		}
 	}
 	

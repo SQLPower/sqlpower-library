@@ -24,7 +24,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -61,10 +60,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	/**
 	 * Defines an absolute ordering of the child types of this class.
 	 */
-	@SuppressWarnings("unchecked")
-	public static List<Class<? extends SPObject>> allowedChildTypes = 
-		Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
-				Arrays.asList(ColumnMapping.class)));
+	public static final List<Class<? extends SPObject>> allowedChildTypes = 
+		Collections.<Class<? extends SPObject>>singletonList(ColumnMapping.class);
 
     /**
      * Comparator that orders ColumnMapping objects by FK column position.
@@ -291,11 +288,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 	protected RelationshipManager fkColumnManager;
 
-    /**
-     * A counter for {@link #setParent()} to decide when to detach listeners.
-     */
-    private int parentCount;
-    
     /**
      * This is the text for parent label of relationship.
      */
@@ -1614,8 +1606,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		/**
 		 * Defines an absolute ordering of the child types of this class.
 		 */
-		@SuppressWarnings("unchecked")
-		public static List<Class<? extends SPObject>> allowedChildTypes = Collections.emptyList();
+		public static final List<Class<? extends SPObject>> allowedChildTypes = Collections.emptyList();
 		
 		protected SQLColumn pkColumn;
 		protected SQLColumn fkColumn;

@@ -22,8 +22,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -31,7 +29,6 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.ObjectDependentException;
-import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
@@ -53,10 +50,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 
 	private static Logger logger = Logger.getLogger(SQLColumn.class);
 	
-	@SuppressWarnings("unchecked")
-    public static List<Class<? extends SPObject>> allowedChildTypes = 
-        Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
-                Arrays.asList(SQLTypePhysicalPropertiesProvider.class)));
+    public static final List<Class<? extends SPObject>> allowedChildTypes = 
+        Collections.<Class<? extends SPObject>>singletonList(SQLTypePhysicalPropertiesProvider.class);
 
 	protected final UserDefinedSQLType userDefinedSQLType;
 	protected String platform;

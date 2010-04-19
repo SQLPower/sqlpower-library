@@ -21,7 +21,6 @@ package ca.sqlpower.sqlobject;
 
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -44,6 +43,12 @@ import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
  */
 public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalPropertiesProvider {
 
+    /**
+     * An unmodifiable {@link List} of allowed child types
+     */
+    public static final List<Class<? extends SPObject>> allowedChildTypes = 
+        Collections.<Class<? extends SPObject>>singletonList(SQLTypePhysicalProperties.class);
+    
     /**
      * The {@link UserDefinedSQLType} may have an 'upstream' type from which it
      * inherits properties from.
@@ -72,12 +77,6 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
      * this {@link UserDefinedSQLType} represents.
      */
     private int type;
-    
-    /**
-     * An unmodifiable {@link List} of allowed child types
-     */
-    public static List<Class<? extends SPObject>> allowedChildTypes = 
-        Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(Arrays.asList(SQLTypePhysicalProperties.class)));
     
     @Constructor
     public UserDefinedSQLType() {

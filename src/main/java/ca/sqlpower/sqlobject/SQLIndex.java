@@ -24,7 +24,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -60,10 +59,8 @@ public class SQLIndex extends SQLObject {
     /**
 	 * Defines an absolute ordering of the child types of this class.
 	 */
-	@SuppressWarnings("unchecked")
-	public static List<Class<? extends SPObject>> allowedChildTypes = 
-		Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
-				Arrays.asList(Column.class)));
+	public static final List<Class<? extends SPObject>> allowedChildTypes = 
+		Collections.<Class<? extends SPObject>>singletonList(Column.class);
 
     /**
      * An enumeration to define if a column in an index should be ordered in ascending
@@ -100,8 +97,7 @@ public class SQLIndex extends SQLObject {
     	/**
     	 * Defines an absolute ordering of the child types of this class.
     	 */
-    	@SuppressWarnings("unchecked")
-    	public static List<Class<? extends SPObject>> allowedChildTypes = Collections.emptyList();
+    	public static final List<Class<? extends SPObject>> allowedChildTypes = Collections.emptyList();
 
         /**
          * Small class for reacting to changes in this index columns's
