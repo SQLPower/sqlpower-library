@@ -296,10 +296,20 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
         commit();
     }
 
+	/**
+	 * Sets the name of the {@link SQLTypePhysicalProperties} object keyed with
+	 * the given platform
+	 * 
+	 * @param platform
+	 *            The platform key that identifies the
+	 *            {@link SQLTypePhysicalProperties} to name.
+	 * @param name
+	 *            The new name value to set to
+	 */
     @NonProperty
-    public void setPhysicalDataType(String platform, String physicalDataType) {
-    	begin("Setting physicalName");
-        getOrCreatePhysicalProperties(platform).setPhysicalName(physicalDataType);
+    public void setPhysicalTypeName(String platform, String name) {
+    	begin("Setting physicalTypeName");
+        getOrCreatePhysicalProperties(platform).setName(name);
         commit();
     }
 

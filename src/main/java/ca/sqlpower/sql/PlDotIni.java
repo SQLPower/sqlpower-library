@@ -658,9 +658,9 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 	 * Type and sets them on the given {@link UserDefinedSQLType}.
 	 */
 	private void putPropertyIntoSQLType(UserDefinedSQLType sqlType, String key, String value) {
-		String platform = SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM;
 		if (key.equals("Name")) {
 			sqlType.setName(value);
+			sqlType.setPhysicalTypeName(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM, value);
 		} else if (key.equals("Basic Type")) {
 			sqlType.setBasicType(BasicSQLType.valueOf(value));
 		} else if (key.equals("Description")) {
