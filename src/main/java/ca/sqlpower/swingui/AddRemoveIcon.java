@@ -67,7 +67,7 @@ public class AddRemoveIcon implements Icon {
      * The width of a stroke (the horizontal and/or vertical line this
      * icon draws) in pixels.
      */
-    private final float strokeWidth = 1.999f;
+    private final float strokeWidth = 1.49f;
     
     public AddRemoveIcon(Type type) {
         this.type = type;

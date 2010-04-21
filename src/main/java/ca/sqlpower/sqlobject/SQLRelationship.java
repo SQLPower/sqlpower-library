@@ -900,8 +900,18 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 						m.getFkColumn().setSourceDataTypeName(m.getPkColumn().getSourceDataTypeName());
 					} else if (prop.equals("scale")) {
 						m.getFkColumn().setScale(m.getPkColumn().getScale());
+					} else if (prop.equals("scaleType")) {
+						m.getFkColumn().setScaleType(m.getPkColumn().getScaleType());
 					} else if (prop.equals("precision")) {
 						m.getFkColumn().setPrecision(m.getPkColumn().getPrecision());
+					} else if (prop.equals("precisionType")) {
+						m.getFkColumn().setPrecisionType(m.getPkColumn().getPrecisionType());
+					} else if (prop.equals("checkConstraint")) {
+						m.getFkColumn().setCheckConstraint(m.getPkColumn().getCheckConstraint());
+					} else if (prop.equals("constaintType")) {
+						m.getFkColumn().setConstraintType(m.getPkColumn().getConstraintType());
+					} else if (prop.equals("enumeration")) {
+						m.getFkColumn().setEnumeration(m.getPkColumn().getEnumeration());
 					} else if (prop.equals("nullable")) {
 						m.getFkColumn().setNullable(m.getPkColumn().getNullable());
 					} else if (prop.equals("defaultValue")) {

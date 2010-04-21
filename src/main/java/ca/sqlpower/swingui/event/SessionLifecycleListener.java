@@ -33,4 +33,8 @@ public interface SessionLifecycleListener<S> {
      */
     public void sessionClosing(SessionLifecycleEvent<S> e);
 
+    /**
+     * This is called when the session is opening
+     */
+    public void sessionOpening(SessionLifecycleEvent<S> e);
 }

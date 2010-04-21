@@ -21,6 +21,7 @@ package ca.sqlpower.sqlobject;
 
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -77,7 +78,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
      * this {@link UserDefinedSQLType} represents.
      */
     private int type;
-    
+
     @Constructor
     public UserDefinedSQLType() {
     	super();
@@ -109,9 +110,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     }
 
     @Override
-    protected void populateImpl() throws SQLObjectException {
-        // TODO Auto-generated method stub
-    }
+    protected void populateImpl() throws SQLObjectException {}
 
     @Override
     protected boolean removeChildImpl(SPObject child) {
@@ -409,6 +408,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
         SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
         if (properties == null) {
             properties = new SQLTypePhysicalProperties(platform);
+            properties.setName(getName());
             putPhysicalProperties(platform, properties);
         }
         return properties;
@@ -462,5 +462,10 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     	} else {
     		throw new IllegalArgumentException("Children Must be of type SQLTypePhysicalProperties");
     	}
+    }
+    
+    @Override
+    public String toString() {
+    	return getName();
     }
 }
