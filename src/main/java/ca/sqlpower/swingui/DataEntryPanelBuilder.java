@@ -36,12 +36,14 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.swingui.ChangeListeningDataEntryPanel.ErrorTextListener;
 import ca.sqlpower.validation.Validated;
 import ca.sqlpower.validation.swingui.ValidatableDataEntryPanel;
 import ca.sqlpower.validation.swingui.ValidationHandler;
@@ -171,7 +173,7 @@ public class DataEntryPanelBuilder {
 			handler.setValidatedAction(okAction);
 		}
 		
-		JButton okButton = new JDefaultButton(okAction);
+		final JButton okButton = new JDefaultButton(okAction);
 		okButton.setText(actionButtonTitle);
 		
 		Action closeAction = new AbstractAction() {
@@ -244,13 +246,30 @@ public class DataEntryPanelBuilder {
 		// Handle if the user presses Enter in the dialog - do OK action
 		d.getRootPane().setDefaultButton(okButton);
 
-
 		// Now build the GUI.
-		JPanel cp = new JPanel(new BorderLayout());
-		cp.add(panel, BorderLayout.CENTER);
+		final JPanel cp = new JPanel(new BorderLayout());
+		final JLabel errorLabel = new JLabel();
+		
+		errorLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));        
+        cp.add(errorLabel, BorderLayout.NORTH);
+        errorLabel.setVisible(false);
+		
+		if (dataEntry instanceof ChangeListeningDataEntryPanel) {		    		    
+		    ((ChangeListeningDataEntryPanel) dataEntry).addErrorTextListener(new ErrorTextListener() {                
+		        public void textChanged(String s) {
+                    errorLabel.setText(s);
+                    boolean noError = s == null || s.trim().equals("");
+                    errorLabel.setVisible(!noError);
+                    okButton.setEnabled(noError);
+                    d.pack();
+		        }
+		    });
+		}
 
+		cp.add(panel, BorderLayout.CENTER);
 		cp.add(ButtonBarFactory.buildOKCancelBar(okButton, cancelButton),
 				BorderLayout.SOUTH);
+
 		cp.setBorder(Borders.DIALOG_BORDER);
 
 		//d.add(cp);
@@ -273,7 +292,6 @@ public class DataEntryPanelBuilder {
 	 */
 	private static JDialog createDialog(final Component dialogParentComponent, final String dialogTitle) {
 		JDialog dialog;
-		
 	      
         Window dialogParent;
         if (dialogParentComponent instanceof Window) {
@@ -385,6 +403,7 @@ public class DataEntryPanelBuilder {
      * provide consistent behaviours such as Cancel button, <ESC> to close, and
      * so on.
      * XXX Worry about modal vs non-modal
+     * XXX This is not called by anything 
      * @param dataEntry
      *            The DataEntryPanel implementation
      * @param dialogParent
