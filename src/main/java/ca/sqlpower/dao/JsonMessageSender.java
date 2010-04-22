@@ -60,4 +60,8 @@ public class JsonMessageSender implements MessageSender<JSONObject> {
         return jsonArray;
     }
 
+    public String getJsonString() {
+        return getJsonArray().toString();
+    }
+    
 }
