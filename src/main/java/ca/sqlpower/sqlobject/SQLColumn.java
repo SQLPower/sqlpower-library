@@ -70,38 +70,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 */
 	private String sourceDataTypeName;
 
-	/*
-	 * These were mixed up originally...
-	 * 
-	 * Some random ideas:
-	 * 
-	 * 1. hasPrecision and hasScale might be useful here.  They are currently part of 
-	 * the GenericTypeDescriptor.  Unfortunately, it is not consulted when the screen
-	 * tries to paint itself...
-	 * 
-	 * 2. nativePrecision and nativeScale might be useful to keep just in case users want
-	 * to forward engineer into the same target database as the source.
-	 */
-    
-	/**
-	 * This column's nullability type.  One of:
-	 * <ul><li>DatabaseMetaData.columnNoNulls - might not allow NULL values
-	 *     <li>DatabaseMetaData.columnNullable - definitely allows NULL values
-	 *     <li>DatabaseMetaData.columnNullableUnknown - nullability unknown
-	 * </ul>
-	 */
-	protected int nullable;
 	// set to empty string so that we don't generate spurious undos
 	protected String remarks ="";
 	
-    /**
-     * This property indicates that values stored in this column should
-     * default to some automatcially-incrementing sequence of values.  Every
-     * database platform handles the specifics of this a little differently,
-     * but the DDL generators are responsible for taking care of that.
-     */
-	protected boolean autoIncrement;
-    
     /**
      * This property is a hint to the DDL generators to tell them what name
      * to give to the database sequence that generates values for this column.
@@ -164,11 +135,11 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		setPrecision(defaultPrec);
 		setScale(defaultScale);
 		if (defaultNullable) {
-			nullable = DatabaseMetaData.columnNullable;
+			setNullable(DatabaseMetaData.columnNullable);
 		} else {
-			nullable = DatabaseMetaData.columnNoNulls;
+			setNullable(DatabaseMetaData.columnNoNulls);
 		}
-		autoIncrement = defaultAutoInc;
+		setAutoIncrement(defaultAutoInc);
 		setRemarks(defaultRemarks);
 		setDefaultValue(defaultForDefaultValue);
 		setPopulated(true);
@@ -239,10 +210,10 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		this.sourceDataTypeName = nativeType;
 		setScale(scale);
 		setPrecision(precision);
-		this.nullable = nullable;
+		setNullable(nullable);
 		this.remarks = remarks;
 		setDefaultValue(defaultValue);
-		this.autoIncrement = isAutoIncrement;
+		setAutoIncrement(isAutoIncrement);
 
 		logger.debug("SQLColumn(.....) set ref count to 1");
 		this.referenceCount = 1;
@@ -333,10 +304,10 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 				target.setScale(source.getScale());
 				target.setScaleType(source.getScaleType());
 				target.setEnumeration(source.getEnumeration());
-				target.setNullable(source.nullable);
+				target.setNullable(source.getNullable());
 				target.setRemarks(source.remarks);
 				target.setDefaultValue(source.getDefaultValue());
-				target.setAutoIncrement(source.autoIncrement);
+				target.setAutoIncrement(source.isAutoIncrement());
 				target.setAutoIncrementSequenceName(source.autoIncrementSequenceName);
 			}
 		});
@@ -717,7 +688,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 */
 	@NonBound
 	public boolean isDefinitelyNullable()  {
-		return this.nullable == DatabaseMetaData.columnNullable;
+		return getNullable() == DatabaseMetaData.columnNullable;
 	}
 
 	/**
@@ -853,9 +824,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      *     <li>DatabaseMetaData.columnNullableUnknown - nullability unknown
      * </ul>
      */
-	@Accessor(isInteresting=true)
+	@Transient @Accessor(isInteresting=true)
 	public int getNullable() {
-		return nullable;
+		return userDefinedSQLType.getNullability();
 	}
 
 	/**
@@ -867,12 +838,13 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      *     <li>DatabaseMetaData.columnNullableUnknown - nullability unknown
      * </ul>
 	 */
-	@Mutator
+	@Transient @Mutator
 	public void setNullable(int argNullable) {
-		int oldNullable = this.nullable;
-		logger.debug("Changing nullable "+oldNullable+" -> "+argNullable);
-		this.nullable = argNullable;
-		firePropertyChange("nullable",oldNullable,argNullable);
+		begin("Set nullable");
+		int yeOldeNullable = getNullable();
+		userDefinedSQLType.setNullability(argNullable);
+		firePropertyChange("nullable", yeOldeNullable, argNullable);
+		commit();
 	}
     	
     public static String getDefaultName() {
@@ -994,9 +966,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @return the value of autoIncrement
 	 */
-	@Accessor(isInteresting=true)
+	@Transient @Accessor(isInteresting=true)
 	public boolean isAutoIncrement()  {
-		return this.autoIncrement;
+		return userDefinedSQLType.isAutoIncrement();
 	}
 
 	/**
@@ -1004,11 +976,13 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 *
 	 * @param argAutoIncrement Value to assign to this.autoIncrement
 	 */
-	@Mutator
+	@Transient @Mutator
 	public void setAutoIncrement(boolean argAutoIncrement) {
-	    boolean oldAutoIncrement = autoIncrement;
-	    this.autoIncrement = argAutoIncrement;
-	    firePropertyChange("autoIncrement",oldAutoIncrement,argAutoIncrement);
+		begin("Set autoIncrement");
+		boolean oldAutoIncrement = isAutoIncrement();
+		userDefinedSQLType.setAutoIncrement(argAutoIncrement);
+		firePropertyChange("autoIncrement",oldAutoIncrement,argAutoIncrement);
+		commit();
 	}
     
     /**

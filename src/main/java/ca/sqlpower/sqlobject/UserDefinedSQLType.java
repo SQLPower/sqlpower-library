@@ -19,9 +19,9 @@
 
 package ca.sqlpower.sqlobject;
 
+import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -79,6 +79,25 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
      */
     private int type;
 
+	/**
+	 * Specifies whether this type accepts NULL as a value, based on the values
+	 * specified by {@link DatabaseMetaData}. These include:
+	 * <ul>
+	 * <li>{@link DatabaseMetaData#columnNoNulls}</li>
+	 * <li>{@link DatabaseMetaData#columnNullable}</li>
+	 * <li>{@link DatabaseMetaData#columnNullableUnknown}</li>
+	 * </ul>
+	 */
+    private int nullability;
+    
+    /**
+     * This property indicates that values stored in this column should
+     * default to some automatically-incrementing sequence of values.  Every
+     * database platform handles the specifics of this a little differently,
+     * but the DDL generators are responsible for taking care of that.
+     */
+    private boolean autoIncrement = false;
+    
     @Constructor
     public UserDefinedSQLType() {
     	super();
@@ -468,4 +487,28 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     public String toString() {
     	return getName();
     }
+
+    @Mutator
+	public void setNullability(int nullability) {
+    	int oldValue = this.nullability;
+		this.nullability = nullability;
+		firePropertyChange("nullability", oldValue, nullability);
+	}
+
+    @Accessor
+	public int getNullability() {
+		return nullability;
+	}
+
+    @Mutator
+	public void setAutoIncrement(boolean autoIncrement) {
+    	boolean oldValue = this.autoIncrement;
+		this.autoIncrement = autoIncrement;
+		firePropertyChange("autoIncrement", oldValue, autoIncrement);
+	}
+
+    @Accessor
+	public boolean isAutoIncrement() {
+		return autoIncrement;
+	}
 }

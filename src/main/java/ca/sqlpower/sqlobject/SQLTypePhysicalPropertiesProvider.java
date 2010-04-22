@@ -19,12 +19,14 @@
 
 package ca.sqlpower.sqlobject;
 
+import java.sql.DatabaseMetaData;
 import java.sql.Types;
-import java.util.List;
 
 import javax.sql.RowSetMetaData;
 
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.sql.Olap4jDataSource.Type;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 
@@ -328,4 +330,52 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 *            {@link Types}
 	 */
 	public void setType(int type);
+
+	/**
+	 * Sets the nullability of this type.
+	 * 
+	 * @param nullability
+	 *            An int corresponding to the nullability behaviour, as
+	 *            specified in {@link DatabaseMetaData}. These include:
+	 *            <ul>
+	 *            <li>{@link DatabaseMetaData#columnNoNulls}</li>
+	 *            <li>{@link DatabaseMetaData#columnNullable}</li>
+	 *            <li>{@link DatabaseMetaData#columnNullableUnknown}</li>
+	 *            </ul>
+	 */
+	public void setNullability(int nullability);
+
+	/**
+	 * Specifies whether this type accepts NULL as a value, based on the values
+	 * specified by {@link DatabaseMetaData}. These include:
+	 * <ul>
+	 * <li>{@link DatabaseMetaData#columnNoNulls}</li>
+	 * <li>{@link DatabaseMetaData#columnNullable}</li>
+	 * <li>{@link DatabaseMetaData#columnNullableUnknown}</li>
+	 * </ul>
+	 * 
+	 * @return An int corresponding to one of the nullability values specified
+	 *         in DatabaseMetaData
+	 */
+	public int getNullability();
+
+	/**
+	 * Set whether or not this type defaults to an automatically-incrementing
+	 * sequence of values
+	 * 
+	 * @param autoIncrement
+	 *            If set to true, then this type's value defaults to an
+	 *            automatically-incrementing sequence of values. If set to
+	 *            false, then it does not.
+	 */
+	public void setAutoIncrement(boolean autoIncrement);
+    
+	/**
+	 * This property indicates that values stored in this column should default
+	 * to some automatically-incrementing sequence of values.
+	 * 
+	 * @return A boolean indicating whether this type defaults to an
+	 *         incrementing sequence of values.
+	 */
+	public boolean isAutoIncrement();
 }
