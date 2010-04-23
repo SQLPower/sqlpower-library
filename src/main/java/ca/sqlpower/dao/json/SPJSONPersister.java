@@ -263,30 +263,9 @@ public class SPJSONPersister implements SPPersister {
 	}
 	
 	public void rollback() {
-		JSONObject jsonObject = new JSONObject();
-		try {
-			// First we empty messages cues so we only send a rollback message
-			messageBuffer.clear();
-			messageSender.clear();
-			// Need to put this in or anything calling get on the key "uuid"
-			// will throw a JSONException
-			jsonObject.put("method", SPPersistMethod.rollback);
-			jsonObject.put("uuid", JSONObject.NULL);
-			logger.debug(jsonObject);
-			messageBuffer.add(jsonObject);
-			for (JSONObject obj: messageBuffer) {
-				messageSender.send(obj);
-			}
-			messageSender.flush();
-		} catch (JSONException e) {
-			throw new RuntimeException("Could not create rollback message to send. Bad bad bad.", e);
-		} catch (SPPersistenceException e) {
-			throw new RuntimeException("Could not create rollback message to send. Bad bad bad.", e);
-		} finally {
-			messageBuffer.clear();
-			messageSender.clear();
-			transactionCount = 0;
-		}
+		messageBuffer.clear();
+		messageSender.clear();
+		transactionCount = 0;
 	}
 	
 	public MessageSender<JSONObject> getMessageSender() {
