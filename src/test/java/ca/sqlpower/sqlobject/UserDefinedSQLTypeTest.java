@@ -19,11 +19,19 @@
 
 package ca.sqlpower.sqlobject;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 
+import ca.sqlpower.dao.SPPersisterListener;
+import ca.sqlpower.dao.SPSessionPersister;
+import ca.sqlpower.object.ObjectDependentException;
+import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.SPChildEvent.EventType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
+import ca.sqlpower.testutil.GenericNewValueMaker;
+import ca.sqlpower.testutil.NewValueMaker;
 
 /**
  * This particular test case is to ensure that {@link UserDefinedSQLType}
@@ -70,7 +78,6 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
     
     private SQLTypePhysicalProperties udtProperties;
     private SQLTypePhysicalProperties domainProperties;
-    private SQLTypePhysicalProperties proxyProperties;
     
     protected void setUp() throws Exception {
         super.setUp();
@@ -86,8 +93,6 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
         
         typeProxy = new UserDefinedSQLType();
         typeProxy.setUpstreamType(domain);
-        proxyProperties = new SQLTypePhysicalProperties("Generic");
-        typeProxy.putPhysicalProperties("Generic", proxyProperties);
 
         getRootObject().addChild(udt, 0);
         getRootObject().addChild(typeProxy, 0);
@@ -95,10 +100,10 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
     }
 
     public void testGetScale() throws Exception {
-        proxyProperties.setScale(1);
+        typeProxy.getDefaultPhysicalProperties().setScale(1);
         udtProperties.setScale(2);
         
-        assertEquals(2, typeProxy.getScale("Oracle"));
+        assertEquals(1, typeProxy.getScale("Oracle"));
     }
     
     public void testSetScale() throws Exception {
@@ -107,10 +112,10 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
     }
     
     public void testGetPrecision() throws Exception {
-        proxyProperties.setPrecision(1);
+        typeProxy.getDefaultPhysicalProperties().setPrecision(1);
         udtProperties.setPrecision(2);
         
-        assertEquals(2, typeProxy.getPrecision("Oracle"));
+        assertEquals(1, typeProxy.getPrecision("Oracle"));
     }
     
     public void testSetPrecision() throws Exception {
@@ -120,11 +125,11 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
     
     public void testGetEnumeration() throws Exception {
     	String[] proxyEnum = {"proxy"};
-        proxyProperties.setEnumeration(proxyEnum);
+        typeProxy.getDefaultPhysicalProperties().setEnumeration(proxyEnum);
         String[] udtEnum = {"udt"};
         udtProperties.setEnumeration(udtEnum);
         
-        assertEquals("udt", typeProxy.getEnumeration("Oracle")[0]);
+        assertEquals("proxy", typeProxy.getEnumeration("Oracle")[0]);
     }
     
     public void testSetEnumeration() throws Exception {
@@ -133,10 +138,10 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
     }
     
     public void testGetDefaultValue() throws Exception {
-        proxyProperties.setDefaultValue("proxy");
+        typeProxy.getDefaultPhysicalProperties().setDefaultValue("proxy");
         udtProperties.setDefaultValue("udt");
         
-        assertEquals("udt", typeProxy.getDefaultValue("Oracle"));
+        assertEquals("proxy", typeProxy.getDefaultValue("Oracle"));
     }
     
     public void testSetDefaultValue() throws Exception {
@@ -145,10 +150,10 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
     }
     
     public void testGetConstraintType() throws Exception {
-        proxyProperties.setConstraintType(SQLTypeConstraint.CHECK);
+        typeProxy.getDefaultPhysicalProperties().setConstraintType(SQLTypeConstraint.CHECK);
         udtProperties.setConstraintType(SQLTypeConstraint.ENUM);
         
-        assertEquals(SQLTypeConstraint.ENUM, typeProxy.getConstraintType("Oracle"));
+        assertEquals(SQLTypeConstraint.CHECK, typeProxy.getConstraintType("Oracle"));
     }
     
     public void testSetConstraintType() throws Exception {
@@ -157,10 +162,10 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
     }
     
     public void testGetCheckConstraint() throws Exception {
-        proxyProperties.setCheckConstraint("Matches A1A 1A1");
+        typeProxy.getDefaultPhysicalProperties().setCheckConstraint("Matches A1A 1A1");
         udtProperties.setCheckConstraint("Matches 12345");
         
-        assertEquals("Matches 12345", typeProxy.getCheckConstraint("Oracle"));
+        assertEquals("Matches A1A 1A1", typeProxy.getCheckConstraint("Oracle"));
     }
     
     public void testSetCheckConstraint() throws Exception {
@@ -169,10 +174,10 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
     }
     
     public void testGetPrecisionType() throws Exception {
-        proxyProperties.setPrecisionType(PropertyType.CONSTANT);
+        typeProxy.getDefaultPhysicalProperties().setPrecisionType(PropertyType.CONSTANT);
         udtProperties.setPrecisionType(PropertyType.VARIABLE);
         
-        assertEquals(PropertyType.VARIABLE, typeProxy.getPrecisionType("Oracle"));
+        assertEquals(PropertyType.CONSTANT, typeProxy.getPrecisionType("Oracle"));
     }
     
     public void testSetPrecisionType() throws Exception {
@@ -187,8 +192,8 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
     public void testSamePlatformOverwritesOld() throws Exception {
     	UserDefinedSQLType obj = (UserDefinedSQLType) getSQLObjectUnderTest();
     	
-    	SQLTypePhysicalProperties props0 = new SQLTypePhysicalProperties(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
-    	SQLTypePhysicalProperties props1 = new SQLTypePhysicalProperties(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
+    	SQLTypePhysicalProperties props0 = new SQLTypePhysicalProperties("testPlatform");
+    	SQLTypePhysicalProperties props1 = new SQLTypePhysicalProperties("testPlatform");
     	
     	obj.putPhysicalProperties(props0.getPlatform(), props0);
     	assertEquals(props0.getUUID(), obj.getPhysicalProperties(props0.getPlatform()).getUUID());
@@ -204,5 +209,143 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
 	@Override
 	protected SQLObject getSQLObjectUnderTest() throws SQLObjectException {
 		return typeProxy;
+	}
+	
+	/**
+	 * Overriden because the superclass version does not account for the default
+	 * physical properties child, which must always exist and always be at index
+	 * 0. Inserting a child at 0 results in an exception being thrown.
+	 */
+	@Override
+	public void testAllChildHandlingMethods() throws SQLObjectException,
+			IllegalArgumentException, ObjectDependentException {
+		if (!getSQLObjectUnderTest().allowsChildren()) return;
+
+		getSQLObjectUnderTest().populate();
+		
+		NewValueMaker newValueMaker = new GenericNewValueMaker(getRootObject());
+		Class<? extends SPObject> childType = getSQLObjectUnderTest().getAllowedChildTypes().get(0);
+		
+		int childCount = getSQLObjectUnderTest().getChildCount();
+		List<SPObject> children = new ArrayList<SPObject>();
+		children.addAll(getSQLObjectUnderTest().getChildren(childType));
+
+		SQLObject x = (SQLObject) newValueMaker.makeNewValue(childType, null, "");
+		
+		getSQLObjectUnderTest().addChild(x);
+		assertEquals(childCount + 1, getSQLObjectUnderTest().getChildCount());
+		assertEquals(x, getSQLObjectUnderTest().getChildren(childType).get(
+				getSQLObjectUnderTest().getChildren(childType).size() - 1));
+		
+		SQLObject y = (SQLObject) newValueMaker.makeNewValue(childType, null, "");
+		
+		// Test addChild(SQLObject, int)
+		getSQLObjectUnderTest().addChild(y, 1);
+		assertEquals(y, getSQLObjectUnderTest().getChildren(y.getClass()).get(1));
+		assertEquals(x, getSQLObjectUnderTest().getChildren(childType).get(
+				getSQLObjectUnderTest().getChildren(childType).size() - 1));
+		
+		getSQLObjectUnderTest().removeChild(x);
+		children.add(0, y);
+		assertTrue(getSQLObjectUnderTest().getChildren(childType).containsAll(children));
+		
+		getSQLObjectUnderTest().removeChild(y);
+		assertEquals(childCount, getSQLObjectUnderTest().getChildCount());
+	}
+	
+	/**
+	 * Overriden because the superclass version does not account for the default
+	 * physical properties child, which must always exist and always be at index
+	 * 0. Inserting a child at 0 results in an exception being thrown.
+	 */
+	@Override
+	public void testPreRemoveEventNoVeto() throws Exception {
+    	if (!getSQLObjectUnderTest().allowsChildren()) return;
+    	
+    	getSQLObjectUnderTest().populate();
+    	
+		Class<? extends SPObject> childType = getSQLObjectUnderTest().getAllowedChildTypes().get(0);
+		NewValueMaker newValueMaker = new GenericNewValueMaker(getRootObject());
+		SQLObject x = (SQLObject) newValueMaker.makeNewValue(childType, null, "");
+		
+		int childCount = getSQLObjectUnderTest().getChildCount();
+        getSQLObjectUnderTest().addChild(x);
+
+        CountingSQLObjectPreEventListener l = new CountingSQLObjectPreEventListener();
+        getSQLObjectUnderTest().addSQLObjectPreEventListener(l);
+        
+        l.setVetoing(false);
+        
+        getSQLObjectUnderTest().removeChild(getSQLObjectUnderTest().getChild(1));
+        
+        assertEquals("Event fired", 1, l.getPreRemoveCount());
+        assertEquals("Child removed", childCount, getSQLObjectUnderTest().getChildren().size());
+	}
+	
+	/**
+	 * Overriden because the superclass version does not account for the default
+	 * physical properties child, which must always exist and always be at index
+	 * 0. Inserting a child at 0 results in an exception being thrown.
+	 */
+	@Override
+	public SPObject testSPPersisterAddsChild() throws Exception {
+		NewValueMaker valueMaker = createNewValueMaker(getRootObject(), getPLIni());
+    	
+    	SPObject spObject = getSPObjectUnderTest();
+    	int oldChildCount = spObject.getChildren().size();
+    	if (!spObject.allowsChildren()) return null;
+    	
+    	Class<? extends SPObject> childClassType = getChildClassType();
+    	if (childClassType == null) return null;
+    	
+    	SPSessionPersister persister = new TestingSessionPersister("test", getSPObjectUnderTest(), getConverter());
+    	persister.setWorkspaceContainer(getSPObjectUnderTest().getWorkspaceContainer());
+    	SPPersisterListener listener = new SPPersisterListener(persister, getConverter());
+    	
+    	SPObject newChild = (SPObject) valueMaker.makeNewValue(childClassType, null, "child");
+    	newChild.setParent(spObject);
+    	
+    	listener.childAdded(new SPChildEvent(spObject, childClassType, newChild, 1, EventType.ADDED));
+    	
+    	assertEquals(oldChildCount + 1, spObject.getChildren().size());
+    	assertEquals(newChild, spObject.getChildren(childClassType).get(1));
+    	
+    	newChild.removeSPListener(listener);
+    	
+    	//Find the actual child under the object under test as the persister will make a new,
+    	//different object to add not the newChild object. This lets the objects compare
+    	//equal by reference.
+    	for (SPObject existingChild : spObject.getChildren(childClassType)) {
+    	    if (existingChild.getUUID().equals(newChild.getUUID())) {
+    	        return existingChild;
+    	    }
+    	}
+    	return null;
+	}
+	
+	/**
+	 * Overriden because the superclass version does not account for the default
+	 * physical properties child, which must always exist and always be at index
+	 * 0. Inserting a child at 0 results in an exception being thrown.
+	 */
+	@Override
+	public void testAddChildFiresEvents() throws Exception {
+    	SPObject o = getSPObjectUnderTest();
+    	
+    	if (!o.allowsChildren()) return;
+    	
+    	Class<?> childClassType = getChildClassType();
+    	if (childClassType == null) return;
+    	
+    	CountingSPListener listener = new CountingSPListener();
+		
+    	o.addSPListener(listener);
+    	
+    	NewValueMaker valueMaker = createNewValueMaker(getRootObject(), getPLIni());
+    	SPObject newChild = (SPObject) valueMaker.makeNewValue(childClassType, null, "child");
+    	
+    	o.addChild(newChild, 1);
+    	
+    	assertEquals(1, listener.getChildAddedCount());
 	}
 }

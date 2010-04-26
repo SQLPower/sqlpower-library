@@ -309,6 +309,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 				target.setDefaultValue(source.getDefaultValue());
 				target.setAutoIncrement(source.isAutoIncrement());
 				target.setAutoIncrementSequenceName(source.autoIncrementSequenceName);
+				target.setConstraintType(source.getConstraintType());
+				target.setCheckConstraint(source.getCheckConstraint());
 			}
 		});
 	}

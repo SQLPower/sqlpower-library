@@ -72,7 +72,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	
 	private static final Logger logger = Logger.getLogger(PersistedSPObjectTest.class);
 	
-	private class TestingSessionPersister extends SPSessionPersister {
+	public class TestingSessionPersister extends SPSessionPersister {
 
 		public TestingSessionPersister(String name, SPObject root,
 				SessionPersisterSuperConverter converter) {
@@ -1031,7 +1031,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
     }
     
     
-    private class CountingSPListener implements SPListener {
+    public class CountingSPListener implements SPListener {
 
     	private int childAddedCount = 0;
     	private int childRemovedCount = 0;
@@ -1063,6 +1063,30 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 
 		public void propertyChanged(PropertyChangeEvent evt) {
 			propertyChangedCount++;
+		}
+
+		public int getChildAddedCount() {
+			return childAddedCount;
+		}
+
+		public int getChildRemovedCount() {
+			return childRemovedCount;
+		}
+
+		public int getTransactionEndedCount() {
+			return transactionEndedCount;
+		}
+
+		public int getTransactionRollbackCount() {
+			return transactionRollbackCount;
+		}
+
+		public int getTransactionStartedCount() {
+			return transactionStartedCount;
+		}
+
+		public int getPropertyChangedCount() {
+			return propertyChangedCount;
 		}
     }
 }

@@ -29,8 +29,11 @@ import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonProperty;
+import ca.sqlpower.object.annotation.Transient;
+import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 
@@ -63,11 +66,25 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     private BasicSQLType basicType;
     
 	/**
-	 * A list of {@link SQLTypePhyisicalProperties} that are the children of this object.
-	 * Only one physical properties object should be listed per platform.
+	 * The Default {@link SQLTypePhysicalProperties} for this type. By default,
+	 * requests for physical properties for all platforms from this type will
+	 * use this instance, UNLESS an overriding instance exists for the requested
+	 * platform in the {@link #overridingPhysicalProperties} list. All requests
+	 * for platform of
+	 * {@link SQLTypePhysicalPropertiesProvider#GENERIC_PLATFORM} will return
+	 * this default instance.
 	 */
-    private List<SQLTypePhysicalProperties> physicalProperties = new ArrayList<SQLTypePhysicalProperties>(); 
-    
+    private final SQLTypePhysicalProperties defaultPhysicalProperties;
+
+	/**
+	 * A list of {@link SQLTypePhyisicalProperties} that are the children of
+	 * this object. These {@link SQLTypePhysicalProperties} instances are
+	 * overrides for the {@link #defaultPhysicalProperties} specific to a given
+	 * platform. Only one physical properties object should be listed per
+	 * platform.
+	 */
+	private List<SQLTypePhysicalProperties> overridingPhysicalProperties = new ArrayList<SQLTypePhysicalProperties>();
+
     /**
      * A textual description of this type for documentation purposes.
      */
@@ -98,19 +115,51 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
      */
     private boolean autoIncrement = false;
     
-    @Constructor
+	/**
+	 * Constructs a {@link UserDefinedSQLType} with a default
+	 * {@link SQLTypePhysicalProperties} set with a platform of
+	 * {@link SQLTypePhysicalPropertiesProvider#GENERIC_PLATFORM}
+	 */
     public UserDefinedSQLType() {
+    	this(new SQLTypePhysicalProperties(GENERIC_PLATFORM));
+	}
+    
+	/**
+	 * Constructs a {@link UserDefinedSQLType} with the
+	 * {@link #defaultPhysicalProperties} set to the
+	 * {@link SQLTypePhysicalProperties} in the argument.
+	 * 
+	 * @param defaultPhysicalProperties
+	 *            Sets the defaultPhysicalProperties to this instance
+	 */
+    @Constructor
+    public UserDefinedSQLType(
+    		@ConstructorParameter(isProperty = ParameterType.CHILD, 
+    		propertyName = "primaryKeyIndex") SQLTypePhysicalProperties defaultPhysicalProperties) {
     	super();
     	setName("UserDefinedSQLType");
+    	this.defaultPhysicalProperties = defaultPhysicalProperties;
+    	defaultPhysicalProperties.setParent(this);
     	setPopulated(true);
     }
     
+	/**
+	 * Returns an overriding {@link SQLTypePhysicalProperties} for the given
+	 * platform name if one exists. Otherwise, it returns the
+	 * {@link #defaultPhysicalProperties}.
+	 * 
+	 * @param platformName The platform name to return a {@link SQLTypePhysicalProperties} for.
+	 * @return If an overriding instance exists in this type, then return it. Otherwise, it returns the
+	 * 
+	 */
     @NonProperty
     public SQLTypePhysicalProperties getPhysicalProperties(String platformName) {
-        for (SQLTypePhysicalProperties properties : physicalProperties) {
-        	if (properties.getPlatform().equals(platformName)) return properties;
-        }
-        return null;
+    	if (!platformName.equals(GENERIC_PLATFORM)) {
+	        for (SQLTypePhysicalProperties properties : overridingPhysicalProperties) {
+	        	if (properties.getPlatform().equals(platformName)) return properties;
+	        }
+    	}
+        return defaultPhysicalProperties;
     }
     
     @Override
@@ -120,7 +169,10 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Override
     public List<? extends SQLObject> getChildrenWithoutPopulating() {
-    	return Collections.unmodifiableList(new ArrayList<SQLTypePhysicalProperties>(physicalProperties));
+    	ArrayList<SQLTypePhysicalProperties> properties = new ArrayList<SQLTypePhysicalProperties>();
+    	properties.add(defaultPhysicalProperties);
+    	properties.addAll(overridingPhysicalProperties);
+		return Collections.unmodifiableList(properties);
     }
 
     @Override
@@ -133,11 +185,12 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Override
     protected boolean removeChildImpl(SPObject child) {
-        int childIndex = physicalProperties.indexOf(child);
-    	boolean removedFromList = physicalProperties.remove(child);
+        int childIndex = overridingPhysicalProperties.indexOf(child);
+    	boolean removedFromList = overridingPhysicalProperties.remove(child);
 		
 		if (child != null && removedFromList) {
-			fireChildRemoved(SQLTypePhysicalProperties.class, child, childIndex);
+			//The defaultPhysicalProperties is the first physical properties in the first position.
+			fireChildRemoved(SQLTypePhysicalProperties.class, child, childIndex + 1);
 			child.setParent(null);
             return true;
         } else {
@@ -445,36 +498,62 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 		return upstreamType;
 	}
     
+	/**
+	 * An important note of this implementation of
+	 * {@link #addChildImpl(SPObject, int)} is that it will not accept adding
+	 * {@link SQLTypePhysicalProperties} for the
+	 * {@link SQLTypePhysicalPropertiesProvider#GENERIC_PLATFORM) The
+	 * SQLTypePhysicalProperties for GENERIC_PLATFORM is always {
+	 * @link #defaultPhysicalProperties}, and it cannot ever be changed.
+	 */
     public void putPhysicalProperties(String platform, SQLTypePhysicalProperties properties) {
+		if (platform.equals(GENERIC_PLATFORM)) {
+			throw new IllegalArgumentException(
+					"The SQLTypePhysicalProperties object for "
+							+ GENERIC_PLATFORM
+							+ " cannot be overwritten. Instead, use getDefaultPhysicalProperties and modify its properties");
+		}
     	SQLTypePhysicalProperties oldProperties = getPhysicalProperties(platform);
     	// Add new properties
-    	physicalProperties.add(properties);
-    	int index = physicalProperties.indexOf(properties);
+    	overridingPhysicalProperties.add(properties);
+    	int index = overridingPhysicalProperties.indexOf(properties);
     	properties.setParent(this);
     	fireChildAdded(SQLTypePhysicalProperties.class, properties, index);
     	// Remove old properties
-    	if (oldProperties != null) {
-    		int oldIndex = physicalProperties.indexOf(oldProperties);
-    		physicalProperties.remove(oldProperties);
+    	if (oldProperties != null && oldProperties != defaultPhysicalProperties) {
+    		int oldIndex = overridingPhysicalProperties.indexOf(oldProperties);
+    		overridingPhysicalProperties.remove(oldProperties);
     		fireChildRemoved(SQLTypePhysicalProperties.class, oldProperties, oldIndex);
     		oldProperties.setParent(null);
     	}
     }
 
+	/**
+	 * An important note of this implementation of
+	 * {@link #addChildImpl(SPObject, int)} is that it will not accept adding
+	 * children at index 0. Index 0 is the index of the
+	 * {@link #defaultPhysicalProperties}, and it cannot ever be moved.
+	 */
     @Override
     protected void addChildImpl(SPObject child, int index) {
     	// super.addChild() should already be checking for type
     	if (child instanceof SQLTypePhysicalProperties) {
     		SQLTypePhysicalProperties newProperties = (SQLTypePhysicalProperties) child;
+    		if (newProperties == defaultPhysicalProperties) return;
+			if (index == 0) {
+				throw new IllegalArgumentException(
+						"Cannot insert child at index 0, as this is where the default physical properties must always be.");
+			}
     		SQLTypePhysicalProperties oldProperties = getPhysicalProperties(newProperties.getPlatform());
-    		// Add new properties
-    		physicalProperties.add(index, newProperties);
+			// Add new properties. Insert at index - 1 is because
+			// defaultPhysicalProperties is an always existent child at index 0.
+    		overridingPhysicalProperties.add(index - 1, newProperties);
     		newProperties.setParent(this);
     		fireChildAdded(SQLTypePhysicalProperties.class, newProperties, index);
     		// Remove old properties
-    		if (oldProperties != null) {
-    			int oldIndex = physicalProperties.indexOf(oldProperties);
-    			physicalProperties.remove(oldProperties);
+    		if (oldProperties != null && oldProperties != defaultPhysicalProperties) {
+    			int oldIndex = overridingPhysicalProperties.indexOf(oldProperties);
+    			overridingPhysicalProperties.remove(oldProperties);
     			fireChildRemoved(SQLTypePhysicalProperties.class, oldProperties, oldIndex);
     			oldProperties.setParent(null);
     		}
@@ -510,5 +589,10 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     @Accessor
 	public boolean isAutoIncrement() {
 		return autoIncrement;
+	}
+    
+    @Transient @Accessor
+    public SQLTypePhysicalProperties getDefaultPhysicalProperties() {
+		return defaultPhysicalProperties;
 	}
 }

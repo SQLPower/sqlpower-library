@@ -25,8 +25,6 @@ import java.sql.Types;
 import javax.sql.RowSetMetaData;
 
 import ca.sqlpower.object.SPObject;
-import ca.sqlpower.object.annotation.Accessor;
-import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.sql.Olap4jDataSource.Type;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 
