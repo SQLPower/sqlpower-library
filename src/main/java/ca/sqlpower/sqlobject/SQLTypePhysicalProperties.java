@@ -295,5 +295,34 @@ public class SQLTypePhysicalProperties extends SQLObject {
 		this.scaleType = scaleType;
 		firePropertyChange("scaleType", oldValue, scaleType);
 	}
+    
+	/**
+	 * Updates the properties of this properties object to match the parameter.
+	 * Does not change this properties platform or parent.
+	 * 
+	 * @param matchMe
+	 *            the SQLTypePhysicalProperties to match
+	 */
+    @Override
+    public void updateToMatch(SQLObject matchMe) {
+    	if (!(matchMe instanceof SQLTypePhysicalProperties)) {
+    		throw new ClassCastException();
+    	}
+    	
+    	SQLTypePhysicalProperties propsToMatch = (SQLTypePhysicalProperties) matchMe;
+    	
+    	begin("Matching properties");
+    	setName(propsToMatch.getName());
+    	setPhysicalName(propsToMatch.getPhysicalName());
+    	setPrecision(propsToMatch.getPrecision());
+    	setPrecisionType(propsToMatch.getPrecisionType());
+    	setScale(propsToMatch.getScale());
+    	setScaleType(propsToMatch.getScaleType());
+    	setEnumeration(propsToMatch.getEnumeration());
+    	setDefaultValue(propsToMatch.getDefaultValue());
+    	setCheckConstraint(propsToMatch.getCheckConstraint());
+    	setConstraintType(propsToMatch.getConstraintType());
+    	commit();
+    }
 }
 

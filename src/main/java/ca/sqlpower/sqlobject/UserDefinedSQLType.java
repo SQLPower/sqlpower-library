@@ -590,6 +590,74 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	public boolean isAutoIncrement() {
 		return autoIncrement;
 	}
+
+	/**
+	 * goes through each of the UserDefinedSQLType's children appending each's
+	 * platform to the list of names
+	 * 
+	 * @return a list of platform names
+	 */
+    public List<String> platforms() {
+    	List<String> platforms = new ArrayList<String>();
+    	for (SQLTypePhysicalProperties properties : overridingPhysicalProperties) {
+    		platforms.add(properties.getPlatform());
+    	}
+    	platforms.add(defaultPhysicalProperties.getPlatform());
+    	return platforms;
+    }
+    
+	/**
+	 * Updates each of this UserDefinedSQLType's properties to match the input
+	 * type. This includes the properties of the physical properties. The
+	 * changes are made in a single transaction.
+	 * 
+	 * @param matchMe
+	 *            the UserDefinedSQLType who's properties we are copying
+	 */
+    @Override
+    public void updateToMatch(SQLObject matchMe) {
+    	if (!(matchMe instanceof UserDefinedSQLType)) {
+    		throw new ClassCastException();
+    	}
+    	
+    	UserDefinedSQLType typeToMatch = (UserDefinedSQLType) matchMe;
+    	
+    	begin("Copying Properties");
+    	
+    	// Properties of UserDefinedSQLType
+    	setName(typeToMatch.getName());
+    	setType(typeToMatch.getType());
+    	setBasicType(typeToMatch.getBasicType());
+    	setNullability(typeToMatch.getNullability());
+    	setAutoIncrement(typeToMatch.isAutoIncrement());
+    	setDescription(typeToMatch.getDescription());
+    	setUpstreamType(typeToMatch.getUpstreamType());
+    	
+    	// Children of UserDefinedSQLType
+    	List<String> oldPlatforms = platforms();
+    	List<String> newPlatforms = typeToMatch.platforms();
+    	for (String platform : oldPlatforms) {
+    		if (!newPlatforms.contains(platform)) {
+    			try {
+    				removeChild(getPhysicalProperties(platform));
+    			} catch (Exception e) {
+    				throw new RuntimeException("Cannot remove child!!!!");
+    			}
+    		}
+    	}
+    	for (String platform : newPlatforms) {
+    		if (!oldPlatforms.contains(platform)) {
+    			putPhysicalProperties(platform, new SQLTypePhysicalProperties(platform));
+    		}
+    	}
+    	
+    	// Properties of the children
+    	for (String platform : newPlatforms) {
+    		getPhysicalProperties(platform).updateToMatch(typeToMatch.getPhysicalProperties(platform));
+    	}
+    	
+    	commit();
+    }
     
     @Transient @Accessor
     public SQLTypePhysicalProperties getDefaultPhysicalProperties() {
