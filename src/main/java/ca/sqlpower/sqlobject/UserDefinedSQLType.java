@@ -488,9 +488,22 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Mutator
 	public void setUpstreamType(UserDefinedSQLType upstreamType) {
+    	begin("setting upstream type");
+    	
     	UserDefinedSQLType oldValue = this.upstreamType;
     	this.upstreamType = upstreamType;
 		firePropertyChange("upstreamType", oldValue, upstreamType);
+		
+		if (upstreamType != null) {
+			for (String platform : platforms()) {
+				if (upstreamType.getPhysicalProperties(platform) != null) {
+					getPhysicalProperties(platform)
+					.setName(upstreamType.getPhysicalProperties(platform).getName());
+				}
+			}
+		}
+		
+		commit();
 	}
 
     @Accessor
