@@ -18,18 +18,18 @@
 	<property name="reports.dir" value="${dist.dir}/reports"/>
 	<property name="ca.sqlpower.SKIP_DODGY_TESTS" value="false"/>
 	<!--
-		Set the format of the findbugs report to html by default
+		Set the format of the findbugs report to xml by default
 	-->
-	<condition property="findbugs.report.format" value="html">
+	<condition property="findbugs.report.format" value="xml">
 		<not>
 			<isset property="findbugs.report.format"/>
 		</not>
 	</condition>
 	
 	<!--
-		Set the format of the pmd report to html by default
+		Set the format of the pmd report to xml by default
 	-->
-	<condition property="pmd.report.format" value="html">
+	<condition property="pmd.report.format" value="xml">
 		<not>
 			<isset property="pmd.report.format"/>
 		</not>
