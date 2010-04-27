@@ -169,6 +169,9 @@ public class SQLPowerUtils {
 	 * UUID, returning null if the item is not found. Throws ClassCastException
 	 * if in item is found, but it is not of the expected type.
 	 * 
+	 * Note: If you are using an ArchitectProject, it is better to use its
+	 * getObjectInTree method, since that uses a HashMap, not recursion.
+	 * 
 	 * @param <T>
 	 *            The expected type of the item
 	 * @param uuid
@@ -189,6 +192,9 @@ public class SQLPowerUtils {
      * Performs a preorder traversal of the given {@link SPObject} and its
      * descendants, returning the first SPObject having the given UUID.
      * Returns null if no such SPObject exists under startWith.
+     * 
+     * Note: If you are using an ArchitectProject, it is better to use its
+     * getObjectInTree method, since that uses a HashMap, not recursion.
      * 
      * @param startWith
      *            The SPObject to start the search with.
