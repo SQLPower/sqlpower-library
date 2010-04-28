@@ -22,22 +22,15 @@ package ca.sqlpower.swingui.querypen;
 import java.awt.Color;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
 
 import javax.swing.JEditorPane;
-import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
 
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.SPVariableHelper;
-import ca.sqlpower.swingui.object.InsertVariableAction;
-import ca.sqlpower.swingui.object.VariableInserter;
-import ca.sqlpower.swingui.object.VariableLabel;
 import edu.umd.cs.piccolo.PCanvas;
 import edu.umd.cs.piccolo.PNode;
 import edu.umd.cs.piccolo.event.PBasicInputEventHandler;
@@ -104,8 +97,7 @@ private static final Logger logger = Logger.getLogger(EditablePStyledText.class)
 	private boolean boxClicked;
 	
 	private final QueryPen queryPen;
-
-	private final SPVariableHelper variablesHelper;
+	
 	
 	/**
 	 *  This is an Array of Where Options for the whereOptionsBox
@@ -118,47 +110,11 @@ private static final Logger logger = Logger.getLogger(EditablePStyledText.class)
 	}
 	
 	public EditablePStyledTextWithOptionBox(String startingText, QueryPen queryPenRef, final PCanvas canvas, int minCharCountSize, SPVariableHelper variables) {
-		super(startingText, queryPenRef, canvas, minCharCountSize);
+		super(startingText, queryPenRef, canvas, minCharCountSize, variables);
 		this.queryPen = queryPenRef;
-		this.variablesHelper = variables;
 		
 		getEditorPane().removeFocusListener(getEditorFocusListener());
 		getEditorPane().addFocusListener(editorFocusListener);
-		
-		if (this.variablesHelper != null) {
-			
-			// Substitutes the variables for the nice variables labels
-			VariableLabel.insertLabels(this.variablesHelper, (StyledDocument)getDocument(), getEditorPane());
-			
-			// Maps CTRL+SPACE to insert variable
-			getEditorPane().getInputMap().put(
-					KeyStroke.getKeyStroke(
-							KeyEvent.VK_SPACE,
-							InputEvent.CTRL_MASK),
-							"insertVariable");
-			getEditorPane().getActionMap().put(
-					"insertVariable", 
-					new InsertVariableAction(
-							"Insert variable",
-							this.variablesHelper, 
-							null, 
-							new VariableInserter() {
-								public void insert(String variable) {
-									try {
-										getEditorPane().setText(getEditorPane().getText().trim());
-										getEditorPane().getDocument().insertString(
-												getEditorPane().getCaretPosition(), 
-												variable, 
-												null);
-									} catch (BadLocationException e) {
-										throw new IllegalStateException(e);
-									}
-									syncWithDocument();
-									getStyledTextEventHandler().stopEditing();
-								}
-							}, 
-							this.getEditorPane()));
-		}
 		
 		whereOptionBox = PPath.createRectangle(0, 0
 				, (float)WHERE_OPTION_BOX_WIDTH, (float)WHERE_OPTION_BOX_HIEGHT);
@@ -219,27 +175,6 @@ private static final Logger logger = Logger.getLogger(EditablePStyledText.class)
 			whereOptionBox.addChild(newOption);
 		}
 		
-	}
-	
-	
-	public void syncWithDocument() {
-		if (this.variablesHelper == null) {
-			super.syncWithDocument();
-		} else {
-			getEditorPane().setText(getEditorPane().getText().trim());
-			VariableLabel.insertLabelsForPicollo((StyledDocument)getDocument());
-			if (getEditorPane().getText() == null || getEditorPane().getText().trim().equals("") ) {
-				getEditorPane().setText(startingText);
-			} else if (	getEditorPane().getText().length() < minCharCountSize) {
-				StringBuffer sb = new StringBuffer();
-				for (int i = 0; i < minCharCountSize - getEditorPane().getText().length(); i++) {
-					sb.append(" ");
-				}
-				getEditorPane().setText(getEditorPane().getText() + sb.toString());
-			}
-			super.syncWithDocument();
-			VariableLabel.removeLabelsForPicollo((StyledDocument)getDocument());
-		}
 	}
 	
 	public PPath getOptionBox() {

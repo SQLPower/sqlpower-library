@@ -27,6 +27,7 @@ import java.awt.Paint;
 import java.awt.Stroke;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.geom.Point2D;
@@ -36,14 +37,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JEditorPane;
+import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 import javax.swing.border.LineBorder;
+import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultStyledDocument;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.object.SPVariableHelper;
+import ca.sqlpower.swingui.object.InsertVariableAction;
+import ca.sqlpower.swingui.object.VariableInserter;
+import ca.sqlpower.swingui.object.VariableLabel;
 import ca.sqlpower.swingui.querypen.event.ExtendedStyledTextEventHandler;
 import edu.umd.cs.piccolo.PCamera;
 import edu.umd.cs.piccolo.PCanvas;
@@ -144,6 +152,8 @@ public class EditablePStyledText extends PStyledText {
      * and position an editor for the PStyledText node so the user can update the text.
      */
     private final PCanvas canvas;
+    
+    protected final SPVariableHelper variablesHelper;
 
     /**
      * This listener is placed on the camera to listen to changes in the
@@ -178,10 +188,19 @@ public class EditablePStyledText extends PStyledText {
 	    this(startingText, queryPen, canvas, 0);
 	}
 	
+	public EditablePStyledText(String startingText, QueryPen queryPen, PCanvas canvas, SPVariableHelper variables) {
+	    this(startingText, queryPen, canvas, 0, variables);
+	}
+	
 	public EditablePStyledText(String startingText, QueryPen queryPen, final PCanvas canvas, int minCharCountSize) {
+		this(startingText, queryPen, canvas, minCharCountSize, null);
+	}
+	
+	public EditablePStyledText(String startingText, QueryPen queryPen, final PCanvas canvas, int minCharCountSize, SPVariableHelper helper) {
 	    this.startingText = startingText;
 		this.minCharCountSize = minCharCountSize;
 	    this.canvas = canvas;
+		variablesHelper = helper;
 		editorPane = new JEditorPane();
 		editingListeners = new ArrayList<EditStyledTextListener>();
 		
@@ -253,6 +272,41 @@ public class EditablePStyledText extends PStyledText {
 			}
 		});
 		
+		if (this.variablesHelper != null) {
+			
+			// Substitutes the variables for the nice variables labels
+			VariableLabel.insertLabels(this.variablesHelper, getDocument(), getEditorPane());
+			
+			// Maps CTRL+SPACE to insert variable
+			getEditorPane().getInputMap().put(
+					KeyStroke.getKeyStroke(
+							KeyEvent.VK_SPACE,
+							InputEvent.CTRL_MASK),
+							"insertVariable");
+			getEditorPane().getActionMap().put(
+					"insertVariable", 
+					new InsertVariableAction(
+							"Insert variable",
+							this.variablesHelper, 
+							null, 
+							new VariableInserter() {
+								public void insert(String variable) {
+									try {
+										getEditorPane().setText(getEditorPane().getText().trim());
+										getEditorPane().getDocument().insertString(
+												getEditorPane().getCaretPosition(), 
+												variable, 
+												null);
+									} catch (BadLocationException e) {
+										throw new IllegalStateException(e);
+									}
+									syncWithDocument();
+									getStyledTextEventHandler().stopEditing();
+								}
+							}, 
+							this.getEditorPane()));
+		}
+		
 	}
 	
 	@Override
@@ -310,6 +364,26 @@ public class EditablePStyledText extends PStyledText {
 			}
 			editorPane.setText(editorPane.getText() + sb.toString());
 			syncWithDocument();
+		}
+	}
+	
+	public void syncWithDocument() {
+		if (this.variablesHelper == null) {
+			super.syncWithDocument();
+		} else {
+			getEditorPane().setText(getEditorPane().getText().trim());
+			VariableLabel.insertLabelsForPicollo((StyledDocument)getDocument());
+			if (getEditorPane().getText() == null || getEditorPane().getText().trim().equals("") ) {
+				getEditorPane().setText(startingText);
+			} else if (	getEditorPane().getText().length() < minCharCountSize) {
+				StringBuffer sb = new StringBuffer();
+				for (int i = 0; i < minCharCountSize - getEditorPane().getText().length(); i++) {
+					sb.append(" ");
+				}
+				getEditorPane().setText(getEditorPane().getText() + sb.toString());
+			}
+			super.syncWithDocument();
+			VariableLabel.removeLabelsForPicollo((StyledDocument)getDocument());
 		}
 	}
 	

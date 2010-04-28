@@ -150,7 +150,7 @@ public class ConstantPNode extends PNode implements CleanupPNode {
 			}
 		});
 		
-		constantText = new EditablePStyledText(source.getName(), mouseStates, canvas);
+		constantText = new EditablePStyledText(source.getName(), mouseStates, canvas, variables);
 		constantText.addEditStyledTextListener(removeItemListener);
 		double yPos = (swingCheckbox.getFullBounds().getHeight() - constantText.getHeight())/2;
 		constantText.translate(swingCheckbox.getFullBounds().getWidth() + SPACING_SIZE, yPos);
