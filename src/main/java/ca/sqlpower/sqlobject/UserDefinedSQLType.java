@@ -529,7 +529,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     	SQLTypePhysicalProperties oldProperties = getPhysicalProperties(platform);
     	// Add new properties
     	overridingPhysicalProperties.add(properties);
-    	int index = overridingPhysicalProperties.indexOf(properties);
+    	int index = overridingPhysicalProperties.indexOf(properties) + 1;
     	properties.setParent(this);
     	fireChildAdded(SQLTypePhysicalProperties.class, properties, index);
     	// Remove old properties
