@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 
 import ca.sqlpower.dao.SPPersister;
+import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
@@ -94,7 +95,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
      * The int value that corresponds to a type defined in {@link Types} that
      * this {@link UserDefinedSQLType} represents.
      */
-    private int type;
+    private Integer type;
 
 	/**
 	 * Specifies whether this type accepts NULL as a value, based on the values
@@ -105,7 +106,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	 * <li>{@link DatabaseMetaData#columnNullableUnknown}</li>
 	 * </ul>
 	 */
-    private int nullability;
+    private Integer nullability;
     
     /**
      * This property indicates that values stored in this column should
@@ -113,7 +114,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
      * database platform handles the specifics of this a little differently,
      * but the DDL generators are responsible for taking care of that.
      */
-    private boolean autoIncrement = false;
+    private Boolean autoIncrement;
     
 	/**
 	 * Constructs a {@link UserDefinedSQLType} with a default
@@ -225,7 +226,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Accessor
     public BasicSQLType getBasicType() {
-        return basicType;
+        return basicType == null && upstreamType != null ? upstreamType.getBasicType() : basicType;
     }
 
     @NonProperty
@@ -335,8 +336,8 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     }
 
     @Accessor
-    public int getType() {
-         return type;
+    public Integer getType() {
+         return (type == null && upstreamType != null) ? upstreamType.getType() : type;
     }
 
     @NonProperty
@@ -399,8 +400,8 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     }
 
     @Mutator
-    public void setType(int type) {
-    	int oldValue = this.type;
+    public void setType(Integer type) {
+    	Integer oldValue = this.type;
         this.type = type;
         firePropertyChange("type", oldValue, type);
     }
@@ -462,7 +463,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Accessor
     public String getDescription() {
-        return description;
+        return description == null && upstreamType != null ? upstreamType.getDescription() : description;
     }
     
     
@@ -581,27 +582,27 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     }
 
     @Mutator
-	public void setNullability(int nullability) {
-    	int oldValue = this.nullability;
+	public void setNullability(Integer nullability) {
+    	Integer oldValue = this.nullability;
 		this.nullability = nullability;
 		firePropertyChange("nullability", oldValue, nullability);
 	}
 
     @Accessor
-	public int getNullability() {
-		return nullability;
+	public Integer getNullability() {
+    	return (nullability == null && upstreamType != null) ? upstreamType.getNullability() : nullability;
 	}
 
     @Mutator
-	public void setAutoIncrement(boolean autoIncrement) {
-    	boolean oldValue = this.autoIncrement;
+	public void setAutoIncrement(Boolean autoIncrement) {
+    	Boolean oldValue = this.autoIncrement;
 		this.autoIncrement = autoIncrement;
 		firePropertyChange("autoIncrement", oldValue, autoIncrement);
 	}
 
     @Accessor
-	public boolean isAutoIncrement() {
-		return autoIncrement;
+	public Boolean getAutoIncrement() {
+		return (autoIncrement == null && upstreamType != null) ? upstreamType.getAutoIncrement() : autoIncrement;
 	}
 
 	/**
@@ -642,7 +643,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     	setType(typeToMatch.getType());
     	setBasicType(typeToMatch.getBasicType());
     	setNullability(typeToMatch.getNullability());
-    	setAutoIncrement(typeToMatch.isAutoIncrement());
+    	setAutoIncrement(typeToMatch.getAutoIncrement());
     	setDescription(typeToMatch.getDescription());
     	setUpstreamType(typeToMatch.getUpstreamType());
     	
@@ -675,5 +676,61 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     @Transient @Accessor
     public SQLTypePhysicalProperties getDefaultPhysicalProperties() {
 		return defaultPhysicalProperties;
+	}
+    
+	static final void copyProperties(final UserDefinedSQLType target,
+			final UserDefinedSQLType source) throws IllegalArgumentException,
+			ObjectDependentException {
+		target.setUpstreamType(source.getUpstreamType());
+		target.setName(source.getName());
+		target.setPhysicalName(source.getPhysicalName());
+		// Don't use getters as they will refer to the upstreamType if the
+		// values are null
+		target.setAutoIncrement(source.autoIncrement);
+		target.setBasicType(source.basicType);
+		target.setDescription(source.description);
+		target.setNullability(source.nullability);
+		target.setType(source.type);
+
+		SQLTypePhysicalProperties targetProperties = target
+				.getDefaultPhysicalProperties();
+		SQLTypePhysicalProperties sourceProperties = source
+				.getDefaultPhysicalProperties();
+
+		targetProperties.setCheckConstraint(sourceProperties
+				.getCheckConstraint());
+		targetProperties
+				.setConstraintType(sourceProperties.getConstraintType());
+		targetProperties.setDefaultValue(sourceProperties.getDefaultValue());
+		targetProperties.setEnumeration(sourceProperties.getEnumeration());
+		targetProperties.setName(sourceProperties.getName());
+		targetProperties.setPhysicalName(sourceProperties.getPhysicalName());
+		targetProperties.setPrecision(sourceProperties.getPrecision());
+		targetProperties.setPrecisionType(sourceProperties.getPrecisionType());
+		targetProperties.setScale(sourceProperties.getScale());
+		targetProperties.setScaleType(sourceProperties.getScaleType());
+
+		for (SQLTypePhysicalProperties overridingProperties : target.overridingPhysicalProperties) {
+			target.removeChild(overridingProperties);
+		}
+
+		for (SQLTypePhysicalProperties overridingProperties : source.overridingPhysicalProperties) {
+			String platform = overridingProperties.getPlatform();
+			target.setCheckConstraint(platform, overridingProperties
+					.getCheckConstraint());
+			target.setConstraintType(platform, overridingProperties
+					.getConstraintType());
+			target.setDefaultValue(platform, overridingProperties
+					.getDefaultValue());
+			target.setEnumeration(platform, overridingProperties
+					.getEnumeration());
+			target.setName(overridingProperties.getName());
+			target.setPhysicalName(overridingProperties.getPhysicalName());
+			target.setPrecision(platform, overridingProperties.getPrecision());
+			target.setPrecisionType(platform, overridingProperties
+					.getPrecisionType());
+			target.setScale(platform, overridingProperties.getScale());
+			target.setScaleType(platform, overridingProperties.getScaleType());
+		}
 	}
 }

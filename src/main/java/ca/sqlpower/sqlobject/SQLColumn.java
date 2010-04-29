@@ -131,17 +131,17 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		referenceCount = 1;
 		setName(defaultName);
 		setPhysicalName("");
-		setType(defaultType);
-		setPrecision(defaultPrec);
-		setScale(defaultScale);
+		userDefinedSQLType.setType(defaultType);
+		userDefinedSQLType.setPrecision(platform, defaultPrec);
+		userDefinedSQLType.setScale(platform, defaultScale);
 		if (defaultNullable) {
-			setNullable(DatabaseMetaData.columnNullable);
+			userDefinedSQLType.setNullability(DatabaseMetaData.columnNullable);
 		} else {
-			setNullable(DatabaseMetaData.columnNoNulls);
+			userDefinedSQLType.setNullability(DatabaseMetaData.columnNoNulls);
 		}
-		setAutoIncrement(defaultAutoInc);
-		setRemarks(defaultRemarks);
-		setDefaultValue(defaultForDefaultValue);
+		userDefinedSQLType.setAutoIncrement(defaultAutoInc);
+		userDefinedSQLType.setDefaultValue(platform, defaultForDefaultValue);
+		this.remarks = defaultRemarks;
 		setPopulated(true);
 	}
 
@@ -206,14 +206,14 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
         setPlatform(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
 		this.setName(colName);
 		setPopulated(true);
-		setType(dataType);
+		this.userDefinedSQLType.setType(dataType);
 		this.sourceDataTypeName = nativeType;
-		setScale(scale);
-		setPrecision(precision);
-		setNullable(nullable);
+		this.userDefinedSQLType.setScale(platform, scale);
+		this.userDefinedSQLType.setPrecision(platform, precision);
+		this.userDefinedSQLType.setNullability(nullable);
+		this.userDefinedSQLType.setDefaultValue(platform, defaultValue);
+		this.userDefinedSQLType.setAutoIncrement(isAutoIncrement);
 		this.remarks = remarks;
-		setDefaultValue(defaultValue);
-		setAutoIncrement(isAutoIncrement);
 
 		logger.debug("SQLColumn(.....) set ref count to 1");
 		this.referenceCount = 1;
@@ -294,23 +294,25 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	private static final void copyProperties(final SQLColumn target, final SQLColumn source) {
 		target.runInForeground(new Runnable() {
 			public void run() {
-				target.setPlatform(source.getPlatform());
-				target.setName(source.getName());
-				target.setType(source.getType());
-				target.setSourceDataTypeName(source.sourceDataTypeName);
-				target.setPhysicalName(source.getPhysicalName());
-				target.setPrecision(source.getPrecision());
-				target.setPrecisionType(source.getPrecisionType());
-				target.setScale(source.getScale());
-				target.setScaleType(source.getScaleType());
-				target.setEnumeration(source.getEnumeration());
-				target.setNullable(source.getNullable());
-				target.setRemarks(source.remarks);
-				target.setDefaultValue(source.getDefaultValue());
-				target.setAutoIncrement(source.isAutoIncrement());
-				target.setAutoIncrementSequenceName(source.autoIncrementSequenceName);
-				target.setConstraintType(source.getConstraintType());
-				target.setCheckConstraint(source.getCheckConstraint());
+ 				target.setPlatform(source.getPlatform());
+ 				target.setName(source.getName());
+ 				target.setSourceDataTypeName(source.sourceDataTypeName);
+ 				target.setPhysicalName(source.getPhysicalName());
+ 				target.setRemarks(source.remarks);
+ 				target.setAutoIncrementSequenceName(source.autoIncrementSequenceName);
+				try {
+					UserDefinedSQLType.copyProperties(target
+							.getUserDefinedSQLType(), source
+							.getUserDefinedSQLType());
+				} catch (IllegalArgumentException e) {
+					throw new RuntimeException(
+							"An Exception occured while attempting to copy the column's Type's properties",
+							e);
+				} catch (ObjectDependentException e) {
+					throw new RuntimeException(
+							"An Exception occured while attempting to copy the column's Type's properties",
+							e);
+				}
 			}
 		});
 	}
@@ -970,7 +972,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 */
 	@Transient @Accessor(isInteresting=true)
 	public boolean isAutoIncrement()  {
-		return userDefinedSQLType.isAutoIncrement();
+		return userDefinedSQLType.getAutoIncrement();
 	}
 
 	/**

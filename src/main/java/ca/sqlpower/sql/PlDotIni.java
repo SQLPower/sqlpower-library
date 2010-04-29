@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
+import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -395,6 +396,8 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
                 	currentSQLType.setPrecisionType(platform, PropertyType.VARIABLE);
                 	currentSQLType.setScale(platform, 0);
                 	currentSQLType.setScaleType(platform, PropertyType.VARIABLE);
+                	currentSQLType.setAutoIncrement(false);
+                	currentSQLType.setNullability(Integer.valueOf(DatabaseMetaData.columnNoNulls));
                 	mode = ReadState.READ_SQLTYPE;
                 } else if (line.startsWith("[")) {
                     logger.debug("It's a new generic section!");

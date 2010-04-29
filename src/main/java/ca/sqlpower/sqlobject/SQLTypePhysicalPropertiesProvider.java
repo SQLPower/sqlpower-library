@@ -318,7 +318,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * @return An int that corresponds to one of the type constants in
 	 *         {@link Types}.
 	 */
-	public int getType();
+	public Integer getType();
 
 	/**
 	 * Sets the JDBC type of this SQLType as defined in {@link Types}
@@ -327,7 +327,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 *            An int that corresponds to one of the type constants in
 	 *            {@link Types}
 	 */
-	public void setType(int type);
+	public void setType(Integer type);
 
 	/**
 	 * Sets the nullability of this type.
@@ -341,7 +341,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 *            <li>{@link DatabaseMetaData#columnNullableUnknown}</li>
 	 *            </ul>
 	 */
-	public void setNullability(int nullability);
+	public void setNullability(Integer nullability);
 
 	/**
 	 * Specifies whether this type accepts NULL as a value, based on the values
@@ -355,7 +355,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * @return An int corresponding to one of the nullability values specified
 	 *         in DatabaseMetaData
 	 */
-	public int getNullability();
+	public Integer getNullability();
 
 	/**
 	 * Set whether or not this type defaults to an automatically-incrementing
@@ -366,7 +366,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 *            automatically-incrementing sequence of values. If set to
 	 *            false, then it does not.
 	 */
-	public void setAutoIncrement(boolean autoIncrement);
+	public void setAutoIncrement(Boolean autoIncrement);
     
 	/**
 	 * This property indicates that values stored in this column should default
@@ -375,5 +375,5 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * @return A boolean indicating whether this type defaults to an
 	 *         incrementing sequence of values.
 	 */
-	public boolean isAutoIncrement();
+	public Boolean getAutoIncrement();
 }

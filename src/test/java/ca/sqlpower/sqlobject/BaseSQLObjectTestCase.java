@@ -166,8 +166,12 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 				// make sure it's unique
 				newVal ="new " + oldVal;
 				
-			} else if (property.getPropertyType() == Boolean.TYPE){
-				newVal = new Boolean(! ((Boolean) oldVal).booleanValue());
+			} else if (property.getPropertyType() == Boolean.TYPE || property.getPropertyType() == Boolean.class) {
+				if (oldVal == null) {
+					newVal = Boolean.TRUE;
+				} else {
+					newVal = new Boolean(! ((Boolean) oldVal).booleanValue());
+				}
 			} else if (property.getPropertyType() == SQLCatalog.class) {
 				newVal = new SQLCatalog(new SQLDatabase(),"This is a new catalog");
 			} else if (property.getPropertyType() == SPDataSource.class) {
@@ -348,8 +352,12 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 				// make sure it's unique
 				newVal ="new " + oldVal;
 				
-			} else if (property.getPropertyType() == Boolean.TYPE){
-				newVal = new Boolean(! ((Boolean) oldVal).booleanValue());
+			} else if (property.getPropertyType() == Boolean.TYPE || property.getPropertyType() == Boolean.class) {
+				if (oldVal == null) {
+					newVal = Boolean.TRUE;
+				} else {
+					newVal = new Boolean(! ((Boolean) oldVal).booleanValue());
+				}
 			} else if (property.getPropertyType() == SQLCatalog.class) {
 				newVal = new SQLCatalog(new SQLDatabase(),"This is a new catalog");
 			} else if (property.getPropertyType() == SPDataSource.class) {

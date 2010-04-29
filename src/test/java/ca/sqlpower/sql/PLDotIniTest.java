@@ -290,7 +290,7 @@ public class PLDotIniTest extends TestCase {
     	assertEquals("VARCHAR", sqlType.getName());
     	assertEquals(BasicSQLType.TEXT, sqlType.getBasicType());
     	assertEquals("Test Type", sqlType.getDescription());
-    	assertEquals(12, sqlType.getType());
+    	assertEquals(12, (int) sqlType.getType());
     	
     	UserDefinedSQLType sqlTypeInList = target.getSQLTypes().get(0);
     	assertEquals(sqlType, sqlTypeInList);
