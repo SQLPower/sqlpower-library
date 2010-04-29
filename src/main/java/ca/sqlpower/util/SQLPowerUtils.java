@@ -242,8 +242,14 @@ public class SQLPowerUtils {
 	 */
     public static void listenToHierarchy(SPObject root, SPListener spcl) {
         root.addSPListener(spcl);
-        if (root.allowsChildren() && (!(root instanceof SQLObject) || ((SQLObject) root).isPopulated())) {
-        	for (SPObject wob : root.getChildren()) {
+        if (root.allowsChildren()) {
+            List<? extends SPObject> children;
+            if (root instanceof SQLObject) {
+                children = ((SQLObject) root).getChildrenWithoutPopulating();
+            } else {
+                children = root.getChildren();
+            }
+        	for (SPObject wob : children) {
         		listenToHierarchy(wob, spcl);
         	}
         }
@@ -264,8 +270,14 @@ public class SQLPowerUtils {
 	 */
     public static void unlistenToHierarchy(SPObject root, SPListener spcl) {
         root.removeSPListener(spcl);
-        if (root.allowsChildren() && (!(root instanceof SQLObject) || ((SQLObject) root).isPopulated())) {
-        	for (SPObject wob : root.getChildren()) {
+        if (root.allowsChildren()) {
+            List<? extends SPObject> children;
+            if (root instanceof SQLObject) {
+                children = ((SQLObject) root).getChildrenWithoutPopulating();
+            } else {
+                children = root.getChildren();
+            }
+        	for (SPObject wob : children) {
         		unlistenToHierarchy(wob, spcl);
         	}
         }
