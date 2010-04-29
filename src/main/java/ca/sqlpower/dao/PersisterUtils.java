@@ -26,12 +26,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
+
+import com.google.common.collect.Multimap;
 
 import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.session.BidirectionalConverter;
@@ -309,6 +312,37 @@ public class PersisterUtils {
             Class<? extends SPObject> allowedType = allowedChildTypes.get(i);
             if (allowedType.isAssignableFrom(childType)) {
                 return allowedType;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns true if there is a boolean property persisted on the given UUID
+     * with the given property name and the property is being set to true.
+     * Returns false if there is a boolean property persisted on the given UUID
+     * with the given property name and the property is being set to false.
+     * Returns null if the persist call does not exist.
+     * 
+     * @param persistedProperties
+     *            The list of properties that have been persisted to search for
+     *            the persist call.
+     * @param parentUUID
+     *            The UUID of the object we are looking for the boolean property
+     *            of.
+     * @param propName
+     *            The property name that describes a boolean property. The
+     *            property if it exists must represent a boolean.
+     * @return
+     */
+    public static Boolean findPersistedBooleanProperty(
+            Multimap<String, PersistedSPOProperty> persistedProperties,
+            String parentUUID, String propName) {
+        Collection<PersistedSPOProperty> properties = persistedProperties.get(parentUUID);
+        if (properties == null || properties.isEmpty()) return null;
+        for (PersistedSPOProperty property : properties) {
+            if (property.getPropertyName().equals(propName)) {
+                return (Boolean) property.getNewValue();
             }
         }
         return null;

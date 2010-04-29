@@ -204,22 +204,10 @@ public class SQLCatalog extends SQLObject {
 				public void run() {
 					synchronized(SQLCatalog.this) {
 						if (populated) return;
-						try {
-							begin("Populating Catalog " + this);
-							for (SQLSchema schema : fetchedSchemas) {
-								addSchema(schema);
-							}
-
-							if (fetchedTables != null) {
-								for (SQLTable table : fetchedTables) {
-									addTable(table);
-								}
-							}
-							setPopulated(true);
-							commit();
-						} catch (Exception e) {
-							rollback(e.getMessage());
-							throw new RuntimeException(e);
+						if (!fetchedSchemas.isEmpty()) {
+						    populateCatalogWithList(SQLCatalog.this, fetchedSchemas);
+						} else if (!fetchedTables.isEmpty()) {
+                            populateCatalogWithList(SQLCatalog.this, fetchedTables);
 						}
 					}
 				}
@@ -229,6 +217,69 @@ public class SQLCatalog extends SQLObject {
 		logger.debug("SQLCatalog: populate finished");
 
 	}
+
+    /**
+     * Populates the SQLCatalog with a given list of children. This must be done
+     * on the foreground thread. The list of children must be of one type only
+     * and of type {@link SQLSchema} or {@link SQLTable}.
+     * <p>
+     * Package private for use in the {@link SQLObjectUtils}.
+     * 
+     * @param catalog
+     *            The catalog to populate
+     * @param children
+     *            The list of children to add as children. All objects in this
+     *            list must be of the same type.
+     */
+    static void populateCatalogWithList(SQLCatalog catalog, List<? extends SQLObject> children) {
+        try {
+            
+            if (children.isEmpty()) return;
+            
+            Class<? extends SPObject> childType;
+            int index;
+            if (children.get(0) instanceof SQLSchema) {
+                index = catalog.schemas.size();
+                childType = SQLSchema.class;
+                for (SQLObject schema : children) {
+                    catalog.schemas.add((SQLSchema) schema);
+                    schema.setParent(catalog);
+                }
+            } else if (children.get(0) instanceof SQLTable) {
+                index = catalog.tables.size();
+                childType = SQLTable.class;
+                for (SQLObject table : children) {
+                    catalog.tables.add((SQLTable) table);
+                    table.setParent(catalog);
+                }
+            } else {
+                throw new IllegalArgumentException("Catalog " + catalog + " cannot have children " +
+                        "of type " + children.get(0).getClass());
+            }
+
+            catalog.populated = true;
+            catalog.begin("Populating Catalog " + catalog);
+            for (SQLObject o : children) {
+                catalog.fireChildAdded(childType, o, index);
+                index++;
+            }
+            catalog.firePropertyChange("populated", false, true);
+            catalog.commit();
+        } catch (Exception e) {
+            catalog.rollback(e.getMessage());
+            if (children.get(0) instanceof SQLSchema) {
+                for (SQLObject schema : children) {
+                    catalog.schemas.remove((SQLSchema) schema);
+                }
+            } else if (children.get(0) instanceof SQLTable) {
+                for (SQLObject table : children) {
+                    catalog.tables.remove((SQLTable) table);
+                }
+            }
+            catalog.populated = false;
+            throw new RuntimeException(e);
+        }
+    }
 
 
 	// ----------------- accessors and mutators -------------------

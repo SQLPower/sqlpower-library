@@ -38,8 +38,16 @@ import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.sqlobject.SQLCatalog;
+import ca.sqlpower.sqlobject.SQLColumn;
+import ca.sqlpower.sqlobject.SQLDatabase;
+import ca.sqlpower.sqlobject.SQLIndex;
 import ca.sqlpower.sqlobject.SQLObject;
+import ca.sqlpower.sqlobject.SQLObjectUtils;
 import ca.sqlpower.sqlobject.SQLRelationship;
+import ca.sqlpower.sqlobject.SQLSchema;
+import ca.sqlpower.sqlobject.SQLTable;
+import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.TransactionEvent;
 import ca.sqlpower.util.WorkspaceContainer;
@@ -772,11 +780,14 @@ public abstract class SPSessionPersister implements SPPersister {
 			SPObject parent = SQLPowerUtils.findByUuid(root, pso.getParentUUID(), 
 					SPObject.class);
 			SPObject spo = null;
+			
 			if (parent == null && pso.getType().equals(root.getClass().getName())) {
 				refreshRootNode(pso);
 			} else if (parent == null) {
 			    throw new IllegalStateException("Missing parent with uuid " + pso.getParentUUID() + 
 			            " when trying to load " + pso);
+			} else if (parent instanceof SQLObject && populateSQLObject((SQLObject) parent)) {
+			    continue;
 			} else {
 				try {
 					spo = PersisterHelperFinder.findPersister(pso.getType()).commitObject(pso, persistedProperties, 
@@ -836,6 +847,174 @@ public abstract class SPSessionPersister implements SPPersister {
 			}
 		}
 		persistedObjects.clear();
+	}
+
+    /**
+     * This is a special corner case for populating SQLObjects. If an object is
+     * populating, the objects must be added in a special way so the populate
+     * flags are set when objects are notified that the population has happened.
+     * This prevents the problem of the DBTreeModel from calling populate when
+     * an object is added and an infinite loop occurring.
+     * 
+     * @param parent
+     *            The parent that is being added to the model. This may or may
+     *            not have been populated.
+     * @return True if the object was populated and its children do not need to
+     *         be added to the object again. False otherwise.
+     */
+	private boolean populateSQLObject(SQLObject parent) throws SPPersistenceException {
+	    //This gross chunk of code essentially simulates, and uses part of, the populate
+	    //method of classes that have the populate method defined.
+	    
+	    if (!(parent instanceof SQLTable || parent instanceof SQLDatabase || 
+	            parent instanceof SQLSchema || parent instanceof SQLCatalog)) {
+	        return false;
+	    }
+	    List<PersistedSPObject> childrenForPopulate = new ArrayList<PersistedSPObject>();
+	    if (parent instanceof SQLTable) {
+	        //For SQLTable
+	        Boolean columnsPopulated = PersisterUtils.findPersistedBooleanProperty(persistedProperties, parent.getUUID(), "columnsPopulated");
+	        Boolean indicesPopulated = PersisterUtils.findPersistedBooleanProperty(persistedProperties, parent.getUUID(), "indicesPopulated");
+	        Boolean exportedKeysPopulated = PersisterUtils.findPersistedBooleanProperty(persistedProperties, parent.getUUID(), "exportedKeysPopulated");
+	        Boolean importedKeysPopulated = PersisterUtils.findPersistedBooleanProperty(persistedProperties, parent.getUUID(), "importedKeysPopulated");
+	        final SQLTable table = (SQLTable) parent;
+            if (!table.isColumnsPopulated() && columnsPopulated != null && columnsPopulated) {
+                List<PersistedSPObject> columnsForPopulate = new ArrayList<PersistedSPObject>();
+	            for (PersistedSPObject spo : persistedObjects) {
+	                if (!spo.isLoaded() && spo.getParentUUID().equals(parent.getUUID())
+	                        && spo.getType().equals(SQLColumn.class.getName())) {
+	                    columnsForPopulate.add(spo);
+	                }
+	            }
+	            List<SQLObject> children = new ArrayList<SQLObject>();
+	            for (PersistedSPObject pso : columnsForPopulate) {
+	                try {
+	                    SQLObject spo = (SQLObject) PersisterHelperFinder.findPersister(pso.getType()).commitObject(pso, persistedProperties, 
+	                            persistedObjects, converter);
+	                    children.add(spo);
+	                } catch (Exception ex) {
+	                    throw new SPPersistenceException("Could not find the persister helper for " + pso.getType(), ex);
+	                }
+	            }
+
+	            SQLObjectUtils.populateChildrenWithList(parent, children);
+	            childrenForPopulate.addAll(columnsForPopulate);
+	            if (columnsForPopulate.isEmpty()) {
+	                //Need to be set even if no columns exist so the indices and relationships
+	                //don't explode
+	                table.setColumnsPopulated(columnsPopulated);
+	            }
+	        }
+	        
+	        if (!table.isIndicesPopulated() && indicesPopulated != null && indicesPopulated) {
+	            List<PersistedSPObject> indicesForPopulate = new ArrayList<PersistedSPObject>();
+	            for (PersistedSPObject spo : persistedObjects) {
+	                if (!spo.isLoaded() && spo.getParentUUID().equals(parent.getUUID())
+	                        && spo.getType().equals(SQLIndex.class.getName())) {
+	                    indicesForPopulate.add(spo);
+	                }
+	            }
+	            List<SQLObject> children = new ArrayList<SQLObject>();
+	            for (PersistedSPObject pso : indicesForPopulate) {
+	                try {
+	                    SQLObject spo = (SQLObject) PersisterHelperFinder.findPersister(pso.getType()).commitObject(pso, persistedProperties, 
+	                            persistedObjects, converter);
+	                    children.add(spo);
+	                } catch (Exception ex) {
+	                    throw new SPPersistenceException("Could not find the persister helper for " + pso.getType(), ex);
+	                }
+	            }
+
+	            SQLObjectUtils.populateChildrenWithList(parent, children);
+	            childrenForPopulate.addAll(indicesForPopulate);
+	            if (indicesForPopulate.isEmpty()) {
+	                //Need to be set even if no columns exist so the relationships don't explode
+	                table.setIndicesPopulated(indicesPopulated);
+	            }
+	        } 
+	        
+	        if (!table.isExportedKeysPopulated() && exportedKeysPopulated != null && exportedKeysPopulated) {
+	            List<PersistedSPObject> exportedKeysForPopulate = new ArrayList<PersistedSPObject>();
+	            for (PersistedSPObject spo : persistedObjects) {
+	                if (!spo.isLoaded() && spo.getParentUUID().equals(parent.getUUID())
+	                        && spo.getType().equals(SQLRelationship.class.getName())) {
+	                    exportedKeysForPopulate.add(spo);
+	                }
+	            }
+	            List<SQLObject> children = new ArrayList<SQLObject>();
+	            for (PersistedSPObject pso : exportedKeysForPopulate) {
+	                try {
+	                    SQLObject spo = (SQLObject) PersisterHelperFinder.findPersister(pso.getType()).commitObject(pso, persistedProperties, 
+	                            persistedObjects, converter);
+	                    children.add(spo);
+	                } catch (Exception ex) {
+	                    throw new SPPersistenceException("Could not find the persister helper for " + pso.getType(), ex);
+	                }
+	            }
+
+	            SQLObjectUtils.populateChildrenWithList(parent, children);
+	            childrenForPopulate.addAll(exportedKeysForPopulate);
+	        }
+
+	        if (!table.isImportedKeysPopulated() && importedKeysPopulated != null && columnsPopulated) {
+	            List<PersistedSPObject> importedKeysForPopulate = new ArrayList<PersistedSPObject>();
+	            for (PersistedSPObject spo : persistedObjects) {
+	                if (!spo.isLoaded() && spo.getParentUUID().equals(parent.getUUID())
+	                        && spo.getType().equals(SQLImportedKey.class.getName())) {
+	                    importedKeysForPopulate.add(spo);
+	                }
+	            }
+	            List<SQLObject> children = new ArrayList<SQLObject>();
+	            for (PersistedSPObject pso : importedKeysForPopulate) {
+	                try {
+	                    SQLObject spo = (SQLObject) PersisterHelperFinder.findPersister(pso.getType()).commitObject(pso, persistedProperties, 
+	                            persistedObjects, converter);
+	                    children.add(spo);
+	                } catch (Exception ex) {
+	                    throw new SPPersistenceException("Could not find the persister helper for " + pso.getType(), ex);
+	                }
+	            }
+
+	            SQLObjectUtils.populateChildrenWithList(parent, children);
+	            childrenForPopulate.addAll(importedKeysForPopulate);
+	        }
+
+	    } else {
+	        //For all SQLObjects that are not SQLTable
+	        Boolean populated = PersisterUtils.findPersistedBooleanProperty(persistedProperties, parent.getUUID(), "populated");
+	        if (!parent.isPopulated() && populated != null && populated) {
+	            for (PersistedSPObject spo : persistedObjects) {
+	                if (!spo.isLoaded() && spo.getParentUUID().equals(parent.getUUID())) {
+	                    childrenForPopulate.add(spo);
+	                }
+	            }
+	        }
+	        List<SQLObject> children = new ArrayList<SQLObject>();
+	        for (PersistedSPObject pso : childrenForPopulate) {
+	            try {
+	                SQLObject spo = (SQLObject) PersisterHelperFinder.findPersister(pso.getType()).commitObject(pso, persistedProperties, 
+	                        persistedObjects, converter);
+	                children.add(spo);
+	            } catch (Exception ex) {
+	                throw new SPPersistenceException("Could not find the persister helper for " + pso.getType(), ex);
+	            }
+	        }
+
+	        SQLObjectUtils.populateChildrenWithList(parent, children);
+	    }
+	    
+	    if (!childrenForPopulate.isEmpty()) {
+	        
+	        //TODO Assert children are in their correct location.
+	        for (PersistedSPObject spo : childrenForPopulate) {
+	            persistedObjectsRollbackList.add(
+	                    new PersistedObjectEntry(
+	                            parent.getUUID(), 
+	                            spo.getUUID()));
+	        }
+	        return true;
+	    }
+	    return false;
 	}
 
 	/**

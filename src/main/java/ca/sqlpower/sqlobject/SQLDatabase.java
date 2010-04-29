@@ -197,30 +197,12 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 			public void run() {
 				synchronized(SQLDatabase.this) {
 					if (populated) return;
-					try {
-						begin("Populating Database " + this);
-
-						for (SQLCatalog cat : fetchedCatalogs) {
-							addCatalog(cat);
-						}
-
-						if (fetchedSchemas != null) {
-							for (SQLSchema schema : fetchedSchemas) {
-								addSchema(schema);
-							}
-						}
-
-						if (fetchedTables != null) {
-							for (SQLTable table : fetchedTables) {
-								addTable(table);
-							}
-						}
-
-						setPopulated(true);
-						commit();
-					} catch (Exception e) {
-						rollback(e.getMessage());
-						throw new RuntimeException(e);
+					if (!fetchedCatalogs.isEmpty()) {
+					    populateDatabaseWithList(SQLDatabase.this, fetchedCatalogs);
+					} else if (!fetchedSchemas.isEmpty()) {
+                        populateDatabaseWithList(SQLDatabase.this, fetchedSchemas);
+					} else if (!fetchedTables.isEmpty()) {
+					    populateDatabaseWithList(SQLDatabase.this, fetchedTables);
 					}
 				}
 			}
@@ -228,6 +210,80 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		
 		logger.debug("SQLDatabase: populate finished"); //$NON-NLS-1$
 	}
+
+    /**
+     * Populates the SQLDatabase with a given list of children. This must be
+     * done on the foreground thread. The list of children must be of one type
+     * only, {@link SQLCatalog}, {@link SQLSchema} or {@link SQLTable}.
+     * <p>
+     * Package private for use in the {@link SQLObjectUtils}.
+     * 
+     * @param db
+     *            The database to populate
+     * @param children
+     *            The list of children to add as children. All objects in this
+     *            list must be of the same type.
+     */
+    static void populateDatabaseWithList(SQLDatabase db, List<? extends SQLObject> children) {
+        try {
+
+            if (children.isEmpty()) return;
+            
+            Class<? extends SPObject> childType;
+            int index;
+            if (children.get(0) instanceof SQLCatalog) {
+                index = db.catalogs.size();
+                childType = SQLCatalog.class;
+                for (SQLObject cat : children) {
+                    db.catalogs.add((SQLCatalog) cat);
+                    cat.setParent(db);
+                }
+            } else if (children.get(0) instanceof SQLSchema) {
+                index = db.schemas.size();
+                childType = SQLSchema.class;
+                for (SQLObject schema : children) {
+                    db.schemas.add((SQLSchema) schema);
+                    schema.setParent(db);
+                }
+            } else if (children.get(0) instanceof SQLTable) {
+                index = db.tables.size();
+                childType = SQLTable.class;
+                for (SQLObject table : children) {
+                    db.tables.add((SQLTable) table);
+                    table.setParent(db);
+                }
+            } else {
+                throw new IllegalArgumentException("Database " + db + " cannot have children " +
+                        "of type " + children.get(0).getClass());
+            }
+
+            db.populated = true;
+            db.begin("Populating Database " + db);
+            for (SQLObject o : children) {
+                db.fireChildAdded(childType, o, index);
+                index++;
+            }
+            db.firePropertyChange("populated", false, true);
+            db.commit();
+        } catch (Exception e) {
+            db.rollback(e.getMessage());
+            if (children.get(0) instanceof SQLCatalog) {
+                for (SQLObject cat : children) {
+                    db.catalogs.remove((SQLCatalog) cat);
+                }
+            } else if (children.get(0) instanceof SQLSchema) {
+                for (SQLObject schema : children) {
+                    db.schemas.remove((SQLSchema) schema);
+                }
+            } else if (children.get(0) instanceof SQLTable) {
+                for (SQLObject table : children) {
+                    db.tables.remove((SQLTable) table);
+                }
+            }
+            db.populated = false;
+            throw new RuntimeException(e);
+        }
+    }
 	
 	@NonProperty
 	public SQLCatalog getCatalogByName(String catalogName) throws SQLObjectException {

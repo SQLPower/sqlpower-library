@@ -134,6 +134,12 @@ public class SQLTable extends SQLObject {
     		boolean startPopulated) throws SQLObjectException {
     	this(parent, name, remarks, objectType, startPopulated, new SQLIndex());
     }
+    
+    public SQLTable(SQLObject parent, String name, String remarks, String objectType, 
+            boolean startPopulated, SQLIndex primaryKey) throws SQLObjectException {
+        this(parent, name, remarks, objectType, startPopulated, 
+                primaryKey, startPopulated, startPopulated, startPopulated, startPopulated);
+    }
 
     @Constructor
 	public SQLTable(@ConstructorParameter(propertyName = "parent") SQLObject parent,
@@ -141,7 +147,11 @@ public class SQLTable extends SQLObject {
 			@ConstructorParameter(propertyName = "remarks") String remarks,
 			@ConstructorParameter(propertyName = "objectType") String objectType,
 			@ConstructorParameter(propertyName = "populated") boolean startPopulated,
-			@ConstructorParameter(isProperty = ParameterType.CHILD, propertyName = "primaryKeyIndex") SQLIndex primaryKeyIndex) 
+			@ConstructorParameter(isProperty = ParameterType.CHILD, propertyName = "primaryKeyIndex") SQLIndex primaryKeyIndex,
+			@ConstructorParameter(propertyName = "columnsPopulated") boolean columnsPopulated,
+			@ConstructorParameter(propertyName = "indicesPopulated") boolean indicesPopulated,
+			@ConstructorParameter(propertyName = "exportedKeysPopulated") boolean exportedKeysPopulated,
+			@ConstructorParameter(propertyName = "importedKeysPopulated") boolean importedKeysPopulated) 
     		throws SQLObjectException {
         super();
 		logger.debug("NEW TABLE "+name+"@"+hashCode());
@@ -158,6 +168,10 @@ public class SQLTable extends SQLObject {
 		this.primaryKeyIndex = primaryKeyIndex;
 		primaryKeyIndex.setParent(this);
 		initFolders(startPopulated);
+		setColumnsPopulated(columnsPopulated);
+		setIndicesPopulated(indicesPopulated);
+		setExportedKeysPopulated(exportedKeysPopulated);
+		setImportedKeysPopulated(importedKeysPopulated);
 		setup(parent, name, remarks, objectType);
 	}
 
@@ -400,10 +414,7 @@ public class SQLTable extends SQLObject {
 						    //at least not be marked as populated.
 						    if (table == null) continue; 
 						    if (table.isColumnsPopulated()) continue;
-							for (SQLColumn col : cols.get(tableName)) {
-								table.addColumnWithoutPopulating(col);
-							}
-							table.setColumnsPopulated(true);
+						    populateColumnsWithList(table, cols.get(tableName));
 						}
 						parentDB.commit();
 					} catch (Throwable t) {
@@ -428,6 +439,54 @@ public class SQLTable extends SQLObject {
 			    }
 			}
 		}
+    }
+
+    /**
+     * Used to populate a table based on a list containing all of the column
+     * children of the table. This method must be called on the foreground
+     * thread. If the table is not populated when calling this method the table
+     * will be considered populated in terms of columns at the end. If the table
+     * is populated then this is will add the children to the table as a group.
+     * (Happens when loading from a repository with the server.)
+     * <p>
+     * Package private so they can be called from {@link SQLObjectUtils}.
+     * 
+     * @param table
+     *            The table to populate with the child list.
+     * @param allChildren
+     *            A list that contains all of the child columns that belong to
+     *            the table.
+     */
+    static void populateColumnsWithList(SQLTable table, List<SQLColumn> allChildren) {
+        if (!table.isForegroundThread()) 
+            throw new IllegalStateException("This method must be called on the foreground thread.");
+        boolean populateStart = table.columnsPopulated;
+        try {
+            //The children are added without firing events because we need all of the
+            //children to be added to the table and have the table defined as populated
+            //before outside code is notified.
+            int index = table.columns.size();
+            for (SQLColumn col : allChildren) {
+                table.columns.add(col);
+                col.setParent(table);
+            }
+            table.columnsPopulated = true;
+            
+            table.begin("Populating all columns");
+            for (SQLColumn col : allChildren) {
+                table.fireChildAdded(SQLColumn.class, col, index);
+                index++;
+            }
+            table.firePropertyChange("columnsPopulated", populateStart, true);
+            table.commit();
+        } catch (Throwable t) {
+            table.rollback(t.getMessage());
+            for (SQLColumn col : allChildren) {
+                table.columns.remove(col);
+            }
+            table.columnsPopulated = populateStart;
+            throw new RuntimeException(t);
+        }
     }
 
     /**
@@ -470,24 +529,9 @@ public class SQLTable extends SQLObject {
             
             runInForeground(new Runnable() {
 				public void run() {
-					if (!columnsPopulated) {
-						throw new IllegalStateException("Columns must be populated");
-					}
 					//someone beat us to this already
 					if (indicesPopulated) return;
-					logger.debug("index populate on foreground start.");
-					try {
-						begin("Populating Indices for Table " + this);
-						for (SQLIndex i : indexes) {
-							addIndex(i);
-						}
-						setIndicesPopulated(true);
-						commit();
-					} catch (Throwable t) {
-						rollback(t.getMessage());
-						throw new RuntimeException(t);
-					}
-					logger.debug("index populate on foreground end.");
+					populateIndicesWithList(SQLTable.this, indexes);
 				}
 			});
             logger.debug("found "+indices.size()+" indices.");
@@ -504,6 +548,55 @@ public class SQLTable extends SQLObject {
         }
         logger.debug("index folder populate finished");
     }
+
+    /**
+     * Used to populate a table based on a list containing all of the index
+     * children of the table. This method must be called on the foreground
+     * thread. The columns of the table must be populated before the indices for
+     * the indices to have proper objects to reference. If the table is not
+     * populated when calling this method the table will be considered populated
+     * in terms of indices at the end. If the table is populated then this is
+     * will add the children to the table as a group. (Happens when loading from
+     * a repository with the server.)
+     * <p>
+     * Package private so they can be called from {@link SQLObjectUtils}.
+     * 
+     * @param table
+     *            The table to populate with the child list.
+     * @param indices
+     *            A list that contains all of the child indices that belong to
+     *            the table.
+     */
+	static void populateIndicesWithList(SQLTable table, List<SQLIndex> indices) {
+	    if (!table.isForegroundThread()) 
+            throw new IllegalStateException("This method must be called on the foreground thread.");
+        if (!table.columnsPopulated)
+            throw new IllegalStateException("Columns must be populated");
+        boolean startPopulated = table.indicesPopulated;
+        try {
+            //Must set the indices and then fire events so the populate flag
+            //is set before events fire to keep the state of the system consistent.
+            for (SQLIndex i : indices) {
+                table.indices.add(i);
+                i.setParent(table);
+            }
+            table.indicesPopulated = true;
+            
+            table.begin("Populating Indices for Table " + table);
+            for (SQLIndex i : indices) {
+                table.fireChildAdded(SQLIndex.class, i, table.indices.indexOf(i) + 1);
+            }
+            table.firePropertyChange("indicesPopulated", startPopulated, true);
+            table.commit();
+        } catch (Throwable t) {
+            table.rollback(t.getMessage());
+            for (SQLIndex i : indices) {
+                table.indices.remove(i);
+            }
+            table.indicesPopulated = startPopulated;
+            throw new RuntimeException(t);
+        }
+	}
 	
 	protected synchronized void populateImportedKeys() throws SQLObjectException {
 		if (importedKeysPopulated) return;
@@ -548,7 +641,7 @@ public class SQLTable extends SQLObject {
                 }
 				pkTable.populateColumns();
 				pkTable.populateIndices();
-				pkTable.populateRelationships(this);
+				pkTable.populateRelationships();
 			}
 			setImportedKeysPopulated(true);
 		} catch (SQLException ex) {
@@ -580,20 +673,6 @@ public class SQLTable extends SQLObject {
 	 * relationships for the exporting tables.
 	 */
     protected synchronized void populateRelationships() throws SQLObjectException {
-        populateRelationships(null);
-    }
-
-	/**
-	 * Populates all the exported key relationships. This has the side effect of
-	 * populating the imported key side of the relationships for the exporting
-	 * tables.
-	 * 
-	 * @param pkTable
-	 *            if not null only relationships that have this table as the
-	 *            parent will be added. If this is null than all relationships
-	 *            will be added regardless of the parent.
-	 */
-    protected synchronized void populateRelationships(final SQLTable fkTable) throws SQLObjectException {
     	if (exportedKeysPopulated) {
     		return;
     	}
@@ -603,58 +682,89 @@ public class SQLTable extends SQLObject {
 		final List<SQLRelationship> newKeys = SQLRelationship.fetchExportedKeys(this);
 		runInForeground(new Runnable() {
 			public void run() {
-				if (!columnsPopulated) {
-		    		throw new IllegalStateException("Table must be populated before relationships are added");
-		    	}
-				if (!indicesPopulated) {
-				    throw new IllegalStateException("Table indices must be populated before relationships are added");
-				}
+
 				//Someone beat us to populating the relationships
 				if (exportedKeysPopulated) return;
-				try {
-					begin("Populating relationships for Table " + this);
-
-					/* now attach the new SQLRelationship objects to their tables,
-					 * which may already be partially populated (we avoid adding the
-					 * same relationship if it's already there). We also filter by
-					 * pkTable if that was requested.
-					 */
-					boolean allRelationshipsAdded = true;
-					List<SQLRelationship> addedRels = new ArrayList<SQLRelationship>();
-					for (SQLRelationship addMe : newKeys) {
-						if (fkTable != null && addMe.getFkTable() != fkTable) {
-							allRelationshipsAdded = false;
-							continue;
-						}
-						if (!addMe.getFkTable().getImportedKeysWithoutPopulating().contains(addMe.getForeignKey())) {
-							addMe.attachRelationship(addMe.getParent(), addMe.getFkTable(), false);
-							addedRels.add(addMe);
-						}
-					}
-					//The imported keys folder will only be guaranteed to be completely populated if
-					//any table can be the pkTable not a specific table.
-					if (fkTable == null || allRelationshipsAdded) {
-						setExportedKeysPopulated(true);
-					}
-
-					// XXX Review above code, and make sure everything is firing
-					// events where it should be. The above block is surrounded
-					// within a transaction, so all events should be fired
-					// there.
-					commit();
-				} catch (SQLObjectException e) {
-					rollback(e.getMessage());
-					throw new SQLObjectRuntimeException(e);
-				} catch (Throwable t) {
-					rollback(t.getMessage());
-					throw new RuntimeException(t);
-				}
+				populateRelationshipsWithList(SQLTable.this, newKeys);
 			}
 		});
 
 		logger.debug("SQLTable: relationship populate finished");
 
 	}
+
+    /**
+     * Used to populate a table based on a list containing all of the exported
+     * relationship children of the table. This method must be called on the
+     * foreground thread. The columns and indices of the table must be populated
+     * before the relationships so the relationships have proper columns and
+     * primary key to reference. If the table is not populated when calling this
+     * method the table will be considered populated in terms of exported keys
+     * at the end. If the table is populated then this is will add the children
+     * to the table as a group. (Happens when loading from a repository with the
+     * server.)
+     * <p>
+     * Package private so they can be called from {@link SQLObjectUtils}.
+     * 
+     * @param table
+     *            The table to populate with the child list.
+     * @param allChildren
+     *            A list that contains all of the child relationships that will
+     *            be added to the table. For backwards compatibility if the
+     *            relationship exists in the table it won't be added again.
+     */
+    static void populateRelationshipsWithList(SQLTable table, List<SQLRelationship> allChildren) {
+        if (!table.isForegroundThread()) 
+            throw new IllegalStateException("This method must be called on the foreground thread.");
+        if (!table.columnsPopulated) {
+            throw new IllegalStateException("Table must be populated before relationships are added");
+        }
+        if (!table.indicesPopulated) {
+            throw new IllegalStateException("Table indices must be populated before relationships are added");
+        }
+        boolean startPopulated = table.exportedKeysPopulated;
+        List<SQLRelationship> relsAdded = new ArrayList<SQLRelationship>();
+        try {
+
+            for (SQLRelationship addMe : allChildren) {
+                //This if is for backwards compatibility
+                if (!addMe.getFkTable().getImportedKeysWithoutPopulating().contains(addMe.getForeignKey())) {
+                    addMe.getParent().exportedKeys.add(addMe);
+                    addMe.getFkTable().importedKeys.add(addMe.getForeignKey());
+                    relsAdded.add(addMe);
+                }
+            }
+            table.exportedKeysPopulated = true;
+
+            table.begin("Populating relationships for Table " + table);
+            for (SQLRelationship addMe : relsAdded) {
+                SQLTable pkTable = addMe.getParent();
+                SQLTable fkTable = addMe.getFkTable();
+                SQLImportedKey foreignKey = addMe.getForeignKey();
+                addMe.attachRelationship(pkTable, fkTable, false, false);
+                pkTable.fireChildAdded(SQLRelationship.class, addMe, pkTable.exportedKeys.indexOf(addMe));
+                fkTable.fireChildAdded(SQLImportedKey.class, foreignKey, fkTable.importedKeys.indexOf(foreignKey));
+            }
+            table.firePropertyChange("exportedKeysPopulated", startPopulated, true);
+            table.commit();
+        } catch (SQLObjectException e) {
+            table.rollback(e.getMessage());
+            for (SQLRelationship rel : relsAdded) {
+                rel.getParent().exportedKeys.remove(rel);
+                rel.getFkTable().importedKeys.remove(rel.getForeignKey());
+            }
+            table.exportedKeysPopulated = startPopulated;
+            throw new SQLObjectRuntimeException(e);
+        } catch (Throwable t) {
+            table.rollback(t.getMessage());
+            for (SQLRelationship rel : relsAdded) {
+                rel.getParent().exportedKeys.remove(rel);
+                rel.getFkTable().importedKeys.remove(rel.getForeignKey());
+            }
+            table.exportedKeysPopulated = startPopulated;
+            throw new RuntimeException(t);
+        }
+    }
 
 	public void addImportedKey(SQLImportedKey r) {
 		addImportedKey(r, importedKeys.size());

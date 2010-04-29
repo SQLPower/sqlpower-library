@@ -45,6 +45,7 @@ import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
+import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -82,9 +83,16 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     
     /**
      * This is the imported side of this SQLRelationship. The imported key holds
-     * a reference to this relationship. The imported key is added  as a child
-     * to the child table to let the relationship exist as a child of both the
+     * a reference to this relationship. The imported key is added as a child to
+     * the child table to let the relationship exist as a child of both the
      * parent and child tables.
+     * <p>
+     * It is important that the foreign key be final otherwise you can very
+     * quickly and easily break the relationship as the two ends float apart or
+     * you end up with two ends on one side pointing to the same object on the
+     * other side. If you feel like you need to make this value non-final or
+     * make a setter for it think hard about your reasoning or if there is a
+     * different way.
      */
     private SQLImportedKey foreignKey;
 
@@ -298,7 +306,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
      */
     private String textForChildLabel = "";
 
-    @Constructor
 	public SQLRelationship() {
     	pkCardinality = ONE;
 		fkCardinality = ZERO | ONE | MANY;
@@ -307,6 +314,14 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		setPopulated(true);
 		foreignKey = new SQLImportedKey(this);
 	}
+
+	@Constructor
+    public SQLRelationship(@ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="parent") SQLTable pkTable, 
+            @ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="fkTable") SQLTable fkTable) {
+        this();
+        setParent(pkTable);
+        setFkTable(fkTable);
+    }
     
 	/**
      * A copy constructor that returns a copy of the provided SQLRelationship
@@ -430,7 +445,47 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		firePropertyChange("fkTable", oldTable, fkTable);
 	}
 	
-	public void attachRelationship(SQLTable pkTable, SQLTable fkTable, boolean autoGenerateMapping) throws SQLObjectException {
+	/**
+     * Associates an {@link SQLRelationship} with the given {@link SQLTable}
+     * objects. Also automatically generates the PK to FK column mapping if
+     * autoGenerateMapping is set to true.
+     * 
+     * @param pkTable
+     *            The parent table in this relationship.
+     * @param fkTable
+     *            The child table in this relationship that contains the foreign
+     *            key.
+     * @param autoGenerateMapping
+     *            Automatically generates the PK to FK column mapping if true
+     * @throws SQLObjectException
+     */
+	public void attachRelationship(SQLTable pkTable, SQLTable fkTable, 
+	        boolean autoGenerateMapping) throws SQLObjectException {
+	    attachRelationship(pkTable, fkTable, autoGenerateMapping, true);
+	}
+
+    /**
+     * Associates an {@link SQLRelationship} with the given {@link SQLTable}
+     * objects. Also automatically generates the PK to FK column mapping if
+     * autoGenerateMapping is set to true.
+     * 
+     * @param pkTable
+     *            The parent table in this relationship.
+     * @param fkTable
+     *            The child table in this relationship that contains the foreign
+     *            key.
+     * @param autoGenerateMapping
+     *            Automatically generates the PK to FK column mapping if true
+     * @param addToParents
+     *            If true the relationship and its imported key will be added to
+     *            their corresponding tables as children by this method. If
+     *            false the relationship will be fully setup but will not be an
+     *            actual child of the table and will have to be added after this
+     *            method call.
+     * @throws SQLObjectException
+     */
+	public void attachRelationship(SQLTable pkTable, SQLTable fkTable, 
+	        boolean autoGenerateMapping, boolean addToParents) throws SQLObjectException {
 		setFkTable(fkTable);
 		try {
 			setMagicEnabled(false);
@@ -438,27 +493,42 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		} finally {
 			setMagicEnabled(true);
 		}
-		attachRelationship(autoGenerateMapping);
+		attachRelationship(autoGenerateMapping, addToParents);
 	}
 	
 	/**
 	 * Associates an {@link SQLRelationship} with the given {@link SQLTable}
 	 * objects. Also automatically generates the PK to FK column mapping if
-	 * autoGenerateMapping is set to true.
+	 * autoGenerateMapping is set to true. The PK and FK tables must be set
+	 * already before calling this method.
 	 * 
-	 * @param pkTable
-	 *            The parent table in this relationship.
-	 * @param fkTable
-	 *            The child table in this relationship that contains the foreign
-	 *            key.
 	 * @param autoGenerateMapping
 	 *            Automatically generates the PK to FK column mapping if true
-	 * @param attachListeners
-	 *            Attaches listeners to both parent tables if true. If false,
-	 *            attachListeners must be called elsewhere.
 	 * @throws SQLObjectException
 	 */
 	private void attachRelationship(boolean autoGenerateMapping) throws SQLObjectException {
+	    attachRelationship(autoGenerateMapping, true);
+	}
+
+    /**
+     * Associates an {@link SQLRelationship} with the given {@link SQLTable}
+     * objects. Also automatically generates the PK to FK column mapping if
+     * autoGenerateMapping is set to true. The PK and FK tables must be set
+     * already before calling this method.
+     * 
+     * @param autoGenerateMapping
+     *            Automatically generates the PK to FK column mapping if true
+     * @param addToParents
+     *            If true the relationship and its imported key will be added to
+     *            their corresponding tables as children by this method. If
+     *            false the relationship will be fully setup but will not be an
+     *            actual child of the table and will have to be added after this
+     *            method call. You may not want to attach a relationship as a child
+     *            of tables to prevent events from being pushed to the object model
+     *            while the relationship is being setup.
+     * @throws SQLObjectException
+     */
+	private void attachRelationship(boolean autoGenerateMapping, boolean addToParents) throws SQLObjectException {
 		if(getParent() == null) throw new NullPointerException("Null pkTable not allowed");
 		SQLTable fkTable = getFkTable();
 		if(fkTable == null) throw new NullPointerException("Null fkTable not allowed");
@@ -476,8 +546,10 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		    }
 		}
 	
-		getParent().addChild(this);
-		fkTable.addChild(foreignKey);
+		if (addToParents) {
+		    getParent().addChild(this);
+		    fkTable.addChild(foreignKey);
+		}
 		
 		try {
 			fkTable.setMagicEnabled(false);

@@ -1154,12 +1154,14 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         assertNotNull(parentTable.getColumnByName("pkcol_2"));
         assertEquals(5, parentTable.getColumns().size());
     }
-    
+
     /**
-     * Tests that relationships loaded between two tables only loads the relationships
-     * imported into the import table from the parent table. This confirms that other
-     * imported relationships, from dontConnectMe does not get loaded. This is to test
-     * lazy loading.
+     * Tests that relationships loaded between two tables can load all of the
+     * exported keys of the PK table but does not extend to populate the
+     * imported keys of the PK table. While this populates more relationships
+     * than are absolutely necessary not populating the imported keys of the PK
+     * table prevents the cascading effect of populating all of the tables
+     * connected by relationships. This is to test lazy loading.
      */
     public void testImportRelationshipsToTable() throws Exception {    	
     	Connection con = null;
@@ -1293,14 +1295,14 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
     	fkTable.populateImportedKeys();
     	
     	System.out.println("Have exported keys " + pkTable.getExportedKeysWithoutPopulating());
-    	assertEquals(1, pkTable.getExportedKeysWithoutPopulating().size());
+    	assertEquals(2, pkTable.getExportedKeysWithoutPopulating().size());
     	assertEquals(0, pkTable.getImportedKeysWithoutPopulating().size());
     	assertEquals(0, fkTable.getExportedKeysWithoutPopulating().size());
     	assertEquals(2, fkTable.getImportedKeysWithoutPopulating().size());
     	assertEquals(1, dontConnectMe.getExportedKeysWithoutPopulating().size());
     	assertEquals(0, dontConnectMe.getImportedKeysWithoutPopulating().size());
     	assertEquals(0, anotherTable.getExportedKeysWithoutPopulating().size());
-    	assertEquals(0, anotherTable.getImportedKeysWithoutPopulating().size());
+    	assertEquals(1, anotherTable.getImportedKeysWithoutPopulating().size());
     	
     	try {
     		con = getDb().getConnection();

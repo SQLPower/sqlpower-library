@@ -227,23 +227,49 @@ public class SQLSchema extends SQLObject {
 		runInForeground(new Runnable() {
 		
 			public void run() {
-				try {
-				    if (populated) return;
-					begin("Populating schema");
-					for (SQLTable table : fetchedTables) {
-                        addTable(table);
-                    }
-					setPopulated(true);
-					commit();
-				} catch (Exception e) {
-					rollback(e.getMessage());
-					throw new RuntimeException(e);
-				}
+			    if (populated) return;
+				populateSchemaWithList(SQLSchema.this, fetchedTables);
 		
 			}
 		});
 		
 		logger.debug("SQLSchema: populate finished");
+	}
+	
+    /**
+     * Populates the SQLSchema with a given list of children. This must be
+     * done on the foreground thread.
+     * <p>
+     * Package private for use in the {@link SQLObjectUtils}.
+     * 
+     * @param schema
+     *            The schema to populate
+     * @param children
+     *            The list of children to add as children. All objects in this
+     *            list must be of the same type.
+     */
+	static void populateSchemaWithList(SQLSchema schema, List<SQLTable> children) {
+        try {
+            for (SQLTable table : children) {
+                schema.tables.add(table);
+                table.setParent(schema);
+            }
+            schema.populated = true;
+            
+            schema.begin("Populating schema");
+            for (SQLTable table : children) {
+                schema.fireChildAdded(SQLTable.class, table, schema.tables.indexOf(table));
+            }
+            schema.firePropertyChange("populated", false, true);
+            schema.commit();
+        } catch (Exception e) {
+            schema.rollback(e.getMessage());
+            for (SQLTable table : children) {
+                schema.tables.remove(table);
+            }
+            schema.populated = false;
+            throw new RuntimeException(e);
+        }
 	}
 
 

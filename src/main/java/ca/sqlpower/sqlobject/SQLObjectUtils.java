@@ -30,6 +30,7 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.ObjectDependentException;
+import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 
 public class SQLObjectUtils {
     
@@ -507,6 +508,80 @@ public class SQLObjectUtils {
             return null;
         } else {
             throw new IllegalStateException("Unknown database child type: " + db.getChildrenWithoutPopulating().get(0).getClass());
+        }
+    }
+
+    /**
+     * Populates the given object by adding all of the children in the list to
+     * the object and setting necessary flags. This method must be called on the
+     * foreground and the object cannot be populated already.
+     * 
+     * @param objectToPopulate
+     *            The object to populate with the given child types.
+     * @param children
+     *            A list of children that will be used to populate the given
+     *            object. The object will be defined to be populated for the
+     *            child type in the list. The list can contain multiple child
+     *            types but must contain all of the children of any one type to
+     *            fully populate that type of children for the object.
+     */
+    public static void populateChildrenWithList(SQLObject objectToPopulate, List<SQLObject> children) {
+        if (objectToPopulate instanceof SQLTable) {
+            List<SQLColumn> columnChildren = new ArrayList<SQLColumn>();
+            List<SQLIndex> indexChildren = new ArrayList<SQLIndex>();
+            List<SQLRelationship> relationshipChildren = new ArrayList<SQLRelationship>();
+            List<SQLImportedKey> importedKeyChildren = new ArrayList<SQLImportedKey>();
+            for (SQLObject o : children) {
+                if (o instanceof SQLColumn) {
+                    columnChildren.add((SQLColumn) o);
+                } else if (o instanceof SQLIndex) {
+                    indexChildren.add((SQLIndex) o);
+                } else if (o instanceof SQLRelationship) {
+                    relationshipChildren.add((SQLRelationship) o);
+                } else if (o instanceof SQLImportedKey) {
+                    importedKeyChildren.add((SQLImportedKey) o);
+                } else {
+                    throw new IllegalArgumentException("Unknown child type " + o.getClass() + 
+                            " for table " + objectToPopulate + ". Cannot add " + o + " as a child.");
+                }
+            }
+
+            if (!columnChildren.isEmpty()) {
+                SQLTable.populateColumnsWithList((SQLTable) objectToPopulate, columnChildren);
+            }
+            if (!indexChildren.isEmpty()) {
+                SQLTable.populateIndicesWithList((SQLTable) objectToPopulate, indexChildren);
+            }
+
+            if (!relationshipChildren.isEmpty()) {
+                SQLTable.populateRelationshipsWithList((SQLTable) objectToPopulate, relationshipChildren);
+            }
+
+            //Imported keys do not follow the normal pattern as they are not actually
+            //populated by calling populate().
+            //TODO come up with a better way to satisfy handling imported keys
+            //that still doesn't cause a tightly connected graph of tables to be
+            //fully populated when populating one table.
+            if (!importedKeyChildren.isEmpty()) {
+                for (SQLImportedKey child : importedKeyChildren) {
+                    ((SQLTable) objectToPopulate).addImportedKey(child);
+                }
+                ((SQLTable) objectToPopulate).setImportedKeysPopulated(true);
+            }
+
+        } else if (objectToPopulate instanceof SQLDatabase) {
+            SQLDatabase.populateDatabaseWithList((SQLDatabase) objectToPopulate, children);
+        } else if (objectToPopulate instanceof SQLCatalog) {
+            SQLCatalog.populateCatalogWithList((SQLCatalog) objectToPopulate, children);
+        } else if (objectToPopulate instanceof SQLSchema) {
+            List<SQLTable> tables = new ArrayList<SQLTable>();
+            for (SQLObject child : children) {
+                tables.add((SQLTable) child);
+            }
+            SQLSchema.populateSchemaWithList((SQLSchema) objectToPopulate, tables);
+        } else {
+            throw new IllegalArgumentException("Object " + objectToPopulate + " does not " +
+            		"allow children and cannot be populated.");
         }
     }
 
