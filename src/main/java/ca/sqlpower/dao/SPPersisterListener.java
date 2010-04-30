@@ -73,22 +73,6 @@ public class SPPersisterListener implements SPListener {
 	private final SPSessionPersister eventSource;
 	
 	/**
-	 * This will be the list we will use to rollback persisted properties
-	 */
-	private List<PersistedPropertiesEntry> persistedPropertiesRollbackList = new LinkedList<PersistedPropertiesEntry>();
-	
-	/**
-	 * This will be the list we use to rollback persisted objects.
-	 * It contains UUIDs of objects that were created.
-	 */
-	private List<PersistedObjectEntry> persistedObjectsRollbackList = new LinkedList<PersistedObjectEntry>();
-	
-	/**
-	 * This is the list we use to rollback object removal
-	 */
-	private List<RemovedObjectEntry> objectsToRemoveRollbackList = new LinkedList<RemovedObjectEntry>();
-	
-	/**
 	 * Persisted property buffer, mapping a {@link SPObject} uuid 
 	 * to a list of persisted properties for that uuid.
 	 */
@@ -477,10 +461,6 @@ public class SPPersisterListener implements SPListener {
 				//the begin and commit to reduce server traffic.
 				if (objectsToRemove.isEmpty() && persistedObjects.isEmpty() && 
 						persistedProperties.isEmpty()) return;
-				
-				this.objectsToRemoveRollbackList.clear();
-				this.persistedObjectsRollbackList.clear();
-				this.persistedPropertiesRollbackList.clear();
 				target.begin();
 				commitRemovals();
 				commitObjects();
@@ -494,11 +474,8 @@ public class SPPersisterListener implements SPListener {
 			} finally {
 				this.objectsToRemove.clear();
 				this.removedObjectsUUIDs.clear();
-				this.objectsToRemoveRollbackList.clear();
 				this.persistedObjects.clear();
-				this.persistedObjectsRollbackList.clear();
 				this.persistedProperties.clear();
-				this.persistedPropertiesRollbackList.clear();
 				this.transactionCount = 0;
 			}
 		} else {
@@ -518,9 +495,6 @@ public class SPPersisterListener implements SPListener {
 				eventSource.isHeadingToWisconsin()) {
 			// This means that the SessionPersister is cleaning his stuff and
 			// we need to do the same. Close all current transactions... bla bla bla.
-			this.objectsToRemoveRollbackList.clear();
-			this.persistedObjectsRollbackList.clear();
-			this.persistedPropertiesRollbackList.clear();
 			this.objectsToRemove.clear();
 			this.removedObjectsUUIDs.clear();
 			this.persistedObjects.clear();
@@ -530,19 +504,33 @@ public class SPPersisterListener implements SPListener {
 			return;
 		}
 		rollingBack = true;
+		SPObject workspace = eventSource.getWorkspaceContainer().getWorkspace(); 
+		boolean initialMagic = workspace.isMagicEnabled();
+		if (initialMagic) {
+		    workspace.setMagicEnabled(false);
+		}
 		try {
+		    List<PersistedObjectEntry> rollbackObjects = new LinkedList<PersistedObjectEntry>();
+		    List<PersistedPropertiesEntry> rollbackProperties = new LinkedList<PersistedPropertiesEntry>();
+		    
+		    for (PersistedSPObject o : persistedObjects) {
+		        rollbackObjects.add(new PersistedObjectEntry(o.getParentUUID(), o.getUUID()));
+		    }
+		    
+		    for (PersistedSPOProperty p : persistedProperties.values()) {
+		        rollbackProperties.add(new PersistedPropertiesEntry(
+		                p.getUUID(), p.getPropertyName(), p.getDataType(), p.getOldValue()));
+		    }
+		    
 			SPSessionPersister.undoForSession(
 				eventSource.getWorkspaceContainer().getWorkspace(), 
-				this.persistedObjectsRollbackList, 
-				this.persistedPropertiesRollbackList, 
-				this.objectsToRemoveRollbackList,
+				rollbackObjects,
+				rollbackProperties, 
+				objectsToRemove,
 				converter);
 		} catch (SPPersistenceException e) {
 			logger.error(e);
 		} finally {
-			this.objectsToRemoveRollbackList.clear();
-			this.persistedObjectsRollbackList.clear();
-			this.persistedPropertiesRollbackList.clear();
 			this.objectsToRemove.clear();
 			this.removedObjectsUUIDs.clear();
 			this.persistedObjects.clear();
@@ -550,6 +538,9 @@ public class SPPersisterListener implements SPListener {
 			this.transactionCount = 0;
 			rollingBack = false;
 			target.rollback();
+			if (initialMagic) {
+			    eventSource.getWorkspaceContainer().getWorkspace().setMagicEnabled(true);
+			}
 		}
 	}
 	
@@ -569,10 +560,6 @@ public class SPPersisterListener implements SPListener {
 				pwo.getType(),
 				pwo.getUUID(),
 				pwo.getIndex());
-			this.persistedObjectsRollbackList.add(
-				new PersistedObjectEntry(
-					pwo.getParentUUID(),
-					pwo.getUUID()));
 		}
 	}
 
@@ -600,12 +587,6 @@ public class SPPersisterListener implements SPListener {
                     property.getOldValue(),
                     property.getNewValue());
             }
-            this.persistedPropertiesRollbackList.add(
-                new PersistedPropertiesEntry(
-                    property.getUUID(), 
-                    property.getPropertyName(),
-                    property.getDataType(), 
-                    property.getOldValue()));
         }
 	}
 
@@ -624,7 +605,6 @@ public class SPPersisterListener implements SPListener {
 			target.removeObject(
 				entry.getParentUUID(), 
 				entry.getRemovedChild().getUUID());
-			this.objectsToRemoveRollbackList.add(entry);
 		}
 	}
 	
@@ -638,18 +618,6 @@ public class SPPersisterListener implements SPListener {
 
 	public List<RemovedObjectEntry> getObjectsToRemove() {
 		return objectsToRemove;
-	}
-	
-	public List<PersistedObjectEntry> getObjectsRollbackList() {
-		return persistedObjectsRollbackList;
-	}
-	
-	public List<PersistedPropertiesEntry> getPropertiesRollbackList() {
-		return persistedPropertiesRollbackList;
-	}
-	
-	public List<RemovedObjectEntry> getRemovedRollbackList() {
-		return objectsToRemoveRollbackList;
 	}
 	
 	/**
@@ -681,25 +649,25 @@ public class SPPersisterListener implements SPListener {
 	    }
 	    return null;
 	}
-
+	
     /**
      * Returns a list of UUIDs that contains this object's UUID and all of the
      * children's uuid.
      */
-	public Set<String> getDescendantUUIDs(SPObject parent) {
-	    Set<String> uuids = new HashSet<String>();
-	    uuids.add(parent.getUUID());
-	    List<? extends SPObject> children;
-	    //XXX We need a way to get the children of SQLObjects for persistence
-	    //without causing them to populate.
-	    if (parent instanceof SQLObject) {
-	        children = ((SQLObject) parent).getChildrenWithoutPopulating();
-	    } else {
-	        children = parent.getChildren();
-	    }
-	    for (SPObject child : children) {
-	        uuids.addAll(getDescendantUUIDs(child));
-	    }	  
-	    return uuids;
-	}
+    public Set<String> getDescendantUUIDs(SPObject parent) {
+        Set<String> uuids = new HashSet<String>();
+        uuids.add(parent.getUUID());
+        List<? extends SPObject> children;
+        //XXX We need a way to get the children of SQLObjects for persistence
+        //without causing them to populate.
+        if (parent instanceof SQLObject) {
+            children = ((SQLObject) parent).getChildrenWithoutPopulating();
+        } else {
+            children = parent.getChildren();
+        }
+        for (SPObject child : children) {
+            uuids.addAll(getDescendantUUIDs(child));
+        }
+        return uuids;
+    }
 }

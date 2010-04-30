@@ -224,7 +224,7 @@ public interface SPObject {
     
 	/**
 	 * Signals the roll back of a transaction. The events of the transaction
-	 * should not be acted on and/or should be undone.
+	 * should not be acted on and should be undone by the SPPersisterListener.
 	 * 
 	 * @param message
 	 *            Reason for the roll back.
