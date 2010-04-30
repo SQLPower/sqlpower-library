@@ -1154,11 +1154,17 @@ public abstract class SPSessionPersister implements SPPersister {
                 return true;
             }
         }
-		if (!objectsToRemove.containsKey(uuid)) {
-			if (SQLPowerUtils.findByUuid(root, uuid, SPObject.class) != null) {
-				return true;
-			}
-		}
+        SPObject spo = SQLPowerUtils.findByUuid(root, uuid, SPObject.class);
+        if (spo != null) {
+            List<SPObject> ancestors = SQLPowerUtils.getAncestorList(spo);
+            ancestors.add(spo);
+            for (SPObject ancestor : ancestors) {
+                if (objectsToRemove.containsKey(ancestor.getUUID())) {
+                    return false;
+                }
+            }
+            return true;
+        }
 		return false;
 	}
 	
