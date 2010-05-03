@@ -673,6 +673,8 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 			sqlType.setPrecisionType(platform, PropertyType.valueOf(value));
 		} else if (key.equals("Scale Type")) {
 			sqlType.setScaleType(platform, PropertyType.valueOf(value));
+		} else if (key.equals("UUID")) {
+			sqlType.setUUID(value);
 		}
 	}
 	
