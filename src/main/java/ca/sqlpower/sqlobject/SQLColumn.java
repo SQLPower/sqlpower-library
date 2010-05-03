@@ -145,6 +145,18 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		setPopulated(true);
 	}
 
+	public SQLColumn(UserDefinedSQLType startingType) {
+		userDefinedSQLType = new UserDefinedSQLType();
+		userDefinedSQLType.setParent(this);
+		userDefinedSQLType.setUpstreamType(startingType);
+		setPlatform(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
+		setName(defaultName);
+		setPhysicalName("");
+		setRemarks(defaultRemarks);
+		referenceCount = 1;
+		setPopulated(true);
+	}
+	
 	public SQLColumn(SQLTable parentTable,
 			String colName, 
 			int dataType,
@@ -456,18 +468,33 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 */
 	@Transient @Accessor
 	public String getTypeName() {
-		if (sourceDataTypeName != null) {
-			if (getPrecision() > 0 && getScale() > 0) {
-				return sourceDataTypeName+"("+getPrecision()+","+getScale()+")";
-			} else if (getPrecision() > 0) {
-				return sourceDataTypeName+"("+getPrecision()+")"; // XXX: should we display stuff like (18,0) for decimals?
-			} else {
-				return sourceDataTypeName;
-			}			
-		} else {
-			return SQLType.getTypeName(getType()) // XXX: replace with TypeDescriptor
-				+"("+getPrecision()+")";
+		// Type proxy should never override its upstream type's name.
+		UserDefinedSQLType upstreamType = userDefinedSQLType.getUpstreamType();
+
+		if (upstreamType == null)
+			return "";
+
+		StringBuilder name = new StringBuilder(upstreamType.getName());
+
+		String defaultPlatform = SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM;
+		PropertyType precisionType = userDefinedSQLType
+				.getPrecisionType(defaultPlatform);
+		PropertyType scaleType = userDefinedSQLType
+				.getScaleType(defaultPlatform);
+
+		if (precisionType != PropertyType.NOT_APPLICABLE
+				&& scaleType != PropertyType.NOT_APPLICABLE) {
+			name.append("(" + userDefinedSQLType.getPrecision(defaultPlatform)
+					+ ", " + userDefinedSQLType.getScale(defaultPlatform) + ")");
+		} else if (precisionType != PropertyType.NOT_APPLICABLE) {
+			name.append("(" + userDefinedSQLType.getPrecision(defaultPlatform)
+					+ ")");
+		} else if (scaleType != PropertyType.NOT_APPLICABLE) {
+			name.append("(" + userDefinedSQLType.getScale(defaultPlatform)
+					+ ")");
 		}
+
+		return name.toString();
 	}
 
 	/**

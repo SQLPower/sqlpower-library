@@ -393,9 +393,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
                 	currentSQLType.setCheckConstraint(platform, "");
                 	currentSQLType.setDefaultValue(platform, "");
                 	currentSQLType.setPrecision(platform, 0);
-                	currentSQLType.setPrecisionType(platform, PropertyType.VARIABLE);
                 	currentSQLType.setScale(platform, 0);
-                	currentSQLType.setScaleType(platform, PropertyType.VARIABLE);
                 	currentSQLType.setAutoIncrement(false);
                 	currentSQLType.setNullability(Integer.valueOf(DatabaseMetaData.columnNoNulls));
                 	mode = ReadState.READ_SQLTYPE;
@@ -661,15 +659,20 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 	 * Type and sets them on the given {@link UserDefinedSQLType}.
 	 */
 	private void putPropertyIntoSQLType(UserDefinedSQLType sqlType, String key, String value) {
+		String platform = SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM;
 		if (key.equals("Name")) {
 			sqlType.setName(value);
-			sqlType.setPhysicalTypeName(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM, value);
+			sqlType.setPhysicalTypeName(platform, value);
 		} else if (key.equals("Basic Type")) {
 			sqlType.setBasicType(BasicSQLType.valueOf(value));
 		} else if (key.equals("Description")) {
 			sqlType.setDescription(value);
 		} else if (key.equals("JDBC Type")) {
 			sqlType.setType(Integer.valueOf(value));
+		} else if (key.equals("Precision Type")) {
+			sqlType.setPrecisionType(platform, PropertyType.valueOf(value));
+		} else if (key.equals("Scale Type")) {
+			sqlType.setScaleType(platform, PropertyType.valueOf(value));
 		}
 	}
 	
