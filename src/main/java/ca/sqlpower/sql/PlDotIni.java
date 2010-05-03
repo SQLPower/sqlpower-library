@@ -394,8 +394,8 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
                 	currentSQLType.setDefaultValue(platform, "");
                 	currentSQLType.setPrecision(platform, 0);
                 	currentSQLType.setScale(platform, 0);
-                	currentSQLType.setAutoIncrement(false);
-                	currentSQLType.setNullability(Integer.valueOf(DatabaseMetaData.columnNoNulls));
+                	currentSQLType.setMyAutoIncrement(false);
+                	currentSQLType.setMyNullability(Integer.valueOf(DatabaseMetaData.columnNoNulls));
                 	mode = ReadState.READ_SQLTYPE;
                 } else if (line.startsWith("[")) {
                     logger.debug("It's a new generic section!");

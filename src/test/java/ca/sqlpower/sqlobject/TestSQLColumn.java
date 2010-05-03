@@ -863,8 +863,8 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
         table.addSPListener(listener);
         
         UserDefinedSQLType underlyingType = new UserDefinedSQLType();
-        underlyingType.setAutoIncrement(false);
-        underlyingType.setNullability(DatabaseMetaData.columnNullableUnknown);
+        underlyingType.setMyAutoIncrement(false);
+        underlyingType.setMyNullability(DatabaseMetaData.columnNullableUnknown);
         underlyingType.setType(Types.VARCHAR);
         
         table.begin("Transaction for testing");

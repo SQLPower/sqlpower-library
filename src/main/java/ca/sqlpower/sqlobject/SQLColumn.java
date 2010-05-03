@@ -135,11 +135,11 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		userDefinedSQLType.setPrecision(platform, defaultPrec);
 		userDefinedSQLType.setScale(platform, defaultScale);
 		if (defaultNullable) {
-			userDefinedSQLType.setNullability(DatabaseMetaData.columnNullable);
+			userDefinedSQLType.setMyNullability(DatabaseMetaData.columnNullable);
 		} else {
-			userDefinedSQLType.setNullability(DatabaseMetaData.columnNoNulls);
+			userDefinedSQLType.setMyNullability(DatabaseMetaData.columnNoNulls);
 		}
-		userDefinedSQLType.setAutoIncrement(defaultAutoInc);
+		userDefinedSQLType.setMyAutoIncrement(defaultAutoInc);
 		userDefinedSQLType.setDefaultValue(platform, defaultForDefaultValue);
 		this.remarks = defaultRemarks;
 		setPopulated(true);
@@ -156,7 +156,11 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		referenceCount = 1;
 		setPopulated(true);
 	}
-	
+
+    /**
+     * A constructor for testing purposes. You normally do not want to call this
+     * constructor because it will override all of your domain or type values.
+     */
 	public SQLColumn(SQLTable parentTable,
 			String colName, 
 			int dataType,
@@ -168,9 +172,30 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 			String defaultValue, 
 			boolean isAutoIncrement) {
 		
-		this(parentTable, colName, dataType, nativeType, precision, scale, 
-				nullable, remarks, defaultValue, isAutoIncrement, 
-				new UserDefinedSQLType());
+	    if (parentTable != null) {
+            logger.debug("NEW COLUMN "+colName+"@"+hashCode()+" parent "+parentTable.getName()+"@"+parentTable.hashCode());
+        } else {
+            logger.debug("NEW COLUMN "+colName+"@"+hashCode()+" (null parent)");
+        }
+        if (parentTable != null) {
+            setParent(parentTable);
+        }
+        this.userDefinedSQLType = new UserDefinedSQLType();
+        userDefinedSQLType.setParent(this);
+        setPlatform(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
+        this.setName(colName);
+        setPopulated(true);
+        this.userDefinedSQLType.setType(dataType);
+        this.sourceDataTypeName = nativeType;
+        this.userDefinedSQLType.setScale(platform, scale);
+        this.userDefinedSQLType.setPrecision(platform, precision);
+        this.userDefinedSQLType.setMyNullability(nullable);
+        this.userDefinedSQLType.setDefaultValue(platform, defaultValue);
+        this.userDefinedSQLType.setMyAutoIncrement(isAutoIncrement);
+        this.remarks = remarks;
+
+        logger.debug("SQLColumn(.....) set ref count to 1");
+        this.referenceCount = 1;
 	}
 	
 	/**
@@ -195,44 +220,33 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	@Constructor
 	public SQLColumn(@ConstructorParameter(propertyName = "parent") SQLTable parentTable,
 			@ConstructorParameter(propertyName = "name") String colName,
-			@ConstructorParameter(propertyName = "type") int dataType,
 			@ConstructorParameter(propertyName = "sourceDataTypeName") String nativeType,
-			@ConstructorParameter(propertyName = "precision") int precision,
-			@ConstructorParameter(propertyName = "scale") int scale,
-			@ConstructorParameter(propertyName = "nullable") int nullable,
 			@ConstructorParameter(propertyName = "remarks") String remarks,
-			@ConstructorParameter(propertyName = "defaultValue") String defaultValue,
-			@ConstructorParameter(propertyName = "autoIncrement") boolean isAutoIncrement,
 			@ConstructorParameter(isProperty=ParameterType.CHILD, propertyName="userDefinedSQLType")
 			UserDefinedSQLType userDefinedSQLType) {
-		if (parentTable != null) {
-			logger.debug("NEW COLUMN "+colName+"@"+hashCode()+" parent "+parentTable.getName()+"@"+parentTable.hashCode());
-		} else {
-			logger.debug("NEW COLUMN "+colName+"@"+hashCode()+" (null parent)");
-		}
-        if (parentTable != null) {
-            setParent(parentTable);
-        }
-        this.userDefinedSQLType = userDefinedSQLType;
-        userDefinedSQLType.setParent(this);
-        setPlatform(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
-		this.setName(colName);
-		setPopulated(true);
-		this.userDefinedSQLType.setType(dataType);
-		this.sourceDataTypeName = nativeType;
-		this.userDefinedSQLType.setScale(platform, scale);
-		this.userDefinedSQLType.setPrecision(platform, precision);
-		this.userDefinedSQLType.setNullability(nullable);
-		this.userDefinedSQLType.setDefaultValue(platform, defaultValue);
-		this.userDefinedSQLType.setAutoIncrement(isAutoIncrement);
-		this.remarks = remarks;
+	    
+	    if (parentTable != null) {
+	        logger.debug("NEW COLUMN "+colName+"@"+hashCode()+" parent "+parentTable.getName()+"@"+parentTable.hashCode());
+	    } else {
+	        logger.debug("NEW COLUMN "+colName+"@"+hashCode()+" (null parent)");
+	    }
+	    if (parentTable != null) {
+	        setParent(parentTable);
+	    }
+	    this.userDefinedSQLType = new UserDefinedSQLType();
+	    userDefinedSQLType.setParent(this);
+	    setPlatform(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
+	    this.setName(colName);
+	    setPopulated(true);
+	    this.sourceDataTypeName = nativeType;
+	    this.remarks = remarks;
 
-		logger.debug("SQLColumn(.....) set ref count to 1");
-		this.referenceCount = 1;
+	    logger.debug("SQLColumn(.....) set ref count to 1");
+	    this.referenceCount = 1;
 	}
 
 	public SQLColumn(SQLTable parent, String colName, int type, int precision, int scale) {
-		this(parent, colName, type, null, precision, scale, DatabaseMetaData.columnNullable, null, null, false, new UserDefinedSQLType());
+		this(parent, colName, type, null, precision, scale, DatabaseMetaData.columnNullable, null, null, false);
 	}
 	
 	/**
@@ -386,8 +400,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 											  rs.getInt(11), // nullable
 											  rs.getString(12) == null ? "" : rs.getString(12), // remarks
 											  rs.getString(13), // default value
-											  autoIncrement, // isAutoIncrement
-											  new UserDefinedSQLType());
+											  autoIncrement // isAutoIncrement
+											  );
 				logger.debug("Precision for the column " + rs.getString(4) + " is " + rs.getInt(7));
 
 				// work around oracle 8i bug: when table names are long and similar,
@@ -873,7 +887,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	public void setNullable(int argNullable) {
 		begin("Set nullable");
 		int yeOldeNullable = getNullable();
-		userDefinedSQLType.setNullability(argNullable);
+		userDefinedSQLType.setMyNullability(argNullable);
 		firePropertyChange("nullable", yeOldeNullable, argNullable);
 		commit();
 	}
@@ -1011,7 +1025,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	public void setAutoIncrement(boolean argAutoIncrement) {
 		begin("Set autoIncrement");
 		boolean oldAutoIncrement = isAutoIncrement();
-		userDefinedSQLType.setAutoIncrement(argAutoIncrement);
+		userDefinedSQLType.setMyAutoIncrement(argAutoIncrement);
 		firePropertyChange("autoIncrement",oldAutoIncrement,argAutoIncrement);
 		commit();
 	}

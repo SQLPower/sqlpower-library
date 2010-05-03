@@ -106,7 +106,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	 * <li>{@link DatabaseMetaData#columnNullableUnknown}</li>
 	 * </ul>
 	 */
-    private Integer nullability;
+    private Integer myNullability;
     
     /**
      * This property indicates that values stored in this column should
@@ -114,7 +114,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
      * database platform handles the specifics of this a little differently,
      * but the DDL generators are responsible for taking care of that.
      */
-    private Boolean autoIncrement;
+    private Boolean myAutoIncrement;
     
 	/**
 	 * Constructs a {@link UserDefinedSQLType} with a default
@@ -582,28 +582,38 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     }
 
     @Mutator
-	public void setNullability(Integer nullability) {
+	public void setMyNullability(Integer nullability) {
     	Integer oldValue = getNullability();
-		this.nullability = nullability;
+		this.myNullability = nullability;
 		firePropertyChange("nullability", oldValue, nullability);
 	}
 
-    @Accessor
+    @Transient @Accessor
 	public Integer getNullability() {
-    	return (nullability == null && upstreamType != null) ? upstreamType.getNullability() : nullability;
+    	return (myNullability == null && upstreamType != null) ? upstreamType.getNullability() : myNullability;
 	}
+    
+    @Accessor
+    public Integer getMyNullability() {
+        return myNullability;
+    }
 
     @Mutator
-	public void setAutoIncrement(Boolean autoIncrement) {
+	public void setMyAutoIncrement(Boolean autoIncrement) {
     	Boolean oldValue = getAutoIncrement();
-		this.autoIncrement = autoIncrement;
+		this.myAutoIncrement = autoIncrement;
 		firePropertyChange("autoIncrement", oldValue, autoIncrement);
 	}
 
-    @Accessor
+    @Transient @Accessor
 	public Boolean getAutoIncrement() {
-		return (autoIncrement == null && upstreamType != null) ? upstreamType.getAutoIncrement() : autoIncrement;
+		return (myAutoIncrement == null && upstreamType != null) ? upstreamType.getAutoIncrement() : myAutoIncrement;
 	}
+    
+    @Accessor
+    public Boolean getMyAutoIncrement() {
+        return myAutoIncrement;
+    }
 
 	/**
 	 * goes through each of the UserDefinedSQLType's children appending each's
@@ -642,8 +652,8 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     	setName(typeToMatch.getName());
     	setType(typeToMatch.getType());
     	setBasicType(typeToMatch.getBasicType());
-    	setNullability(typeToMatch.getNullability());
-    	setAutoIncrement(typeToMatch.getAutoIncrement());
+    	setMyNullability(typeToMatch.getNullability());
+    	setMyAutoIncrement(typeToMatch.getAutoIncrement());
     	setDescription(typeToMatch.getDescription());
     	setUpstreamType(typeToMatch.getUpstreamType());
     	
@@ -686,10 +696,10 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 		target.setPhysicalName(source.getPhysicalName());
 		// Don't use getters as they will refer to the upstreamType if the
 		// values are null
-		target.setAutoIncrement(source.autoIncrement);
+		target.setMyAutoIncrement(source.myAutoIncrement);
 		target.setBasicType(source.basicType);
 		target.setDescription(source.description);
-		target.setNullability(source.nullability);
+		target.setMyNullability(source.myNullability);
 		target.setType(source.type);
 
 		SQLTypePhysicalProperties targetProperties = target

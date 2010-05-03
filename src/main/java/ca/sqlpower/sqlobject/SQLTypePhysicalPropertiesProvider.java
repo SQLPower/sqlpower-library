@@ -341,7 +341,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 *            <li>{@link DatabaseMetaData#columnNullableUnknown}</li>
 	 *            </ul>
 	 */
-	public void setNullability(Integer nullability);
+	public void setMyNullability(Integer nullability);
 
 	/**
 	 * Specifies whether this type accepts NULL as a value, based on the values
@@ -366,7 +366,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 *            automatically-incrementing sequence of values. If set to
 	 *            false, then it does not.
 	 */
-	public void setAutoIncrement(Boolean autoIncrement);
+	public void setMyAutoIncrement(Boolean autoIncrement);
     
 	/**
 	 * This property indicates that values stored in this column should default
