@@ -27,6 +27,8 @@ import java.util.Set;
 
 import org.apache.commons.beanutils.BeanUtils;
 
+import ca.sqlpower.dao.SPPersisterListener;
+import ca.sqlpower.object.CountingSPPersister;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.JDBCDataSourceType;
@@ -845,6 +847,40 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
     		cannotRemoveChild = e;
     	}
     	assertNotNull(cannotRemoveChild);
+    }
+
+    /**
+     * Tests the SQLColumn and {@link UserDefinedSQLType} at the same time. If
+     * you set the column's type through its setter the persister should see the
+     * events come through correctly and not throw an exception. Previously the
+     * old value of the last property change was not matching the new value of
+     * the first property change when persisting the object.
+     */
+    public void testSetNullabilityAfterCreation() throws Exception {
+        final CountingSPPersister persister = new CountingSPPersister();
+        SPPersisterListener listener = new SPPersisterListener(persister, getConverter());
+        SQLTable table = new SQLTable(new SQLDatabase(), true);
+        table.addSPListener(listener);
+        
+        UserDefinedSQLType underlyingType = new UserDefinedSQLType();
+        underlyingType.setAutoIncrement(false);
+        underlyingType.setNullability(DatabaseMetaData.columnNullableUnknown);
+        underlyingType.setType(Types.VARCHAR);
+        
+        table.begin("Transaction for testing");
+        SQLColumn col = new SQLColumn(underlyingType);
+        table.addColumn(col);
+        
+        int nullable = col.getNullable();
+        if (nullable == DatabaseMetaData.columnNullable) {
+            nullable = DatabaseMetaData.columnNullableUnknown;
+        } else {
+            nullable = DatabaseMetaData.columnNullable;
+        }
+        col.setNullable(nullable);
+        
+        table.commit();
+        
     }
     
     @Override

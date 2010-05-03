@@ -401,7 +401,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Mutator
     public void setType(Integer type) {
-    	Integer oldValue = this.type;
+    	Integer oldValue = getType();
         this.type = type;
         firePropertyChange("type", oldValue, type);
     }
@@ -583,7 +583,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Mutator
 	public void setNullability(Integer nullability) {
-    	Integer oldValue = this.nullability;
+    	Integer oldValue = getNullability();
 		this.nullability = nullability;
 		firePropertyChange("nullability", oldValue, nullability);
 	}
@@ -595,7 +595,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Mutator
 	public void setAutoIncrement(Boolean autoIncrement) {
-    	Boolean oldValue = this.autoIncrement;
+    	Boolean oldValue = getAutoIncrement();
 		this.autoIncrement = autoIncrement;
 		firePropertyChange("autoIncrement", oldValue, autoIncrement);
 	}
