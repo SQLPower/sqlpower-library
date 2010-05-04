@@ -864,6 +864,10 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                 set.add("SQLObjectListeners"); // interferes with EventLogger, which listens to all objects
                 set.add("SPListeners"); // interferes with EventLogger, which listens to all objects
                 ignoreProperties.put(SQLIndex.Column.class, set);
+                
+                set = new HashSet<String>();
+                set.add("nullability"); // retrieved from underlying domain or type which is not tested here.
+                ignoreProperties.put(UserDefinedSQLType.class, set);
 
             }
             
