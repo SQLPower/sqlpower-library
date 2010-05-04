@@ -585,7 +585,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	public void setMyNullability(Integer nullability) {
     	Integer oldValue = getNullability();
 		this.myNullability = nullability;
-		firePropertyChange("nullability", oldValue, nullability);
+		firePropertyChange("myNullability", oldValue, nullability);
 	}
 
     @Transient @Accessor
@@ -602,7 +602,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	public void setMyAutoIncrement(Boolean autoIncrement) {
     	Boolean oldValue = getAutoIncrement();
 		this.myAutoIncrement = autoIncrement;
-		firePropertyChange("autoIncrement", oldValue, autoIncrement);
+		firePropertyChange("myAutoIncrement", oldValue, autoIncrement);
 	}
 
     @Transient @Accessor
