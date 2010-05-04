@@ -233,7 +233,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	    if (parentTable != null) {
 	        setParent(parentTable);
 	    }
-	    this.userDefinedSQLType = new UserDefinedSQLType();
+	    this.userDefinedSQLType = userDefinedSQLType;
 	    userDefinedSQLType.setParent(this);
 	    setPlatform(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
 	    this.setName(colName);
