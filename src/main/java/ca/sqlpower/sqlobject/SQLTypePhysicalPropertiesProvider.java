@@ -194,7 +194,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * @param precision
 	 *            The new precision value
 	 */
-	public void setPrecision(String platform, int precision);
+	public void setPrecision(String platform, Integer precision);
 
 	/**
 	 * Indicates how this type uses the scale property. {@link RowSetMetaData}
@@ -244,7 +244,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * @param precision
 	 *            The new scale value
 	 */
-	public void setScale(String platform, int scale);
+	public void setScale(String platform, Integer scale);
 
 	/**
 	 * Returns the default value of this type

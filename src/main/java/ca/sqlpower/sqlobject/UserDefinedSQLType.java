@@ -386,14 +386,14 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     }
 
     @NonProperty
-    public void setPrecision(String platform, int precision) {
+    public void setPrecision(String platform, Integer precision) {
     	begin("Setting precision");
         getOrCreatePhysicalProperties(platform).setPrecision(precision);
         commit();
     }
 
     @NonProperty
-    public void setScale(String platform, int scale) {
+    public void setScale(String platform, Integer scale) {
     	begin("Setting scale");
         getOrCreatePhysicalProperties(platform).setScale(scale);
         commit();
