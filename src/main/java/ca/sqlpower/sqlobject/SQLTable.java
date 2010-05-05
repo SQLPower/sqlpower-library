@@ -400,8 +400,9 @@ public class SQLTable extends SQLObject {
 		try {
 		    con = parentDB.getConnection();
 		    DatabaseMetaData dbmd = con.getMetaData();
+		    List<UserDefinedSQLType> types = parentDB.getDataSource().getParentCollection().getSQLTypes();
 		    final ListMultimap<String, SQLColumn> cols = SQLColumn.fetchColumnsForTable(
-		    		catalogName, schemaName, dbmd);
+		    		catalogName, schemaName, dbmd, types);
 		    Runnable runner = new Runnable() {
 				public void run() {
 					try {
@@ -1884,46 +1885,6 @@ public class SQLTable extends SQLObject {
         throw new UnsupportedOperationException("Individual tables can't be refreshed.");
     }
 
-	/**
-	 * Refreshes all of the columns in the list of tables passed in. All of the
-	 * columns need to be populated in the list of tables before this method is
-	 * called for their columns to be refreshed. If the table does not have its
-	 * columns populated it will be skipped.
-	 * 
-	 * @param catalogName
-	 *            The catalog name to look up columns for. Can be null if the
-	 *            database does not support catalogs.
-	 * @param schemaName
-	 *            The schemas name to look up columns for. Can be null if the
-	 *            database does not support schemas.
-	 * @param dbmd
-	 *            The database meta data that describes the columns in the
-	 *            tables.
-	 * @param tables
-	 *            The tables that will be updated with new columns or modify
-	 *            existing ones. These tables will very likely be changed at the
-	 *            end of this method unless the tables match the database
-	 *            already.
-	 */
-    static void refreshAllColumns(String catalogName, String schemaName, DatabaseMetaData dbmd, 
-    		List<SQLTable> tables) throws SQLObjectException {
-    	List<SQLTable> populatedTables = new ArrayList<SQLTable>();
-    	for (SQLTable table : tables) {
-    		if (table.isColumnsPopulated()) {
-    			populatedTables.add(table);
-    		}
-    	}
-        try {
-            ListMultimap<String, SQLColumn> newCols = SQLColumn.fetchColumnsForTable(
-            		catalogName, schemaName, dbmd);
-            for (SQLTable table : populatedTables) {
-            	SQLObjectUtils.refreshChildren(table, newCols.get(table.getName()), SQLColumn.class);
-            }
-        } catch (SQLException e) {
-            throw new SQLObjectException("Refresh failed", e);
-        }
-    }
-    
     public boolean removeIndex(SQLIndex sqlIndex) {
     	if (isMagicEnabled() && sqlIndex.getParent() != this) {
 			throw new IllegalStateException("Cannot remove child " + sqlIndex.getName() + 

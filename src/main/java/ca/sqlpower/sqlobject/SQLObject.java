@@ -639,8 +639,8 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
         if (isTableContainer()) {
             logger.debug("Refreshing table container " + this);
             Connection con = null;
+            SQLDatabase db = SPObjectUtils.getAncestor(this, SQLDatabase.class);
             try {
-                SQLDatabase db = SPObjectUtils.getAncestor(this, SQLDatabase.class);
                 SQLCatalog cat = SPObjectUtils.getAncestor(this, SQLCatalog.class);
                 SQLSchema sch = SPObjectUtils.getAncestor(this, SQLSchema.class);
                 String catName = cat == null ? null : cat.getName();
@@ -661,8 +661,9 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
                 });
 
                 try {
+                	List<UserDefinedSQLType> types = db.getDataSource().getParentCollection().getSQLTypes();
                     final ListMultimap<String, SQLColumn> newCols = SQLColumn.fetchColumnsForTable(
-                            catName, schName, dbmd);
+                            catName, schName, dbmd, types);
                     
                     runInForeground(new Runnable() {
                         public void run() {

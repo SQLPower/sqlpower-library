@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -64,12 +65,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 */
 	protected SQLColumn sourceColumn;
 	
-	/**
-	 * This is the native name for the column's type in its source
-	 * database.  See {@link #type} for system-independant type.
-	 */
-	private String sourceDataTypeName;
-
 	// set to empty string so that we don't generate spurious undos
 	protected String remarks ="";
 	
@@ -158,7 +153,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
     /**
-     * A constructor for testing purposes. You normally do not want to call this
+     * A constructor for testing purposes, and reverse engineering. You normally do not want to call this
      * constructor because it will override all of your domain or type values.
      */
 	public SQLColumn(SQLTable parentTable,
@@ -170,28 +165,44 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 			int nullable,
 			String remarks, 
 			String defaultValue, 
-			boolean isAutoIncrement) {
+			boolean isAutoIncrement,
+			UserDefinedSQLType upstreamType) {
+
+		if (parentTable != null) {
+			logger.debug("NEW COLUMN "+colName+"@"+hashCode()+" parent "+parentTable.getName()+"@"+parentTable.hashCode());
+		} else {
+			logger.debug("NEW COLUMN "+colName+"@"+hashCode()+" (null parent)");
+		}
+		if (parentTable != null) {
+			setParent(parentTable);
+		}
+		this.userDefinedSQLType = new UserDefinedSQLType();
+		userDefinedSQLType.setParent(this);
+		setPlatform(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
+		this.setName(colName);
+		setPopulated(true);
 		
-	    if (parentTable != null) {
-            logger.debug("NEW COLUMN "+colName+"@"+hashCode()+" parent "+parentTable.getName()+"@"+parentTable.hashCode());
-        } else {
-            logger.debug("NEW COLUMN "+colName+"@"+hashCode()+" (null parent)");
-        }
-        if (parentTable != null) {
-            setParent(parentTable);
-        }
-        this.userDefinedSQLType = new UserDefinedSQLType();
-        userDefinedSQLType.setParent(this);
-        setPlatform(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
-        this.setName(colName);
-        setPopulated(true);
-        this.userDefinedSQLType.setType(dataType);
-        this.sourceDataTypeName = nativeType;
-        this.userDefinedSQLType.setScale(platform, scale);
-        this.userDefinedSQLType.setPrecision(platform, precision);
-        this.userDefinedSQLType.setMyNullability(nullable);
-        this.userDefinedSQLType.setDefaultValue(platform, defaultValue);
-        this.userDefinedSQLType.setMyAutoIncrement(isAutoIncrement);
+		// Check if override is needed before setting properties
+		if (upstreamType == null || !upstreamType.getType().equals(dataType))
+			this.userDefinedSQLType.setType(dataType);
+		
+		if (upstreamType == null || upstreamType.getScale(platform) != scale)
+			this.userDefinedSQLType.setScale(platform, scale);
+		
+		if (upstreamType == null || upstreamType.getPrecision(platform) != precision)
+			this.userDefinedSQLType.setPrecision(platform, precision);
+		
+		if (upstreamType == null || !upstreamType.getNullability().equals(nullable))
+			this.userDefinedSQLType.setMyNullability(nullable);
+		
+		if (upstreamType == null || !upstreamType.getDefaultValue(platform).equals(defaultValue))
+			this.userDefinedSQLType.setDefaultValue(platform, defaultValue);
+		
+		if (upstreamType == null || !upstreamType.getAutoIncrement().equals(isAutoIncrement))
+			this.userDefinedSQLType.setMyAutoIncrement(isAutoIncrement);
+		
+		this.userDefinedSQLType.setName(nativeType);
+		this.userDefinedSQLType.setUpstreamType(upstreamType);
         this.remarks = remarks;
 
         logger.debug("SQLColumn(.....) set ref count to 1");
@@ -238,7 +249,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	    setPlatform(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
 	    this.setName(colName);
 	    setPopulated(true);
-	    this.sourceDataTypeName = nativeType;
 	    this.remarks = remarks;
 
 	    logger.debug("SQLColumn(.....) set ref count to 1");
@@ -246,7 +256,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
 	public SQLColumn(SQLTable parent, String colName, int type, int precision, int scale) {
-		this(parent, colName, type, null, precision, scale, DatabaseMetaData.columnNullable, null, null, false);
+		this(parent, colName, type, null, precision, scale, DatabaseMetaData.columnNullable, null, null, false, null);
 	}
 	
 	/**
@@ -322,7 +332,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 			public void run() {
  				target.setPlatform(source.getPlatform());
  				target.setName(source.getName());
- 				target.setSourceDataTypeName(source.sourceDataTypeName);
  				target.setPhysicalName(source.getPhysicalName());
  				target.setRemarks(source.remarks);
  				target.setAutoIncrementSequenceName(source.autoIncrementSequenceName);
@@ -368,7 +377,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	static ListMultimap<String, SQLColumn> fetchColumnsForTable(
 	                                String catalog,
 	                                String schema,
-	                                DatabaseMetaData dbmd) 
+	                                DatabaseMetaData dbmd,
+	                                List<UserDefinedSQLType> types) 
 		throws SQLException, DuplicateColumnException, SQLObjectException {
 		ResultSet rs = null;
 		final ListMultimap<String, SQLColumn> multimap = ArrayListMultimap.create();
@@ -378,6 +388,12 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 			
 			int autoIncCol = SQL.findColumnIndex(rs, "is_autoincrement");
 			logger.debug("Auto-increment info column: " + autoIncCol);
+			
+			// XXX Possibility of multiple types with same source data type name??
+			HashMap<String, UserDefinedSQLType> typeMap = new HashMap<String, UserDefinedSQLType>();
+			for (UserDefinedSQLType type : types) {
+				typeMap.put(type.getName(), type);
+			}
 			
 			while (rs.next()) {
 				logger.debug("addColumnsToTable SQLColumn constructor invocation.");
@@ -391,16 +407,25 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
                     autoIncrement = false;
                 }
 				
+                String nativeType = rs.getString(6);
+                UserDefinedSQLType upstreamType;
+                if (nativeType != null) {
+					upstreamType = typeMap.get(nativeType);
+                } else {
+                	upstreamType = typeMap.get(SQLType.getTypeName(rs.getInt(5)));
+                }
+                
 				SQLColumn col = new SQLColumn(null,
 											  rs.getString(4),  // col name
 											  rs.getInt(5), // data type (from java.sql.Types)
-											  rs.getString(6), // native type name
+											  nativeType, // native type name
 											  rs.getInt(7), // column size (precision)
 											  rs.getInt(9), // decimal size (scale)
 											  rs.getInt(11), // nullable
 											  rs.getString(12) == null ? "" : rs.getString(12), // remarks
 											  rs.getString(13), // default value
-											  autoIncrement // isAutoIncrement
+											  autoIncrement, // isAutoIncrement
+											  upstreamType // upstream user defined type
 											  );
 				logger.debug("Precision for the column " + rs.getString(4) + " is " + rs.getInt(7));
 
@@ -660,16 +685,18 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	/**
 	 * The data type name as obtained during reverse engineering
 	 */
-	@Accessor
+	@Transient @Accessor
 	public String getSourceDataTypeName() {
-		return sourceDataTypeName;
+		return userDefinedSQLType.getName();
 	}
 
-	@Mutator
+	@Transient @Mutator
 	public void setSourceDataTypeName(String n) {
-		String oldSourceDataTypeName =  sourceDataTypeName;
-		sourceDataTypeName = n;
+		begin("Set Source Data Type Name");
+		String oldSourceDataTypeName = getSourceDataTypeName();
+		userDefinedSQLType.setName(n);
 		firePropertyChange("sourceDataTypeName",oldSourceDataTypeName,n);
+		commit();
 	}
 
 	/**
@@ -871,6 +898,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
      */
 	@Transient @Accessor(isInteresting=true)
 	public int getNullable() {
+		logger.debug(userDefinedSQLType);
 		return userDefinedSQLType.getNullability();
 	}
 

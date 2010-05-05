@@ -37,6 +37,7 @@ import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
+import ca.sqlpower.util.WorkspaceContainer;
 
 /**
  * An implementation of {@link SQLTypePhysicalPropertiesProvider}
@@ -506,7 +507,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 		
 		commit();
 	}
-
+    
     @Accessor
 	public UserDefinedSQLType getUpstreamType() {
 		return upstreamType;
@@ -687,7 +688,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     public SQLTypePhysicalProperties getDefaultPhysicalProperties() {
 		return defaultPhysicalProperties;
 	}
-    
+
 	static final void copyProperties(final UserDefinedSQLType target,
 			final UserDefinedSQLType source) throws IllegalArgumentException,
 			ObjectDependentException {
