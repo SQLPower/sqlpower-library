@@ -123,7 +123,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	 * {@link SQLTypePhysicalPropertiesProvider#GENERIC_PLATFORM}
 	 */
     public UserDefinedSQLType() {
-    	this(new SQLTypePhysicalProperties(GENERIC_PLATFORM));
+    	this(null, null, null, null, new SQLTypePhysicalProperties(GENERIC_PLATFORM));
 	}
     
 	/**
@@ -136,6 +136,10 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	 */
     @Constructor
     public UserDefinedSQLType(
+            @ConstructorParameter(propertyName = "myNullability") Integer nullability,
+            @ConstructorParameter(propertyName = "myAutoIncrement") Boolean autoIncrement,
+            @ConstructorParameter(propertyName = "basicType") BasicSQLType basicType,
+            @ConstructorParameter(propertyName = "upstreamType") UserDefinedSQLType upstreamType,
     		@ConstructorParameter(isProperty = ParameterType.CHILD, 
     		propertyName = "primaryKeyIndex") SQLTypePhysicalProperties defaultPhysicalProperties) {
     	super();
@@ -143,6 +147,10 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     	this.defaultPhysicalProperties = defaultPhysicalProperties;
     	defaultPhysicalProperties.setParent(this);
     	setPopulated(true);
+    	setMyNullability(nullability);
+    	setMyAutoIncrement(autoIncrement);
+    	setBasicType(basicType);
+    	setUpstreamType(upstreamType);
     }
     
 	/**
