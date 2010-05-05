@@ -61,7 +61,7 @@ public class SessionPersisterSuperConverter {
 	
 	private final StringArrayConverter stringArrayConverter = new StringArrayConverter();
 	
-	private final DataSourceCollection <JDBCDataSource> dsCollection;
+	protected final DataSourceCollection <JDBCDataSource> dsCollection;
 
 	/**
 	 * This converter will allow changes between any complex object in the
