@@ -234,7 +234,7 @@ public class ConstantsPane extends PNode implements CleanupPNode {
 		});
 		allSelectCheckbox = new PSwing(checkbox);
 		header.addChild(allSelectCheckbox);
-		columnHeader = new EditablePStyledText("select all/none", mouseState, canvas, variables);
+		columnHeader = new EditablePStyledText("select all/none", mouseState, canvas);
 		double headerYPos = (allSelectCheckbox.getFullBounds().getHeight() - columnHeader.getHeight())/2;
 		double checkboxWidth = allSelectCheckbox.getFullBounds().getWidth();
 		columnHeader.translate(checkboxWidth , headerYPos);
