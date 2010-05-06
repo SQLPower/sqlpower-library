@@ -393,10 +393,10 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 			int autoIncCol = SQL.findColumnIndex(rs, "is_autoincrement");
 			logger.debug("Auto-increment info column: " + autoIncCol);
 			
-			// XXX Possibility of multiple types with same source data type name??
+			// XXX Possibility of multiple types with same name??
 			HashMap<String, UserDefinedSQLType> typeMap = new HashMap<String, UserDefinedSQLType>();
 			for (UserDefinedSQLType type : types) {
-				typeMap.put(type.getName(), type);
+				typeMap.put(type.getName().toLowerCase(), type);
 			}
 			
 			while (rs.next()) {
@@ -412,11 +412,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
                 }
 				
                 String nativeType = rs.getString(6);
-                UserDefinedSQLType upstreamType;
-                if (nativeType != null) {
-					upstreamType = typeMap.get(nativeType);
-                } else {
-                	upstreamType = typeMap.get(SQLType.getTypeName(rs.getInt(5)));
+                UserDefinedSQLType upstreamType = typeMap.get(nativeType.toLowerCase());
+                if (upstreamType == null) {
+                	upstreamType = typeMap.get(SQLType.getTypeName(rs.getInt(5)).toLowerCase());
                 }
                 
 				SQLColumn col = new SQLColumn(null,
