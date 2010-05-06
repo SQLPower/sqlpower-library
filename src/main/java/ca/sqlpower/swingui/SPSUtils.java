@@ -96,12 +96,131 @@ public class SPSUtils {
     /**
      * The URL for the SQL Power forum where users can get help and ask questions.
      */
-    public static final String FORUM_URL = "http://www.sqlpower.ca/forum/"; //$NON-NLS-1$
+    public static final String FORUM_URL = "http://www.sqlpower.ca/page/enter_forum"; //$NON-NLS-1$
+    
+    
+    
     
     /**
-     * The URL for the SQL Power FAQ page
+     * The URL for the Wabit FAQ page
      */
-    public static final String FAQ_URL = "http://www.sqlpower.ca/page/FAQ"; //$NON-NLS-1$
+    public static final String WABIT_FAQ_URL = "http://www.sqlpower.ca/page/wabit-faq"; //$NON-NLS-1$
+    
+    /**
+     * The URL for the DQGURU FAQ page
+     */
+    public static final String DQGURU_FAQ_URL = "http://www.sqlpower.ca/page/dqguru-faq"; //$NON-NLS-1$
+    
+    /**
+     * The URL for the Architect FAQ page
+     */
+    public static final String ARCHITECT_FAQ_URL = "http://www.sqlpower.ca/page/architect-faq"; //$NON-NLS-1$
+    
+    
+    
+    
+    /**
+     * The URL for the Wabit getting started page
+     */
+    public static final String WABIT_GS_URL = "http://www.sqlpower.ca/page/wabit-start"; //$NON-NLS-1$
+    
+    /**
+     * The URL for the Architect getting started page
+     */
+    public static final String ARCHITECT_GS_URL = "http://www.sqlpower.ca/page/architect-start"; //$NON-NLS-1$
+    
+    /**
+     * The URL for the Architect getting started page
+     */
+    public static final String DQGURU_GS_URL = "http://www.sqlpower.ca/page/dqguru-start"; //$NON-NLS-1$
+    
+    
+    
+   
+    
+    
+    /**
+     * The URL for the Wabit demo page
+     */
+    public static final String WABIT_DEMO_URL = "http://www.sqlpower.ca/page/wabit-demos"; //$NON-NLS-1$
+    
+    /**
+     * The URL for the DQGuru demo page
+     */
+    public static final String DQGURU_DEMO_URL = "http://www.sqlpower.ca/page/dqguru-demos"; //$NON-NLS-1$
+    
+    /**
+     * The URL for the Architect demo page
+     */
+    public static final String ARCHITECT_DEMO_URL = "http://www.sqlpower.ca/page/architect-demos"; //$NON-NLS-1$
+    
+    
+    
+    
+    
+    
+    
+    /**
+     * The URL for the Wabit user guide page
+     */
+    public static final String WABIT_UG_URL = "http://www.sqlpower.ca/page/wabit-userguide"; //$NON-NLS-1$
+    
+    /**
+     * The URL for the Architect user guide page
+     */
+    public static final String ARCHITECT_UG_URL = "http://www.sqlpower.ca/page/architect-userguide"; //$NON-NLS-1$
+    
+    /**
+     * The URL for the DQGuru user guide page
+     */
+    public static final String DQGURU_UG_URL = "http://www.sqlpower.ca/page/dqguru-userguide"; //$NON-NLS-1$
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    /**
+     * The URL for the Wabit enterprise upgrade
+     */
+    public static final String WABIT_UPGRADE_URL = "http://www.sqlpower.ca/page/wabit-ep"; //$NON-NLS-1$
+    
+    /**
+     * The URL for the Wabit enterprise upgrade
+     */
+    public static final String ARCHITECT_UPGRADE_URL = "http://www.sqlpower.ca/page/architect-e"; //$NON-NLS-1$
+    
+    /**
+     * The URL for the Wabit enterprise upgrade
+     */
+    public static final String DQGURU_UPGRADE_URL = "http://www.sqlpower.ca/page/dqguru-e"; //$NON-NLS-1$
+    
+    
+    
+    
+    
+    
+    
+    /**
+     * The URL for the Wabit premium support
+     */
+    public static final String WABIT_PS_URL = "http://www.sqlpower.ca/page/wabit_support"; //$NON-NLS-1$
+    
+    /**
+     * The URL for the Architect premium support
+     */
+    public static final String ARCHITECT_PS_URL = "http://www.sqlpower.ca/page/architect_support"; //$NON-NLS-1$
+    
+    /**
+     * The URL for the DQGuru premium support
+     */
+    public static final String DQGURU_PS_URL = "http://www.sqlpower.ca/page/dqguru_support"; //$NON-NLS-1$
+    
+    
+    
     
 	
 	public static final Action forumAction = new AbstractAction(Messages.getString("SPSUtils.webSupportActionName"), //$NON-NLS-1$

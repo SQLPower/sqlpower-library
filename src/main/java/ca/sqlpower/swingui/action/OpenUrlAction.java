@@ -23,23 +23,24 @@ import java.awt.event.ActionEvent;
 import java.io.IOException;
 
 import javax.swing.AbstractAction;
-import javax.swing.Icon;
 
-import ca.sqlpower.swingui.SPSUtils;
 import ca.sqlpower.util.BrowserUtil;
 
 /**
  * This action will open a browser to the SQL Power products FAQ
  */
-public class FaqAction extends AbstractAction {
+public class OpenUrlAction extends AbstractAction {
 	
-	public FaqAction(Icon buttonIcon) {
-		super("Frequently Asked Questions", buttonIcon); //$NON-NLS-1$		
+	private final String url;
+	
+	public OpenUrlAction(String url, String caption) {
+		super(caption); //$NON-NLS-1$		
+		this.url = url;
 	}
 
 	public void actionPerformed(ActionEvent e) {
 		try {
-			BrowserUtil.launch(SPSUtils.FAQ_URL);
+			BrowserUtil.launch(url);
 		} catch (IOException e1) {
 			throw new RuntimeException("Unexpected error in launch", e1); //$NON-NLS-1$
 		}
