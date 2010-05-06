@@ -183,7 +183,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		setPopulated(true);
 		
 		// Check if override is needed before setting properties
-		if (upstreamType == null || !upstreamType.getType().equals(dataType))
+		if (upstreamType == null || upstreamType.getType() == null
+				|| !upstreamType.getType().equals(dataType))
 			this.userDefinedSQLType.setType(dataType);
 		
 		if (upstreamType == null || upstreamType.getScale(platform) != scale)
@@ -192,13 +193,16 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		if (upstreamType == null || upstreamType.getPrecision(platform) != precision)
 			this.userDefinedSQLType.setPrecision(platform, precision);
 		
-		if (upstreamType == null || !upstreamType.getNullability().equals(nullable))
+		if (upstreamType == null || upstreamType.getNullability() == null
+				 || !upstreamType.getNullability().equals(nullable))
 			this.userDefinedSQLType.setMyNullability(nullable);
 		
-		if (upstreamType == null || !upstreamType.getDefaultValue(platform).equals(defaultValue))
+		if (upstreamType == null || upstreamType.getDefaultValue(platform) == null
+				 || !upstreamType.getDefaultValue(platform).equals(defaultValue))
 			this.userDefinedSQLType.setDefaultValue(platform, defaultValue);
 		
-		if (upstreamType == null || !upstreamType.getAutoIncrement().equals(isAutoIncrement))
+		if (upstreamType == null || upstreamType.getAutoIncrement() == null
+				 || !upstreamType.getAutoIncrement().equals(isAutoIncrement))
 			this.userDefinedSQLType.setMyAutoIncrement(isAutoIncrement);
 		
 		this.userDefinedSQLType.setName(nativeType);

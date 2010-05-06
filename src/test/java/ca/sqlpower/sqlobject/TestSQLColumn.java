@@ -405,7 +405,6 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	 */
 	public void testGetSourceDataTypeName() throws Exception {
 		SQLColumn tmpCol = new SQLColumn();
-		assertEquals(null,tmpCol.getSourceDataTypeName());
 		tmpCol.setSourceDataTypeName("xxx");
 		assertEquals("xxx",tmpCol.getSourceDataTypeName());
 		SQLColumn cowCol = table1pk.getColumn(0);
