@@ -120,6 +120,8 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 		}
 	}
 
+	private final UserDefinedSQLType unknownType;
+	
     /**
      * Boolean to control whether we autosave, to prevent calling it while we're already saving.
      */
@@ -193,6 +195,9 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
         listeners.add(saver);
 		this.serverBaseURI = serverBaseURI;
 		this.mondrianServerBaseURI = mondrianServerBaseURI;
+		
+		unknownType = new UserDefinedSQLType();
+		unknownType.setName("Unknown");
     }
     
 	/**
@@ -1080,5 +1085,12 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 			}
 		}
 		return list;
+	}
+	
+	/**
+	 * This behaviour is not supported in the standalone edition, and so returns a stub type
+	 */
+	public UserDefinedSQLType getNewSQLType(String name, int jdbcCode) {
+		return unknownType;
 	}
 }

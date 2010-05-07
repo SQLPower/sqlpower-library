@@ -137,4 +137,8 @@ public class SpecificDataSourceCollection<T extends SPDataSource> implements Dat
 		return delegate.getSQLTypes();
 	}
 
+	public UserDefinedSQLType getNewSQLType(String name, int jdbcCode) {
+		return delegate.getNewSQLType(name, jdbcCode);
+	}
+
 }

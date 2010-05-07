@@ -191,4 +191,10 @@ public interface DataSourceCollection<T extends SPDataSource> {
 	 *         an empty List.
 	 */
     public List<UserDefinedSQLType> getSQLTypes();
+
+	/**
+	 * Produces a UserDefinedSQLType suitable for use as an upstream type, with
+	 * the given properties.
+	 */
+    public UserDefinedSQLType getNewSQLType(String name, int jdbcCode);
 }

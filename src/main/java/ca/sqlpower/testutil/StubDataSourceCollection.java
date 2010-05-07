@@ -162,4 +162,9 @@ public class StubDataSourceCollection<T extends SPDataSource> implements DataSou
 		// TODO Auto-generated method stub
 		return null;
 	}
+	
+	public UserDefinedSQLType getNewSQLType(String name, int jdbcCode) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

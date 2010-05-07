@@ -24,7 +24,6 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -39,12 +38,14 @@ import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
+import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.SQL;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 
 public class SQLColumn extends SQLObject implements java.io.Serializable {
@@ -165,8 +166,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 			int nullable,
 			String remarks, 
 			String defaultValue, 
-			boolean isAutoIncrement,
-			UserDefinedSQLType upstreamType) {
+			boolean isAutoIncrement) {
 
 		if (parentTable != null) {
 			logger.debug("NEW COLUMN "+colName+"@"+hashCode()+" parent "+parentTable.getName()+"@"+parentTable.hashCode());
@@ -182,31 +182,13 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		this.setName(colName);
 		setPopulated(true);
 		
-		// Check if override is needed before setting properties
-		if (upstreamType == null || upstreamType.getType() == null
-				|| !upstreamType.getType().equals(dataType))
-			this.userDefinedSQLType.setType(dataType);
-		
-		if (upstreamType == null || upstreamType.getScale(platform) != scale)
-			this.userDefinedSQLType.setScale(platform, scale);
-		
-		if (upstreamType == null || upstreamType.getPrecision(platform) != precision)
-			this.userDefinedSQLType.setPrecision(platform, precision);
-		
-		if (upstreamType == null || upstreamType.getNullability() == null
-				 || !upstreamType.getNullability().equals(nullable))
-			this.userDefinedSQLType.setMyNullability(nullable);
-		
-		if (upstreamType == null || upstreamType.getDefaultValue(platform) == null
-				 || !upstreamType.getDefaultValue(platform).equals(defaultValue))
-			this.userDefinedSQLType.setDefaultValue(platform, defaultValue);
-		
-		if (upstreamType == null || upstreamType.getAutoIncrement() == null
-				 || !upstreamType.getAutoIncrement().equals(isAutoIncrement))
-			this.userDefinedSQLType.setMyAutoIncrement(isAutoIncrement);
-		
+		this.userDefinedSQLType.setType(dataType);
+		this.userDefinedSQLType.setScale(platform, scale);
+		this.userDefinedSQLType.setPrecision(platform, precision);
+		this.userDefinedSQLType.setMyNullability(nullable);
+		this.userDefinedSQLType.setDefaultValue(platform, defaultValue);
+		this.userDefinedSQLType.setMyAutoIncrement(isAutoIncrement);
 		this.userDefinedSQLType.setName(nativeType);
-		this.userDefinedSQLType.setUpstreamType(upstreamType);
         this.remarks = remarks;
 
         logger.debug("SQLColumn(.....) set ref count to 1");
@@ -260,7 +242,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	}
 
 	public SQLColumn(SQLTable parent, String colName, int type, int precision, int scale) {
-		this(parent, colName, type, null, precision, scale, DatabaseMetaData.columnNullable, null, null, false, null);
+		this(parent, colName, type, null, precision, scale, DatabaseMetaData.columnNullable, null, null, false);
 	}
 	
 	/**
@@ -381,8 +363,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	static ListMultimap<String, SQLColumn> fetchColumnsForTable(
 	                                String catalog,
 	                                String schema,
-	                                DatabaseMetaData dbmd,
-	                                List<UserDefinedSQLType> types) 
+	                                DatabaseMetaData dbmd) 
 		throws SQLException, DuplicateColumnException, SQLObjectException {
 		ResultSet rs = null;
 		final ListMultimap<String, SQLColumn> multimap = ArrayListMultimap.create();
@@ -392,13 +373,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 			
 			int autoIncCol = SQL.findColumnIndex(rs, "is_autoincrement");
 			logger.debug("Auto-increment info column: " + autoIncCol);
-			
-			// XXX Possibility of multiple types with same name??
-			HashMap<String, UserDefinedSQLType> typeMap = new HashMap<String, UserDefinedSQLType>();
-			for (UserDefinedSQLType type : types) {
-				typeMap.put(type.getName().toLowerCase(), type);
-			}
-			
+
 			while (rs.next()) {
 				logger.debug("addColumnsToTable SQLColumn constructor invocation.");
 				
@@ -410,24 +385,17 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
                 } else {
                     autoIncrement = false;
                 }
-				
-                String nativeType = rs.getString(6);
-                UserDefinedSQLType upstreamType = typeMap.get(nativeType.toLowerCase());
-                if (upstreamType == null) {
-                	upstreamType = typeMap.get(SQLType.getTypeName(rs.getInt(5)).toLowerCase());
-                }
                 
 				SQLColumn col = new SQLColumn(null,
 											  rs.getString(4),  // col name
 											  rs.getInt(5), // data type (from java.sql.Types)
-											  nativeType, // native type name
+											  rs.getString(6), // native type name
 											  rs.getInt(7), // column size (precision)
 											  rs.getInt(9), // decimal size (scale)
 											  rs.getInt(11), // nullable
 											  rs.getString(12) == null ? "" : rs.getString(12), // remarks
 											  rs.getString(13), // default value
-											  autoIncrement, // isAutoIncrement
-											  upstreamType // upstream user defined type
+											  autoIncrement // isAutoIncrement
 											  );
 				logger.debug("Precision for the column " + rs.getString(4) + " is " + rs.getInt(7));
 
@@ -458,6 +426,83 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 			} catch (SQLException ex) {
 				logger.error("Couldn't close result set", ex);
 			}
+		}
+	}
+
+	/**
+	 * Takes in information about the current UserDefinedSQLTypes and assigns an
+	 * upstream type to each of the columns. It will first find an upstream type
+	 * by matching the type name from the platform to the forward engineering
+	 * type name of the user defined type. If this fails, it will match by JDBC
+	 * type code. If this fails, it will either assign a dummy upstream type
+	 * (standalone client), or create a new one with the desired properties
+	 * (enterprise). If any one of these steps produces multiple matches, a
+	 * UserPrompter will be used. If any column in the list already has an
+	 * upstream type, it will be ignored.
+	 */
+	public static void assignTypes(List<SQLColumn> columns, DataSourceCollection dsCollection, String fromPlatform) {
+		List<UserDefinedSQLType> types = dsCollection.getSQLTypes();
+		
+		ListMultimap<String, UserDefinedSQLType> typeMapByName = LinkedListMultimap.create();
+		for (UserDefinedSQLType type : types) {
+				typeMapByName.put(type.getPhysicalProperties(fromPlatform).getName().toLowerCase(), type);
+		}
+		
+		ListMultimap<Integer, UserDefinedSQLType> typeMapByCode = LinkedListMultimap.create();
+		for (UserDefinedSQLType type : types) {
+				typeMapByCode.put(type.getType(), type);
+		}
+		
+		for (SQLColumn column : columns) {
+			if (column.getUserDefinedSQLType().getUpstreamType() != null) continue;
+            String nativeType = column.getSourceDataTypeName();
+            List<UserDefinedSQLType> upstreamTypes = typeMapByName.get(nativeType == null ? "" : nativeType.toLowerCase());
+            UserDefinedSQLType upstreamType;
+            if (upstreamTypes.size() == 0) {
+            	int jdbcCode = column.getType();
+            	upstreamTypes = typeMapByCode.get(jdbcCode);
+            	if (upstreamTypes.size() == 0) {
+            		upstreamType = dsCollection.getNewSQLType(nativeType, jdbcCode);
+            	} else if (upstreamTypes.size() == 1) {
+            		upstreamType = upstreamTypes.get(0);
+            	} else {
+            		// TODO Multiple matches, defer decision
+            		upstreamType = null;
+            	}
+            } else if (upstreamTypes.size() == 1) {
+            	upstreamType = upstreamTypes.get(0);
+            } else {
+            	// TODO Multiple matches, defer decision
+            	upstreamType = null;
+            }
+            
+            UserDefinedSQLType type = column.getUserDefinedSQLType();
+            
+            if (upstreamType != null) {
+            	if (upstreamType.getType() != null
+            			&& upstreamType.getType().equals(type.getType()))
+            		type.setType(null);
+
+            	if (upstreamType.getScale(fromPlatform) == type.getScale(fromPlatform))
+            		type.setScale(fromPlatform, null);
+
+            	if (upstreamType.getPrecision(fromPlatform) == type.getPrecision(fromPlatform))
+            		type.setPrecision(fromPlatform, null);
+
+            	if (upstreamType.getNullability() == null
+            			&& upstreamType.getNullability().equals(type.getNullability()))
+            		type.setMyNullability(null);
+
+            	if (upstreamType.getDefaultValue(fromPlatform) != null
+            			&& upstreamType.getDefaultValue(fromPlatform).equals(type.getDefaultValue(fromPlatform)))
+            		type.setDefaultValue(fromPlatform, null);
+
+            	if (upstreamType.getAutoIncrement() != null
+            			&& upstreamType.getAutoIncrement().equals(type.getAutoIncrement()))
+            		type.setMyAutoIncrement(null);
+            	
+            	column.getUserDefinedSQLType().setUpstreamType(upstreamType);
+            }
 		}
 	}
 
@@ -512,10 +557,17 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		// Type proxy should never override its upstream type's name.
 		UserDefinedSQLType upstreamType = userDefinedSQLType.getUpstreamType();
 
-		if (upstreamType == null)
-			return "";
-
-		StringBuilder name = new StringBuilder(upstreamType.getName());
+		StringBuilder name;
+		
+		if (upstreamType == null) {
+			if (userDefinedSQLType.getName() == null) {
+				return "";
+			} else {
+				name = new StringBuilder(userDefinedSQLType.getName());
+			}
+		} else {
+			name = new StringBuilder(upstreamType.getName());
+		}
 
 		String defaultPlatform = SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM;
 		PropertyType precisionType = userDefinedSQLType

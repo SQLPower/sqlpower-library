@@ -400,9 +400,8 @@ public class SQLTable extends SQLObject {
 		try {
 		    con = parentDB.getConnection();
 		    DatabaseMetaData dbmd = con.getMetaData();
-		    List<UserDefinedSQLType> types = parentDB.getDataSource().getParentCollection().getSQLTypes();
 		    final ListMultimap<String, SQLColumn> cols = SQLColumn.fetchColumnsForTable(
-		    		catalogName, schemaName, dbmd, types);
+		    		catalogName, schemaName, dbmd);
 		    Runnable runner = new Runnable() {
 				public void run() {
 					try {

@@ -661,9 +661,8 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
                 });
 
                 try {
-                	List<UserDefinedSQLType> types = db.getDataSource().getParentCollection().getSQLTypes();
                     final ListMultimap<String, SQLColumn> newCols = SQLColumn.fetchColumnsForTable(
-                            catName, schName, dbmd, types);
+                            catName, schName, dbmd);
                     
                     runInForeground(new Runnable() {
                         public void run() {

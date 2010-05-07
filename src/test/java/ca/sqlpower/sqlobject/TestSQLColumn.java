@@ -194,7 +194,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		SQLColumn col = new SQLColumn(table0pk,
 				"test_column_2", Types.INTEGER, "my_test_integer",
 				44, 33, DatabaseMetaData.columnNullable, "test remarks",
-				"test default", true, new UserDefinedSQLType());
+				"test default", true);
 		assertEquals(table0pk, col.getParent());
 		assertEquals("test_column_2", col.getName());
 		assertEquals(Types.INTEGER, col.getType());
