@@ -23,7 +23,6 @@ import java.awt.Component;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import javax.swing.Action;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
@@ -31,6 +30,7 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
+import ca.sqlpower.enterprise.client.ConnectionTestAction;
 import ca.sqlpower.enterprise.client.SPServerInfo;
 import ca.sqlpower.swingui.DataEntryPanel;
 import ca.sqlpower.util.Version;
@@ -82,7 +82,7 @@ public class SPServerInfoPanel implements DataEntryPanel {
         panel = buildUI(defaultSettings);
         this.clientVersion = clientVersion;
     }
-
+    
     private JPanel buildUI(SPServerInfo si) {
         DefaultFormBuilder builder = new DefaultFormBuilder(new FormLayout("pref, 4dlu, max(100dlu; pref):grow")); //$NON-NLS-1$
         
@@ -99,7 +99,7 @@ public class SPServerInfoPanel implements DataEntryPanel {
         return builder.getPanel();
     }
     
-    public void setTestAction(Action action) {
+    public void setTestAction(ConnectionTestAction action) {
     	testButton.setAction(action);
     }
     
@@ -119,7 +119,7 @@ public class SPServerInfoPanel implements DataEntryPanel {
     public JComponent getPanel() {
         return panel;
     }
-
+    
     /**
      * Checks fields for validity, but does not modify the SPServerInfo given in
      * the constructor (this is not possible because it's immutable). If any of

@@ -22,7 +22,6 @@ package ca.sqlpower.swingui.enterprise.client;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.concurrent.Callable;
@@ -39,6 +38,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 
+import ca.sqlpower.enterprise.client.ConnectionTestAction;
 import ca.sqlpower.enterprise.client.SPServerInfo;
 import ca.sqlpower.enterprise.client.SPServerInfoManager;
 import ca.sqlpower.swingui.DataEntryPanelBuilder;
@@ -57,7 +57,7 @@ public class SPServerInfoManagerPanel {
 	private final JPanel panel;
 	private JList serverInfos;
 	private final JButton connectButton;
-	private Action testAction = new AbstractAction() {
+	private ConnectionTestAction testAction = new ConnectionTestAction() {
 		public void actionPerformed(ActionEvent e) {
 			JOptionPane.showMessageDialog(null, "Testing not implemented");
 		}
@@ -175,6 +175,7 @@ public class SPServerInfoManagerPanel {
 			infoPanel = new SPServerInfoPanel(panel, manager.getClientVersion(), serverInfo);
 		}
 		
+		testAction.addPanel(infoPanel);
 		infoPanel.setTestAction(testAction);
 
 		Callable<Boolean> okCall = new Callable<Boolean>() {
@@ -187,11 +188,13 @@ public class SPServerInfoManagerPanel {
 				}
 				manager.add(infoPanel.getServerInfo());
 				refreshInfoList();
+				testAction.removePanel(infoPanel);
 				return true;
 			}
 		};
 		Callable<Boolean> cancelCall = new Callable<Boolean>() {
 			public Boolean call() throws Exception {
+				testAction.removePanel(infoPanel);
 				return true;
 			}
 		};
@@ -203,7 +206,7 @@ public class SPServerInfoManagerPanel {
 		dialog.setVisible(true);
 	}
 	
-	public void setTestAction(Action action) {
+	public void setTestAction(ConnectionTestAction action) {
 		testAction = action;
 	}
 
