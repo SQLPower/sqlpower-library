@@ -35,6 +35,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -50,11 +51,15 @@ import javax.swing.undo.CannotUndoException;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.sqlobject.SQLIndex;
+import ca.sqlpower.sqlobject.SQLTypePhysicalProperties;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider;
 import ca.sqlpower.sqlobject.UserDefinedSQLType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.BasicSQLType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
+
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 
 /**
  * The PlDotIni class represents the contents of a PL.INI file; despit
@@ -361,7 +366,8 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
             SPDataSource currentDS = null;
             UserDefinedSQLType currentSQLType = null;
             Section currentSection = new Section(null);  // this accounts for any properties before the first named section
-
+            Multimap<String, SQLTypePhysicalProperties> typePropertiesMap = ArrayListMultimap.create();
+            
             // Can't use Reader to read this file because the encrypted passwords contain non-ASCII characters
             BufferedInputStream in = new BufferedInputStream(inStream);
 
@@ -431,7 +437,17 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
                         }
                         currentDS.put(key, value);
                     } else if (mode == ReadState.READ_TYPE) {
-                        currentType.putProperty(key, value);
+                    	if (key.matches("ca.sqlpower.sqlobject.SQLTypePhysicalProperties_\\d+")) {
+                    		String[] values = value.split(",");
+                    		String typeUUID = values[0];
+                    		SQLTypePhysicalProperties props = new SQLTypePhysicalProperties(currentType.getName());
+                    		props.setName(values[1]);
+                    		props.setPrecisionType(PropertyType.valueOf(values[2]));
+                    		props.setScaleType(PropertyType.valueOf(values[3]));
+                    		typePropertiesMap.put(typeUUID, props);
+                    	} else {
+                    		currentType.putProperty(key, value);
+                    	}
                     } else if (mode == ReadState.READ_GENERIC) {
                         currentSection.put(key, value);
                     } else if (mode == ReadState.READ_SQLTYPE) {
@@ -469,7 +485,15 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
                         logger.debug("The data source type \"" + type + "\" is being set as the parent type of" + ds);
                         ds.setParentType(type);
                     }
-                    
+                } else if (o instanceof UserDefinedSQLType) {
+                	// Attach SQLTypePhysicalProperties to their type
+                	UserDefinedSQLType type = (UserDefinedSQLType) o;
+                	Collection<SQLTypePhysicalProperties> typeProperties = typePropertiesMap.get(type.getUUID());
+                	if (typeProperties != null) {
+                		for (SQLTypePhysicalProperties properties : typeProperties) {
+                			type.putPhysicalProperties(properties.getPlatform(), properties);
+                		}
+                	}
                 }
             }
         } finally {
