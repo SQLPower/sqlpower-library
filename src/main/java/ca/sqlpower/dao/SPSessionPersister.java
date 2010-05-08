@@ -396,7 +396,7 @@ public abstract class SPSessionPersister implements SPPersister {
 
 	public void begin() throws SPPersistenceException {
 		synchronized (getWorkspaceContainer()) {
-			enforeThreadSafety();
+			enforceThreadSafety();
 			transactionCount++;
 			
 			if (logger.isDebugEnabled()) {
@@ -407,7 +407,7 @@ public abstract class SPSessionPersister implements SPPersister {
 
 	public void commit() throws SPPersistenceException {
 		synchronized (getWorkspaceContainer()) {
-			enforeThreadSafety();
+			enforceThreadSafety();
 			
 			if (logger.isDebugEnabled()) {
 				logger.debug("spsp.commit(); - transaction count : " + transactionCount);
@@ -473,7 +473,7 @@ public abstract class SPSessionPersister implements SPPersister {
 			int index) throws SPPersistenceException {
 		logger.debug("Persisting object " + uuid + " of type " + type + " as a child to " + parentUUID);
 		synchronized (getWorkspaceContainer()) {
-			enforeThreadSafety();
+			enforceThreadSafety();
 			
 			if (logger.isDebugEnabled()) {
 				logger.debug(String.format(
@@ -510,7 +510,7 @@ public abstract class SPSessionPersister implements SPPersister {
 					"a transaction.");
 		}
 		synchronized (getWorkspaceContainer()) {
-			enforeThreadSafety();
+			enforceThreadSafety();
 			
 			if (logger.isDebugEnabled()) {
 				logger.debug(String.format(
@@ -538,7 +538,7 @@ public abstract class SPSessionPersister implements SPPersister {
 					"a transaction.");
 		}
 		synchronized (getWorkspaceContainer()) {
-			enforeThreadSafety();
+			enforceThreadSafety();
 			
 			if (logger.isDebugEnabled()) {
 				logger.debug(String.format(
@@ -646,7 +646,7 @@ public abstract class SPSessionPersister implements SPPersister {
 	public void removeObject(String parentUUID, String uuid)
 			throws SPPersistenceException {
 		synchronized (getWorkspaceContainer()) {
-			enforeThreadSafety();
+			enforceThreadSafety();
 			
 			if (logger.isDebugEnabled()) {
 				logger.debug(String.format("spsp.removeObject(\"%s\", \"%s\");",
@@ -683,7 +683,7 @@ public abstract class SPSessionPersister implements SPPersister {
 			}
 			headingToWisconsin = true;
 			if (!force) {
-				enforeThreadSafety();
+				enforceThreadSafety();
 			}
 			try {
 				// We catch ANYTHING that comes out of here and rollback.
@@ -1192,7 +1192,7 @@ public abstract class SPSessionPersister implements SPPersister {
 	/**
 	 * Enforces thread safety.
 	 */
-	public void enforeThreadSafety() {
+	public void enforceThreadSafety() {
 		if (currentThread == null) {
 			currentThread = Thread.currentThread();
 		} else {
