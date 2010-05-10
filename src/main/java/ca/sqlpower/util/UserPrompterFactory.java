@@ -151,4 +151,7 @@ public interface UserPrompterFactory {
     public UserPrompter createDatabaseUserPrompter(String question, List<Class<? extends SPDataSource>> dsTypes,
     		UserPromptOptions optionType, UserPromptResponse defaultResponseType, Object defaultResponse,
     		DataSourceCollection<SPDataSource> dsCollection, String ... buttonNames);
+    
+    public <T> UserPrompter createListUserPrompter(String question,
+			List<T> responses, T defaultResponse);
 }

@@ -49,4 +49,9 @@ public class DefaultUserPrompterFactory implements UserPrompterFactory {
 		return new DefaultUserPrompter(optionType, defaultResponseType, defaultResponse);
 	}
 
+	public <T> UserPrompter createListUserPrompter(String question,
+			List<T> responses, T defaultResponse) {
+		return new DefaultUserPrompter(UserPromptOptions.OK, UserPromptResponse.OK, defaultResponse);
+	}
+	
 }

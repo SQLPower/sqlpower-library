@@ -125,8 +125,6 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 		}
 	}
 
-	private final UserDefinedSQLType unknownType;
-	
     /**
      * Boolean to control whether we autosave, to prevent calling it while we're already saving.
      */
@@ -200,9 +198,6 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
         listeners.add(saver);
 		this.serverBaseURI = serverBaseURI;
 		this.mondrianServerBaseURI = mondrianServerBaseURI;
-		
-		unknownType = new UserDefinedSQLType();
-		unknownType.setName("Unknown");
     }
     
 	/**
@@ -260,6 +255,11 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
     }
 
     private static final Logger logger = Logger.getLogger(PlDotIni.class);
+    
+    /**
+     * The UUID of the special "Unknown" UserDefinedSQLType, as defined in the default_database_types.ini file
+     */
+    private static final String unknownTypeUUID = "Unknown_UserDefinedSQLType";
 
     /**
      * A list of Section and SPDataSource objects, in the order they appear in the file;
@@ -1115,6 +1115,9 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 	 * This behaviour is not supported in the standalone edition, and so returns a stub type
 	 */
 	public UserDefinedSQLType getNewSQLType(String name, int jdbcCode) {
-		return unknownType;
+		for (UserDefinedSQLType type : getSQLTypes()) {
+			if (type.getUUID().equals(unknownTypeUUID)) return type;
+		}
+		throw new IllegalStateException("The Unknown Datatype has been removed");
 	}
 }

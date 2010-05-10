@@ -59,4 +59,10 @@ public class SwingUIUserPrompterFactory implements UserPrompterFactory {
 		return new DataSourceUserPrompter(question, optionType, defaultResponseType, (SPDataSource) defaultResponse, 
 				owner, question, dsCollection, dsTypes, buttonNames);
 	}
+
+
+	public <T> UserPrompter createListUserPrompter(String question,
+			List<T> responses, T defaultResponse) {
+		return new ModalDialogListUserPrompter<T>(owner, question, responses, defaultResponse);
+	}
 }

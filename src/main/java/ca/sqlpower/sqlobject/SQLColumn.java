@@ -22,9 +22,12 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 
@@ -43,6 +46,8 @@ import ca.sqlpower.sql.SQL;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
+import ca.sqlpower.util.UserPrompter;
+import ca.sqlpower.util.UserPrompterFactory;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.LinkedListMultimap;
@@ -440,18 +445,17 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * UserPrompter will be used. If any column in the list already has an
 	 * upstream type, it will be ignored.
 	 */
-	public static void assignTypes(List<SQLColumn> columns, DataSourceCollection dsCollection, String fromPlatform) {
+	public static void assignTypes(List<SQLColumn> columns, DataSourceCollection dsCollection, String fromPlatform, UserPrompterFactory upf) {
 		List<UserDefinedSQLType> types = dsCollection.getSQLTypes();
 		
 		ListMultimap<String, UserDefinedSQLType> typeMapByName = LinkedListMultimap.create();
-		for (UserDefinedSQLType type : types) {
-				typeMapByName.put(type.getPhysicalProperties(fromPlatform).getName().toLowerCase(), type);
-		}
-		
 		ListMultimap<Integer, UserDefinedSQLType> typeMapByCode = LinkedListMultimap.create();
 		for (UserDefinedSQLType type : types) {
+				typeMapByName.put(type.getPhysicalProperties(fromPlatform).getName().toLowerCase(), type);
 				typeMapByCode.put(type.getType(), type);
 		}
+		
+		Map<String, UserPrompter> userPrompters = new HashMap<String, UserPrompter>();
 		
 		for (SQLColumn column : columns) {
 			if (column.getUserDefinedSQLType().getUpstreamType() != null) continue;
@@ -466,14 +470,28 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
             	} else if (upstreamTypes.size() == 1) {
             		upstreamType = upstreamTypes.get(0);
             	} else {
-            		// TODO Multiple matches, defer decision
-            		upstreamType = null;
+            		UserPrompter prompt;
+            		if (userPrompters.get(nativeType) != null) {
+            			prompt = userPrompters.get(nativeType);
+            		} else {
+            			prompt = upf.createListUserPrompter("Type?", upstreamTypes, upstreamTypes.get(0));
+            			userPrompters.put(nativeType, prompt);
+            		}
+            		prompt.promptUser();
+            		upstreamType = (UserDefinedSQLType) prompt.getUserSelectedResponse();
             	}
             } else if (upstreamTypes.size() == 1) {
             	upstreamType = upstreamTypes.get(0);
             } else {
-            	// TODO Multiple matches, defer decision
-            	upstreamType = null;
+            	UserPrompter prompt;
+        		if (userPrompters.get(nativeType) != null) {
+        			prompt = userPrompters.get(nativeType);
+        		} else {
+        			prompt = upf.createListUserPrompter("Choose a type for " + column.getShortDisplayName(), upstreamTypes, upstreamTypes.get(0));
+        			userPrompters.put(nativeType, prompt);
+        		}
+        		prompt.promptUser();
+        		upstreamType = (UserDefinedSQLType) prompt.getUserSelectedResponse();
             }
             
             UserDefinedSQLType type = column.getUserDefinedSQLType();
@@ -487,7 +505,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
             		type.setScale(fromPlatform, null);
 
             	if (upstreamType.getPrecision(fromPlatform) == type.getPrecision(fromPlatform))
-            		type.setPrecision(fromPlatform, null);
+            		type.setPrecisionType(fromPlatform, null);
 
             	if (upstreamType.getNullability() == null
             			&& upstreamType.getNullability().equals(type.getNullability()))
