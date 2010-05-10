@@ -163,7 +163,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	 */
     @NonProperty
     public SQLTypePhysicalProperties getPhysicalProperties(String platformName) {
-    	if (!platformName.equals(GENERIC_PLATFORM)) {
+    	if (!GENERIC_PLATFORM.equals(platformName)) {
 	        for (SQLTypePhysicalProperties properties : overridingPhysicalProperties) {
 	        	if (properties.getPlatform().equals(platformName)) return properties;
 	        }
