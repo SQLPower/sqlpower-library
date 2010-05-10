@@ -37,7 +37,6 @@ import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
-import ca.sqlpower.util.WorkspaceContainer;
 
 /**
  * An implementation of {@link SQLTypePhysicalPropertiesProvider}
@@ -751,5 +750,32 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 			target.setScale(platform, overridingProperties.getScale());
 			target.setScaleType(platform, overridingProperties.getScaleType());
 		}
+	}
+
+	/**
+	 * Returns the physical name of this type under the given platform.
+	 * 
+	 * @param platform
+	 *            The name of the platform (usually what is returned by
+	 *            {@link JDBCDataSourceType#getName()}
+	 * @return The physical name of this type for the given platform. If a
+	 *         platform specific override doesn't exist for that platform, it
+	 *         returns the name under the 'default' platform.
+	 */
+	@NonProperty
+	public String getPhysicalName(String platform) {
+		String physicalName = null;
+        SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
+        
+        if (properties != null) {
+            physicalName = properties.getName();
+            if (physicalName == null && getUpstreamType() != null) {
+                physicalName = getUpstreamType().getPhysicalName(platform);
+            }
+        } else if (getUpstreamType() != null) {
+            physicalName = getUpstreamType().getPhysicalName(platform);
+        }
+        
+        return physicalName;
 	}
 }
