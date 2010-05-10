@@ -779,9 +779,11 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
         return physicalName;
 	}
 	
-	@Override
+	@Override @Mutator
 	public void setName(String name) {
+		begin("Setting name");
 		super.setName(name);
 		defaultPhysicalProperties.setName(name);
+		commit();
 	}
 }
