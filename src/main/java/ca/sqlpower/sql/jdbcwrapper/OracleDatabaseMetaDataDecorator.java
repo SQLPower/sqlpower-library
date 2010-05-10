@@ -588,8 +588,11 @@ public class OracleDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 					sql.append("	AND");
 				}
 				if (cacheType.get() == null || cacheType.get().equals(CacheType.NO_CACHE)) {
-					sql.append("	t.table_name LIKE ").append(SQL.quote(tableNamePattern)).append(" ESCAPE '/'\n");
-					sql.append("	AND t.column_name LIKE ").append(SQL.quote(columnNamePattern)).append(" ESCAPE '/'\n");
+				    if (tableNamePattern != null) {
+				        sql.append("	t.table_name LIKE ").append(SQL.quote(tableNamePattern)).append(" ESCAPE '/'\n");
+				        sql.append("    AND");
+				    }
+					sql.append("	t.column_name LIKE ").append(SQL.quote(columnNamePattern)).append(" ESCAPE '/'\n");
 					sql.append("	AND");
 				}
 				sql.append("	t.owner=c.owner (+)\n");
