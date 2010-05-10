@@ -142,8 +142,8 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     		@ConstructorParameter(isProperty = ParameterType.CHILD, 
     		propertyName = "primaryKeyIndex") SQLTypePhysicalProperties defaultPhysicalProperties) {
     	super();
-    	setName("UserDefinedSQLType");
     	this.defaultPhysicalProperties = defaultPhysicalProperties;
+    	setName("UserDefinedSQLType");
     	defaultPhysicalProperties.setParent(this);
     	setPopulated(true);
     	setMyNullability(nullability);
@@ -777,5 +777,11 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
         }
         
         return physicalName;
+	}
+	
+	@Override
+	public void setName(String name) {
+		super.setName(name);
+		defaultPhysicalProperties.setName(name);
 	}
 }
