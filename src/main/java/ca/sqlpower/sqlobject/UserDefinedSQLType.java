@@ -510,8 +510,10 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 					.setName(upstreamType.getPhysicalProperties(platform).getName());
 				}
 			}
+			// Fix/hack to make sure the type is set to the same as the upstream
+			// type.
+			setType(upstreamType.getType());
 		}
-		
 		commit();
 	}
     

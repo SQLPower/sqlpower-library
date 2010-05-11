@@ -344,7 +344,10 @@ public class GenericNewValueMaker implements NewValueMaker {
         		newVal = BasicSQLType.TEXT;
         	}
         } else if (valueType == UserDefinedSQLType.class) {
-        	newVal = new UserDefinedSQLType();
+        	UserDefinedSQLType userDefinedSQLType = new UserDefinedSQLType();
+        	UserDefinedSQLType oldType = (UserDefinedSQLType) oldVal;
+        	userDefinedSQLType.setType(oldType.getType() + 1);
+			newVal = userDefinedSQLType;
         	root.addChild((SPObject) newVal, root.getChildren(UserDefinedSQLType.class).size());
         } else if (valueType == SQLTypePhysicalProperties.class) {
         	// XXX Uses a random string so that each platform will be different. The interaction

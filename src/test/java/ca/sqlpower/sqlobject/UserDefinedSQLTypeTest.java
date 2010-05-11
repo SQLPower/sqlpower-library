@@ -19,6 +19,7 @@
 
 package ca.sqlpower.sqlobject;
 
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -85,6 +86,7 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
         udt = new UserDefinedSQLType();
         udtProperties = new SQLTypePhysicalProperties("Oracle");
         udt.putPhysicalProperties("Oracle", udtProperties);
+        udt.setType(Types.VARCHAR);
         
         domain = new UserDefinedSQLType();
         domain.setUpstreamType(udt);
