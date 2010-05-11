@@ -172,7 +172,7 @@ public class PersisterUtils {
 	throws SecurityException, ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
 	    Map<String, Object> propertyMap = new HashMap<String, Object>();
 	    
-	    Class<? extends Object> objectClass = Class.forName(type);
+	    Class<? extends Object> objectClass = Class.forName(type, true, PersisterUtils.class.getClassLoader());
 	    for (Method m : objectClass.getMethods()) {
 	        
 	        if (m.getAnnotation(Accessor.class) != null
@@ -274,8 +274,8 @@ public class PersisterUtils {
     @SuppressWarnings("unchecked")
     public static int getTypePosition(String childClassName, String parentClassName) 
             throws IllegalArgumentException, SecurityException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException {
-        Class<? extends SPObject> childType = (Class<? extends SPObject>) ClassLoader.getSystemClassLoader().loadClass(childClassName);
-        Class<? extends SPObject> parentType = (Class<? extends SPObject>) ClassLoader.getSystemClassLoader().loadClass(parentClassName);
+        Class<? extends SPObject> childType = (Class<? extends SPObject>) PersisterUtils.class.getClassLoader().loadClass(childClassName);
+        Class<? extends SPObject> parentType = (Class<? extends SPObject>) PersisterUtils.class.getClassLoader().loadClass(parentClassName);
         
         List<Class<? extends SPObject>> allowedChildTypes = (List<Class<? extends SPObject>>) 
             parentType.getDeclaredField("allowedChildTypes").get(null);

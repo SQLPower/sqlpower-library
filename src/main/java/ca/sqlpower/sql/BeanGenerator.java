@@ -280,7 +280,7 @@ public class BeanGenerator {
 			ResultSet rs;
 			ResultSetMetaData rsmd;
 			
-			Class.forName(dbclass).newInstance();
+			Class.forName(dbclass, true, BeanGenerator.class.getClassLoader()).newInstance();
 			
 			con=DriverManager.getConnection(dburl, dbuser, dbpass);
 			stmt=con.createStatement();

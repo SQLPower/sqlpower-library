@@ -391,8 +391,8 @@ public class DataMover {
 			Connection srcCon;
 			Connection dstCon;
 			
-			Class.forName(srcDbclass).newInstance();
-			Class.forName(dstDbclass).newInstance();
+			Class.forName(srcDbclass, true, DataMover.class.getClassLoader()).newInstance();
+			Class.forName(dstDbclass, true, DataMover.class.getClassLoader()).newInstance();
 			
 			srcCon = DriverManager.getConnection(srcDburl, srcDbuser, srcDbpass);
 			dstCon = DriverManager.getConnection(dstDburl, dstDbuser, dstDbpass);

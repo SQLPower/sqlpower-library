@@ -52,7 +52,7 @@ public class CheckConnection {
         System.out.println("Making connection...");
         System.out.println("Connection Name:   "+dbcs.getDisplayName());
         System.out.println("JDBC Driver Class: "+dbcs.getDriverClass());
-        Class.forName(dbcs.getDriverClass()).newInstance();
+        Class.forName(dbcs.getDriverClass(), true, CheckConnection.class.getClassLoader()).newInstance();
         System.out.println("JDBC URL:          "+dbcs.getUrl());
         System.out.println("Username:          "+dbcs.getUser());
         System.out.println("Password:          "+dbcs.getPass());
