@@ -12,12 +12,12 @@ public class TransactionInformation {
         DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
 
     private final long versionNumber;
-    private final Date timeCreated;
+    private final long timeCreated; //in millis
     private final String versionAuthor;
     private final String versionDescription;
     private final String simpleDescription;
     
-    public TransactionInformation(long versionNumber, Date timeCreated, 
+    public TransactionInformation(long versionNumber, long timeCreated, 
             String versionAuthor, String versionDescription) {
         this(versionNumber, timeCreated, versionAuthor, versionDescription, versionDescription);
     }
@@ -31,7 +31,7 @@ public class TransactionInformation {
      * @param versionDescription
      * @param simpleDescription
      */
-    public TransactionInformation(long versionNumber, Date timeCreated, 
+    public TransactionInformation(long versionNumber, long timeCreated, 
             String versionAuthor, String versionDescription, String simpleDescription) {
         this.versionNumber = versionNumber;
         this.timeCreated = timeCreated;
@@ -44,7 +44,7 @@ public class TransactionInformation {
      * Returns a formatted list of strings describing this transaction.
      */
     public String toString() {
-        return "v" + versionNumber + " (" + timeCreated.toString() + ")" +
+        return "v" + versionNumber + " (" + new Date(timeCreated) + ")" +
                 ", " + versionAuthor + ":" + simpleDescription;
     }
 
@@ -52,7 +52,7 @@ public class TransactionInformation {
         return versionNumber;
     }
 
-    public Date getTimeCreated() {
+    public long getTimeCreated() {
         return timeCreated;
     }
 
@@ -67,9 +67,5 @@ public class TransactionInformation {
     public String getSimpleDescription() {
         return simpleDescription;
     }
-    
-    public String getTimeString() {
-        return DATE_FORMAT.format(timeCreated);
-    }        
     
 }
