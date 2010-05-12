@@ -660,12 +660,14 @@ public abstract class SPSessionPersister implements SPPersister {
 				throw new SPPersistenceException(uuid,"Remove Object attempted while " +
 						"not in a transaction. Rollback initiated.");
 			}
-			if (!exists(uuid)) {
-				rollback();
-				throw new SPPersistenceException(uuid,
-						"Cannot remove the SPObject with UUID " + uuid
-						+ " from parent UUID " + parentUUID
-						+ " as it does not exist.");
+			//Now that we allow remove persist calls on objects that are children of
+			//objects being removed the persister needs to handle them.
+			if (!exists(uuid) && !objectsToRemove.containsKey(parentUUID)) {
+			    rollback();
+			    throw new SPPersistenceException(uuid,
+			            "Cannot remove the SPObject with UUID " + uuid
+			            + " from parent UUID " + parentUUID
+			            + " as it does not exist.");
 			}
 			objectsToRemove.put(uuid, parentUUID);
 		}
@@ -726,6 +728,11 @@ public abstract class SPSessionPersister implements SPPersister {
 		for (String uuid : objectsToRemove.keySet()) {
 			SPObject spo = SQLPowerUtils.findByUuid(root, uuid,
 					SPObject.class);
+			
+			//The parent of this object has been deleted by this transaction
+			//already so we don't need to delete the object again.
+			if (spo == null && objectsToRemove.containsKey(objectsToRemove.get(uuid))) continue;
+			
 			SPObject parent = SQLPowerUtils.findByUuid(root, objectsToRemove.get(uuid), 
 					SPObject.class);
 			try {
