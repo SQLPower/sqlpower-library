@@ -1598,6 +1598,9 @@ public class SQLQueryUIComponents {
     		
     		tempTable = new FancyExportableJTable(model, searchDocument);
 
+    		// Allow users to select a single table cell.
+    		tempTable.setCellSelectionEnabled(true);
+
     		tableAreaBuilder.nextLine();
     		JScrollPane tableScrollPane = new JScrollPane(tempTable);
     		tableScrollPane.setPreferredSize(new Dimension(
