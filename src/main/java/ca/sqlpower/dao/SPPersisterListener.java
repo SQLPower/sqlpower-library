@@ -27,6 +27,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.log4j.Logger;
 
@@ -467,6 +470,16 @@ public class SPPersisterListener implements SPListener {
 				commitProperties();
 				target.commit();
 				logger.debug("...commit completed.");
+				if (logger.isDebugEnabled()) {
+			        try {
+			            Clip clip = AudioSystem.getClip();
+			            clip.open(AudioSystem.getAudioInputStream(
+			                    getClass().getResource("/sounds/beep.wav")));
+			            clip.start();
+			        } catch (Exception ex) {
+			            logger.debug("A transaction committed but we cannot play the commit sound.", ex);
+			        }
+				}
 			} catch (Throwable t) {
 			    logger.warn("Rolling back due to " + t, t);
 				this.rollback();
