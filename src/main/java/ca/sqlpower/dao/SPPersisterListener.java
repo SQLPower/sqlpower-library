@@ -474,7 +474,7 @@ public class SPPersisterListener implements SPListener {
 			        try {
 			            Clip clip = AudioSystem.getClip();
 			            clip.open(AudioSystem.getAudioInputStream(
-			                    getClass().getResource("/sounds/beep.wav")));
+			                    getClass().getResource("/sounds/transaction_complete.wav")));
 			            clip.start();
 			        } catch (Exception ex) {
 			            logger.debug("A transaction committed but we cannot play the commit sound.", ex);
