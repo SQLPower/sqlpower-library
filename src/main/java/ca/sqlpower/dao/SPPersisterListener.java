@@ -29,6 +29,8 @@ import java.util.Set;
 
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineEvent;
+import javax.sound.sampled.LineListener;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.log4j.Logger;
@@ -472,9 +474,17 @@ public class SPPersisterListener implements SPListener {
 				logger.debug("...commit completed.");
 				if (logger.isDebugEnabled()) {
 			        try {
-			            Clip clip = AudioSystem.getClip();
+			            final Clip clip = AudioSystem.getClip();
 			            clip.open(AudioSystem.getAudioInputStream(
 			                    getClass().getResource("/sounds/transaction_complete.wav")));
+			            clip.addLineListener(new LineListener() {
+                            public void update(LineEvent event) {
+                                if (event.getType().equals(LineEvent.Type.STOP)) {
+                                    logger.debug("Stopping sound");
+                                    clip.close();
+                                }
+                            }
+                        });
 			            clip.start();
 			        } catch (Exception ex) {
 			            logger.debug("A transaction committed but we cannot play the commit sound.", ex);
