@@ -21,7 +21,6 @@ package ca.sqlpower.query;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -48,7 +47,7 @@ public class TableContainer extends ItemContainer implements Container {
 	/**
 	 * The list contains all of the columns of the table.
 	 */
-	private final List<Item> itemList;
+	private final List<SQLObjectItem> itemList;
 	
 	/**
 	 * The catalog that the SQLTable contained in this container belongs to.
@@ -76,7 +75,7 @@ public class TableContainer extends ItemContainer implements Container {
 		schema = table.getSchemaName();
 		catalog = table.getCatalogName();
 		setAlias("");
-		itemList = new ArrayList<Item>();
+		itemList = new ArrayList<SQLObjectItem>();
 		loadColumnsFromTable(t);
 	}
 
@@ -108,8 +107,8 @@ public class TableContainer extends ItemContainer implements Container {
 		setName(name);
 		table = null;
 		super.setAlias("");
-		itemList = new ArrayList<Item>();
-		for (Item item : items) {
+		itemList = new ArrayList<SQLObjectItem>();
+		for (SQLObjectItem item : items) {
 			item.setParent(this);
 			itemList.add(item);
 			fireChildAdded(item, itemList.indexOf(item));
@@ -146,7 +145,7 @@ public class TableContainer extends ItemContainer implements Container {
 	
 	public List<Item> getItems() {
 		loadTableByQualifiedName();
-		return Collections.unmodifiableList(itemList);
+		return new ArrayList<Item>(itemList);
 	}
 	
 	public String getName() {
@@ -229,8 +228,13 @@ public class TableContainer extends ItemContainer implements Container {
 	
 	@Override
 	public Container createCopy() {
-	    TableContainer copy = new TableContainer(database, table);
-	    for (Item item : itemList) {
+		final TableContainer copy;
+		if (database != null && table != null) {
+			copy = new TableContainer(database, table);
+		} else {
+			copy = new TableContainer(getUUID(), database, getName(), schema, catalog, itemList);			
+		}
+		for (Item item : itemList) {
 	        Item newItem = copy.getItem(item.getItem());
 	        newItem.setAlias(item.getAlias());
 	        newItem.setColumnWidth(item.getColumnWidth());
