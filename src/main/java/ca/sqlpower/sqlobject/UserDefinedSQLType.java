@@ -122,7 +122,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	 * {@link SQLTypePhysicalPropertiesProvider#GENERIC_PLATFORM}
 	 */
     public UserDefinedSQLType() {
-    	this(null, null, null, null, new SQLTypePhysicalProperties(GENERIC_PLATFORM));
+    	this("UserDefinedSQLType", null, null, null, null, new SQLTypePhysicalProperties(GENERIC_PLATFORM));
 	}
     
 	/**
@@ -135,6 +135,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	 */
     @Constructor
     public UserDefinedSQLType(
+    		@ConstructorParameter(propertyName = "name") String name,
             @ConstructorParameter(propertyName = "myNullability") Integer nullability,
             @ConstructorParameter(propertyName = "myAutoIncrement") Boolean autoIncrement,
             @ConstructorParameter(propertyName = "basicType") BasicSQLType basicType,
@@ -143,7 +144,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     		propertyName = "primaryKeyIndex") SQLTypePhysicalProperties defaultPhysicalProperties) {
     	super();
     	this.defaultPhysicalProperties = defaultPhysicalProperties;
-    	setName("UserDefinedSQLType");
+    	setName(name);
     	defaultPhysicalProperties.setParent(this);
     	setPopulated(true);
     	setMyNullability(nullability);
@@ -600,7 +601,11 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Transient @Accessor
 	public Integer getNullability() {
-    	return (myNullability == null && upstreamType != null) ? upstreamType.getNullability() : myNullability;
+    	if (myNullability == null && upstreamType != null) {
+    		return upstreamType.getNullability();
+    	} else {
+    		return myNullability;
+    	}
 	}
     
     @Accessor

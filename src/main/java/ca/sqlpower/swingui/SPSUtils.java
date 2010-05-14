@@ -8,6 +8,7 @@ import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.GridLayout;
+import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.Window;
@@ -53,9 +54,13 @@ import javax.swing.JTextArea;
 import javax.swing.JTree;
 import javax.swing.JViewport;
 import javax.swing.KeyStroke;
+import javax.swing.Popup;
+import javax.swing.PopupFactory;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.Scrollable;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.border.BevelBorder;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
@@ -1271,5 +1276,71 @@ public class SPSUtils {
         } else {
             SwingUtilities.invokeLater(doRun);
         }
+    }
+
+	/**
+	 * Creates a {@link Popup} containing a given {@link JComponent} embedded
+	 * inside a {@link JScrollPane}. Also creates a {@link PopupListenerHandler}
+	 * that handles events dealing with the {@link Popup}. When display, it will
+	 * popup the window at the given location, and it will add scrollbars in the
+	 * right circumstances as well.
+	 * 
+	 * @param owningFrame
+	 *            The {@link Component} which the popup is being popped up on.
+	 * @param componentToEmbed
+	 *            The {@link JComponent} to display.
+	 * @param windowLocation
+	 *            The location of where the popup should be displayed.
+	 * @return The {@link PopupListenerHandler} that handles the created
+	 *         {@link Popup} window.
+	 */
+    public static PopupListenerHandler popupComponent(
+    		final Component owningFrame, 
+    		final JComponent componentToEmbed, 
+    		final Point windowLocation) {
+        JScrollPane treeScroll = new JScrollPane(componentToEmbed);
+        treeScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        treeScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+
+        Point frameLocation = new Point(0, 0);
+        SwingUtilities.convertPointToScreen(frameLocation, owningFrame);
+        
+        int popupScreenSpaceY = (windowLocation.y - frameLocation.y);
+        int maxHeight = (int)(owningFrame.getSize().getHeight() - popupScreenSpaceY);
+        
+        int width = (int) Math.min(treeScroll.getPreferredSize().getWidth(), owningFrame.getSize().getWidth());
+        int height = (int) Math.min(treeScroll.getPreferredSize().getHeight(), maxHeight);
+        treeScroll.setPreferredSize(new java.awt.Dimension(width, height));
+        
+        double popupWidth = treeScroll.getPreferredSize().getWidth();
+        int popupScreenSpaceX = (int) (owningFrame.getSize().getWidth() - (windowLocation.x - frameLocation.x));
+        int x;
+        if (popupWidth > popupScreenSpaceX) {
+            x = (int) (windowLocation.x - (popupWidth - popupScreenSpaceX));
+        } else {
+            x = windowLocation.x;
+        }
+        
+        treeScroll.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED, Color.GRAY, Color.GRAY));
+        
+        JComponent glassPane;
+        if (owningFrame instanceof JFrame) {
+        	JFrame frame = (JFrame) owningFrame;
+        	if (frame.getGlassPane() == null) {
+        		glassPane = new JPanel();
+        		frame.setGlassPane(glassPane);
+        	} else {
+        		glassPane = (JComponent) frame.getGlassPane();
+        	}
+        	glassPane.setVisible(true);
+        	glassPane.setOpaque(false);
+        } else {
+        	glassPane = (JComponent) owningFrame;
+        }
+        
+        PopupFactory pFactory = new PopupFactory();
+        final Popup popup = pFactory.getPopup(glassPane, treeScroll, x, windowLocation.y);
+        
+        return new PopupListenerHandler(popup, glassPane, owningFrame);
     }
 }

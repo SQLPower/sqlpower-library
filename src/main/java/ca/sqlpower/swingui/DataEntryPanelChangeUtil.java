@@ -26,14 +26,15 @@ import java.util.Enumeration;
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
-import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JSpinner;
+import javax.swing.JTree;
 import javax.swing.text.JTextComponent;
 
 import ca.sqlpower.sqlobject.SQLType;
+import ca.sqlpower.sqlobject.UserDefinedSQLType;
 
 /**
  * This class has several methods for JComponents of different types
@@ -57,7 +58,7 @@ public class DataEntryPanelChangeUtil {
      */
     public static boolean incomingChange(JTextComponent field, PropertyChangeEvent e) {
         return changeBackground(field, field.getText(), e);
-    }    
+    }
     
     /**
      * Sets the background color and creates a colored border in case of an incoming change/conflict.
@@ -95,7 +96,19 @@ public class DataEntryPanelChangeUtil {
     public static boolean incomingChange(ButtonGroup field, Object fieldValue, PropertyChangeEvent e) {
         return changeBorder(getSelectedButton(field), fieldValue, e);
     }
-
+    
+    /**
+     * Sets the background colour of the JTree in case of an incoming change/conflict. 
+     */
+    public static boolean incomingChange(JTree field, PropertyChangeEvent e) {
+    	Object selection = field.getLastSelectedPathComponent();
+		if (selection instanceof UserDefinedSQLType) {
+    		return changeBackground(field, ((UserDefinedSQLType) selection).getType(), e);
+    	} else {
+    		return false;
+    	}
+    }
+    
     /**
      * Sets the background color of the given component in case of incoming change/conflict.
      * @param field Any JComponent
