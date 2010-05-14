@@ -42,7 +42,6 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
-import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
@@ -50,7 +49,6 @@ import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.SessionNotFoundException;
-import ca.sqlpower.util.TransactionEvent;
 
 /**
  * The SQLRelationship class represents a foreign key relationship between
@@ -80,6 +78,16 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     private static Logger logger = Logger.getLogger(SQLRelationship.class);
     
     private List<ColumnMapping> mappings = new ArrayList<ColumnMapping>();
+    
+    /**
+	 * If true then one side of this relationship is being disconnected from
+	 * its parent table and the manager is making a call to remove the
+	 * relationship from the other parent. Then this relationship should not
+	 * go back to the first table and try to remove the relationship again
+	 * or else it will bounce back and forth between the tables like a bad
+	 * game of pong.
+	 */
+	private boolean isDisconnecting = false;
     
     /**
      * This is the imported side of this SQLRelationship. The imported key holds
@@ -237,6 +245,10 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
         }
     }
 
+	/**
+	 * A convenience method for turning a list of SQLImported keys into a list
+	 * of their corresponding SQLRelationships
+	 */
     public static List<SQLRelationship> getExportedKeys(List<SQLImportedKey> foreignKeys) {
     	List<SQLRelationship> primaryKeys = new ArrayList<SQLRelationship>();
     	for (SQLImportedKey k : foreignKeys) {
@@ -294,8 +306,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 	protected String physicalName;
 
-	protected RelationshipManager fkColumnManager;
-
     /**
      * This is the text for parent label of relationship.
      */
@@ -309,7 +319,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	public SQLRelationship() {
     	pkCardinality = ONE;
 		fkCardinality = ZERO | ONE | MANY;
-		fkColumnManager = new RelationshipManager();
 		setName("New SQL Relationship");
 		setPopulated(true);
 		foreignKey = new SQLImportedKey(this);
@@ -400,19 +409,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	    } while (table.getColumnByName(uniqueName) != null);
 	    return uniqueName;
 	}
-
-	/**
-	 * This method is for the benefit of the unit tests. It should never be
-	 * necessary to use it in the real world.
-	 * <p>
-	 * XXX The relationship manager is going away. This can be removed in the
-	 * future and the methods in the relationship manager moved into
-	 * SQLRelationship itself.
-	 */
-	@NonBound
-    public RelationshipManager getRelationshipManager() {
-        return fkColumnManager;
-    }
 
 	public void attachListeners() throws SQLObjectException {
 		SQLPowerUtils.listenToHierarchy(getParent(), fkColumnUpdater);
@@ -607,79 +603,79 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 *
 	 * @throws SQLObjectException If something goes terribly wrong
 	 */
-    	private void realizeMapping() throws SQLObjectException {
-        for (ColumnMapping m : getChildren(ColumnMapping.class)) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("realizeMapping: processing " + m);
-            }
-            SQLColumn fkCol = m.getFkColumn();
-            try {
-                fkCol.setMagicEnabled(false);
-                if (fkCol.getReferenceCount() == 0)
-                    fkCol.addReference();
+	private void realizeMapping() throws SQLObjectException {
+		for (ColumnMapping m : getChildren(ColumnMapping.class)) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("realizeMapping: processing " + m);
+			}
+			SQLColumn fkCol = m.getFkColumn();
+			try {
+				fkCol.setMagicEnabled(false);
+				if (fkCol.getReferenceCount() == 0)
+					fkCol.addReference();
 
-                // since we turned magic off, we have to insert the PK cols in
-                // the correct position
-                int insertIdx;
-                if (identifying) {
-                    if (fkCol.getParent() == null || !fkCol.isPrimaryKey()) {
-                        logger.debug("realizeMapping: fkCol PK seq is null. Inserting at end of PK.");
-                        insertIdx = getFkTable().getPkSize();
-                    } else {
-                    	insertIdx = getFkTable().getColumnIndex(fkCol);
-                        logger.debug("realizeMapping: using existing fkCol PK seq " + insertIdx);
-                    }
-                } else {
-                    if (fkCol.getParent() != null && fkCol.isPrimaryKey()) {
-                        insertIdx = getFkTable().getColumnIndex(fkCol);
-                    } else {
-                        insertIdx = getFkTable().getColumns().size();
-                    }
-                }
-                
-                fkCol.setAutoIncrement(false);
+				// since we turned magic off, we have to insert the PK cols in
+				// the correct position
+				int insertIdx;
+				if (identifying) {
+					if (fkCol.getParent() == null || !fkCol.isPrimaryKey()) {
+						logger.debug("realizeMapping: fkCol PK seq is null. Inserting at end of PK.");
+						insertIdx = getFkTable().getPkSize();
+					} else {
+						insertIdx = getFkTable().getColumnIndex(fkCol);
+						logger.debug("realizeMapping: using existing fkCol PK seq " + insertIdx);
+					}
+				} else {
+					if (fkCol.getParent() != null && fkCol.isPrimaryKey()) {
+						insertIdx = getFkTable().getColumnIndex(fkCol);
+					} else {
+						insertIdx = getFkTable().getColumns().size();
+					}
+				}
 
-                // This might bump up the reference count (which would be
-                // correct)
-                getFkTable().addColumn(fkCol, insertIdx);
-                logger.debug("realizeMapping: Added column '" + fkCol.getName() + "' at index " + insertIdx);
-                if (fkCol.getReferenceCount() <= 0)
-                    throw new IllegalStateException("Created a column with 0 references!");
+				fkCol.setAutoIncrement(false);
 
-                if (identifying && !fkCol.isPrimaryKey()) {
-                	getFkTable().addToPK(fkCol);
-                }
+				// This might bump up the reference count (which would be
+				// correct)
+				getFkTable().addColumn(fkCol, insertIdx);
+				logger.debug("realizeMapping: Added column '" + fkCol.getName() + "' at index " + insertIdx);
+				if (fkCol.getReferenceCount() <= 0)
+					throw new IllegalStateException("Created a column with 0 references!");
 
-            } finally {
-                fkCol.setMagicEnabled(true);
-            }
-        }
-    }
+				if (identifying && !fkCol.isPrimaryKey()) {
+					getFkTable().addToPK(fkCol);
+				}
 
-    /**
-     * Fetches imported keys for the given table. (Imported keys are the
-     * uniquely-indexed columns of other tables that are referenced by (imported
-     * from) the given table). Nothing is added to the given table or any other
-     * objects, although the returned SQLRelationship column mapping objects
-     * will likely have references to columns in that table and others. It is
-     * the caller's option whether or not to attach some, all, or none of the
-     * returned SQLRelationship objects to the object model. All returned
-     * objects can be safely thrown away simply by ignoring them, or kept by
-     * invoking their {@link #attachRelationship(SQLTable, SQLTable, boolean)}
-     * method.
-     * <p>
-     * Note that <code>table</code>'s database must be fully populated up to the
-     * table level (the tables themselves can be unpopulated) before you call
-     * this method; it requires that all referenced tables are represented by
-     * in-memory SQLTable objects. The tables this table imports its keys from
-     * will be populated as a side effect of this call.
-     * <p>
-     * Also note that the table may not have had its children populated at this
-     * point. If this method is being called in a background thread the columns
-     * and indices will be added to the table in the foreground thread. Any
-     * section that requires the table to have the correct children and indices
-     * needs to be run on the foreground thread to ensure the objects exist.
-     * 
+			} finally {
+				fkCol.setMagicEnabled(true);
+			}
+		}
+	}
+
+	/**
+	 * Fetches imported keys for the given table. (Imported keys are the
+	 * uniquely-indexed columns of other tables that are referenced by (imported
+	 * from) the given table). Nothing is added to the given table or any other
+	 * objects, although the returned SQLRelationship column mapping objects
+	 * will likely have references to columns in that table and others. It is
+	 * the caller's option whether or not to attach some, all, or none of the
+	 * returned SQLRelationship objects to the object model. All returned
+	 * objects can be safely thrown away simply by ignoring them, or kept by
+	 * invoking their {@link #attachRelationship(SQLTable, SQLTable, boolean)}
+	 * method.
+	 * <p>
+	 * Note that <code>table</code>'s database must be fully populated up to the
+	 * table level (the tables themselves can be unpopulated) before you call
+	 * this method; it requires that all referenced tables are represented by
+	 * in-memory SQLTable objects. The tables this table imports its keys from
+	 * will be populated as a side effect of this call.
+	 * <p>
+	 * Also note that the table may not have had its children populated at this
+	 * point. If this method is being called in a background thread the columns
+	 * and indices will be added to the table in the foreground thread. Any
+	 * section that requires the table to have the correct children and indices
+	 * needs to be run on the foreground thread to ensure the objects exist.
+	 * 
      * @throws SQLObjectException
      *             if a database error occurs or if the given table's parent
      *             database is not marked as populated.
@@ -842,6 +838,14 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 		return null;
 	}
+	
+	public void reassignMappingsByPkCol(SQLColumn pkCol) {
+		for (ColumnMapping m : mappings) {
+			if (m.pkColumn != pkCol && m.pkColumn.getUUID().equals(pkCol.getUUID())) {
+				m.setFkColumn(pkCol);
+			}
+		}
+	}
 
 	public boolean containsPkColumn(SQLColumn col) {
 		return getMappingByPkCol(col) != null;
@@ -856,9 +860,17 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 		return null;
 	}
-
+	
 	public boolean containsFkColumn(SQLColumn col) {
 		return getMappingByFkCol(col) != null;
+	}
+	
+	public void reassignMappingsByFkCol(SQLColumn fkCol) {
+		for (ColumnMapping m : mappings) {
+			if (m.fkColumn != fkCol && m.fkColumn.getUUID().equals(fkCol.getUUID())) {
+				m.setFkColumn(fkCol);
+			}
+		}
 	}
 
 	public String printKeyColumns(int keyType) {
@@ -1007,228 +1019,176 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 	};
 
+//	---------------------- Former RelationshipManager ------------------------
+		
 	/**
-	 * Listens to all activity at and under the pkTable and fkTable.  Updates
-	 * and maintains the mapping from pkTable to fkTable, and even removes the
-	 * whole relationship when necessary.
+	 * When a child is added to the parent table this method must be
+	 * called to fix the relationship mappings.
+	 * 
+	 * @param col
+	 *            The column just added to the parent table's relationship.
 	 */
-	protected class RelationshipManager {
-		
-		/**
-		 * If true then one side of this relationship is being disconnected from
-		 * its parent table and the manager is making a call to remove the
-		 * relationship from the other parent. Then this relationship should not
-		 * go back to the first table and try to remove the relationship again
-		 * or else it will bounce back and forth between the tables like a bad
-		 * game of pong.
-		 */
-		private boolean isDisconnecting = false;
-		
-		/**
-		 * When a child is added to the parent table this method must be
-		 * called to fix the relationship mappings.
-		 * 
-		 * @param col
-		 *            The column just added to the parent table's relationship.
-		 */
-		public void fixMappingNewChildInParent(SQLColumn col) {
-			if (!getParent().isMagicEnabled()){
-				logger.debug("Magic disabled; not fixing mapping for " + col);
-				return;
-			}
-			
-			try {
-				if (col.isPrimaryKey()) {
-					ensureInMapping(col);
-				} else {
-					ensureNotInMapping(col);
-				}
-			} catch (SQLObjectException ex) {
-				logger.warn("Couldn't add/remove mapped FK columns", ex);
-			}
+	public void fixMappingNewChildInParent(SQLColumn col) {
+		if (!getParent().isMagicEnabled()){
+			logger.debug("Magic disabled; not fixing mapping for " + col);
+			return;
 		}
 
-		/**
-		 * Must be called when this relationship or its foreignKey is being
-		 * removed from its parent table.
-		 * 
-		 * @param isRelationship
-		 *            If true the relationship is being removed from the pk
-		 *            table and the associated {@link SQLImportedKey} must be
-		 *            removed from the fk table. If false the
-		 *            {@link SQLImportedKey} is being removed from the fk table
-		 *            and the containing {@link SQLRelationship} must be removed
-		 *            from the pk table.
-		 */
-		public void disconnectRelationship(boolean isRelationship) {
-			if (!getParent().isMagicEnabled()){
-				logger.debug("Magic disabled; ignoring relationship remove " + SQLRelationship.this);
-				return;
-			}
-
-			if (isDisconnecting) return;
-			
-			try {
-				detachListeners();
-				try {
-					isDisconnecting = true;
-					if (isRelationship) {
-						SQLImportedKey fk = foreignKey;
-						fk.getParent().removeChild(fk);
-					} else {
-						getParent().removeChild(SQLRelationship.this);
-					}
-				} catch (ObjectDependentException e1) {
-					throw new RuntimeException(e1); // This should not happen
-				}
-
-				logger.debug("Removing references for mappings: "+getChildren());
-
-				// references to fk columns are removed in reverse order in case
-				// this relationship is reconnected in the future. (if not removed
-				// in reverse order, the PK sequence numbers will change as each
-				// mapping is removed and the subsequent column indexes shift down)
-				List<ColumnMapping> mappings = new ArrayList<ColumnMapping>(getChildren(ColumnMapping.class));
-				Collections.sort(mappings, Collections.reverseOrder(new ColumnMappingFKColumnOrderComparator()));
-				for (ColumnMapping cm : mappings) {
-					logger.debug("Removing reference to fkcol "+ cm.getFkColumn());
-					cm.getFkColumn().removeReference();
-				}
-			} finally {
-				isDisconnecting = false;
-			}
-		}
-
-		/**
-		 * Must be called when a column is being removed from its parent table.
-		 * While this can be done from both pk and fk table it appears to only
-		 * have effect for the pk table.
-		 * 
-		 * @param col
-		 *            The column removed from the table.
-		 */
-		public void fixMappingChildRemoved(SQLColumn col) {
-			if (!col.getParent().isMagicEnabled()){
-				logger.debug("Magic disabled; not fixing mapping for " + col);
-				return;
-			}
-			
-			try {
+		try {
+			if (col.isPrimaryKey()) {
+				ensureInMapping(col);
+			} else {
 				ensureNotInMapping(col);
-			} catch (SQLObjectException ex) {
-				logger.warn("Couldn't remove mapped FK columns", ex);
 			}
+		} catch (SQLObjectException ex) {
+			logger.warn("Couldn't add/remove mapped FK columns", ex);
+		}
+	}
+
+	/**
+	 * Must be called when this relationship or its foreignKey is being
+	 * removed from its parent table.
+	 * 
+	 * @param isRelationship
+	 *            If true the relationship is being removed from the pk
+	 *            table and the associated {@link SQLImportedKey} must be
+	 *            removed from the fk table. If false the
+	 *            {@link SQLImportedKey} is being removed from the fk table
+	 *            and the containing {@link SQLRelationship} must be removed
+	 *            from the pk table.
+	 */
+	public void disconnectRelationship(boolean isRelationship) {
+		if (!getParent().isMagicEnabled()){
+			logger.debug("Magic disabled; ignoring relationship remove " + SQLRelationship.this);
+			return;
 		}
 
-		/**
-		 * To be called when the primary key sequence of a column in the pk
-		 * table changes.
-		 * <p>
-		 * XXX May not be necessary after refactoring, if this is not in use
-		 * it was not necessary and can be deleted.
-		 * 
-		 * @param col
-		 *            A column belonging to the pk table that has had its
-		 *            primary key sequence changed.
-		 */
-		public void correctPKSequenceChange(SQLColumn col) {
-			if (!col.isMagicEnabled()){
-				logger.debug("Magic disabled; ignoring pk seq changed on col " + col);
-				return;
-			}
+		if (isDisconnecting) return;
 
-			if (col.getParent() != null && col.getParent().equals(getParent())) {
-				try {
-					if (col.isPrimaryKey()) {
-						ensureInMapping(col);
-					} else {
-						ensureNotInMapping(col);
-					}
-				} catch (SQLObjectException ae) {
-					throw new SQLObjectRuntimeException(ae);
+		try {
+			detachListeners();
+			try {
+				isDisconnecting = true;
+				if (isRelationship) {
+					SQLImportedKey fk = foreignKey;
+					fk.getParent().removeChild(fk);
+				} else {
+					getParent().removeChild(SQLRelationship.this);
 				}
+			} catch (ObjectDependentException e1) {
+				throw new RuntimeException(e1); // This should not happen
 			}
 
-		}
-		
-		/**
-		 * To be called when the pk or fk table is removed from its parent.
-		 */
-		public void tableDisconnected() {
-			if (!getParent().isMagicEnabled() || !getFkTable().isMagicEnabled()){
-				logger.debug("Magic disabled; ignoring table disconnect that would " +
-						"clean up relationship " + SQLRelationship.this);
-				return;
+			logger.debug("Removing references for mappings: "+getChildren());
+
+			// references to fk columns are removed in reverse order in case
+			// this relationship is reconnected in the future. (if not removed
+			// in reverse order, the PK sequence numbers will change as each
+			// mapping is removed and the subsequent column indexes shift down)
+			List<ColumnMapping> mappings = new ArrayList<ColumnMapping>(getChildren(ColumnMapping.class));
+			Collections.sort(mappings, Collections.reverseOrder(new ColumnMappingFKColumnOrderComparator()));
+			for (ColumnMapping cm : mappings) {
+				logger.debug("Removing reference to fkcol "+ cm.getFkColumn());
+				cm.getFkColumn().removeReference();
 			}
-				
-			getParent().removeExportedKey(SQLRelationship.this);
+		} finally {
+			isDisconnecting = false;
 		}
-		
-        // XXX this code serves essentially the same purpose as the loop in realizeMapping().
-        //     We should refactor that method to use this one as a subroutine, and at that
-        //     time, ensure the special cases in both places are preserved.
-        //     (if there is a special case in there that's not here, it's probably a bug)
-		protected void ensureInMapping(SQLColumn pkcol) throws SQLObjectException {
-		    if (!containsPkColumn(pkcol)) {
-		        if (logger.isDebugEnabled()) {
-		            logger.debug("ensureInMapping("+getName()+"): Adding "
-		                    +pkcol.getParent().getName()+"."+pkcol.getName()
-		                    +" to mapping");
-		        }
-                
-                SQLColumn fkcol;
-		        if (pkcol.getParent().equals(getFkTable())) {
-                    // self-reference! must create new column!
-                    fkcol = new SQLColumn(pkcol);
-                    fkcol.setName(generateUniqueColumnName("Parent_"+pkcol.getName(), pkcol.getParent()));
-                } else {
-                    fkcol = getFkTable().getColumnByName(pkcol.getName());
-                    if (fkcol == null) fkcol = new SQLColumn(pkcol);
-                }
-                                		
-		        if (identifying && getParent() != getFkTable()) {
-		            // this either adds the new column or bumps up the refcount on existing col
-		            getFkTable().addColumn(fkcol, getFkTable().getPkSize());
-		            getFkTable().addToPK(fkcol);
-		        } else {
-		            // this either adds the new column or bumps up the refcount on existing col
-		            getFkTable().addColumn(fkcol);
-		        }
-		        logger.debug("ensureInMapping("+getName()+"): added fkcol " + fkcol);
-		        fkcol.setAutoIncrement(false);
-		        addMapping(pkcol, fkcol);
-		    }
+	}
+
+	/**
+	 * Must be called when a column is being removed from its parent table.
+	 * While this can be done from both pk and fk table it appears to only
+	 * have effect for the pk table.
+	 * 
+	 * @param col
+	 *            The column removed from the table.
+	 */
+	public void fixMappingChildRemoved(SQLColumn col) {
+		if (!col.getParent().isMagicEnabled()){
+			logger.debug("Magic disabled; not fixing mapping for " + col);
+			return;
 		}
 
-		/**
-		 * Ensures there is no mapping for pkcol in this relationship.
-		 * If there was, it is removed along with the column that may
-		 * have been pushed into the relationship's fkTable.
-		 */
-		protected void ensureNotInMapping(SQLColumn pkcol) throws SQLObjectException {
-			logger.debug("Removing "+pkcol.getParent()+"."+pkcol+" from mapping");
-			if (containsPkColumn(pkcol)) {
-				ColumnMapping m = getMappingByPkCol(pkcol);
-				try {
-					removeChild(m);
-				} catch (IllegalArgumentException e) {
-					throw new SQLObjectException(e);
-				} catch (ObjectDependentException e) {
-					throw new SQLObjectException(e);
-				}
-				try {
-                    // XXX no magic here? this is suspect
-					m.getFkColumn().setMagicEnabled(false);
-					m.getFkColumn().removeReference();
-				} finally {
-					m.getFkColumn().setMagicEnabled(true);
-				}
-			}
+		try {
+			ensureNotInMapping(col);
+		} catch (SQLObjectException ex) {
+			logger.warn("Couldn't remove mapped FK columns", ex);
+		}
+	}
+
+	/**
+	 * To be called when the pk or fk table is removed from its parent.
+	 */
+	public void tableDisconnected() {
+		if (!getParent().isMagicEnabled() || !getFkTable().isMagicEnabled()){
+			logger.debug("Magic disabled; ignoring table disconnect that would " +
+					"clean up relationship " + SQLRelationship.this);
+			return;
 		}
 
-		@Override
-		public String toString() {
-			return "RelManager of "+SQLRelationship.this.toString();
+		getParent().removeExportedKey(SQLRelationship.this);
+	}
+
+	// XXX this code serves essentially the same purpose as the loop in realizeMapping().
+	//     We should refactor that method to use this one as a subroutine, and at that
+	//     time, ensure the special cases in both places are preserved.
+	//     (if there is a special case in there that's not here, it's probably a bug)
+	protected void ensureInMapping(SQLColumn pkcol) throws SQLObjectException {
+		if (!containsPkColumn(pkcol)) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("ensureInMapping("+getName()+"): Adding "
+						+pkcol.getParent().getName()+"."+pkcol.getName()
+						+" to mapping");
+			}
+
+			SQLColumn fkcol;
+			if (pkcol.getParent().equals(getFkTable())) {
+				// self-reference! must create new column!
+				fkcol = new SQLColumn(pkcol);
+				fkcol.setName(generateUniqueColumnName("Parent_"+pkcol.getName(), pkcol.getParent()));
+			} else {
+				fkcol = getFkTable().getColumnByName(pkcol.getName());
+				if (fkcol == null) fkcol = new SQLColumn(pkcol);
+			}
+
+			if (identifying && getParent() != getFkTable()) {
+				// this either adds the new column or bumps up the refcount on existing col
+				getFkTable().addColumn(fkcol, getFkTable().getPkSize());
+				getFkTable().addToPK(fkcol);
+			} else {
+				// this either adds the new column or bumps up the refcount on existing col
+				getFkTable().addColumn(fkcol);
+			}
+			logger.debug("ensureInMapping("+getName()+"): added fkcol " + fkcol);
+			fkcol.setAutoIncrement(false);
+			addMapping(pkcol, fkcol);
+		}
+	}
+
+	/**
+	 * Ensures there is no mapping for pkcol in this relationship.
+	 * If there was, it is removed along with the column that may
+	 * have been pushed into the relationship's fkTable.
+	 */
+	protected void ensureNotInMapping(SQLColumn pkcol) throws SQLObjectException {
+		logger.debug("Removing "+pkcol.getParent()+"."+pkcol+" from mapping");
+		if (containsPkColumn(pkcol)) {
+			ColumnMapping m = getMappingByPkCol(pkcol);
+			try {
+				removeChild(m);
+			} catch (IllegalArgumentException e) {
+				throw new SQLObjectException(e);
+			} catch (ObjectDependentException e) {
+				throw new SQLObjectException(e);
+			}
+			try {
+				// XXX no magic here? this is suspect
+				m.getFkColumn().setMagicEnabled(false);
+				m.getFkColumn().removeReference();
+			} finally {
+				m.getFkColumn().setMagicEnabled(true);
+			}
 		}
 	}
 
@@ -1506,59 +1466,21 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		};
 
 		/**
-		 * This listener is for when an fk-column is moved from one index to another.
-         * A reference is preserved, so it is not an issue for the person moving the column.
-         * However, for other clients on a server project, the old column is deleted, and a new one is made.
-         * Therefore, the reference in the column mapping will need to be updated.
+		 * This listener is for when an fk-column is moved from one index to
+		 * another. The reference of the column could change, so this will
+		 * reassign all column mappings to the new reference by comparing UUIDs.
 		 */
 		private final SPListener fkTableListener = new AbstractSPListener() {
-
-		    SQLColumn removedFkColumn = null;
-		    int transactionLevel = 0;
-
 		    @Override
-		    public void transactionStarted(TransactionEvent e) {
-		        if (transactionLevel == 0) {
-		            removedFkColumn = null;
-		        }
-		        transactionLevel++;
-		    }
-
-		    @Override
-		    public void childRemoved(SPChildEvent e) {
-		        if (e.getChild() instanceof SQLColumn) {
-		            SQLColumn col = (SQLColumn) e.getChild();
-		            if (relationship.getMappingByFkCol(col) != null) {
-		                if (transactionLevel == 0) {
-		                    throw new IllegalStateException("Cannot remove an fkColumn outside of a transaction " +
-		                    "(it needs to be done in a transaction so that column mappings may be updated)");
-		                } else {
-		                    removedFkColumn = col;
-		                }
-		            }
-		        }
-		    }
-
-		    @Override
+			/*
+			 * This is a cleaner/better fix than the one from commit 1466, but I
+			 * am not sure what the problem was, as the mappings seem to be
+			 * reassigned fine without this listener.
+			 */
 		    public void childAdded(SPChildEvent e) {
 		        if (e.getChild() instanceof SQLColumn) {
-		            SQLColumn col = (SQLColumn) e.getChild();
-		            if (removedFkColumn != null && removedFkColumn != col
-		                    && removedFkColumn.getUUID().equals(col.getUUID())) {
-		                ColumnMapping mapping = relationship.getMappingByFkCol(removedFkColumn);
-		                if (mapping != null && mapping.getFkColumn() != col) {
-		                    mapping.setFkColumn(col);
-		                }
-		            }
+		        	relationship.reassignMappingsByFkCol((SQLColumn) e.getChild());
 		        }
-		    }
-
-		    @Override
-		    public void transactionEnded(TransactionEvent e) {
-		        if (transactionLevel < 1) {
-		            throw new IllegalStateException("Transaction ended before it was started");
-		        }		        
-		        transactionLevel--;
 		    }
 		};
 

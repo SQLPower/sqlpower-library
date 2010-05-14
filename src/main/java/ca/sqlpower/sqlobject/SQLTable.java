@@ -356,8 +356,6 @@ public class SQLTable extends SQLObject {
 	 * @throws SQLObjectException
 	 */
     protected synchronized void populateColumns() throws SQLObjectException {
-    	logger.debug("Populating columns on table " + getName(), new Exception());
-
     	if (columnsPopulated) return;
     	if (columns.size() > 0) {
     	    throw new IllegalStateException("Can't populate table because it already contains columns");
@@ -782,7 +780,7 @@ public class SQLTable extends SQLObject {
 					" of type " + k.getClass() + " as its parent is not " + getName());
 		}
 		
-		k.getRelationship().getRelationshipManager().disconnectRelationship(false);
+		k.getRelationship().disconnectRelationship(false);
 		
 		int index = importedKeys.indexOf(k);
 		if (index != -1) {
@@ -808,7 +806,7 @@ public class SQLTable extends SQLObject {
 			throw new IllegalStateException("Cannot remove child " + r.getName() + 
 					" of type " + r.getClass() + " as its parent is not " + getName());
 		}
-		r.getRelationshipManager().disconnectRelationship(true);
+		r.disconnectRelationship(true);
 		
 		int index = exportedKeys.indexOf(r);
 		if (index != -1) {
@@ -934,11 +932,11 @@ public class SQLTable extends SQLObject {
 		 * getColumnsByName and addColumnsToTable
 		 */
 		if (logger.isDebugEnabled()) {
-		    logger.debug("Looking for column "+colName+" in "+columns);
-		    logger.debug("Table " + getName() + " has " + columns.size() + " columns");
+//		    logger.debug("Looking for column "+colName+" in "+columns);
+//		    logger.debug("Table " + getName() + " has " + columns.size() + " columns");
 		}
 		for (SQLColumn col : columns) {
-			logger.debug("Current column name is '" + col.getName() + "'");
+			//logger.debug("Current column name is '" + col.getName() + "'");
             if (caseSensitive) {
                 if (col.getName().equals(colName)) {
                     logger.debug("FOUND");
@@ -957,13 +955,13 @@ public class SQLTable extends SQLObject {
 
 	@NonProperty
 	public int getColumnIndex(SQLColumn col) throws SQLObjectException {
-		logger.debug("Looking for column index of: " + col);
+//		logger.debug("Looking for column index of: " + col);
 
 		List<SQLColumn> columns = getColumns();
 		int index = columns.indexOf(col);
 		
 		if (index == -1) {
-			logger.debug("NOT FOUND");
+//			logger.debug("NOT FOUND");
 		}
 		
 		return index;
@@ -1270,7 +1268,7 @@ public class SQLTable extends SQLObject {
 			}
 		}
 	}
-
+	
 	/**
 	 * Since SQLTable is just a container for Folders, there is no special populate
      * step.  The various populate operations (columns, keys, indices) are triggered
@@ -1293,7 +1291,6 @@ public class SQLTable extends SQLObject {
 			}
 			runInForeground(new Runnable() {
 				public void run() {
-					firePropertyChange("populated", false, true);
 				}
 			});
 			runInForeground(new Runnable() {
@@ -1305,6 +1302,7 @@ public class SQLTable extends SQLObject {
 		    runInForeground(new Runnable() {
                 public void run() {
                     rollback(e.getMessage());
+                    logger.error("Sketchy transaction rollback");
                 }
             });
 			throw e;
@@ -2067,10 +2065,10 @@ public class SQLTable extends SQLObject {
 	 */
 	void removeNotify() {
 		for (int i = exportedKeys.size() - 1; i >= 0; i--) {
-			exportedKeys.get(i).getRelationshipManager().tableDisconnected();
+			exportedKeys.get(i).tableDisconnected();
 		}
 		for (int i = importedKeys.size() - 1; i >= 0; i--) {
-			importedKeys.get(i).getRelationship().getRelationshipManager().tableDisconnected();
+			importedKeys.get(i).getRelationship().tableDisconnected();
 		}
 	}
 
@@ -2116,7 +2114,7 @@ public class SQLTable extends SQLObject {
 	void updateRelationshipsForNewIndexColumn(SQLColumn col) {
 		if (isMagicEnabled()) {
 			for (SQLRelationship r : exportedKeys) {
-				r.getRelationshipManager().fixMappingNewChildInParent(col);
+				r.fixMappingNewChildInParent(col);
 			}
 		}
 	}
@@ -2131,7 +2129,7 @@ public class SQLTable extends SQLObject {
 	void updateRelationshipsForRemovedIndexColumns(SQLColumn col) {
 		if (isMagicEnabled()) {
 			for (SQLRelationship r : exportedKeys) {
-				r.getRelationshipManager().fixMappingChildRemoved(col);
+				r.fixMappingChildRemoved(col);
 			}
 		}
 	}
