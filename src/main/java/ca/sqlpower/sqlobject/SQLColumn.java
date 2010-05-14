@@ -445,6 +445,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * upstream type, it will be ignored.
 	 */
 	public static void assignTypes(List<SQLColumn> columns, DataSourceCollection dsCollection, String fromPlatform, UserPrompterFactory upf) {
+		if (fromPlatform == null) return; // Dropped from within the PlayPen
 		List<UserDefinedSQLType> types = dsCollection.getSQLTypes();
 		
 		ListMultimap<String, UserDefinedSQLType> typeMapByName = LinkedListMultimap.create();
