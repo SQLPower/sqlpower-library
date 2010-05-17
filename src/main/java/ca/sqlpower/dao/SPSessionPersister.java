@@ -963,7 +963,7 @@ public abstract class SPSessionPersister implements SPPersister {
 	            childrenForPopulate.addAll(exportedKeysForPopulate);
 	        }
 
-	        if (!table.isImportedKeysPopulated() && importedKeysPopulated != null && columnsPopulated) {
+	        if (!table.isImportedKeysPopulated() && importedKeysPopulated != null && importedKeysPopulated) {
 	            List<PersistedSPObject> importedKeysForPopulate = new ArrayList<PersistedSPObject>();
 	            for (PersistedSPObject spo : persistedObjects) {
 	                if (!spo.isLoaded() && spo.getParentUUID().equals(parent.getUUID())

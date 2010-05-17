@@ -841,7 +841,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	
 	public void reassignMappingsByPkCol(SQLColumn pkCol) {
 		for (ColumnMapping m : mappings) {
-			if (m.pkColumn != pkCol && m.pkColumn.getUUID().equals(pkCol.getUUID())) {
+			if (m.pkColumn != null && m.pkColumn != pkCol && m.pkColumn.getUUID().equals(pkCol.getUUID())) {
 				m.setFkColumn(pkCol);
 			}
 		}
@@ -867,7 +867,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	
 	public void reassignMappingsByFkCol(SQLColumn fkCol) {
 		for (ColumnMapping m : mappings) {
-			if (m.fkColumn != fkCol && m.fkColumn.getUUID().equals(fkCol.getUUID())) {
+			if (m.fkColumn != null && m.fkColumn != fkCol && m.fkColumn.getUUID().equals(fkCol.getUUID())) {
 				m.setFkColumn(fkCol);
 			}
 		}
