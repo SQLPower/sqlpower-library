@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -423,7 +424,7 @@ public class SPVariableHelper implements SPVariableResolver {
 
 	public Collection<Object> resolveCollection(String key, Object defaultValue) {
 		
-		Collection<Object> results = new HashSet<Object>();
+		LinkedHashSet<Object> results = new LinkedHashSet<Object>();
 		String namespace = getNamespace(key);
 		
 		try {
