@@ -1343,4 +1343,13 @@ public class SPSUtils {
         
         return new PopupListenerHandler(popup, glassPane, owningFrame);
     }
+    
+    public static Throwable getRootCause(Throwable t) {
+		Throwable rootCause = t;
+		while (rootCause.getCause() != null
+				&& rootCause != rootCause.getCause()) {
+			rootCause = rootCause.getCause();
+		}
+		return rootCause;
+	}
 }

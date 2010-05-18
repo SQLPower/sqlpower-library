@@ -188,6 +188,7 @@ public class SQLQueryUIComponents {
 				addConnection(db);
 			} catch (SQLObjectException e1) {
 				logTextArea.append(createErrorStringMessage(e1));
+				logTextArea.setCaretPosition(logTextArea.getDocument().getLength());
 			}
         }
 
@@ -408,6 +409,7 @@ public class SQLQueryUIComponents {
         	} finally {
         		logTextArea.append("\n");
         		updateStatus();
+        		logTextArea.setCaretPosition(logTextArea.getDocument().getLength());
         		this.stmtExecutor.removeStatementExecutorListener(executorListener);
         	}
         }
@@ -1672,6 +1674,7 @@ public class SQLQueryUIComponents {
         }
         updateStatus();
         logTextArea.append("\n" + JDBCDataSource.getConnectionInfoString(db.getDataSource(), false) + "\n\n");
+        logTextArea.setCaretPosition(logTextArea.getDocument().getLength());
 	}
     
     public void addWindowListener(Window container){
@@ -1814,7 +1817,7 @@ public class SQLQueryUIComponents {
 		stringWriter.write(Messages.getString("SQLQuery.queryFailed"));
 		e.printStackTrace(traceWriter);
 		stringWriter.write("\n\n");
-		stringWriter.write(Messages.getString("SQLQuery.queryFailedSeeAbove", e.getMessage()));
+		stringWriter.write(Messages.getString("SQLQuery.queryFailedSeeAbove", SPSUtils.getRootCause(e).getMessage()));
 		return stringWriter.toString();
 	}
 }
