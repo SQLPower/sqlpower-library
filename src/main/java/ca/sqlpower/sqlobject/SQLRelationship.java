@@ -1344,18 +1344,22 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 					
 					firePropertyChange("identifying", oldIdentifying, argIdentifying);
 					
-					for (ColumnMapping m : getChildren(ColumnMapping.class)) {
-						if (m.getFkColumn() != null && !m.getFkColumn().isPrimaryKey()) {
-							getFkTable().addToPK(m.getFkColumn());
-						}
-					}	
+					if (isMagicEnabled()) {
+					    for (ColumnMapping m : getChildren(ColumnMapping.class)) {
+					        if (m.getFkColumn() != null && !m.getFkColumn().isPrimaryKey()) {
+					            getFkTable().addToPK(m.getFkColumn());
+					        }
+					    }	
+					}
 					
 				} else {
-					for (ColumnMapping m : getChildren(ColumnMapping.class)) {
-						if (m.getFkColumn() != null && m.getFkColumn().isPrimaryKey()) {
-							getFkTable().moveAfterPK(m.getFkColumn());
-						}
-					}
+				    if (isMagicEnabled()) {
+				        for (ColumnMapping m : getChildren(ColumnMapping.class)) {
+				            if (m.getFkColumn() != null && m.getFkColumn().isPrimaryKey()) {
+				                getFkTable().moveAfterPK(m.getFkColumn());
+				            }
+				        }
+				    }
 					
 					firePropertyChange("identifying", oldIdentifying, argIdentifying);
 				}

@@ -182,5 +182,33 @@ public class TestUndoManager extends TestCase {
 		// this is the point of the test
 		assertEquals("pk1 didn't go back to old type", Types.INTEGER, pk1.getType());
 	}
-	
+
+
+    /**
+     * Test to ensure magic is respected when moving FK index columns from the
+     * primary key which changes the relationship identifyingness.
+     */
+    public void testUndoIndexMoveAndRelationChange() throws Exception {
+        pkTable.moveAfterPK(pkTable.getColumn(1));
+        
+        assertEquals(1, pkTable.getPkSize());
+        assertEquals(0, fkTable.getPkSize());
+        
+        SQLRelationship relationship = SQLRelationship.createRelationship(pkTable, fkTable, true);
+        
+        assertEquals(1, fkTable.getPkSize());
+        assertTrue(relationship.isIdentifying());
+
+        pkTable.getParent().begin("Test");
+        relationship.setIdentifying(false);
+        fkTable.moveAfterPK(fkTable.getColumn(0));
+        pkTable.getParent().commit();
+        
+        assertEquals(0, fkTable.getPkSize());
+        undoManager.undo();
+        
+        assertEquals(true, relationship.isIdentifying());
+        assertEquals(1, fkTable.getPkSize());
+    }
+    
 }
