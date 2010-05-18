@@ -314,6 +314,7 @@ public abstract class PreparedStatementDecorator implements PreparedStatement{
 
 	public void setObject(int parameterIndex, Object x, int targetSqlType,
 			int scale) throws SQLException {
+		
 		preparedStatement.setObject(parameterIndex, x, targetSqlType, scale);
 	}
 
@@ -323,7 +324,32 @@ public abstract class PreparedStatementDecorator implements PreparedStatement{
 	}
 
 	public void setObject(int parameterIndex, Object x) throws SQLException {
-		preparedStatement.setObject(parameterIndex, x);
+		preparedStatement.setObject(parameterIndex, applyJavaToJdbcMappings(x));
+	}
+	
+	/**
+	 * Most database drivers mess up with the date conversions
+	 * and other java to sql object mappings.
+	 * Oracle does. SQL Server does. They didn't implement the 
+	 * object mappings as specified in the JDBC specs.
+	 * This function will java objects to sql ones if needed.
+	 * @param x Object to maybe convert.
+	 * @return Either the 
+	 */
+	protected Object applyJavaToJdbcMappings(Object x) {
+		
+		// Convert java dates to sql dates.
+		if (x instanceof java.util.Date) {
+			if (x == null) {
+				return (java.sql.Date) null;
+			} else {
+				return new java.sql.Date(((java.util.Date)x).getTime());
+			}
+		
+		// No conversion necessary. Return the original object.
+		} else {
+			return x;
+		}
 	}
 
 	public void setQueryTimeout(int seconds) throws SQLException {
