@@ -299,14 +299,10 @@ public class SQLTable extends SQLObject {
 		populateRelationships();
 		populateImportedKeys();
         SQLIndex newPKIndex = new SQLIndex();
-		SQLTable t = new SQLTable(parent, true, newPKIndex);
-		t.setName(getName());
-		t.remarks = remarks;
+        SQLTable t = new SQLTable(parent, getName(), remarks, "TABLE", true, newPKIndex);
 		for (Map.Entry<Class<? extends SQLObject>, Throwable> inaccessibleReason : getChildrenInaccessibleReasons().entrySet()) {
         	t.setChildrenInaccessibleReason(inaccessibleReason.getValue(), inaccessibleReason.getKey(), false);
         }
-
-		t.setPhysicalName(getPhysicalName());
 
 		t.inherit(this, transferStyle, preserveColumnSource);
         inheritIndices(this, t);
@@ -848,9 +844,7 @@ public class SQLTable extends SQLObject {
 	 * columns will be added to this table's primary key.
 	 */
 	public void inherit(int pos, SQLTable source, TransferStyles transferStyle, boolean preserveColumnSource) throws SQLObjectException {
-		SQLColumn c;
-		if (source == this)
-		{
+		if (source == this) {
 			throw new SQLObjectException("Cannot inherit from self");
 		}
 
@@ -866,17 +860,7 @@ public class SQLTable extends SQLObject {
 
 		begin("Inherting columns from source table");
 		for (SQLColumn child : source.getColumns()) {
-			switch (transferStyle) {
-			case REVERSE_ENGINEER:
-				c = child.createInheritingInstance(this);
-				break;
-			case COPY:
-				c = child.createCopy(this, preserveColumnSource);
-				break;
-			default:
-				throw new IllegalStateException("Unknown transfer type of " + transferStyle);
-			}
-			addColumn(c, addToPK, pos);
+			inherit(pos, child, addToPK, transferStyle, preserveColumnSource);
 			pos++;
 		}
 		commit();
@@ -886,7 +870,7 @@ public class SQLTable extends SQLObject {
 	    if (addToPK && pos > 0 && !getColumn(pos - 1).isPrimaryKey()) {
 	        throw new IllegalArgumentException("Can't inherit new PK column below a non-PK column! Insert pos="+pos+"; addToPk="+addToPK);
 	    }
-		SQLColumn c = sourceCol.createInheritingInstance(this);
+		SQLColumn c;
 		switch (transferStyle) {
 		case REVERSE_ENGINEER:
 			c = sourceCol.createInheritingInstance(this);
@@ -1943,10 +1927,10 @@ public class SQLTable extends SQLObject {
                 }
             }
             
-            boolean removed = removeColumn((SQLColumn) child);
+            return removeColumn((SQLColumn) child);
             
 		} else if (child instanceof SQLRelationship) {
-			removeExportedKey((SQLRelationship) child);
+			return removeExportedKey((SQLRelationship) child);
 		} else if (child instanceof SQLImportedKey) {
 			return removeImportedKey((SQLImportedKey) child);
 		} else if (child instanceof SQLIndex) {
@@ -2088,7 +2072,7 @@ public class SQLTable extends SQLObject {
 			targetIndex = getPkSize();
 		}
 		int currentIndex = columns.indexOf(col);
-		changeColumnIndex(columns.indexOf(col), targetIndex, false);
+		changeColumnIndex(currentIndex, targetIndex, false);
 	}
 
 	/**

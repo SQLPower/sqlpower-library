@@ -434,7 +434,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
      * @param oldChildren The children that might be removed
      * @return  True if the operation should proceed; false if it should not. 
      */
-    protected boolean fireDbChildrenPreRemove(int[] oldIndices, List oldChildren) {
+    protected boolean fireDbChildrenPreRemove(int[] oldIndices, List<SQLObject> oldChildren) {
         if (logger.isDebugEnabled()) {
             logger.debug(getClass().getName()+" "+toString()+": " +
                     "firing dbChildrenPreRemove event");
@@ -466,7 +466,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
     protected boolean fireDbChildPreRemove(int oldIndex, SQLObject oldChild) {
         int[] oldIndexArray = new int[1];
         oldIndexArray[0] = oldIndex;
-        List oldChildList = new ArrayList(1);
+        List<SQLObject> oldChildList = new ArrayList<SQLObject>(1);
         oldChildList.add(oldChild);
         return fireDbChildrenPreRemove(oldIndexArray, oldChildList);
     }

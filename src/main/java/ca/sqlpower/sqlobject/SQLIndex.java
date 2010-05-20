@@ -1086,14 +1086,13 @@ public class SQLIndex extends SQLObject {
 			SQLIndex index, SQLColumn column) {
 		if (column.getParent().equals(parentTable)) return column;
 		
-		SQLColumn sqlColumn = null;
 		for (SQLColumn existingCol : parentTable.getColumnsWithoutPopulating()) {
 			if (existingCol.getName().equals(column.getName()) &&
 					index.indexOf(existingCol) == -1) {
-				sqlColumn = existingCol;
+				return existingCol;
 			}
 		}
-		return sqlColumn;
+		return null;
 	}
 
 	/**

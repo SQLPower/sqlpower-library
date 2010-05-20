@@ -1815,7 +1815,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	    
 	    if (getPkTable().getPkSize() > getFkTable().getPkSize()) return false;
 	    
-	    List<ColumnMapping> columnMappings = (List<ColumnMapping>)getChildren();
+	    List<ColumnMapping> columnMappings = getChildren(ColumnMapping.class);
 	    SQLIndex pkTablePKIndex = getPkTable().getPrimaryKeyIndex();
 	    if (pkTablePKIndex == null) return false;
 	    List<Column> pkColumns = pkTablePKIndex.getChildren(Column.class);

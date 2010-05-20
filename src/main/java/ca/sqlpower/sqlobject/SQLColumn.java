@@ -41,6 +41,7 @@ import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.DataSourceCollection;
+import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.SQL;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
@@ -444,7 +445,11 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * UserPrompter will be used. If any column in the list already has an
 	 * upstream type, it will be ignored.
 	 */
-	public static void assignTypes(List<SQLColumn> columns, DataSourceCollection dsCollection, String fromPlatform, UserPrompterFactory upf) {
+	public static void assignTypes(
+			List<SQLColumn> columns, 
+			DataSourceCollection<? extends SPDataSource> dsCollection, 
+			String fromPlatform, 
+			UserPrompterFactory upf) {
 		if (fromPlatform == null) return; // Dropped from within the PlayPen
 		List<UserDefinedSQLType> types = dsCollection.getSQLTypes();
 		
@@ -532,15 +537,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * "MY_COLUMN"</code> and type <code>VARCHAR(4)</code>,
 	 * <code>compare(column1, column2)</code> will return 0.
 	 */
-	public static class ColumnNameComparator implements Comparator {
-		/**
-		 * Forwards to {@link #compare(SQLColumn,SQLColumn)}.
-		 *
-		 * @throws ClassCastException if o1 or o2 is not of class SQLColumn.
-		 */
-		public int compare(Object o1, Object o2) {
-			return compare((SQLColumn) o1, (SQLColumn) o2);
-		}
+	public static class ColumnNameComparator implements Comparator<SQLColumn> {
 
 		/**
 		 * See class description for behaviour of this method.

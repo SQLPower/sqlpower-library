@@ -164,7 +164,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 		SQLColumn fooCol = table1pk.getColumnByName("foo");
 
 		// check column name comparator
-		Comparator nameComp = new SQLColumn.ColumnNameComparator();
+		Comparator<SQLColumn> nameComp = new SQLColumn.ColumnNameComparator();
 		assertTrue(nameComp.compare(cowCol, mooCol) < 0);
 		assertTrue(nameComp.compare(mooCol, fooCol) > 0);
 		assertTrue(nameComp.compare(fooCol, cowCol) > 0);
