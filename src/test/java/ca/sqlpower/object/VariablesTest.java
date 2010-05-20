@@ -145,9 +145,9 @@ public class VariablesTest extends TestCase {
 		
 		String[] list2 = new String[4];
 		list2[0] = "value1";
-		list2[1] = "value4";
-		list2[2] = "value2";
-		list2[3] = "value3";
+		list2[1] = "value2";
+		list2[2] = "value3";
+		list2[3] = "value4";
 		
 		root = new MockSPObject();
 		MockSPObject node1 = new MockSPObject();
