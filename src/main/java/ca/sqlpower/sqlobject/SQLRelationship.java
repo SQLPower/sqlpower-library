@@ -324,12 +324,15 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		foreignKey = new SQLImportedKey(this);
 	}
 
+	// TODO Remove the fkTable from this constructor. It is only included so that the session persister still has a property to set. Once the repo can be upgraded, this can just be removed.
 	@Constructor
-    public SQLRelationship(@ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="parent") SQLTable pkTable, 
-            @ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="fkTable") SQLTable fkTable) {
-        this();
+    public SQLRelationship(@ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="parent") SQLTable pkTable,
+    		@ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="fkTable") SQLTable fkTable) {
+		pkCardinality = ONE;
+		fkCardinality = ZERO | ONE | MANY;
+		setName("New SQL Relationship");
+		setPopulated(true);
         setParent(pkTable);
-        setFkTable(fkTable);
     }
     
 	/**
@@ -430,7 +433,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		firePropertyChange("pkTable", oldTable, pkTable);
 	}
 	
-	@Mutator(constructorMutator=true)
+	// TODO mark this property transient, once we can upgrade the repo to remove it
+	@Transient @Mutator
 	public void setFkTable(SQLTable fkTable) {
 		if (getFkTable() != null && !getFkTable().equals(fkTable)) 
 			throw new IllegalArgumentException("Cannot set the child table of relationship " + 
@@ -1393,12 +1397,12 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		return getParent();
 	}
 
-	@Transient @Accessor
+	@Accessor
 	public SQLImportedKey getForeignKey() {
 		return foreignKey;
 	}
 	
-	@Transient @Mutator
+	@Mutator
 	public void setForeignKey(SQLImportedKey newKey) {
 		SQLImportedKey oldKey = foreignKey;
 		this.foreignKey = newKey;
@@ -1435,7 +1439,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 	}
 	
-	@Transient @Accessor
+	// TODO mark this property transient, once we can upgrade the repo to remove it
+	@Accessor
 	public SQLTable getFkTable() {
 		if (foreignKey != null) {
 			return foreignKey.getParent();
@@ -1493,7 +1498,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				@ConstructorParameter(propertyName="relationship") SQLRelationship relationship) {
 			super();
 			this.relationship = relationship;
-			relationship.setForeignKey(this);
 			setName(relationship.getName());
 			setPopulated(relationship.isPopulated());
 			relationship.addSPListener(relationshipPropertyListener);

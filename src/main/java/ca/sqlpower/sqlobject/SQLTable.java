@@ -722,22 +722,26 @@ public class SQLTable extends SQLObject {
 
             for (SQLRelationship addMe : allChildren) {
                 //This if is for backwards compatibility
-                if (!addMe.getFkTable().getImportedKeysWithoutPopulating().contains(addMe.getForeignKey())) {
-                    addMe.getParent().exportedKeys.add(addMe);
-                    addMe.getFkTable().importedKeys.add(addMe.getForeignKey());
-                    relsAdded.add(addMe);
-                }
+            	addMe.getParent().exportedKeys.add(addMe);
+            	if (addMe.getPkTable().isMagicEnabled()) {
+            		if (!addMe.getFkTable().getImportedKeysWithoutPopulating().contains(addMe.getForeignKey())) {
+            			addMe.getFkTable().importedKeys.add(addMe.getForeignKey());
+            			relsAdded.add(addMe);
+            		}
+            	}
             }
             table.exportedKeysPopulated = true;
 
             table.begin("Populating relationships for Table " + table);
             for (SQLRelationship addMe : relsAdded) {
                 SQLTable pkTable = addMe.getParent();
-                SQLTable fkTable = addMe.getFkTable();
-                SQLImportedKey foreignKey = addMe.getForeignKey();
-                addMe.attachRelationship(pkTable, fkTable, false, false);
+                if (pkTable.isMagicEnabled()) {
+                	SQLTable fkTable = addMe.getFkTable();
+                	SQLImportedKey foreignKey = addMe.getForeignKey();
+                	addMe.attachRelationship(pkTable, fkTable, false, false);
+                	fkTable.fireChildAdded(SQLImportedKey.class, foreignKey, fkTable.importedKeys.indexOf(foreignKey));
+                }
                 pkTable.fireChildAdded(SQLRelationship.class, addMe, pkTable.exportedKeys.indexOf(addMe));
-                fkTable.fireChildAdded(SQLImportedKey.class, foreignKey, fkTable.importedKeys.indexOf(foreignKey));
             }
             table.firePropertyChange("exportedKeysPopulated", startPopulated, true);
             table.commit();
@@ -745,7 +749,9 @@ public class SQLTable extends SQLObject {
             table.rollback(e.getMessage());
             for (SQLRelationship rel : relsAdded) {
                 rel.getParent().exportedKeys.remove(rel);
-                rel.getFkTable().importedKeys.remove(rel.getForeignKey());
+                if (table.isMagicEnabled()) {
+                	rel.getFkTable().importedKeys.remove(rel.getForeignKey());
+                }
             }
             table.exportedKeysPopulated = startPopulated;
             throw new SQLObjectRuntimeException(e);
