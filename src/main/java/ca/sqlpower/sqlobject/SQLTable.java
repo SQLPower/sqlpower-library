@@ -351,19 +351,23 @@ public class SQLTable extends SQLObject {
 	 * 
 	 * @throws SQLObjectException
 	 */
-    protected synchronized void populateColumns() throws SQLObjectException {
-    	if (columnsPopulated) return;
-    	if (columns.size() > 0) {
-    	    throw new IllegalStateException("Can't populate table because it already contains columns");
+    protected void populateColumns() throws SQLObjectException {
+    	synchronized(getClass()) {
+    		synchronized(this) {
+    			if (columnsPopulated) return;
+    			if (columns.size() > 0) {
+    				throw new IllegalStateException("Can't populate table because it already contains columns");
+    			}
+
+    			logger.debug("column folder populate starting for table " + getName());
+
+    			populateAllColumns(getCatalogName(), getSchemaName(), getParentDatabase(), getParent());
+
+    			logger.debug("column folder populate finished for table " + getName());
+
+    			populateIndices();
+    		}
     	}
-
-    	logger.debug("column folder populate starting for table " + getName());
-
-    	populateAllColumns(getCatalogName(), getSchemaName(), getParentDatabase(), getParent());
-
-    	logger.debug("column folder populate finished for table " + getName());
-
-    	populateIndices();
     }
 
 	/**
@@ -374,6 +378,10 @@ public class SQLTable extends SQLObject {
 	 * passed in will be populated with all of the columns found for the tables
 	 * in the database. No additional tables will be created even if columns
 	 * exist for missing tables.
+	 * <p>
+	 * Note that this class will iterate over all columns, obtaining locks on
+	 * all them. Any methods calling this must be sure to synchronize on the
+	 * class <b>before</b> the table instance, or else risk causing deadlock.
 	 * <p>
 	 * This is a helper method for {@link #populateColumns()}.
 	 * 
@@ -592,59 +600,64 @@ public class SQLTable extends SQLObject {
         }
 	}
 	
-	protected synchronized void populateImportedKeys() throws SQLObjectException {
-		if (importedKeysPopulated) return;
-		
-		CachedRowSet crs = null;
-		Connection con = null;
-		try {
-			con = getParentDatabase().getConnection();
-			DatabaseMetaData dbmd = con.getMetaData();
-			crs = new CachedRowSet();
-			ResultSet exportedKeysRS = dbmd.getImportedKeys(getCatalogName(), getSchemaName(), getName());
-            crs.populate(exportedKeysRS);
-            exportedKeysRS.close();
-		} catch (SQLException ex) {
-            throw new SQLObjectException("Couldn't locate related tables", ex);
-        } finally {
-            // close the connection before it makes the recursive call
-            // that could lead to opening more connections
-            try {
-                if (con != null) con.close();
-            } catch (SQLException ex) {
-                logger.warn("Couldn't close connection", ex);
-            }
-        }
-        try {
-			while (crs.next()) {
-				if (crs.getInt(9) != 1) {
-					// just another column mapping in a relationship we've already handled
-					logger.debug("Got exported key with sequence " + crs.getInt(9) + " on " + crs.getString(5) + "." + crs.getString(6) + "." + crs.getString(7) + ", continuing.");
-					continue;
+	protected void populateImportedKeys() throws SQLObjectException {
+		// Must synchronize on class before instance. See populateAllColumns
+		synchronized(getClass()) {
+			synchronized(this) {
+				if (importedKeysPopulated) return;
+
+				CachedRowSet crs = null;
+				Connection con = null;
+				try {
+					con = getParentDatabase().getConnection();
+					DatabaseMetaData dbmd = con.getMetaData();
+					crs = new CachedRowSet();
+					ResultSet exportedKeysRS = dbmd.getImportedKeys(getCatalogName(), getSchemaName(), getName());
+					crs.populate(exportedKeysRS);
+					exportedKeysRS.close();
+				} catch (SQLException ex) {
+					throw new SQLObjectException("Couldn't locate related tables", ex);
+				} finally {
+					// close the connection before it makes the recursive call
+					// that could lead to opening more connections
+					try {
+						if (con != null) con.close();
+					} catch (SQLException ex) {
+						logger.warn("Couldn't close connection", ex);
+					}
 				}
-				logger.debug("Got exported key with sequence " + crs.getInt(9) + " on " + crs.getString(5) + "." + crs.getString(6) + "." + crs.getString(7) + ", populating.");
-				String cat = crs.getString(1);
-				String sch = crs.getString(2);
-				String tab = crs.getString(3);
-				SQLTable pkTable = getParentDatabase().getTableByName(cat, sch, tab);
-                if (pkTable == null) {
-                    throw new IllegalStateException("While populating table " +
-                            SQLObjectUtils.toQualifiedName(getParent()) +
-                            ", I failed to find child table " +
-                            "\""+cat+"\".\""+sch+"\".\""+tab+"\"");
-                }
-				pkTable.populateColumns();
-				pkTable.populateIndices();
-				pkTable.populateRelationships();
-			}
-			setImportedKeysPopulated(true);
-		} catch (SQLException ex) {
-			throw new SQLObjectException("Couldn't locate related tables", ex);
-		} finally {
-			try {
-				if (crs != null) crs.close();
-			} catch (SQLException ex) {
-				logger.warn("Couldn't close resultset", ex);
+				try {
+					while (crs.next()) {
+						if (crs.getInt(9) != 1) {
+							// just another column mapping in a relationship we've already handled
+							logger.debug("Got exported key with sequence " + crs.getInt(9) + " on " + crs.getString(5) + "." + crs.getString(6) + "." + crs.getString(7) + ", continuing.");
+							continue;
+						}
+						logger.debug("Got exported key with sequence " + crs.getInt(9) + " on " + crs.getString(5) + "." + crs.getString(6) + "." + crs.getString(7) + ", populating.");
+						String cat = crs.getString(1);
+						String sch = crs.getString(2);
+						String tab = crs.getString(3);
+						SQLTable pkTable = getParentDatabase().getTableByName(cat, sch, tab);
+						if (pkTable == null) {
+							throw new IllegalStateException("While populating table " +
+									SQLObjectUtils.toQualifiedName(getParent()) +
+									", I failed to find child table " +
+									"\""+cat+"\".\""+sch+"\".\""+tab+"\"");
+						}
+						pkTable.populateColumns();
+						pkTable.populateIndices();
+						pkTable.populateRelationships();
+					}
+					setImportedKeysPopulated(true);
+				} catch (SQLException ex) {
+					throw new SQLObjectException("Couldn't locate related tables", ex);
+				} finally {
+					try {
+						if (crs != null) crs.close();
+					} catch (SQLException ex) {
+						logger.warn("Couldn't close resultset", ex);
+					}
+				}
 			}
 		}
 	}
@@ -655,10 +668,15 @@ public class SQLTable extends SQLObject {
 	 * 
 	 * @throws SQLObjectException
 	 */
-	protected synchronized void populateExportedKeys() throws SQLObjectException {
-		populateColumns();
-		populateIndices();
-		populateRelationships();
+	protected void populateExportedKeys() throws SQLObjectException {
+		// Must synchronize on class before instance. See populateAllColumns
+		synchronized(getClass()) {
+			synchronized(this) {
+				populateColumns();
+				populateIndices();
+				populateRelationships();
+			}
+		}
 	}
 
 	/**
@@ -1501,9 +1519,14 @@ public class SQLTable extends SQLObject {
 	 * @return the value of columns
 	 */
 	@NonProperty
-	public synchronized List<SQLColumn> getColumns() throws SQLObjectException {
-		populateColumns();
-		return getColumnsWithoutPopulating();
+	public List<SQLColumn> getColumns() throws SQLObjectException {
+		// Must synchronize on class before instance. See populateAllColumns
+		synchronized(getClass()) {
+			synchronized(this) {
+				populateColumns();
+				return getColumnsWithoutPopulating();
+			}
+		}
 	}
 
 	/**
@@ -1593,17 +1616,22 @@ public class SQLTable extends SQLObject {
      * Gets a list of unique indices
      */
 	@NonProperty
-    public synchronized List<SQLIndex> getUniqueIndices() throws SQLObjectException {
-        populateColumns();
-        populateIndices();
-        List<SQLIndex> list = new ArrayList<SQLIndex>();
-        list.add(primaryKeyIndex);
-        for (SQLIndex index : indices) {
-        	if (index.isUnique()) {
-        		list.add(index);
-        	}
-        }
-        return list;
+    public List<SQLIndex> getUniqueIndices() throws SQLObjectException {
+		// Must synchronize on class before instance. See populateAllColumns
+		synchronized(getClass()) {
+			synchronized(this) {
+				populateColumns();
+				populateIndices();
+				List<SQLIndex> list = new ArrayList<SQLIndex>();
+				list.add(primaryKeyIndex);
+				for (SQLIndex index : indices) {
+					if (index.isUnique()) {
+						list.add(index);
+					}
+				}
+				return list;
+			}
+		}
     }
 
     /**
