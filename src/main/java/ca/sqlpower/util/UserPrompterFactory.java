@@ -36,8 +36,6 @@ import java.io.File;
 import java.text.MessageFormat;
 import java.util.List;
 
-import javax.swing.JFrame;
-
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.util.UserPrompter.UserPromptOptions;

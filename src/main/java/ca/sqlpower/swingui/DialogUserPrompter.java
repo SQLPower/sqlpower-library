@@ -41,9 +41,9 @@ import com.jgoodies.forms.builder.ButtonBarBuilder;
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 import com.jgoodies.forms.layout.FormLayout;
 
-public class ModalDialogUserPrompter implements UserPrompter {
+public class DialogUserPrompter implements UserPrompter {
     
-    private static Logger logger = Logger.getLogger(ModalDialogUserPrompter.class);
+    private static Logger logger = Logger.getLogger(DialogUserPrompter.class);
 
     /**
      * The dialog that poses the question to the user.
@@ -91,13 +91,23 @@ public class ModalDialogUserPrompter implements UserPrompter {
      */
 	private final UserPromptResponse defaultResponseType;
 
+	/**
+	 * Creates a new user prompter that uses a modal dialog to prompt the user.
+	 * Normally this constructor should be called via a {@link UserPrompterFactory}
+     * such as the current Session.
+	 */
+	 public DialogUserPrompter(UserPromptOptions optionType, UserPromptResponse defaultResponseType,
+	            JFrame owner, String questionMessage, String ... buttonNames) {
+		 this(optionType, defaultResponseType, owner, questionMessage, true, buttonNames);
+	 }
+	
     /**
      * Creates a new user prompter that uses a dialog to prompt the user.
      * Normally this constructor should be called via a {@link UserPrompterFactory}
      * such as the current ArchitectSession.
      */
-    public ModalDialogUserPrompter(UserPromptOptions optionType, UserPromptResponse defaultResponseType,
-            JFrame owner, String questionMessage, String ... buttonNames) {
+    public DialogUserPrompter(UserPromptOptions optionType, UserPromptResponse defaultResponseType,
+            JFrame owner, String questionMessage, boolean modal, String ... buttonNames) {
     	if(optionType.getButtonCount() != buttonNames.length) {
 			throw new IllegalStateException("Expecting " + optionType.getButtonCount() + 
 					" arguments for the optionType " + optionType + "Recieved only " + buttonNames.length + "arguments\n" +
@@ -195,7 +205,7 @@ public class ModalDialogUserPrompter implements UserPrompter {
                 throw new UnsupportedOperationException("Default response type : " + defaultResponseType + " is not known");
         }
 
-        confirmDialog.setModal(true);
+        confirmDialog.setModal(modal);
         confirmDialog.add(builder.getPanel());
     }
     

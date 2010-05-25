@@ -32,13 +32,12 @@ import ca.sqlpower.util.UserPrompter.UserPromptResponse;
 
 public class SwingUIUserPrompterFactory implements UserPrompterFactory {
     
-    private JFrame owner;
+    protected JFrame owner;
 
     public SwingUIUserPrompterFactory(JFrame owner) {
         this.owner = owner;
     }
-
-
+    
     public void setParentFrame(JFrame frame) {
         owner = frame;
     }
@@ -47,7 +46,7 @@ public class SwingUIUserPrompterFactory implements UserPrompterFactory {
 			UserPromptType responseType, UserPromptOptions optionType,
 			UserPromptResponse defaultResponseType, Object defaultResponse,
 			String... buttonNames) {
-		return new ModalDialogUserPrompter(optionType, defaultResponseType, owner, question, buttonNames);
+		return new DialogUserPrompter(optionType, defaultResponseType, owner, question, buttonNames);
 	}
 
 	public UserPrompter createDatabaseUserPrompter(String question,
@@ -65,4 +64,21 @@ public class SwingUIUserPrompterFactory implements UserPrompterFactory {
 			List<T> responses, T defaultResponse) {
 		return new ModalDialogListUserPrompter<T>(owner, question, responses, defaultResponse);
 	}
+	
+	public static class NonModalSwingUIUserPrompterFactory extends SwingUIUserPrompterFactory {
+
+		public NonModalSwingUIUserPrompterFactory(JFrame owner) {
+			super(owner);
+		}
+		
+		@Override
+		public UserPrompter createUserPrompter(String question,
+				UserPromptType responseType, UserPromptOptions optionType,
+				UserPromptResponse defaultResponseType, Object defaultResponse,
+				String... buttonNames) {
+			return new DialogUserPrompter(optionType, defaultResponseType, owner, question, false, buttonNames);
+		}
+		
+	}
+	
 }
