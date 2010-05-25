@@ -14,7 +14,7 @@
 	<classpathentry kind="lib" path="lib/junit-3.8.2.jar"/>
 	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar"/>
 	<classpathentry kind="lib" path="lib/mail-1.4.1.jar"/>
-	<classpathentry kind="lib" path="lib/miglayout-3.7-swing.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/miglayout-3.7-swing.jar"/>
 	<classpathentry kind="lib" path="lib/opencsv-1.8.jar"/>
 	<classpathentry kind="lib" path="lib/piccolo.jar" sourcepath="/wabit/libsrc/Piccolo2D.Java-1.2.1.zip"/>
 	<classpathentry kind="lib" path="lib/piccolox.jar"/>
