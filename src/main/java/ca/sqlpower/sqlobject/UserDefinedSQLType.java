@@ -228,14 +228,29 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Mutator
     public void setBasicType(BasicSQLType basicType) {
+    	begin("Setting basic type.");
     	BasicSQLType oldValue = this.basicType;
         this.basicType = basicType;
         firePropertyChange("basicType", oldValue, basicType);
+        
+        // Hack to set the appropriate "type" property given a basic type
+        // At current, we are using the most generic SQL type so that all
+        // the properties within the data type, such as precision and scale,
+        // can be used.
+        if (getType() == null) {
+        	setType(BasicSQLType.convertFromBasicSQLType(basicType));
+        }
+        
+        commit();
     }
 
     @Accessor
     public BasicSQLType getBasicType() {
-        return basicType == null && upstreamType != null ? upstreamType.getBasicType() : basicType;
+    	if (basicType == null && upstreamType != null) {
+    		return upstreamType.getBasicType();
+    	} else {
+    		return basicType;
+    	}
     }
 
     @NonProperty
@@ -346,7 +361,11 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Accessor
     public Integer getType() {
-         return (type == null && upstreamType != null) ? upstreamType.getType() : type;
+    	if (type == null && upstreamType != null) {
+    		return upstreamType.getType();
+    	} else {
+    		return type;
+    	}
     }
 
     @NonProperty
@@ -429,6 +448,10 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
             precisionType = getUpstreamType().getPrecisionType(platform);
         }
         
+        if (precisionType == null) {
+        	precisionType = PropertyType.NOT_APPLICABLE;
+        }
+        
         return precisionType;
     }
 
@@ -444,6 +467,10 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
             }
         } else if (getUpstreamType() != null) {
             scaleType = getUpstreamType().getScaleType(platform);
+        }
+        
+        if (scaleType == null) {
+        	scaleType = PropertyType.NOT_APPLICABLE;
         }
         
         return scaleType;

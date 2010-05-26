@@ -465,7 +465,14 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		for (SQLColumn column : columns) {
 			if (column.getUserDefinedSQLType().getUpstreamType() != null) continue;
             String nativeType = column.getSourceDataTypeName();
-            List<UserDefinedSQLType> upstreamTypes = typeMapByName.get(nativeType == null ? "" : nativeType.toLowerCase());
+            
+            List<UserDefinedSQLType> upstreamTypes;
+            if (nativeType == null) {
+            	upstreamTypes = typeMapByName.get("");
+            } else {
+            	upstreamTypes = typeMapByName.get(nativeType.toLowerCase());
+            }
+            
             UserDefinedSQLType upstreamType;
             if (upstreamTypes.size() == 0) {
             	int jdbcCode = column.getType();
@@ -502,29 +509,30 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
             UserDefinedSQLType type = column.getUserDefinedSQLType();
             
             if (upstreamType != null) {
-            	if (upstreamType.getType() != null
-            			&& upstreamType.getType().equals(type.getType()))
-            		type.setType(null);
-
-            	if (upstreamType.getScale(fromPlatform) == type.getScale(fromPlatform))
+            	if (upstreamType.getScale(fromPlatform) == type.getScale(fromPlatform)) {
             		type.setScale(fromPlatform, null);
+            	}
 
-            	if (upstreamType.getPrecision(fromPlatform) == type.getPrecision(fromPlatform))
+            	if (upstreamType.getPrecision(fromPlatform) == type.getPrecision(fromPlatform)) {
             		type.setPrecisionType(fromPlatform, null);
+            	}
 
             	if (upstreamType.getNullability() == null
-            			&& upstreamType.getNullability().equals(type.getNullability()))
+            			&& upstreamType.getNullability().equals(type.getNullability())) {
             		type.setMyNullability(null);
+            	}
 
             	if (upstreamType.getDefaultValue(fromPlatform) != null
-            			&& upstreamType.getDefaultValue(fromPlatform).equals(type.getDefaultValue(fromPlatform)))
+            			&& upstreamType.getDefaultValue(fromPlatform).equals(type.getDefaultValue(fromPlatform))) {
             		type.setDefaultValue(fromPlatform, null);
+            	}
 
             	if (upstreamType.getAutoIncrement() != null
-            			&& upstreamType.getAutoIncrement().equals(type.getAutoIncrement()))
+            			&& upstreamType.getAutoIncrement().equals(type.getAutoIncrement())) {
             		type.setMyAutoIncrement(null);
+            	}
             	
-            	column.getUserDefinedSQLType().setUpstreamType(upstreamType);
+            	type.setUpstreamType(upstreamType);
             }
 		}
 	}

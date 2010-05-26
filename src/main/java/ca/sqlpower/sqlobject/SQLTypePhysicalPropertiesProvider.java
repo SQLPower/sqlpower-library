@@ -121,6 +121,35 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 
 			}
 		}
+
+		/**
+		 * Converts from a {@link BasicSQLType} enum to the most generic JDBC
+		 * types defined by {@link Types}.
+		 * 
+		 * @param type
+		 *            The {@link BasicSQLType} enum to convert.
+		 * @return An {@link Integer} from {@link Types} which generically
+		 *         describes the SQL type you want to convert. Returns null if
+		 *         null is passed in.
+		 */
+		public static Integer convertFromBasicSQLType(BasicSQLType type) {
+			if (type == null) return null;
+			switch (type) {
+			case BOOLEAN:
+				return Types.BOOLEAN;
+			case DATETIME:
+				return Types.TIMESTAMP;
+			case NUMBER:
+				return Types.DECIMAL;
+			case OTHER:
+				return Types.OTHER;
+			case TEXT:
+				return Types.VARCHAR;
+			default:
+				throw new IllegalArgumentException("Unhandled BasicSQLType: " + 
+						type.toString());
+			}
+		}
 	}
 
 	/**

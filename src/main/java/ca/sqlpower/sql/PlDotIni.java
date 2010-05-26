@@ -213,12 +213,12 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
          * The contents of this section (part before the '=' is the key, and
          * the rest of the line is the value).
          */
-        private Map properties;
+        private Map<String, String> properties;
 
         /** Creates a new section with the given name and no properties. */
         public Section(String name) {
             this.name = name;
-            this.properties = new LinkedHashMap();
+            this.properties = new LinkedHashMap<String, String>();
         }
 
         /**
@@ -234,7 +234,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
         }
 
         /** Returns the whole properties map.  This is required when saving the PL.INI file. */
-        public Map getPropertiesMap() {
+        public Map<String, String> getPropertiesMap() {
             return properties;
         }
 
@@ -642,7 +642,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
         int typeNum = 1;
         int olapNum = 1;
 
-        Iterator it = fileSections.iterator();
+        Iterator<Object> it = fileSections.iterator();
 	    while (it.hasNext()) {
 	        Object next = it.next();
 
@@ -716,7 +716,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 	 * @param properties The properties to output in this section.
 	 * @throws IOException when writing to the given stream fails.
 	 */
-	private void writeSection(OutputStream out, String name, Map properties) throws IOException {
+	private void writeSection(OutputStream out, String name, Map<String, String> properties) throws IOException {
 	    if (name != null) {
 	        String sectionHeading = "["+name+"]" + DOS_CR_LF;
 	        out.write(sectionHeading.getBytes());
@@ -732,9 +732,9 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 	    }
 
 	    // now get everything else, and ignore the LOGICAL property
-	    Iterator it = properties.entrySet().iterator();
+	    Iterator<Map.Entry<String, String>> it = properties.entrySet().iterator();
 	    while (it.hasNext()) {
-	        Map.Entry ent = (Map.Entry) it.next();
+	        Map.Entry<String, String> ent = it.next();
 	        if (!ent.getKey().equals("Logical")) {
 	        	out.write(((String) ent.getKey()).getBytes());
 	        	if (ent.getValue() != null) {
@@ -757,7 +757,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
     }
     
     public <C extends SPDataSource> C getDataSource(String name, Class<C> classType) {
-        Iterator it = fileSections.iterator();
+        Iterator<Object> it = fileSections.iterator();
         while (it.hasNext()) {
             Object next = it.next();
             if (classType.isInstance(next)) {
@@ -812,7 +812,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
      */
     public <C extends SPDataSource> List<C> getConnections(Class<C> classType) {
         List<C> connections = new ArrayList<C>();
-	    Iterator it = fileSections.iterator();
+	    Iterator<Object> it = fileSections.iterator();
 	    while (it.hasNext()) {
 	        Object next = it.next();
 	        if (classType.isInstance(next)) {
