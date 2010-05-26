@@ -662,7 +662,8 @@ public abstract class SPSessionPersister implements SPPersister {
 			}
 			//Now that we allow remove persist calls on objects that are children of
 			//objects being removed the persister needs to handle them.
-			if (!exists(uuid) && !objectsToRemove.containsKey(parentUUID)) {
+			SPObject spo = SQLPowerUtils.findByUuid(root, uuid, SPObject.class);
+			if (spo == null) {
 			    rollback();
 			    throw new SPPersistenceException(uuid,
 			            "Cannot remove the SPObject with UUID " + uuid
@@ -729,9 +730,18 @@ public abstract class SPSessionPersister implements SPPersister {
 			SPObject spo = SQLPowerUtils.findByUuid(root, uuid,
 					SPObject.class);
 			
-			//The parent of this object has been deleted by this transaction
+			//The ancestor of this object has been deleted by this transaction
 			//already so we don't need to delete the object again.
-			if (spo == null && objectsToRemove.containsKey(objectsToRemove.get(uuid))) continue;
+			if (spo == null) {
+			    boolean descendantRemoved = false;
+			    for (RemovedObjectEntry removedEntry : objectsToRemoveRollbackList) {
+			        if (SQLPowerUtils.findByUuid(removedEntry.getRemovedChild(), uuid, SPObject.class) != null) {
+			            descendantRemoved = true;
+			            break;
+			        }
+			    }
+			    if (descendantRemoved) continue;
+			}
 			
 			SPObject parent = SQLPowerUtils.findByUuid(root, objectsToRemove.get(uuid), 
 					SPObject.class);
