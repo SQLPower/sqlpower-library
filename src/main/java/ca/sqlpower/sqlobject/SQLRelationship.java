@@ -1506,6 +1506,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			setName(relationship.getName());
 			setPopulated(relationship.isPopulated());
 			relationship.addSPListener(relationshipPropertyListener);
+			relationship.setForeignKey(this);
 		}
 		
 		@Override
