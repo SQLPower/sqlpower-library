@@ -324,10 +324,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		foreignKey = new SQLImportedKey(this);
 	}
 
-	// TODO Remove the fkTable from this constructor. It is only included so that the session persister still has a property to set. Once the repo can be upgraded, this can just be removed.
 	@Constructor
-    public SQLRelationship(@ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="parent") SQLTable pkTable,
-    		@ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="fkTable") SQLTable fkTable) {
+    public SQLRelationship(@ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="parent") SQLTable pkTable) {
 		pkCardinality = ONE;
 		fkCardinality = ZERO | ONE | MANY;
 		setName("New SQL Relationship");
@@ -433,7 +431,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		firePropertyChange("pkTable", oldTable, pkTable);
 	}
 	
-	// TODO mark this property transient, once we can upgrade the repo to remove it
 	@Transient @Mutator
 	public void setFkTable(SQLTable fkTable) {
 		if (getFkTable() != null && !getFkTable().equals(fkTable)) 
@@ -1439,8 +1436,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 	}
 	
-	// TODO mark this property transient, once we can upgrade the repo to remove it
-	@Accessor
+	@Transient @Accessor
 	public SQLTable getFkTable() {
 		if (foreignKey != null) {
 			return foreignKey.getParent();
