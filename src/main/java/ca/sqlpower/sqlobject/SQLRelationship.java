@@ -324,6 +324,15 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		foreignKey = new SQLImportedKey(this);
 	}
 
+    /**
+     * NOTE: Magic MUST be disabled before calling this constructor. If not the
+     * relationship will try to be attached between the parent table and a null
+     * FK table throwing a NPE.
+     * <p>
+     * NOTE 2: No foreign key will be created with this constructor. After
+     * calling this constructor you MUST set the SQLImportedKey before using it
+     * or else it will only be half a relationship.
+     */
 	@Constructor
     public SQLRelationship(@ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="parent") SQLTable pkTable) {
 		pkCardinality = ONE;
