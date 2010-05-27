@@ -326,15 +326,18 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     @NonProperty
     public int getPrecision(String platform) {
         Integer precision = null;
-        SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
         
-        if (properties != null) {
-            precision = properties.getPrecision();
-            if (precision == null && getUpstreamType() != null) {
-            	precision = getUpstreamType().getPrecision(platform);
-            }
-        } else if (getUpstreamType() != null) {
-            precision = getUpstreamType().getPrecision(platform);
+        if (getPrecisionType(platform) != PropertyType.NOT_APPLICABLE) {
+        	SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
+
+        	if (properties != null) {
+        		precision = properties.getPrecision();
+        		if (precision == null && getUpstreamType() != null) {
+        			precision = getUpstreamType().getPrecision(platform);
+        		}
+        	} else if (getUpstreamType() != null) {
+        		precision = getUpstreamType().getPrecision(platform);
+        	}
         }
         
         // If precision is null and all upstream types also return null, then just return 0 to prevent an NPE
@@ -344,15 +347,18 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     @NonProperty
     public int getScale(String platform) {
         Integer scale = null;
-        SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
-        
-        if (properties != null) {
-            scale = properties.getScale();
-            if (scale == null && getUpstreamType() != null) {
-                scale = getUpstreamType().getScale(platform);
-            }
-        } else if (getUpstreamType() != null) {
-            scale = getUpstreamType().getScale(platform);
+
+        if (getScaleType(platform) != PropertyType.NOT_APPLICABLE) {
+        	SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
+
+        	if (properties != null) {
+        		scale = properties.getScale();
+        		if (scale == null && getUpstreamType() != null) {
+        			scale = getUpstreamType().getScale(platform);
+        		}
+        	} else if (getUpstreamType() != null) {
+        		scale = getUpstreamType().getScale(platform);
+        	}
         }
         
         // If scale is null and all upstream types also return null, then just return 0 to prevent an NPE

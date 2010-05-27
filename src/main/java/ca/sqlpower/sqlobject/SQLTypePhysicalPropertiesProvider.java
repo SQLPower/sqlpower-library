@@ -181,7 +181,7 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * total number of decimal digits'.
 	 * 
 	 * @return <ul>
-	 *         <li>If it returns {@value PropertyType#CONSTANT}, then the value
+	 *         <li>If it returns {@link PropertyType#CONSTANT}, then the value
 	 *         returned by {@link #getPrecision()} is constant and should not be
 	 *         changed. {@link #setPrecision(int)} will have no effect.</li>
 	 *         <li>If it returns {@link PropertyType#VARIABLE}, then the value
@@ -194,15 +194,16 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 *         </ul>
 	 */
 	public PropertyType getPrecisionType(String platform);
-	
+
 	/**
-	 * Sets how this . {@link RowSetMetaData}
-	 * {@link #setPrecision(int)} defines it as 'the total number of decimal
-	 * digits'. This also determines whether the value returned by
-	 * {@link #getPrecision()} means anything.
+	 * Sets how this . {@link RowSetMetaData} {@link #setPrecision(int)} defines
+	 * it as 'the total number of decimal digits'. This also determines whether
+	 * the value returned by {@link #getPrecision()} means anything.
 	 * 
-	 * @param usingPrecision
-	 *            Set to true if this type uses precision. False if it does not.
+	 * @param platform
+	 *            The platform name.
+	 * @param precisionType
+	 *            The precision type, defined as a {@link PropertyType}.
 	 */
 	public void setPrecisionType(String platform, PropertyType precisionType);
 	
@@ -231,12 +232,12 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * decimal point'.
 	 * 
 	 * @return <ul>
-	 *         <li>If it returns {@value PropertyType#CONSTANT}, then the value
+	 *         <li>If it returns {@link PropertyType#CONSTANT}, then the value
 	 *         returned by {@link #getScale()} is constant and should not be
 	 *         changed. {@link #setScale(int)} will have no effect.</li>
 	 *         <li>If it returns {@link PropertyType#VARIABLE}, then the value
-	 *         is variable, so using {@link #setScale(int)} can change its
-	 *         value</li>
+	 *         is variable, so using {@link #setScale(int)} can change its value
+	 *         </li>
 	 *         <li>If it returns {@link PropertyType#NOT_APPLICABLE}, then the
 	 *         precision is not used, and its value has no meaning for this
 	 *         type, and anything that {@link #getScale()} returns should be
@@ -270,7 +271,9 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	 * {@link #setScale(int)} defines it as 'the number of digits to right of
 	 * decimal point'.
 	 * 
-	 * @param precision
+	 * @param platform
+	 *            The platform name
+	 * @param scale
 	 *            The new scale value
 	 */
 	public void setScale(String platform, Integer scale);
