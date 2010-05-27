@@ -23,6 +23,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyDescriptor;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -93,7 +94,7 @@ public class SPPersisterListener implements SPListener {
 	 * {@link WabitObject} removal buffer, mapping of {@link WabitObject} UUIDs
 	 * to their parents
 	 */
-	private List<RemovedObjectEntry> objectsToRemove = new LinkedList<RemovedObjectEntry>();
+	private LinkedHashMap<String, RemovedObjectEntry> objectsToRemove = new LinkedHashMap<String, RemovedObjectEntry>();
 	
 	/**
      * Keeps track of the UUIDs of all removed objects and all their descendants
@@ -311,7 +312,7 @@ public class SPPersisterListener implements SPListener {
 		} else {
 		    transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
 		    "Start of transaction triggered by childRemoved event"));
-		    objectsToRemove.add(
+		    objectsToRemove.put(e.getChild().getUUID(),
 		            new RemovedObjectEntry(
 		                    e.getSource().getUUID(),
 		                    e.getChild(),
@@ -619,7 +620,7 @@ public class SPPersisterListener implements SPListener {
 	 */
 	private void commitRemovals() throws SPPersistenceException {
 		logger.debug("commitRemovals()");
-		for (RemovedObjectEntry entry: this.objectsToRemove) {
+		for (RemovedObjectEntry entry: this.objectsToRemove.values()) {
 		    // Don't make removal persist calls for children of
 		    // objects that are also being removed, since the JCR handles that.
 		    if (removedObjectsUUIDs.contains(entry.getParentUUID())) continue;
@@ -639,7 +640,7 @@ public class SPPersisterListener implements SPListener {
 		return persistedObjects;
 	}
 
-	public List<RemovedObjectEntry> getObjectsToRemove() {
+	public LinkedHashMap<String, RemovedObjectEntry> getObjectsToRemove() {
 		return objectsToRemove;
 	}
 	
@@ -665,12 +666,7 @@ public class SPPersisterListener implements SPListener {
      * @return The object with the given uuid, or null if it cannot be found
      */
 	public RemovedObjectEntry getRemovedObject(String uuid) {
-	    for (RemovedObjectEntry o : objectsToRemove) {
-	        if (o.getRemovedChild().getUUID().equals(uuid)) {
-	            return o;
-	        }
-	    }
-	    return null;
+	    return objectsToRemove.get(uuid);
 	}
 	
     /**

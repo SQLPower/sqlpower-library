@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -338,10 +339,13 @@ public abstract class SPSessionPersister implements SPPersister {
 	}
 
 	/**
-	 * This is the list we use to rollback object removal
+	 * This is the map we use to rollback object removal. The key is the UUID of the
+	 * object removed for faster lookup if an object was moved instead of being
+	 * directly removed. The map is ordered to keep the object order that they were
+	 * removed in for rollback.
 	 */
-	private List<RemovedObjectEntry> objectsToRemoveRollbackList = 
-		new LinkedList<RemovedObjectEntry>();
+	private LinkedHashMap<String, RemovedObjectEntry> objectsToRemoveRollbackList = 
+		new LinkedHashMap<String, RemovedObjectEntry>();
 
 	/**
 	 * This root object is used to find other objects by UUID by walking the
@@ -734,7 +738,7 @@ public abstract class SPSessionPersister implements SPPersister {
 			//already so we don't need to delete the object again.
 			if (spo == null) {
 			    boolean descendantRemoved = false;
-			    for (RemovedObjectEntry removedEntry : objectsToRemoveRollbackList) {
+			    for (RemovedObjectEntry removedEntry : objectsToRemoveRollbackList.values()) {
 			        if (SQLPowerUtils.findByUuid(removedEntry.getRemovedChild(), uuid, SPObject.class) != null) {
 			            descendantRemoved = true;
 			            break;
@@ -756,7 +760,7 @@ public abstract class SPSessionPersister implements SPPersister {
 				int index = siblings.indexOf(spo);
 				index -= parent.childPositionOffset(spo.getClass());
 				parent.removeChild(spo);
-				objectsToRemoveRollbackList.add(
+				objectsToRemoveRollbackList.put(spo.getUUID(),
 					new RemovedObjectEntry(
 						parent.getUUID(), 
 						spo,
@@ -766,6 +770,9 @@ public abstract class SPSessionPersister implements SPPersister {
 			} catch (ObjectDependentException e) {
 				throw new SPPersistenceException(uuid, e);
 			}
+		}
+		if (objectsToRemoveRollbackList.size() != objectsToRemove.size()) {
+		    logger.warn("Skipped some objects");
 		}
 		objectsToRemove.clear();
 	}
@@ -799,10 +806,72 @@ public abstract class SPSessionPersister implements SPPersister {
 			SPObject spo = null;
 			
 			if (parent == null && pso.getType().equals(root.getClass().getName())) {
-				refreshRootNode(pso);
-			} else if (parent == null) {
-			    throw new IllegalStateException("Missing parent with uuid " + pso.getParentUUID() + 
-			            " when trying to load " + pso);
+                refreshRootNode(pso);
+                continue;
+            } else if (parent == null) {
+                throw new IllegalStateException("Missing parent with uuid " + pso.getParentUUID() + 
+                        " when trying to load " + pso);
+            }
+			
+	         //XXX This was initially part of the fix for bug 2326 but is a larger problem
+            //that is we need to get the children of a SQLObject without populating them
+            //for the persister layer but other than this case we should not need to let
+            //other places get at the children of SQLObjects in this manner.
+            Class<? extends SPObject> parentAllowedChildType;
+            try {
+                parentAllowedChildType = PersisterUtils.getParentAllowedChildType(pso.getType(), 
+                        parent.getClass().getName());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            List<? extends SPObject> siblings;
+            if (parent instanceof SQLObject) {
+                siblings = ((SQLObject) parent).getChildrenWithoutPopulating(parentAllowedChildType);
+            } else {
+                siblings = parent.getChildren(parentAllowedChildType);
+            }
+
+            if (objectsToRemoveRollbackList.keySet().contains(parent.getUUID())) {
+                for (SPObject sibling : siblings) {
+                    if (sibling.getUUID().equals(pso.getUUID())) {
+                        spo = sibling;
+                        break;
+                    }
+                }
+            }
+            //Ancestor list does not contain the node passed in.
+            if (spo == null) {
+                for (SPObject ancestor : SQLPowerUtils.getAncestorList(parent)) {
+                    if (objectsToRemoveRollbackList.keySet().contains(ancestor.getUUID())) {
+                        for (SPObject sibling : siblings) {
+                            if (sibling.getUUID().equals(pso.getUUID())) {
+                                spo = sibling;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+			
+			if (spo != null) {
+			    //Case for the ancestor was moved and on adding the ancestor this object
+			    //was essentially re-added as well as it was never technically removed.
+			    //This is done above.
+			    
+			    removeFinalPersistProperties(pso);
+			    persistedObjectsRollbackList.add(
+			            new PersistedObjectEntry(
+			                    parent.getUUID(), 
+			                    spo.getUUID()));
+			    continue;
+			} else if (objectsToRemoveRollbackList.get(pso.getUUID()) != null) {
+			    //Object was removed and added back in. This is the current way a 'move' of a 
+			    //child object is represented in the system. We may want to revisit this and
+			    //look at creating a different command, or special property change of 'move'.
+			    spo = objectsToRemoveRollbackList.get(pso.getUUID()).getRemovedChild();
+
+			    removeFinalPersistProperties(pso);
 			} else if (parent instanceof SQLObject && populateSQLObject((SQLObject) parent)) {
 			    continue;
 			} else {
@@ -819,7 +888,7 @@ public abstract class SPSessionPersister implements SPPersister {
 						//do nothing
 					}
 					public void childRemoved(SPChildEvent e) {
-						objectsToRemoveRollbackList.add(
+						objectsToRemoveRollbackList.put(e.getChild().getUUID(), 
 								new RemovedObjectEntry(e.getSource().getUUID(), 
 										e.getChild(), e.getIndex()));
 					}
@@ -839,20 +908,6 @@ public abstract class SPSessionPersister implements SPPersister {
 				parent.addSPListener(removeChildOnAddListener);
 				
 				// FIXME Terrible hack, see bug 2326
-				Class<? extends SPObject> parentAllowedChildType;
-		        try {
-		            parentAllowedChildType = PersisterUtils.getParentAllowedChildType(spo.getClass().getName(), 
-		                    parent.getClass().getName());
-		        } catch (Exception e) {
-		            throw new RuntimeException(e);
-		        }
-				List<? extends SPObject> siblings;
-				if (parent instanceof SQLObject) {
-					siblings = ((SQLObject) parent).getChildrenWithoutPopulating(parentAllowedChildType);
-				} else {
-					siblings = parent.getChildren(parentAllowedChildType);
-				}
-				
 				//XXX This appears to shuffle columns up which will cause columns to be rearranged
 				parent.addChild(spo, Math.min(pso.getIndex(), siblings.size()));
 				
@@ -865,6 +920,34 @@ public abstract class SPSessionPersister implements SPPersister {
 		}
 		persistedObjects.clear();
 	}
+
+    /**
+     * Helper method for {@link #commitObjects()}. Removes the persist property
+     * calls that are final to the given object. For the case where the object
+     * was moved and is not actually being recreated but just moved in-tact.
+     */
+    private void removeFinalPersistProperties(PersistedSPObject pso)
+            throws SPPersistenceException {
+        List<String> persistedPropNames;
+        try {
+            persistedPropNames = PersisterHelperFinder.findPersister(pso.getType()).getPersistedProperties();
+        } catch (Exception ex) {
+            throw new SPPersistenceException("Could not find the persister helper for " + pso.getType(), ex);
+        }
+        List<PersistedSPOProperty> propertiesToRemove = new ArrayList<PersistedSPOProperty>();
+        for (PersistedSPOProperty spoProperty : persistedProperties.get(pso.getUUID())) {
+            if (!persistedPropNames.contains(spoProperty.getPropertyName())) {
+                propertiesToRemove.add(spoProperty);
+            }
+        }
+        for (PersistedSPOProperty spoProperty : propertiesToRemove) {
+            persistedProperties.get(pso.getUUID()).remove(spoProperty);
+            //Using the new value as this property is a final field.
+            persistedPropertiesRollbackList.add(new PersistedPropertiesEntry(
+                    spoProperty.getUUID(), spoProperty.getPropertyName(), 
+                    spoProperty.getDataType(), spoProperty.getNewValue()));
+        }
+    }
 
     /**
      * This is a special corner case for populating SQLObjects. If an object is
@@ -1096,8 +1179,10 @@ public abstract class SPSessionPersister implements SPPersister {
 	 */
 	private void rollbackRemovals() {
 		// We must rollback in the inverse order the operations were performed.
-		Collections.reverse(objectsToRemoveRollbackList);
-		for (RemovedObjectEntry entry : objectsToRemoveRollbackList) {
+	    List<RemovedObjectEntry> removedObjects = 
+	        new ArrayList<RemovedObjectEntry>(objectsToRemoveRollbackList.values());
+		Collections.reverse(removedObjects);
+		for (RemovedObjectEntry entry : removedObjects) {
 			final String parentUuid = entry.getParentUUID();
 			final SPObject objectToRestore = entry.getRemovedChild();
 			final int index = entry.getIndex();
@@ -1234,7 +1319,7 @@ public abstract class SPSessionPersister implements SPPersister {
 	}
 	
 	private void setObjectsToRemoveRollbackList(
-			List<RemovedObjectEntry> objectsToRemoveRollbackList) {
+			LinkedHashMap<String, RemovedObjectEntry> objectsToRemoveRollbackList) {
 		this.objectsToRemoveRollbackList = objectsToRemoveRollbackList;
 	}
 	
@@ -1350,8 +1435,8 @@ public abstract class SPSessionPersister implements SPPersister {
 	 *            A set of persist property calls that updated objects that need
 	 *            to be reversed.
 	 * @param removals
-	 *            A set of remove object calls that need objects to be added
-	 *            back in.
+	 *            An ordered set of remove object calls that need objects to be added
+	 *            back in. The key of each entry is the UUID of the object that was removed.
 	 * @param converter
 	 *            An object converter that can convert the simple property types
 	 *            in the persist property calls to full objects to update the
@@ -1362,7 +1447,7 @@ public abstract class SPSessionPersister implements SPPersister {
 			SPObject root,
 			List<PersistedObjectEntry> creations,
 			List<PersistedPropertiesEntry> properties,
-			List<RemovedObjectEntry> removals,
+			LinkedHashMap<String, RemovedObjectEntry> removals,
 			SessionPersisterSuperConverter converter) throws SPPersistenceException
 	{
 		SPSessionPersister persister = new SPSessionPersister("undoer", root, converter) {
