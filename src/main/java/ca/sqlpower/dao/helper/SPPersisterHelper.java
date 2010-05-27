@@ -171,9 +171,10 @@ public interface SPPersisterHelper<T extends SPObject> {
 			SessionPersisterSuperConverter converter) throws SPPersistenceException;
 	
 	/**
-	 * Gets a list of all of the property names that this helper should persist
-	 * 
-	 * @return
+	 * Gets a list of all of the property names that this helper should persist.
+	 * This only includes those properties that have both a getter and a setter.
+	 * Properties that are persisted but have no setters are final fields and
+	 * need to be handled when constructing a new object.
 	 */
 	List<String> getPersistedProperties() throws SPPersistenceException;
 
