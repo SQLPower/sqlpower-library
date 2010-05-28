@@ -73,7 +73,7 @@ public class Grant extends AbstractSPObject {
      */
     @Constructor
     public Grant(@Nullable @ConstructorParameter(propertyName = "subject") String subject, 
-    		@Nonnull @ConstructorParameter(propertyName = "type") String type,
+    		@ConstructorParameter(propertyName = "type") String type,
             @ConstructorParameter(propertyName = "createPrivilege") boolean create, 
             @ConstructorParameter(propertyName = "modifyPrivilege") boolean modify, 
             @ConstructorParameter(propertyName = "deletePrivilege") boolean delete, 

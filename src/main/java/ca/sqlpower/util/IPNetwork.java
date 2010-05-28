@@ -89,6 +89,9 @@ public class IPNetwork {
 	 */
 	@Override
 	public boolean equals(Object other) {
+		if (other == null) {
+			return false;
+		}
 		IPNetwork otherNet = (IPNetwork) other;
 		byte[] thisAddr = addr.getAddress();
 		byte[] thisMask = mask.getAddress();

@@ -161,7 +161,7 @@ public class Frequency implements Comparable, java.io.Serializable {
 	 */
 	@Override
 	public boolean equals(Object other) throws ClassCastException {
-		if (((Frequency) other).freq == this.freq) {
+		if (other != null && ((Frequency) other).freq == this.freq) {
 			return true;
 		} else {
 			return false;

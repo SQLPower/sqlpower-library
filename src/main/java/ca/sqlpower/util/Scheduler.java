@@ -230,6 +230,9 @@ public class Scheduler {
 		 */
 		@Override
 		public boolean equals(Object other) {
+			if (other == null) {
+				return false;
+			}
 			ScheduledTask otherTask = (ScheduledTask) other;
 			Date thisNextOccurrence = this.recurrence.nextOccurrence(baseDate);
 			Date otherNextOccurrence = otherTask.recurrence.nextOccurrence(baseDate);
