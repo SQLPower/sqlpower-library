@@ -103,26 +103,34 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
 
     public void testGetScale() throws Exception {
         typeProxy.getDefaultPhysicalProperties().setScale(1);
+        typeProxy.getDefaultPhysicalProperties().setScaleType(PropertyType.VARIABLE);
         udtProperties.setScale(2);
+        udtProperties.setScaleType(PropertyType.VARIABLE);
         
         assertEquals(1, typeProxy.getScale("Oracle"));
     }
     
     public void testSetScale() throws Exception {
-        typeProxy.setScale("Oracle", 3);
-        assertEquals(3, typeProxy.getScale("Oracle"));
+    	final String platform = "Oracle";
+        typeProxy.setScale(platform, 3);
+        typeProxy.setScaleType(platform, PropertyType.VARIABLE);
+        assertEquals(3, typeProxy.getScale(platform));
     }
     
     public void testGetPrecision() throws Exception {
         typeProxy.getDefaultPhysicalProperties().setPrecision(1);
+        typeProxy.getDefaultPhysicalProperties().setPrecisionType(PropertyType.VARIABLE);
         udtProperties.setPrecision(2);
+        udtProperties.setPrecisionType(PropertyType.VARIABLE);
         
         assertEquals(1, typeProxy.getPrecision("Oracle"));
     }
     
     public void testSetPrecision() throws Exception {
-        typeProxy.setPrecision("Oracle", 3);
-        assertEquals(3, typeProxy.getPrecision("Oracle"));
+    	final String platform = "Oracle";
+        typeProxy.setPrecision(platform, 3);
+        typeProxy.setPrecisionType(platform, PropertyType.VARIABLE);
+        assertEquals(3, typeProxy.getPrecision(platform));
     }
     
     public void testGetEnumeration() throws Exception {

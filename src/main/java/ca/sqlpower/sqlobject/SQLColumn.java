@@ -134,7 +134,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		setPhysicalName("");
 		userDefinedSQLType.setType(defaultType);
 		userDefinedSQLType.setPrecision(platform, defaultPrec);
+		userDefinedSQLType.setPrecisionType(platform, PropertyType.VARIABLE);
 		userDefinedSQLType.setScale(platform, defaultScale);
+		userDefinedSQLType.setScaleType(platform, PropertyType.VARIABLE);
 		if (defaultNullable) {
 			userDefinedSQLType.setMyNullability(DatabaseMetaData.columnNullable);
 		} else {
@@ -189,7 +191,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		
 		this.userDefinedSQLType.setType(dataType);
 		this.userDefinedSQLType.setScale(platform, scale);
+		this.userDefinedSQLType.setScaleType(platform, PropertyType.VARIABLE);
 		this.userDefinedSQLType.setPrecision(platform, precision);
+		this.userDefinedSQLType.setPrecisionType(platform, PropertyType.VARIABLE);
 		this.userDefinedSQLType.setMyNullability(nullable);
 		this.userDefinedSQLType.setDefaultValue(platform, defaultValue);
 		this.userDefinedSQLType.setMyAutoIncrement(isAutoIncrement);
@@ -509,6 +513,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
             UserDefinedSQLType type = column.getUserDefinedSQLType();
             
             if (upstreamType != null) {
+            	type.setScaleType(fromPlatform, upstreamType.getScaleType(fromPlatform));
+            	type.setPrecisionType(fromPlatform, upstreamType.getPrecisionType(fromPlatform));
+            	
             	if (upstreamType.getScale(fromPlatform) == type.getScale(fromPlatform)) {
             		type.setScale(fromPlatform, null);
             	}
