@@ -191,9 +191,24 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		
 		this.userDefinedSQLType.setType(dataType);
 		this.userDefinedSQLType.setScale(platform, scale);
-		this.userDefinedSQLType.setScaleType(platform, PropertyType.VARIABLE);
+		
+		// A scale/precision value of 0 does not mean anything, 
+		// which means the scale/precision type should be not applicable.
+		// Otherwise, set the scale/precision type to a default of variable.
+		// Reverse engineered tables will override the scale/precision types
+		// by looking through existing user types and inherting their 
+		// scale/precision properties.
+		if (scale == 0) {
+			this.userDefinedSQLType.setScaleType(platform, PropertyType.NOT_APPLICABLE);
+		} else {
+			this.userDefinedSQLType.setScaleType(platform, PropertyType.VARIABLE);
+		}
 		this.userDefinedSQLType.setPrecision(platform, precision);
-		this.userDefinedSQLType.setPrecisionType(platform, PropertyType.VARIABLE);
+		if (precision == 0) {
+			this.userDefinedSQLType.setPrecisionType(platform, PropertyType.NOT_APPLICABLE);
+		} else {
+			this.userDefinedSQLType.setPrecisionType(platform, PropertyType.VARIABLE);
+		}
 		this.userDefinedSQLType.setMyNullability(nullable);
 		this.userDefinedSQLType.setDefaultValue(platform, defaultValue);
 		this.userDefinedSQLType.setMyAutoIncrement(isAutoIncrement);
