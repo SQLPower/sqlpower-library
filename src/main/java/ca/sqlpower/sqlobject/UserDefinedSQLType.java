@@ -133,6 +133,9 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	 * @param defaultPhysicalProperties
 	 *            Sets the defaultPhysicalProperties to this instance
 	 */
+    //XXX While not mandatory to match the default physical properties child object 
+    //could probably use a better name than "primaryKeyIndex" to be stored under in 
+    //the JCR as it is misleading.
     @Constructor
     public UserDefinedSQLType(
     		@ConstructorParameter(propertyName = "name") String name,
