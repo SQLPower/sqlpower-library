@@ -22,8 +22,11 @@ package ca.sqlpower.sqlobject;
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.object.ObjectDependentException;
@@ -37,6 +40,7 @@ import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
+import ca.sqlpower.util.SQLPowerUtils;
 
 /**
  * An implementation of {@link SQLTypePhysicalPropertiesProvider}
@@ -696,6 +700,49 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     	platforms.add(defaultPhysicalProperties.getPlatform());
     	return platforms;
     }
+
+	/**
+	 * Compares two {@link UserDefinedSQLType} objects to see if they are equal
+	 * in all properties (except UUID).
+	 * 
+	 * @param udt1
+	 *            The first of two {@link UserDefinedSQLType} objects to
+	 *            compare.
+	 * @param udt2
+	 *            The second of two {@link UserDefinedSQLType} objects to
+	 *            compare.
+	 */
+    public static boolean areEqual(UserDefinedSQLType udt1, UserDefinedSQLType udt2) {
+		Set<String> oldPlatforms = new HashSet<String>(udt1.platforms());
+		Set<String> newPlatforms = new HashSet<String>(udt2.platforms());
+		boolean equal = SQLPowerUtils.areEqual(udt1.getName(), udt2.getName())
+				&& SQLPowerUtils.areEqual(udt1.getType(), udt2.getType())
+				&& SQLPowerUtils.areEqual(udt1.getMyNullability(), udt2.getMyNullability())
+				&& SQLPowerUtils.areEqual(udt1.getMyAutoIncrement(), udt2.getMyAutoIncrement())
+				&& SQLPowerUtils.areEqual(udt1.getDescription(), udt2.getDescription())
+				&& SQLPowerUtils.areEqual(udt1.getUpstreamType(), udt2.getUpstreamType())
+				&& SQLPowerUtils.areEqual(oldPlatforms, newPlatforms);
+    	
+		if (equal) {
+			for (String platform : udt1.platforms()) {
+				SQLTypePhysicalProperties oldProperties = udt1.getPhysicalProperties(platform);
+				SQLTypePhysicalProperties newProperties = udt2.getPhysicalProperties(platform);
+				equal &= SQLPowerUtils.areEqual(oldProperties.getName(), newProperties.getName())
+						&& SQLPowerUtils.areEqual(oldProperties.getPhysicalName(), newProperties.getPhysicalName())
+						&& SQLPowerUtils.areEqual(oldProperties.getPrecision(), newProperties.getPrecision())
+						&& SQLPowerUtils.areEqual(oldProperties.getPrecisionType(), newProperties.getPrecisionType())
+						&& SQLPowerUtils.areEqual(oldProperties.getScale(), newProperties.getScale())
+						&& Arrays.equals(oldProperties.getEnumeration(), newProperties.getEnumeration())
+						&& SQLPowerUtils.areEqual(oldProperties.getDefaultValue(), newProperties.getDefaultValue())
+						&& SQLPowerUtils.areEqual(oldProperties.getCheckConstraint(), newProperties.getCheckConstraint())
+						&& SQLPowerUtils.areEqual(oldProperties.getConstraintType(), newProperties.getConstraintType());
+				if (!equal) {
+					return false;
+				}
+			}
+		}
+		return equal;
+    }
     
 	/**
 	 * Updates each of this UserDefinedSQLType's properties to match the input
@@ -713,41 +760,43 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     	
     	UserDefinedSQLType typeToMatch = (UserDefinedSQLType) matchMe;
     	
-    	begin("Copying Properties");
-    	
-    	// Properties of UserDefinedSQLType
-    	setName(typeToMatch.getName());
-    	setType(typeToMatch.getType());
-    	setBasicType(typeToMatch.getBasicType());
-    	setMyNullability(typeToMatch.getNullability());
-    	setMyAutoIncrement(typeToMatch.getAutoIncrement());
-    	setDescription(typeToMatch.getDescription());
-    	setUpstreamType(typeToMatch.getUpstreamType());
-    	
-    	// Children of UserDefinedSQLType
-    	List<String> oldPlatforms = platforms();
-    	List<String> newPlatforms = typeToMatch.platforms();
-    	for (String platform : oldPlatforms) {
-    		if (!newPlatforms.contains(platform)) {
-    			try {
-    				removeChild(getPhysicalProperties(platform));
-    			} catch (Exception e) {
-    				throw new RuntimeException("Cannot remove child!!!!");
+    	if (!areEqual(this, typeToMatch)) {
+    		begin("Copying Properties");
+
+    		// Properties of UserDefinedSQLType
+    		setName(typeToMatch.getName());
+    		setType(typeToMatch.getType());
+    		setBasicType(typeToMatch.getBasicType());
+    		setMyNullability(typeToMatch.getNullability());
+    		setMyAutoIncrement(typeToMatch.getAutoIncrement());
+    		setDescription(typeToMatch.getDescription());
+    		setUpstreamType(typeToMatch.getUpstreamType());
+
+    		// Children of UserDefinedSQLType
+    		List<String> oldPlatforms = platforms();
+    		List<String> newPlatforms = typeToMatch.platforms();
+    		for (String platform : oldPlatforms) {
+    			if (!newPlatforms.contains(platform)) {
+    				try {
+    					removeChild(getPhysicalProperties(platform));
+    				} catch (Exception e) {
+    					throw new RuntimeException("Cannot remove child!!!!");
+    				}
     			}
     		}
-    	}
-    	for (String platform : newPlatforms) {
-    		if (!oldPlatforms.contains(platform)) {
-    			putPhysicalProperties(platform, new SQLTypePhysicalProperties(platform));
+    		for (String platform : newPlatforms) {
+    			if (!oldPlatforms.contains(platform)) {
+    				putPhysicalProperties(platform, new SQLTypePhysicalProperties(platform));
+    			}
     		}
+
+    		// Properties of the children
+    		for (String platform : newPlatforms) {
+    			getPhysicalProperties(platform).updateToMatch(typeToMatch.getPhysicalProperties(platform));
+    		}
+
+    		commit();
     	}
-    	
-    	// Properties of the children
-    	for (String platform : newPlatforms) {
-    		getPhysicalProperties(platform).updateToMatch(typeToMatch.getPhysicalProperties(platform));
-    	}
-    	
-    	commit();
     }
     
     @Transient @Accessor
