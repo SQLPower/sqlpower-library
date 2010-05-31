@@ -136,10 +136,10 @@ public class SPPersisterListener implements SPListener {
 	
 	
 	public void childAdded(SPChildEvent e) {
-	    if (!e.getSource().getRunnableDispatcher().isForegroundThread()) {
+			    if (!e.getSource().getRunnableDispatcher().isForegroundThread()) {
             throw new RuntimeException("New child event " + e + " not fired on the foreground.");
         }
-	    
+		
 		SQLPowerUtils.listenToHierarchy(e.getChild(), this);
 		if (wouldEcho()) return;
 		logger.debug("Child added: " + e);
@@ -297,10 +297,9 @@ public class SPPersisterListener implements SPListener {
 	}
 
 	public void childRemoved(SPChildEvent e) {
-	    if (!e.getSource().getRunnableDispatcher().isForegroundThread()) {
+       if (!e.getSource().getRunnableDispatcher().isForegroundThread()) {
             throw new RuntimeException("Removed child event " + e + " not fired on the foreground.");
         }
-	    
 		SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
 		if (wouldEcho()) return;
 		String uuid = e.getChild().getUUID();
@@ -317,6 +316,17 @@ public class SPPersisterListener implements SPListener {
 		        throw new RuntimeException("This shouldn't have happened");
 		    }
 		    persistedProperties.removeAll(uuid);
+		    List<String> descendantUUIDs = new ArrayList<String>(getDescendantUUIDs(e.getChild()));
+		    descendantUUIDs.remove(uuid);
+		    for (String uuidToRemove : descendantUUIDs) {
+		        persistedProperties.removeAll(uuidToRemove);
+		        for (PersistedSPObject childPSO : persistedObjects) {
+		            if (childPSO.getUUID().equals(uuidToRemove)) {
+		                persistedObjects.remove(childPSO);
+		                break;
+		            }
+		        }
+		    }
 		} else {
 		    transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
 		    "Start of transaction triggered by childRemoved event"));
@@ -353,10 +363,9 @@ public class SPPersisterListener implements SPListener {
 	}
 
 	public void propertyChanged(PropertyChangeEvent evt) {
-	    if (!((SPObject) evt.getSource()).getRunnableDispatcher().isForegroundThread()) {
+		if (!((SPObject) evt.getSource()).getRunnableDispatcher().isForegroundThread()) {
 	        throw new RuntimeException("Property change " + evt + " not fired on the foreground.");
 	    }
-		
 		SPObject source = (SPObject) evt.getSource();
 		String uuid = source.getUUID();
 		String propertyName = evt.getPropertyName();

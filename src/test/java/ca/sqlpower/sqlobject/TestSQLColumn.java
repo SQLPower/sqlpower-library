@@ -861,7 +861,8 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
     public void testSetNullabilityAfterCreation() throws Exception {
         final CountingSPPersister persister = new CountingSPPersister();
         SPPersisterListener listener = new SPPersisterListener(persister, getConverter());
-        SQLTable table = new SQLTable(new SQLDatabase(), true);
+        SQLTable table = (SQLTable) createNewValueMaker(getRootObject(), new PlDotIni()).
+            makeNewValue(SQLTable.class, null, "");
         table.addSPListener(listener);
         
         UserDefinedSQLType underlyingType = new UserDefinedSQLType();
