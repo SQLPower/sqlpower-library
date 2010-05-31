@@ -1163,8 +1163,38 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			}
 
 			if (identifying && getParent() != getFkTable()) {
+			    //Each inserted column will be placed: 
+			    //1: just above the next column in the fk index that we know about and can find.
+			    //2: just below the previous column in the fk index that we know about and can find.
+			    //3: at the bottom of the fk index.
+			    int index = -1;
+			    int pkIndex = getPkTable().getColumnIndex(pkcol);
+			    for (int i = pkIndex + 1; i < getPkTable().getPkSize(); i++) {
+			        for (int j = 0; j < getFkTable().getPkSize(); j++) {
+			            if (getFkTable().getColumn(j).getName().equals(getPkTable().getColumn(i).getName())) {
+			                index = j;
+			                break;
+			            }
+			        }
+			        if (index >= 0) break;
+			    }
+			    if (index == -1) {
+			        for (int i = pkIndex - 1; i >=0; i--) {
+			            for (int j = 0; j < getFkTable().getPkSize(); j++) {
+			                if (getFkTable().getColumn(j).getName().equals(getPkTable().getColumn(i).getName())) {
+			                    index = j + 1;
+			                    break;
+			                }
+			            }
+			            if (index >= 0) break;
+			        }
+			    }
+			    if (index == -1) {
+			        index = getFkTable().getPkSize();
+			    }
+			    
 				// this either adds the new column or bumps up the refcount on existing col
-				getFkTable().addColumn(fkcol, getFkTable().getPkSize());
+				getFkTable().addColumn(fkcol, index);
 				getFkTable().addToPK(fkcol);
 			} else {
 				// this either adds the new column or bumps up the refcount on existing col
