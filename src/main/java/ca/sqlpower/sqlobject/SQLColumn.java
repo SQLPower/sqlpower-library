@@ -134,9 +134,20 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		setPhysicalName("");
 		userDefinedSQLType.setType(defaultType);
 		userDefinedSQLType.setPrecision(platform, defaultPrec);
-		userDefinedSQLType.setPrecisionType(platform, PropertyType.VARIABLE);
+		
+		if (defaultPrec > 0) {
+			userDefinedSQLType.setPrecisionType(platform, PropertyType.VARIABLE);
+		} else {
+			userDefinedSQLType.setPrecisionType(platform, PropertyType.NOT_APPLICABLE);
+		}
+		
 		userDefinedSQLType.setScale(platform, defaultScale);
-		userDefinedSQLType.setScaleType(platform, PropertyType.VARIABLE);
+		if (defaultScale > 0) {
+			userDefinedSQLType.setScaleType(platform, PropertyType.VARIABLE);
+		} else {
+			userDefinedSQLType.setScaleType(platform, PropertyType.NOT_APPLICABLE);
+		}
+		
 		if (defaultNullable) {
 			userDefinedSQLType.setMyNullability(DatabaseMetaData.columnNullable);
 		} else {
@@ -198,16 +209,16 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		// Reverse engineered tables will override the scale/precision types
 		// by looking through existing user types and inherting their 
 		// scale/precision properties.
-		if (scale == 0) {
-			this.userDefinedSQLType.setScaleType(platform, PropertyType.NOT_APPLICABLE);
-		} else {
+		if (scale > 0) {
 			this.userDefinedSQLType.setScaleType(platform, PropertyType.VARIABLE);
+		} else {
+			this.userDefinedSQLType.setScaleType(platform, PropertyType.NOT_APPLICABLE);
 		}
 		this.userDefinedSQLType.setPrecision(platform, precision);
-		if (precision == 0) {
-			this.userDefinedSQLType.setPrecisionType(platform, PropertyType.NOT_APPLICABLE);
-		} else {
+		if (precision > 0) {
 			this.userDefinedSQLType.setPrecisionType(platform, PropertyType.VARIABLE);
+		} else {
+			this.userDefinedSQLType.setPrecisionType(platform, PropertyType.NOT_APPLICABLE);
 		}
 		this.userDefinedSQLType.setMyNullability(nullable);
 		this.userDefinedSQLType.setDefaultValue(platform, defaultValue);
@@ -615,19 +626,22 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		}
 
 		String defaultPlatform = SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM;
+		int precision = userDefinedSQLType.getPrecision(defaultPlatform);
+		int scale = userDefinedSQLType.getScale(defaultPlatform);
 		PropertyType precisionType = userDefinedSQLType
 				.getPrecisionType(defaultPlatform);
 		PropertyType scaleType = userDefinedSQLType
 				.getScaleType(defaultPlatform);
 
 		if (precisionType != PropertyType.NOT_APPLICABLE
-				&& scaleType != PropertyType.NOT_APPLICABLE) {
+				&& scaleType != PropertyType.NOT_APPLICABLE
+				&& precision > 0 && scale > 0) {
 			name.append("(" + userDefinedSQLType.getPrecision(defaultPlatform)
 					+ ", " + userDefinedSQLType.getScale(defaultPlatform) + ")");
-		} else if (precisionType != PropertyType.NOT_APPLICABLE) {
+		} else if (precisionType != PropertyType.NOT_APPLICABLE && precision > 0) {
 			name.append("(" + userDefinedSQLType.getPrecision(defaultPlatform)
 					+ ")");
-		} else if (scaleType != PropertyType.NOT_APPLICABLE) {
+		} else if (scaleType != PropertyType.NOT_APPLICABLE && scale > 0) {
 			name.append("(" + userDefinedSQLType.getScale(defaultPlatform)
 					+ ")");
 		}

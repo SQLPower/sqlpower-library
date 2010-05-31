@@ -330,12 +330,17 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     public int getPrecision(String platform) {
     	Integer precision = null;
     	
+    	// A non-applicable precision should just mean that precision is 0.
     	if (getPrecisionType(platform) != PropertyType.NOT_APPLICABLE) {
     		SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
 
     		if (properties != null) {
     			precision = properties.getPrecision();
-    			if (precision == null && getUpstreamType() != null) {
+    			
+    			// Get the precision property from the upstream type if this one 
+    			// does not exist or this precision type is constant.
+    			if ((precision == null || getPrecisionType(platform) == PropertyType.CONSTANT) 
+    					&& getUpstreamType() != null) {
     				precision = getUpstreamType().getPrecision(platform);
     			}
     		} else if (getUpstreamType() != null) {
@@ -351,12 +356,17 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     public int getScale(String platform) {
     	Integer scale = null;
     	
+    	// A non-applicable scale should just mean that scale is 0.
     	if (getScaleType(platform) != PropertyType.NOT_APPLICABLE) {
     		SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
 
     		if (properties != null) {
     			scale = properties.getScale();
-    			if (scale == null && getUpstreamType() != null) {
+    			
+    			// Get the scale property from the upstream type if this one 
+    			// does not exist or this scale type is constant.
+    			if ((scale == null || getScaleType(platform) == PropertyType.CONSTANT) 
+    					&& getUpstreamType() != null) {
     				scale = getUpstreamType().getScale(platform);
     			}
     		} else if (getUpstreamType() != null) {
@@ -426,6 +436,9 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     public void setPrecision(String platform, Integer precision) {
     	begin("Setting precision");
         getOrCreatePhysicalProperties(platform).setPrecision(precision);
+        if (precision != null && precision.intValue() > 0) {
+        	getOrCreatePhysicalProperties(platform).setPrecisionType(PropertyType.VARIABLE);
+        }
         commit();
     }
 
@@ -433,6 +446,9 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     public void setScale(String platform, Integer scale) {
     	begin("Setting scale");
         getOrCreatePhysicalProperties(platform).setScale(scale);
+        if (scale != null && scale.intValue() > 0) {
+        	getOrCreatePhysicalProperties(platform).setScaleType(PropertyType.VARIABLE);
+        }
         commit();
     }
 

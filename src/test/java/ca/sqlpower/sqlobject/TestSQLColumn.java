@@ -33,6 +33,7 @@ import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sql.PlDotIni;
+import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
 import ca.sqlpower.testutil.TestUtils;
 
 
@@ -419,10 +420,12 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	public void testGetScale() throws Exception {
 		SQLColumn tmpCol = new SQLColumn();
 		assertEquals(0,tmpCol.getScale());
+		tmpCol.setScaleType(PropertyType.VARIABLE);
 		tmpCol.setScale(123);
 		assertEquals(123,tmpCol.getScale());
 		SQLColumn cowCol = table1pk.getColumn(0);
 		assertEquals(0,cowCol.getScale());
+		cowCol.setScaleType(PropertyType.VARIABLE);
 		cowCol.setScale(321);
 		assertEquals(321,cowCol.getScale());
 	}
