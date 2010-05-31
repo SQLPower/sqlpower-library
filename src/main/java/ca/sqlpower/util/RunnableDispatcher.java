@@ -24,13 +24,23 @@ import ca.sqlpower.object.SPObject;
 
 public interface RunnableDispatcher {
 
-	/**
+    /**
      * This will force the given runnable to execute in the 'foreground'. If
      * something is executed in the foreground then the thread that called this
      * method will pass the runner to the thread that updates the user
      * interface. Once the Runnable has been passed to the UI thread this method
      * will continue executing and the runner will be executed when the UI
      * thread is able to run it.
+     * <p>
+     * Note: If you are on a background thread and pushing parts of a
+     * transaction instead of an entire transaction to the foreground you must
+     * be careful about how the foreground is used. If a transaction is sent to
+     * the foreground in two or more calls to this method it is possible to have
+     * changes come from the foreground of the client or from the server that
+     * could change the state of the project. In these cases the parts pushed to
+     * the foreground must either be aware of the possibility of these changes
+     * or must be done in a way to have the same result regardless of these
+     * changes.
      * <p>
      * In cases where there is no UI, the foreground thread will be the same
      * thread as the one calling this method. If this is the case the runner

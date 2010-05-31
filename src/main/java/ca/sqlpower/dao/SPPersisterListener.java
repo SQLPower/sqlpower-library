@@ -136,6 +136,10 @@ public class SPPersisterListener implements SPListener {
 	
 	
 	public void childAdded(SPChildEvent e) {
+	    if (!e.getSource().getRunnableDispatcher().isForegroundThread()) {
+            throw new RuntimeException("New child event " + e + " not fired on the foreground.");
+        }
+	    
 		SQLPowerUtils.listenToHierarchy(e.getChild(), this);
 		if (wouldEcho()) return;
 		logger.debug("Child added: " + e);
@@ -293,6 +297,10 @@ public class SPPersisterListener implements SPListener {
 	}
 
 	public void childRemoved(SPChildEvent e) {
+	    if (!e.getSource().getRunnableDispatcher().isForegroundThread()) {
+            throw new RuntimeException("Removed child event " + e + " not fired on the foreground.");
+        }
+	    
 		SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
 		if (wouldEcho()) return;
 		String uuid = e.getChild().getUUID();
@@ -345,14 +353,55 @@ public class SPPersisterListener implements SPListener {
 	}
 
 	public void propertyChanged(PropertyChangeEvent evt) {
-		if (wouldEcho()) return;
+	    if (!((SPObject) evt.getSource()).getRunnableDispatcher().isForegroundThread()) {
+	        throw new RuntimeException("Property change " + evt + " not fired on the foreground.");
+	    }
 		
 		SPObject source = (SPObject) evt.getSource();
 		String uuid = source.getUUID();
 		String propertyName = evt.getPropertyName();
 		Object oldValue = evt.getOldValue();
 		Object newValue = evt.getNewValue();
+
+        Object oldBasicType = converter.convertToBasicType(oldValue);
+        Object newBasicType = converter.convertToBasicType(newValue);
 		
+		PersistedSPOProperty property = null;
+        for (PersistedSPOProperty p : persistedProperties.get(uuid))  {
+            if (p.getPropertyName().equals(propertyName)) {
+                property = p;
+                break;
+            }
+        }
+        if (property != null) {
+            boolean valuesMatch;
+            if (property.getNewValue() == null) {
+                valuesMatch = oldBasicType == null;
+            } else {
+                // Check that the old property's new value is equal to the new change's old value.
+                // Also, accept the change if it is the same as the last one.
+                valuesMatch = property.getNewValue().equals(oldBasicType) || 
+                (property.getOldValue().equals(oldBasicType) && property.getNewValue().equals(newBasicType));
+            }
+            if (!valuesMatch) {
+                try {
+                    throw new RuntimeException("Multiple property changes do not follow after each other properly. " +
+                            "Property " + property.getPropertyName() + ", on object " + source + " of type " + 
+                            source.getClass() + ", Old " + oldBasicType + ", new " + property.getNewValue());
+                } finally {
+                    this.rollback();
+                }
+            }
+        }
+		
+        if (wouldEcho()) {
+            //The persisted property was changed by a persist call received from the server.
+            //The property is removed from the persist calls as it now matchs what is
+            //in the server.
+            persistedProperties.remove(uuid, property);
+            return;
+        }
+        
 		try {
 			if (!PersisterHelperFinder.findPersister(source.getClass())
 					.getPersistedProperties()
@@ -388,37 +437,6 @@ public class SPPersisterListener implements SPListener {
 		DataType typeForClass = PersisterUtils.
 				getDataType(newValue == null ? Void.class : newValue.getClass());	
 		
-		Object oldBasicType = converter.convertToBasicType(oldValue);
-		Object newBasicType = converter.convertToBasicType(newValue);
-		
-		PersistedSPOProperty property = null;
-		for (PersistedSPOProperty p : persistedProperties.get(uuid))  {
-		    if (p.getPropertyName().equals(propertyName)) {
-		        property = p;
-		        break;
-		    }
-		}
-        if (property != null) {
-            boolean valuesMatch;
-            if (property.getNewValue() == null) {
-                valuesMatch = oldBasicType == null;
-            } else {
-                // Check that the old property's new value is equal to the new change's old value.
-                // Also, accept the change if it is the same as the last one.
-                valuesMatch = property.getNewValue().equals(oldBasicType) || 
-                (property.getOldValue().equals(oldBasicType) && property.getNewValue().equals(newBasicType));
-            }
-            if (!valuesMatch) {
-                try {
-                    throw new RuntimeException("Multiple property changes do not follow after each other properly. " +
-                    		"Property " + property.getPropertyName() + ", on object " + source + " of type " + 
-                    		source.getClass() + ", Old " + oldBasicType + ", new " + property.getNewValue());
-                } finally {
-                    this.rollback();
-                }
-            }
-        }
-
         boolean unconditional = false;
         if (property != null) {
             // Hang on to the old value
