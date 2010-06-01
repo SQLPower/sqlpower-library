@@ -363,14 +363,26 @@ public class SPPersisterListener implements SPListener {
 	}
 
 	public void propertyChanged(PropertyChangeEvent evt) {
+	    SPObject source = (SPObject) evt.getSource();
+	    String uuid = source.getUUID();
+	    String propertyName = evt.getPropertyName();
+	    Object oldValue = evt.getOldValue();
+	    Object newValue = evt.getNewValue();
+	    
+	    try {
+	        if (!PersisterHelperFinder.findPersister(source.getClass())
+	                .getPersistedProperties()
+	                .contains(propertyName)) {
+	            logger.debug("Tried to persist a property that shouldn't be. Ignoring the property: " + propertyName);
+	            return;
+	        }
+	    } catch (Exception e) {
+	        throw new RuntimeException(e);
+	    }
+	    
 		if (!((SPObject) evt.getSource()).getRunnableDispatcher().isForegroundThread()) {
 	        throw new RuntimeException("Property change " + evt + " not fired on the foreground.");
 	    }
-		SPObject source = (SPObject) evt.getSource();
-		String uuid = source.getUUID();
-		String propertyName = evt.getPropertyName();
-		Object oldValue = evt.getOldValue();
-		Object newValue = evt.getNewValue();
 
         Object oldBasicType = converter.convertToBasicType(oldValue);
         Object newBasicType = converter.convertToBasicType(newValue);
@@ -411,17 +423,6 @@ public class SPPersisterListener implements SPListener {
             return;
         }
         
-		try {
-			if (!PersisterHelperFinder.findPersister(source.getClass())
-					.getPersistedProperties()
-					.contains(propertyName)) {
-				logger.debug("Tried to persist a property that shouldn't be. Ignoring the property: " + propertyName);
-				return;
-			}
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		
 		transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
 				"Creating start transaction event from propertyChange on object " + 
 				evt.getSource().getClass().getSimpleName() + " and property name " + evt.getPropertyName()));
