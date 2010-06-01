@@ -20,7 +20,6 @@
 package ca.sqlpower.object;
 
 import java.awt.Image;
-import java.beans.PropertyChangeEvent;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -1007,7 +1006,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		
 		getSPObjectUnderTest().removeChild(child);
 		
-		assertEquals(1, listener.childRemovedCount);
+		assertEquals(1, listener.getChildRemovedCount());
 	}
     
     public void testAddChildFiresEvents() throws Exception {
@@ -1027,66 +1026,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
     	
     	o.addChild(newChild, 0);
     	
-    	assertEquals(1, listener.childAddedCount);
+    	assertEquals(1, listener.getChildAddedCount());
     }
     
-    
-    public static class CountingSPListener implements SPListener {
-
-    	private int childAddedCount = 0;
-    	private int childRemovedCount = 0;
-    	private int transactionEndedCount = 0;
-    	private int transactionRollbackCount = 0;
-    	private int transactionStartedCount = 0;
-    	private int propertyChangedCount = 0;
-    	
-    	
-		public void childAdded(SPChildEvent e) {
-			childAddedCount++;
-		}
-
-		public void childRemoved(SPChildEvent e) {
-			childRemovedCount++;
-		}
-
-		public void transactionEnded(TransactionEvent e) {
-			transactionEndedCount++;
-		}
-
-		public void transactionRollback(TransactionEvent e) {
-			transactionRollbackCount++;
-		}
-
-		public void transactionStarted(TransactionEvent e) {
-			transactionStartedCount++;
-		}
-
-		public void propertyChanged(PropertyChangeEvent evt) {
-			propertyChangedCount++;
-		}
-
-		public int getChildAddedCount() {
-			return childAddedCount;
-		}
-
-		public int getChildRemovedCount() {
-			return childRemovedCount;
-		}
-
-		public int getTransactionEndedCount() {
-			return transactionEndedCount;
-		}
-
-		public int getTransactionRollbackCount() {
-			return transactionRollbackCount;
-		}
-
-		public int getTransactionStartedCount() {
-			return transactionStartedCount;
-		}
-
-		public int getPropertyChangedCount() {
-			return propertyChangedCount;
-		}
-    }
 }
