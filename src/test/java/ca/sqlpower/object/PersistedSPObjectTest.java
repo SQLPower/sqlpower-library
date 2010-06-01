@@ -1031,7 +1031,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
     }
     
     
-    public class CountingSPListener implements SPListener {
+    public static class CountingSPListener implements SPListener {
 
     	private int childAddedCount = 0;
     	private int childRemovedCount = 0;
