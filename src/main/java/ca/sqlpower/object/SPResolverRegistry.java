@@ -125,11 +125,11 @@ public class SPResolverRegistry {
 	
 	private static class TreeListener extends AbstractPoolingSPListener {
 		protected void propertyChangeImpl(PropertyChangeEvent e) {
-			if (e.getPropertyName().equalsIgnoreCase("uuid")
-					&& resolvers.containsKey(e.getOldValue())) {
-				// This means that the root object has changed it's UUID.
-				// Update the maps accordingly.
-				synchronized (resolvers) {
+			synchronized (resolvers) {
+				if (e.getPropertyName().equalsIgnoreCase("uuid")
+						&& resolvers.containsKey(e.getOldValue())) {
+					// This means that the root object has changed it's UUID.
+					// Update the maps accordingly.
 					resolvers.put((String)e.getNewValue(), resolvers.get(e.getOldValue()));
 					listeners.put((String)e.getNewValue(), listeners.get(e.getOldValue()));
 					resolvers.remove(e.getOldValue());
