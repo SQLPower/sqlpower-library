@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1352,4 +1354,48 @@ public class SPSUtils {
 		}
 		return rootCause;
 	}
+    
+    private static String convertToHex(byte[] data) {
+        StringBuilder buf = new StringBuilder();
+        for (int i = 0; i < data.length; i++) {
+            int halfbyte = (data[i] >>> 4) & 0x0F;
+            int two_halfs = 0;
+            do {
+                if ((0 <= halfbyte) && (halfbyte <= 9)) {
+                    buf.append((char) ('0' + halfbyte));
+                } else {
+                    buf.append((char) ('a' + (halfbyte - 10)));
+                }
+                halfbyte = data[i] & 0x0F;
+            } while (two_halfs++ < 1);
+        }
+        return buf.toString();
+    }
+
+    public static String encodeSha1(String text) {
+    	
+    	/*
+    	 * Thanks to the olap4j project for this code.
+    	 * www.olap4j.org
+    	 */
+    	
+        MessageDigest md;
+        try {
+            md = MessageDigest.getInstance("SHA-1");
+        } catch (NoSuchAlgorithmException e) {
+            try {
+                md = MessageDigest.getInstance("MD5");
+            } catch (NoSuchAlgorithmException e1) {
+                throw new RuntimeException(e1);
+            }
+        }
+
+        byte[] sha1hash = new byte[40];
+
+        md.update(text.getBytes(), 0, text.length());
+
+        sha1hash = md.digest();
+
+        return convertToHex(sha1hash);
+    }
 }
