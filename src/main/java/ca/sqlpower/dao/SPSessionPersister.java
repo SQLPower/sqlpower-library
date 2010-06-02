@@ -1056,28 +1056,9 @@ public abstract class SPSessionPersister implements SPPersister {
 	            childrenForPopulate.addAll(exportedKeysForPopulate);
 	        }
 
-	        if (!table.isImportedKeysPopulated() && importedKeysPopulated != null && importedKeysPopulated) {
-	            List<PersistedSPObject> importedKeysForPopulate = new ArrayList<PersistedSPObject>();
-	            for (PersistedSPObject spo : persistedObjects) {
-	                if (!spo.isLoaded() && spo.getParentUUID().equals(parent.getUUID())
-	                        && spo.getType().equals(SQLImportedKey.class.getName())) {
-	                    importedKeysForPopulate.add(spo);
-	                }
-	            }
-	            List<SQLObject> children = new ArrayList<SQLObject>();
-	            for (PersistedSPObject pso : importedKeysForPopulate) {
-	                try {
-	                    SQLObject spo = (SQLObject) PersisterHelperFinder.findPersister(pso.getType()).commitObject(pso, persistedProperties, 
-	                            persistedObjects, converter);
-	                    children.add(spo);
-	                } catch (Exception ex) {
-	                    throw new SPPersistenceException("Could not find the persister helper for " + pso.getType(), ex);
-	                }
-	            }
-
-	            SQLObjectUtils.populateChildrenWithList(parent, children);
-	            childrenForPopulate.addAll(importedKeysForPopulate);
-	        }
+			// SQLImportedKeys do not need to be added to parent in any special
+			// way, and in fact must wait until all relationships have been
+			// added.
 
 	    } else {
 	        //For all SQLObjects that are not SQLTable

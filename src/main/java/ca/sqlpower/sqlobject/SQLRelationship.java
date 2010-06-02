@@ -1433,12 +1433,12 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		return getParent();
 	}
 
-	@Accessor
+	@Transient @Accessor
 	public SQLImportedKey getForeignKey() {
 		return foreignKey;
 	}
 	
-	@Mutator
+	@Transient @Mutator
 	public void setForeignKey(SQLImportedKey newKey) {
 		SQLImportedKey oldKey = foreignKey;
 		this.foreignKey = newKey;
