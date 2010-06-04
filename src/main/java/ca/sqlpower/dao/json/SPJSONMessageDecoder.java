@@ -69,16 +69,26 @@ public class SPJSONMessageDecoder implements MessageDecoder<String> {
 	}
 
 	/**
-	 * Takes in a message in the form of String. The message is expected to be
-	 * in JSON format.
-	 * 
-	 * The JSON message is expected to be a JSONArray of JSONObjects. Each
-	 * JSONObject contains details for making a SPPersister method call.
+	 * Takes in a String, which is expected to represent a JSON Array. See
+	 * {@link #decode(JSONArray)}
+	 */
+	public void decode(@Nonnull String message) throws SPPersistenceException {
+		try {
+			decode(new JSONArray(message));
+		} catch (JSONException e) {
+			throw new SPPersistenceException(null, e);
+		}
+	}
+
+	/**
+	 * Takes in a JSONArray of persister calls. The JSON message is expected to
+	 * be a JSONArray of JSONObjects. Each JSONObject contains details for
+	 * making a SPPersister method call.
 	 * 
 	 * It expects the following key-value pairs in each JSONObject message:
 	 * <ul>
-	 * <li>method - The String value of a {@link SPPersistMethod}. This is
-	 * used to determine which {@link SPPersister} method to call.</li>
+	 * <li>method - The String value of a {@link SPPersistMethod}. This is used
+	 * to determine which {@link SPPersister} method to call.</li>
 	 * <li>uuid - The UUID of the SPObject, if there is one, that the persist
 	 * method call will act on. If there is none, it expects
 	 * {@link JSONObject#NULL}</li>
@@ -92,17 +102,16 @@ public class SPJSONMessageDecoder implements MessageDecoder<String> {
 	 * <li>oldValue</li>
 	 * <li>propertyName</li>
 	 * </ul>
-	 * See the method documentation of {@link SPPersister} for full details
-	 * on the expected values
+	 * See the method documentation of {@link SPPersister} for full details on
+	 * the expected values
 	 */
-	public void decode(@Nonnull String message) throws SPPersistenceException {
+	public void decode(JSONArray json) throws SPPersistenceException {
 		String uuid = null;
 		JSONObject jsonObject = null;
 		try {
 			synchronized (persister) {
-				JSONArray messageArray = new JSONArray(message);
-				for (int i=0; i < messageArray.length(); i++) {
-					jsonObject = messageArray.getJSONObject(i);
+				for (int i=0; i < json.length(); i++) {
+					jsonObject = json.getJSONObject(i);
 					logger.debug("Decoding Message: " + jsonObject);
 					uuid = jsonObject.getString("uuid");
 					SPPersistMethod method = SPPersistMethod.valueOf(jsonObject.getString("method"));
