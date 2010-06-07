@@ -550,7 +550,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
             		type.setPrecisionType(fromPlatform, null);
             	}
 
-            	if (upstreamType.getNullability() == null
+            	if (upstreamType.getNullability() != null
             			&& upstreamType.getNullability().equals(type.getNullability())) {
             		type.setMyNullability(null);
             	}
