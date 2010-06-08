@@ -61,6 +61,8 @@ public class SessionPersisterSuperConverter {
 	
 	private final StringArrayConverter stringArrayConverter = new StringArrayConverter();
 	
+	private final ClassConverter classConverter = new ClassConverter();
+	
 	protected final DataSourceCollection <JDBCDataSource> dsCollection;
 
 	/**
@@ -159,6 +161,9 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom instanceof Color) {
 		    Color c = (Color) convertFrom;
 		    return colorConverter.convertToSimpleType(c);
+		} else if (convertFrom instanceof Class<?>) {
+		    Class<?> c = (Class<?>) convertFrom;
+		    return classConverter.convertToSimpleType(c);
 		    
 		} else if (convertFrom instanceof java.util.Date) {
 			java.util.Date d = (java.util.Date) convertFrom;
@@ -247,6 +252,8 @@ public class SessionPersisterSuperConverter {
 
         } else if (Color.class.isAssignableFrom(type)) {
             return colorConverter.convertToComplexType((String) o);
+        } else if (Class.class.isAssignableFrom(type)) {
+            return classConverter.convertToComplexType((String) o);
             
         } else if (java.util.Date.class.isAssignableFrom(type)) {
             return dateConverter.convertToComplexType((String) o);
