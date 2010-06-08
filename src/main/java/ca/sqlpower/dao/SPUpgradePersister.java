@@ -24,8 +24,38 @@ package ca.sqlpower.dao;
  * and upgrade them to a different set of persist calls at a new version of the
  * state of the repository.
  * <p>
- * One important note is that the results of the upgrade should be in-line with what
- * you would get from a JCRPersister if you were loading the project directly.
+ * One important note is that the results of the upgrade should be in-line with
+ * what you would get from a JCRPersister if you were loading the project
+ * directly.
+ * <p>
+ * <h2>UUIDs in new objects</h2>
+ * <p>
+ * Another important note about all upgrades is that adding in a new object
+ * requires all of the objects created in the same path to have the same UUID.
+ * This means every time a persist call comes through this upgrade path the
+ * object created must always have the same UUID, its first child must have the
+ * same UUID and so on. The reason for the same UUIDs is old projects in
+ * revision control will be updated on-the-fly later and the object defined on
+ * that upgrade must match the one created when the workspace is upgraded.
+ * <p>
+ * The standard pattern for UUIDs to use in an upgrade is
+ * "upgrade-#-(generated uuid)-#" where: the first # is the number of the
+ * upgrade you are going to put the repository at, the second # is a number that
+ * is incremented for each object that is being persisted by that upgrade
+ * persister to keep the UUIDs different and the (generated uuid) section is
+ * normally a generated UUID that is the same for all objects created by the
+ * persister. Provided the objects are created in the same order on every pass
+ * of the upgrade persister the UUIDs will be unique for each created object and
+ * the same each time the upgrade is run.
+ * <p>
+ * <h2>Thread Safety</h2>
+ * <p>
+ * Since the same upgrade persister may be used to upgrade a project multiple
+ * times on different threads at the same time some thread safety is required
+ * in these types of persisters. For simple upgrade paths this should not be
+ * an issue as the upgrade does not need to care about the state of other persist
+ * calls. However, if there is some collection of state in the persist calls
+ * it should be done in a thread safe way. See {@link ThreadLocal}.
  */
 public interface SPUpgradePersister extends SPPersister {
 
@@ -35,8 +65,15 @@ public interface SPUpgradePersister extends SPPersister {
      * persister un-obstructed. In other upgrade persisters all of the persist
      * calls may need to be buffered first then upgraded before sending them to
      * the next persister.
+     * 
+     * @param nextPersister
+     *            The next persister to send the upgraded persist calls to.
+     * @param isDefault
+     *            Set to true if the next persister should be the default
+     *            persister used when we access this upgrade persister from a
+     *            new thread. The next persister can still be changed.
      */
-    public void setNextPersister(SPPersister nextPersister);
+    public void setNextPersister(SPPersister nextPersister, boolean isDefault);
 
     /**
      * See {@link #setNextPersister(SPPersister)}.
