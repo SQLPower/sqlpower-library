@@ -20,6 +20,7 @@ package ca.sqlpower.sqlobject;
 
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Collections;
@@ -32,6 +33,8 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.SPVariableResolver;
+import ca.sqlpower.object.SPVariableResolverProvider;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
@@ -53,7 +56,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 
-public class SQLColumn extends SQLObject implements java.io.Serializable {
+public class SQLColumn extends SQLObject implements java.io.Serializable, SPVariableResolverProvider {
 
 	private static Logger logger = Logger.getLogger(SQLColumn.class);
 	
@@ -122,6 +125,12 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	 * the creation of a relationship.    
 	 */
 	protected int referenceCount;
+
+	/**
+	 * Helper object to resolve variables in the check constraint.
+	 */
+    private final CheckConstraintVariableResolver variableResolver = 
+    	new CheckConstraintVariableResolver(this);
 	
 	public SQLColumn() {
 		userDefinedSQLType = new UserDefinedSQLType();
@@ -201,7 +210,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		setPopulated(true);
 		
 		this.userDefinedSQLType.setType(dataType);
-		this.userDefinedSQLType.setScale(platform, scale);
 		
 		// A scale/precision value of 0 does not mean anything, 
 		// which means the scale/precision type should be not applicable.
@@ -209,6 +217,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		// Reverse engineered tables will override the scale/precision types
 		// by looking through existing user types and inherting their 
 		// scale/precision properties.
+		this.userDefinedSQLType.setScale(platform, scale);
 		if (scale > 0) {
 			this.userDefinedSQLType.setScaleType(platform, PropertyType.VARIABLE);
 		} else {
@@ -547,7 +556,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
             	}
 
             	if (upstreamType.getPrecision(fromPlatform) == type.getPrecision(fromPlatform)) {
-            		type.setPrecisionType(fromPlatform, null);
+            		type.setPrecision(fromPlatform, null);
             	}
 
             	if (upstreamType.getNullability() != null
@@ -628,10 +637,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 		String defaultPlatform = SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM;
 		int precision = userDefinedSQLType.getPrecision(defaultPlatform);
 		int scale = userDefinedSQLType.getScale(defaultPlatform);
-		PropertyType precisionType = userDefinedSQLType
-				.getPrecisionType(defaultPlatform);
-		PropertyType scaleType = userDefinedSQLType
-				.getScaleType(defaultPlatform);
+		PropertyType precisionType = userDefinedSQLType.getPrecisionType(defaultPlatform);
+		PropertyType scaleType = userDefinedSQLType.getScaleType(defaultPlatform);
 
 		if (precisionType != PropertyType.NOT_APPLICABLE
 				&& scaleType != PropertyType.NOT_APPLICABLE
@@ -1309,6 +1316,10 @@ public class SQLColumn extends SQLObject implements java.io.Serializable {
 	@NonProperty
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		return allowedChildTypes;
+	}
+
+	public SPVariableResolver getVariableResolver() {
+		return variableResolver;
 	}
 
 }

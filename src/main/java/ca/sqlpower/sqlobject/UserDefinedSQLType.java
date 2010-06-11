@@ -22,7 +22,6 @@ package ca.sqlpower.sqlobject;
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -327,6 +326,10 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
             enumeration = getUpstreamType().getEnumeration(platform);
         }
         
+        if (enumeration == null) {
+        	enumeration = new String[0];
+        }
+        
         return enumeration;
     }
 
@@ -429,17 +432,11 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     @NonProperty
     public void setPrecision(String platform, Integer precision) {
         getOrCreatePhysicalProperties(platform).setPrecision(precision);
-        if (precision != null && precision.intValue() > 0) {
-        	getOrCreatePhysicalProperties(platform).setPrecisionType(PropertyType.VARIABLE);
-        }
     }
 
     @NonProperty
     public void setScale(String platform, Integer scale) {
         getOrCreatePhysicalProperties(platform).setScale(scale);
-        if (scale != null && scale.intValue() > 0) {
-        	getOrCreatePhysicalProperties(platform).setScaleType(PropertyType.VARIABLE);
-        }
     }
 
     @Mutator
@@ -548,9 +545,19 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 		
 		if (upstreamType != null) {
 			for (String platform : platforms()) {
-				if (upstreamType.getPhysicalProperties(platform) != null) {
-					getPhysicalProperties(platform)
-					.setName(upstreamType.getPhysicalProperties(platform).getName());
+				SQLTypePhysicalProperties upstreamProperties = upstreamType.getPhysicalProperties(platform);
+				if (upstreamProperties != null) {
+					SQLTypePhysicalProperties physicalProperties = getPhysicalProperties(platform);
+					physicalProperties.setName(upstreamProperties.getName());
+					if (upstreamProperties.getPrecisionType() != PropertyType.VARIABLE) {
+						physicalProperties.setPrecision(null);
+						physicalProperties.setPrecisionType(null);
+					}
+					if (upstreamProperties.getScaleType() != PropertyType.VARIABLE) {
+						physicalProperties.setScale(null);
+						physicalProperties.setScaleType(null);
+					}
+					
 				}
 			}
 			// Fix/hack to make sure the type is set to the same as the upstream
@@ -564,14 +571,14 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	public UserDefinedSQLType getUpstreamType() {
 		return upstreamType;
 	}
-    
+
 	/**
 	 * An important note of this implementation of
 	 * {@link #addChildImpl(SPObject, int)} is that it will not accept adding
 	 * {@link SQLTypePhysicalProperties} for the
-	 * {@link SQLTypePhysicalPropertiesProvider#GENERIC_PLATFORM) The
-	 * SQLTypePhysicalProperties for GENERIC_PLATFORM is always {
-	 * @link #defaultPhysicalProperties}, and it cannot ever be changed.
+	 * {@link SQLTypePhysicalPropertiesProvider#GENERIC_PLATFORM} The
+	 * SQLTypePhysicalProperties for GENERIC_PLATFORM is always
+	 * {@link #defaultPhysicalProperties}, and it cannot ever be changed.
 	 */
     public void putPhysicalProperties(String platform, SQLTypePhysicalProperties properties) {
 		if (platform.equals(GENERIC_PLATFORM)) {
@@ -697,6 +704,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	 * @param udt2
 	 *            The second of two {@link UserDefinedSQLType} objects to
 	 *            compare.
+	 * @return true iff the two {@link UserDefinedSQLType} objects are equal.
 	 */
     public static boolean areEqual(UserDefinedSQLType udt1, UserDefinedSQLType udt2) {
 		Set<String> oldPlatforms = new HashSet<String>(udt1.platforms());
@@ -713,16 +721,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 			for (String platform : udt1.platforms()) {
 				SQLTypePhysicalProperties oldProperties = udt1.getPhysicalProperties(platform);
 				SQLTypePhysicalProperties newProperties = udt2.getPhysicalProperties(platform);
-				equal &= SQLPowerUtils.areEqual(oldProperties.getName(), newProperties.getName())
-						&& SQLPowerUtils.areEqual(oldProperties.getPhysicalName(), newProperties.getPhysicalName())
-						&& SQLPowerUtils.areEqual(oldProperties.getPrecision(), newProperties.getPrecision())
-						&& SQLPowerUtils.areEqual(oldProperties.getPrecisionType(), newProperties.getPrecisionType())
-						&& SQLPowerUtils.areEqual(oldProperties.getScale(), newProperties.getScale())
-						&& Arrays.equals(oldProperties.getEnumeration(), newProperties.getEnumeration())
-						&& SQLPowerUtils.areEqual(oldProperties.getDefaultValue(), newProperties.getDefaultValue())
-						&& SQLPowerUtils.areEqual(oldProperties.getCheckConstraint(), newProperties.getCheckConstraint())
-						&& SQLPowerUtils.areEqual(oldProperties.getConstraintType(), newProperties.getConstraintType());
-				if (!equal) {
+				if (!SQLTypePhysicalProperties.areEqual(oldProperties, newProperties)) {
 					return false;
 				}
 			}

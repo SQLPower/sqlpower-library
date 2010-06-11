@@ -19,6 +19,7 @@
 
 package ca.sqlpower.sqlobject;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,6 +34,7 @@ import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
+import ca.sqlpower.util.SQLPowerUtils;
 
 /**
  * A container class that stores several specific database platform-dependent
@@ -310,19 +312,47 @@ public class SQLTypePhysicalProperties extends SQLObject {
     	}
     	
     	SQLTypePhysicalProperties propsToMatch = (SQLTypePhysicalProperties) matchMe;
-    	
-    	begin("Matching properties");
-    	setName(propsToMatch.getName());
-    	setPhysicalName(propsToMatch.getPhysicalName());
-    	setPrecision(propsToMatch.getPrecision());
-    	setPrecisionType(propsToMatch.getPrecisionType());
-    	setScale(propsToMatch.getScale());
-    	setScaleType(propsToMatch.getScaleType());
-    	setEnumeration(propsToMatch.getEnumeration());
-    	setDefaultValue(propsToMatch.getDefaultValue());
-    	setCheckConstraint(propsToMatch.getCheckConstraint());
-    	setConstraintType(propsToMatch.getConstraintType());
-    	commit();
+
+    	if (!areEqual(this, propsToMatch)) {
+    		begin("Matching properties");
+    		setName(propsToMatch.getName());
+    		setPhysicalName(propsToMatch.getPhysicalName());
+    		setPrecision(propsToMatch.getPrecision());
+    		setPrecisionType(propsToMatch.getPrecisionType());
+    		setScale(propsToMatch.getScale());
+    		setScaleType(propsToMatch.getScaleType());
+    		setEnumeration(propsToMatch.getEnumeration());
+    		setDefaultValue(propsToMatch.getDefaultValue());
+    		setCheckConstraint(propsToMatch.getCheckConstraint());
+    		setConstraintType(propsToMatch.getConstraintType());
+    		commit();
+    	}
+    }
+
+	/**
+	 * Compares two {@link SQLTypePhysicalProperties} objects to see if they are
+	 * equal in all properties (except UUID).
+	 * 
+	 * @param prop1
+	 *            The first of two {@link SQLTypePhysicalProperties} objects to
+	 *            compare.
+	 * @param prop2
+	 *            The second of two {@link SQLTypePhysicalProperties} objects to
+	 *            compare.
+	 * @return true iff the two {@link SQLTypePhysicalProperties} objects are
+	 *         equal.
+	 */
+    public static boolean areEqual(SQLTypePhysicalProperties prop1, SQLTypePhysicalProperties prop2) {
+		return SQLPowerUtils.areEqual(prop1.getName(), prop2.getName())
+				&& SQLPowerUtils.areEqual(prop1.getPhysicalName(), prop2.getPhysicalName())
+				&& SQLPowerUtils.areEqual(prop1.getPrecision(), prop2.getPrecision())
+				&& SQLPowerUtils.areEqual(prop1.getPrecisionType(), prop2.getPrecisionType())
+				&& SQLPowerUtils.areEqual(prop1.getScale(), prop2.getScale())
+				&& SQLPowerUtils.areEqual(prop1.getScaleType(), prop2.getScaleType())
+				&& Arrays.equals(prop1.getEnumeration(), prop2.getEnumeration())
+				&& SQLPowerUtils.areEqual(prop1.getDefaultValue(), prop2.getDefaultValue())
+				&& SQLPowerUtils.areEqual(prop1.getCheckConstraint(), prop2.getCheckConstraint())
+				&& SQLPowerUtils.areEqual(prop1.getConstraintType(), prop2.getConstraintType());
     }
 }
 
