@@ -256,6 +256,10 @@ public class SPClassVisitor implements DeclarationVisitor {
 	        }
 	    }
 		if (d.getAnnotation(Persistable.class) != null) {
+		    if (d.getAnnotation(Persistable.class).isTransient()) {
+		        valid = false;
+		        return;
+		    }
 			try {
 				String qualifiedName = 
 					SPAnnotationProcessorUtils.convertTypeDeclarationToQualifiedName(d);

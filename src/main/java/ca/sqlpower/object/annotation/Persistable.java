@@ -43,4 +43,10 @@ import ca.sqlpower.object.SPObject;
 @Target(ElementType.TYPE)
 public @interface Persistable {
 
+    /**
+     * Set to true if the object that is marked as persistable is actually
+     * transient.
+     */
+    boolean isTransient() default false;
+
 }
