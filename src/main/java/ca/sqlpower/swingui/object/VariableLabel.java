@@ -79,32 +79,73 @@ public class VariableLabel extends JLabel {
 	
 	@Override
 	public String toString() {
-		return "${"+this.variableDef+"}";
+		return formatVariable(variableDef);
 	}
 	
 	public void setVariableDef(String variableDef) {
 		this.variableDef = variableDef;
 		this.setText("  " + SPVariableHelper.getKey(VariableLabel.this.variableDef) + "  > ");
 	}
-	
+
 	/**
-	 * Helper method to insert and register a styled label in
-	 * a AWT Document
-	 * @param variableDef The variable unique key, including namespace, 
-	 * name and default value, but exclusing ${} markers.
-	 * @param helper The helper to use if this variable needs to be modified.
-	 * @param target The terget {@link Document} into which to insert
-	 * this variable.
-	 * @param insertPosition The position at whch to insert the variable.
-	 * @throws BadLocationException If the position supplied is not a valid
-	 * position within the target document.
+	 * Helper method to insert and register a styled label in a AWT Document
+	 * 
+	 * @param variableDef
+	 *            The variable unique key, including namespace, name and default
+	 *            value, but excluding ${} markers.
+	 * @param helper
+	 *            The helper to use if this variable needs to be modified.
+	 * @param target
+	 *            The target {@link Document} into which to insert this
+	 *            variable.
+	 * @param insertPosition
+	 *            The position at which to insert the variable.
+	 * @param dialogOwner
+	 *            The owner of the dialog that will be displayed if the
+	 *            variable is edited.
+	 * @throws BadLocationException
+	 *             If the position supplied is not a valid position within the
+	 *             target document.
 	 */
 	public static void insertLabel(
 			final String variableDef, 
 			final SPVariableHelper helper,
 			final Document target,
 			final int insertPosition,
-			final Component dialogOwner) throws BadLocationException 
+			final Component dialogOwner) throws BadLocationException {
+		insertLabel(variableDef, helper, target, insertPosition, dialogOwner, true);
+	}
+
+	/**
+	 * Helper method to insert and register a styled label in a AWT Document
+	 * 
+	 * @param variableDef
+	 *            The variable unique key, including namespace, name and default
+	 *            value, but excluding ${} markers.
+	 * @param helper
+	 *            The helper to use if this variable needs to be modified.
+	 * @param target
+	 *            The target {@link Document} into which to insert this
+	 *            variable.
+	 * @param insertPosition
+	 *            The position at which to insert the variable.
+	 * @param dialogOwner
+	 *            The owner of the dialog that will be displayed if the variable
+	 *            is edited.
+	 * @param showVariablesPanelOnClick
+	 *            The determinant of whether to show a {@link VariablesPanel}
+	 *            when the label is clicked on.
+	 * @throws BadLocationException
+	 *             If the position supplied is not a valid position within the
+	 *             target document.
+	 */
+	public static void insertLabel(
+			final String variableDef, 
+			final SPVariableHelper helper,
+			final Document target,
+			final int insertPosition,
+			final Component dialogOwner,
+			boolean showVariablesPanelOnClick) throws BadLocationException 
 	{
 		final String uuid = java.util.UUID.randomUUID().toString();
 		final SimpleAttributeSet varStyle = new SimpleAttributeSet();
@@ -115,53 +156,55 @@ public class VariableLabel extends JLabel {
 		StyleConstants.setComponent(varStyle, labelToInsert);
 		target.insertString(insertPosition, VARIABLE_CHAR, varStyle);
 		
-		// Open the editor if the user clicks on the label
-		labelToInsert.addMouseListener(new MouseListener() {
-			public void mouseReleased(MouseEvent e) {
-			}
-			public void mousePressed(MouseEvent e) {
-			}
-			public void mouseExited(MouseEvent e) {
-			}
-			public void mouseEntered(MouseEvent e) {
-			}
-			public void mouseClicked(MouseEvent e) 
-			{
-				VariablesPanel vp = 
-					new VariablesPanel(
-							helper,
-							new VariableInserter() {
-								public void insert(String variable) {
-									// We don't know where the var is now, but we can search it
-									// by UUID attribute.
-									for (int i = 0; i < target.getLength(); i++) {
-										try {
-											if (getCharacterElement(target, i).getAttributes().isDefined(UUID)
-													&& getCharacterElement(target, i).getAttributes().getAttribute(UUID).equals(uuid)
-													&& target.getText(i, 1).equals(VARIABLE_CHAR)) {
-												// Gotcha!
-												target.remove(i, 1);
-												String newVariableDef = variable.replaceFirst("\\$", "").replaceFirst("\\{", "").replaceFirst("\\}", "");
-												insertLabel(newVariableDef, helper, target, i, dialogOwner);
+		if (showVariablesPanelOnClick) {
+			// Open the editor if the user clicks on the label
+			labelToInsert.addMouseListener(new MouseListener() {
+				public void mouseReleased(MouseEvent e) {
+				}
+				public void mousePressed(MouseEvent e) {
+				}
+				public void mouseExited(MouseEvent e) {
+				}
+				public void mouseEntered(MouseEvent e) {
+				}
+				public void mouseClicked(MouseEvent e) 
+				{
+					VariablesPanel vp = 
+						new VariablesPanel(
+								helper,
+								new VariableInserter() {
+									public void insert(String variable) {
+										// We don't know where the var is now, but we can search it
+										// by UUID attribute.
+										for (int i = 0; i < target.getLength(); i++) {
+											try {
+												if (getCharacterElement(target, i).getAttributes().isDefined(UUID)
+														&& getCharacterElement(target, i).getAttributes().getAttribute(UUID).equals(uuid)
+														&& target.getText(i, 1).equals(VARIABLE_CHAR)) {
+													// Gotcha!
+													target.remove(i, 1);
+													String newVariableDef = variable.replaceFirst("\\$", "").replaceFirst("\\{", "").replaceFirst("\\}", "");
+													insertLabel(newVariableDef, helper, target, i, dialogOwner);
+												}
+											} catch (BadLocationException e) {
+												throw new AssertionError(e);
 											}
-										} catch (BadLocationException e) {
-											throw new AssertionError(e);
 										}
 									}
-								}
-							},
-							variableDef);
-				
-				JDialog dialog = 
-					DataEntryPanelBuilder.createDataEntryPanelDialog(
-						vp,
-				        dialogOwner, 
-				        "Edit variable", 
-				        "Update");
-				
-				dialog.setVisible(true);
-			}
-		});
+								},
+								variableDef);
+
+					JDialog dialog = 
+						DataEntryPanelBuilder.createDataEntryPanelDialog(
+								vp,
+								dialogOwner, 
+								"Edit variable", 
+						"Update");
+
+					dialog.setVisible(true);
+				}
+			});
+		}
 	}
 	
 	
@@ -179,7 +222,7 @@ public class VariableLabel extends JLabel {
 					target.remove(i, 1);
 					target.insertString(
 							i, 
-							"${"+varValue+"}", 
+							formatVariable(varValue), 
 							null);
 				}
 			}
@@ -203,9 +246,7 @@ public class VariableLabel extends JLabel {
 				if (getCharacterElement(target, i).getAttributes().isDefined(VAR_VALUE)
 						&& target.getText(i, 1).equals(VARIABLE_CHAR)) {
 					String varValue = (String)getCharacterElement(target, i).getAttributes().getAttribute(VAR_VALUE);
-					sb.append("${");
-					sb.append(varValue);
-					sb.append("}");
+					sb.append(formatVariable(varValue));
 				} else {
 					sb.append(target.getText(i, 1));
 				}
@@ -215,21 +256,48 @@ public class VariableLabel extends JLabel {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	/**
-	 * This helper method parses the contents of an AWT Document
-	 * and inserts pretty variables labels in it.
-	 * @param helper The var helper to use if the variables are
-	 * modified after being inserted.
-	 * @param target The Document into which to perform the
-	 * substitution
-	 * @param dialogOwner The owner of the dialog that will be displayed 
-	 * if the variables are edited.
+	 * This helper method parses the contents of an AWT Document and inserts
+	 * pretty variables labels in it.
+	 * 
+	 * @param helper
+	 *            The var helper to use if the variables are modified after
+	 *            being inserted.
+	 * @param target
+	 *            The Document into which to perform the substitution
+	 * @param dialogOwner
+	 *            The owner of the dialog that will be displayed if the
+	 *            variables are edited.
 	 */
 	public static void insertLabels(
 			SPVariableHelper helper,
 			Document target,
-			Component dialogOwner)
+			Component dialogOwner) {
+		insertLabels(helper, target, dialogOwner, true);
+	}
+
+	/**
+	 * This helper method parses the contents of an AWT Document and inserts
+	 * pretty variables labels in it.
+	 * 
+	 * @param helper
+	 *            The var helper to use if the variables are modified after
+	 *            being inserted.
+	 * @param target
+	 *            The Document into which to perform the substitution
+	 * @param dialogOwner
+	 *            The owner of the dialog that will be displayed if the
+	 *            variables are edited.
+	 * @param showVariablesPanelOnClick
+	 *            The determinant of whether to show a {@link VariablesPanel}
+	 *            when the labels are clicked on.
+	 */
+	public static void insertLabels(
+			SPVariableHelper helper,
+			Document target,
+			Component dialogOwner,
+			boolean showVariablesPanelOnClick)
 	{
 		try {
 			
@@ -248,7 +316,7 @@ public class VariableLabel extends JLabel {
 				
 				target.remove(indexStart, indexEnd - indexStart + 1);
 				
-				insertLabel(var, helper, target, indexStart, dialogOwner);
+				insertLabel(var, helper, target, indexStart, dialogOwner, showVariablesPanelOnClick);
 			}
 
 		} catch (BadLocationException e) {
@@ -343,7 +411,7 @@ public class VariableLabel extends JLabel {
 					target.remove(i, endIndex - i);
 					target.insertString(
 							i, 
-							"${"+varValue+"}", 
+							formatVariable(varValue), 
 							null);
 				}
 			}
@@ -352,10 +420,40 @@ public class VariableLabel extends JLabel {
 			throw new RuntimeException(e);
 		}
 	}
-	
-	
-	///////////////////////////////////////////
-	/////  Private methods
+
+	/**
+	 * Formats a variable name into a form where the variable looks unresolved.
+	 * For example, var -> ${var}. This method works in reverse of
+	 * {@link #stripVariable(String)}.
+	 * 
+	 * @param variableName
+	 *            The variable name.
+	 * @return The formatted unresolved variable.
+	 */
+	public static String formatVariable(String variableName) {
+		return "${" + variableName + "}";
+	}
+
+	/**
+	 * Strips the characters from an unresolved variable to get the variable
+	 * name from it. For example, ${var} -> var. This method works in reverse of
+	 * {@link #formatVariable(String)}.
+	 * 
+	 * @param formattedVariableName
+	 *            The unresolved variable.
+	 * @return The stripped variable name.
+	 */
+	public static String stripVariable(String formattedVariableName) {
+		int indexStart = formattedVariableName.indexOf("${");
+		int indexEnd = formattedVariableName.indexOf("}");
+		
+		if (indexStart == -1 || indexEnd == -1 || indexStart > indexEnd) {
+			return formattedVariableName;
+		}
+		
+		String var = formattedVariableName.substring(indexStart, indexEnd + 1);
+		return var.replaceFirst("\\$", "").replaceFirst("\\{", "").replaceFirst("\\}", "");
+	}
 	
 	public static Element getCharacterElement(Document doc, int pos) {
 		Element e = null;

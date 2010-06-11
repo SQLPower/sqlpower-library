@@ -149,20 +149,22 @@ public interface SPVariableResolver {
 	 * if it cannot be resolved.
 	 */
 	public Collection<Object> resolveCollection(String key);
-	
+
 	/**
-	 * Resolves a variable to it's value by a String key.
-	 * Returns a {@link Collection} containing only the supplied default value
-	 * if the variable cannot be resolved.
+	 * Resolves a variable to it's value by a String key. Returns a
+	 * {@link Collection} containing only the supplied default value if the
+	 * variable cannot be resolved.
 	 * 
-	 * <p>A common mistake done by using this call is to receive the default
-	 * value without verifying prior to the call if the implementing resolver
-	 * can actually resolve it via the {@link SPVariableResolver#resolves(String)} 
+	 * <p>
+	 * A common mistake done by using this call is to receive the default value
+	 * without verifying prior to the call if the implementing resolver can
+	 * actually resolve it via the {@link SPVariableResolver#resolves(String)}
 	 * function.
 	 * 
-	 * @param key The variable key to resolve
-	 * @return The variable object, or an empty {@link Collection}
-	 * if it cannot be resolved.
+	 * @param key
+	 *            The variable key to resolve
+	 * @return The variable object, or a {@link Collection} containing only the
+	 *         supplied default value if the variable cannot be resolved.
 	 */
 	public Collection<Object> resolveCollection(String key, Object defaultValue);
 	
