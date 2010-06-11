@@ -1318,6 +1318,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 		return allowedChildTypes;
 	}
 
+	@NonProperty
 	public SPVariableResolver getVariableResolver() {
 		return variableResolver;
 	}

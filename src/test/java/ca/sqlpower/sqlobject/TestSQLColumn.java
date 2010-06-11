@@ -232,6 +232,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
         propsToIgnore.add("children");
         propsToIgnore.add("childrenWithoutPopulating");
         propsToIgnore.add("userDefinedSQLType");
+        propsToIgnore.add("variableResolver");
 
 		TestUtils.setAllInterestingProperties(origCol, propsToIgnore);
 		origCol.setSourceDataTypeName("NUMERIC");
@@ -606,6 +607,7 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
         propsToIgnore.add("children");
         propsToIgnore.add("childrenWithoutPopulating");
         propsToIgnore.add("userDefinedSQLType");
+        propsToIgnore.add("variableResolver");
         
 		Map<String,Object> origProps = (Map<String,Object>) BeanUtils.describe(cowCol);
 		Map<String,Object> derivProps = (Map<String,Object>) BeanUtils.describe(tmpCol);
