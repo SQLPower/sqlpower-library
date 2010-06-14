@@ -351,7 +351,11 @@ public class GenericNewValueMaker implements NewValueMaker {
         } else if (valueType == UserDefinedSQLType.class) {
         	UserDefinedSQLType userDefinedSQLType = new UserDefinedSQLType();
         	UserDefinedSQLType oldType = (UserDefinedSQLType) oldVal;
-        	userDefinedSQLType.setType(oldType.getType() + 1);
+        	if (oldType != null && oldType.getType() != null) {
+        	    userDefinedSQLType.setType(oldType.getType() + 1);
+        	} else {
+        	    userDefinedSQLType.setType(1);
+        	}
 			newVal = userDefinedSQLType;
         	root.addChild((SPObject) newVal, root.getChildren(UserDefinedSQLType.class).size());
         } else if (valueType == SQLTypePhysicalProperties.class) {
