@@ -1222,13 +1222,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			} catch (ObjectDependentException e) {
 				throw new SQLObjectException(e);
 			}
-			try {
-				// XXX no magic here? this is suspect
-				m.getFkColumn().setMagicEnabled(false);
-				m.getFkColumn().removeReference();
-			} finally {
-				m.getFkColumn().setMagicEnabled(true);
-			}
 		}
 	}
 
@@ -1981,7 +1974,17 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 		int index = mappings.indexOf(child);
 		if (index != -1) {
-			mappings.remove(index);
+			ColumnMapping m = mappings.remove(index);
+			final SQLColumn fkCol = m.getFkColumn();
+			if (fkCol != null) {
+			    try {
+			        // XXX no magic here? this is suspect
+			        fkCol.setMagicEnabled(false);
+			        fkCol.removeReference();
+			    } finally {
+			        fkCol.setMagicEnabled(true);
+			    }
+			}
 			fireChildRemoved(SQLTable.class, child, index);
 			child.setParent(null);
 			return true;
