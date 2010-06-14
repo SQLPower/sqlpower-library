@@ -280,14 +280,15 @@ public abstract class AbstractSPObject implements SPObject {
     protected SPChildEvent fireChildAdded(Class<? extends SPObject> type, SPObject child, int index) {
     	logger.debug("Child Added: " + type + " notifying " + listeners.size() + " listeners");
     	
+    	synchronized(listeners) {
+    		if (listeners.isEmpty()) return null;
+    	}
+    	
     	if (!isForegroundThread()) {
     		throw new IllegalStateException("Event for adding the child " + child.getName() + 
     				" must fired on the foreground thread.");
     	}
     	
-        synchronized(listeners) {
-            if (listeners.isEmpty()) return null;
-        }
         final SPChildEvent e = new SPChildEvent(this, type, child, index, EventType.ADDED);
         synchronized(listeners) {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
@@ -317,14 +318,15 @@ public abstract class AbstractSPObject implements SPObject {
     protected SPChildEvent fireChildRemoved(Class<? extends SPObject> type, SPObject child, int index) {
     	logger.debug("Child Removed: " + type + " notifying " + listeners.size() + " listeners: " + listeners);
     	
+    	synchronized(listeners) {
+    		if (listeners.isEmpty()) return null;
+    	}
+    	
     	if (!isForegroundThread()) {
     		throw new IllegalStateException("Event for removing the child " + child.getName() + 
     				" must fired on the foreground thread.");
     	}
     	
-        synchronized(listeners) {
-            if (listeners.isEmpty()) return null;
-        }
         final SPChildEvent e = new SPChildEvent(this, type, child, index, EventType.REMOVED);
         synchronized(listeners) {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
@@ -346,14 +348,15 @@ public abstract class AbstractSPObject implements SPObject {
     protected PropertyChangeEvent firePropertyChange(final String propertyName, final boolean oldValue, 
             final boolean newValue) {
     	if (oldValue == newValue) return null;
+    	synchronized(listeners) {
+    		if (listeners.size() == 0) return null;
+    	}
     	
     	if (!isForegroundThread()) {
     		throw new IllegalStateException("Event for property change " + propertyName + 
     				" must fired on the foreground thread.");
     	}
-        synchronized(listeners) {
-            if (listeners.size() == 0) return null;
-        }
+    	
         final PropertyChangeEvent evt = new PropertyChangeEvent(this, propertyName, oldValue, newValue);
         synchronized(listeners) {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
@@ -376,14 +379,15 @@ public abstract class AbstractSPObject implements SPObject {
             final int newValue) {
     	if (oldValue == newValue) return null;
     	
+    	synchronized(listeners) {
+    		if (listeners.size() == 0) return null;
+    	}
+    	
     	if (!isForegroundThread()) {
     		throw new IllegalStateException("Event for property change " + propertyName + 
     				" must fired on the foreground thread.");
     	}
     	
-        synchronized(listeners) {
-            if (listeners.size() == 0) return null;
-        }
         final PropertyChangeEvent evt = new PropertyChangeEvent(this, propertyName, oldValue, newValue);
         synchronized(listeners) {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
@@ -407,19 +411,20 @@ public abstract class AbstractSPObject implements SPObject {
     	if ((oldValue == null && newValue == null)
     			|| (oldValue != null && oldValue.equals(newValue))) return null; 
     	
+    	synchronized(listeners) {
+    		if (listeners.size() == 0) return null;
+    		if (logger.isDebugEnabled()) {
+    			logger.debug("Firing property change \"" + propertyName
+    					+ "\" to " + listeners.size() + " listeners: "
+    					+ listeners);
+    		}
+    	}
+    	
     	if (!isForegroundThread()) {
     		throw new IllegalStateException("Event for property change " + propertyName + 
     				" must fired on the foreground thread.");
     	}
     	
-        synchronized(listeners) {
-            if (listeners.size() == 0) return null;
-            if (logger.isDebugEnabled()) {
-                logger.debug("Firing property change \"" + propertyName
-                        + "\" to " + listeners.size() + " listeners: "
-                        + listeners);
-            }
-        }
         final PropertyChangeEvent evt = new PropertyChangeEvent(this, propertyName, oldValue, newValue);
         synchronized(listeners) {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
@@ -439,13 +444,13 @@ public abstract class AbstractSPObject implements SPObject {
      *         testing purposes.
      */
     protected TransactionEvent fireTransactionStarted(final String message) {
+    	synchronized (listeners) {
+    		if (listeners.size() == 0) return null;            
+    	}
     	if (!isForegroundThread()) {
     		throw new IllegalStateException("Event for a transaction start" + 
     				" must fired on the foreground thread.");
     	}
-        synchronized (listeners) {
-            if (listeners.size() == 0) return null;            
-        }
         final TransactionEvent evt = TransactionEvent.createStartTransactionEvent(this, message);
         synchronized (listeners) {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
@@ -464,13 +469,13 @@ public abstract class AbstractSPObject implements SPObject {
      *         testing purposes.
      */
     protected TransactionEvent fireTransactionEnded() {
+    	synchronized (listeners) {
+    		if (listeners.size() == 0) return null;            
+    	}
     	if (!isForegroundThread()) {
     		throw new IllegalStateException("Event for a transaction end" + 
     				" must fired on the foreground thread.");
     	}
-        synchronized (listeners) {
-            if (listeners.size() == 0) return null;            
-        }
         final TransactionEvent evt = TransactionEvent.createEndTransactionEvent(this);
         synchronized (listeners) {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
@@ -490,13 +495,13 @@ public abstract class AbstractSPObject implements SPObject {
      *         testing purposes.
      */
     protected TransactionEvent fireTransactionRollback(final String message) {
+    	synchronized (listeners) {
+    		if (listeners.size() == 0) return null;            
+    	}
     	if (!isForegroundThread()) {
     		throw new IllegalStateException("Event for a transaction rollback" + 
     				" must fired on the foreground thread.");
     	}
-        synchronized (listeners) {
-            if (listeners.size() == 0) return null;            
-        }
         final TransactionEvent evt = TransactionEvent.createRollbackTransactionEvent(this, message);
         synchronized (listeners) {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
