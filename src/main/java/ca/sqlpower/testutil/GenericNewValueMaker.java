@@ -45,6 +45,7 @@ import ca.sqlpower.sqlobject.SQLCatalog;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLIndex;
+import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLObjectRoot;
 import ca.sqlpower.sqlobject.SQLObjectRuntimeException;
@@ -173,7 +174,7 @@ public class GenericNewValueMaker implements NewValueMaker {
         	} else {
         		newVal = SimpleDateFormat.getDateTimeInstance();
         	}        	
-        } else if (valueType.isAssignableFrom(SQLColumn.class)) {
+        } else if (SQLColumn.class.isAssignableFrom(valueType)) {
             // Objects like SPObject or SQLObject may come in here
         	SQLColumn sqlCol = new SQLColumn();
         	sqlCol.setName("testing!");
@@ -245,6 +246,10 @@ public class GenericNewValueMaker implements NewValueMaker {
         	SQLCatalog catalog = new SQLCatalog(db, "catalog for test", true);
         	db.addCatalog(catalog);
         	newVal = catalog;
+        } else if (valueType == SPObject.class) {
+            return makeNewValue(SQLDatabase.class, null, "SPObject of some kind");
+        } else if (valueType == SQLObject.class) {
+            return makeNewValue(SQLColumn.class, null, "SQLObject of some kind");
         } else if (valueType == Throwable.class) {
         	newVal = new SQLObjectException("Test Exception");
         } else if (valueType == UserPrompter.class) {

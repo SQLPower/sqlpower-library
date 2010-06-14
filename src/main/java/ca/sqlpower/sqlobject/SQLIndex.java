@@ -176,7 +176,6 @@ public class SQLIndex extends SQLObject {
         public Column(SQLColumn col, AscendDescend ad) {
             this(col.getName(), ad);
             setColumn(col);
-            setPhysicalName(col.getPhysicalName());
         }
 
         /**
@@ -212,7 +211,6 @@ public class SQLIndex extends SQLObject {
         		@ConstructorParameter(propertyName="ascendingOrDescending") AscendDescend ad) {
         	this(name, ad);
         	setColumn(col);
-        	setPhysicalName(col.getPhysicalName());
         }
 
         public Column() {
@@ -269,15 +267,25 @@ public class SQLIndex extends SQLObject {
 
         @Mutator
         public void setColumn(SQLColumn column) {
-            if (this.column != null) {
-                this.column.removeSPListener(targetColumnListener);
+            try {
+                begin("Setting SQLIndex column");
+                if (this.column != null) {
+                    this.column.removeSPListener(targetColumnListener);
+                }
+                SQLColumn oldValue = this.column;
+                this.column = column;
+                if (this.column != null) {
+                    this.column.addSPListener(targetColumnListener);
+                }
+                firePropertyChange("column", oldValue, column);
+                if (this.column != null) {
+                    setPhysicalName(column.getPhysicalName());
+                }
+                commit();
+            } catch (RuntimeException e) {
+                rollback(e.getMessage());
+                throw e;
             }
-            SQLColumn oldValue = this.column;
-            this.column = column;
-            if (this.column != null) {
-                this.column.addSPListener(targetColumnListener);
-            }
-            firePropertyChange("column", oldValue, column);
         }
 
         @Accessor
