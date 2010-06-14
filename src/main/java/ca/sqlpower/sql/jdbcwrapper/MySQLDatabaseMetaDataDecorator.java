@@ -154,7 +154,9 @@ public class MySQLDatabaseMetaDataDecorator extends DatabaseMetaDataDecorator {
 	        origRS = super.getPrimaryKeys(catalog, schema, table);
 	        crs.populate(origRS);
 	    } finally {
-	        origRS.close();
+	    	if (origRS != null) {
+	    		origRS.close();
+	    	}
 	    }
 	    
 	    while (crs.next()) {

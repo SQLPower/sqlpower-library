@@ -20,7 +20,6 @@ package ca.sqlpower.sqlobject;
 
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Collections;
@@ -215,7 +214,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 		// which means the scale/precision type should be not applicable.
 		// Otherwise, set the scale/precision type to a default of variable.
 		// Reverse engineered tables will override the scale/precision types
-		// by looking through existing user types and inherting their 
+		// by looking through existing user types and inheriting their 
 		// scale/precision properties.
 		this.userDefinedSQLType.setScale(platform, scale);
 		if (scale > 0) {
@@ -840,6 +839,19 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 		int oldScale = getScale();
 		userDefinedSQLType.setScale(getPlatform(), argScale);
 		firePropertyChange("scale", oldScale, argScale);
+		
+		// Need to change scale type here according to the scale value
+		// that is passed in. It is possible that when the project gets
+		// loaded initially, the default SQLColumn() constructor gets called,
+		// which sets the scale value and type to default. Since scale type
+		// is not saved, only the scale value is set here. When getScale()
+		// is called, it may return 0 because it will try to read the
+		// scale type which could be NOT_APPLICABLE by default.
+		if (argScale > 0 && getScaleType() == PropertyType.NOT_APPLICABLE) {
+			setScaleType(PropertyType.VARIABLE);
+		} else if (argScale == 0 && getScaleType() == PropertyType.VARIABLE) {
+			setScaleType(null);
+		}
 		commit();
 	}
 
@@ -870,6 +882,20 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 		int oldPrecision = getPrecision();
 		userDefinedSQLType.setPrecision(getPlatform(), argPrecision);
 		firePropertyChange("precision", oldPrecision, argPrecision);
+		
+		// Need to change precision type here according to the precision value
+		// that is passed in. It is possible that when the project gets
+		// loaded initially, the default SQLColumn() constructor gets called,
+		// which sets the precision value and type to default. Since precision type
+		// is not saved, only the precision value is set here. When getPrecision()
+		// is called, it may return 0 because it will try to read the
+		// precision type which could be NOT_APPLICABLE by default
+		if (argPrecision > 0 && getPrecisionType() == PropertyType.NOT_APPLICABLE) {
+			setPrecisionType(PropertyType.VARIABLE);
+		} else if (argPrecision == 0 && getPrecisionType() == PropertyType.VARIABLE) {
+			setPrecisionType(null);
+		}
+		
 		commit();
 	}
 
