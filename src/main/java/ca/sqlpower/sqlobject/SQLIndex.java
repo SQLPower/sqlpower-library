@@ -114,6 +114,8 @@ public class SQLIndex extends SQLObject {
             public void propertyChanged(PropertyChangeEvent e) {
                 if ("name".equals(e.getPropertyName())) {
                     setName((String) e.getNewValue());
+                } else if ("physicalName".equals(e.getPropertyName())) {
+                    setPhysicalName((String) e.getNewValue());
                 }
             }
             
@@ -174,6 +176,7 @@ public class SQLIndex extends SQLObject {
         public Column(SQLColumn col, AscendDescend ad) {
             this(col.getName(), ad);
             setColumn(col);
+            setPhysicalName(col.getPhysicalName());
         }
 
         /**
@@ -209,6 +212,7 @@ public class SQLIndex extends SQLObject {
         		@ConstructorParameter(propertyName="ascendingOrDescending") AscendDescend ad) {
         	this(name, ad);
         	setColumn(col);
+        	setPhysicalName(col.getPhysicalName());
         }
 
         public Column() {
