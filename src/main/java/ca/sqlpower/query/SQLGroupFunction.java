@@ -29,10 +29,7 @@ public enum SQLGroupFunction {
 	MIN ("MIN"),
 	MAX ("MAX"),
 	AVG ("AVG"),
-	COUNT ("COUNT"),
-	FIRST ("FIRST"),
-	LAST ("LAST"),
-	MID ("MID");
+	COUNT ("COUNT");
 	
 	private final String groupingName;
     
