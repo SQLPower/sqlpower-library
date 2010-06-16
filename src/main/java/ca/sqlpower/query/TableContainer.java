@@ -29,6 +29,7 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLDatabase;
+import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLTable;
 
@@ -64,7 +65,7 @@ public class TableContainer extends ItemContainer implements Container {
      * refresh it as necessary.
      */
 	private final SQLDatabase database;
-	
+
 	public TableContainer(@Nonnull SQLDatabase db, @Nonnull SQLTable t) {
 	    super(t.getName());
 	    if (db == null) {
@@ -86,6 +87,25 @@ public class TableContainer extends ItemContainer implements Container {
 	 * set when the table is loaded.
 	 */
 	public TableContainer(String uuid, SQLDatabase db, String name, String schema, String catalog, List<SQLObjectItem> items) {
+	    this(uuid, db, name, schema, catalog, items, false);
+	}
+
+    /**
+     * This constructor creates a table that will be loaded from the database
+     * when a part of the container is accessed if the populated flag is set to
+     * false. To load the table the table's name, schema and catalog will be
+     * used to retrieve the table from the database. The items of this container
+     * will have it's object set when the table is loaded.
+     * 
+     * @param doPopulate
+     *            If set to false the objects will be considered populated and
+     *            will not try to populate again. This is useful for places like
+     *            the session on the server that can just accept the objects
+     *            given to it, it does not need to manipulate the objects
+     *            further. If true the object named in this container will be
+     *            populated when accessed.
+     */
+	public TableContainer(String uuid, SQLDatabase db, String name, String schema, String catalog, List<SQLObjectItem> items, boolean doPopulate) {
 		super(name, uuid);
 	    if (db == null) {
 	    	logger.debug("Database connection for table " + name + " is missing. Although " +
@@ -105,7 +125,16 @@ public class TableContainer extends ItemContainer implements Container {
 			this.catalog = "";
 		}
 		setName(name);
-		table = null;
+		if (doPopulate) {
+		    table = null;
+		} else {
+		    try {
+		        table = new SQLTable(db, true);
+		        table.setName(name);
+		    } catch (SQLObjectException e) {
+		        throw new RuntimeException("Cannot happen", e);
+		    }
+		}
 		super.setAlias("");
 		itemList = new ArrayList<SQLObjectItem>();
 		for (SQLObjectItem item : items) {
