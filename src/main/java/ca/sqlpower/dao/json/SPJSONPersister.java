@@ -19,9 +19,9 @@
 
 package ca.sqlpower.dao.json;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
@@ -232,7 +232,7 @@ public class SPJSONPersister implements SPPersister {
 	private void setValueInJSONObject(JSONObject jsonObject, String jsonPropName, DataType type, Object value)
 	throws IOException, JSONException, UnsupportedEncodingException {
 		if (type == DataType.PNG_IMG && value != null) {
-			ByteArrayInputStream in = (ByteArrayInputStream) value;
+			InputStream in = (InputStream) value;
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			SQLPowerUtils.copyStream(in, out);
 			byte[] bytes = out.toByteArray();
