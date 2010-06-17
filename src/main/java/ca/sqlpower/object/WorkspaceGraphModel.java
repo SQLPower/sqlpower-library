@@ -101,19 +101,17 @@ public class WorkspaceGraphModel implements GraphModel<SPObject, WorkspaceGraphM
     /**
      * This list will contain all of the nodes in the entire graph.
      */
-    private final Set<SPObject> nodes = new HashSet<SPObject>();
+    private final Set<SPObject> nodes;
     
     /**
      * This list will map each node to a list of inbound edges on the node.
      */
-    private final Map<SPObject, Set<WorkspaceGraphModelEdge>> inboundEdges = 
-        new HashMap<SPObject, Set<WorkspaceGraphModelEdge>>();
+    private final Map<SPObject, Set<WorkspaceGraphModelEdge>> inboundEdges;
     
     /**
      * This list will map each node to a list of outbound edges on the node.
      */
-    private final Map<SPObject, Set<WorkspaceGraphModelEdge>> outboundEdges =
-        new HashMap<SPObject, Set<WorkspaceGraphModelEdge>>();
+    private final Map<SPObject, Set<WorkspaceGraphModelEdge>> outboundEdges;
 
     /**
      * This node is the starting point when creating the graph.
@@ -121,6 +119,13 @@ public class WorkspaceGraphModel implements GraphModel<SPObject, WorkspaceGraphM
      */
     private final SPObject graphStartNode;
 
+    private WorkspaceGraphModel(Set<SPObject> nodes, Map<SPObject, Set<WorkspaceGraphModelEdge>> inboundEdges, Map<SPObject, Set<WorkspaceGraphModelEdge>> outboundEdges, SPObject graphStartNode) {
+		this.nodes = nodes;
+		this.inboundEdges = inboundEdges;
+		this.outboundEdges = outboundEdges;
+		this.graphStartNode = graphStartNode;
+    }
+    
     /**
      * @param root
      *            The Wabit object that is the highest ancestor of all of the
@@ -163,6 +168,10 @@ public class WorkspaceGraphModel implements GraphModel<SPObject, WorkspaceGraphM
         //2) do a BFS on the graph starting at the start node to find what nodes should 
         //   stay in the graph, ie connected, and remove the rest.
         
+    	nodes = new HashSet<SPObject>();
+    	outboundEdges = new HashMap<SPObject, Set<WorkspaceGraphModelEdge>>();
+    	inboundEdges = new HashMap<SPObject, Set<WorkspaceGraphModelEdge>>();
+    	
         this.graphStartNode = graphStartNode;
         Queue<SPObject> adjacentNodes = new LinkedList<SPObject>();
         Map<SPObject, SPObject> childParentMap = new HashMap<SPObject, SPObject>();
@@ -294,6 +303,33 @@ public class WorkspaceGraphModel implements GraphModel<SPObject, WorkspaceGraphM
 
     public SPObject getGraphStartNode() {
         return graphStartNode;
+    }
+
+	/**
+	 * Returns this graph model, with all edges reversed. This has a similar
+	 * effect to the reverse polarity flag in the constructor, but the graph may
+	 * contain a different set of nodes.
+	 */
+    public WorkspaceGraphModel invert() {
+    	Map<SPObject, Set<WorkspaceGraphModelEdge>> invertedInboundEdges = new HashMap<SPObject, Set<WorkspaceGraphModelEdge>>();
+    	for (Map.Entry<SPObject, Set<WorkspaceGraphModelEdge>> entry : inboundEdges.entrySet()) {
+    		Set<WorkspaceGraphModelEdge> edges = new HashSet<WorkspaceGraphModelEdge>();
+    		for (WorkspaceGraphModelEdge edge : entry.getValue()) {
+    			edges.add(new WorkspaceGraphModelEdge(edge.getChild(), edge.getParent()));
+    		}
+    		invertedInboundEdges.put(entry.getKey(), edges);
+    	}
+    	
+    	Map<SPObject, Set<WorkspaceGraphModelEdge>> invertedOutboundEdges = new HashMap<SPObject, Set<WorkspaceGraphModelEdge>>();
+    	for (Map.Entry<SPObject, Set<WorkspaceGraphModelEdge>> entry : outboundEdges.entrySet()) {
+    		Set<WorkspaceGraphModelEdge> edges = new HashSet<WorkspaceGraphModelEdge>();
+    		for (WorkspaceGraphModelEdge edge : entry.getValue()) {
+    			edges.add(new WorkspaceGraphModelEdge(edge.getChild(), edge.getParent()));
+    		}
+    		invertedOutboundEdges.put(entry.getKey(), edges);
+    	}
+    	
+    	return new WorkspaceGraphModel(nodes, invertedOutboundEdges, invertedInboundEdges, graphStartNode);
     }
     
 }
