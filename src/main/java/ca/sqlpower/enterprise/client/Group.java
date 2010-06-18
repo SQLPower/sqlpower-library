@@ -38,6 +38,32 @@ public class Group extends AbstractSPObject implements GrantedAuthority {
         Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
         		Arrays.asList(Grant.class, GroupMember.class)));
 	
+	public enum SPObjectOrder {
+		GROUP_MEMBER(GroupMember.class),
+		GRANT(Grant.class);
+		
+		private final Class<? extends SPObject> clazz;
+		
+		private SPObjectOrder(Class<? extends SPObject> clazz) {
+			this.clazz = clazz;
+		}
+		
+		public Class<? extends SPObject> getChildClass() {
+			return clazz;
+		}
+		
+		public static SPObjectOrder getOrderBySimpleClassName(String name) {
+			for (SPObjectOrder order : values()) {
+				if (order.clazz.getSimpleName().equals(name)) {
+					return order;
+				}
+			}
+			throw new IllegalArgumentException("The WabitObject class \"" + name + 
+					"\" does not exist or is not a child type of WabitWorkspace.");
+		}
+		
+	}
+	
     private final List<Grant> grants = new ArrayList<Grant>();
     private final List<GroupMember> members = new ArrayList<GroupMember>();
 
