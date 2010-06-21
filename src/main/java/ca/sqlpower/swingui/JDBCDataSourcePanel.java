@@ -118,7 +118,7 @@ public class JDBCDataSourcePanel implements DataEntryPanel {
      * use this connection for).
      */
     private JPanel buildGeneralPanel(JDBCDataSource dbcs) {
-        DataSourceCollection dsCollection = dbcs.getParentCollection();
+        DataSourceCollection<SPDataSource> dsCollection = dbcs.getParentCollection();
         List<JDBCDataSourceType> dataSourceTypes = dsCollection.getDataSourceTypes();
         dataSourceTypes.add(0, new JDBCDataSourceType());
         dataSourceTypeBox = new JComboBox(dataSourceTypes.toArray());
