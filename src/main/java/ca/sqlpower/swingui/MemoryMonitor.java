@@ -39,7 +39,11 @@ public class MemoryMonitor {
 
     private Timer timer;
     private JLabel label = new JLabel();
-    
+    private long totalMemory = 0;
+	private long freeMemory = 0;
+	private long usedMemory = 0;
+	
+	
     private MouseAdapter gcMouseEvent = new MouseAdapter() {
         @Override
         @edu.umd.cs.findbugs.annotations.SuppressWarnings(value={"DM_GC"}, justification="Used as a debugging tool")
@@ -48,18 +52,18 @@ public class MemoryMonitor {
         }
     };
 
-    private ActionListener timerAction = new ActionListener() {
+    private class MemoryUsageListener implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             long megabyte = 1024 * 1024;
-            long totalMemory = Runtime.getRuntime().totalMemory() / megabyte;
-            long freeMemory = Runtime.getRuntime().freeMemory() / megabyte;
-            long usedMemory = totalMemory - freeMemory;
+            totalMemory = Runtime.getRuntime().totalMemory() / megabyte;
+            freeMemory = Runtime.getRuntime().freeMemory() / megabyte;
+            usedMemory = totalMemory - freeMemory;
             label.setText(usedMemory + "M/" + totalMemory + "M");
         }
     };
     
     public MemoryMonitor() {
-        timer = new Timer(1000, timerAction);
+        timer = new Timer(1000, new MemoryUsageListener());
         label.addMouseListener(gcMouseEvent);
     }
     
@@ -78,4 +82,16 @@ public class MemoryMonitor {
     public JLabel getLabel() {
         return label;
     }
+    
+    public long getTotalMemory() {
+		return totalMemory;
+	}
+	
+    public long getFreeMemory() {
+		return freeMemory;
+	}
+	
+    public long getUsedMemory() {
+		return usedMemory;
+	}
 }
