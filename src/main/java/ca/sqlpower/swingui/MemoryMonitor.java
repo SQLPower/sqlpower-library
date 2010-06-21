@@ -94,4 +94,11 @@ public class MemoryMonitor {
     public long getUsedMemory() {
 		return usedMemory;
 	}
+    
+    public String toString() {
+    	return 
+    			"MemoryMonitor Status: Total:" + totalMemory 
+    			+ "; Used:" + usedMemory 
+    			+ "; Free:" + freeMemory;
+    }
 }
