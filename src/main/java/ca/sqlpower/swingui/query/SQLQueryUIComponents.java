@@ -94,6 +94,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.event.UndoableEditEvent;
 import javax.swing.event.UndoableEditListener;
 import javax.swing.text.BadLocationException;
@@ -1583,7 +1585,7 @@ public class SQLQueryUIComponents {
 
     	searchDocument = new DefaultStyledDocument();
     	for (CachedRowSet rs : resultSets) {
-    		JTable tempTable;
+    		final JTable tempTable;
     		FormLayout tableAreaLayout = new FormLayout("pref, 3dlu, pref:grow", "pref, fill:min(pref;50dlu):grow");
     		DefaultFormBuilder tableAreaBuilder = new DefaultFormBuilder(tableAreaLayout);
 
@@ -1599,6 +1601,12 @@ public class SQLQueryUIComponents {
     		rowSetListeners.add(rowSetListener);
     		
     		tempTable = new FancyExportableJTable(model, searchDocument);
+    		final TableModelListener tableListener = new TableModelListener() {
+    		    public void tableChanged(TableModelEvent e) {
+    		        tempTable.createDefaultColumnsFromModel();
+    		    }
+    		};
+    		model.addTableModelListener(tableListener);
 
     		// Allow users to select a single table cell.
     		tempTable.setCellSelectionEnabled(true);

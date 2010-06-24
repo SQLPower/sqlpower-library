@@ -22,6 +22,8 @@ package ca.sqlpower.swingui.table;
 import java.sql.ResultSet;
 
 import javax.swing.JTable;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.text.Document;
 
 /**
@@ -35,8 +37,15 @@ public class ResultSetTableFactory {
 	 * selections can be exported.
 	 */
 	public static JTable createResultSetJtable(ResultSet rs) {
-		ResultSetTableModel model = new ResultSetTableModel(rs);
-		return new FancyExportableJTable(model);
+		final ResultSetTableModel model = new ResultSetTableModel(rs);
+		final JTable table = new FancyExportableJTable(model);
+		final TableModelListener tableListener = new TableModelListener() {
+		    public void tableChanged(TableModelEvent e) {
+		        table.createDefaultColumnsFromModel();
+		    }
+		};
+		model.addTableModelListener(tableListener);
+		return table;
 	}
 	
 
@@ -47,7 +56,13 @@ public class ResultSetTableFactory {
 	 */
 	public static JTable createResultSetJTableWithSearch(ResultSet rs, Document doc) {
 		ResultSetTableModel model = new ResultSetTableModel(rs);
-		JTable t = new FancyExportableJTable(model, doc);
+		final JTable t = new FancyExportableJTable(model, doc);
+		final TableModelListener tableListener = new TableModelListener() {
+		    public void tableChanged(TableModelEvent e) {
+		        t.createDefaultColumnsFromModel();
+		    }
+		};
+		model.addTableModelListener(tableListener);
 		return t;
 	}
 

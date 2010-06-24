@@ -35,8 +35,6 @@ import javax.swing.Action;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JPopupMenu;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 import javax.swing.text.Document;
 
@@ -186,12 +184,6 @@ public class FancyExportableJTable extends EditableJTable {
 	 */
 	private TableModelSortDecorator sortDecorator;
 
-	private final TableModelListener tableListener = new TableModelListener() {
-		public void tableChanged(TableModelEvent e) {
-			createDefaultColumnsFromModel();
-		}
-	};
-	
 	public FancyExportableJTable(TableModel model, Document doc) {
 		sortDecorator = new TableModelSortDecorator(model, getTableHeader());
 		model = sortDecorator;
@@ -226,8 +218,6 @@ public class FancyExportableJTable extends EditableJTable {
 		    
 		    lowestWrapper.setWrappedModel(model);
 		}
-		
-		model.addTableModelListener(tableListener);
 	}
 	
 	@Override
