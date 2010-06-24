@@ -31,10 +31,10 @@ import java.io.PrintWriter;
 import java.util.concurrent.Callable;
 
 import javax.swing.AbstractAction;
+import javax.swing.Action;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JPopupMenu;
-import javax.swing.JTable;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
@@ -60,22 +60,19 @@ public class FancyExportableJTable extends EditableJTable {
 
 		private JPopupMenu menu;
 		
-		private final JTable parentTable;
-		
-		public PopupMenuMouseListener(JTable c) {
+		public PopupMenuMouseListener() {
 			menu = new JPopupMenu();
-			parentTable = c;
 			menu.add(new AbstractAction("Change Font Size..") {
 				public void actionPerformed(ActionEvent arg0) {
-					final FontSelector fontSelector = new FontSelector(parentTable.getFont());
+					final FontSelector fontSelector = new FontSelector(getFont());
 					Callable<Boolean> okCall = new Callable<Boolean>() {
 					    public Boolean call() {
 							setFont(fontSelector.getSelectedFont());
-							TableUtils.fitColumnWidths(parentTable, 15);
+							TableUtils.fitColumnWidths(FancyExportableJTable.this, 15);
 							
-							FontRenderContext frc = ((Graphics2D) parentTable.getGraphics()).getFontRenderContext();
+							FontRenderContext frc = ((Graphics2D) getGraphics()).getFontRenderContext();
 							Rectangle2D fontBounds = fontSelector.getSelectedFont().getMaxCharBounds(frc);
-							parentTable.setRowHeight((int) fontBounds.getHeight());
+							setRowHeight((int) fontBounds.getHeight());
 							
 							return true;
 						}
@@ -87,7 +84,7 @@ public class FancyExportableJTable extends EditableJTable {
 					};
 					JDialog d = DataEntryPanelBuilder.createDataEntryPanelDialog(
 					        fontSelector,
-					        parentTable.getTopLevelAncestor(),
+					        getTopLevelAncestor(),
 					        "Choose a font",
 					        "OK",
 					        okCall,
@@ -95,55 +92,9 @@ public class FancyExportableJTable extends EditableJTable {
 					d.setVisible(true);
 				}
 			});
-			menu.add(new AbstractAction("Export Selected to HTML..") {
-				public void actionPerformed(ActionEvent e) {
-					TableModelHTMLFormatter htmlFormatter= new TableModelHTMLFormatter();
-					JFileChooser chooser = new JFileChooser();
-					int chooserResult =  chooser.showSaveDialog(parentTable);
-					if (chooserResult == JFileChooser.APPROVE_OPTION) {
-						File file = chooser.getSelectedFile();
-						try {
-							PrintWriter writer = new PrintWriter(file);
-							if(parentTable.getSelectedRows().length != 0){
-								htmlFormatter.formatToStream(parentTable.getModel(), writer, parentTable.getSelectedRows());						
-							}
-							else {
-								htmlFormatter.formatToStream(parentTable.getModel(), writer);
-							}
-						} catch (FileNotFoundException ex) {
-							throw new RuntimeException("Could not open file " + file.getName(), ex);
-						} 
-
-					}
-
-				}
-					
-			});
+			menu.add(exportHTMLAction);
 			
-			menu.add(new AbstractAction("Export Selected to CSV..") {
-				public void actionPerformed(ActionEvent e) {
-					TableModelCSVFormatter csvFormatter = new TableModelCSVFormatter();
-
-					JFileChooser chooser = new JFileChooser();
-					int chooserResult =  chooser.showSaveDialog(parentTable);
-					if (chooserResult == JFileChooser.APPROVE_OPTION) {
-						File file = chooser.getSelectedFile();
-						try {
-							PrintWriter writer = new PrintWriter(file);
-							if(parentTable.getSelectedRows().length != 0){
-								csvFormatter.formatToStream(parentTable.getModel(), writer, parentTable.getSelectedRows());						
-							}
-							else {
-								csvFormatter.formatToStream(parentTable.getModel(), writer);
-							}
-							
-						} catch (FileNotFoundException ex) {
-							throw new RuntimeException("Could not open file " + file.getName(), ex);
-						} 
-						
-					}
-
-			}});
+			menu.add(exportCSVAction);
 			menu.pack();
 		}
 		
@@ -160,6 +111,55 @@ public class FancyExportableJTable extends EditableJTable {
 		public void mousePressed(MouseEvent e) {}
 		public void mouseReleased(MouseEvent e) {}
 	}
+	
+	/**
+	 * This action will export the table in its current state to HTML.
+	 */
+	private final Action exportHTMLAction = new AbstractAction("Export Selected to HTML..") {
+        public void actionPerformed(ActionEvent e) {
+            TableModelHTMLFormatter htmlFormatter= new TableModelHTMLFormatter();
+            JFileChooser chooser = new JFileChooser();
+            int chooserResult =  chooser.showSaveDialog(FancyExportableJTable.this);
+            if (chooserResult == JFileChooser.APPROVE_OPTION) {
+                File file = chooser.getSelectedFile();
+                try {
+                    PrintWriter writer = new PrintWriter(file);
+                    if (getSelectedRows().length != 0){
+                        htmlFormatter.formatToStream(getModel(), writer, getSelectedRows());                        
+                    } else {
+                        htmlFormatter.formatToStream(getModel(), writer);
+                    }
+                } catch (FileNotFoundException ex) {
+                    throw new RuntimeException("Could not open file " + file.getName(), ex);
+                } 
+            }
+        }
+    };
+    
+    /**
+     * This action will export the table in its current state to CSV.
+     */
+    private final Action exportCSVAction = new AbstractAction("Export Selected to CSV..") {
+        public void actionPerformed(ActionEvent e) {
+            TableModelCSVFormatter csvFormatter = new TableModelCSVFormatter();
+
+            JFileChooser chooser = new JFileChooser();
+            int chooserResult =  chooser.showSaveDialog(FancyExportableJTable.this);
+            if (chooserResult == JFileChooser.APPROVE_OPTION) {
+                File file = chooser.getSelectedFile();
+                try {
+                    PrintWriter writer = new PrintWriter(file);
+                    if (getSelectedRows().length != 0) {
+                        csvFormatter.formatToStream(getModel(), writer, getSelectedRows());                     
+                    } else {
+                        csvFormatter.formatToStream(getModel(), writer);
+                    }
+                } catch (FileNotFoundException ex) {
+                    throw new RuntimeException("Could not open file " + file.getName(), ex);
+                } 
+            }
+        }
+    };
 		
 	/**
 	 * The text converter for the search table model. This is used to get the strings
@@ -203,7 +203,7 @@ public class FancyExportableJTable extends EditableJTable {
 		}
 		
 		setModel(model);
-		addMouseListener(new PopupMenuMouseListener(this));
+		addMouseListener(new PopupMenuMouseListener());
 		TableUtils.fitColumnWidths(this, 15);
 	}
 	
@@ -245,6 +245,22 @@ public class FancyExportableJTable extends EditableJTable {
 	 */
 	public TableModelSortDecorator getTableModelSortDecorator() {
 		return sortDecorator;
+	}
+	
+	/**
+	 * Returns the action that will export the table to HTML. This is
+	 * the same action that appears when right clicking on the table.
+	 */
+	public Action getExportHTMLAction() {
+	    return exportHTMLAction;
+	}
+	
+	/**
+     * Returns the action that will export the table to CSV. This is
+     * the same action that appears when right clicking on the table.
+     */
+	public Action getExportCSVAction() {
+	    return exportCSVAction;
 	}
 
 }
