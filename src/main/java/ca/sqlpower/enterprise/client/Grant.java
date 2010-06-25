@@ -31,6 +31,7 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonProperty;
 
 /**
  * A Grant object represents a set of permissions on a single object, or class
@@ -58,22 +59,32 @@ public class Grant extends AbstractSPObject {
     		grant.isModifyPrivilege(),grant.isDeletePrivilege(),
     		grant.isExecutePrivilege(),grant.isGrantPrivilege());
     }
-    
-    /**
-     * Creates a grant object.
-     * @param subject The object we want to grant access to. Can be null
-     * if the type parameter is used.
-     * @param type The class of wabit object to grant access to. Can be null
-     * if the subject parameter is used.
-     * @param create 
-     * @param modify
-     * @param delete
-     * @param execute
-     * @param grant
-     */
+
+	/**
+	 * Creates a grant object. If subject is null, the grant will be system
+	 * wide. Otherwise, it will only affect the subject referenced. Preferably,
+	 * one of
+	 * {@link #Grant(SPObject, boolean, boolean, boolean, boolean, boolean)} or
+	 * {@link #Grant(String, boolean, boolean, boolean, boolean, boolean)}
+	 * should be used, as these leave no ambiguity as to whether this grant is
+	 * system level or not.
+	 * 
+	 * @param subject
+	 *            The UUID of the object we want to grant access to. Can be null
+	 *            if the type parameter is used.
+	 * @param type
+	 *            The class of object to grant access to. If the subject
+	 *            parameter is null, this will represent a system level Grant on
+	 *            this type.
+	 * @param create
+	 * @param modify
+	 * @param delete
+	 * @param execute
+	 * @param grant
+	 */
     @Constructor
     public Grant(@Nullable @ConstructorParameter(propertyName = "subject") String subject, 
-    		@ConstructorParameter(propertyName = "type") String type,
+    		@Nonnull @ConstructorParameter(propertyName = "type") String type,
             @ConstructorParameter(propertyName = "createPrivilege") boolean create, 
             @ConstructorParameter(propertyName = "modifyPrivilege") boolean modify, 
             @ConstructorParameter(propertyName = "deletePrivilege") boolean delete, 
@@ -88,6 +99,46 @@ public class Grant extends AbstractSPObject {
         this.executePrivilege = execute;
         this.grantPrivilege = grant;
     }
+
+	/**
+	 * Creates an object level Grant on the given subject
+	 * 
+	 * @param subject
+	 *            The SPObject to which the grant references
+	 * @param create
+	 * @param modify
+	 * @param delete
+	 * @param execute
+	 * @param grant
+	 */
+	public Grant(SPObject subject, boolean create, boolean modify,
+			boolean delete, boolean execute, boolean grant) {
+		this(subject.getUUID(), subject.getClass().getName(), create, modify,
+				delete, execute, grant);
+	}
+
+	/**
+	 * Creates a system level Grant on the given type
+	 * 
+	 * @param type
+	 *            The type on which this applies. In Wabit, this is a simple
+	 *            class name, in Architect, it is a fully qualified class name.
+	 * @param create
+	 * @param modify
+	 * @param delete
+	 * @param execute
+	 * @param grant
+	 */
+	/*
+	 * The type parameter here should probably be a Class, but since Wabit and
+	 * Architect have differing conventions, we have to take a String for now.
+	 * In future, we should convert wabit over to using fully qualified class
+	 * names, and change the type parameter of this constructor to a Class
+	 * object.
+	 */
+	public Grant(String type, boolean create, boolean modify, boolean delete, boolean execute, boolean grant) {
+		this(null, type, create, modify, delete, execute, grant);
+	}
 
     @Override
     @Mutator
@@ -201,4 +252,9 @@ public class Grant extends AbstractSPObject {
         }
         return sb.toString();
     }
+
+    @NonProperty
+	public boolean isSystemLevel() {
+		return subject == null;
+	}
 }

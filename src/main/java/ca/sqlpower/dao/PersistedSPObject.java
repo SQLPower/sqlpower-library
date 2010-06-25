@@ -95,7 +95,7 @@ public class PersistedSPObject implements Comparable<PersistedSPObject> {
 	public String toString() {
 		return "PersistedSPObject: uuid " + uuid + ", parent uuid " + 
 				parentUUID + ", type " + type + ", index " + index + 
-				", loaded " + loaded + "\n";
+				", loaded " + loaded;
 	}
 
 	public void setLoaded(boolean loaded) {

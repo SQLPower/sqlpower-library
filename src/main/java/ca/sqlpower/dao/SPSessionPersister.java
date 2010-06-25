@@ -798,7 +798,7 @@ public abstract class SPSessionPersister implements SPPersister {
 		// --------------------------------------------------------------------------------------------
 		
 		for (PersistedSPObject pso : persistedObjects) {
-		    logger.info("Persisting " + pso);
+		    logger.debug("Persisting " + pso);
 			if (pso.isLoaded())
 				continue;
 			SPObject parent = SQLPowerUtils.findByUuid(root, pso.getParentUUID(), 
