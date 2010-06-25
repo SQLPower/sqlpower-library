@@ -40,6 +40,7 @@ import javax.swing.text.Document;
 
 import ca.sqlpower.swingui.DataEntryPanelBuilder;
 import ca.sqlpower.swingui.FontSelector;
+import ca.sqlpower.swingui.SPSUtils;
 
 /**
  * This class contains a JTable that displays the given model. The JTable can be sorted
@@ -117,6 +118,8 @@ public class FancyExportableJTable extends EditableJTable {
         public void actionPerformed(ActionEvent e) {
             TableModelHTMLFormatter htmlFormatter= new TableModelHTMLFormatter();
             JFileChooser chooser = new JFileChooser();
+            chooser.addChoosableFileFilter(SPSUtils.HTML_FILE_FILTER);
+            chooser.setFileFilter(SPSUtils.HTML_FILE_FILTER);
             int chooserResult =  chooser.showSaveDialog(FancyExportableJTable.this);
             if (chooserResult == JFileChooser.APPROVE_OPTION) {
                 File file = chooser.getSelectedFile();
@@ -142,6 +145,8 @@ public class FancyExportableJTable extends EditableJTable {
             TableModelCSVFormatter csvFormatter = new TableModelCSVFormatter();
 
             JFileChooser chooser = new JFileChooser();
+            chooser.addChoosableFileFilter(SPSUtils.CSV_FILE_FILTER);
+            chooser.setFileFilter(SPSUtils.CSV_FILE_FILTER);
             int chooserResult =  chooser.showSaveDialog(FancyExportableJTable.this);
             if (chooserResult == JFileChooser.APPROVE_OPTION) {
                 File file = chooser.getSelectedFile();
