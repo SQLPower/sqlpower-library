@@ -49,7 +49,6 @@ import com.sun.mirror.declaration.FieldDeclaration;
 import com.sun.mirror.declaration.InterfaceDeclaration;
 import com.sun.mirror.declaration.MemberDeclaration;
 import com.sun.mirror.declaration.MethodDeclaration;
-import com.sun.mirror.declaration.Modifier;
 import com.sun.mirror.declaration.PackageDeclaration;
 import com.sun.mirror.declaration.ParameterDeclaration;
 import com.sun.mirror.declaration.TypeDeclaration;
