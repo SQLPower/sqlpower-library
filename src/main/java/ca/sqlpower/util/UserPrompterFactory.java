@@ -67,7 +67,13 @@ public interface UserPrompterFactory {
     	 * Just an informative message that does not solicit any additional
     	 * information from the user. Supports only the OK option type.
     	 */
-    	MESSAGE(Void.class);
+    	MESSAGE(Void.class),
+    	
+    	/**
+    	 * Text prompt type that supports the OK and CANCEL options. This is used for
+    	 * string manipulation and/or replacement.
+    	 */
+    	TEXT(String.class);
     	
     	private final Class<? extends Object> clazz;
 

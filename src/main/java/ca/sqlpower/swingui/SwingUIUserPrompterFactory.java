@@ -46,7 +46,11 @@ public class SwingUIUserPrompterFactory implements UserPrompterFactory {
 			UserPromptType responseType, UserPromptOptions optionType,
 			UserPromptResponse defaultResponseType, Object defaultResponse,
 			String... buttonNames) {
-		return new DialogUserPrompter(optionType, defaultResponseType, owner, question, buttonNames);
+	    if (UserPromptType.TEXT.equals(responseType) && optionType.equals(UserPromptOptions.OK_CANCEL)) {
+	        return new TextUserPrompter(owner, question, defaultResponseType, defaultResponse, buttonNames[0], buttonNames[1]);
+	    } else {
+	        return new DialogUserPrompter(optionType, defaultResponseType, owner, question, buttonNames);
+	    }
 	}
 
 	public UserPrompter createDatabaseUserPrompter(String question,
