@@ -591,7 +591,9 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		
 		// Using a TreeSet here to sort imports alphabetically.
 		Set<String> allImports = new TreeSet<String>();
-		allImports.addAll(constructorImports);
+		if (!Modifier.isAbstract(visitedClass.getModifiers())) {
+		    allImports.addAll(constructorImports);
+		}
 		allImports.addAll(mutatorImports.values());
 		
 		StringBuilder sb = new StringBuilder();
