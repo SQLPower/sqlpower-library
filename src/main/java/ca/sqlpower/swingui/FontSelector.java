@@ -44,6 +44,8 @@ import javax.swing.event.ListSelectionListener;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.dao.session.SPFontLoader;
+
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
@@ -153,6 +155,8 @@ public class FontSelector implements DataEntryPanel {
      * the user's current choice will revert to this value.
      */
     private final Font originalFont;
+
+	private final SPFontLoader fontLoader;
     
     private class SelectionHandler implements ChangeListener, ListSelectionListener {
 
@@ -190,17 +194,34 @@ public class FontSelector implements DataEntryPanel {
      * default font will be used.
      */
     public FontSelector(Font font) {
+    	this(
+			font == null
+				? Font.decode(null)
+				: font, 
+			GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames(),
+			null);
+    }
+    
+    public FontSelector(Font font, String[] fontList, SPFontLoader fontLoader) {
+    	
+    	this.fontLoader = fontLoader;
+		if (font == null) {
+    		if (fontList == null
+    				|| fontList.length == 0)
+    		{
+    			throw new IllegalArgumentException("The fontList parameter requires at least one valid font.");
+    		}
+			font = Font.decode(fontList[0]);
+			if (font == null) {
+				throw new IllegalArgumentException("The fontList[0] element cannot be loaded.");
+			}
+    	}
+    	
         logger.debug("Creating new font selector with given font: " + font);
-        if(font == null) {
-            font = Font.decode(null);
-            logger.debug("Given font was null; defaulting to: " + font);
-        }
+        
         this.originalFont = font;
         
         SelectionHandler selectionHandler = new SelectionHandler();
-        
-        String[] fontList = GraphicsEnvironment.getLocalGraphicsEnvironment()
-                .getAvailableFontFamilyNames();
         fontNameList = new JList(fontList);
         fontNameList.addListSelectionListener(selectionHandler);
         
@@ -256,7 +277,15 @@ public class FontSelector implements DataEntryPanel {
         String name = (String) fontNameList.getSelectedValue();
         FontStyle style = (FontStyle) styleChoice.getSelectedValue();
         int size = ((Integer) fontSizeSpinner.getValue()).intValue();
-        setSelectedFont(new Font(name, style.getStyleCode(), size));
+        
+        if (fontLoader == null) {
+        	setSelectedFont(new Font(name, style.getStyleCode(), size));
+        } else {
+        	Font font = fontLoader.loadFontFromName(name);
+        	font = font.deriveFont(style.getStyleCode());
+        	font = font.deriveFont(Float.valueOf(String.valueOf(size)));
+        	setSelectedFont(font);
+        }
     }
 
     /**
