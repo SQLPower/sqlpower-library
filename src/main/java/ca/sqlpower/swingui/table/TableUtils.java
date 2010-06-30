@@ -95,7 +95,9 @@ public class TableUtils {
         int limit = table.getRowCount()>100? 100: table.getRowCount();
         
         for (int j = 0; j < limit; j++) {                
-            comp = table.getCellRenderer(j,colIndex).getTableCellRendererComponent(table,
+            final TableCellRenderer cellRenderer = table.getCellRenderer(j,colIndex);
+            if (cellRenderer == null) continue;
+            comp = cellRenderer.getTableCellRendererComponent(table,
                     table.getValueAt(j, colIndex),false,false,j, colIndex);  
 
             // we add a one-pixel fudge factor here because the result is often too short by a pixel
