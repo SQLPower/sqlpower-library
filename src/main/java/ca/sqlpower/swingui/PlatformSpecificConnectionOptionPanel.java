@@ -77,11 +77,13 @@ public class PlatformSpecificConnectionOptionPanel {
 
         public Dimension preferredLayoutSize(Container parent) {
             int height = 0;
+            int width = 0;
             for (int i = 0; i < parent.getComponentCount(); i++) {
                 Component c = parent.getComponent(i);
                 height = Math.max(height, c.getPreferredSize().height);
+                width += c.getPreferredSize().getWidth();
             }
-            return new Dimension(parent.getWidth(), height);
+            return new Dimension(width, height);
         }
 
         public Dimension minimumLayoutSize(Container parent) {
@@ -90,7 +92,7 @@ public class PlatformSpecificConnectionOptionPanel {
                 Component c = parent.getComponent(i);
                 height = Math.max(height, c.getMinimumSize().height);
             }
-            return new Dimension(parent.getWidth(), height);
+            return new Dimension(0, height);
         }
 
         public void layoutContainer(Container parent) {
