@@ -132,7 +132,7 @@ public class SQLTypePhysicalProperties extends SQLObject {
 	 * List of allowed child types, which is empty since
 	 * {@link SQLTypePhysicalProperties} has no children
 	 */
-	public static final List<Class<? extends SPObject>> allowedChildTypes = Collections.emptyList();
+	public static final List<Class<? extends SPObject>> allowedChildTypes = Collections.<Class<? extends SPObject>>singletonList(SQLCheckConstraint.class);
 
     @Constructor
     public SQLTypePhysicalProperties(@ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="platform") String platformName) {
