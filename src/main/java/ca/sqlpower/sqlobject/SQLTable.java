@@ -1466,9 +1466,7 @@ public class SQLTable extends SQLObject {
 	@Mutator
 	@Override
 	public void setName(String name) {
-		if (getName() == null) {
-			updatePKIndexNameToMatch(null, name);
-		}
+	    updatePhysicalNameToMatch(getName(), name);
 		super.setName(name);
 	}
 	
@@ -1488,6 +1486,14 @@ public class SQLTable extends SQLObject {
         	primaryKeyIndex.setName(newName + "_pk");
 
         }
+	}
+	
+	private void updatePhysicalNameToMatch(String oldName, String newName) {
+	    if ((newName != null && getPhysicalName() == null) 
+	            || (getPhysicalName() != null && "".equals(getPhysicalName().trim())) 
+	            || (oldName != null && oldName.equals(getPhysicalName()))) {
+	        setPhysicalName(newName);
+	    }
 	}
 
 	/**
