@@ -78,7 +78,7 @@ public class StackedTabComponent extends JComponent {
 	private final Border UNSELECTED_LABEL_BORDER = BorderFactory.createLineBorder(new Color(187, 187, 187), 1);
 	private final Border SELECTED_OR_HOVERING_OVER_LABEL_BORDER = BorderFactory.createLineBorder(SELECTED_TAB_GRADIENT_TOP, 1);
 	
-	private static final Icon closeIcon = new ImageIcon(StackedTab.class.getClassLoader().getResource("icons/closeWorkspace-12.png"));
+	private static final Icon closeIcon = new ImageIcon(StackedTab.class.getClassLoader().getResource("ca/sqlpower/swingui/closeWorkspace-12.png"));
 	
 	/**
 	 * A list of tabs that this component currently contains
