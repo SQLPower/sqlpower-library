@@ -1255,4 +1255,35 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
 		assertEquals(2, table.getPrimaryKeyIndex().getChildren().indexOf(wrapperForCol));
 		assertEquals(3, table.getPkSize());
 	}
+
+    /**
+     * This tests that a physical name of a table will be updated to match its
+     * name correctly if they both match when they change.
+     */
+    public void testNamesInSync() throws Exception {
+        SQLTable table = new SQLTable();
+        
+        assertEquals(table.getName(), table.getPhysicalName());
+        
+        //test changing the name updates physical and primary key names
+        table.setName("Testing1");
+        assertEquals("Testing1", table.getPhysicalName());
+        assertTrue(table.getPrimaryKeyIndex().getName().startsWith("Testing1"));
+        
+        //you should still be able to change the physical name independent of the logical.
+        table.setPhysicalName("something else");
+        assertEquals("Testing1", table.getName());
+        assertEquals("something else", table.getPhysicalName());
+        assertTrue(table.getPrimaryKeyIndex().getName().startsWith("something else"));
+        
+        //when the names are not the same, changing the logical will leave the physical alone
+        table.setName("Test2");
+        assertEquals("something else", table.getPhysicalName());
+        
+        //if the names get back to be the same the logical should update the physical again.
+        table.setName("something else");
+        table.setName("Trial");
+        assertEquals("Trial", table.getPhysicalName());
+        assertTrue(table.getPrimaryKeyIndex().getName().startsWith("Trial"));
+    }
 }
