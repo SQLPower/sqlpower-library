@@ -37,7 +37,7 @@ public class SQLTypePhysicalPropertiesTest extends BaseSQLObjectTestCase {
 
 	@Override
 	protected Class<? extends SPObject> getChildClassType() {
-		return null;
+		return SQLCheckConstraint.class;
 	}
 
 	@Override

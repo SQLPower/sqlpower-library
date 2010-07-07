@@ -19,66 +19,148 @@
 
 package ca.sqlpower.sqlobject;
 
+import java.util.Collections;
 import java.util.List;
 
-import ca.sqlpower.object.SPObject;
+import javax.annotation.Nonnull;
 
+import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.Mutator;
+
+/**
+ * This class represents a single SQL check constraint. This constraint can be
+ * applied at the table, column, data type, or domain level.
+ * 
+ * i.e. {@link SQLCheckConstraint}s can only be children of either
+ * {@link SQLTable}, {@link SQLColumn}, or {@link SQLTypePhysicalProperties}.
+ */
 public class SQLCheckConstraint extends SQLObject {
 
-	/*
-	 * This class is a stub, put in here so that enterprise tests can work. It
-	 * will soon be replaced an actual class.
+	/**
+	 * {@link List} of allowed child types, which is empty since
+	 * {@link SQLCheckConstraint} has no children.
 	 */
+	public static final List<Class<? extends SPObject>> allowedChildTypes = 
+		Collections.emptyList();
 	
-	
+	/**
+	 * @see #getConstraint()
+	 */
+	private String constraint;
+
+	/**
+	 * Creates a new {@link SQLCheckConstraint}.
+	 * 
+	 * @param name
+	 *            The name of the constraint. Note that this name must be unique
+	 *            among its parent's list of {@link SQLCheckConstraint}
+	 *            children, as well as the list of {@link SQLCheckConstraint}s
+	 *            inherited from upstream types (if any).
+	 * @param constraint
+	 *            The condition for the constraint.
+	 */
+	@Constructor
+	public SQLCheckConstraint(
+			@ConstructorParameter(propertyName="name") @Nonnull String name, 
+			@ConstructorParameter(propertyName="constraint") String constraint) {
+		setName(name);
+		this.constraint = constraint;
+	}
+
+	/**
+	 * Copy constructor. Creates a copy of a given {@link SQLCheckConstraint}
+	 * with the same name and check constraint condition.
+	 * 
+	 * @param constraint
+	 *            The {@link SQLCheckConstraint} to copy from.
+	 */
+	public SQLCheckConstraint(@Nonnull SQLCheckConstraint constraint) {
+		this(constraint.getName(), constraint.getConstraint());
+	}
+
+	public int childPositionOffset(Class<? extends SPObject> childType) {
+		return 0;
+	}
+
+	public void removeDependency(SPObject dependency) {
+		// No operation.
+	}
+
+	public List<? extends SPObject> getDependencies() {
+		return Collections.emptyList();
+	}
+
+	public List<Class<? extends SPObject>> getAllowedChildTypes() {
+		return allowedChildTypes;
+	}
+
+	@Override
+	protected void populateImpl() throws SQLObjectException {
+		// No operation.
+	}
+
+	@Override
+	public String getShortDisplayName() {
+		return getName();
+	}
+
 	@Override
 	public boolean allowsChildren() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public List<? extends SQLObject> getChildrenWithoutPopulating() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String getShortDisplayName() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	protected void populateImpl() throws SQLObjectException {
-		// TODO Auto-generated method stub
-
+		return Collections.emptyList();
 	}
 
 	@Override
 	protected boolean removeChildImpl(SPObject child) {
-		// TODO Auto-generated method stub
 		return false;
 	}
-
-	public int childPositionOffset(Class<? extends SPObject> childType) {
-		// TODO Auto-generated method stub
-		return 0;
+	
+	/**
+	 * Returns the {@link String} check constraint condition. 
+	 */
+	@Accessor(isInteresting=true)
+	public String getConstraint() {
+		return constraint;
 	}
 
-	public List<Class<? extends SPObject>> getAllowedChildTypes() {
-		// TODO Auto-generated method stub
-		return null;
+	/**
+	 * Sets the check constraint condition.
+	 * 
+	 * @param constraint
+	 *            The {@link String} condition for the check constraint.
+	 */
+	@Mutator
+	public void setConstraint(String constraint) {
+		this.constraint = constraint;
 	}
 
-	public List<? extends SPObject> getDependencies() {
-		// TODO Auto-generated method stub
-		return null;
+	/**
+	 * The name of a constraint should never be null to properly uniquely
+	 * identify them among a collection of constraints on a shared parent
+	 * {@link SQLObject}.
+	 */
+	@Override
+	@Mutator
+	public void setName(@Nonnull String name) {
+		super.setName(name);
 	}
 
-	public void removeDependency(SPObject dependency) {
-		// TODO Auto-generated method stub
-
+	/**
+	 * Overriding this method to restrict parent types to be {@link SQLObject}.
+	 * Technically, this should only either be {@link SQLTable},
+	 * {@link SQLColumn}, or {@link SQLTypePhysicalProperties}. Applying check
+	 * constraints on any other level does not make sense.
+	 */
+	@Override
+	public SQLObject getParent() {
+		return (SQLObject) super.getParent();
 	}
 
 }

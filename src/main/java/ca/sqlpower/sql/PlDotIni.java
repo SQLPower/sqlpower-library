@@ -400,8 +400,6 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
                 	currentSQLType = new UserDefinedSQLType();
                 	String platform = SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM; 
                 	currentSQLType.setConstraintType(platform, SQLTypeConstraint.NONE);
-                	currentSQLType.setEnumeration(platform, new String[0]);
-                	currentSQLType.setCheckConstraint(platform, "");
                 	currentSQLType.setDefaultValue(platform, "");
                 	currentSQLType.setPrecision(platform, 0);
                 	currentSQLType.setScale(platform, 0);

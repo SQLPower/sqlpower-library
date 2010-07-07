@@ -42,27 +42,29 @@ import ca.sqlpower.sql.Olap4jDataSource;
 import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLCatalog;
+import ca.sqlpower.sqlobject.SQLCheckConstraint;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLDatabase;
+import ca.sqlpower.sqlobject.SQLEnumeration;
 import ca.sqlpower.sqlobject.SQLIndex;
+import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
+import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLObjectRoot;
 import ca.sqlpower.sqlobject.SQLObjectRuntimeException;
 import ca.sqlpower.sqlobject.SQLRelationship;
-import ca.sqlpower.sqlobject.SQLSchema;
-import ca.sqlpower.sqlobject.SQLTable;
-import ca.sqlpower.sqlobject.SQLTypePhysicalProperties;
-import ca.sqlpower.sqlobject.UserDefinedSQLType;
-import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
-import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.sqlobject.SQLRelationship.ColumnMapping;
 import ca.sqlpower.sqlobject.SQLRelationship.Deferrability;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 import ca.sqlpower.sqlobject.SQLRelationship.UpdateDeleteRule;
+import ca.sqlpower.sqlobject.SQLSchema;
+import ca.sqlpower.sqlobject.SQLTable;
+import ca.sqlpower.sqlobject.SQLTypePhysicalProperties;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.BasicSQLType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
+import ca.sqlpower.sqlobject.UserDefinedSQLType;
 import ca.sqlpower.util.DefaultUserPrompter;
 import ca.sqlpower.util.UserPrompter;
 import ca.sqlpower.util.UserPrompter.UserPromptOptions;
@@ -247,9 +249,15 @@ public class GenericNewValueMaker implements NewValueMaker {
         	db.addCatalog(catalog);
         	newVal = catalog;
         } else if (valueType == SPObject.class) {
-            return makeNewValue(SQLDatabase.class, null, "SPObject of some kind");
+            newVal = makeNewValue(SQLDatabase.class, null, "SPObject of some kind");
         } else if (valueType == SQLObject.class) {
-            return makeNewValue(SQLColumn.class, null, "SQLObject of some kind");
+        	newVal = makeNewValue(SQLColumn.class, null, "SQLObject of some kind");
+        } else if (valueType == SQLCheckConstraint.class) {
+        	newVal = new SQLCheckConstraint(
+        			(String) makeNewValue(String.class, null, "SQLCheckConstraint - name"),
+        			(String) makeNewValue(String.class, null, "SQLCheckConstraint - constraint"));
+        } else if (valueType == SQLEnumeration.class) {
+        	newVal = new SQLEnumeration((String) makeNewValue(String.class, null, "SQLEnumeration - name"));
         } else if (valueType == Throwable.class) {
         	newVal = new SQLObjectException("Test Exception");
         } else if (valueType == UserPrompter.class) {
@@ -287,13 +295,13 @@ public class GenericNewValueMaker implements NewValueMaker {
 			} else {
 				point.setLocation(((Point2D) oldVal).getX() + 1, ((Point2D) oldVal).getY() - 1);
 			}
-			return point;
+			newVal = point;
         } else if (valueType.equals(Image.class)) {
-            return new BufferedImage(10, 10, BufferedImage.TYPE_INT_ARGB);
+        	newVal = new BufferedImage(10, 10, BufferedImage.TYPE_INT_ARGB);
         } else if (valueType.equals(Olap4jDataSource.class)) {
         	Olap4jDataSource ds = new Olap4jDataSource(new StubDataSourceCollection<SPDataSource>());
         	ds.setName("Testing OLAP data source");
-            return ds;
+        	newVal = ds;
         } else if (valueType.equals(SQLGroupFunction.class)) {
         	if (oldVal.equals(SQLGroupFunction.COUNT)) {
         		newVal = SQLGroupFunction.GROUP_BY;
@@ -378,7 +386,7 @@ public class GenericNewValueMaker implements NewValueMaker {
         		newVal = PropertyType.VARIABLE;
         	}
         } else if (Exception.class.isAssignableFrom(valueType)) {
-            return new Exception("Testing Exception");
+        	newVal = new Exception("Testing Exception");
         } else if (valueType == List.class) {
         	newVal = Arrays.asList("one","two","three");
         } else {

@@ -32,7 +32,6 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import ca.sqlpower.object.AbstractPoolingSPListener;
 import ca.sqlpower.object.AbstractSPListener;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
@@ -41,10 +40,10 @@ import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
-import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -425,8 +424,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	}
 
 	private void detachListeners(){
-        if (getParent() != null)
+        if (getParent() != null) {
             SQLPowerUtils.unlistenToHierarchy(getParent(), fkColumnUpdater);
+        }
 	}
 
 	@Mutator(constructorMutator=true)
@@ -848,6 +848,52 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 		return null;
 	}
+
+	/**
+	 * Gets the {@link List} of {@link ColumnMapping}s within this
+	 * {@link SQLRelationship} that have primary key columns such that their
+	 * {@link UserDefinedSQLType} matches the one passed in.
+	 * 
+	 * @param type
+	 *            The {@link UserDefinedSQLType} to find.
+	 * @return The {@link List} of matching {@link ColumnMapping}s.
+	 */
+	@NonProperty
+	public List<ColumnMapping> getMappingsByUserDefinedSQLType(
+			final UserDefinedSQLType type) {
+		List<ColumnMapping> match = new ArrayList<ColumnMapping>();
+		for (ColumnMapping m : mappings) {
+			SQLColumn pkCol = m.getPkColumn();
+			if (pkCol != null && pkCol.getUserDefinedSQLType() == type) {
+				match.add(m);
+			}
+		}
+		return Collections.unmodifiableList(match);
+	}
+
+	/**
+	 * Gets the {@link List} of {@link ColumnMapping}s within this
+	 * {@link SQLRelationship} that have primary key columns such that its
+	 * {@link UserDefinedSQLType} has a {@link SQLTypePhysicalProperties} for a
+	 * platform that is equal to the one passed in.
+	 * 
+	 * @param properties The {@link SQLTypePhysicalProperties} to find.
+	 * @return The {@link List} of matching {@link ColumnMapping}s.
+	 */
+	@NonProperty
+	public List<ColumnMapping> getMappingsBySQLTypePhysicalProperties(
+			final SQLTypePhysicalProperties properties) {
+		List<ColumnMapping> match = new ArrayList<ColumnMapping>();
+		for (ColumnMapping m : mappings) {
+			SQLColumn pkCol = m.getPkColumn();
+			if (pkCol != null && 
+					pkCol.getUserDefinedSQLType().getPhysicalProperties(
+							pkCol.getPlatform()) == properties) {
+				match.add(m);
+			}
+		}
+		return Collections.unmodifiableList(match);
+	}
 	
 	public void reassignMappingsByPkCol(SQLColumn pkCol) {
 		for (ColumnMapping m : mappings) {
@@ -948,87 +994,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 * columns in the pk table. This listener only needs to be attached to the
 	 * pk table.
 	 */
-	protected SPListener fkColumnUpdater = new AbstractPoolingSPListener(false) {
-		@Override
-		public void propertyChangeImpl(PropertyChangeEvent e) {
-			if (!((SQLObject) e.getSource()).isMagicEnabled()){
-				logger.debug("Magic disabled; ignoring sqlobject changed event "+e);
-				return;
-			}
-			String prop = e.getPropertyName();
-			if (logger.isDebugEnabled()) {
-				logger.debug("Property changed!" +
-						"\n source=" + e.getSource() +
-						"\n property=" + prop +
-						"\n old=" + e.getOldValue() +
-						"\n new=" + e.getNewValue());
-			}
-			if (e.getSource() instanceof SQLColumn) {
-				SQLColumn col = (SQLColumn) e.getSource();
-
-				if (col.getParent() != null && col.getParent().equals(getParent())) {
-
-					ColumnMapping m = getMappingByPkCol(col);
-					if (m == null) {
-						logger.debug("Ignoring change for column "+col+" parent "+col.getParent());
-						return;
-					}
-					if (m.getPkColumn() == null) throw new NullPointerException("Missing pk column in mapping");
-					if (m.getFkColumn() == null) throw new NullPointerException("Missing fk column in mapping");
-
-					if (prop == null
-							|| prop.equals("parent")
-							|| prop.equals("remarks")
-							|| prop.equals("autoIncrement")) {
-						// don't care
-					} else if (prop.equals("sourceColumn")) {
-						m.getFkColumn().setSourceColumn(m.getPkColumn().getSourceColumn());
-					} else if (prop.equals("name")) {
-						// only update the fkcol name if its name was the same as the old pkcol name
-						if (m.getFkColumn().getName().equalsIgnoreCase((String) e.getOldValue())) {
-							m.getFkColumn().setName(m.getPkColumn().getName());
-						}
-					} else if (prop.equals("type")) {
-						m.getFkColumn().setType(m.getPkColumn().getType());
-					} else if (prop.equals("sourceDataTypeName")) {
-						m.getFkColumn().setSourceDataTypeName(m.getPkColumn().getSourceDataTypeName());
-					} else if (prop.equals("scale")) {
-						m.getFkColumn().setScale(m.getPkColumn().getScale());
-					} else if (prop.equals("scaleType")) {
-						m.getFkColumn().setScaleType(m.getPkColumn().getScaleType());
-					} else if (prop.equals("precision")) {
-						m.getFkColumn().setPrecision(m.getPkColumn().getPrecision());
-					} else if (prop.equals("precisionType")) {
-						m.getFkColumn().setPrecisionType(m.getPkColumn().getPrecisionType());
-					} else if (prop.equals("checkConstraint")) {
-						m.getFkColumn().setCheckConstraint(m.getPkColumn().getCheckConstraint());
-					} else if (prop.equals("constaintType")) {
-						m.getFkColumn().setConstraintType(m.getPkColumn().getConstraintType());
-					} else if (prop.equals("enumeration")) {
-						m.getFkColumn().setEnumeration(m.getPkColumn().getEnumeration());
-					} else if (prop.equals("nullable")) {
-						m.getFkColumn().setNullable(m.getPkColumn().getNullable());
-					} else if (prop.equals("defaultValue")) {
-						m.getFkColumn().setDefaultValue(m.getPkColumn().getDefaultValue());
-					} else {
-						logger.warn("Warning: unknown column property "+prop
-								+" changed while monitoring pkTable");
-					}
-				}
-			}
-		}
-		
-		@Override
-		protected void childAddedImpl(SPChildEvent e) {
-			e.getChild().addSPListener(this);
-		}
-		
-		@Override
-		protected void childRemovedImpl(SPChildEvent e) {
-		    e.getChild().removeSPListener(this);
-		}
-	};
-
+	protected SPListener fkColumnUpdater = 
+		new ForeignKeyColumnUpdaterPoolingSPListener(this);
+	
 //	---------------------- Former RelationshipManager ------------------------
 		
 	/**

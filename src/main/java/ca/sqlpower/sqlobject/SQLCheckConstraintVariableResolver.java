@@ -27,22 +27,23 @@ import java.util.Set;
 import ca.sqlpower.object.SPVariableResolver;
 
 /**
- * This {@link SPVariableResolver} resolves variables contained within the check
- * constraint of {@link UserDefinedSQLType}s given by
- * {@link UserDefinedSQLType#getCheckConstraint(String)}. There is no use of
- * namespaces in these variables because the variables only refer to the column
- * the check constraint applies to.
+ * This {@link SPVariableResolver} resolves variables defined by
+ * {@link SQLCheckConstraint}. There is no use of namespaces in these variables
+ * because the variables only refer to the {@link SQLObject} the check
+ * constraint applies to.
  */
-public class CheckConstraintVariableResolver implements SPVariableResolver {
-	
-	public enum CheckConstraintVariable {
-		COLUMN("column"),
-		PRECISION("precision"),
-		SCALE("scale");
+public class SQLCheckConstraintVariableResolver implements SPVariableResolver {
+
+	/**
+	 * This enum defines the different check constraint variables that can be
+	 * used within a constraint condition.
+	 */
+	public enum SQLCheckConstraintVariable {
+		THIS("this");
 		
 		private final String variableName;
 		
-		private CheckConstraintVariable(String variableName) {
+		private SQLCheckConstraintVariable(String variableName) {
 			this.variableName = variableName;
 		}
 		
@@ -51,16 +52,16 @@ public class CheckConstraintVariableResolver implements SPVariableResolver {
 		}
 
 		/**
-		 * Finds the {@link CheckConstraintVariable} given the variable name.
+		 * Finds the {@link SQLCheckConstraintVariable} given the variable name.
 		 * 
 		 * @param variableName
 		 *            The name of the variable.
-		 * @return The found {@link CheckConstraintVariable} that matches with
+		 * @return The found {@link SQLCheckConstraintVariable} that matches with
 		 *         the variable name, or null if it does not exist.
 		 */
-		public static CheckConstraintVariable findVariable(String variableName) {
+		public static SQLCheckConstraintVariable findVariable(String variableName) {
 			if (variableName != null) {
-				for (CheckConstraintVariable var : CheckConstraintVariable.values()) {
+				for (SQLCheckConstraintVariable var : SQLCheckConstraintVariable.values()) {
 					if (variableName.equals(var.getVariableName())) {
 						return var;
 					}
@@ -79,18 +80,15 @@ public class CheckConstraintVariableResolver implements SPVariableResolver {
 		 *            The name of the variable.
 		 * @return The value of the variable.
 		 */
-		public static Object getVariableValue(SQLColumn column, String variableName) {
-			CheckConstraintVariable var = findVariable(variableName);
+		public static Object getVariableValue(
+				SQLColumn column, String variableName) {
+			SQLCheckConstraintVariable var = findVariable(variableName);
 			if (var == null) {
 				return null;
 			} else {
 				switch(var) {
-				case COLUMN:
+				case THIS:
 					return column.getPhysicalName();
-				case PRECISION:
-					return column.getPrecision();
-				case SCALE:
-					return column.getScale();
 				default:
 					return null;
 				}
@@ -99,11 +97,24 @@ public class CheckConstraintVariableResolver implements SPVariableResolver {
 	}
 	
 	private final SQLColumn column;
-	
-	public CheckConstraintVariableResolver(SQLColumn column) {
+
+	/**
+	 * Creates a new {@link SQLCheckConstraintVariableResolver} that resolves
+	 * variables within a {@link SQLColumn}'s {@link SQLCheckConstraint}s.
+	 * 
+	 * @param column
+	 *            The {@link SQLColumn} that contains the
+	 *            {@link SQLCheckConstraint}s to resolve.
+	 */
+	public SQLCheckConstraintVariableResolver(SQLColumn column) {
 		this.column = column;
 	}
-	
+
+	/**
+	 * Returns the {@link SQLColumn} this
+	 * {@link SQLCheckConstraintVariableResolver} resolves for its
+	 * {@link SQLCheckConstraint}s.
+	 */
 	public SQLColumn getColumn() {
 		return column;
 	}
@@ -118,13 +129,14 @@ public class CheckConstraintVariableResolver implements SPVariableResolver {
 	}
 
 	public String getUserFriendlyName() {
-		return "Column - " + column.getName();
+		return SQLColumn.class.getSimpleName() + 
+				" - " + column.getName();
 	}
 
 	public Collection<String> keySet(String namespace) {
 		if (namespace == null) {
 			Set<String> variableNames = new HashSet<String>();
-			for (CheckConstraintVariable var : CheckConstraintVariable.values()) {
+			for (SQLCheckConstraintVariable var : SQLCheckConstraintVariable.values()) {
 				variableNames.add(var.getVariableName());
 			}
 			return variableNames;
@@ -148,12 +160,12 @@ public class CheckConstraintVariableResolver implements SPVariableResolver {
 	}
 
 	public Object resolve(String key, Object defaultValue) {
-		CheckConstraintVariable variable = 
-			CheckConstraintVariable.findVariable(key);
+		SQLCheckConstraintVariable variable = 
+			SQLCheckConstraintVariable.findVariable(key);
 		if (variable == null) {
 			return defaultValue;
 		} else {
-			return CheckConstraintVariable.getVariableValue(
+			return SQLCheckConstraintVariable.getVariableValue(
 					column, variable.getVariableName());
 		}
 	}
@@ -177,7 +189,7 @@ public class CheckConstraintVariableResolver implements SPVariableResolver {
 	}
 
 	public boolean resolves(String key) {
-		return CheckConstraintVariable.findVariable(key) != null;
+		return SQLCheckConstraintVariable.findVariable(key) != null;
 	}
 
 	public boolean resolvesNamespace(String namespace) {

@@ -33,10 +33,10 @@ import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
-import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -158,15 +158,17 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     	setBasicType(basicType);
     	setUpstreamType(upstreamType);
     }
-    
+
 	/**
 	 * Returns an overriding {@link SQLTypePhysicalProperties} for the given
 	 * platform name if one exists. Otherwise, it returns the
 	 * {@link #defaultPhysicalProperties}.
 	 * 
-	 * @param platformName The platform name to return a {@link SQLTypePhysicalProperties} for.
-	 * @return If an overriding instance exists in this type, then return it. Otherwise, it returns the
-	 * 
+	 * @param platformName
+	 *            The platform name to return a
+	 *            {@link SQLTypePhysicalProperties} for.
+	 * @return If an overriding instance exists in this type, then return it.
+	 *         Otherwise, it returns the {@link #defaultPhysicalProperties}.
 	 */
     @NonProperty
     public SQLTypePhysicalProperties getPhysicalProperties(String platformName) {
@@ -259,21 +261,30 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     	}
     }
 
+	/**
+	 * Gets the check constraints for this type. The check constraint is only
+	 * valid if {@link #getConstraintType(String)} returns
+	 * {@link SQLTypeConstraint#CHECK}
+	 * 
+	 * @return The {@link List} of {@link SQLCheckConstraint}s.
+	 */
     @NonProperty
-    public String getCheckConstraint(String platform) {
-        String checkConstraint = null;
+    public List<SQLCheckConstraint> getCheckConstraints(String platform) {
+        List<SQLCheckConstraint> checkConstraints = null;
         SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
         
         if (properties != null) {
-            checkConstraint = properties.getCheckConstraint();
-            if (checkConstraint == null && getUpstreamType() != null) {
-                checkConstraint = getUpstreamType().getCheckConstraint(platform);
+        	checkConstraints = properties.getCheckConstraints();
+            if (checkConstraints.isEmpty() && getUpstreamType() != null) {
+                checkConstraints = getUpstreamType().getCheckConstraints(platform);
             }
         } else if (getUpstreamType() != null) {
-            checkConstraint = getUpstreamType().getCheckConstraint(platform);
+            checkConstraints = getUpstreamType().getCheckConstraints(platform);
+        } else {
+        	checkConstraints = Collections.emptyList();
         }
         
-        return checkConstraint;
+        return Collections.unmodifiableList(checkConstraints);
     }
 
     @NonProperty
@@ -311,26 +322,22 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     }
 
     @NonProperty
-    public String[] getEnumeration(String platform) {
-        String[] enumeration = null;
+    public List<SQLEnumeration> getEnumerations(String platform) {
+        List<SQLEnumeration> enumerations = null;
         SQLTypePhysicalProperties properties = getPhysicalProperties(platform);
         
         if (properties != null) {
-        	String[] array = properties.getEnumeration();
-        	if (array != null) {
-        		enumeration = array;
-        	} else if (getUpstreamType() != null) {
-                enumeration = getUpstreamType().getEnumeration(platform);
+        	enumerations = properties.getChildren(SQLEnumeration.class);
+            if (enumerations.isEmpty() && getUpstreamType() != null) {
+            	enumerations = getUpstreamType().getEnumerations(platform);
             }
         } else if (getUpstreamType() != null) {
-            enumeration = getUpstreamType().getEnumeration(platform);
+        	enumerations = getUpstreamType().getEnumerations(platform);
+        } else {
+        	enumerations = Collections.emptyList();
         }
         
-        if (enumeration == null) {
-        	enumeration = new String[0];
-        }
-        
-        return enumeration;
+        return Collections.unmodifiableList(enumerations);
     }
 
     @NonProperty
@@ -393,10 +400,36 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     		return type;
     	}
     }
-
-    @NonProperty
-    public void setCheckConstraint(String platform, String checkConstraint) {
-        getOrCreatePhysicalProperties(platform).setCheckConstraint(checkConstraint);
+    
+    public void addCheckConstraint(String platform, SQLCheckConstraint checkConstraint) {
+    	getOrCreatePhysicalProperties(platform).addCheckConstraint(checkConstraint);
+    }
+    
+	/**
+	 * Adds a {@link SQLCheckConstraint} that is enforced on any
+	 * {@link SQLObject} that uses this type.
+	 * 
+	 * @param platform
+	 *            The platform to enforce the constraint on.
+	 * @param checkConstraint
+	 *            The {@link SQLCheckConstraint} to enforce.
+	 */
+    public void addCheckConstraint(String platform, SQLCheckConstraint checkConstraint, int index) {
+    	getOrCreatePhysicalProperties(platform).addCheckConstraint(checkConstraint, index);
+    }
+    
+	/**
+	 * Removes a {@link SQLCheckConstraint} from the child {@link List} of check
+	 * constraints that is being enforced on a {@link SQLObject} that uses this
+	 * type.
+	 * 
+	 * @param platform
+	 *            The platform to remove the enforced constraint from.
+	 * @param checkConstraint
+	 *            The {@link SQLCheckConstraint} to remove.
+	 */
+    public boolean removeCheckConstraint(String platform, SQLCheckConstraint checkConstraint) {
+    	return getOrCreatePhysicalProperties(platform).removeCheckConstraint(checkConstraint);
     }
 
     @NonProperty
@@ -410,8 +443,12 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     }
 
     @NonProperty
-    public void setEnumeration(String platform, String[] enumeration) {
-        getOrCreatePhysicalProperties(platform).setEnumeration(enumeration);
+    public void addEnumeration(String platform, SQLEnumeration enumeration) {
+        getOrCreatePhysicalProperties(platform).addEnumeration(enumeration);
+    }
+    
+    public void addEnumeration(String platform, SQLEnumeration enumeration, int index) {
+    	getOrCreatePhysicalProperties(platform).addEnumeration(enumeration, index);
     }
 
 	/**
@@ -441,9 +478,11 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Mutator
     public void setType(Integer type) {
+    	begin("Setting type.");
     	Integer oldValue = getType();
         this.type = type;
         firePropertyChange("type", oldValue, type);
+        commit();
     }
 
     @NonProperty
@@ -643,9 +682,11 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Mutator
 	public void setMyNullability(Integer nullability) {
+    	begin("Setting myNullability.");
     	Integer oldValue = getMyNullability();
 		this.myNullability = nullability;
 		firePropertyChange("myNullability", oldValue, nullability);
+		commit();
 	}
 
     @Transient @Accessor
@@ -664,9 +705,11 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
     @Mutator
 	public void setMyAutoIncrement(Boolean autoIncrement) {
+    	begin("Setting myAutoIncrement.");
     	Boolean oldValue = getMyAutoIncrement();
 		this.myAutoIncrement = autoIncrement;
 		firePropertyChange("myAutoIncrement", oldValue, autoIncrement);
+		commit();
 	}
 
     @Transient @Accessor
@@ -808,12 +851,54 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 		SQLTypePhysicalProperties sourceProperties = source
 				.getDefaultPhysicalProperties();
 
-		targetProperties.setCheckConstraint(sourceProperties
-				.getCheckConstraint());
-		targetProperties
-				.setConstraintType(sourceProperties.getConstraintType());
+		// Copy check constraints.
+		List<SQLCheckConstraint> targetConstraints = 
+			targetProperties.getChildrenWithoutPopulating(SQLCheckConstraint.class);
+		List<SQLCheckConstraint> sourceConstraints = 
+			sourceProperties.getChildrenWithoutPopulating(SQLCheckConstraint.class);
+		for (int i = targetConstraints.size() - 1; i >= 0; i--) {
+			SQLCheckConstraint constraint = targetConstraints.get(i);
+			if (!sourceConstraints.contains(constraint)) {
+				if (!targetProperties.removeChild(constraint)) {
+					throw new RuntimeException("Could not remove " + 
+							SQLCheckConstraint.class.getSimpleName() + " " + 
+							constraint.getName() + " from " + 
+							SQLTypePhysicalProperties.class.getSimpleName() + " " + 
+							targetProperties.getName());
+				}
+			}
+		}
+		for (SQLCheckConstraint constraint : sourceConstraints) {
+			if (!targetConstraints.contains(constraint)) {
+				targetProperties.addCheckConstraint(new SQLCheckConstraint(constraint));
+			}
+		}
+		
+		// Copy enumerations.
+		List<SQLEnumeration> targetEnumerations = 
+			targetProperties.getChildrenWithoutPopulating(SQLEnumeration.class);
+		List<SQLEnumeration> sourceEnumerations = 
+			sourceProperties.getChildrenWithoutPopulating(SQLEnumeration.class);
+		for (int i = targetEnumerations.size() - 1; i >= 0; i--) {
+			SQLEnumeration enumeration = targetEnumerations.get(i);
+			if (!sourceEnumerations.contains(enumeration)) {
+				if (!targetProperties.removeChild(enumeration)) {
+					throw new RuntimeException("Could not remove " + 
+							SQLEnumeration.class.getSimpleName() + " " + 
+							enumeration.getName() + " from " + 
+							SQLTypePhysicalProperties.class.getSimpleName() + " " + 
+							targetProperties.getName());
+				}
+			}
+		}
+		for (SQLEnumeration enumeration : sourceEnumerations) {
+			if (!targetEnumerations.contains(enumeration)) {
+				targetProperties.addEnumeration(new SQLEnumeration(enumeration));
+			}
+		}
+		
+		targetProperties.setConstraintType(sourceProperties.getConstraintType());
 		targetProperties.setDefaultValue(sourceProperties.getDefaultValue());
-		targetProperties.setEnumeration(sourceProperties.getEnumeration());
 		targetProperties.setName(sourceProperties.getName());
 		targetProperties.setPhysicalName(sourceProperties.getPhysicalName());
 		targetProperties.setPrecision(sourceProperties.getPrecision());
@@ -827,14 +912,47 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 
 		for (SQLTypePhysicalProperties overridingProperties : source.overridingPhysicalProperties) {
 			String platform = overridingProperties.getPlatform();
-			target.setCheckConstraint(platform, overridingProperties
-					.getCheckConstraint());
+			
+			// Copy overriding check constraints.
+			targetConstraints = overridingProperties.getChildrenWithoutPopulating(SQLCheckConstraint.class);
+			sourceConstraints = overridingProperties.getChildrenWithoutPopulating(SQLCheckConstraint.class);
+			for (int i = targetConstraints.size() - 1; i >= 0; i--) {
+				SQLCheckConstraint constraint = targetConstraints.get(i);
+				if (!sourceConstraints.contains(constraint)) {
+					overridingProperties.removeCheckConstraint(constraint);
+				}
+			}
+			for (SQLCheckConstraint constraint : sourceConstraints) {
+				if (!targetConstraints.contains(constraint)) {
+					overridingProperties.addCheckConstraint(
+							new SQLCheckConstraint(constraint), 
+							overridingProperties.getChildrenWithoutPopulating(
+							SQLCheckConstraint.class).size());
+				}
+			}
+			
+			// Copy overriding enumerations.
+			targetEnumerations = overridingProperties.getChildrenWithoutPopulating(SQLEnumeration.class);
+			sourceEnumerations = overridingProperties.getChildrenWithoutPopulating(SQLEnumeration.class);
+			for (int i = targetEnumerations.size() - 1; i >= 0; i--) {
+				SQLEnumeration enumeration = targetEnumerations.get(i);
+				if (!sourceEnumerations.contains(enumeration)) {
+					overridingProperties.removeEnumeration(enumeration);
+				}
+			}
+			for (SQLEnumeration enumeration : sourceEnumerations) {
+				if (!targetEnumerations.contains(enumeration)) {
+					overridingProperties.addEnumeration(
+							new SQLEnumeration(enumeration), 
+							overridingProperties.getChildrenWithoutPopulating(
+							SQLCheckConstraint.class).size());
+				}
+			}
+			
 			target.setConstraintType(platform, overridingProperties
 					.getConstraintType());
 			target.setDefaultValue(platform, overridingProperties
 					.getDefaultValue());
-			target.setEnumeration(platform, overridingProperties
-					.getEnumeration());
 			target.setName(overridingProperties.getName());
 			target.setPhysicalName(overridingProperties.getPhysicalName());
 			target.setPrecision(platform, overridingProperties.getPrecision());
@@ -879,4 +997,37 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 		defaultPhysicalProperties.setName(name);
 		commit();
 	}
+
+	public void removeEnumeration(String platform, SQLEnumeration enumeration) {
+		getOrCreatePhysicalProperties(platform).removeEnumeration(enumeration);
+	}
+
+	/**
+	 * This method does not make sense here because {@link SQLCheckConstraint}s
+	 * in a {@link UserDefinedSQLType} should be platform specific. An empty
+	 * list is returned.
+	 * 
+	 * @see #getCheckConstraints(String)
+	 */
+	@NonProperty
+	public List<SQLCheckConstraint> getCheckConstraints() {
+		return Collections.emptyList();
+	}
+
+	public void addCheckConstraint(SQLCheckConstraint checkConstraint) {
+		// No operation.
+		// Adding check constraints must be platform specific.
+	}
+
+	public boolean removeCheckConstraint(SQLCheckConstraint checkConstraint) {
+		// No operation.
+		// Removing check constraints must be platform specific.
+		return false;
+	}
+
+	public void addCheckConstraint(SQLCheckConstraint checkConstraint, int index) {
+		// No operation.
+		// Adding check constraints must be platform specific.
+	}
+	
 }

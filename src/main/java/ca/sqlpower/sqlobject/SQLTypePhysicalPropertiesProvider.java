@@ -21,6 +21,7 @@ package ca.sqlpower.sqlobject;
 
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
+import java.util.List;
 
 import javax.sql.RowSetMetaData;
 
@@ -31,7 +32,7 @@ import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 /**
  * Provides a set of physical properties for a SQL column type.
  */
-public interface SQLTypePhysicalPropertiesProvider extends SPObject {
+public interface SQLTypePhysicalPropertiesProvider extends SPObject, SQLCheckConstraintContainer {
 	
 	public static final String GENERIC_PLATFORM = "GENERIC";
 	
@@ -294,40 +295,36 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	public void setDefaultValue(String platform, String defaultValue);
 
 	/**
-	 * Gets the check constraint value of this type. The check constraint is
-	 * only valid if {@link #getConstraint()} returns
-	 * {@link SQLTypeConstraint#CHECK}
+	 * Removes a {@link SQLEnumeration} from the child {@link List} of
+	 * enumerations that is being enforced on a {@link SQLObject} that uses this
+	 * type.
 	 * 
-	 * @return The check constraint as a String
+	 * @param platform
+	 *            The platform to remove the enforced enumeration from.
+	 * @param enumeration
+	 *            The {@link SQLEnumeration} to remove.
 	 */
-	public String getCheckConstraint(String platform);
+	public void removeEnumeration(String platform, SQLEnumeration enumeration);
 
 	/**
-	 * Sets the check constraint value of this type. The check constraint is
-	 * only valid if {@link #getConstraint()} returns
-	 * {@link SQLTypeConstraint#CHECK}
+	 * Gets the {@link List} of {@link SQLEnumeration}s as allowed values of
+	 * this type. The enumerations are only valid if
+	 * {@link #getConstraintType(String)} returns {@link SQLTypeConstraint#ENUM}
 	 * 
-	 * @param checkConstraint
+	 * @return The {@link List} of {@link SQLEnumeration}s.
 	 */
-	public void setCheckConstraint(String platform, String checkConstraint);
+	public List<SQLEnumeration> getEnumerations(String platform);
 
 	/**
-	 * Gets the List ('enumeration') of allowed values of this type. The
-	 * enumeration is only valid if {@link #getConstraint()} returns
-	 * {@link SQLTypeConstraint#ENUM}
+	 * Adds a {@link SQLEnumeration} as a child of this type. This enumeration
+	 * is an indicator that this is a valid value.
 	 * 
-	 * @return The enumeration constraint as a String
+	 * @param platform
+	 *            The platform to add the enumeration on.
+	 * @param enumeration
+	 *            The {@link SQLEnumeration} to add.
 	 */
-	public String[] getEnumeration(String platform);
-
-	/**
-	 * Gets the List ('enumeration') of allowed values of this type. The
-	 * enumeration is only valid if {@link #getConstraint()} returns
-	 * {@link SQLTypeConstraint#ENUM}
-	 * 
-	 * @return The enumeration constraint as a String
-	 */
-	public void setEnumeration(String platform, String[] enumeration);
+	public void addEnumeration(String platform, SQLEnumeration enumeration);
 
 	/**
 	 * Sets the {@link SQLTypeConstraint} for this type.

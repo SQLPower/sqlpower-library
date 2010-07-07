@@ -135,17 +135,25 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
     }
     
     public void testGetEnumeration() throws Exception {
-    	String[] proxyEnum = {"proxy"};
-        typeProxy.getDefaultPhysicalProperties().setEnumeration(proxyEnum);
-        String[] udtEnum = {"udt"};
-        udtProperties.setEnumeration(udtEnum);
+    	SQLEnumeration proxyEnum = new SQLEnumeration("proxy");
+        typeProxy.getDefaultPhysicalProperties().addEnumeration(proxyEnum);
+        SQLEnumeration udtEnum = new SQLEnumeration("udt");
+        udtProperties.addEnumeration(udtEnum);
         
-        assertEquals("proxy", typeProxy.getEnumeration("Oracle")[0]);
+        assertEquals(proxyEnum, typeProxy.getEnumerations("Oracle").get(0));
     }
     
-    public void testSetEnumeration() throws Exception {
-        typeProxy.setEnumeration("Oracle", new String[]{"enum"});
-        assertEquals("enum", typeProxy.getEnumeration("Oracle")[0]);
+    public void testAddEnumeration() throws Exception {
+        SQLEnumeration enumeration = new SQLEnumeration("enum");
+		typeProxy.addEnumeration("Oracle", enumeration);
+        assertEquals(enumeration, typeProxy.getEnumerations("Oracle").get(0));
+    }
+    
+    public void testRemoveEnumeration() throws Exception {
+        SQLEnumeration enumeration = new SQLEnumeration("enum");
+		typeProxy.addEnumeration("Oracle", enumeration);
+    	typeProxy.removeEnumeration("Oracle", enumeration);
+    	assertTrue(typeProxy.getEnumerations("Oracle").isEmpty());
     }
     
     public void testGetDefaultValue() throws Exception {
@@ -172,16 +180,28 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
         assertEquals(SQLTypeConstraint.CHECK, typeProxy.getConstraintType("Oracle"));
     }
     
-    public void testGetCheckConstraint() throws Exception {
-        typeProxy.getDefaultPhysicalProperties().setCheckConstraint("Matches A1A 1A1");
-        udtProperties.setCheckConstraint("Matches 12345");
-        
-        assertEquals("Matches A1A 1A1", typeProxy.getCheckConstraint("Oracle"));
+    public void testGetCheckConstraints() throws Exception {
+    	SQLCheckConstraint constraint1 = new SQLCheckConstraint("testGetCheckConstraints - typeProxy", "Matches A1A 1A1");
+    	SQLCheckConstraint constraint2 = new SQLCheckConstraint("testGetCheckConstraints - udtProperties", "Matches 12345");
+    	
+		typeProxy.getDefaultPhysicalProperties().addCheckConstraint(constraint1);
+		udtProperties.addCheckConstraint(constraint2);
+		assertEquals(1, typeProxy.getCheckConstraints("Oracle").size());
+		assertEquals(constraint1, typeProxy.getCheckConstraints("Oracle").get(0));
     }
     
-    public void testSetCheckConstraint() throws Exception {
-        typeProxy.setCheckConstraint("Oracle", "Matches A1A 1A1");
-        assertEquals("Matches A1A 1A1", typeProxy.getCheckConstraint("Oracle"));
+    public void testAddCheckConstraint() throws Exception {
+    	SQLCheckConstraint checkConstraint = new SQLCheckConstraint("testAddcheckConstraint", "Matches A1A 1A1");
+		typeProxy.addCheckConstraint("Oracle", checkConstraint);
+    	assertEquals(1, typeProxy.getCheckConstraints("Oracle").size());
+    	assertEquals(checkConstraint, typeProxy.getCheckConstraints("Oracle").get(0));
+    }
+    
+    public void testRemoveCheckConstraint() throws Exception {
+    	SQLCheckConstraint checkConstraint = new SQLCheckConstraint("testRemoveCheckConstraint", "Matches A1A 1A1");
+    	typeProxy.addCheckConstraint("Oracle", checkConstraint);
+    	typeProxy.removeCheckConstraint("Oracle", checkConstraint);
+    	assertTrue(typeProxy.getCheckConstraints("Oracle").isEmpty());
     }
     
     public void testGetPrecisionType() throws Exception {

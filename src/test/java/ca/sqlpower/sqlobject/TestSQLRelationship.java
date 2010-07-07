@@ -504,7 +504,19 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         assertFalse(child.getColumn(1).isPrimaryKey());
     }
 
-	public void testPKColPrecisionChangeGoesToFKCol() throws SQLObjectException {
+	public void testPKColPrecisionChangeGoesToFKColIfIncreased() throws SQLObjectException {
+		SQLColumn pkcol = new SQLColumn(parentTable, "old name", Types.VARCHAR, 10, 0);
+		parentTable.addColumn(pkcol);
+		parentTable.addToPK(pkcol);
+		
+		SQLColumn fkcol = childTable1.getColumnByName("old name");
+		
+		pkcol.setPrecision(5);
+		
+		assertEquals("fkcol's precision didn't update", 5, fkcol.getPrecision());
+	}
+	
+	public void testPKColPrecisionChangeDoesNotGoToFKColIfDecreased() throws SQLObjectException {
 		SQLColumn pkcol = new SQLColumn(parentTable, "old name", Types.VARCHAR, 10, 0);
 		parentTable.addColumn(pkcol);
 		parentTable.addToPK(pkcol);
@@ -513,7 +525,31 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
 		
 		pkcol.setPrecision(20);
 		
-		assertEquals("fkcol's precision didn't update", 20, fkcol.getPrecision());
+		assertEquals("fkcol's precision updated when it shouldn't have", 10, fkcol.getPrecision());
+	}
+	
+	public void testPKColScaleChangeGoesToFKColIfIncreased() throws SQLObjectException {
+		SQLColumn pkcol = new SQLColumn(parentTable, "old name", Types.VARCHAR, 0, 10);
+		parentTable.addColumn(pkcol);
+		parentTable.addToPK(pkcol);
+		
+		SQLColumn fkcol = childTable1.getColumnByName("old name");
+		
+		pkcol.setScale(5);
+		
+		assertEquals("fkcol's scale didn't update", 5, fkcol.getScale());
+	}
+	
+	public void testPKColScaleChangeDoesNotGoToFKColIfDecreased() throws SQLObjectException {
+		SQLColumn pkcol = new SQLColumn(parentTable, "old name", Types.VARCHAR, 0, 10);
+		parentTable.addColumn(pkcol);
+		parentTable.addToPK(pkcol);
+		
+		SQLColumn fkcol = childTable1.getColumnByName("old name");
+		
+		pkcol.setScale(20);
+		
+		assertEquals("fkcol's scale updated when it shouldn't have", 10, fkcol.getScale());
 	}
 
 	/** This is something the undo manager will attempt when you undo deleting a relationship */

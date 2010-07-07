@@ -889,6 +889,23 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
     }
     
     @Override
+    public Set<String> getPropertiesToIgnoreForEvents() {
+    	Set<String> ignored = super.getPropertiesToIgnoreForEvents();
+    	ignored.add("autoIncrement");
+    	ignored.add("constraintType");
+    	ignored.add("defaultValue");
+    	ignored.add("enumeration");
+    	ignored.add("nullable");
+    	ignored.add("precision");
+    	ignored.add("precisionType");
+    	ignored.add("scale");
+    	ignored.add("scaleType");
+    	ignored.add("sourceDataTypeName");
+    	ignored.add("type");
+    	return ignored;
+    }
+    
+    @Override
     public void testFiresAddEvent() {}
     @Override
     public void testPreRemoveEventNoVeto() {}

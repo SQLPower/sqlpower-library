@@ -1298,10 +1298,6 @@ public class SQLTable extends SQLObject {
 			    populated = true;
 			}
 			runInForeground(new Runnable() {
-				public void run() {
-				}
-			});
-			runInForeground(new Runnable() {
                 public void run() {
                     commit();
                 }

@@ -850,6 +850,15 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
                 set.add("foreignKey");         // secondary property depends on position in parent
                 set.add("indexed");            // secondary property depends on position in parent
                 set.add("uniqueIndexed");      // secondary property depends on position in parent
+            	set.add("autoIncrement");      // depends on user defined SQL type
+            	set.add("constraintType");     // depends on user defined SQL type
+            	set.add("defaultValue");       // depends on user defined SQL type
+            	set.add("enumeration");        // depends on user defined SQL type
+            	set.add("nullable");           // depends on user defined SQL type
+            	set.add("precisionType");      // depends on user defined SQL type
+            	set.add("scaleType");          // depends on user defined SQL type
+            	set.add("sourceDataTypeName"); // depends on user defined SQL type
+            	set.add("type");               // depends on user defined SQL type
                 ignoreProperties.put(SQLColumn.class, set);
                 
                 set = new HashSet<String>();

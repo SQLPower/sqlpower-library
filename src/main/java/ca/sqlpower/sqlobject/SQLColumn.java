@@ -37,11 +37,11 @@ import ca.sqlpower.object.SPVariableResolverProvider;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
-import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.SQL;
@@ -55,7 +55,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 
-public class SQLColumn extends SQLObject implements java.io.Serializable, SPVariableResolverProvider {
+public class SQLColumn extends SQLObject implements java.io.Serializable, SPVariableResolverProvider, SQLCheckConstraintContainer {
 
 	private static Logger logger = Logger.getLogger(SQLColumn.class);
 	
@@ -126,10 +126,10 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	protected int referenceCount;
 
 	/**
-	 * Helper object to resolve variables in the check constraint.
+	 * Helper objects to resolve variables in check constraints.
 	 */
-    private final CheckConstraintVariableResolver variableResolver = 
-    	new CheckConstraintVariableResolver(this);
+    private final SQLCheckConstraintVariableResolver variableResolver = 
+    	new SQLCheckConstraintVariableResolver(this);
 	
 	public SQLColumn() {
 		userDefinedSQLType = new UserDefinedSQLType();
@@ -680,12 +680,12 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	public void setPlatform(String newPlatform) {
 		String oldPlatform = platform;
 		platform = newPlatform;
-		fireTransactionStarted("Setting platform");
+		begin("Setting platform");
 		firePropertyChange("platform", oldPlatform, newPlatform);
 		if (userDefinedSQLType.getPhysicalProperties(newPlatform) == null) {
 			userDefinedSQLType.putPhysicalProperties(newPlatform, new SQLTypePhysicalProperties(newPlatform));
 		}
-		fireTransactionEnded();
+		commit();
 	}
 	
 	@Accessor
@@ -693,18 +693,18 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 		return userDefinedSQLType;
 	}
 	
-	@Transient @Accessor(isInteresting = true)
-	public String getCheckConstraint() {
-		return userDefinedSQLType.getCheckConstraint(getPlatform());
+	@NonBound
+	public List<SQLCheckConstraint> getCheckConstraints() {
+		return Collections.unmodifiableList(
+				userDefinedSQLType.getCheckConstraints(getPlatform()));
 	}
 	
-	@Transient @Mutator
-	public void setCheckConstraint(String argCheckConstraint) {
-		begin("Set checkConstraint");
-		String oldConstraint = getCheckConstraint();
-		userDefinedSQLType.setCheckConstraint(getPlatform(), argCheckConstraint);
-		firePropertyChange("checkConstraint", oldConstraint, argCheckConstraint);
-		commit();
+	public void addCheckConstraint(SQLCheckConstraint checkConstraint) {
+		userDefinedSQLType.addCheckConstraint(getPlatform(), checkConstraint);
+	}
+	
+	public boolean removeCheckConstraint(SQLCheckConstraint checkConstraint) {
+		return userDefinedSQLType.removeCheckConstraint(getPlatform(), checkConstraint);
 	}
 	
 	@Transient @Accessor(isInteresting = true)
@@ -714,26 +714,21 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 
 	@Transient @Mutator
 	public void setConstraintType(SQLTypeConstraint constraint) {
-		begin("Set constraintType");
-		SQLTypeConstraint oldConstraint = getConstraintType();
 		userDefinedSQLType.setConstraintType(getPlatform(), constraint);
-		firePropertyChange("constraintType", oldConstraint, constraint);
-		commit();
 	}
 	
-	@Transient @Accessor(isInteresting = true)
-    public String[] getEnumeration() {
-        return userDefinedSQLType.getEnumeration(getPlatform());
+	@NonBound
+    public List<SQLEnumeration> getEnumerations() {
+        return userDefinedSQLType.getEnumerations(getPlatform());
     }
 
-	@Transient @Mutator
-    public void setEnumeration(String[] enumeration) {
-		begin("Set enumeration");
-		String[] oldEnumeration = getEnumeration();
-		userDefinedSQLType.setEnumeration(getPlatform(), enumeration);
-		firePropertyChange("enumeration", oldEnumeration, enumeration);
-		commit();
+    public void addEnumeration(SQLEnumeration enumeration) {
+		userDefinedSQLType.addEnumeration(getPlatform(), enumeration);
 	}
+    
+    public void removeEnumeration(SQLEnumeration enumeration) {
+    	userDefinedSQLType.removeEnumeration(getPlatform(), enumeration);
+    }
 	
 	@Transient @Accessor(isInteresting = true)
 	public PropertyType getPrecisionType() {
@@ -742,11 +737,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 
 	@Transient @Mutator
 	public void setPrecisionType(PropertyType precisionType) {
-		begin("Set precisionType");
-		PropertyType oldPrecisionType = getPrecisionType();
 		userDefinedSQLType.setPrecisionType(getPlatform(), precisionType);
-		firePropertyChange("precisionType", oldPrecisionType, precisionType);
-		commit();
 	}
 	
 	@Transient @Accessor(isInteresting = true)
@@ -756,11 +747,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
     
 	@Transient @Mutator
     public void setScaleType(PropertyType scaleType) {
-		begin("Set scaleType");
-		PropertyType oldScaleType = getScaleType();
 		userDefinedSQLType.setScaleType(getPlatform(), scaleType);
-		firePropertyChange("scaleType", oldScaleType, scaleType);
-        commit();
 	}
 	
 	@Accessor
@@ -770,9 +757,11 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 
 	@Mutator
 	public void setSourceColumn(SQLColumn col) {
+		begin("Setting source column.");
 		SQLColumn oldCol = this.sourceColumn;
 		sourceColumn = col;
 		firePropertyChange("sourceColumn",oldCol,col);
+		commit();
 	}
 
 
@@ -794,11 +783,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	 */
 	@Transient @Mutator
 	public void setType(int argType) {
-		begin("Set type");
-		int oldType = getType();
 		userDefinedSQLType.setType(argType);
-		firePropertyChange("type", oldType, argType);
-		commit();
 	}
 
 	/**
@@ -811,11 +796,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 
 	@Transient @Mutator
 	public void setSourceDataTypeName(String n) {
-		begin("Set Source Data Type Name");
-		String oldSourceDataTypeName = getSourceDataTypeName();
 		userDefinedSQLType.setName(n);
-		firePropertyChange("sourceDataTypeName",oldSourceDataTypeName,n);
-		commit();
 	}
 
 	/**
@@ -836,9 +817,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	@Transient @Mutator
 	public void setScale(int argScale) {
 		begin("Set scale");
-		int oldScale = getScale();
 		userDefinedSQLType.setScale(getPlatform(), argScale);
-		firePropertyChange("scale", oldScale, argScale);
 		
 		// Need to change scale type here according to the scale value
 		// that is passed in. It is possible that when the project gets
@@ -879,9 +858,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	@Transient @Mutator
 	public void setPrecision(int argPrecision) {
 		begin("Set precision");
-		int oldPrecision = getPrecision();
 		userDefinedSQLType.setPrecision(getPlatform(), argPrecision);
-		firePropertyChange("precision", oldPrecision, argPrecision);
 		
 		// Need to change precision type here according to the precision value
 		// that is passed in. It is possible that when the project gets
@@ -1059,11 +1036,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	 */
 	@Transient @Mutator
 	public void setNullable(int argNullable) {
-		begin("Set nullable");
-		int yeOldeNullable = getNullable();
 		userDefinedSQLType.setMyNullability(argNullable);
-		firePropertyChange("nullable", yeOldeNullable, argNullable);
-		commit();
 	}
     	
     public static String getDefaultName() {
@@ -1197,11 +1170,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	 */
 	@Transient @Mutator
 	public void setAutoIncrement(boolean argAutoIncrement) {
-		begin("Set autoIncrement");
-		boolean oldAutoIncrement = isAutoIncrement();
 		userDefinedSQLType.setMyAutoIncrement(argAutoIncrement);
-		firePropertyChange("autoIncrement",oldAutoIncrement,argAutoIncrement);
-		commit();
 	}
     
     /**
@@ -1239,8 +1208,10 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
         String oldName = getAutoIncrementSequenceName();
         
         if (!oldName.equals(autoIncrementSequenceName)) {
+        	begin("Setting autoIncrementSequenceName.");
             this.autoIncrementSequenceName = autoIncrementSequenceName;
             firePropertyChange("autoIncrementSequenceName", oldName, autoIncrementSequenceName);
+            commit();
         }
     }
 
@@ -1347,6 +1318,31 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	@NonProperty
 	public SPVariableResolver getVariableResolver() {
 		return variableResolver;
+	}
+
+	@NonBound
+	public List<SQLCheckConstraint> getCheckConstraints(String platform) {
+		return Collections.unmodifiableList(
+				userDefinedSQLType.getCheckConstraints(platform));
+	}
+
+	public void addCheckConstraint(String platform,
+			SQLCheckConstraint checkConstraint) {
+		userDefinedSQLType.addCheckConstraint(platform, checkConstraint);
+	}
+
+	public boolean removeCheckConstraint(String platform,
+			SQLCheckConstraint checkConstraint) {
+		return userDefinedSQLType.removeCheckConstraint(platform, checkConstraint);
+	}
+
+	public void addCheckConstraint(SQLCheckConstraint checkConstraint, int index) {
+		userDefinedSQLType.addCheckConstraint(checkConstraint, index);
+	}
+
+	public void addCheckConstraint(String platform,
+			SQLCheckConstraint checkConstraint, int index) {
+		userDefinedSQLType.addCheckConstraint(platform, checkConstraint, index);
 	}
 
 }
