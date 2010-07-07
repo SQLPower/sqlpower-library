@@ -20,7 +20,6 @@
 package ca.sqlpower.sqlobject;
 
 import java.beans.PropertyChangeEvent;
-import java.util.List;
 
 import javax.annotation.Nonnull;
 
@@ -28,6 +27,7 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.AbstractPoolingSPListener;
 import ca.sqlpower.object.SPChildEvent;
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLRelationship.ColumnMapping;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.BasicSQLType;
@@ -111,113 +111,191 @@ class ForeignKeyColumnUpdaterPoolingSPListener extends
 			}
 		} else if (e.getSource() instanceof UserDefinedSQLType) {
 			UserDefinedSQLType sourceType = (UserDefinedSQLType) e.getSource();
-			List<ColumnMapping> matchedMappings = 
-				relationship.getMappingsByUserDefinedSQLType(sourceType);
+			SPObject parent = sourceType.getParent();
+			if (!(parent instanceof SQLColumn)) {
+				throw new IllegalStateException("UserDefinedSQLType " + 
+						sourceType.getPhysicalName() + " must have a SQLColumn parent.");
+			}
+			SQLColumn sourceColumn = (SQLColumn) parent;
+			ColumnMapping m = relationship.getMappingByPkCol(sourceColumn);
 			
-			if (matchedMappings.isEmpty()) {
+			if (m == null) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Ignoring change for UserDefinedSQLType "+sourceType.getName());
 				}
 				return;
 			}
-			
-			for (ColumnMapping m : matchedMappings) {
-				final SQLColumn fkCol = m.getFkColumn();
-				if (fkCol == null) throw new NullPointerException("Missing fk column in mapping");
-				final UserDefinedSQLType fkType = fkCol.getUserDefinedSQLType();
 
-				if (prop.equals("type")) {
-					fkType.setType((Integer) e.getNewValue());
-				} else if (prop.equals("name")) {
-					fkType.setName((String) e.getNewValue());
-				} else if (prop.equals("myNullability")) {
-					fkType.setMyNullability((Integer) e.getNewValue());
-				} else if (prop.equals("upstreamType")) {
-					fkType.setUpstreamType((UserDefinedSQLType) e.getNewValue());
-				} else if (prop.equals("basicType")) {
-					fkType.setBasicType((BasicSQLType) e.getNewValue());
-				} else {
-					logger.warn("Warning: unknown UserDefinedSQLType property "+prop
-							+" changed while monitoring pkTable");
-				}
+			final SQLColumn fkCol = m.getFkColumn();
+			if (fkCol == null) throw new NullPointerException("Missing fk column in mapping");
+			final UserDefinedSQLType fkType = fkCol.getUserDefinedSQLType();
+
+			if (prop.equals("type")) {
+				fkType.setType((Integer) e.getNewValue());
+			} else if (prop.equals("name")) {
+				fkType.setName((String) e.getNewValue());
+			} else if (prop.equals("myNullability")) {
+				fkType.setMyNullability((Integer) e.getNewValue());
+			} else if (prop.equals("upstreamType")) {
+				fkType.setUpstreamType((UserDefinedSQLType) e.getNewValue());
+			} else if (prop.equals("basicType")) {
+				fkType.setBasicType((BasicSQLType) e.getNewValue());
+			} else {
+				logger.warn("Warning: unknown UserDefinedSQLType property "+prop
+						+" changed while monitoring pkTable");
 			}
 
 		} else if (e.getSource() instanceof SQLTypePhysicalProperties) {
 			// Find all the column mappings where the primary key column's
 			// type is the type that fired this property change event.
 			SQLTypePhysicalProperties sourceProperties = (SQLTypePhysicalProperties) e.getSource();
-			List<ColumnMapping> matchedMappings = 
-				relationship.getMappingsBySQLTypePhysicalProperties(sourceProperties);
 			
-			if (matchedMappings.isEmpty()) {
+			SPObject parent = sourceProperties.getParent();
+			if (!(parent instanceof UserDefinedSQLType)) {
+				throw new IllegalStateException("SQLTypePhysicalProperties " + 
+						sourceProperties.getPhysicalName() + 
+						" must have a UserDefinedSQLType parent.");
+			}
+			UserDefinedSQLType sourceType = (UserDefinedSQLType) parent;
+			
+			parent = sourceType.getParent();
+			if (!(parent instanceof SQLColumn)) {
+				throw new IllegalStateException("UserDefinedSQLType " + 
+						sourceType.getPhysicalName() + " must have a SQLColumn parent.");
+			}
+			SQLColumn sourceColumn = (SQLColumn) parent;
+			ColumnMapping m = relationship.getMappingByPkCol(sourceColumn);
+
+			if (m == null) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Ignoring change for SQLTypePhysicalProperties "+sourceProperties.getName());
 				}
 				return;
 			}
-			
-			for (ColumnMapping m : matchedMappings) {
-				final SQLColumn fkCol = m.getFkColumn();
-				if (fkCol == null) throw new NullPointerException("Missing fk column in mapping");
 
-				final UserDefinedSQLType fkType = fkCol.getUserDefinedSQLType();
-				final String fkPlatform = fkCol.getPlatform();
+			final SQLColumn fkCol = m.getFkColumn();
+			if (fkCol == null) throw new NullPointerException("Missing fk column in mapping");
 
-				if (prop.equals("scale") && fkType.getScale(fkPlatform) > (Integer) e.getNewValue()) {
-					// Foreign key's scale must conform to primary key's scale.
-					// FK scale <= PK scale
-					fkType.setScale(fkPlatform, (Integer) e.getNewValue());
-				} else if (prop.equals("scaleType")) {
-					fkType.setScaleType(fkPlatform, (PropertyType) e.getNewValue());
-				} else if (prop.equals("precision") && fkType.getPrecision(fkPlatform) > (Integer) e.getNewValue()) {
-					// Foreign key's precision must conform to primary key's precision.
-					// FK precision <= PK precision
-					fkType.setPrecision(fkPlatform, (Integer) e.getNewValue());
-				} else if (prop.equals("precisionType")) {
-					fkType.setPrecisionType(fkPlatform, (PropertyType) e.getNewValue());
-				} else if (prop.equals("constraintType")) {
-					fkType.setConstraintType(fkPlatform, (SQLTypeConstraint) e.getNewValue());
-				} else if (prop.equals("defaultValue")) {
-					fkType.setDefaultValue(fkPlatform, (String) e.getNewValue());
-				} else {
-					logger.warn("Warning: unknown SQLTypePhysicalProperties property "+prop
-							+" changed while monitoring pkTable");
-				}
+			final UserDefinedSQLType fkType = fkCol.getUserDefinedSQLType();
+			final String fkPlatform = fkCol.getPlatform();
+
+			if (prop.equals("scale") && 
+					(e.getNewValue() == null || fkType.getScale(fkPlatform) > (Integer) e.getNewValue())) {
+				// Foreign key's scale must conform to primary key's scale.
+				// FK scale <= PK scale
+				fkType.setScale(fkPlatform, (Integer) e.getNewValue());
+			} else if (prop.equals("scaleType")) {
+				fkType.setScaleType(fkPlatform, (PropertyType) e.getNewValue());
+			} else if (prop.equals("precision") && 
+					(e.getNewValue() == null || fkType.getPrecision(fkPlatform) > (Integer) e.getNewValue())) {
+				// Foreign key's precision must conform to primary key's precision.
+				// FK precision <= PK precision
+				fkType.setPrecision(fkPlatform, (Integer) e.getNewValue());
+			} else if (prop.equals("precisionType")) {
+				fkType.setPrecisionType(fkPlatform, (PropertyType) e.getNewValue());
+			} else if (prop.equals("constraintType")) {
+				fkType.setConstraintType(fkPlatform, (SQLTypeConstraint) e.getNewValue());
+			} else if (prop.equals("defaultValue")) {
+				fkType.setDefaultValue(fkPlatform, (String) e.getNewValue());
+			} else {
+				logger.warn("Warning: unknown SQLTypePhysicalProperties property "+prop
+						+" changed while monitoring pkTable");
 			}
 		} else if (e.getSource() instanceof SQLCheckConstraint) {
 			SQLCheckConstraint sourceConstraint = (SQLCheckConstraint) e.getSource();
-			SQLObject parent = sourceConstraint.getParent();
-			if (parent != null && parent instanceof SQLTypePhysicalProperties) {
-				SQLTypePhysicalProperties sourceProperties = 
-					(SQLTypePhysicalProperties) parent;
-				List<ColumnMapping> matchedMappings = 
-					relationship.getMappingsBySQLTypePhysicalProperties(sourceProperties);
-				
-				if (matchedMappings.isEmpty()) {
-					if (logger.isDebugEnabled()) {
-						logger.debug("Ignoring change for SQLCheckConstraint "+sourceConstraint.getName());
-					}
-					return;
-				}
-				
-				for (ColumnMapping m : matchedMappings) {
-					final SQLColumn fkCol = m.getFkColumn();
-					if (fkCol == null) throw new NullPointerException("Missing fk column in mapping");
+			
+			SPObject parent = sourceConstraint.getParent();
+			if (!(parent instanceof SQLTypePhysicalProperties)) {
+				throw new IllegalStateException("SQLCheckConstraint " + 
+						sourceConstraint.getPhysicalName() + 
+						" must have a SQLTypePhysicalProperties parent.");
+			}
+			SQLTypePhysicalProperties sourceProperties = (SQLTypePhysicalProperties) parent;
+			
+			parent = sourceProperties.getParent();
+			if (!(parent instanceof UserDefinedSQLType)) {
+				throw new IllegalStateException("SQLTypePhysicalProperties " + 
+						sourceProperties.getPhysicalName() + 
+						" must have a UserDefinedSQLType parent.");
+			}
+			UserDefinedSQLType sourceType = (UserDefinedSQLType) parent;
+			
+			parent = sourceType.getParent();
+			if (!(parent instanceof SQLColumn)) {
+				throw new IllegalStateException("UserDefinedSQLType " + 
+						sourceType.getPhysicalName() + " must have a SQLColumn parent.");
+			}
+			SQLColumn sourceColumn = (SQLColumn) parent;
+			
+			ColumnMapping m = relationship.getMappingByPkCol(sourceColumn);
 
-					final String fkPlatform = fkCol.getPlatform();
-					final SQLTypePhysicalProperties fkProperties = 
-						fkCol.getUserDefinedSQLType().getPhysicalProperties(fkPlatform);
-					for (SQLCheckConstraint constraint : fkProperties.getChildren(SQLCheckConstraint.class)) {
-						if (prop.equals("name") 
-								&& constraint.getName().equals((String) e.getOldValue())
-								&& constraint.getConstraint().equals(sourceConstraint.getConstraint())) {
-							constraint.setName((String) e.getNewValue());
-						} else if (prop.equals("constraint")
-								&& constraint.getName().equals(sourceConstraint)
-								&& constraint.getConstraint().equals((String) e.getOldValue())) {
-							constraint.setConstraint((String) e.getNewValue());
-						}
-					}
+			if (m == null) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Ignoring change for SQLCheckConstraint "+sourceConstraint.getName());
+				}
+				return;
+			}
+
+			final SQLColumn fkCol = m.getFkColumn();
+			if (fkCol == null) throw new NullPointerException("Missing fk column in mapping");
+
+			final String fkPlatform = fkCol.getPlatform();
+			final SQLTypePhysicalProperties fkProperties = 
+				fkCol.getUserDefinedSQLType().getPhysicalProperties(fkPlatform);
+			for (SQLCheckConstraint constraint : fkProperties.getChildren(SQLCheckConstraint.class)) {
+				if (prop.equals("name") 
+						&& constraint.getName().equals((String) e.getOldValue())
+						&& constraint.getConstraint().equals(sourceConstraint.getConstraint())) {
+					constraint.setName((String) e.getNewValue());
+				} else if (prop.equals("constraint")
+						&& constraint.getName().equals(sourceConstraint)
+						&& constraint.getConstraint().equals((String) e.getOldValue())) {
+					constraint.setConstraint((String) e.getNewValue());
+				}
+			}
+		} else if (e.getSource() instanceof SQLEnumeration) {
+			SQLEnumeration sourceEnumeration = (SQLEnumeration) e.getSource();
+			SPObject parent = sourceEnumeration.getParent();
+			if (!(parent instanceof SQLTypePhysicalProperties)) {
+				throw new IllegalStateException("SQLEnumeration " + 
+						sourceEnumeration.getPhysicalName() + 
+						" must have a SQLTypePhysicalProperties parent.");
+			}
+			SQLTypePhysicalProperties sourceProperties = (SQLTypePhysicalProperties) parent;
+			
+			parent = sourceProperties.getParent();
+			if (!(parent instanceof UserDefinedSQLType)) {
+				throw new IllegalStateException("SQLTypePhysicalProperties " + 
+						sourceProperties.getPhysicalName() + 
+						" must have a UserDefinedSQLType parent.");
+			}
+			UserDefinedSQLType sourceType = (UserDefinedSQLType) parent;
+			
+			parent = sourceType.getParent();
+			if (!(parent instanceof SQLColumn)) {
+				throw new IllegalStateException("UserDefinedSQLType " + 
+						sourceType.getPhysicalName() + " must have a SQLColumn parent.");
+			}
+			SQLColumn sourceColumn = (SQLColumn) parent;
+			ColumnMapping m = relationship.getMappingByPkCol(sourceColumn);
+
+			if (m == null) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Ignoring change for SQLEnumeration "+sourceEnumeration.getName());
+				}
+				return;
+			}
+
+			final SQLColumn fkCol = m.getFkColumn();
+			if (fkCol == null) throw new NullPointerException("Missing fk column in mapping");
+
+			final String fkPlatform = fkCol.getPlatform();
+			final SQLTypePhysicalProperties fkProperties = 
+				fkCol.getUserDefinedSQLType().getPhysicalProperties(fkPlatform);
+			for (SQLEnumeration constraint : fkProperties.getChildren(SQLEnumeration.class)) {
+				if (prop.equals("name") 
+						&& constraint.getName().equals((String) e.getOldValue())) {
+					constraint.setName((String) e.getNewValue());
 				}
 			}
 		}

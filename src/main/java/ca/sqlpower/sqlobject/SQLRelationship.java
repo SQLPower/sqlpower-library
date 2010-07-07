@@ -849,52 +849,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		return null;
 	}
 
-	/**
-	 * Gets the {@link List} of {@link ColumnMapping}s within this
-	 * {@link SQLRelationship} that have primary key columns such that their
-	 * {@link UserDefinedSQLType} matches the one passed in.
-	 * 
-	 * @param type
-	 *            The {@link UserDefinedSQLType} to find.
-	 * @return The {@link List} of matching {@link ColumnMapping}s.
-	 */
-	@NonProperty
-	public List<ColumnMapping> getMappingsByUserDefinedSQLType(
-			final UserDefinedSQLType type) {
-		List<ColumnMapping> match = new ArrayList<ColumnMapping>();
-		for (ColumnMapping m : mappings) {
-			SQLColumn pkCol = m.getPkColumn();
-			if (pkCol != null && pkCol.getUserDefinedSQLType() == type) {
-				match.add(m);
-			}
-		}
-		return Collections.unmodifiableList(match);
-	}
-
-	/**
-	 * Gets the {@link List} of {@link ColumnMapping}s within this
-	 * {@link SQLRelationship} that have primary key columns such that its
-	 * {@link UserDefinedSQLType} has a {@link SQLTypePhysicalProperties} for a
-	 * platform that is equal to the one passed in.
-	 * 
-	 * @param properties The {@link SQLTypePhysicalProperties} to find.
-	 * @return The {@link List} of matching {@link ColumnMapping}s.
-	 */
-	@NonProperty
-	public List<ColumnMapping> getMappingsBySQLTypePhysicalProperties(
-			final SQLTypePhysicalProperties properties) {
-		List<ColumnMapping> match = new ArrayList<ColumnMapping>();
-		for (ColumnMapping m : mappings) {
-			SQLColumn pkCol = m.getPkColumn();
-			if (pkCol != null && 
-					pkCol.getUserDefinedSQLType().getPhysicalProperties(
-							pkCol.getPlatform()) == properties) {
-				match.add(m);
-			}
-		}
-		return Collections.unmodifiableList(match);
-	}
-	
 	public void reassignMappingsByPkCol(SQLColumn pkCol) {
 		for (ColumnMapping m : mappings) {
 			if (m.pkColumn != null && m.pkColumn != pkCol && m.pkColumn.getUUID().equals(pkCol.getUUID())) {
