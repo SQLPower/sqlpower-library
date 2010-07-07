@@ -142,7 +142,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         table.setName(newName);
         
         assertNotNull("Table has null physical name", table.getPhysicalName());
-        assertEquals("The physical name is not empty", "", table.getPhysicalName().trim());
+        assertEquals("The physical name does not match the logical", newName, table.getPhysicalName().trim());
         
         table.setPhysicalName(newPhysicalName);
         assertEquals(newPhysicalName+"_pk",table.getPrimaryKeyName());

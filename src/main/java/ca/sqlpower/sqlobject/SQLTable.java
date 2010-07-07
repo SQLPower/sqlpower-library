@@ -1466,8 +1466,17 @@ public class SQLTable extends SQLObject {
 	@Mutator
 	@Override
 	public void setName(String name) {
-	    updatePhysicalNameToMatch(getName(), name);
-		super.setName(name);
+	    try {
+	        begin("Setting name and possibly physical or primary key name.");
+	        if (isMagicEnabled()) {
+	            updatePhysicalNameToMatch(getName(), name);
+	        }
+	        super.setName(name);
+	        commit();
+	    } catch (Throwable t) {
+	        rollback(t.getMessage());
+	        throw new RuntimeException(t);
+	    }
 	}
 	
 	/**
