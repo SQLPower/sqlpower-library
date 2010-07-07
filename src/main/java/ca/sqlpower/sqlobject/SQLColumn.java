@@ -1320,29 +1320,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 		return variableResolver;
 	}
 
-	@NonBound
-	public List<SQLCheckConstraint> getCheckConstraints(String platform) {
-		return Collections.unmodifiableList(
-				userDefinedSQLType.getCheckConstraints(platform));
-	}
-
-	public void addCheckConstraint(String platform,
-			SQLCheckConstraint checkConstraint) {
-		userDefinedSQLType.addCheckConstraint(platform, checkConstraint);
-	}
-
-	public boolean removeCheckConstraint(String platform,
-			SQLCheckConstraint checkConstraint) {
-		return userDefinedSQLType.removeCheckConstraint(platform, checkConstraint);
-	}
-
 	public void addCheckConstraint(SQLCheckConstraint checkConstraint, int index) {
-		userDefinedSQLType.addCheckConstraint(checkConstraint, index);
-	}
-
-	public void addCheckConstraint(String platform,
-			SQLCheckConstraint checkConstraint, int index) {
-		userDefinedSQLType.addCheckConstraint(platform, checkConstraint, index);
+		userDefinedSQLType.addCheckConstraint(getPlatform(), checkConstraint, index);
 	}
 
 }

@@ -25,9 +25,11 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.Transient;
 
 /**
  * This {@link SQLObject} represents an enumerated value that can be applied to
@@ -86,7 +88,7 @@ public class SQLEnumeration extends SQLObject {
 		// No operation.
 	}
 
-	@Override
+	@Override @Transient @Accessor
 	public String getShortDisplayName() {
 		return getName();
 	}
@@ -109,10 +111,28 @@ public class SQLEnumeration extends SQLObject {
 	/**
 	 * The name of an enumeration should never be null.
 	 */
-	@Override
-	@Mutator
+	@Override @Mutator
 	public void setName(@Nonnull String name) {
 		super.setName(name);
+	}
+
+	/**
+	 * This method has been overridden to return a {@link SQLObject} parent.
+	 */
+	@Override @Accessor
+	public SQLObject getParent() {
+		return (SQLObject) super.getParent();
+	}
+
+	/**
+	 * Because we constrained the return type on getParent there needs to be a
+	 * setter that has the same constraint otherwise the reflection in the undo
+	 * events will not find a setter to match the getter and won't be able to
+	 * undo parent property changes.
+	 */
+	@Mutator
+	public void setParent(SQLObject parent) {
+		super.setParent(parent);
 	}
 
 }

@@ -32,7 +32,7 @@ import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 /**
  * Provides a set of physical properties for a SQL column type.
  */
-public interface SQLTypePhysicalPropertiesProvider extends SPObject, SQLCheckConstraintContainer {
+public interface SQLTypePhysicalPropertiesProvider extends SPObject {
 	
 	public static final String GENERIC_PLATFORM = "GENERIC";
 	
@@ -293,6 +293,39 @@ public interface SQLTypePhysicalPropertiesProvider extends SPObject, SQLCheckCon
 	 *            The new default value as a String
 	 */
 	public void setDefaultValue(String platform, String defaultValue);
+
+	/**
+	 * Gets the check constraints for this type. The check constraint is only
+	 * valid if {@link #getConstraintType(String)} returns
+	 * {@link SQLTypeConstraint#CHECK}
+	 * 
+	 * @return The {@link List} of {@link SQLCheckConstraint}s.
+	 */
+	public List<SQLCheckConstraint> getCheckConstraints(String platform);
+
+	/**
+	 * Adds a {@link SQLCheckConstraint} that is enforced on any
+	 * {@link SQLObject} that uses this type.
+	 * 
+	 * @param platform
+	 *            The platform to enforce the constraint on.
+	 * @param checkConstraint
+	 *            The {@link SQLCheckConstraint} to enforce.
+	 */
+	public void addCheckConstraint(String platform, SQLCheckConstraint checkConstraint);
+
+	/**
+	 * Removes a {@link SQLCheckConstraint} from the child {@link List} of check
+	 * constraints that is being enforced on a {@link SQLObject} that uses this
+	 * type.
+	 * 
+	 * @param platform
+	 *            The platform to remove the enforced constraint from.
+	 * @param checkConstraint
+	 *            The {@link SQLCheckConstraint} to remove.
+	 * @return true if the removal was successful.
+	 */
+	public boolean removeCheckConstraint(String platform, SQLCheckConstraint checkConstraint);
 
 	/**
 	 * Removes a {@link SQLEnumeration} from the child {@link List} of

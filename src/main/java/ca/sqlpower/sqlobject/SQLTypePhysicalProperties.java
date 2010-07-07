@@ -496,39 +496,10 @@ public class SQLTypePhysicalProperties extends SQLObject implements SQLCheckCons
 		return equal;
     }
 
+    @NonProperty
 	public List<SQLCheckConstraint> getCheckConstraints() {
 		return getChildrenWithoutPopulating(SQLCheckConstraint.class);
 	}
 
-	public List<SQLCheckConstraint> getCheckConstraints(String platform) {
-		if (getPlatform().equals(platform)) {
-			return getCheckConstraints();
-		} else {
-			return Collections.emptyList();
-		}
-	}
-
-	public void addCheckConstraint(String platform,
-			SQLCheckConstraint checkConstraint) {
-		if (getPlatform().equals(platform)) {
-			addCheckConstraint(checkConstraint);
-		}
-	}
-
-	public boolean removeCheckConstraint(String platform,
-			SQLCheckConstraint checkConstraint) {
-		if (getPlatform().equals(platform)) {
-			return removeCheckConstraint(checkConstraint);
-		} else {
-			return false;
-		}
-	}
-
-	public void addCheckConstraint(String platform,
-			SQLCheckConstraint checkConstraint, int index) {
-		if (getPlatform().equals(platform)) {
-			addCheckConstraint(checkConstraint, index);
-		}
-	}
 }
 

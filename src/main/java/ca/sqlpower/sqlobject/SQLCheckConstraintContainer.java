@@ -36,33 +36,11 @@ public interface SQLCheckConstraintContainer extends SPObject {
 	 * {@link SQLCheckConstraint}s that are contained by the lowest
 	 * grandchildren in the hierarchy appear first, {@link SQLCheckConstraint}s
 	 * that are contained by direct children of this object appear last.
-	 * Depending on the implementing class, this method might not make sense so
-	 * an empty list should be returned. In this case, a call to
-	 * {@link #getCheckConstraints()} would be better instead.
 	 */
 	List<SQLCheckConstraint> getCheckConstraints();
 
 	/**
-	 * Returns the {@link List} of {@link SQLCheckConstraint}s this object
-	 * contains under a specific database platform. The order of this
-	 * {@link List} is defined as: {@link SQLCheckConstraint}s that are
-	 * contained by the lowest grandchildren in the hierarchy appear first,
-	 * {@link SQLCheckConstraint}s that are contained by direct children of this
-	 * object appear last. Depending on the implementing class, this method
-	 * might not make sense so an empty list should be returned. In this case, a
-	 * call to {@link #getCheckConstraints()} would be better instead.
-	 * 
-	 * @param platform
-	 *            The name of the database platform to get the
-	 *            {@link SQLCheckConstraint} s from.
-	 */
-	List<SQLCheckConstraint> getCheckConstraints(String platform);
-
-	/**
-	 * Adds a {@link SQLCheckConstraint} to this container. Depending on the
-	 * implementing class, this method might either add the constraint to its
-	 * {@link List} of children, add the constraint to one of its subcontainers,
-	 * or have no effect (if it does not make sense to implement it).
+	 * Adds a {@link SQLCheckConstraint} to this container.
 	 * 
 	 * @param checkConstraint
 	 *            The {@link SQLCheckConstraint} to add.
@@ -71,10 +49,6 @@ public interface SQLCheckConstraintContainer extends SPObject {
 
 	/**
 	 * Adds a {@link SQLCheckConstraint} to this container to a specific index.
-	 * Depending on the implementing class, this method might either add the
-	 * constraint to its {@link List} of children, add the constraint to one of
-	 * its subcontainers, or have no effect (if it does not make sense to
-	 * implement it).
 	 * 
 	 * @param checkConstraint
 	 *            The {@link SQLCheckConstraint} to add.
@@ -85,62 +59,12 @@ public interface SQLCheckConstraintContainer extends SPObject {
 	void addCheckConstraint(SQLCheckConstraint checkConstraint, int index);
 
 	/**
-	 * Adds a {@link SQLCheckConstraint} to this container under a specific
-	 * database platform. Depending on the implementing class, this method might
-	 * either add the constraint to its {@link List} of children, add the
-	 * constraint to one of its subcontainers, or have no effect (if it does not
-	 * make sense to implement it.
-	 * 
-	 * @param platform
-	 *            The platform name to add the constraint under.
-	 * @param checkConstraint
-	 *            The {@link SQLCheckConstraint} to add.
-	 */
-	void addCheckConstraint(String platform, SQLCheckConstraint checkConstraint);
-
-	/**
-	 * Adds a {@link SQLCheckConstraint} to this container under a specific
-	 * database platform to a specific index. Depending on the implementing
-	 * class, this method might either add the constraint to its {@link List} of
-	 * children, add the constraint to one of its subcontainers, or have no
-	 * effect (if it does not make sense to implement it.
-	 * 
-	 * @param platform
-	 *            The platform name to add the constraint under.
-	 * @param checkConstraint
-	 *            The {@link SQLCheckConstraint} to add.
-	 * @param index
-	 *            The index in a container's {@link List} of children to add the
-	 *            constraint to.
-	 */
-	void addCheckConstraint(String platform, SQLCheckConstraint checkConstraint, int index);
-
-	/**
-	 * Removes a {@link SQLCheckConstraint} from this container. Depending on
-	 * the implementing class, this method might either remove the constraint
-	 * from its {@link List} of children, remove the constraint from one of its
-	 * subcontainers, or have no effect (if it does not make sense to implement
-	 * it).
+	 * Removes a {@link SQLCheckConstraint} from this container.
 	 * 
 	 * @param checkConstraint
 	 *            The {@link SQLCheckConstraint} to remove.
 	 * @return true if the removal was successful.
 	 */
 	boolean removeCheckConstraint(SQLCheckConstraint checkConstraint);
-
-	/**
-	 * Removes a {@link SQLCheckConstraint} from this container under a specific
-	 * platform. Depending on the implementing class, this method might either
-	 * remove the constraint from its {@link List} of children, remove the
-	 * constraint from one of its subcontainers, or have no effect (if it does
-	 * not make sense to implement it).
-	 * 
-	 * @param platform
-	 *            The platform name to remove the constraint from.
-	 * @param checkConstraint
-	 *            The {@link SQLCheckConstraint} to remove.
-	 * @return true if the removal was successful.
-	 */
-	boolean removeCheckConstraint(String platform, SQLCheckConstraint checkConstraint);
 	
 }

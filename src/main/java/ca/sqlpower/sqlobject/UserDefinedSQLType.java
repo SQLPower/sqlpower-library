@@ -1001,33 +1001,5 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	public void removeEnumeration(String platform, SQLEnumeration enumeration) {
 		getOrCreatePhysicalProperties(platform).removeEnumeration(enumeration);
 	}
-
-	/**
-	 * This method does not make sense here because {@link SQLCheckConstraint}s
-	 * in a {@link UserDefinedSQLType} should be platform specific. An empty
-	 * list is returned.
-	 * 
-	 * @see #getCheckConstraints(String)
-	 */
-	@NonProperty
-	public List<SQLCheckConstraint> getCheckConstraints() {
-		return Collections.emptyList();
-	}
-
-	public void addCheckConstraint(SQLCheckConstraint checkConstraint) {
-		// No operation.
-		// Adding check constraints must be platform specific.
-	}
-
-	public boolean removeCheckConstraint(SQLCheckConstraint checkConstraint) {
-		// No operation.
-		// Removing check constraints must be platform specific.
-		return false;
-	}
-
-	public void addCheckConstraint(SQLCheckConstraint checkConstraint, int index) {
-		// No operation.
-		// Adding check constraints must be platform specific.
-	}
 	
 }

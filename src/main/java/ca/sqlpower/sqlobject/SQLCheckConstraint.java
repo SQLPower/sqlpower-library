@@ -29,6 +29,7 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.Transient;
 
 /**
  * This class represents a single SQL check constraint. This constraint can be
@@ -65,7 +66,7 @@ public class SQLCheckConstraint extends SQLObject {
 	@Constructor
 	public SQLCheckConstraint(
 			@ConstructorParameter(propertyName="name") @Nonnull String name, 
-			@ConstructorParameter(propertyName="constraint") String constraint) {
+			@ConstructorParameter(propertyName="constraint") @Nonnull String constraint) {
 		setName(name);
 		this.constraint = constraint;
 	}
@@ -102,7 +103,7 @@ public class SQLCheckConstraint extends SQLObject {
 		// No operation.
 	}
 
-	@Override
+	@Override @Transient @Accessor
 	public String getShortDisplayName() {
 		return getName();
 	}
@@ -138,7 +139,9 @@ public class SQLCheckConstraint extends SQLObject {
 	 */
 	@Mutator
 	public void setConstraint(String constraint) {
+		String oldConstraint = this.constraint;
 		this.constraint = constraint;
+		firePropertyChange("constraint", oldConstraint, constraint);
 	}
 
 	/**
@@ -146,8 +149,7 @@ public class SQLCheckConstraint extends SQLObject {
 	 * identify them among a collection of constraints on a shared parent
 	 * {@link SQLObject}.
 	 */
-	@Override
-	@Mutator
+	@Override @Mutator
 	public void setName(@Nonnull String name) {
 		super.setName(name);
 	}
@@ -158,9 +160,20 @@ public class SQLCheckConstraint extends SQLObject {
 	 * {@link SQLColumn}, or {@link SQLTypePhysicalProperties}. Applying check
 	 * constraints on any other level does not make sense.
 	 */
-	@Override
+	@Override @Accessor
 	public SQLObject getParent() {
 		return (SQLObject) super.getParent();
+	}
+
+	/**
+	 * Because we constrained the return type on getParent there needs to be a
+	 * setter that has the same constraint otherwise the reflection in the undo
+	 * events will not find a setter to match the getter and won't be able to
+	 * undo parent property changes.
+	 */
+	@Mutator
+	public void setParent(SQLObject parent) {
+		super.setParent(parent);
 	}
 
 }
