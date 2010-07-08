@@ -43,6 +43,7 @@ import ca.sqlpower.sql.PlDotIni;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLCatalog;
 import ca.sqlpower.sqlobject.SQLCheckConstraint;
+import ca.sqlpower.sqlobject.SQLCheckConstraintContainer;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLEnumeration;
@@ -253,11 +254,21 @@ public class GenericNewValueMaker implements NewValueMaker {
         } else if (valueType == SQLObject.class) {
         	newVal = makeNewValue(SQLColumn.class, null, "SQLObject of some kind");
         } else if (valueType == SQLCheckConstraint.class) {
-        	newVal = new SQLCheckConstraint(
+        	SQLTypePhysicalProperties properties =
+        		(SQLTypePhysicalProperties) makeNewValue(SQLTypePhysicalProperties.class, null, "SQLTypePhysicalProperties as parent of SQLCheckConstraint");
+        	SQLCheckConstraint constraint = new SQLCheckConstraint(
         			(String) makeNewValue(String.class, null, "SQLCheckConstraint - name"),
         			(String) makeNewValue(String.class, null, "SQLCheckConstraint - constraint"));
+        	properties.addCheckConstraint(constraint);
+        	newVal = constraint;
         } else if (valueType == SQLEnumeration.class) {
-        	newVal = new SQLEnumeration((String) makeNewValue(String.class, null, "SQLEnumeration - name"));
+        	SQLTypePhysicalProperties properties =
+        		(SQLTypePhysicalProperties) makeNewValue(SQLTypePhysicalProperties.class, null, "SQLTypePhysicalProperties as parent of SQLEnumeration");
+        	SQLEnumeration enumeration = new SQLEnumeration((String) makeNewValue(String.class, null, "SQLEnumeration - name"));
+        	properties.addEnumeration(enumeration);
+        	newVal = enumeration;
+        } else if (valueType == SQLCheckConstraintContainer.class) {
+        	newVal = makeNewValue(SQLTypePhysicalProperties.class, oldVal, propName);
         } else if (valueType == Throwable.class) {
         	newVal = new SQLObjectException("Test Exception");
         } else if (valueType == UserPrompter.class) {
@@ -369,7 +380,16 @@ public class GenericNewValueMaker implements NewValueMaker {
         } else if (valueType == SQLTypePhysicalProperties.class) {
         	// XXX Uses a random string so that each platform will be different. The interaction
         	// of identical platforms is tested for specifically.
-        	newVal = new SQLTypePhysicalProperties(UUID.randomUUID().toString());
+        	SQLTypePhysicalProperties properties = new SQLTypePhysicalProperties(UUID.randomUUID().toString());
+        	UserDefinedSQLType udt = 
+        		(UserDefinedSQLType) makeNewValue(UserDefinedSQLType.class, null, "UserDefinedSQLType as parent of SQLTypePhysicalProperties");
+        	try {
+				udt.addChild(properties);
+			} catch (SQLObjectException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			newVal = properties;
         } else if (valueType == SQLTypeConstraint.class) {
         	if (oldVal != SQLTypeConstraint.NONE) {
         		newVal = SQLTypeConstraint.NONE;

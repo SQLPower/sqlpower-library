@@ -29,6 +29,7 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
 
 /**
@@ -75,10 +76,12 @@ public class SQLEnumeration extends SQLObject {
 		// No operation.
 	}
 
+	@NonProperty
 	public List<? extends SPObject> getDependencies() {
 		return Collections.emptyList();
 	}
 
+	@NonProperty
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		return allowedChildTypes;
 	}
@@ -98,7 +101,7 @@ public class SQLEnumeration extends SQLObject {
 		return false;
 	}
 
-	@Override
+	@Override @NonProperty
 	public List<? extends SQLObject> getChildrenWithoutPopulating() {
 		return Collections.emptyList();
 	}
@@ -115,23 +118,18 @@ public class SQLEnumeration extends SQLObject {
 	public void setName(@Nonnull String name) {
 		super.setName(name);
 	}
-
-	/**
-	 * This method has been overridden to return a {@link SQLObject} parent.
-	 */
+	
 	@Override @Accessor
-	public SQLObject getParent() {
-		return (SQLObject) super.getParent();
+	public SQLTypePhysicalProperties getParent() {
+		return (SQLTypePhysicalProperties) super.getParent();
 	}
-
-	/**
-	 * Because we constrained the return type on getParent there needs to be a
-	 * setter that has the same constraint otherwise the reflection in the undo
-	 * events will not find a setter to match the getter and won't be able to
-	 * undo parent property changes.
-	 */
-	@Mutator
-	public void setParent(SQLObject parent) {
+	
+	@Override @Mutator
+	public void setParent(SPObject parent) {
+        if (parent != null && !(parent instanceof SQLTypePhysicalProperties)) {
+            throw new IllegalArgumentException("The parent of a " + SQLEnumeration.class.getSimpleName() + 
+            		" must be a " + SQLTypePhysicalProperties.class.getSimpleName() + ".");
+        }
 		super.setParent(parent);
 	}
 

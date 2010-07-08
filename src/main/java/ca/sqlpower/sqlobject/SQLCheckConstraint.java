@@ -29,6 +29,7 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
 
 /**
@@ -90,10 +91,12 @@ public class SQLCheckConstraint extends SQLObject {
 		// No operation.
 	}
 
+	@NonProperty
 	public List<? extends SPObject> getDependencies() {
 		return Collections.emptyList();
 	}
 
+	@NonProperty
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		return allowedChildTypes;
 	}
@@ -113,7 +116,7 @@ public class SQLCheckConstraint extends SQLObject {
 		return false;
 	}
 
-	@Override
+	@Override @NonProperty
 	public List<? extends SQLObject> getChildrenWithoutPopulating() {
 		return Collections.emptyList();
 	}
@@ -153,26 +156,20 @@ public class SQLCheckConstraint extends SQLObject {
 	public void setName(@Nonnull String name) {
 		super.setName(name);
 	}
-
-	/**
-	 * Overriding this method to restrict parent types to be {@link SQLObject}.
-	 * Technically, this should only either be {@link SQLTable},
-	 * {@link SQLColumn}, or {@link SQLTypePhysicalProperties}. Applying check
-	 * constraints on any other level does not make sense.
-	 */
+	
 	@Override @Accessor
-	public SQLObject getParent() {
-		return (SQLObject) super.getParent();
+	public SQLCheckConstraintContainer getParent() {
+		return (SQLCheckConstraintContainer) super.getParent();
 	}
-
-	/**
-	 * Because we constrained the return type on getParent there needs to be a
-	 * setter that has the same constraint otherwise the reflection in the undo
-	 * events will not find a setter to match the getter and won't be able to
-	 * undo parent property changes.
-	 */
-	@Mutator
-	public void setParent(SQLObject parent) {
+	
+	@Override @Mutator
+	public void setParent(SPObject parent) {
+        if (parent != null && 
+        		!SQLCheckConstraintContainer.class.isAssignableFrom(parent.getClass())) {
+            throw new IllegalArgumentException("The parent of a " + 
+            		SQLCheckConstraint.class.getSimpleName() + " must be a " + 
+            		SQLCheckConstraintContainer.class.getSimpleName() + ".");
+        }
 		super.setParent(parent);
 	}
 

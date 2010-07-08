@@ -413,6 +413,10 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
             	} else {
             		newVal = SQLTypeConstraint.CHECK;
             	}
+            } else if (property.getPropertyType() == SQLCheckConstraint.class) {
+            	newVal = new SQLCheckConstraint("check constraint name", "check constraint condition");
+            } else if (property.getPropertyType() == SQLEnumeration.class) {
+            	newVal = new SQLEnumeration("some enumeration");
             } else if (property.getPropertyType() == String[].class) {
             	newVal = new String[3];
             } else if (property.getPropertyType() == PropertyType.class) {
