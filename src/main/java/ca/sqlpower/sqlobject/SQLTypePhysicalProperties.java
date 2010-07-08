@@ -27,6 +27,7 @@ import java.util.List;
 import javax.sql.RowSetMetaData;
 
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.SPObjectNameComparator;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
@@ -136,12 +137,130 @@ public class SQLTypePhysicalProperties extends SQLObject implements SQLCheckCons
 	public static final List<Class<? extends SPObject>> allowedChildTypes = 
 		Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
 				Arrays.asList(SQLCheckConstraint.class, SQLEnumeration.class)));
+	
+	static final void copyProperties(
+			final SQLTypePhysicalProperties target, 
+			final SQLTypePhysicalProperties source) {
+    	if (!areEqual(target, source)) {
+    		target.begin("Matching properties");
+    		target.setName(source.getName());
+    		target.setPhysicalName(source.getPhysicalName());
+    		target.setPrecision(source.getPrecision());
+    		target.setPrecisionType(source.getPrecisionType());
+    		target.setScale(source.getScale());
+    		target.setScaleType(source.getScaleType());
+    		target.setDefaultValue(source.getDefaultValue());
+    		target.setConstraintType(source.getConstraintType());
+    		
+    		final List<SQLCheckConstraint> sourceCheckConstraints = 
+    			new ArrayList<SQLCheckConstraint>(source.getCheckConstraints());
+    		final List<SQLCheckConstraint> targetCheckConstraints = 
+    			new ArrayList<SQLCheckConstraint>(target.getCheckConstraints());
+    		final List<SQLEnumeration> sourceEnumerations = 
+    			new ArrayList<SQLEnumeration>(source.getChildrenWithoutPopulating(SQLEnumeration.class));
+    		final List<SQLEnumeration> targetEnumerations = 
+    			new ArrayList<SQLEnumeration>(target.getChildrenWithoutPopulating(SQLEnumeration.class));
+
+    		final SPObjectNameComparator nameComparator = new SPObjectNameComparator();
+    		Collections.sort(sourceCheckConstraints, nameComparator);
+    		Collections.sort(targetCheckConstraints, nameComparator);
+    		Collections.sort(sourceEnumerations, nameComparator);
+    		Collections.sort(targetEnumerations, nameComparator);
+    		
+    		for (int i = 0, j = 0; i < sourceCheckConstraints.size() || j < targetCheckConstraints.size();) {
+    			int compare = 0;
+    			
+    			SQLCheckConstraint sourceConstraint;
+    			if (i < sourceCheckConstraints.size()) {
+    				sourceConstraint = sourceCheckConstraints.get(i);
+    			} else {
+    				sourceConstraint = null;
+    				compare = 1;
+    			}
+    			
+    			SQLCheckConstraint targetConstraint;
+    			if (j < targetCheckConstraints.size()) {
+    				targetConstraint = targetCheckConstraints.get(i);
+    			} else {
+    				targetConstraint = null;
+    				compare = -1;
+    			}
+    			
+    			if (compare == 0) {
+    				compare = nameComparator.compare(sourceConstraint, targetConstraint);
+    			}
+    			
+    			if (compare < 0) {
+    				target.addCheckConstraint(new SQLCheckConstraint(sourceConstraint));
+    				i++;
+    			} else if (compare > 0) {
+    				target.removeCheckConstraint(targetConstraint);
+    				j++;
+    			} else {
+    				if (!sourceConstraint.getConstraint().equals(targetConstraint.getConstraint())) {
+    					targetConstraint.setConstraint(sourceConstraint.getConstraint());
+    				}
+    				i++;
+    				j++;
+    			}
+    		}
+    		
+    		for (int i = 0, j = 0; i < sourceEnumerations.size() || j < targetEnumerations.size();) {
+    			int compare = 0;
+    			
+    			SQLEnumeration sourceEnumeration;
+    			if (i < sourceEnumerations.size()) {
+    				sourceEnumeration = sourceEnumerations.get(i);
+    			} else {
+    				sourceEnumeration = null;
+    				compare = 1;
+    			}
+    			
+    			SQLEnumeration targetEnumeration;
+    			if (j < targetEnumerations.size()) {
+    				targetEnumeration = targetEnumerations.get(i);
+    			} else {
+    				targetEnumeration = null;
+    				compare = -1;
+    			}
+    			
+    			if (compare == 0) {
+    				compare = nameComparator.compare(sourceEnumeration, targetEnumeration);
+    			}
+    			
+    			if (compare < 0) {
+    				target.addEnumeration(new SQLEnumeration(sourceEnumeration));
+    				i++;
+    			} else if (compare > 0) {
+    				target.removeEnumeration(targetEnumeration);
+    				j++;
+    			} else {
+    				i++;
+    				j++;
+    			}
+    		}
+    		
+    		target.commit();
+    	}
+	}
 
     @Constructor
     public SQLTypePhysicalProperties(@ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="platform") String platformName) {
-    	this.platform = platformName;
+    	platform = platformName;
     	setName("SQLTypePhysicalProperties for " + platform);
     }
+
+	/**
+	 * Copy constructor.
+	 * 
+	 * @param properties
+	 *            The {@link SQLTypePhysicalProperties} to copy to this
+	 *            instance.
+	 */
+    public SQLTypePhysicalProperties(SQLTypePhysicalProperties properties) {
+    	platform = properties.getPlatform();
+		updateToMatch(properties);
+	}
     
     @Override
     protected void addChildImpl(SPObject child, int index) {
@@ -369,88 +488,18 @@ public class SQLTypePhysicalProperties extends SQLObject implements SQLCheckCons
     @Override
     public void updateToMatch(SQLObject matchMe) {
     	if (!(matchMe instanceof SQLTypePhysicalProperties)) {
-    		throw new ClassCastException();
+    		throw new ClassCastException("Only " + 
+    				SQLTypePhysicalProperties.class.getSimpleName() + 
+    				" can be copied to " + 
+    				SQLTypePhysicalProperties.class.getSimpleName() + ".");
     	}
-    	
-    	SQLTypePhysicalProperties propsToMatch = (SQLTypePhysicalProperties) matchMe;
-
-    	if (!areEqual(this, propsToMatch)) {
-    		begin("Matching properties");
-    		setName(propsToMatch.getName());
-    		setPhysicalName(propsToMatch.getPhysicalName());
-    		setPrecision(propsToMatch.getPrecision());
-    		setPrecisionType(propsToMatch.getPrecisionType());
-    		setScale(propsToMatch.getScale());
-    		setScaleType(propsToMatch.getScaleType());
-    		setDefaultValue(propsToMatch.getDefaultValue());
-    		setConstraintType(propsToMatch.getConstraintType());
-
-    		List<SQLCheckConstraint> newConstraints = propsToMatch.getChildrenWithoutPopulating(SQLCheckConstraint.class);
-    		for (int i = checkConstraints.size() - 1; i >= 0; i--) {
-    			SQLCheckConstraint constraint = checkConstraints.get(i);
-    			
-    			boolean found = false;
-    			for (SQLCheckConstraint newConstraint : newConstraints) {
-    				if (SQLPowerUtils.areEqual(newConstraint.getName(), constraint.getName()) &&
-    						SQLPowerUtils.areEqual(newConstraint.getConstraint(), constraint.getConstraint())) {
-    					found = true;
-    					break;
-    				}
-    			}
-    			if (!found) {
-    				removeCheckConstraint(constraint);
-    			}
-    		}
-    		for (SQLCheckConstraint newConstraint : newConstraints) {
-    			boolean found = false;
-    			for (SQLCheckConstraint constraint : checkConstraints) {
-    				if (SQLPowerUtils.areEqual(newConstraint.getName(), constraint.getName()) &&
-    						SQLPowerUtils.areEqual(newConstraint.getConstraint(), constraint.getConstraint())) {
-    					found = true;
-    					break;
-    				}
-    			}
-    			if (!found) {
-    				addCheckConstraint(new SQLCheckConstraint(newConstraint));
-    			}
-    		}
-    		
-    		List<SQLEnumeration> newEnumerations = propsToMatch.getChildrenWithoutPopulating(SQLEnumeration.class);
-    		for (int i = enumerations.size() - 1; i >= 0; i--) {
-    			SQLEnumeration enumeration = enumerations.get(i);
-    			
-    			boolean found = false;
-    			for (SQLEnumeration newEnum : newEnumerations) {
-    				if (SQLPowerUtils.areEqual(enumeration.getName(), newEnum.getName())) {
-    					found = true;
-    					break;
-    				}
-    			}
-    			if (!found) {
-    				removeEnumeration(enumeration);
-    			}
-    		}
-    		for (SQLEnumeration newEnum : newEnumerations) {
-    			boolean found = false;
-    			for (SQLEnumeration enumeration : enumerations) {
-    				if (SQLPowerUtils.areEqual(enumeration.getName(), newEnum.getName())) {
-    					found = true;
-    					break;
-    				}
-    			}
-    			if (!found) {
-    				addEnumeration(new SQLEnumeration(newEnum));
-    			}
-    		}
-
-    		commit();
-    	}
+    	copyProperties(this, (SQLTypePhysicalProperties) matchMe);
     }
 
 	/**
 	 * Compares two {@link SQLTypePhysicalProperties} objects to see if they are
 	 * equal in all properties (except UUID) and children (
-	 * {@link SQLCheckConstraint}s).
+	 * {@link SQLCheckConstraint}s and {@link SQLEnumeration}s).
 	 * 
 	 * @param prop1
 	 *            The first of two {@link SQLTypePhysicalProperties} objects to
@@ -471,28 +520,45 @@ public class SQLTypePhysicalProperties extends SQLObject implements SQLCheckCons
 				&& SQLPowerUtils.areEqual(prop1.getDefaultValue(), prop2.getDefaultValue())
 				&& SQLPowerUtils.areEqual(prop1.getConstraintType(), prop2.getConstraintType());
 		
-		if (equal) {
-			List<SQLCheckConstraint> checkConstraints1 = prop1.getChildrenWithoutPopulating(SQLCheckConstraint.class);
-			List<SQLCheckConstraint> checkConstraints2 = prop2.getChildrenWithoutPopulating(SQLCheckConstraint.class);
-			List<SQLEnumeration> enumerations1 = prop1.getChildrenWithoutPopulating(SQLEnumeration.class);
-			List<SQLEnumeration> enumerations2 = prop2.getChildrenWithoutPopulating(SQLEnumeration.class);
-			
-			equal &= checkConstraints1.size() == checkConstraints2.size();
-			equal &= enumerations1.size() == enumerations2.size();
-
-			for (int i = 0; i < checkConstraints1.size() && equal; i++) {
-				SQLCheckConstraint constraint1 = checkConstraints1.get(i);
-				SQLCheckConstraint constraint2 = checkConstraints2.get(i);
-				equal &= SQLPowerUtils.areEqual(constraint1.getName(), constraint2.getName());
-				equal &= SQLPowerUtils.areEqual(constraint1.getConstraint(), constraint2.getConstraint());
-			}
-			
-			for (int i = 0; i < enumerations1.size() && equal; i++) {
-				SQLEnumeration enum1 = enumerations1.get(i);
-				SQLEnumeration enum2 = enumerations2.get(i);
-				equal &= SQLPowerUtils.areEqual(enum1.getName(), enum2.getName());
-			}
+		equal &= prop1.getCheckConstraints().size() == prop2.getCheckConstraints().size();
+		equal &= prop1.getChildrenWithoutPopulating(SQLEnumeration.class).size() == prop2.getChildrenWithoutPopulating(SQLEnumeration.class).size();
+		
+		if (!equal) {
+			return false;
 		}
+
+		List<SQLCheckConstraint> checkConstraints1 = 
+			new ArrayList<SQLCheckConstraint>(prop1.getCheckConstraints());
+		List<SQLCheckConstraint> checkConstraints2 = 
+			new ArrayList<SQLCheckConstraint>(prop2.getCheckConstraints());
+		List<SQLEnumeration> enumerations1 = 
+			new ArrayList<SQLEnumeration>(prop1.getChildrenWithoutPopulating(SQLEnumeration.class));
+		List<SQLEnumeration> enumerations2 = 
+			new ArrayList<SQLEnumeration>(prop2.getChildrenWithoutPopulating(SQLEnumeration.class));
+
+		SPObjectNameComparator nameComparator = new SPObjectNameComparator();
+		Collections.sort(checkConstraints1, nameComparator);
+		Collections.sort(checkConstraints2, nameComparator);
+
+		for (int i = 0; i < checkConstraints1.size() && equal; i++) {
+			SQLCheckConstraint constraint1 = checkConstraints1.get(i);
+			SQLCheckConstraint constraint2 = checkConstraints2.get(i);
+			equal &= SQLPowerUtils.areEqual(constraint1.getName(), constraint2.getName());
+			equal &= SQLPowerUtils.areEqual(constraint1.getConstraint(), constraint2.getConstraint());
+		}
+
+		if (!equal) {
+			return false;
+		}
+
+		Collections.sort(enumerations1, nameComparator);
+		Collections.sort(enumerations2, nameComparator);
+		for (int i = 0; i < enumerations1.size() && equal; i++) {
+			SQLEnumeration enum1 = enumerations1.get(i);
+			SQLEnumeration enum2 = enumerations2.get(i);
+			equal &= SQLPowerUtils.areEqual(enum1.getName(), enum2.getName());
+		}
+		
 		return equal;
     }
 

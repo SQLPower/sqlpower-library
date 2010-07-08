@@ -359,24 +359,16 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	private static final void copyProperties(final SQLColumn target, final SQLColumn source) {
 		target.runInForeground(new Runnable() {
 			public void run() {
+				target.begin("Copying SQLColumn.");
  				target.setPlatform(source.getPlatform());
  				target.setName(source.getName());
  				target.setPhysicalName(source.getPhysicalName());
  				target.setRemarks(source.remarks);
  				target.setAutoIncrementSequenceName(source.autoIncrementSequenceName);
-				try {
-					UserDefinedSQLType.copyProperties(target
-							.getUserDefinedSQLType(), source
-							.getUserDefinedSQLType());
-				} catch (IllegalArgumentException e) {
-					throw new RuntimeException(
-							"An Exception occured while attempting to copy the column's Type's properties",
-							e);
-				} catch (ObjectDependentException e) {
-					throw new RuntimeException(
-							"An Exception occured while attempting to copy the column's Type's properties",
-							e);
-				}
+ 				UserDefinedSQLType.copyProperties(
+ 						target.getUserDefinedSQLType(), 
+ 						source.getUserDefinedSQLType());
+ 				target.commit();
 			}
 		});
 	}

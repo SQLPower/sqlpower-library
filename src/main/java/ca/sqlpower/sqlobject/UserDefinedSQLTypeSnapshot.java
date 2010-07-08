@@ -76,9 +76,7 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 * @throws IllegalArgumentException
 	 * @throws ObjectDependentException
 	 */
-	public UserDefinedSQLTypeSnapshot(UserDefinedSQLType original,
-			int systemRevision) throws IllegalArgumentException,
-			ObjectDependentException {
+	public UserDefinedSQLTypeSnapshot(UserDefinedSQLType original, int systemRevision) {
 		super(original.getUUID(), systemRevision);
 		setName(original.getName());
 		snapshotType = new UserDefinedSQLType();
@@ -105,8 +103,7 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 * @throws ObjectDependentException
 	 */
 	public UserDefinedSQLTypeSnapshot(UserDefinedSQLType original,
-			int systemRevision, UserDefinedSQLTypeSnapshot upstreamTypeSnapshot)
-			throws IllegalArgumentException, ObjectDependentException {
+			int systemRevision, UserDefinedSQLTypeSnapshot upstreamTypeSnapshot) {
 		this(original, systemRevision);
 		snapshotType.setUpstreamType(upstreamTypeSnapshot.getSPObject());
 	}

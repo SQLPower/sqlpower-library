@@ -752,16 +752,28 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     public static boolean areEqual(UserDefinedSQLType udt1, UserDefinedSQLType udt2) {
 		Set<String> oldPlatforms = new HashSet<String>(udt1.platforms());
 		Set<String> newPlatforms = new HashSet<String>(udt2.platforms());
-		boolean equal = SQLPowerUtils.areEqual(udt1.getName(), udt2.getName())
-				&& SQLPowerUtils.areEqual(udt1.getType(), udt2.getType())
-				&& SQLPowerUtils.areEqual(udt1.getMyNullability(), udt2.getMyNullability())
-				&& SQLPowerUtils.areEqual(udt1.getMyAutoIncrement(), udt2.getMyAutoIncrement())
-				&& SQLPowerUtils.areEqual(udt1.getDescription(), udt2.getDescription())
+		
+		String defaultPlatform = udt1.getDefaultPhysicalProperties().getPlatform();
+		boolean equal = SQLTypePhysicalProperties.areEqual(udt1.getDefaultPhysicalProperties(), udt2.getDefaultPhysicalProperties());
+		if (!equal) {
+			return false;
+		}
+		
+		oldPlatforms.remove(defaultPlatform);
+		newPlatforms.remove(defaultPlatform);
+		
+		equal = SQLPowerUtils.areEqual(udt1.getName(), udt2.getName())
+				&& SQLPowerUtils.areEqual(udt1.type, udt2.type)
+				&& SQLPowerUtils.areEqual(udt1.myNullability, udt2.myNullability)
+				&& SQLPowerUtils.areEqual(udt1.myAutoIncrement, udt2.myAutoIncrement)
+				&& SQLPowerUtils.areEqual(udt1.description, udt2.description)
+				&& SQLPowerUtils.areEqual(udt1.basicType, udt2.basicType)
 				&& SQLPowerUtils.areEqual(udt1.getUpstreamType(), udt2.getUpstreamType())
-				&& SQLPowerUtils.areEqual(oldPlatforms, newPlatforms);
+				&& SQLPowerUtils.areEqual(oldPlatforms.size(), newPlatforms.size())
+				&& oldPlatforms.containsAll(newPlatforms);
     	
 		if (equal) {
-			for (String platform : udt1.platforms()) {
+			for (String platform : oldPlatforms) {
 				SQLTypePhysicalProperties oldProperties = udt1.getPhysicalProperties(platform);
 				SQLTypePhysicalProperties newProperties = udt2.getPhysicalProperties(platform);
 				if (!SQLTypePhysicalProperties.areEqual(oldProperties, newProperties)) {
@@ -783,48 +795,12 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     @Override
     public void updateToMatch(SQLObject matchMe) {
     	if (!(matchMe instanceof UserDefinedSQLType)) {
-    		throw new ClassCastException();
+    		throw new ClassCastException("Only " + 
+    				UserDefinedSQLType.class.getSimpleName() + 
+    				" can be copied to " + 
+    				UserDefinedSQLType.class.getSimpleName() + ".");
     	}
-    	
-    	UserDefinedSQLType typeToMatch = (UserDefinedSQLType) matchMe;
-    	
-    	if (!areEqual(this, typeToMatch)) {
-    		begin("Copying Properties");
-
-    		// Properties of UserDefinedSQLType
-    		setName(typeToMatch.getName());
-    		setType(typeToMatch.getType());
-    		setBasicType(typeToMatch.getBasicType());
-    		setMyNullability(typeToMatch.getNullability());
-    		setMyAutoIncrement(typeToMatch.getAutoIncrement());
-    		setDescription(typeToMatch.getDescription());
-    		setUpstreamType(typeToMatch.getUpstreamType());
-
-    		// Children of UserDefinedSQLType
-    		List<String> oldPlatforms = platforms();
-    		List<String> newPlatforms = typeToMatch.platforms();
-    		for (String platform : oldPlatforms) {
-    			if (!newPlatforms.contains(platform)) {
-    				try {
-    					removeChild(getPhysicalProperties(platform));
-    				} catch (Exception e) {
-    					throw new RuntimeException("Cannot remove child!!!!");
-    				}
-    			}
-    		}
-    		for (String platform : newPlatforms) {
-    			if (!oldPlatforms.contains(platform)) {
-    				putPhysicalProperties(platform, new SQLTypePhysicalProperties(platform));
-    			}
-    		}
-
-    		// Properties of the children
-    		for (String platform : newPlatforms) {
-    			getPhysicalProperties(platform).updateToMatch(typeToMatch.getPhysicalProperties(platform));
-    		}
-
-    		commit();
-    	}
+    	copyProperties(this, (UserDefinedSQLType) matchMe);
     }
     
     @Transient @Accessor
@@ -832,134 +808,87 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 		return defaultPhysicalProperties;
 	}
 
-	static final void copyProperties(final UserDefinedSQLType target,
-			final UserDefinedSQLType source) throws IllegalArgumentException,
-			ObjectDependentException {
-		target.setUpstreamType(source.getUpstreamType());
-		target.setName(source.getName());
-		target.setPhysicalName(source.getPhysicalName());
-		// Don't use getters as they will refer to the upstreamType if the
-		// values are null
-		target.setMyAutoIncrement(source.myAutoIncrement);
-		target.setBasicType(source.basicType);
-		target.setDescription(source.description);
-		target.setMyNullability(source.myNullability);
-		target.setType(source.type);
-
-		SQLTypePhysicalProperties targetProperties = target
-				.getDefaultPhysicalProperties();
-		SQLTypePhysicalProperties sourceProperties = source
-				.getDefaultPhysicalProperties();
-
-		// Copy check constraints.
-		List<SQLCheckConstraint> targetConstraints = 
-			targetProperties.getChildrenWithoutPopulating(SQLCheckConstraint.class);
-		List<SQLCheckConstraint> sourceConstraints = 
-			sourceProperties.getChildrenWithoutPopulating(SQLCheckConstraint.class);
-		for (int i = targetConstraints.size() - 1; i >= 0; i--) {
-			SQLCheckConstraint constraint = targetConstraints.get(i);
-			if (!sourceConstraints.contains(constraint)) {
-				if (!targetProperties.removeChild(constraint)) {
-					throw new RuntimeException("Could not remove " + 
-							SQLCheckConstraint.class.getSimpleName() + " " + 
-							constraint.getName() + " from " + 
-							SQLTypePhysicalProperties.class.getSimpleName() + " " + 
-							targetProperties.getName());
-				}
-			}
-		}
-		for (SQLCheckConstraint constraint : sourceConstraints) {
-			if (!targetConstraints.contains(constraint)) {
-				targetProperties.addCheckConstraint(new SQLCheckConstraint(constraint));
-			}
-		}
-		
-		// Copy enumerations.
-		List<SQLEnumeration> targetEnumerations = 
-			targetProperties.getChildrenWithoutPopulating(SQLEnumeration.class);
-		List<SQLEnumeration> sourceEnumerations = 
-			sourceProperties.getChildrenWithoutPopulating(SQLEnumeration.class);
-		for (int i = targetEnumerations.size() - 1; i >= 0; i--) {
-			SQLEnumeration enumeration = targetEnumerations.get(i);
-			if (!sourceEnumerations.contains(enumeration)) {
-				if (!targetProperties.removeChild(enumeration)) {
-					throw new RuntimeException("Could not remove " + 
-							SQLEnumeration.class.getSimpleName() + " " + 
-							enumeration.getName() + " from " + 
-							SQLTypePhysicalProperties.class.getSimpleName() + " " + 
-							targetProperties.getName());
-				}
-			}
-		}
-		for (SQLEnumeration enumeration : sourceEnumerations) {
-			if (!targetEnumerations.contains(enumeration)) {
-				targetProperties.addEnumeration(new SQLEnumeration(enumeration));
-			}
-		}
-		
-		targetProperties.setConstraintType(sourceProperties.getConstraintType());
-		targetProperties.setDefaultValue(sourceProperties.getDefaultValue());
-		targetProperties.setName(sourceProperties.getName());
-		targetProperties.setPhysicalName(sourceProperties.getPhysicalName());
-		targetProperties.setPrecision(sourceProperties.getPrecision());
-		targetProperties.setPrecisionType(sourceProperties.getPrecisionType());
-		targetProperties.setScale(sourceProperties.getScale());
-		targetProperties.setScaleType(sourceProperties.getScaleType());
-
-		for (SQLTypePhysicalProperties overridingProperties : target.overridingPhysicalProperties) {
-			target.removeChild(overridingProperties);
-		}
-
-		for (SQLTypePhysicalProperties overridingProperties : source.overridingPhysicalProperties) {
-			String platform = overridingProperties.getPlatform();
+	static final void copyProperties(final UserDefinedSQLType target, final UserDefinedSQLType source) {
+		if (!areEqual(target, source)) {
+			target.begin("Copying UserDefinedSQLType");
+			target.setUpstreamType(source.getUpstreamType());
+			target.setName(source.getName());
+			target.setPhysicalName(source.getPhysicalName());
+			// Don't use getters as they will refer to the upstreamType if the
+			// values are null
+			target.setMyAutoIncrement(source.myAutoIncrement);
+			target.setBasicType(source.basicType);
+			target.setDescription(source.description);
+			target.setMyNullability(source.myNullability);
+			target.setType(source.type);
 			
-			// Copy overriding check constraints.
-			targetConstraints = overridingProperties.getChildrenWithoutPopulating(SQLCheckConstraint.class);
-			sourceConstraints = overridingProperties.getChildrenWithoutPopulating(SQLCheckConstraint.class);
-			for (int i = targetConstraints.size() - 1; i >= 0; i--) {
-				SQLCheckConstraint constraint = targetConstraints.get(i);
-				if (!sourceConstraints.contains(constraint)) {
-					overridingProperties.removeCheckConstraint(constraint);
-				}
-			}
-			for (SQLCheckConstraint constraint : sourceConstraints) {
-				if (!targetConstraints.contains(constraint)) {
-					overridingProperties.addCheckConstraint(
-							new SQLCheckConstraint(constraint), 
-							overridingProperties.getChildrenWithoutPopulating(
-							SQLCheckConstraint.class).size());
-				}
-			}
+			SQLTypePhysicalProperties.copyProperties(target.getDefaultPhysicalProperties(), source.getDefaultPhysicalProperties());
 			
-			// Copy overriding enumerations.
-			targetEnumerations = overridingProperties.getChildrenWithoutPopulating(SQLEnumeration.class);
-			sourceEnumerations = overridingProperties.getChildrenWithoutPopulating(SQLEnumeration.class);
-			for (int i = targetEnumerations.size() - 1; i >= 0; i--) {
-				SQLEnumeration enumeration = targetEnumerations.get(i);
-				if (!sourceEnumerations.contains(enumeration)) {
-					overridingProperties.removeEnumeration(enumeration);
-				}
-			}
-			for (SQLEnumeration enumeration : sourceEnumerations) {
-				if (!targetEnumerations.contains(enumeration)) {
-					overridingProperties.addEnumeration(
-							new SQLEnumeration(enumeration), 
-							overridingProperties.getChildrenWithoutPopulating(
-							SQLCheckConstraint.class).size());
-				}
-			}
+			final List<String> sourcePlatforms = new ArrayList<String>(source.platforms());
+			final List<String> targetPlatforms = new ArrayList<String>(target.platforms());
+			sourcePlatforms.remove(source.getDefaultPhysicalProperties().getPlatform());
+			targetPlatforms.remove(target.getDefaultPhysicalProperties().getPlatform());
+			Collections.sort(sourcePlatforms);
+			Collections.sort(targetPlatforms);
 			
-			target.setConstraintType(platform, overridingProperties
-					.getConstraintType());
-			target.setDefaultValue(platform, overridingProperties
-					.getDefaultValue());
-			target.setName(overridingProperties.getName());
-			target.setPhysicalName(overridingProperties.getPhysicalName());
-			target.setPrecision(platform, overridingProperties.getPrecision());
-			target.setPrecisionType(platform, overridingProperties
-					.getPrecisionType());
-			target.setScale(platform, overridingProperties.getScale());
-			target.setScaleType(platform, overridingProperties.getScaleType());
+			for (int i = 0, j = 0; i < sourcePlatforms.size() || j < targetPlatforms.size();) {
+				int compare = 0;
+				
+				String sourcePlatform;
+				if (i < sourcePlatforms.size()) {
+					sourcePlatform = sourcePlatforms.get(i);
+				} else {
+					sourcePlatform = null;
+					compare = 1;
+				}
+				
+				String targetPlatform;
+				if (j < targetPlatforms.size()) {
+					targetPlatform = targetPlatforms.get(j);
+				} else {
+					targetPlatform = null;
+					compare = -1;
+				}
+				
+				if (compare == 0) {
+					compare = sourcePlatform.compareTo(targetPlatform);
+				}
+				
+    			if (compare < 0) {
+    				try {
+						target.addChild(new SQLTypePhysicalProperties(source.getPhysicalProperties(sourcePlatform)));
+					} catch (SQLObjectException e) {
+						target.rollback("Could not copy UserDefinedSQLType");
+						throw new IllegalStateException("Could not add new " +
+								"SQLTypePhysicalProperties for platform " + 
+								sourcePlatform + " to UserDefinedSQLType " + 
+								target.getPhysicalName() + " in copyProperties.");
+					}
+    				i++;
+    			} else if (compare > 0) {
+    				try {
+						target.removeChild(target.getPhysicalProperties(targetPlatform));
+					} catch (IllegalArgumentException e) {
+						target.rollback("Could not copy UserDefinedSQLType");
+						throw new IllegalStateException("Could not remove " +
+								"SQLTypePhysicalProperties for platform " + 
+								targetPlatform + " from UserDefinedSQLType " + 
+								target.getPhysicalName());
+					} catch (ObjectDependentException e) {
+						target.rollback("Could not copy UserDefinedSQLType");
+						throw new IllegalStateException("Could not remove " +
+								"SQLTypePhysicalProperties for platform " + 
+								targetPlatform + " from UserDefinedSQLType " + 
+								target.getPhysicalName());
+					}
+    				j++;
+    			} else {
+    				target.getPhysicalProperties(targetPlatform).updateToMatch(source.getPhysicalProperties(sourcePlatform));
+    				i++;
+    				j++;
+    			}
+			}
+			target.commit();
 		}
 	}
 
