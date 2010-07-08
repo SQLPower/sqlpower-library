@@ -809,4 +809,25 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
     public void updateToMatch(SQLObject source) throws SQLObjectException {
         throw new UnsupportedOperationException();
     }
+
+    /**
+     * Updates the physical name to be the same as the logical name if the
+     * current physical name and the old logical name match or if the physical
+     * name is missing.
+     * 
+     * @param oldName
+     *            The name before the latest name change. Used to check if the
+     *            physical name is a match.
+     * @param newName
+     *            The name the logical name is being changed to. If the old name
+     *            and physical name match the physical name will be set to this
+     *            one.
+     */
+    protected void updatePhysicalNameToMatch(String oldName, String newName) {
+        if ((newName != null && getPhysicalName() == null) 
+                || (getPhysicalName() != null && "".equals(getPhysicalName().trim())) 
+                || (oldName != null && oldName.equals(getPhysicalName()))) {
+            setPhysicalName(newName);
+        }
+    }
 }

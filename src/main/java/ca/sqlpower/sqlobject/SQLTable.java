@@ -1493,14 +1493,6 @@ public class SQLTable extends SQLObject {
         }
 	}
 	
-	private void updatePhysicalNameToMatch(String oldName, String newName) {
-	    if ((newName != null && getPhysicalName() == null) 
-	            || (getPhysicalName() != null && "".equals(getPhysicalName().trim())) 
-	            || (oldName != null && oldName.equals(getPhysicalName()))) {
-	        setPhysicalName(newName);
-	    }
-	}
-
 	/**
 	 * Gets the value of remarks
 	 *

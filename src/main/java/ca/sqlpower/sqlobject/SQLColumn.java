@@ -1324,4 +1324,20 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 		userDefinedSQLType.addCheckConstraint(getPlatform(), checkConstraint, index);
 	}
 
+	@Override
+	@Mutator
+	public void setName(String name) {
+	    try {
+	        begin("Setting name and possibly physical or primary key name.");
+	        String oldName = getName();
+	        super.setName(name);
+	        if (isMagicEnabled()) {
+	            updatePhysicalNameToMatch(oldName, name);
+	        }
+	        commit();
+	    } catch (Throwable t) {
+	        rollback(t.getMessage());
+	        throw new RuntimeException(t);
+	    }
+	}
 }
