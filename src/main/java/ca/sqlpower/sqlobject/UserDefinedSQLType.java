@@ -808,6 +808,15 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 		return defaultPhysicalProperties;
 	}
 
+	/**
+	 * Copies all non-final properties (except UUID) and children from one
+	 * {@link UserDefinedSQLType} object to another.
+	 * 
+	 * @param target
+	 *            The target {@link UserDefinedSQLType} to copy to.
+	 * @param source
+	 *            The source {@link UserDefinedSQLType} to copy from.
+	 */
 	static final void copyProperties(final UserDefinedSQLType target, final UserDefinedSQLType source) {
 		if (!areEqual(target, source)) {
 			target.begin("Copying UserDefinedSQLType");
@@ -822,6 +831,8 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 			target.setMyNullability(source.myNullability);
 			target.setType(source.type);
 			
+			// XXX Platform name is final. If the default platform names don't match
+			// the source and target default platforms won't exactly be the same.
 			SQLTypePhysicalProperties.copyProperties(target.getDefaultPhysicalProperties(), source.getDefaultPhysicalProperties());
 			
 			final List<String> sourcePlatforms = new ArrayList<String>(source.platforms());

@@ -112,7 +112,7 @@ public class SQLTypePhysicalProperties extends SQLObject implements SQLCheckCons
      * {@link JDBCDataSourceType#getName()} on the {@link JDBCDataSourceType}
      * representing the physical platform of this type.
      */
-    private String platform = "";
+    private final String platform;
     
     /**
      * The {@link PropertyType} of the precision. It determines if it is meant to
@@ -137,7 +137,16 @@ public class SQLTypePhysicalProperties extends SQLObject implements SQLCheckCons
 	public static final List<Class<? extends SPObject>> allowedChildTypes = 
 		Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
 				Arrays.asList(SQLCheckConstraint.class, SQLEnumeration.class)));
-	
+
+	/**
+	 * Copies all non-final properties (except UUID) and children from one
+	 * {@link SQLTypePhysicalProperties} object to another.
+	 * 
+	 * @param target
+	 *            The target {@link SQLTypePhysicalProperties} to copy to.
+	 * @param source
+	 *            The source {@link SQLTypePhysicalProperties} to copy from.
+	 */
 	static final void copyProperties(
 			final SQLTypePhysicalProperties target, 
 			final SQLTypePhysicalProperties source) {
