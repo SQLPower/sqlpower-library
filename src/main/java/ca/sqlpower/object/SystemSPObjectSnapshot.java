@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.List;
 
 import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.sqlobject.UserDefinedSQLType;
 
@@ -39,9 +41,12 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 
 	private static final String SYSTEM_WORKSPACE_UUID = "system";
 	
-	public SystemSPObjectSnapshot(String originalUUID, int systemRevision) {
+	@Constructor
+	public SystemSPObjectSnapshot(
+			@ConstructorParameter(propertyName = "originalUUID") String originalUUID,
+			@ConstructorParameter(propertyName = "workspaceRevision") int systemRevision) {
 		this.originalUUID = originalUUID;
-		this.systemRevision = systemRevision;
+		this.workspaceRevision = systemRevision;
 	}
 
 	/**
@@ -53,7 +58,7 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 	 * The revision number of the System workspace at the exact time the
 	 * snapshot was taken
 	 */
-	private int systemRevision;
+	private int workspaceRevision;
 	
 	@Accessor
 	public String getOriginalUUID() {
@@ -67,14 +72,14 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 	
 	@Mutator
 	public void setWorkspaceRevision(int workspaceRevision) {
-		int oldValue = this.systemRevision;
-		this.systemRevision = workspaceRevision;
+		int oldValue = this.workspaceRevision;
+		this.workspaceRevision = workspaceRevision;
 		firePropertyChange("workspaceRevision", oldValue, workspaceRevision);
 	}
 
 	@Accessor
 	public int getWorkspaceRevision() {
-		return systemRevision;
+		return workspaceRevision;
 	}
 
 	@Override
