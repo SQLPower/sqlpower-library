@@ -25,6 +25,7 @@ import java.util.Arrays;
 
 import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.util.SQLPowerUtils;
 
 /**
  * A class representing an individual persisted {@link SPObject}
@@ -119,7 +120,7 @@ public class PersistedSPOProperty implements Comparable<PersistedSPOProperty> {
         PersistedSPOProperty wop = (PersistedSPOProperty) obj;
         
         if (!isUnconditional() && !wop.isUnconditional() 
-                && !getOldValue().equals(wop.getOldValue())) {
+                && !SQLPowerUtils.areEqual(getOldValue(), wop.getOldValue())) {
             return false;
         }
         
