@@ -393,12 +393,12 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
      */
     private final SQLObject sqlObjectRoot;
 
-    public SQLObjectUndoManager(SQLObject sqlObjectRoot) throws SQLObjectException {
+    public SQLObjectUndoManager(SQLObject sqlObjectRoot) {
         this.sqlObjectRoot = sqlObjectRoot;
         init(sqlObjectRoot);
     }
 
-    private final void init(SQLObject sqlObjectRoot) throws SQLObjectException {
+    private final void init(SQLObject sqlObjectRoot) {
         SQLPowerUtils.listenToHierarchy(sqlObjectRoot, eventAdapter);
         eventAdapter.attachToObject(sqlObjectRoot);
     }
