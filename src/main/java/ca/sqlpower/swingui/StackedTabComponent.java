@@ -28,6 +28,7 @@ import java.awt.Graphics2D;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -308,6 +309,10 @@ public class StackedTabComponent extends JComponent {
 	 */
 	public int getTabCount() {
 		return tabs.size();
+	}
+	
+	public List<StackedTab> getTabs() {
+		return Collections.unmodifiableList(tabs);
 	}
 
 	/**
