@@ -31,6 +31,21 @@ public class PercentTableCellRenderer extends DefaultTableCellRenderer implement
 
     DecimalFormat pctFormat = new DecimalFormat("0%");
 
+    /**
+     * If false the % sign following the decimal formatted should be removed.
+     * This is useful if you are using the format to export and want to do some
+     * Maths on the values.
+     */
+    private final boolean includePercentSign;
+    
+    public PercentTableCellRenderer() {
+        this(true);
+    }
+
+    public PercentTableCellRenderer(boolean includePercentSign) {
+        this.includePercentSign = includePercentSign;
+    }
+
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
             int row, int column) {
 
@@ -41,6 +56,9 @@ public class PercentTableCellRenderer extends DefaultTableCellRenderer implement
             throw new IllegalArgumentException("Value must be a Number object");
         } else {
             formattedValue = pctFormat.format(value);
+            if (!includePercentSign) {
+                formattedValue = formattedValue.replace("%", "");
+            }
         }
         return super.getTableCellRendererComponent(table, formattedValue, isSelected, hasFocus, row, column);
     }
@@ -50,7 +68,11 @@ public class PercentTableCellRenderer extends DefaultTableCellRenderer implement
         @Override
         public StringBuffer format(Object value, StringBuffer toAppendTo, FieldPosition pos) {
             if (value instanceof Number) {
-                return toAppendTo.append(pctFormat.format(value));
+                String formattedValue = pctFormat.format(value);
+                if (!includePercentSign) {
+                    formattedValue = formattedValue.replace("%", "");
+                }
+                return toAppendTo.append(formattedValue);
             } else {
                 throw new IllegalArgumentException("Value must be a Number object");
             }

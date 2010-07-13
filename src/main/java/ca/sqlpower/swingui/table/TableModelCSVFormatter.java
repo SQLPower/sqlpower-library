@@ -21,8 +21,11 @@ package ca.sqlpower.swingui.table;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.Format;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.table.TableModel;
 
@@ -32,11 +35,27 @@ import au.com.bytecode.opencsv.CSVWriter;
  * This class exports TableModels to a CSV file.
  */
 public class TableModelCSVFormatter implements ExportFormatter {
-	
+
+    /**
+     * Formatters are given an object from the table model and must output a
+     * string representation of that object. This allows classes using the
+     * formatter to define different strings to represent an object as other
+     * than just the toString version of the object.
+     */
+    private final Map<Integer, Format> columnFormatters = new HashMap<Integer, Format>();
 	
 	public TableModelCSVFormatter(){
 		
 	}
+
+    /**
+     * Sets a formatter for the given column of a table model. If the column does
+     * not exist because the table is too small the formatter will not be used.
+     */
+	public void setFormatter(int column, Format formatter) {
+	    columnFormatters.put(column, formatter);
+	}
+	
 	/**
 	 * Converts the given model into a CSV file and writes it to the output
 	 * stream.
@@ -68,7 +87,11 @@ public class TableModelCSVFormatter implements ExportFormatter {
 				for (int col = 0; col < columnCount; col++) {
 					Object value = model.getValueAt(selectedRows[row], col);
 					if (value != null) {
-						rowArray[col] = value.toString();
+					    if (columnFormatters.get(col) != null) {
+					        rowArray[col] = columnFormatters.get(col).format(value);
+					    } else {
+					        rowArray[col] = value.toString();
+					    }
 					} else {
 						rowArray[col] = "";
 					}

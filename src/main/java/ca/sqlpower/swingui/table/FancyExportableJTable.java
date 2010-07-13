@@ -28,6 +28,9 @@ import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import java.text.Format;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 import javax.swing.AbstractAction;
@@ -138,12 +141,20 @@ public class FancyExportableJTable extends EditableJTable {
     };
     
     /**
+     * Formatters for the csv export for columns.
+     */
+    private final Map<Integer, Format> csvColumnFormatters = new HashMap<Integer, Format>();
+    
+    /**
      * This action will export the table in its current state to CSV.
      */
     private final Action exportCSVAction = new AbstractAction("Export Selected to CSV..") {
         public void actionPerformed(ActionEvent e) {
             TableModelCSVFormatter csvFormatter = new TableModelCSVFormatter();
-
+            for (Map.Entry<Integer, Format> entry : csvColumnFormatters.entrySet()) {
+                csvFormatter.setFormatter(entry.getKey(), entry.getValue());
+            }
+            
             JFileChooser chooser = new JFileChooser();
             chooser.addChoosableFileFilter(SPSUtils.CSV_FILE_FILTER);
             chooser.setFileFilter(SPSUtils.CSV_FILE_FILTER);
@@ -258,4 +269,12 @@ public class FancyExportableJTable extends EditableJTable {
 	    return exportCSVAction;
 	}
 
+    /**
+     * Sets a formatter for the given column of a table model for exporting to
+     * CSV. If the column does not exist because the table is too small the
+     * formatter will not be used.
+     */
+	public void setCSVColumnFormatter(int column, Format formatter) {
+	    csvColumnFormatters.put(column, formatter);
+	}
 }
