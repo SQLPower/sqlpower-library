@@ -29,7 +29,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 
 public class PercentTableCellRenderer extends DefaultTableCellRenderer implements FormatFactory {
 
-    DecimalFormat pctFormat = new DecimalFormat("0%");
+    DecimalFormat pctFormat = new DecimalFormat("0.00%");
 
     /**
      * If false the % sign following the decimal formatted should be removed.
