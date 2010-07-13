@@ -20,6 +20,9 @@
 package ca.sqlpower.swingui.table;
 
 import java.io.PrintWriter;
+import java.text.Format;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.table.TableModel;
 
@@ -30,9 +33,25 @@ public class TableModelHTMLFormatter implements ExportFormatter{
 	
 	
 	private static final String NULL_STRING = "";
+	
+    /**
+     * Formatters are given an object from the table model and must output a
+     * string representation of that object. This allows classes using the
+     * formatter to define different strings to represent an object as other
+     * than just the toString version of the object.
+     */
+    private final Map<Integer, Format> columnFormatters = new HashMap<Integer, Format>();
 
 	public TableModelHTMLFormatter() {
 
+	}
+	
+	/**
+	 * Sets a formatter for the given column of a table model. If the column does
+	 * not exist because the table is too small the formatter will not be used.
+	 */
+	public void setFormatter(int column, Format formatter) {
+	    columnFormatters.put(column, formatter);
 	}
 	
 	/**
@@ -66,8 +85,13 @@ public class TableModelHTMLFormatter implements ExportFormatter{
 				
 				for (int j = 0; j < model.getColumnCount(); j++ ) {
 					writer.print("  <td>");
-					if (model.getValueAt(selectedRows[i], j) != null) {
-						writer.print(model.getValueAt(selectedRows[i], j).toString());
+					final Object value = model.getValueAt(selectedRows[i], j);
+                    if (value != null) {
+                        if (columnFormatters.get(j) != null) {
+                            writer.print(columnFormatters.get(j).format(value));
+                        } else {
+                            writer.print(value.toString());
+                        }
 					} else {
 						writer.print(NULL_STRING);
 					}

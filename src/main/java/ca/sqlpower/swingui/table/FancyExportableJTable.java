@@ -120,6 +120,10 @@ public class FancyExportableJTable extends EditableJTable {
 	private final Action exportHTMLAction = new AbstractAction("Export Selected to HTML..") {
         public void actionPerformed(ActionEvent e) {
             TableModelHTMLFormatter htmlFormatter= new TableModelHTMLFormatter();
+            for (Map.Entry<Integer, Format> entry : columnFormatters.entrySet()) {
+                htmlFormatter.setFormatter(entry.getKey(), entry.getValue());
+            }
+            
             JFileChooser chooser = new JFileChooser();
             chooser.addChoosableFileFilter(SPSUtils.HTML_FILE_FILTER);
             chooser.setFileFilter(SPSUtils.HTML_FILE_FILTER);
@@ -141,9 +145,9 @@ public class FancyExportableJTable extends EditableJTable {
     };
     
     /**
-     * Formatters for the csv export for columns.
+     * Formatters for the export for columns.
      */
-    private final Map<Integer, Format> csvColumnFormatters = new HashMap<Integer, Format>();
+    private final Map<Integer, Format> columnFormatters = new HashMap<Integer, Format>();
     
     /**
      * This action will export the table in its current state to CSV.
@@ -151,7 +155,7 @@ public class FancyExportableJTable extends EditableJTable {
     private final Action exportCSVAction = new AbstractAction("Export Selected to CSV..") {
         public void actionPerformed(ActionEvent e) {
             TableModelCSVFormatter csvFormatter = new TableModelCSVFormatter();
-            for (Map.Entry<Integer, Format> entry : csvColumnFormatters.entrySet()) {
+            for (Map.Entry<Integer, Format> entry : columnFormatters.entrySet()) {
                 csvFormatter.setFormatter(entry.getKey(), entry.getValue());
             }
             
@@ -271,10 +275,10 @@ public class FancyExportableJTable extends EditableJTable {
 
     /**
      * Sets a formatter for the given column of a table model for exporting to
-     * CSV. If the column does not exist because the table is too small the
-     * formatter will not be used.
+     * CSV or HTML. If the column does not exist because the table is too small
+     * the formatter will not be used.
      */
-	public void setCSVColumnFormatter(int column, Format formatter) {
-	    csvColumnFormatters.put(column, formatter);
+	public void setColumnFormatter(int column, Format formatter) {
+	    columnFormatters.put(column, formatter);
 	}
 }
