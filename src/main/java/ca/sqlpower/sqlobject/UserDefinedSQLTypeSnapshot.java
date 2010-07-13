@@ -35,7 +35,7 @@ import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
  */
 public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefinedSQLType> {
 
-	private final UserDefinedSQLType snapshotType;
+	private final UserDefinedSQLType spObject;
 
 	/**
 	 * This particular constructor is intended to be used by the SPObject
@@ -46,17 +46,19 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 *            The snapshot {@link UserDefinedSQLType}
 	 * @param originalUUID
 	 *            The UUID of the original {@link UserDefinedSQLType} object
-	 * @param systemRevision
+	 * @param systemWorkspaceRevision
 	 *            The system workspace revision number from which the snapshot
 	 *            was taken.
 	 */
     @Constructor
 	public UserDefinedSQLTypeSnapshot(
-			@ConstructorParameter (isProperty = ParameterType.CHILD) UserDefinedSQLType spObject,
-			@ConstructorParameter (isProperty = ParameterType.PRIMITIVE) String originalUUID,
-			@ConstructorParameter (isProperty = ParameterType.PRIMITIVE, defaultValue = "0") int systemRevision) {
-		super(originalUUID, systemRevision);
-		this.snapshotType = spObject;
+			@ConstructorParameter (isProperty = ParameterType.CHILD, 
+					propertyName = "spObject") UserDefinedSQLType spObject,
+			@ConstructorParameter (propertyName = "originalUUID" ) String originalUUID,
+			@ConstructorParameter (propertyName = "workspaceRevision", defaultValue = "0") int systemWorkspaceRevision) {
+		super(originalUUID, systemWorkspaceRevision);
+		this.spObject = spObject;
+		this.spObject.setParent(this);
 	}
 
 	/**
@@ -79,7 +81,7 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	public UserDefinedSQLTypeSnapshot(UserDefinedSQLType original, int systemRevision) {
 		super(original.getUUID(), systemRevision);
 		setName(original.getName());
-		snapshotType = new UserDefinedSQLType();
+		spObject = new UserDefinedSQLType();
 		UserDefinedSQLType.copyProperties(getSPObject(), original);
 		getSPObject().setParent(this);
 	}
@@ -105,7 +107,7 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	public UserDefinedSQLTypeSnapshot(UserDefinedSQLType original,
 			int systemRevision, UserDefinedSQLTypeSnapshot upstreamTypeSnapshot) {
 		this(original, systemRevision);
-		snapshotType.setUpstreamType(upstreamTypeSnapshot.getSPObject());
+		spObject.setUpstreamType(upstreamTypeSnapshot.getSPObject());
 	}
 
 	/**
@@ -124,6 +126,6 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 
 	@Accessor
 	public UserDefinedSQLType getSPObject() {
-		return snapshotType;
+		return spObject;
 	}
 }
