@@ -622,7 +622,7 @@ public class SQLQueryUIComponents {
 	 * create the result sets. If this is null there is no currently executing
 	 * worker.
 	 */
-    private ExecuteSQLWorker sqlExecuteWorker;
+    private volatile ExecuteSQLWorker sqlExecuteWorker;
     
     private final TaskTerminationListener sqlExecuteTerminationListener = new TaskTerminationListener() {
 		public void taskFinished(TaskTerminationEvent e) {
