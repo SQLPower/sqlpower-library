@@ -53,6 +53,7 @@ public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Seria
 	 * {@link #addColumn(boolean, boolean, boolean, boolean, int, boolean, int, String, String, String, int, int, String, String, int, String, boolean, boolean, boolean, String)}.
 	 */
 	public CachedResultSetMetaData() {
+	    logger.debug("Creating new CachedResultSetMetaData");
 	    columnCount = 0;
 	    createArrays(columnCount);
 	}
@@ -71,6 +72,7 @@ public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Seria
 	 */
 	public CachedResultSetMetaData(ResultSetMetaData source, boolean upcaseColumnNames)
 		throws SQLException {
+        logger.debug("Creating new CachedResultSetMetaData");
 		this.upcaseColumnNames = upcaseColumnNames;
 		this.columnCount = source.getColumnCount();
 		createArrays(columnCount);
@@ -282,5 +284,13 @@ public class CachedResultSetMetaData implements ResultSetMetaData, java.io.Seria
 
     public String getColumnClassName(int column) throws SQLException {
 		return columnClassName[column - 1];
+	}
+
+	public boolean isWrapperFor(Class<?> arg0) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public <T> T unwrap(Class<T> arg0) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
 	}
 }

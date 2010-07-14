@@ -12,6 +12,14 @@ import java.sql.SQLException;
  */
 public abstract class ResultSetMetaDataDecorator implements ResultSetMetaData{
 	
+	public boolean isWrapperFor(Class<?> iface) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	public <T> T unwrap(Class<T> iface) throws SQLException {
+		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
 	/**
 	 * The actual result set meta data that does all the work.
 	 */
