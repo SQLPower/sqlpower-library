@@ -22,27 +22,20 @@ package ca.sqlpower.object;
 import java.util.Comparator;
 
 /**
- * This {@link Comparator} compares {@link SPObject}s by their name property.
- * Null {@link SPObject}s are allowed and come before non-null {@link SPObject}s.
- * Also, null names come before non-null names.
+ * This {@link Comparator} compares UUIDs between {@link SPObject}s. Null
+ * {@link SPObject}s are allowed and come before non-null {@link SPObject}s.
  */
-public class SPObjectNameComparator implements Comparator<SPObject> {
+public class SPObjectUUIDComparator<T extends SPObject> implements Comparator<T> {
 
-	public int compare(SPObject spo1, SPObject spo2) {
+	public int compare(T spo1, T spo2) {
 		if (spo1 == spo2) {
 			return 0;
 		} else if (spo1 == null) {
 			return -1;
 		} else if (spo2 == null) {
 			return 1;
-		} else if (spo1.getName() == null && spo2.getName() == null) {
-			return 0;
-		} else if (spo1.getName() == null) {
-			return 1;
-		} else if (spo2.getName() == null) {
-			return -1;
 		} else {
-			return spo1.getName().compareTo(spo2.getName());
+            return spo1.getUUID().compareTo(spo2.getUUID());
 		}
 	}
 
