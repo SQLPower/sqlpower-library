@@ -476,12 +476,13 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
                     if (typeName != null) {
                         JDBCDataSourceType type = getDataSourceType(typeName);
                         if (type == null) {
-                            throw new IllegalStateException(
+                            logger.error(
                                     "Database connection \""+ds.getName()+"\" refers to database type \""+
                                     typeName+"\", which doesn't exist");
+                        } else {
+                            logger.debug("The data source type \"" + type + "\" is being set as the parent type of" + ds);
+                            ds.setParentType(type);
                         }
-                        logger.debug("The data source type \"" + type + "\" is being set as the parent type of" + ds);
-                        ds.setParentType(type);
                     }
                 } else if (o instanceof UserDefinedSQLType) {
                 	// Attach SQLTypePhysicalProperties to their type
