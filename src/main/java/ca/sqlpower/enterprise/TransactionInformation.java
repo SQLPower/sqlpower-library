@@ -1,7 +1,6 @@
 package ca.sqlpower.enterprise;
 
 import java.text.DateFormat;
-import java.util.Date;
 
 /**
  * Simple container class for information regarding a particular revision.
@@ -44,7 +43,7 @@ public class TransactionInformation {
      * Returns a formatted list of strings describing this transaction.
      */
     public String toString() {
-        return "v" + versionNumber + " (" + new Date(timeCreated) + ")" +
+        return "v" + versionNumber + " (" + DATE_FORMAT.format(timeCreated) + ")" +
                 ", " + versionAuthor + ":" + simpleDescription;
     }
 

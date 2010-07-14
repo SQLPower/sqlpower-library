@@ -516,7 +516,14 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
             		if (userPrompters.get(nativeType) != null) {
             			prompt = userPrompters.get(nativeType);
             		} else {
-            			prompt = upf.createListUserPrompter("Type?", upstreamTypes, upstreamTypes.get(0));
+            			UserDefinedSQLType defaultType = upstreamTypes.get(0);
+                    	for (UserDefinedSQLType type : upstreamTypes) {
+                    		if (type.getName().equalsIgnoreCase(column.getUserDefinedSQLType().getName())) {
+                    			defaultType = type;
+                    			break;
+                    		}
+                    	}
+            			prompt = upf.createListUserPrompter("Choose a type for " + column.getShortDisplayName(), upstreamTypes, defaultType);
             			userPrompters.put(nativeType, prompt);
             		}
             		prompt.promptUser();
@@ -529,7 +536,14 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
         		if (userPrompters.get(nativeType) != null) {
         			prompt = userPrompters.get(nativeType);
         		} else {
-        			prompt = upf.createListUserPrompter("Choose a type for " + column.getShortDisplayName(), upstreamTypes, upstreamTypes.get(0));
+        			UserDefinedSQLType defaultType = upstreamTypes.get(0);
+        			for (UserDefinedSQLType type : upstreamTypes) {
+        				if (type.getName().equalsIgnoreCase(column.getUserDefinedSQLType().getName())) {
+        					defaultType = type;
+        					break;
+        				}
+        			}
+        			prompt = upf.createListUserPrompter("Choose a type for " + column.getShortDisplayName(), upstreamTypes, defaultType);
         			userPrompters.put(nativeType, prompt);
         		}
         		prompt.promptUser();
@@ -542,11 +556,11 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
             	type.setScaleType(fromPlatform, upstreamType.getScaleType(fromPlatform));
             	type.setPrecisionType(fromPlatform, upstreamType.getPrecisionType(fromPlatform));
             	
-            	if (upstreamType.getScale(fromPlatform) == type.getScale(fromPlatform)) {
+            	if (upstreamType.getScale(fromPlatform) == type.getScale(fromPlatform) || upstreamType.getScaleType(fromPlatform) == PropertyType.NOT_APPLICABLE) {
             		type.setScale(fromPlatform, null);
             	}
 
-            	if (upstreamType.getPrecision(fromPlatform) == type.getPrecision(fromPlatform)) {
+            	if (upstreamType.getPrecision(fromPlatform) == type.getPrecision(fromPlatform) || upstreamType.getPrecisionType(fromPlatform) == PropertyType.NOT_APPLICABLE) {
             		type.setPrecision(fromPlatform, null);
             	}
 
