@@ -88,7 +88,7 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 	}
 
 	public boolean allowsChildren() {
-		return true;
+		return false;
 	}
 
 	public int childPositionOffset(Class<? extends SPObject> childType) {
@@ -101,14 +101,5 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 
 	public void removeDependency(SPObject dependency) {
 		// no-op
-	}
-
-	@Override
-	protected void addChildImpl(SPObject child, int index) {
-		throw new UnsupportedOperationException(
-				"SPObjectSnapshots can have only one final child of type set in the constructor. "
-						+ "Something tried to add "
-						+ child.getName()
-						+ " of type " + child.getClass());
 	}
 }

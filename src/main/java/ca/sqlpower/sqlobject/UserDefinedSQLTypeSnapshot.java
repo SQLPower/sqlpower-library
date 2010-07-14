@@ -22,13 +22,12 @@ package ca.sqlpower.sqlobject;
 import java.util.Collections;
 import java.util.List;
 
-import ca.sqlpower.object.SystemSPObjectSnapshot;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.SystemSPObjectSnapshot;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
-import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 
 /**
  * An {@link SystemSPObjectSnapshot} implementation specifically for {@link UserDefinedSQLType}
@@ -52,13 +51,11 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 */
     @Constructor
 	public UserDefinedSQLTypeSnapshot(
-			@ConstructorParameter (isProperty = ParameterType.CHILD, 
-					propertyName = "spObject") UserDefinedSQLType spObject,
+			@ConstructorParameter (propertyName = "spObject") UserDefinedSQLType spObject,
 			@ConstructorParameter (propertyName = "originalUUID" ) String originalUUID,
 			@ConstructorParameter (propertyName = "workspaceRevision", defaultValue = "0") int systemWorkspaceRevision) {
 		super(originalUUID, systemWorkspaceRevision);
 		this.spObject = spObject;
-		this.spObject.setParent(this);
 	}
 
 	/**
@@ -69,6 +66,10 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 * upstream type first, and then use
 	 * {@link #UserDefinedSQLTypeSnapshot(UserDefinedSQLType, int, UserDefinedSQLTypeSnapshot)}
 	 * , using the upstream type snapshot as the third parameter.
+	 * 
+	 * It is also important that any client code that creates the the snapshot
+	 * must add the copied {@link UserDefinedSQLType} (retrieved using
+	 * {@link #getSPObject()}) as a node to the SPObject tree.
 	 * 
 	 * @param original
 	 *            The {@link UserDefinedSQLType} to make a snapshot of
@@ -83,7 +84,6 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 		setName(original.getName());
 		spObject = new UserDefinedSQLType();
 		UserDefinedSQLType.copyProperties(getSPObject(), original);
-		getSPObject().setParent(this);
 	}
 
 	/**
@@ -92,6 +92,10 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 * {@link UserDefinedSQLType} from the given upstreamTypeSnapshot. This is
 	 * intended to be used if the original {@link UserDefinedSQLType} has an
 	 * upstreamType returned by {@link UserDefinedSQLType#getUpstreamType()}.
+	 * 
+	 * It is also important that any client code that creates the the snapshot
+	 * must add the copied {@link UserDefinedSQLType} (retrieved using
+	 * {@link #getSPObject()}) as a node to the SPObject tree.
 	 * 
 	 * @param original
 	 *            The {@link UserDefinedSQLType} to make a snapshot of
@@ -114,14 +118,14 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 * An unmodifiable {@link List} of allowed child types
 	 */
 	public static final List<Class<? extends SPObject>> allowedChildTypes = 
-	     Collections.<Class<? extends SPObject>>singletonList(UserDefinedSQLType.class);
+	     Collections.emptyList();
 	
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		return allowedChildTypes;
 	}
 
 	public List<? extends SPObject> getChildren() {
-		return Collections.singletonList(getSPObject());
+		return Collections.emptyList();
 	}
 
 	@Accessor

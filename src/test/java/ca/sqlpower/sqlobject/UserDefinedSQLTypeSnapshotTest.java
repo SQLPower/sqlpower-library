@@ -56,20 +56,4 @@ public class UserDefinedSQLTypeSnapshotTest extends PersistedSPObjectTest {
 	protected Class<? extends SPObject> getChildClassType() {
 		return UserDefinedSQLType.class;
 	}
-	
-	/**
-	 * Must be overridden to account for the single, final child
-	 */
-	@Override
-	public SPObject testSPPersisterAddsChild() throws Exception {
-		return null;
-	}
-	
-	/**
-	 * Must be overridden to account for the single, final child
-	 */
-	@Override
-	public void testAddChildFiresEvents() throws Exception {
-
-	}
 }
