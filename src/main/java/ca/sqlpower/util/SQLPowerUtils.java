@@ -1,15 +1,19 @@
 package ca.sqlpower.util;
 
 import java.beans.PropertyChangeEvent;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.servlet.ServletContext;
 
 import org.apache.log4j.Logger;
 
@@ -385,6 +389,108 @@ public class SQLPowerUtils {
         }
         for (Exception exception : cleanupObject.getExceptions()) {
             logger.error("Exception during cleanup", exception);
+        }
+    }
+
+    /**
+     * Resolves/decodes a path that can be any kind of URI, including a local
+     * file reference. This method recognizes a superset of the path specs that
+     * {@link #resolveConfiguredFilePath(ServletContext, String)} does.
+     * <p>
+     * The syntax for the path argument is documented in detail below:
+     * <br><br>
+     * Information for configuring file/URL locations in this file:
+     * <br><br>
+     * Configuration parameters described as accepting "any location" are
+     * interpreted as follows:
+     * <br>
+     * <ol>
+     * <li>If the value contains "://" then it is taken as an absolute URI, and
+     * is fed to the java.net.URI constructor as-is
+     * <br><br>
+     * NOTE: if you are referencing a local file, you may find option 3, below,
+     * more convenient and reliable than crafting a correct file:// URI
+     * yourself, especially if the file's pathname contains spaces.<br><br></li>
+     * 
+     * <li>If the value starts with "webapp:" then it is taken as a location
+     * inside this web application. Note that items in the WEB-INF directory are
+     * accessible, as are the publicly-readable items outside of WEB-INF.
+     * <br><br>
+     * Caveat: This only works if the webapp is deployed in "exploded" form
+     * (served from actual files and not straight out of the .war file)
+     * <br><br>
+     * This format is used for the default value, so the caveat applies by
+     * default.<br><br></li>
+     * 
+     * <li>Otherwise, the value is taken as a filesystem location which may be
+     * absolute or relative. The value is fed to the java.io.File constructor
+     * as-is, and is then converted to a URI using File.toURI().</li>
+     * </ol>
+     * <br>
+     * Configuration parameters described as accepting
+     * "local filesystem locations" are interpreted using only steps 2 and 3
+     * above. It is an error to specify a location that contains the "://"
+     * sequence of characters in it.
+     * 
+     * @param context
+     * @param path
+     * @return
+     */
+    public static URI resolveConfiguredPath(ServletContext context, String path) {
+        if (path.contains("://")) {
+            try {
+                return new URI(path);
+            } catch (URISyntaxException e) {
+                throw new IllegalArgumentException(
+                        "Configured path " + path + " looks like a URI, but isn't. " +
+                        "Check your typing.", e);
+            }
+        } else {
+            return resolveConfiguredFilePath(context, path).toURI();
+        }
+    }
+
+    /**
+     * Resolves/decodes a path that can be any kind of URI, including a local
+     * file reference. Compared with
+     * {@link #resolveConfiguredPath(ServletContext, String)}, this method
+     * recognizes the subset of path specs that refer to the local filesystem
+     * and do not contain the substring "://" (so file:// URIs are not
+     * recognized by this method).
+     * <p>
+     * The syntax for the path argument is documented in detail on
+     * {@link #resolveConfiguredPath(ServletContext, String)}.
+     * 
+     * @param context
+     * @param path
+     * @return
+     */
+    public static File resolveConfiguredFilePath(ServletContext context, String path) {
+        if (path.startsWith("webapp:")) {
+            if (context == null) {
+                throw new IllegalArgumentException(
+                        "Path specifications starting with 'webapp:' are only " +
+                        "allowed in web applications");
+            }
+            String contextPath = path.substring("webapp:".length());
+            String realPath = context.getRealPath(contextPath);
+            if (realPath == null) {
+                throw new IllegalArgumentException(
+                    "Webapp path " + path + " could not be resolved. " +
+                    "Check that it is valid, and ensure this webapp has " +
+                    "been deployed in \"exploded\" mode.");
+            }
+            File file = new File(realPath);
+            if (!file.exists()) {
+                throw new IllegalArgumentException(
+                        "Webapp path " + path + " resolved to " + file.getAbsolutePath() +
+                        ", which does not exist. Check that the path is valid, " +
+                        "and ensure this webapp has been deployed in \"exploded\" mode.");
+            }
+            return file;
+        } else {
+            File file = new File(path);
+            return file;
         }
     }
 }
