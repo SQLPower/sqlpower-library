@@ -159,7 +159,24 @@ public abstract class AbstractSPObject implements SPObject {
 		}
 		return children;
 	}
-
+	
+    public boolean allowsChildren() {
+        return !getAllowedChildTypes().isEmpty();
+    }
+	
+    public int childPositionOffset(Class<? extends SPObject> childType) {  
+        int offset = 0;
+        for (Class<? extends SPObject> type : getAllowedChildTypes()) {
+            if (type.isAssignableFrom(childType)) {
+                return offset;
+            } else {
+                offset += getChildren(type).size();
+            }
+        }
+        throw new IllegalArgumentException(childType.getName() + 
+                " is not a valid child type of " + getClass().getName());
+    }
+    
 	@Accessor(isInteresting=true)
 	public String getName() {
 		return name;
