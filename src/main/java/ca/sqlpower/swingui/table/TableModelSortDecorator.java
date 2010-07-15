@@ -128,7 +128,7 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
     private JTableHeader tableHeader;
     private MouseListener mouseListener;
     private TableModelListener tableModelListener;
-    private Map columnComparators = new HashMap();
+    private Map<Class, Comparator> columnComparators = new HashMap<Class, Comparator>();
     private List<Directive> sortingColumns = new ArrayList<Directive>();
 
     /**
@@ -353,7 +353,7 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
         return tableModel.getColumnName(column);
     }
 
-    public Class getColumnClass(int column) {
+    public Class<?> getColumnClass(int column) {
         return tableModel.getColumnClass(column);
     }
 
@@ -382,7 +382,7 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
             int row1 = modelIndex;
             int row2 = ((Row) o).modelIndex;
 
-            for (Iterator it = sortingColumns.iterator(); it.hasNext();) {
+            for (Iterator<Directive> it = sortingColumns.iterator(); it.hasNext();) {
                 Directive directive = (Directive) it.next();
                 int column = directive.column;
                 Object o1 = tableModel.getValueAt(row1, column);
