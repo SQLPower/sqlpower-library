@@ -43,6 +43,7 @@ import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sql.DataSourceCollection;
+import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.SQL;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
@@ -466,14 +467,41 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 
 	/**
 	 * Takes in information about the current UserDefinedSQLTypes and assigns an
-	 * upstream type to each of the columns. It will first find an upstream type
-	 * by matching the type name from the platform to the forward engineering
-	 * type name of the user defined type. If this fails, it will match by JDBC
-	 * type code. If this fails, it will either assign a dummy upstream type
-	 * (standalone client), or create a new one with the desired properties
-	 * (enterprise). If any one of these steps produces multiple matches, a
-	 * UserPrompter will be used. If any column in the list already has an
-	 * upstream type, it will be ignored.
+	 * upstream type to each of the columns. This is a many step process. Each
+	 * step falls through to the next one if it can't find a type.
+	 * <p>
+	 * 1. Search the types by type name. If there are any number of matches, use
+	 * one. We don't really care which. <br>
+	 * 2. Search the types by forward engineering name. This means what each
+	 * type would forward engineer to on the given platform. If there is exactly
+	 * one result, we're done. If there are multiple results, prompt the user. <br>
+	 * 3. Search the types by JDBC type code. Follow the same guidelines as step
+	 * 2. <br>
+	 * 4. If we are connected to an enterprise server, create a new type with
+	 * the same name and JDBC type as the reverse engineered column. <br>
+	 * 5. Assign the unknown type as the parent. This type is fairly clueless,
+	 * and won't forward engineer correctly on its own.
+	 * <p>
+	 * By the end of this process, all columns will have best match upstream
+	 * types which, barring some fiddling on the user's part (or the unknown
+	 * type coming into play), will forward engineer back to the type they came
+	 * from. They will also have appropriate values overridden from their new
+	 * upstream type. Any values that match up with defaults will not be
+	 * overridden, so that changing the type will change all of these columns.
+	 * 
+	 * @param columns
+	 *            A list of columns to assign types to. These should all be from
+	 *            the same database platform. If any columns in the list already
+	 *            have types assigned, they will be safely ignored.
+	 * @param dsCollection
+	 *            The datasource collection that contains the user defined
+	 *            types.
+	 * @param fromPlatform
+	 *            The name of the platform these columns were reverse engineered
+	 *            from, obtained using {@link JDBCDataSourceType#getName()}.
+	 * @param upf
+	 *            A UserPrompterFactory, used for asking the user to
+	 *            decide between multiple appropriate types.
 	 */
 	public static void assignTypes(
 			List<SQLColumn> columns, 
@@ -483,10 +511,12 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 		if (fromPlatform == null) return; // Dropped from within the PlayPen
 		List<UserDefinedSQLType> types = dsCollection.getSQLTypes();
 		
-		ListMultimap<String, UserDefinedSQLType> typeMapByName = LinkedListMultimap.create();
+		Map<String, UserDefinedSQLType> typeMapByReverseName = new HashMap<String, UserDefinedSQLType>();
+		ListMultimap<String, UserDefinedSQLType> typeMapByForwardName = LinkedListMultimap.create();
 		ListMultimap<Integer, UserDefinedSQLType> typeMapByCode = LinkedListMultimap.create();
 		for (UserDefinedSQLType type : types) {
-				typeMapByName.put(type.getPhysicalProperties(fromPlatform).getName().toLowerCase(), type);
+				typeMapByReverseName.put(type.getName(), type);
+				typeMapByForwardName.put(type.getPhysicalProperties(fromPlatform).getName().toLowerCase(), type);
 				typeMapByCode.put(type.getType(), type);
 		}
 		
@@ -496,58 +526,51 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 			if (column.getUserDefinedSQLType().getUpstreamType() != null) continue;
             String nativeType = column.getSourceDataTypeName();
             
-            List<UserDefinedSQLType> upstreamTypes;
-            if (nativeType == null) {
-            	upstreamTypes = typeMapByName.get("");
-            } else {
-            	upstreamTypes = typeMapByName.get(nativeType.toLowerCase());
-            }
-            
             UserDefinedSQLType upstreamType;
-            if (upstreamTypes.size() == 0) {
-            	int jdbcCode = column.getType();
-            	upstreamTypes = typeMapByCode.get(jdbcCode);
+            
+            if (typeMapByReverseName.containsKey(nativeType)) {
+            	upstreamType = typeMapByReverseName.get(nativeType);
+            } else {
+            	List<UserDefinedSQLType> upstreamTypes;
+            	if (nativeType == null) {
+            		upstreamTypes = typeMapByForwardName.get("");
+            	} else {
+            		upstreamTypes = typeMapByForwardName.get(nativeType.toLowerCase());
+            	}
+
             	if (upstreamTypes.size() == 0) {
-            		upstreamType = dsCollection.getNewSQLType(nativeType, jdbcCode);
+            		int jdbcCode = column.getType();
+            		upstreamTypes = typeMapByCode.get(jdbcCode);
+            		if (upstreamTypes.size() == 0) {
+            			upstreamType = dsCollection.getNewSQLType(nativeType, jdbcCode);
+            			typeMapByForwardName.put(nativeType, upstreamType);
+            			typeMapByCode.put(jdbcCode, upstreamType);
+            		} else if (upstreamTypes.size() == 1) {
+            			upstreamType = upstreamTypes.get(0);
+            		} else {
+            			UserPrompter prompt;
+            			if (userPrompters.get(nativeType) != null) {
+            				prompt = userPrompters.get(nativeType);
+            			} else {
+            				prompt = upf.createListUserPrompter("Choose a type for " + column.getShortDisplayName(), upstreamTypes, upstreamTypes.get(0));
+            				userPrompters.put(nativeType, prompt);
+            			}
+            			prompt.promptUser();
+            			upstreamType = (UserDefinedSQLType) prompt.getUserSelectedResponse();
+            		}
             	} else if (upstreamTypes.size() == 1) {
             		upstreamType = upstreamTypes.get(0);
             	} else {
             		UserPrompter prompt;
-            		if (userPrompters.get(nativeType) != null) {
+            		if (userPrompters.containsKey(nativeType)) {
             			prompt = userPrompters.get(nativeType);
             		} else {
-            			UserDefinedSQLType defaultType = upstreamTypes.get(0);
-                    	for (UserDefinedSQLType type : upstreamTypes) {
-                    		if (type.getName().equalsIgnoreCase(column.getUserDefinedSQLType().getName())) {
-                    			defaultType = type;
-                    			break;
-                    		}
-                    	}
-            			prompt = upf.createListUserPrompter("Choose a type for " + column.getShortDisplayName(), upstreamTypes, defaultType);
+            			prompt = upf.createListUserPrompter("Choose a type for " + column.getShortDisplayName(), upstreamTypes, upstreamTypes.get(0));
             			userPrompters.put(nativeType, prompt);
             		}
             		prompt.promptUser();
             		upstreamType = (UserDefinedSQLType) prompt.getUserSelectedResponse();
             	}
-            } else if (upstreamTypes.size() == 1) {
-            	upstreamType = upstreamTypes.get(0);
-            } else {
-            	UserPrompter prompt;
-        		if (userPrompters.get(nativeType) != null) {
-        			prompt = userPrompters.get(nativeType);
-        		} else {
-        			UserDefinedSQLType defaultType = upstreamTypes.get(0);
-        			for (UserDefinedSQLType type : upstreamTypes) {
-        				if (type.getName().equalsIgnoreCase(column.getUserDefinedSQLType().getName())) {
-        					defaultType = type;
-        					break;
-        				}
-        			}
-        			prompt = upf.createListUserPrompter("Choose a type for " + column.getShortDisplayName(), upstreamTypes, defaultType);
-        			userPrompters.put(nativeType, prompt);
-        		}
-        		prompt.promptUser();
-        		upstreamType = (UserDefinedSQLType) prompt.getUserSelectedResponse();
             }
             
             UserDefinedSQLType type = column.getUserDefinedSQLType();
