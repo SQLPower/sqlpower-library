@@ -147,7 +147,7 @@ public class SQLTable extends SQLObject {
 			@ConstructorParameter(propertyName = "remarks") String remarks,
 			@ConstructorParameter(propertyName = "objectType") String objectType,
 			@ConstructorParameter(propertyName = "populated") boolean startPopulated,
-			@ConstructorParameter(isProperty = ParameterType.CHILD, propertyName = "primaryKeyIndex") SQLIndex primaryKeyIndex,
+			@ConstructorParameter(parameterType = ParameterType.CHILD, propertyName = "primaryKeyIndex") SQLIndex primaryKeyIndex,
 			@ConstructorParameter(propertyName = "columnsPopulated") boolean columnsPopulated,
 			@ConstructorParameter(propertyName = "indicesPopulated") boolean indicesPopulated,
 			@ConstructorParameter(propertyName = "exportedKeysPopulated") boolean exportedKeysPopulated,

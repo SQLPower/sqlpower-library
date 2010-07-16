@@ -333,7 +333,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
      * or else it will only be half a relationship.
      */
 	@Constructor
-    public SQLRelationship(@ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="parent") SQLTable pkTable) {
+    public SQLRelationship(@ConstructorParameter(parameterType=ParameterType.PROPERTY, propertyName="parent") SQLTable pkTable) {
 		pkCardinality = ONE;
 		fkCardinality = ZERO | ONE | MANY;
 		setName("New SQL Relationship");

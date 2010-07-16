@@ -20,7 +20,6 @@
 package ca.sqlpower.enterprise.client;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -36,10 +35,8 @@ import ca.sqlpower.object.annotation.Mutator;
 
 public class User extends AbstractSPObject implements UserDetails {
 
-	@SuppressWarnings("unchecked")
     public static List<Class<? extends SPObject>> allowedChildTypes = 
-        Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
-                Arrays.asList(Grant.class)));
+        Collections.<Class<? extends SPObject>>singletonList(Grant.class);
 	
     private final List<Grant> grants;
     private String password;
@@ -62,18 +59,6 @@ public class User extends AbstractSPObject implements UserDetails {
     		return removeGrant((Grant) child);
     	} else {
     		return false;
-    	}
-    }
-
-    public boolean allowsChildren() {
-        return true;
-    }
-
-    public int childPositionOffset(Class<? extends SPObject> childType) {
-    	if (Grant.class.isAssignableFrom(childType)) {
-    		return 0;
-    	} else {
-    		throw new IllegalArgumentException("Users don't have children of type " + childType);
     	}
     }
 

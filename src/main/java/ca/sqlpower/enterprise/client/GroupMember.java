@@ -29,6 +29,13 @@ import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 
 public class GroupMember extends AbstractSPObject {
+	
+    /**
+     * Defines an absolute ordering of the child types of this class.
+     * 
+     * IMPORTANT!: When changing this, ensure you maintain the order specified by {@link #getChildren()}
+     */
+	private static final List<Class<? extends SPObject>> allowedChildTypes = Collections.emptyList();
 
     private final User user;
     
@@ -51,14 +58,6 @@ public class GroupMember extends AbstractSPObject {
         return false;
     }
 
-    public boolean allowsChildren() {
-        return false;
-    }
-
-    public int childPositionOffset(Class<? extends SPObject> childType) {
-        return 0;
-    }
-
     public List<? extends SPObject> getChildren() {
         return Collections.emptyList();
     }
@@ -78,7 +77,7 @@ public class GroupMember extends AbstractSPObject {
 	}
 
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
-		return Collections.emptyList();
+		return allowedChildTypes;
 	}
 
     

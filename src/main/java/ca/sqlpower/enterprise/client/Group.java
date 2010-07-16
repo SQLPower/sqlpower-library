@@ -35,10 +35,14 @@ import ca.sqlpower.object.annotation.ConstructorParameter;
 
 public class Group extends AbstractSPObject implements GrantedAuthority {
 
-	@SuppressWarnings("unchecked")
+    /**
+     * Defines an absolute ordering of the child types of this class.
+     * 
+     * IMPORTANT!: When changing this, ensure you maintain the order specified by {@link #getChildren()}
+     */
 	public static List<Class<? extends SPObject>> allowedChildTypes = 
         Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
-        		Arrays.asList(Grant.class, GroupMember.class)));
+        		Arrays.asList(GroupMember.class, Grant.class)));
 
 	/**
 	 * FIXME This enum defines the {@link SPObject} child classes a
@@ -133,26 +137,6 @@ public class Group extends AbstractSPObject implements GrantedAuthority {
         } else {
             return false;
         }
-    }
-
-    public boolean allowsChildren() {
-        return true;
-    }
-
-    public int childPositionOffset(Class<? extends SPObject> childType) {
-    	int offset = 0;
-        if (GroupMember.class.isAssignableFrom(childType)) {
-        	return offset;
-        } else {
-        	offset += members.size();
-        }
-        if (Grant.class.isAssignableFrom(childType)) {
-        	return offset;
-        } else {
-        	offset += grants.size();
-        }
-        
-        throw new IllegalArgumentException("Group does not allow children of type " + childType);
     }
 
     public List<SPObject> getChildren() {

@@ -40,6 +40,11 @@ import ca.sqlpower.object.annotation.NonProperty;
  */
 public class Grant extends AbstractSPObject {
 
+    /**
+     * Defines an absolute ordering of the child types of this class.
+     * 
+     * IMPORTANT!: When changing this, ensure you maintain the order specified by {@link #getChildren()}
+     */
 	public static List<Class<? extends SPObject>> allowedChildTypes = Collections.emptyList();
 	
     private final String type;
@@ -164,14 +169,6 @@ public class Grant extends AbstractSPObject {
         return false;
     }
 
-    public boolean allowsChildren() {
-        return false;
-    }
-    
-    public int childPositionOffset(Class<? extends SPObject> childType) {
-    	return 0;
-    }
-    
     public List<Class<? extends SPObject>> getAllowedChildTypes() {
     	return Collections.emptyList();
     }

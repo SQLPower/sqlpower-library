@@ -146,7 +146,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
             @ConstructorParameter(propertyName = "myAutoIncrement") Boolean autoIncrement,
             @ConstructorParameter(propertyName = "basicType") BasicSQLType basicType,
             @ConstructorParameter(propertyName = "upstreamType") UserDefinedSQLType upstreamType,
-    		@ConstructorParameter(isProperty = ParameterType.CHILD, 
+    		@ConstructorParameter(parameterType = ParameterType.CHILD, 
     		propertyName = "primaryKeyIndex") SQLTypePhysicalProperties defaultPhysicalProperties) {
     	super();
     	this.defaultPhysicalProperties = defaultPhysicalProperties;

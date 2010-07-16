@@ -39,12 +39,6 @@ public class VariablesTest extends TestCase {
 		protected boolean removeChildImpl(SPObject child) {
 			return true;
 		}
-		public boolean allowsChildren() {
-			return true;
-		}
-		public int childPositionOffset(Class<? extends SPObject> childType) {
-			return 0;
-		}
 		public List<? extends SPObject> getChildren() {
 			return this.children;
 		}

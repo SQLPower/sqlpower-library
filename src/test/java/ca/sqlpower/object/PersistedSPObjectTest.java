@@ -113,16 +113,8 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 			return false;
 		}
 
-		public boolean allowsChildren() {
-			return true;
-		}
-
-		public int childPositionOffset(Class<? extends SPObject> childType) {
-			return 0;
-		}
-
 		public List<Class<? extends SPObject>> getAllowedChildTypes() {
-			ArrayList<Class<? extends SPObject>> list = new ArrayList<Class<? extends SPObject>>();
+			List<Class<? extends SPObject>> list = new ArrayList<Class<? extends SPObject>>();
 			list.add(SPObjectRoot.class);
 			return list;
 		}

@@ -262,7 +262,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 			@ConstructorParameter(propertyName = "name") String colName,
 			@ConstructorParameter(propertyName = "sourceDataTypeName") String nativeType,
 			@ConstructorParameter(propertyName = "remarks") String remarks,
-			@ConstructorParameter(isProperty=ParameterType.CHILD, propertyName="userDefinedSQLType")
+			@ConstructorParameter(parameterType=ParameterType.CHILD, propertyName="userDefinedSQLType")
 			UserDefinedSQLType userDefinedSQLType) {
 	    
 	    if (parentTable != null) {

@@ -120,7 +120,7 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	private String name;
 	
 	@Constructor
-	public SQLDatabase(@ConstructorParameter(isProperty=ParameterType.PROPERTY, 
+	public SQLDatabase(@ConstructorParameter(parameterType=ParameterType.PROPERTY, 
 			propertyName="dataSource") JDBCDataSource dataSource)
 	{
 		setDataSource(dataSource);

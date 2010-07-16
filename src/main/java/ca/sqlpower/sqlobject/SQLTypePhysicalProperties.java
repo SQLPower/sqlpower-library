@@ -254,7 +254,7 @@ public class SQLTypePhysicalProperties extends SQLObject implements SQLCheckCons
 	}
 
     @Constructor
-    public SQLTypePhysicalProperties(@ConstructorParameter(isProperty=ParameterType.PROPERTY, propertyName="platform") String platformName) {
+    public SQLTypePhysicalProperties(@ConstructorParameter(parameterType=ParameterType.PROPERTY, propertyName="platform") String platformName) {
     	platform = platformName;
     	setName("SQLTypePhysicalProperties for " + platform);
     }
