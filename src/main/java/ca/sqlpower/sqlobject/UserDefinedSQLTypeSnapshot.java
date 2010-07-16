@@ -52,12 +52,12 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
     @Constructor
 	public UserDefinedSQLTypeSnapshot(
 			@ConstructorParameter (propertyName = "spObject") UserDefinedSQLType spObject,
-			@ConstructorParameter (propertyName = "originalUUID" ) String originalUUID,
-			@ConstructorParameter (propertyName = "workspaceRevision", defaultValue = "0") int systemWorkspaceRevision) {
+			@ConstructorParameter (propertyName = "originalUUID") String originalUUID,
+			@ConstructorParameter (propertyName = "workspaceRevision") int systemWorkspaceRevision) {
 		super(originalUUID, systemWorkspaceRevision);
 		this.spObject = spObject;
 	}
-
+    
 	/**
 	 * Create a snapshot of a {@link UserDefinedSQLType}.
 	 * 

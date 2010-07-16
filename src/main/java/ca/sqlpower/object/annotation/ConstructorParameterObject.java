@@ -48,23 +48,16 @@ public class ConstructorParameterObject {
 	 */
 	private final String name;
 	
-	/**
-	 * @see #getValue()
-	 */
-	private final String value;
-	
-	public ConstructorParameterObject(ParameterType property, Class<?> type, 
-			String name, String value) {
+	public ConstructorParameterObject(ParameterType property, Class<?> type, String name) {
 		this.property = property;
 		this.type = type;
 		this.name = name;
-		this.value = value;
 	}
 	
 	/**
 	 * Returns true if this constructor parameter refers to an {@link SPObject} property.
 	 * 
-	 * @see ConstructorParameter#isProperty()
+	 * @see ConstructorParameter#parameterType()
 	 */
 	public ParameterType getProperty() {
 		return property;
@@ -88,20 +81,8 @@ public class ConstructorParameterObject {
 		return name;
 	}
 
-	/**
-	 * Returns the {@link String} representation of the primitive value to use
-	 * in an {@link SPPersister} to call the constructor if
-	 * {@link #getProperty()} is false and {@link #getType()} is not
-	 * {@link SPObject}.
-	 * 
-	 * @see ConstructorParameter#primitiveValue()
-	 */
-	public String getValue() {
-		return value;
-	}
-	
 	@Override
 	public String toString() {
-		return "name: " + name + ", property: " + property + ", type: " + type + ", value: " + value;
+		return "name: " + name + ", property: " + property + ", type: " + type;
 	}
 }

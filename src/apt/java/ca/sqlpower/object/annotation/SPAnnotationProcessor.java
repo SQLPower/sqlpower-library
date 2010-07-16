@@ -787,21 +787,6 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 									persistedPropertiesField,
 									parameterType));
 				}
-			} else if (ParameterType.PRIMITIVE.equals(cpo.getProperty())) {
-				// <parameterType> <parameterName> = <parameterType>.valueOf(
-				print(sb, tabs, 
-						String.format("%s %s = %s.valueOf(",
-								parameterType,
-								parameterName,
-								parameterType));
-
-				if (cpo.getType() == Character.class) {
-					// '<primitive value>');
-					niprintln(sb, "'" + cpo.getValue() + "');");
-				} else {
-					// "<primitive value>");
-					niprintln(sb, "\"" + cpo.getValue() + "\");");
-				}
 			} else if (ParameterType.CHILD.equals(cpo.getProperty())) {
 				String objectUUIDField = parameterName + "UUID";
 				String childPersisterHelperField = parameterName + "Helper";

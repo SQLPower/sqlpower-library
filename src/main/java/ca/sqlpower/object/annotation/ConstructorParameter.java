@@ -23,7 +23,6 @@ import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 
-import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPObject;
@@ -60,12 +59,6 @@ public @interface ConstructorParameter {
 		 * This includes references to object that exist in the tree.
 		 */
 		PROPERTY,
-		
-		/**
-		 * This is any primitive object type that is not covered by the
-		 * {@link SessionPersisterSuperConverter}.
-		 */
-		PRIMITIVE,
 
 		/**
 		 * Children must be an {@link SPObject} that is a child of the object to
@@ -77,28 +70,20 @@ public @interface ConstructorParameter {
 	}
 
 	/**
-	 * Determines whether this annotated constructor parameter maps onto an
-	 * {@link SPObject} property. If this is true, the parameter does map onto a
-	 * property and the property name is defined by {@link #propertyName()}.
-	 * Otherwise, either the parameter is an SPObject or a regular
-	 * primitive/String type. By default, this is true.
+	 * Defines the {@link ParameterType} this annotated constructor parameter
+	 * maps to. If the type is {@link ParameterType#PROPERTY}, then the
+	 * parameter maps onto an {@link SPObject} property, and the property name
+	 * is defined by {@link #propertyName()}. Otherwise, if the type is
+	 * {@link ParameterType#CHILD}, then the property is an {@link SPObject}
+	 * child. By default, this value is {@link ParameterType#PROPERTY}.
 	 */
-	ParameterType isProperty() default ParameterType.PROPERTY;
+	ParameterType parameterType() default ParameterType.PROPERTY;
 
 	/**
 	 * This will be the JavaBean property that will be set to the annotated
 	 * constructor parameter value. Note that this field should only and must be
-	 * used if {@link #isProperty()} is true.
+	 * used if {@link #parameterType()} is true.
 	 */
 	String propertyName() default "";
 
-	/**
-	 * If the annotated parameter is a primitive or {@link String} type, this
-	 * should be a {@link String} representation of the value to be used by
-	 * session {@link SPPersister}s when passing in constructor arguments to
-	 * create the {@link SPObject}. Note that this field should only and must be
-	 * used if {@link #isProperty()} is false.
-	 */
-	String defaultValue() default "";
-	
 }

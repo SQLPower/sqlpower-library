@@ -299,25 +299,23 @@ public class SPClassVisitor implements DeclarationVisitor {
 					try {
 						TypeMirror type = pd.getType();
 						Class<?> c = SPAnnotationProcessorUtils.convertTypeMirrorToClass(type);
-						String value = null;
 						
-						ParameterType property = cp.isProperty();
+						ParameterType property = cp.parameterType();
 						String name;
 						
 						if (property.equals(ParameterType.PROPERTY)) {
 							name = cp.propertyName();
 						} else {
 							name = pd.getSimpleName();
-							value = cp.defaultValue();
 						}
 
 						if (type instanceof PrimitiveType) {
 							constructorParameters.add(
-									new ConstructorParameterObject(property, c, name, value));
+									new ConstructorParameterObject(property, c, name));
 
 						} else if (type instanceof ClassType || type instanceof InterfaceType) {
 							constructorParameters.add(
-									new ConstructorParameterObject(property, c, name, null));
+									new ConstructorParameterObject(property, c, name));
 							constructorImports.add(c.getName());
 						}
 					} catch (ClassNotFoundException e) {
