@@ -200,7 +200,11 @@ public abstract class AbstractSPObject implements SPObject {
 	                + " is not a child of " + getName() + " of type " + getClass());
 	    }
 	    
-	    return removeChildImpl(child);
+	    if (removeChildImpl(child)) {
+	    	child.setParent(null);
+	    	return true;
+	    }
+	    return false;
 	}
 	
     /**
