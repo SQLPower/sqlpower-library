@@ -110,7 +110,8 @@ public class SQLTypePhysicalProperties extends SQLObject implements SQLCheckCons
      * 
      * This would be the same value that you would get if you called
      * {@link JDBCDataSourceType#getName()} on the {@link JDBCDataSourceType}
-     * representing the physical platform of this type.
+     * representing the physical platform of this type. This can also be set
+     * to {@link SQLTypePhysicalPropertiesProvider#GENERIC_PLATFORM}.
      */
     private final String platform;
     
