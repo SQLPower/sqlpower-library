@@ -145,7 +145,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         assertEquals("The physical name does not match the logical", newName, table.getPhysicalName().trim());
         
         table.setPhysicalName(newPhysicalName);
-        assertEquals(newPhysicalName+"_pk",table.getPrimaryKeyName());
+        assertEquals(newPhysicalName+"_pk",table.getPrimaryKeyIndex().getName());
     }
     
     public void testRenamePhysicalNameOfTableDoesntRenamePKIfPKRenamed() throws SQLObjectException {
@@ -156,7 +156,7 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
         table.getPrimaryKeyIndex().setName(newPKName);
         table.setName(newTableName);
         table.setPhysicalName(newPhysicalName);
-        assertEquals(newPKName, table.getPrimaryKeyName());
+        assertEquals(newPKName, table.getPrimaryKeyIndex().getName());
     }
     
     public void testRenamePhysicalNameOfTableRenamesSequences() throws Exception {

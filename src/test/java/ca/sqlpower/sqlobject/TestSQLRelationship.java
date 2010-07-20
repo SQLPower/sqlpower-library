@@ -725,7 +725,7 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
         assertTrue(table2.getColumn(0).isPrimaryKey());
 
         assertNotNull(table2.getPrimaryKeyIndex());
-        assertNotNull(table2.getPrimaryKeyName());
+        assertNotNull(table2.getPrimaryKeyIndex().getName());
     }
     
     /**

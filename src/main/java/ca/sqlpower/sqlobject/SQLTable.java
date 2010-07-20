@@ -1771,22 +1771,6 @@ public class SQLTable extends SQLObject {
         }
     }
     
-    /**
-     * Gets the name of this table's Primary Key index if it has one, otherwise
-     * returns null.
-     * 
-     * @throws SQLObjectException
-     * @deprecated this method is left over from an incomplete refactoring, and
-     *             it will be removed in a future release. Use
-     *             {@link #getPrimaryKeyIndex()}.getName() instead.
-     */
-    @Deprecated
-    @Transient @Accessor
-	public String getPrimaryKeyName() throws SQLObjectException  {
-        SQLIndex primaryKeyIndex = getPrimaryKeyIndex();
-		return primaryKeyIndex == null ? null : primaryKeyIndex.getName();
-	}
-
 	/**
 	 * Gets the type of table this object represents (TABLE or VIEW).
 	 *
