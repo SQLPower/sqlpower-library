@@ -1800,9 +1800,7 @@ public class SQLTable extends SQLObject {
 	 * associated with it.
 	 */
     @Transient @Accessor
-    public SQLIndex getPrimaryKeyIndex() throws SQLObjectException {
-    	//populateColumns();
-    	//populateIndices();
+    public SQLIndex getPrimaryKeyIndex() {
     	return primaryKeyIndex;
     }
 
