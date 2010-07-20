@@ -10,6 +10,7 @@
 	<property name="build.apt" value="build_apt"/>
 	<property name="build_tmp" value="build_tmp"/>
 	<property name="build.compiler" value="modern"/>
+	<property name="lib" value="lib"/>
 	<property name="dist.jar" value="sqlpower_library.jar"/>
 	<property name="test.jar" value="sqlpower_library-tests.jar"/>
 	<property name="apt.jar" value="sqlpower_library-apt.jar"/>
@@ -36,7 +37,7 @@
 	</condition>
 	
 	<path id="compile.classpath">
-		<fileset dir="lib">
+		<fileset dir="${lib}/main">
 			<include name="*.jar"/>
 		</fileset>
 	</path>
@@ -44,14 +45,15 @@
 	<path id="apt.classpath">
 		<pathelement location="${build}"/>
 		<pathelement location="${build.apt}"/>
-		<fileset dir="lib">
+		<fileset dir="${lib}/main">
 			<include name="*.jar"/>
 		</fileset>
 	</path>
 
 	<path id="test.classpath">
 		<pathelement location="${build}"/>
-		<fileset dir="lib">
+		<path refid="compile.classpath"/>
+		<fileset dir="${lib}/test">
 			<include name="*.jar"/>
 		</fileset>
 	</path>

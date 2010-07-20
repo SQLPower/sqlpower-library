@@ -4,33 +4,33 @@
 	<classpathentry kind="src" path="src/test/java"/>
 	<classpathentry kind="src" path="src/main/resources"/>
 	<classpathentry kind="src" path="src/test/resources"/>
-	<classpathentry exported="true" kind="lib" path="lib/annotations.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/commons-beanutils.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/commons-collections-3.2.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/commons-dbcp-1.2.2.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/commons-pool-1.5.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/junit-3.8.2.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/log4j-1.2.15.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/mail-1.4.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/miglayout-3.7-swing.jar" sourcepath="libsrc/miglayout-3.7-sources.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/opencsv-1.8.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/piccolo.jar" sourcepath="/wabit/libsrc/Piccolo2D.Java-1.2.1.zip"/>
-	<classpathentry exported="true" kind="lib" path="lib/piccolox.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/rsyntaxtextarea.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/xercesImpl-2.9.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/commons-logging.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/jsr305.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/httpclient-4.0.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/httpcore-4.0.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/httpmime-4.0.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/jmdns-2.1.jar" sourcepath="libsrc/jmdns-2.1-src.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/spring-security-core-2.0.5.RELEASE.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/commons-codec-20041127.091804.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/commons-lang-2.4.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/olap4j-0.9.7.302.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/servlet-api-2.5.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/google-collect-1.0.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/forms-1.3.0.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/annotations.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/commons-beanutils.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/commons-codec-20041127.091804.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/commons-collections-3.2.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/commons-dbcp-1.2.2.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/commons-lang-2.4.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/commons-logging.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/commons-pool-1.5.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/forms-1.3.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/google-collect-1.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/httpclient-4.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/httpcore-4.0.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/httpmime-4.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/jmdns-2.1.jar" sourcepath="libsrc/jmdns-2.1-src.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/jsr305.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/log4j-1.2.15.jar" sourcepath="libsrc/log4j-1.2.15-sources.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/mail-1.4.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/miglayout-3.7-swing.jar" sourcepath="libsrc/miglayout-3.7-sources.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/olap4j-0.9.7.302.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/opencsv-1.8.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/piccolo.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/piccolox.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/rsyntaxtextarea.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/servlet-api-2.5.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/spring-security-core-2.0.5.RELEASE.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/xercesImpl-2.9.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/test/junit-3.8.2.jar" sourcepath="libsrc/junit-3.8.2-src.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
