@@ -77,7 +77,7 @@ public class SQLIndex extends SQLObject {
     public static final String INDEX_TYPE_DESCRIPTOR = SQLIndex.class.getName() + ".IndexType";
 
     /**
-     * This is the index type
+     * This is the index type. If this is null the default type in the database should be used.
      */
     private String type;
 
