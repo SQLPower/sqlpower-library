@@ -30,6 +30,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JSpinner;
+import javax.swing.JTable;
 import javax.swing.JTree;
 import javax.swing.text.JTextComponent;
 
@@ -107,6 +108,21 @@ public class DataEntryPanelChangeUtil {
     	} else {
     		return false;
     	}
+    }
+
+	/**
+	 * Sets the background colour of the {@link JTable} in case of an incoming
+	 * change/conflict.
+	 * 
+	 * @param table
+	 *            The JTable to which the background colour should change on.
+	 * @param evt
+	 *            The {@link PropertyChangeEvent} that is the cause of the
+	 *            incoming change or conflict.
+	 * @return true if the background colour was set.
+	 */
+    public static boolean incomingChange(JTable table, PropertyChangeEvent evt) {
+    	return changeBackground(table, null, evt);
     }
     
     /**
