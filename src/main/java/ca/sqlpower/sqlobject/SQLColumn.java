@@ -515,7 +515,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 		ListMultimap<String, UserDefinedSQLType> typeMapByForwardName = LinkedListMultimap.create();
 		ListMultimap<Integer, UserDefinedSQLType> typeMapByCode = LinkedListMultimap.create();
 		for (UserDefinedSQLType type : types) {
-				typeMapByReverseName.put(type.getName(), type);
+				typeMapByReverseName.put(type.getName().toLowerCase(), type);
 				typeMapByForwardName.put(type.getPhysicalProperties(fromPlatform).getName().toLowerCase(), type);
 				typeMapByCode.put(type.getType(), type);
 		}
@@ -524,7 +524,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 		
 		for (SQLColumn column : columns) {
 			if (column.getUserDefinedSQLType().getUpstreamType() != null) continue;
-            String nativeType = column.getSourceDataTypeName();
+            String nativeType = column.getSourceDataTypeName().toLowerCase();
+            logger.info("Column has type " + nativeType);
             
             UserDefinedSQLType upstreamType;
             

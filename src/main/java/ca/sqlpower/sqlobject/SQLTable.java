@@ -867,7 +867,7 @@ public class SQLTable extends SQLObject {
 	 * added to this table's primary key.  Otherwise, no source
 	 * columns will be added to this table's primary key.
 	 */
-	public void inherit(int pos, SQLTable source, TransferStyles transferStyle, boolean preserveColumnSource) throws SQLObjectException {
+	public List<SQLColumn> inherit(int pos, SQLTable source, TransferStyles transferStyle, boolean preserveColumnSource) throws SQLObjectException {
 		if (source == this) {
 			throw new SQLObjectException("Cannot inherit from self");
 		}
@@ -882,15 +882,18 @@ public class SQLTable extends SQLObject {
 			addToPK = false;
 		}
 
+		List<SQLColumn> addedColumns = new ArrayList<SQLColumn>(); 
+		
 		begin("Inherting columns from source table");
 		for (SQLColumn child : source.getColumns()) {
-			inherit(pos, child, addToPK, transferStyle, preserveColumnSource);
+			addedColumns.add(inherit(pos, child, addToPK, transferStyle, preserveColumnSource));
 			pos++;
 		}
 		commit();
+		return addedColumns;
 	}
 
-	public void inherit(int pos, SQLColumn sourceCol, boolean addToPK, TransferStyles transferStyle, boolean preserveColumnSource) throws SQLObjectException {
+	public SQLColumn inherit(int pos, SQLColumn sourceCol, boolean addToPK, TransferStyles transferStyle, boolean preserveColumnSource) throws SQLObjectException {
 	    if (addToPK && pos > 0 && !getColumn(pos - 1).isPrimaryKey()) {
 	        throw new IllegalArgumentException("Can't inherit new PK column below a non-PK column! Insert pos="+pos+"; addToPk="+addToPK);
 	    }
@@ -906,6 +909,7 @@ public class SQLTable extends SQLObject {
 			throw new IllegalStateException("Unknown transfer type of " + transferStyle);
 		}
 		addColumn(c, addToPK, pos);
+		return c;
 	}
 
 	@NonProperty
