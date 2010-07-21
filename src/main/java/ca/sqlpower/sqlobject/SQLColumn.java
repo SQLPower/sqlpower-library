@@ -524,7 +524,10 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 		
 		for (SQLColumn column : columns) {
 			if (column.getUserDefinedSQLType().getUpstreamType() != null) continue;
-            String nativeType = column.getSourceDataTypeName().toLowerCase();
+            String nativeType = column.getSourceDataTypeName();
+            if (nativeType != null) {
+            	nativeType = nativeType.toLowerCase();
+            }
             logger.info("Column has type " + nativeType);
             
             UserDefinedSQLType upstreamType;
