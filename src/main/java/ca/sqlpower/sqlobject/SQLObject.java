@@ -30,20 +30,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.log4j.Logger;
-
-import com.google.common.collect.ListMultimap;
 
 import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
-import ca.sqlpower.object.SPObjectUtils;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
+import ca.sqlpower.util.SQLPowerUtils;
+
+import com.google.common.collect.ListMultimap;
 
 /**
  * SQLObject is the main base class of the Architect API. All objects that can
@@ -640,10 +641,10 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
         if (isTableContainer()) {
             logger.debug("Refreshing table container " + this);
             Connection con = null;
-            SQLDatabase db = SPObjectUtils.getAncestor(this, SQLDatabase.class);
+            SQLDatabase db = SQLPowerUtils.getAncestor(this, SQLDatabase.class);
             try {
-                SQLCatalog cat = SPObjectUtils.getAncestor(this, SQLCatalog.class);
-                SQLSchema sch = SPObjectUtils.getAncestor(this, SQLSchema.class);
+                SQLCatalog cat = SQLPowerUtils.getAncestor(this, SQLCatalog.class);
+                SQLSchema sch = SQLPowerUtils.getAncestor(this, SQLSchema.class);
                 String catName = cat == null ? null : cat.getName();
                 String schName = sch == null ? null : sch.getName();
                 

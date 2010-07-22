@@ -33,18 +33,18 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
-import ca.sqlpower.object.SPObjectUtils;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
-import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
+import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.SessionNotFoundException;
 
 import com.google.common.collect.ListMultimap;
@@ -57,7 +57,8 @@ public class SQLTable extends SQLObject {
 	@SuppressWarnings("unchecked")
 	public static final List<Class<? extends SPObject>> allowedChildTypes = 
 		Collections.unmodifiableList(new ArrayList<Class<? extends SPObject>>(
-				Arrays.asList(SQLColumn.class, SQLRelationship.class, SQLImportedKey.class, SQLIndex.class)));
+				Arrays.asList(SQLColumn.class, SQLRelationship.class, 
+						SQLImportedKey.class, SQLIndex.class)));
 
 	private static Logger logger = Logger.getLogger(SQLTable.class);
 
@@ -1132,7 +1133,7 @@ public class SQLTable extends SQLObject {
 		}
 	}
 
-    /**
+	/**
      * Calls {@link #removeColumn(SQLColumn)} with the appropriate argument.
      * 
      * @throws LockedColumnException
@@ -1348,7 +1349,7 @@ public class SQLTable extends SQLObject {
 	 */
 	@Transient @Accessor
 	public SQLDatabase getParentDatabase()  {
-		return SPObjectUtils.getAncestor(this, SQLDatabase.class);
+		return SQLPowerUtils.getAncestor(this, SQLDatabase.class);
 	}
 	
 	@Override
@@ -1384,7 +1385,7 @@ public class SQLTable extends SQLObject {
 
 	@Transient @Accessor
 	public SQLCatalog getCatalog()  {
-		return SPObjectUtils.getAncestor(this, SQLCatalog.class);
+		return SQLPowerUtils.getAncestor(this, SQLCatalog.class);
 	}
 
 	/**
@@ -1403,7 +1404,7 @@ public class SQLTable extends SQLObject {
 
 	@Transient @Accessor
 	public SQLSchema getSchema()  {
-		return SPObjectUtils.getAncestor(this, SQLSchema.class);
+		return SQLPowerUtils.getAncestor(this, SQLSchema.class);
 	}
 
 	/**

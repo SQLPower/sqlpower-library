@@ -29,12 +29,12 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.object.SPObject;
-import ca.sqlpower.object.SPObjectUtils;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.Transient;
+import ca.sqlpower.util.SQLPowerUtils;
 
 /**
  * A SQLSchema is a container for SQLTables.  If it is in the
@@ -184,7 +184,7 @@ public class SQLSchema extends SQLObject {
 		
 		logger.debug("SQLSchema: populate starting");
 
-		SQLDatabase parentDatabase = SPObjectUtils.getAncestor(this, SQLDatabase.class);
+		SQLDatabase parentDatabase = SQLPowerUtils.getAncestor(this, SQLDatabase.class);
 		if (parentDatabase == null) throw new IllegalStateException("Schema does not have a SQLDatabase ancestor. Can't populate.");
 		
 		Connection con = null;
