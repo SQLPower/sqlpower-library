@@ -66,6 +66,7 @@ public abstract class DatabaseConnectedTestCase extends TestCase {
      */
     protected JDBCDataSource getJDBCDataSource() throws IOException {
         plini.read(new File("pl.regression.ini"));
+        plini.read(new File("default_database_types.regression.ini"));
     	return plini.getDataSource("regression_test", JDBCDataSource.class);
     }
     
