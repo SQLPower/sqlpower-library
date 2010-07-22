@@ -34,7 +34,17 @@ import ca.sqlpower.object.annotation.ConstructorParameter;
  */
 public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefinedSQLType> {
 
+	/**
+	 * The {@link UserDefinedSQLType} that is a copy of the original
+	 */
 	private final UserDefinedSQLType spObject;
+
+	/**
+	 * Is true if the snapshot is of a {@link UserDefinedSQLType} that is a
+	 * Domain, or if this snapshot is referred to as the upstream type from a
+	 * domain {@link UserDefinedSQLTypeSnapshot}.
+	 */
+	private final boolean domainSnapshot;
 
 	/**
 	 * This particular constructor is intended to be used by the SPObject
@@ -48,16 +58,22 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 * @param systemWorkspaceRevision
 	 *            The system workspace revision number from which the snapshot
 	 *            was taken.
+	 * @param isDomainSnapshot
+	 *            Is true if the snapshot is of a {@link UserDefinedSQLType}
+	 *            that is a Domain, or if this snapshot is referred to as the
+	 *            upstream type from a domain {@link UserDefinedSQLTypeSnapshot}
 	 */
     @Constructor
 	public UserDefinedSQLTypeSnapshot(
 			@ConstructorParameter (propertyName = "spObject") UserDefinedSQLType spObject,
 			@ConstructorParameter (propertyName = "originalUUID") String originalUUID,
-			@ConstructorParameter (propertyName = "workspaceRevision") int systemWorkspaceRevision) {
+			@ConstructorParameter (propertyName = "workspaceRevision") int systemWorkspaceRevision,
+			@ConstructorParameter (propertyName = "domainSnapshot") boolean isDomainSnapshot) {
 		super(originalUUID, systemWorkspaceRevision);
 		this.spObject = spObject;
+		this.domainSnapshot = isDomainSnapshot;
 	}
-    
+
 	/**
 	 * Create a snapshot of a {@link UserDefinedSQLType}.
 	 * 
@@ -76,14 +92,19 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 * @param systemRevision
 	 *            The system workspace revision number from which the snapshot
 	 *            is being taken.
+	 * @param isDomainSnapshot
+	 *            Is true if the snapshot is of a {@link UserDefinedSQLType}
+	 *            that is a Domain, or if this snapshot is referred to as the
+	 *            upstream type from a domain {@link UserDefinedSQLTypeSnapshot}
 	 * @throws IllegalArgumentException
 	 * @throws ObjectDependentException
 	 */
-	public UserDefinedSQLTypeSnapshot(UserDefinedSQLType original, int systemRevision) {
+	public UserDefinedSQLTypeSnapshot(UserDefinedSQLType original, int systemRevision, boolean isDomainSnapshot) {
 		super(original.getUUID(), systemRevision);
 		setName(original.getName());
 		spObject = new UserDefinedSQLType();
 		UserDefinedSQLType.copyProperties(getSPObject(), original);
+		this.domainSnapshot = isDomainSnapshot;
 	}
 
 	/**
@@ -102,6 +123,10 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 * @param systemRevision
 	 *            The system workspace revision number from which the snapshot
 	 *            is being taken.
+	 * @param isDomainSnapshot
+	 *            Is true if the snapshot is of a {@link UserDefinedSQLType}
+	 *            that is a Domain, or if this snapshot is referred to as the
+	 *            upstream type from a domain {@link UserDefinedSQLTypeSnapshot}
 	 * @param upstreamTypeSnapshot
 	 *            A {@link UserDefinedSQLTypeSnapshot} of the upstreamType of
 	 *            the original {@link UserDefinedSQLType}
@@ -109,8 +134,8 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 * @throws ObjectDependentException
 	 */
 	public UserDefinedSQLTypeSnapshot(UserDefinedSQLType original,
-			int systemRevision, UserDefinedSQLTypeSnapshot upstreamTypeSnapshot) {
-		this(original, systemRevision);
+			int systemRevision, boolean isDomainSnapshot, UserDefinedSQLTypeSnapshot upstreamTypeSnapshot) {
+		this(original, systemRevision, isDomainSnapshot);
 		spObject.setUpstreamType(upstreamTypeSnapshot.getSPObject());
 	}
 
@@ -131,5 +156,10 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	@Accessor
 	public UserDefinedSQLType getSPObject() {
 		return spObject;
+	}
+
+	@Accessor
+	public boolean isDomainSnapshot() {
+		return domainSnapshot;
 	}
 }
