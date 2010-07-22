@@ -1165,15 +1165,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	}
 
 	/**
-	 * Relationships have ColumnMapping children.
-	 *
-	 * @return true
-	 */
-	public boolean allowsChildren() {
-		return true;
-	}
-
-	/**
 	 * This class is not a lazy-loading class.  This call does nothing.
 	 */
 	protected void populateImpl() {
@@ -1462,11 +1453,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 		
 		@Override
-		public boolean allowsChildren() {
-			return false;
-		}
-		
-		@Override
 		public SQLTable getParent() {
 			return (SQLTable) super.getParent();
 		}
@@ -1510,11 +1496,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		@Override
 		protected boolean removeChildImpl(SPObject child) {
 			return false;
-		}
-
-		public int childPositionOffset(Class<? extends SPObject> childType) {
-			throw new IllegalArgumentException("Cannot retrieve the child position offset of " + 
-					childType + " but " + getClass() + " does not allow children.");
 		}
 
 		public List<Class<? extends SPObject>> getAllowedChildTypes() {
@@ -1672,15 +1653,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		}
 
 		/**
-		 * Mappings do not contain other SQLObjects.
-		 *
-		 * @return false
-		 */
-		public boolean allowsChildren() {
-			return false;
-		}
-
-		/**
 		 * This class is not a lazy-loading class.  This call does nothing.
 		 */
 		protected void populateImpl() throws SQLObjectException {
@@ -1721,11 +1693,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		@Override
 		protected boolean removeChildImpl(SPObject child) {
 			return false;
-		}
-
-		public int childPositionOffset(Class<? extends SPObject> childType) {
-			throw new IllegalArgumentException("Cannot retrieve the child position offset of " + 
-					childType + " but " + getClass() + " does not allow children.");
 		}
 
 		public List<? extends SPObject> getDependencies() {
@@ -1909,15 +1876,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			return true;
 		}
 		return false;
-	}
-
-	public int childPositionOffset(Class<? extends SPObject> childType) {
-		if (childType == ColumnMapping.class) {
-			return 0;
-		}
-		
-		throw new IllegalArgumentException("The type " + childType + 
-				" is not a valid child type of " + getName());
 	}
 
 	public List<? extends SPObject> getDependencies() {

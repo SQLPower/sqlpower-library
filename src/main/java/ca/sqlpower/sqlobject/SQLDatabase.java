@@ -461,10 +461,6 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		return getName();
 	}
 	
-	public boolean allowsChildren() {
-		return true;
-	}
-
 	/**
 	 * Determines whether this SQL object is a container for catalog
 	 *
@@ -949,21 +945,6 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 		    }
 		}
 		return false;
-	}
-
-	public int childPositionOffset(Class<? extends SPObject> childType) {
-		int offset = 0;
-		
-		if (childType == SQLCatalog.class) return offset;
-		offset += catalogs.size();
-		
-		if (childType == SQLSchema.class) return offset;
-		offset += schemas.size();
-		
-		if (childType == SQLTable.class) return offset;
-		
-		throw new IllegalArgumentException("The type " + childType + 
-				" is not a valid child type of " + getName());
 	}
 
 	@NonProperty

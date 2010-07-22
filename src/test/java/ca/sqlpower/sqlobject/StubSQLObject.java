@@ -66,11 +66,6 @@ public class StubSQLObject extends SQLObject {
         return null;
     }
 
-    @Override
-    public boolean allowsChildren() {
-        return true;
-    }
-
     // ======= non-SQLObject methods below this line ==========
     
     public int getPopulateCount() {
@@ -92,10 +87,6 @@ public class StubSQLObject extends SQLObject {
 			return true;
 		}
 		return false;
-	}
-
-	public int childPositionOffset(Class<? extends SPObject> childType) {
-		return 0;
 	}
 
 	public List<? extends SPObject> getDependencies() {
@@ -126,8 +117,6 @@ public class StubSQLObject extends SQLObject {
 	}
 	
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
-		List<Class<? extends SPObject>> types = new ArrayList<Class<? extends SPObject>>();
-		types.add(SQLObject.class);
-		return Collections.unmodifiableList(types);
+		return Collections.<Class<? extends SPObject>>singletonList(SQLObject.class);
 	}
 }

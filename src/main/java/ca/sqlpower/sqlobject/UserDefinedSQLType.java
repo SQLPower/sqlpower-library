@@ -181,11 +181,6 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     }
     
     @Override
-    public boolean allowsChildren() {
-        return true;
-    }
-
-    @Override
     public List<? extends SQLObject> getChildrenWithoutPopulating() {
     	ArrayList<SQLTypePhysicalProperties> properties = new ArrayList<SQLTypePhysicalProperties>();
     	properties.add(defaultPhysicalProperties);
@@ -214,10 +209,6 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
         } else {
             return false;
         }
-    }
-
-    public int childPositionOffset(Class<? extends SPObject> childType) {
-        return 0;
     }
 
     public List<Class<? extends SPObject>> getAllowedChildTypes() {

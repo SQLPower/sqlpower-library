@@ -1332,13 +1332,6 @@ public class SQLTable extends SQLObject {
 		return populated;
 	}
 
-	/**
-	 * Returns true (tables have several folders as children).
-	 */
-	public boolean allowsChildren() {
-		return true;
-	}
-
 	@NonBound
 	public Class<? extends SQLObject> getChildType() {
 		return SQLObject.class;
@@ -1962,24 +1955,6 @@ public class SQLTable extends SQLObject {
 		return false;
 	}
 	
-	public int childPositionOffset(Class<? extends SPObject> childType) {
-		int offset = 0;
-		
-		if (childType == SQLColumn.class) return offset;
-		offset += columns.size();
-		
-		if (childType == SQLRelationship.class) return offset;
-		offset += exportedKeys.size();
-		
-		if (childType == SQLImportedKey.class) return offset;
-		offset += importedKeys.size();
-		
-		if (childType == SQLIndex.class) return offset;
-		
-		throw new IllegalArgumentException("The type " + childType + 
-				" is not a valid child type of " + getName());
-	}
-
 	public List<? extends SPObject> getDependencies() {
 		return Collections.emptyList();
 	}

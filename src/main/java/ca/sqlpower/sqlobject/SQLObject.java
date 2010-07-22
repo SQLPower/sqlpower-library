@@ -250,11 +250,12 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	 * Returns true if and only if this object can have child
 	 * SQLObjects.  Your implementation of this method <b>must not</b>
 	 * cause JDBC activity, or the lazy loading properties of your
-	 * SQLObjects will be wasted!  Typically, you will implement this
-	 * with a hardcoded "<code>return true</code>" or 
-	 * "<code>return false</code>" depending on object type.
+	 * SQLObjects will be wasted!
 	 */
-	public abstract boolean allowsChildren();
+	@Override
+	public boolean allowsChildren() {
+		return super.allowsChildren();
+	}
 
 	@Override
 	public boolean removeChild(SPObject child) throws ObjectDependentException,

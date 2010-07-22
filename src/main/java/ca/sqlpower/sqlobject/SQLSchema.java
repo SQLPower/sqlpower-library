@@ -172,10 +172,6 @@ public class SQLSchema extends SQLObject {
 		return getName();
 	}
 	
-	public boolean allowsChildren() {
-		return true;
-	}
-
 	/**
 	 * Populates this schema from the source database, if there
 	 * is one.  Schemas that have no parent should not need to be
@@ -344,13 +340,6 @@ public class SQLSchema extends SQLObject {
 			 return true;
 		}
 		return false;
-	}
-
-	public int childPositionOffset(Class<? extends SPObject> childType) {
-		if (childType == SQLTable.class) return 0;
-		
-		throw new IllegalArgumentException("The type " + childType + 
-				" is not a valid child type of " + getName());
 	}
 
 	public List<? extends SPObject> getDependencies() {

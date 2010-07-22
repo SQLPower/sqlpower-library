@@ -57,10 +57,6 @@ public class SQLObjectRoot extends SQLObject {
 		return getName();
 	}
 	
-	public boolean allowsChildren() {
-		return true;
-	}
-	
 	protected void populateImpl() throws SQLObjectException {
 		// no-op
 	}
@@ -122,18 +118,6 @@ public class SQLObjectRoot extends SQLObject {
 			return true;
 		}
 		return false;
-	}
-
-	public int childPositionOffset(Class<? extends SPObject> childType) {
-		int offset = 0;
-		
-		if (childType == SQLDatabase.class) return offset;
-		offset += databases.size();
-		
-		if (childType == SQLTable.class) return offset;
-		
-		throw new IllegalArgumentException("The type " + childType + 
-				" is not a valid child type of " + getName());
 	}
 
 	@NonProperty

@@ -83,10 +83,6 @@ public class SQLCheckConstraint extends SQLObject {
 		this(constraint.getName(), constraint.getConstraint());
 	}
 
-	public int childPositionOffset(Class<? extends SPObject> childType) {
-		return 0;
-	}
-
 	public void removeDependency(SPObject dependency) {
 		// No operation.
 	}
@@ -109,11 +105,6 @@ public class SQLCheckConstraint extends SQLObject {
 	@Override @Transient @Accessor
 	public String getShortDisplayName() {
 		return getName();
-	}
-
-	@Override
-	public boolean allowsChildren() {
-		return false;
 	}
 
 	@Override @NonProperty

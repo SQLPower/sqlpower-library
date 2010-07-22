@@ -698,10 +698,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 		return getName() + ": " + getTypeName();
 	}
 
-	public boolean allowsChildren() {
-		return true;
-	}
-
 	// ------------------------- accessors and mutators --------------------------
 
 	@Accessor(isInteresting=true)
@@ -1327,11 +1323,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	@Override
 	protected boolean removeChildImpl(SPObject child) {
 		throw new IllegalStateException("Cannot remove children!!!");
-	}
-
-	public int childPositionOffset(Class<? extends SPObject> childType) {
-		throw new IllegalArgumentException("Cannot retrieve the child position offset of " + 
-				childType + " but " + getClass() + " does not allow children.");
 	}
 
 	@NonProperty

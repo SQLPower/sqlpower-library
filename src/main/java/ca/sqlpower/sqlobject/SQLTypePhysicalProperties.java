@@ -376,11 +376,6 @@ public class SQLTypePhysicalProperties extends SQLObject implements SQLCheckCons
     }
 
     @Override
-    public boolean allowsChildren() {
-        return true;
-    }
-
-    @Override
     public List<? extends SQLObject> getChildrenWithoutPopulating() {
     	List<SQLObject> children = new ArrayList<SQLObject>();
     	children.addAll(checkConstraints);
@@ -428,18 +423,6 @@ public class SQLTypePhysicalProperties extends SQLObject implements SQLCheckCons
     		return true;
     	}
     	return false;
-    }
-
-    public int childPositionOffset(Class<? extends SPObject> childType) {
-    	int offset = 0;
-    	
-    	if (childType == SQLCheckConstraint.class) return offset;
-        offset += checkConstraints.size();
-        
-        if (childType == SQLEnumeration.class) return offset;
-		
-		throw new IllegalArgumentException("The type " + childType + 
-				" is not a valid child type of " + getName());
     }
 
     @NonProperty

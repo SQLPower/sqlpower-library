@@ -218,11 +218,6 @@ public class SQLIndex extends SQLObject {
         }
 
         @Override
-        public boolean allowsChildren() {
-            return false;
-        }
-
-        @Override
         @Accessor
         public SQLIndex getParent() {
             return (SQLIndex) super.getParent();
@@ -363,12 +358,7 @@ public class SQLIndex extends SQLObject {
 
 		@Override
 		protected boolean removeChildImpl(SPObject child) {
-			// TODO Auto-generated method stub
 			return false;
-		}
-
-		public int childPositionOffset(Class<? extends SPObject> childType) {
-			return 0;
 		}
 
 		public List<? extends SPObject> getDependencies() {

@@ -50,14 +50,6 @@ public class SQLSequence extends SQLObject {
     }
     
     /**
-     * Returns false.
-     */
-    @Override
-    public boolean allowsChildren() {
-        return false;
-    }
-
-    /**
      * Returns null because this type of object doesn't have a parent.
      */
     @Override
@@ -97,10 +89,6 @@ public class SQLSequence extends SQLObject {
 	@Override
 	protected boolean removeChildImpl(SPObject child) {
 		return false;
-	}
-
-	public int childPositionOffset(Class<? extends SPObject> childType) {
-		throw new IllegalStateException("SQLSequence " + getName() + " does not allow children.");
 	}
 
 	public List<? extends SPObject> getDependencies() {

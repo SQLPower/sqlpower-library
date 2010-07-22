@@ -161,10 +161,6 @@ public class SQLCatalog extends SQLObject {
 		return getName();
 	}
 	
-	public boolean allowsChildren() {
-		return true;
-	}
-
 	protected void populateImpl() throws SQLObjectException {
 		if (populated) return;
 
@@ -415,11 +411,6 @@ public class SQLCatalog extends SQLObject {
 			return true;
 		}
 		return false;
-	}
-
-	public int childPositionOffset(Class<? extends SPObject> childType) {
-		// TODO Auto-generated method stub
-		return 0;
 	}
 
 	public List<? extends SPObject> getDependencies() {
