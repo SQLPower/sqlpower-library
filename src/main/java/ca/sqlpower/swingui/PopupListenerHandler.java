@@ -20,6 +20,7 @@
 package ca.sqlpower.swingui;
 
 import java.awt.Component;
+import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseAdapter;
@@ -73,25 +74,10 @@ public class PopupListenerHandler {
             }
         };
 
-        resizeListener = new ComponentListener() {
-
-            public void componentHidden(ComponentEvent e) {
-                //Do nothing
-            }
-
+        resizeListener = new ComponentAdapter() {
             public void componentMoved(ComponentEvent e) {
                 cleanup();
             }
-
-            public void componentResized(ComponentEvent e) {
-                //Do nothing
-
-            }
-
-            public void componentShown(ComponentEvent e) {
-                //Do nothing
-            }
-
         };
         
     }
