@@ -157,7 +157,7 @@ public abstract class AbstractSPObject implements SPObject {
 				children.add(type.cast(child));
 			}
 		}
-		return children;
+		return Collections.unmodifiableList(children);
 	}
 	
     public boolean allowsChildren() {
