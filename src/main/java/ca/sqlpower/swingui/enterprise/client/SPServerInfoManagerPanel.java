@@ -116,8 +116,9 @@ public class SPServerInfoManagerPanel {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if (e.getClickCount() == 2
-						&& SwingUtilities.isLeftMouseButton(e)) {
-					editSelectedServer();
+						&& SwingUtilities.isLeftMouseButton(e)
+						&& connectButton.getAction() != null) {
+					connectButton.getAction().actionPerformed(null);
 				}
 			}
 
