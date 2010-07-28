@@ -21,8 +21,6 @@ package ca.sqlpower.swingui;
 
 import java.awt.Point;
 import java.awt.event.ActionEvent;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -90,21 +88,6 @@ public class PopupJTreeAction extends AbstractAction {
                 	}
                 }
             }
-        }
-    };
-
-	/**
-	 * This {@link FocusListener} causes the popup to close once the component
-	 * it is attached to loses focus.
-	 */
-    private final FocusListener focusListener = new FocusAdapter() {
-        @Override
-        public void focusLost(FocusEvent e) {
-        	if (e.getOppositeComponent() != panel && 
-        			e.getOppositeComponent() != button && 
-        			e.getOppositeComponent() != tree) {
-        		popupCleanup();
-        	}
         }
     };
 
@@ -189,9 +172,6 @@ public class PopupJTreeAction extends AbstractAction {
         }
         if (tree != null) {
             tree.addTreeSelectionListener(treeListener);
-            tree.addFocusListener(focusListener);
-            panel.addFocusListener(focusListener);
-            button.addFocusListener(focusListener);
         }
     }
 
@@ -206,9 +186,6 @@ public class PopupJTreeAction extends AbstractAction {
         }
         if (tree != null) {
             tree.removeTreeSelectionListener(treeListener);
-            tree.removeFocusListener(focusListener);
-            panel.removeFocusListener(focusListener);
-            button.removeFocusListener(focusListener);
         }
     }
 
