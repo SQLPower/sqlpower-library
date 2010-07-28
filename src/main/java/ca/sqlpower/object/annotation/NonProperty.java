@@ -30,9 +30,10 @@ import java.lang.annotation.Target;
  * either a {@link Mutator} annotation or a {@link NonProperty} annotation. This
  * ensures that each getter and setter has been defined to be persisted or not.
  * A method marked as a {@link NonProperty} identifies that the property it
- * returns is not actually a property of the object but is a complex value, like
- * children, and will be ignored by persistence tests and other persistence
- * classes.
+ * returns is a complex value, and not simply a property. The value will be
+ * persisted as a property. One example of its use is a reference to a specific
+ * child. These properties will be ignored by persistence tests and other
+ * persistence classes.
  * <p>
  * This annotation is retained at runtime for the benefits of tests only. There
  * will be no need to access this annotation at runtime when the app is running.

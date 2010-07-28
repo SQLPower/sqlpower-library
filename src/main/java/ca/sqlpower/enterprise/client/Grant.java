@@ -31,7 +31,6 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
-import ca.sqlpower.object.annotation.NonProperty;
 
 /**
  * A Grant object represents a set of permissions on a single object, or class
@@ -250,7 +249,6 @@ public class Grant extends AbstractSPObject {
         return sb.toString();
     }
 
-    @NonProperty
 	public boolean isSystemLevel() {
 		return subject == null;
 	}

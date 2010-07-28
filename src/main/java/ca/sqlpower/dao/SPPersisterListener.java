@@ -189,12 +189,7 @@ public class SPPersisterListener implements SPListener {
 		this.transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
 			"Persisting " + o.getName() + " and its descendants."));
 		
-		final SPPersisterHelper<? extends SPObject> persisterHelper;
-		try {
-			persisterHelper = PersisterHelperFinder.findPersister(o.getClass());
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		
 		
 		//This persister is used to put persist calls to the pooled lists in this listener.
 		SPPersister poolingPersister = new SPPersister() {
@@ -247,16 +242,30 @@ public class SPPersisterListener implements SPListener {
 				//do nothing, just looking for persist calls.		
 			}
 		};
-
+		
 		try {
-		    if (includeRootPersistObject) {
-		        persisterHelper.persistObject(o, index, poolingPersister, converter);
-		    } else {
-		        List<String> emptyList = new ArrayList<String>();
-		        persisterHelper.persistObjectProperties(o, poolingPersister, converter, emptyList);
-		    }
+			persistObject(o, index, includeRootPersistObject, poolingPersister);
 		} catch (SPPersistenceException e) {
 			throw new RuntimeException(e);
+		}
+			
+		this.transactionEnded(TransactionEvent.createEndTransactionEvent(this));
+	}
+	
+	public void persistObject(SPObject o, int index, boolean includeRootPersistObject, SPPersister localTarget) throws SPPersistenceException {
+		final SPPersisterHelper<? extends SPObject> persisterHelper;
+		try {
+			persisterHelper = PersisterHelperFinder.findPersister(o.getClass());
+		} catch (Exception e) {
+			throw new SPPersistenceException(o.getUUID(), e);
+		}
+		
+		localTarget.begin();
+		if (includeRootPersistObject) {
+			persisterHelper.persistObject(o, index, localTarget, converter);
+		} else {
+			List<String> emptyList = new ArrayList<String>();
+			persisterHelper.persistObjectProperties(o, localTarget, converter, emptyList);
 		}
 
 		List<? extends SPObject> children;
@@ -269,10 +278,9 @@ public class SPPersisterListener implements SPListener {
 		for (SPObject child : children) {
 			int childIndex = 0;
 			childIndex = getIndexWithinSiblings(o, child);
-			persistObject(child, childIndex);
+			persistObject(child, childIndex, true, localTarget);
 		}
-
-		this.transactionEnded(TransactionEvent.createEndTransactionEvent(this));
+		localTarget.commit();
 	}
 
 	/**
