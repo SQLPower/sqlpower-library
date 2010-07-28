@@ -87,6 +87,27 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
      */
     private String autoIncrementSequenceName;
 
+	/**
+	 * @see #getEtlTransformationLogic()
+	 */
+    private String etlTransformationLogic;
+    
+    /**
+     * @see #getEtlDefaultValue()
+     */
+    private String etlDefaultValue;
+    
+    /**
+     * @see #getEtlAuditable()
+     */
+    private Boolean etlAuditable;
+
+	/**
+	 * @see #getEtlNotes()
+	 */
+    private String etlNotes;
+    
+
 	// *** REMEMBER *** update the copyProperties method if you add new properties!
 
 	
@@ -366,6 +387,10 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
  				target.setPhysicalName(source.getPhysicalName());
  				target.setRemarks(source.remarks);
  				target.setAutoIncrementSequenceName(source.autoIncrementSequenceName);
+ 				target.setEtlAuditable(source.getEtlAuditable());
+ 				target.setEtlDefaultValue(source.getEtlDefaultValue());
+ 				target.setEtlNotes(source.getEtlNotes());
+ 				target.setEtlTransformationLogic(source.getEtlTransformationLogic());
  				UserDefinedSQLType.copyProperties(
  						target.getUserDefinedSQLType(), 
  						source.getUserDefinedSQLType());
@@ -1364,4 +1389,114 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	        throw new RuntimeException(t);
 	    }
 	}
+
+	/**
+	 * Returns the ETL transformation logic used to get from the source column
+	 * to this target column. Currently, this property is only used in SQL Power
+	 * Architect Enterprise Edition.
+	 */
+	@Accessor(isInteresting=true)
+	public String getEtlTransformationLogic() {
+		return etlTransformationLogic;
+	}
+
+	/**
+	 * Sets the ETL transformation logic used to get from the source column to
+	 * this target column. Currently, this property is only used in SQL Power
+	 * Architect Enterprise Edition.
+	 * 
+	 * @param etlTransformationLogic
+	 *            The ETL transformation logic.
+	 */
+	@Mutator
+	public void setEtlTransformationLogic(String etlTransformationLogic) {
+		String oldTransformationLogic = this.etlTransformationLogic;
+		this.etlTransformationLogic = etlTransformationLogic;
+		firePropertyChange("etlTransformationLogic", oldTransformationLogic, etlTransformationLogic);
+	}
+
+	/**
+	 * Gets the ETL mapping default value. This column should be set to this
+	 * default value during an ETL transformation process.
+	 * 
+	 * @return The ETL mapping default value.
+	 */
+	@Accessor(isInteresting=true)
+	public String getEtlDefaultValue() {
+		return etlDefaultValue;
+	}
+
+	/**
+	 * Sets the ETL mapping default value. This column should be set to this
+	 * default value during an ETL transformation process.
+	 * 
+	 * @param etlDefaultValue
+	 *            The ETL mapping default value.
+	 */
+	@Mutator
+	public void setEtlDefaultValue(String etlDefaultValue) {
+		String oldDefaultValue = this.etlDefaultValue;
+		this.etlDefaultValue = etlDefaultValue;
+		firePropertyChange("etlDefaultValue", oldDefaultValue, etlDefaultValue);
+	}
+
+	/**
+	 * Returns a {@link Boolean} that determines if the ETL mapping from this
+	 * target column to the source column is auditable. Auditable means that a
+	 * comparison should be done outside the ETL after the process has been
+	 * running for a long period of time (e.g. 1 month). Currently, this
+	 * property is only used in SQL Power Architect Enterprise Edition.
+	 * 
+	 * If true is returned, the ETL mapping is auditable. If null is returned,
+	 * there is no ETL mapping.
+	 */
+	@Accessor(isInteresting=true)
+	public Boolean getEtlAuditable() {
+		return etlAuditable;
+	}
+
+	/**
+	 * Sets a {@link Boolean} that determines if the ETL mapping from this
+	 * target column to the source column is auditable. Currently, this property
+	 * is only used in SQL Power Architect Enterprise Edition.
+	 * 
+	 * @param etlAuditable
+	 *            The {@link Boolean} auditable value. If true, then the ETL
+	 *            mapping is auditable. This value can be null, which indicates
+	 *            that there is no ETL mapping.
+	 */
+	@Mutator
+	public void setEtlAuditable(Boolean etlAuditable) {
+		Boolean oldAuditable = this.etlAuditable;
+		this.etlAuditable = etlAuditable;
+		firePropertyChange("etlAuditable", oldAuditable, etlAuditable);
+	}
+	
+	/**
+	 * Returns a {@link String} description about the ETL mapping from this
+	 * column to the source column, extra to the transformation logic.
+	 * Currently, this property is only used in SQL Power Architect Enterprise
+	 * Edition.
+	 */
+	@Accessor(isInteresting=true)
+	public String getEtlNotes() {
+		return etlNotes;
+	}
+	
+	/**
+	 * Sets a description regarding anything about the ETL mapping from this
+	 * column to this source column that is not already defined in the ETL
+	 * transformation logic. Currently, this property is only used in SQL Power
+	 * Architect Enterprise Edition.
+	 * 
+	 * @param etlNotes
+	 *            The description about the ETL mapping.
+	 */
+	@Mutator
+	public void setEtlNotes(String etlNotes) {
+		String oldNotes = this.etlNotes;
+		this.etlNotes = etlNotes;
+		firePropertyChange("etlNotes", oldNotes, etlNotes);
+	}
+	
 }
