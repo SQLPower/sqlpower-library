@@ -355,9 +355,21 @@ public class FormValidationHandler implements ValidationHandler {
 
         setWorstValidationStatus(worst);
         display.setResult(worst);
+        setValidatedActionsEnabled(getWorstValidationStatus() == null || 
+    			getWorstValidationStatus().getStatus() != Status.FAIL);
+    }
+
+	/**
+	 * Sets all of the validated {@link Action}s to either true or false.
+	 * 
+	 * @param enabled
+	 *            true if the {@link Action}s should be enabled, false
+	 *            otherwise.
+	 */
+    public void setValidatedActionsEnabled(boolean enabled) {
         if (actions != null){
         	for (Action a : actions) {
-        		a.setEnabled(worst == null || worst.getStatus() != Status.FAIL);
+        		a.setEnabled(enabled);
         	}
         }
     }
