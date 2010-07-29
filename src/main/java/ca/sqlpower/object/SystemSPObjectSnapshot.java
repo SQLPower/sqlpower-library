@@ -59,6 +59,15 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 	 * snapshot was taken
 	 */
 	private int workspaceRevision;
+
+	/**
+	 * Whether or not this snapshot is obsolete when compared to its original
+	 * (identified by {@link #getOriginalUUID()}) when most recently checked.
+	 * Note that since this is based on when it was most recently checked, it is
+	 * certainly possible that a snapshot can be obsolete and still return
+	 * false.
+	 */       
+	private boolean obsolete;
 	
 	@Accessor
 	public String getOriginalUUID() {
@@ -101,5 +110,17 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 
 	public void removeDependency(SPObject dependency) {
 		// no-op
+	}
+	
+	@Mutator
+	public void setObsolete(boolean isObsolete) {
+		boolean oldValue = this.obsolete;
+		this.obsolete = isObsolete;
+		firePropertyChange("obsolete", oldValue, isObsolete);
+	}
+	
+	@Accessor
+	public boolean isObsolete() {
+		return obsolete;
 	}
 }

@@ -80,4 +80,30 @@ public interface SPObjectSnapshot<T extends SPObject> extends SPObject {
 	 */
 	@Accessor
 	public T getSPObject();
+
+	/**
+	 * Sets the value of the obsolete flag. Use this to mark this snapshot as
+	 * obsolete (the original SPObject identified by {@link #getOriginalUUID()}
+	 * has changed state since this snapshot was made).
+	 * 
+	 * @param isObsolete
+	 *            Set to true if the original SPObject has changed state since
+	 *            this snapshot was made. Otherwise, set to false.
+	 */
+	@Mutator
+	public void setObsolete(boolean isObsolete);
+
+	/**
+	 * Returns whether or not this snapshot is obsolete when compared to its
+	 * original (identified by {@link #getOriginalUUID()}) when most recently
+	 * checked. Note that since this is based on when it was most recently
+	 * checked, it is certainly possible that a snapshot can be obsolete and
+	 * still return false.
+	 * 
+	 * @return True if this snapshot is obsolete (the original SPObject has
+	 *         changed state). Return false if it is not obsolete as of the most
+	 *         recent check.
+	 */
+	@Accessor
+	public boolean isObsolete();
 }
