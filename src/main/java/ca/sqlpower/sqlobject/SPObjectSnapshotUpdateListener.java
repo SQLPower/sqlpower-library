@@ -85,6 +85,9 @@ public class SPObjectSnapshotUpdateListener implements SPListener {
 	@Override
 	public void propertyChanged(PropertyChangeEvent evt) {
 		setObsolete = true;
+		if (transactionCount == 0) {
+			snapshot.setObsolete(true);
+		}
 	}
 
 }
