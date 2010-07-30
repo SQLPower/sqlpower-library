@@ -39,6 +39,8 @@ public class SPObjectSnapshotUpdateListener implements SPListener {
 	private SPObjectSnapshot<? extends SPObject> snapshot;
 	
 	private boolean setObsolete = false;
+	
+	private int transactionCount = 0;
 
 	/**
 	 * Creates a new {@link SPObjectSnapshotUpdateListener} and associates it
@@ -60,12 +62,17 @@ public class SPObjectSnapshotUpdateListener implements SPListener {
 
 	@Override
 	public void transactionStarted(TransactionEvent e) {
-		setObsolete = false;
+		if (transactionCount == 0) {
+			setObsolete = false;
+		}
+		transactionCount++;
 	}
 
 	@Override
 	public void transactionEnded(TransactionEvent e) {
-		if (setObsolete) {
+		transactionCount--;
+		if (transactionCount < 0) throw new IllegalStateException("A transaction ended before it began.");
+		if (transactionCount == 0 && setObsolete) {
 			snapshot.setObsolete(true);
 		}
 	}
