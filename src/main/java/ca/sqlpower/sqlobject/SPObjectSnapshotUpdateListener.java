@@ -53,11 +53,13 @@ public class SPObjectSnapshotUpdateListener implements SPListener {
 	@Override
 	public void childAdded(SPChildEvent e) {
 		setObsolete = true;
+		e.getChild().addSPListener(this);
 	}
 
 	@Override
 	public void childRemoved(SPChildEvent e) {
-		setObsolete = true;	
+		setObsolete = true;
+		e.getChild().removeSPListener(this);
 	}
 
 	@Override
