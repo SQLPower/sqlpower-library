@@ -759,7 +759,9 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 				&& SQLPowerUtils.areEqual(udt1.myAutoIncrement, udt2.myAutoIncrement)
 				&& SQLPowerUtils.areEqual(udt1.description, udt2.description)
 				&& SQLPowerUtils.areEqual(udt1.basicType, udt2.basicType)
-				&& SQLPowerUtils.areEqual(udt1.getUpstreamType(), udt2.getUpstreamType())
+				&& ((udt1.getUpstreamType() == null && udt2.getUpstreamType() == null)
+						|| (udt1.getUpstreamType() != null && udt2.getUpstreamType() != null &&
+								areEqual(udt1.getUpstreamType(), udt2.getUpstreamType())))
 				&& SQLPowerUtils.areEqual(oldPlatforms.size(), newPlatforms.size())
 				&& oldPlatforms.containsAll(newPlatforms);
     	
