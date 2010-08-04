@@ -22,6 +22,8 @@ package ca.sqlpower.sqlobject;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.SystemSPObjectSnapshot;
@@ -34,6 +36,8 @@ import ca.sqlpower.object.annotation.Mutator;
  * An {@link SystemSPObjectSnapshot} implementation specifically for {@link UserDefinedSQLType}
  */
 public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefinedSQLType> {
+	
+	private static final Logger logger = Logger.getLogger(UserDefinedSQLTypeSnapshot.class);
 
 	/**
 	 * The {@link UserDefinedSQLType} that is a copy of the original
@@ -174,8 +178,12 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	@Mutator
 	public void setSnapshotUseCount(int snapshotUseCount) {
 		if (snapshotUseCount < 0) throw new IllegalArgumentException(
-				"There cannot be a negative number of objects using this snapshot.");
+				"There cannot be a negative number of objects using the snapshot for " + 
+				getSPObject().getName() + ".");
+		logger.debug("Setting snapshot use count of " + getSPObject().getName() + " to " + snapshotUseCount);
+		int oldCount = this.snapshotUseCount;
 		this.snapshotUseCount = snapshotUseCount;
+		firePropertyChange("snapshotUseCount", oldCount, snapshotUseCount);
 	}
 
 	@Accessor
