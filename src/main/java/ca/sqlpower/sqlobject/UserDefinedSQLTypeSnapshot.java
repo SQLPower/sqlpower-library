@@ -180,7 +180,9 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 		if (snapshotUseCount < 0) throw new IllegalArgumentException(
 				"There cannot be a negative number of objects using the snapshot for " + 
 				getSPObject().getName() + ".");
-		logger.debug("Setting snapshot use count of " + getSPObject().getName() + " to " + snapshotUseCount);
+		if (getSPObject() != null) {
+			logger.debug("Setting snapshot use count of " + getSPObject().getName() + " to " + snapshotUseCount);
+		}
 		int oldCount = this.snapshotUseCount;
 		this.snapshotUseCount = snapshotUseCount;
 		firePropertyChange("snapshotUseCount", oldCount, snapshotUseCount);
