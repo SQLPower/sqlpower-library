@@ -51,8 +51,7 @@ public class EditableJTable extends JTable implements TableTextConverter {
 		super.columnMarginChanged(pE);
 	}
 
-	public String getTextForCell(int row, int col) {
-		Object o = getValueAt(row, col);
+	public String getTextForCell(Object o) {
 		if (o != null) {
 			return o.toString();
 		} else {
