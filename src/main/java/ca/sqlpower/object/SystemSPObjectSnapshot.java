@@ -43,10 +43,8 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 	
 	@Constructor
 	public SystemSPObjectSnapshot(
-			@ConstructorParameter(propertyName = "originalUUID") String originalUUID,
-			@ConstructorParameter(propertyName = "workspaceRevision") int systemRevision) {
+			@ConstructorParameter(propertyName = "originalUUID") String originalUUID) {
 		this.originalUUID = originalUUID;
-		this.workspaceRevision = systemRevision;
 	}
 
 	/**
@@ -54,12 +52,6 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 	 */
 	private final String originalUUID;
 	
-	/**
-	 * The revision number of the System workspace at the exact time the
-	 * snapshot was taken
-	 */
-	private int workspaceRevision;
-
 	/**
 	 * Whether or not this snapshot is obsolete when compared to its original
 	 * (identified by {@link #getOriginalUUID()}) when most recently checked.
@@ -79,18 +71,6 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 		return SYSTEM_WORKSPACE_UUID;
 	}
 	
-	@Mutator
-	public void setWorkspaceRevision(int workspaceRevision) {
-		int oldValue = this.workspaceRevision;
-		this.workspaceRevision = workspaceRevision;
-		firePropertyChange("workspaceRevision", oldValue, workspaceRevision);
-	}
-
-	@Accessor
-	public int getWorkspaceRevision() {
-		return workspaceRevision;
-	}
-
 	@Override
 	protected boolean removeChildImpl(SPObject child) {
 		return false;

@@ -48,26 +48,6 @@ public interface SPObjectSnapshot<T extends SPObject> extends SPObject {
 	public String getWorkspaceUUID();
 	
 	/**
-	 * Set the workspace revision number that this snapshot is based on. This
-	 * will be typically used when initially creating or updating the
-	 * snapshotted object
-	 * 
-	 * @param workspaceRevision
-	 *            The revision number of the workspace identified by the UUID
-	 *            given by {@link #getWorkspaceUUID()} at which this snapshot
-	 *            was taken.
-	 */
-	@Mutator
-	public void setWorkspaceRevision(int workspaceRevision);
-
-	/**
-	 * @return Returns the revision number of the original SPObject's workspace
-	 *         when the snapshot was taken.
-	 */
-	@Accessor
-	public int getWorkspaceRevision();
-
-	/**
 	 * Returns the {@link SPObject} that is a snapshot of another SPObject with
 	 * the UUID given by {@link #getOriginalUUID()}. The returned
 	 * {@link SPObject} should be in an identical state that the original was in

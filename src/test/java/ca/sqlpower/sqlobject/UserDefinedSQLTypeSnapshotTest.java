@@ -41,7 +41,7 @@ public class UserDefinedSQLTypeSnapshotTest extends PersistedSPObjectTest {
         udt.putPhysicalProperties("Oracle", udtProperties);
         udt.setType(Types.VARCHAR);
         
-        udtSnapshot = new UserDefinedSQLTypeSnapshot(udt, 0, false);
+        udtSnapshot = new UserDefinedSQLTypeSnapshot(udt, false);
         
         getRootObject().addChild(udt, 0);
         getRootObject().addChild(udtSnapshot, 0);

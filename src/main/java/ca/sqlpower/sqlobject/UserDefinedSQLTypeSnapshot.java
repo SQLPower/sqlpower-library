@@ -79,9 +79,8 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	public UserDefinedSQLTypeSnapshot(
 			@ConstructorParameter (propertyName = "spObject") UserDefinedSQLType spObject,
 			@ConstructorParameter (propertyName = "originalUUID") String originalUUID,
-			@ConstructorParameter (propertyName = "workspaceRevision") int systemWorkspaceRevision,
 			@ConstructorParameter (propertyName = "domainSnapshot") boolean isDomainSnapshot) {
-		super(originalUUID, systemWorkspaceRevision);
+		super(originalUUID);
 		this.spObject = spObject;
 		this.domainSnapshot = isDomainSnapshot;
 	}
@@ -111,8 +110,8 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 * @throws IllegalArgumentException
 	 * @throws ObjectDependentException
 	 */
-	public UserDefinedSQLTypeSnapshot(UserDefinedSQLType original, int systemRevision, boolean isDomainSnapshot) {
-		super(original.getUUID(), systemRevision);
+	public UserDefinedSQLTypeSnapshot(UserDefinedSQLType original, boolean isDomainSnapshot) {
+		super(original.getUUID());
 		setName(original.getName());
 		spObject = new UserDefinedSQLType();
 		UserDefinedSQLType.copyProperties(getSPObject(), original);
@@ -146,8 +145,8 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 * @throws ObjectDependentException
 	 */
 	public UserDefinedSQLTypeSnapshot(UserDefinedSQLType original,
-			int systemRevision, boolean isDomainSnapshot, UserDefinedSQLTypeSnapshot upstreamTypeSnapshot) {
-		this(original, systemRevision, isDomainSnapshot);
+			boolean isDomainSnapshot, UserDefinedSQLTypeSnapshot upstreamTypeSnapshot) {
+		this(original, isDomainSnapshot);
 		spObject.setUpstreamType(upstreamTypeSnapshot.getSPObject());
 	}
 
