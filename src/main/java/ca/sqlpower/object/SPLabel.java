@@ -39,12 +39,6 @@ public abstract class SPLabel extends AbstractSPObject {
     private VerticalAlignment vAlignment = VerticalAlignment.MIDDLE;
     
     /**
-     * The font that this label is using to display text. If null, getFont()
-     * will return the parent content box's font.
-     */
-    private Font font;
-
-    /**
      * The background colour defined for this label.
      */
 	private Color backgroundColour;
@@ -112,16 +106,10 @@ public abstract class SPLabel extends AbstractSPObject {
 	}
 
 	@Mutator
-	public void setFont(Font font) {
-		Font oldVal = getFont();
-		this.font = font;
-		firePropertyChange("font", oldVal, font);
-	}
+	public abstract void setFont(Font font);
 
 	@Accessor
-	public Font getFont() {
-		return font;
-	}
+	public abstract Font getFont();
 
 	@Mutator
 	public void setBackgroundColour(Color backgroundColour) {

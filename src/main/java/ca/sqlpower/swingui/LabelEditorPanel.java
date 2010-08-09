@@ -184,7 +184,7 @@ public abstract class LabelEditorPanel implements DataEntryPanel {
             }
         });
         fb.append("Font", fontSelector.getPanel());
-        
+
         fb.nextLine();
         final JLabel colourLabel = new JLabel(" ");
         colourLabel.setBackground(label.getBackgroundColour());
@@ -192,21 +192,25 @@ public abstract class LabelEditorPanel implements DataEntryPanel {
         colourCombo = new JComboBox();
         colourCombo.setRenderer(new ColorCellRenderer(85, 30));
         for (Color bgColour : getBackgroundColours()) {
-            colourCombo.addItem(bgColour);
+        	colourCombo.addItem(bgColour);
         }
-        
-        colourCombo.setSelectedItem(label.getBackgroundColour());
-        colourCombo.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                Color colour = (Color) colourCombo.getSelectedItem();
-                colourLabel.setBackground(colour);
-            }
-        });
-        JPanel colourPanel = new JPanel(new BorderLayout());
-        colourPanel.add(colourLabel, BorderLayout.CENTER);
-        colourPanel.add(colourCombo, BorderLayout.EAST);
-        fb.append("Background", colourPanel);
-        
+
+        if (getBackgroundColours().size() > 1) {
+        	colourCombo.setSelectedItem(label.getBackgroundColour());
+        	colourCombo.addActionListener(new ActionListener() {
+        		public void actionPerformed(ActionEvent e) {
+        			Color colour = (Color) colourCombo.getSelectedItem();
+        			colourLabel.setBackground(colour);
+        		}
+        	});
+        	colourCombo.setSelectedItem(label.getBackgroundColour());
+        	JPanel colourPanel = new JPanel(new BorderLayout());
+        	colourPanel.add(colourLabel, BorderLayout.CENTER);
+        	colourPanel.add(colourCombo, BorderLayout.EAST);
+        	fb.append("Background", colourPanel);
+        } else {
+        	colourCombo.setSelectedIndex(0);
+        }
 	}
 	
 
@@ -253,6 +257,10 @@ public abstract class LabelEditorPanel implements DataEntryPanel {
 	@Override
 	public boolean hasUnsavedChanges() {
 		return true;
+	}
+	
+	public SPLabel getLabel() {
+	    return label;
 	}
 	
 	public abstract FontSelector getFontSelector();

@@ -111,56 +111,23 @@ public abstract class AbstractSPPersisterHelper<T extends SPObject> implements S
 	
 	/**
 	 * Finds the {@link PersistedSPObject} in a {@link List} that matches the
-	 * given parent UUID and class type.
-	 * <p>
-	 * XXX This is unused by the current persister helpers but exists in the
-	 * processor. Leaving it in until we decide it is not needed.
+	 * given UUIDs
 	 * 
 	 * @param parentUUID
 	 *            The {@link SPObject}'s parent UUID.
-	 * @param classType
-	 *            The simple name of the {@link SPObject} type.
 	 * @param persistedObjects
 	 *            The {@link List} of {@link PersistedSPObject}s to search
 	 *            through.
 	 * @return The matching {@link PersistedSPObject}. If it cannot be found,
 	 *         null is returned.
 	 */
-	protected PersistedSPObject findPersistedSPObject(String parentUUID, String classType,
-			List<PersistedSPObject> persistedObjects) {
-		for (PersistedSPObject pwo : persistedObjects) {
-			if (pwo.isLoaded())
-				continue;
-			if (pwo.getType().equals(classType)
-					&& pwo.getParentUUID().equals(parentUUID)) {
-				return pwo;
-			}
-		}
-		return null;
-	}
-
-	/**
-	 * Finds the {@link PersistedSPObject} in a {@link List} that matches the
-	 * given parent UUID and class type.
-	 * 
-	 * @param parentUUID
-	 *            The {@link SPObject}'s parent UUID.
-	 * @param classType
-	 *            The fully qualified name of the {@link SPObject} type.
-	 * @param persistedObjects
-	 *            The {@link List} of {@link PersistedSPObject}s to search
-	 *            through.
-	 * @return The matching {@link PersistedSPObject}. If it cannot be found,
-	 *         null is returned.
-	 */
-	public static PersistedSPObject findPersistedSPObject(String parentUUID, String classType,
+	public static PersistedSPObject findPersistedSPObject(String parentUUID,
 			String childUUID,
 			List<PersistedSPObject> persistedObjects) {
 		for (PersistedSPObject pwo : persistedObjects) {
 			if (pwo.isLoaded())
 				continue;
-			if (pwo.getType().equals(classType)
-					&& pwo.getParentUUID().equals(parentUUID)
+			if (pwo.getParentUUID().equals(parentUUID)
 					&& pwo.getUUID().equals(childUUID)) {
 				return pwo;
 			}

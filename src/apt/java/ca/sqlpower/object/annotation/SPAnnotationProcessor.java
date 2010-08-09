@@ -814,12 +814,11 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 				// 				<parameterName>UUID,
 				// 				persistedObjects);
 				println(sb, tabs, 
-						String.format("%s %s = %s(%s, \"%s\", %s, %s);",
+						String.format("%s %s = %s(%s, %s, %s);",
 								PersistedSPObject.class.getSimpleName(),
 								childPersistedObject,
 								FIND_PERSISTED_OBJECT_METHOD_NAME,
 								uuidField,
-								cpo.getType().getName(),
 								objectUUIDField,
 								persistedObjectsListField));
 				
