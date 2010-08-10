@@ -25,6 +25,8 @@ import java.util.TimerTask;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+import org.apache.log4j.Logger;
+
 /**
  * A {@link DocumentListener} that will buffer all events, and throw a new event
  * after the document has not been modified for a specified period. This
@@ -35,6 +37,8 @@ import javax.swing.event.DocumentListener;
  * explicitly {@link #cancel()} this listener for it to be garbage collected.
  */
 public abstract class TimedDocumentListener implements DocumentListener {
+	
+	private static final Logger logger = Logger.getLogger(TimedDocumentListener.class);
 
 	private boolean dirty = false;
 	
@@ -51,34 +55,37 @@ public abstract class TimedDocumentListener implements DocumentListener {
 				if (cancelled) {
 					timer.cancel();
 					return;
-				} else if (!dirty && changed) {
+				} else if (!isDirty() && isChanged()) {
 					textChanged();
 				}
-				changed = dirty;
-				dirty = false;
+				setChanged(isDirty());
+				setDirty(false);
 			}
 		}
 	};
 
-	public TimedDocumentListener(long delay) {
+	private final String name;
+
+	public TimedDocumentListener(String name, long delay) {
+		this.name = name;
 		timer.scheduleAtFixedRate(task, delay, delay);
 	}
 	
 	@Override
-	public void changedUpdate(DocumentEvent e) {
-		dirty = true;
+	public synchronized void changedUpdate(DocumentEvent e) {
+		setDirty(true);
 	}
 
 	@Override
-	public void insertUpdate(DocumentEvent e) {
-		dirty = true;
+	public synchronized void insertUpdate(DocumentEvent e) {
+		setDirty(true);
 	}
 
 	@Override
-	public void removeUpdate(DocumentEvent e) {
-		dirty = true;
+	public synchronized void removeUpdate(DocumentEvent e) {
+		setDirty(true);
 	}
-
+	
 	/**
 	 * Tells the listener to stop forwarding events. If the document has been
 	 * changed since the last event was fired, one more event will be fired on
@@ -86,11 +93,30 @@ public abstract class TimedDocumentListener implements DocumentListener {
 	 */
 	public synchronized void cancel() {
 		cancelled = true;
-		if (dirty || changed) {
+		logger.debug(name + ": cancelled called dirty is " + isDirty() + " changed is " + isChanged());
+		if (isDirty() || isChanged()) {
 			textChanged();
 		}
 	}
 
 	public abstract void textChanged();
+
+	private synchronized void setDirty(boolean dirty) {
+		this.dirty = dirty;
+		logger.debug(name + ": dirty is " + dirty);
+	}
+
+	private synchronized boolean isDirty() {
+		return dirty;
+	}
+
+	private synchronized void setChanged(boolean changed) {
+		this.changed = changed;
+		logger.debug(name + ": Changed is " + changed);
+	}
+
+	private synchronized boolean isChanged() {
+		return changed;
+	}
 
 }
