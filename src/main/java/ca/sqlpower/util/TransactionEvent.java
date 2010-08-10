@@ -51,9 +51,21 @@ public class TransactionEvent {
      * 
      * @param source
      *            The source of the event.
+     * @deprecated Use {@link #createEndTransactionEvent(Object, String)} instead.
      */
+    @Deprecated
     public static TransactionEvent createEndTransactionEvent(Object source) {
         return new TransactionEvent(source);
+    }
+    
+    /**
+     * Call this constructor to create an end transaction event.
+     * 
+     * @param source
+     *            The source of the event.
+     */
+    public static TransactionEvent createEndTransactionEvent(Object source, String message) {
+    	return new TransactionEvent(source, message, TransactionState.END);
     }
     
     public static TransactionEvent createRollbackTransactionEvent(Object source, String message) {

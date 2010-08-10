@@ -529,7 +529,7 @@ public class SPPersisterListener implements SPListener {
 				}
 			} catch (Throwable t) {
 			    logger.warn("Rolling back due to " + t, t);
-				this.rollback();
+//				this.rollback();
 				throw new SPPersistenceException(null,t);
 			} finally {
 				this.objectsToRemove.clear();

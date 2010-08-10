@@ -483,13 +483,25 @@ public abstract class AbstractSPObject implements SPObject {
         return evt;
     }
 
+	/**
+	 * Fires a transaction ended event.
+	 * 
+	 * @return The event that was fired or null if no event was fired, for
+	 *         testing purposes.
+	 * @deprecated Use {@link #fireTransactionEnded(String)} instead.
+	 */
+    @Deprecated
+    protected TransactionEvent fireTransactionEnded() {
+    	return fireTransactionEnded("Transaction Ended; Source: " + this);
+    }
+
     /**
      * Fires a transaction ended event.
      * 
      * @return The event that was fired or null if no event was fired, for
      *         testing purposes.
      */
-    protected TransactionEvent fireTransactionEnded() {
+    protected TransactionEvent fireTransactionEnded(final String message) {
     	synchronized (listeners) {
     		if (listeners.size() == 0) return null;            
     	}
@@ -497,7 +509,7 @@ public abstract class AbstractSPObject implements SPObject {
     		throw new IllegalStateException("Event for a transaction end" + 
     				" must fired on the foreground thread.");
     	}
-        final TransactionEvent evt = TransactionEvent.createEndTransactionEvent(this);
+        final TransactionEvent evt = TransactionEvent.createEndTransactionEvent(this, message);
         synchronized (listeners) {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
         	for (int i = staticListeners.size() - 1; i >= 0; i--) {
@@ -506,7 +518,9 @@ public abstract class AbstractSPObject implements SPObject {
         	}
         }
         return evt;
-    }
+	}
+
+	
 
     /**
      * Fires a transaction rollback event with a message indicating the
@@ -540,6 +554,10 @@ public abstract class AbstractSPObject implements SPObject {
     
     public void commit() {
     	fireTransactionEnded();
+    }
+    
+    public void commit(String message) {
+    	fireTransactionEnded(message);
     }
     
     protected boolean isForegroundThread() {

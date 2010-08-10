@@ -205,8 +205,15 @@ public interface SPObject {
     
     /**
      * Signals the end of a transaction of a compound event.
+     * @deprecated Use {@link #commit(String)} instead.
      */
+    @Deprecated
     void commit();
+    
+    /**
+     * Signals the end of a transaction of a compound event.
+     */
+    void commit(String message);
 
     /**
      * Gets the WorkspaceContainer that contains this SPObject. If the session is null a
