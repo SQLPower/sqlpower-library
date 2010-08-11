@@ -646,7 +646,8 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     		if (newProperties == defaultPhysicalProperties) return;
 			if (index == 0) {
 				throw new IllegalArgumentException(
-						"Cannot insert child at index 0, as this is where the default physical properties must always be.");
+						"Cannot insert child " + child.getName() + " at index 0 for " + getName() + ", " +
+								"as this is where the default physical properties must always be.");
 			}
     		SQLTypePhysicalProperties oldProperties = getPhysicalProperties(newProperties.getPlatform());
 			// Add new properties. Insert at index - 1 is because
