@@ -198,6 +198,10 @@ public class Group extends AbstractSPObject implements GrantedAuthority {
         addMember(member, members.size());
     }
     
+    public void addUser(User user) {
+    	addMember(new GroupMember(user));
+    }
+    
     public boolean removeMember(GroupMember member) {
     	boolean wasRemoved = false;
         if (this.members.contains(member)) {
@@ -207,6 +211,15 @@ public class Group extends AbstractSPObject implements GrantedAuthority {
             member.setParent(null);
         }
         return wasRemoved;
+    }
+    
+    public boolean removeUser(User user) {
+    	for (GroupMember member : members) {
+    		if (member.getUser().getUUID().equals(user.getUUID())) {
+    			return removeMember(member);
+    		}
+    	}
+    	return false;
     }
 
 	public String getAuthority() {

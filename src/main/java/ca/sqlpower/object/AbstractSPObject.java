@@ -43,7 +43,7 @@ import ca.sqlpower.util.WorkspaceContainer;
 @Persistable
 public abstract class AbstractSPObject implements SPObject {
 	
-    private static final Logger logger = Logger.getLogger(SPObject.class);
+    private static final Logger logger = Logger.getLogger(AbstractSPObject.class);
 	
     protected final List<SPListener> listeners = 
         Collections.synchronizedList(new ArrayList<SPListener>());
@@ -472,6 +472,7 @@ public abstract class AbstractSPObject implements SPObject {
     		throw new IllegalStateException("Event for a transaction start" + 
     				" must fired on the foreground thread.");
     	}
+    	logger.debug(getName() + "[" + getUUID() + "]: Firing transaction started to " + listeners.size() + " listeners");
         final TransactionEvent evt = TransactionEvent.createStartTransactionEvent(this, message);
         synchronized (listeners) {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
@@ -509,6 +510,7 @@ public abstract class AbstractSPObject implements SPObject {
     		throw new IllegalStateException("Event for a transaction end" + 
     				" must fired on the foreground thread.");
     	}
+    	logger.debug(getName() + "[" + getUUID() + "]: Firing transaction ended to " + listeners.size() + " listeners");
         final TransactionEvent evt = TransactionEvent.createEndTransactionEvent(this, message);
         synchronized (listeners) {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
@@ -537,6 +539,7 @@ public abstract class AbstractSPObject implements SPObject {
     		throw new IllegalStateException("Event for a transaction rollback" + 
     				" must fired on the foreground thread.");
     	}
+    	logger.debug(getName() + "[" + getUUID() + "]: Firing transaction rollback to " + listeners.size() + " listeners");
         final TransactionEvent evt = TransactionEvent.createRollbackTransactionEvent(this, message);
         synchronized (listeners) {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
