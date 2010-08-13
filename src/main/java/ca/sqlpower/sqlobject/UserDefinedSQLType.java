@@ -813,7 +813,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	 * @param source
 	 *            The source {@link UserDefinedSQLType} to copy from.
 	 */
-	static final void copyProperties(final UserDefinedSQLType target, final UserDefinedSQLType source) {
+	public static final void copyProperties(final UserDefinedSQLType target, final UserDefinedSQLType source) {
 		if (!areEqual(target, source)) {
 			target.begin("Copying UserDefinedSQLType");
 			target.setUpstreamType(source.getUpstreamType());
