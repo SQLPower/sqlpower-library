@@ -343,9 +343,10 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     			precision = properties.getPrecision();
     			
     			// Get the precision property from the upstream type if this one 
-    			// does not exist or this precision type is constant.
-    			if ((precision == null || getPrecisionType(platform) == PropertyType.CONSTANT) 
-    					&& getUpstreamType() != null) {
+    			// does not exist or its precision type is constant.
+				if (getUpstreamType() != null
+						&& (precision == null || getUpstreamType()
+								.getPrecisionType(platform) == PropertyType.CONSTANT)) {
     				precision = getUpstreamType().getPrecision(platform);
     			}
     		} else if (getUpstreamType() != null) {
@@ -369,9 +370,10 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     			scale = properties.getScale();
     			
     			// Get the scale property from the upstream type if this one 
-    			// does not exist or this scale type is constant.
-    			if ((scale == null || getScaleType(platform) == PropertyType.CONSTANT) 
-    					&& getUpstreamType() != null) {
+    			// does not exist or its scale type is constant.
+				if (getUpstreamType() != null
+						&& (scale == null
+						|| getUpstreamType().getScaleType(platform) == PropertyType.CONSTANT)) {
     				scale = getUpstreamType().getScale(platform);
     			}
     		} else if (getUpstreamType() != null) {
