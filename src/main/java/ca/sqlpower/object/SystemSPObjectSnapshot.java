@@ -26,6 +26,7 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sqlobject.UserDefinedSQLType;
 
 /**
@@ -60,6 +61,12 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 	 * false.
 	 */       
 	private boolean obsolete;
+
+	/**
+	 * Flag to signal that the original object has been deleted. If this is set,
+	 * we should not try to look up the original.
+	 */
+	private boolean deleted = false;
 	
 	@Accessor
 	public String getOriginalUUID() {
@@ -102,5 +109,17 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 	@Accessor
 	public boolean isObsolete() {
 		return obsolete;
+	}
+	
+	@Transient @Mutator
+	public void setDeleted(boolean isDeleted) {
+		boolean oldValue = this.deleted;
+		this.deleted = isDeleted;
+		firePropertyChange("deleted", oldValue, isDeleted);
+	}
+	
+	@Transient @Accessor
+	public boolean isDeleted() {
+		return deleted;
 	}
 }

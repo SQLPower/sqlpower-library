@@ -21,6 +21,7 @@ package ca.sqlpower.object;
 
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.Transient;
 
 /**
  * A 'snapshot' of an {@link SPObject} in the SPObject persistence mechanism in
@@ -86,4 +87,20 @@ public interface SPObjectSnapshot<T extends SPObject> extends SPObject {
 	 */
 	@Accessor
 	public boolean isObsolete();
+
+	/**
+	 * Sets the value of the deleted flag. Use this to signal that the original
+	 * object associated with this snapshot has been deleted.
+	 * 
+	 * @param isDeleted
+	 */
+	@Transient @Mutator
+	void setDeleted(boolean isDeleted);
+
+	/**
+	 * Returns whether or not the original objects associated with this snapshot has been deleted.
+	 * @return
+	 */
+	@Transient @Accessor
+	boolean isDeleted();
 }
