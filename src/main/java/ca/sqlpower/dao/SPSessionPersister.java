@@ -444,28 +444,31 @@ public abstract class SPSessionPersister implements SPPersister {
 						commitObjects();
 						commitProperties();
 						workspace.commit();
-						objectsToRemove.clear();
-						objectsToRemoveRollbackList.clear();
-						persistedObjects.clear();
-						persistedObjectsRollbackList.clear();
-						persistedProperties.clear();
-						persistedPropertiesRollbackList.clear();
-						currentThread = null;
-						transactionCount = 0;
 						
 						if (logger.isDebugEnabled()) {
 							logger.debug("...commit succeeded.");
 						}
-						
-					} else {
-						transactionCount--;
 					}
+						
 				} catch (Throwable t) {
 					logger.error("SPSessionPersister caught an exception while " +
 							"performing a commit operation. Will try to rollback...", t);
 					rollback();
 					throw new SPPersistenceException(null, t);
 				} finally {
+					if (transactionCount > 0) {
+						transactionCount--;
+						if (transactionCount == 0) {
+							objectsToRemove.clear();
+							objectsToRemoveRollbackList.clear();
+							persistedObjects.clear();
+							persistedObjectsRollbackList.clear();
+							persistedProperties.clear();
+							persistedPropertiesRollbackList.clear();
+							currentThread = null;
+						}
+					}
+					
 					workspace.setMagicEnabled(true);
 				}
 			}
