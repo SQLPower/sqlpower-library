@@ -172,28 +172,30 @@ public abstract class LabelEditorPanel implements DataEntryPanel {
         textLabel.setVerticalTextPosition(JLabel.TOP);
         
         fb.nextLine();
-        
-        fontSelector = getFontSelector();
-        
-        logger.debug("FontSelector got passed Font " + label.getFont());
-        fontSelector.setShowingPreview(false);
-        fontSelector.addPropertyChangeListener(new PropertyChangeListener() {
-            public void propertyChange(PropertyChangeEvent evt) {
-                logger.debug("Changing font to: " + fontSelector.getSelectedFont());
-                textArea.setFont(fontSelector.getSelectedFont());
-            }
-        });
-        fb.append("Font", fontSelector.getPanel());
 
-        fb.nextLine();
-        final JLabel colourLabel = new JLabel(" ");
-        colourLabel.setBackground(label.getBackgroundColour());
-        colourLabel.setOpaque(true);
-        colourCombo = new JComboBox();
-        colourCombo.setRenderer(new ColorCellRenderer(85, 30));
-        for (Color bgColour : getBackgroundColours()) {
-        	colourCombo.addItem(bgColour);
+        fontSelector = getFontSelector();
+
+        if (fontSelector != null) {
+        	logger.debug("FontSelector got passed Font " + label.getFont());
+        	fontSelector.setShowingPreview(false);
+        	fontSelector.addPropertyChangeListener(new PropertyChangeListener() {
+        		public void propertyChange(PropertyChangeEvent evt) {
+        			logger.debug("Changing font to: " + fontSelector.getSelectedFont());
+        			textArea.setFont(fontSelector.getSelectedFont());
+        		}
+        	});
+        	fb.append("Font", fontSelector.getPanel());
         }
+
+        	fb.nextLine();
+        	final JLabel colourLabel = new JLabel(" ");
+        	colourLabel.setBackground(label.getBackgroundColour());
+        	colourLabel.setOpaque(true);
+        	colourCombo = new JComboBox();
+        	colourCombo.setRenderer(new ColorCellRenderer(85, 30));
+        	for (Color bgColour : getBackgroundColours()) {
+        		colourCombo.addItem(bgColour);
+        	}
 
         if (getBackgroundColours().size() > 1) {
         	colourCombo.setSelectedItem(label.getBackgroundColour());
@@ -217,8 +219,10 @@ public abstract class LabelEditorPanel implements DataEntryPanel {
 	@Override
 	public boolean applyChanges() {
 
-        fontSelector.applyChanges();
-        label.setFont(fontSelector.getSelectedFont());
+		if (fontSelector != null) {
+			fontSelector.applyChanges();
+			label.setFont(fontSelector.getSelectedFont());
+		}
 
         VariableLabel.removeLabels(textArea.getDocument());
         label.setText(textArea.getText());
