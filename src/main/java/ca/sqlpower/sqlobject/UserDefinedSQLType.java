@@ -529,8 +529,13 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     public void setScaleType(String platform, PropertyType scaleType) {
         getOrCreatePhysicalProperties(platform).setScaleType(scaleType);
     }
-
+    
     @Mutator
+    public void setMyDescription(String myDescription) {
+    	setDescription(myDescription);
+    }
+
+    @Transient @Mutator
     public void setDescription(String description) {
         String oldValue = this.description;
     	this.description = description;
@@ -538,6 +543,11 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     }
 
     @Accessor
+    public String getMyDescription() {
+    	return this.description;
+    }
+    
+    @Transient @Accessor
     public String getDescription() {
     	if (description == null && upstreamType != null) {
     		return upstreamType.getDescription();
