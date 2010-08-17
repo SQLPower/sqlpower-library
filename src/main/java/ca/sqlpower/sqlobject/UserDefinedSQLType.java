@@ -532,14 +532,14 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     
     @Mutator
     public void setMyDescription(String myDescription) {
-    	setDescription(myDescription);
+    	String oldValue = this.description;
+    	this.description = myDescription;
+        firePropertyChange("myDescription", oldValue, description);
     }
 
     @Transient @Mutator
     public void setDescription(String description) {
-        String oldValue = this.description;
-    	this.description = description;
-        firePropertyChange("description", oldValue, description);
+        setMyDescription(description);
     }
 
     @Accessor
