@@ -745,6 +745,11 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				final int deleteRule = crs.getInt(11);
 				final String fkName = crs.getString(12);
 				final int deferrability = crs.getInt(14);
+				
+				if (!fkTable.isColumnsPopulated()) {
+					fkTable.populateColumns();
+				}
+					
 				if (currentKeySeq == 1) {
 					r = new SQLRelationship();
 					final SQLRelationship finalRelation = r;

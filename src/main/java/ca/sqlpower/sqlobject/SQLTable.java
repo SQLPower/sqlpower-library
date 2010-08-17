@@ -353,16 +353,16 @@ public class SQLTable extends SQLObject {
 	 * @throws SQLObjectException
 	 */
     protected void populateColumns() throws SQLObjectException {
+    	if (columnsPopulated) return;
     	synchronized(getClass()) {
     		synchronized(this) {
-    			if (columnsPopulated) return;
     			if (columns.size() > 0) {
     				throw new IllegalStateException("Can't populate table because it already contains columns");
     			}
 
     			logger.debug("column folder populate starting for table " + getName());
 
-    			populateAllColumns(getCatalogName(), getSchemaName(), getParentDatabase(), getParent());
+    			populateAllColumns(getCatalogName(), getSchemaName(), getName(), getParentDatabase(), getParent());
 
     			logger.debug("column folder populate finished for table " + getName());
 
@@ -397,14 +397,15 @@ public class SQLTable extends SQLObject {
 	 *            The SQLObject that contains all of the tables in the system.
 	 * @throws SQLObjectException
 	 */
-    private synchronized static void populateAllColumns(String catalogName, String schemaName, 
+    private synchronized static void populateAllColumns(String catalogName, String schemaName,
+    		String tableName,
     		final SQLDatabase parentDB, final SQLObject tableContainer) throws SQLObjectException {
     	Connection con = null;
 		try {
 		    con = parentDB.getConnection();
 		    DatabaseMetaData dbmd = con.getMetaData();
 		    final ListMultimap<String, SQLColumn> cols = SQLColumn.fetchColumnsForTable(
-		    		catalogName, schemaName, dbmd);
+		    		catalogName, schemaName, tableName, dbmd);
 		    Runnable runner = new Runnable() {
 				public void run() {
 					try {
@@ -603,9 +604,9 @@ public class SQLTable extends SQLObject {
 	
 	protected void populateImportedKeys() throws SQLObjectException {
 		// Must synchronize on class before instance. See populateAllColumns
+		if (importedKeysPopulated) return;
 		synchronized(getClass()) {
 			synchronized(this) {
-				if (importedKeysPopulated) return;
 
 				CachedRowSet crs = null;
 				Connection con = null;

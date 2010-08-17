@@ -664,7 +664,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 
                 try {
                     final ListMultimap<String, SQLColumn> newCols = SQLColumn.fetchColumnsForTable(
-                            catName, schName, dbmd);
+                            catName, schName, null, dbmd);
                     
                     runInForeground(new Runnable() {
                         public void run() {

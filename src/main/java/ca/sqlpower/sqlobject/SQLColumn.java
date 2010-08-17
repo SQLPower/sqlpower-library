@@ -424,13 +424,14 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	static ListMultimap<String, SQLColumn> fetchColumnsForTable(
 	                                String catalog,
 	                                String schema,
+	                                String table,
 	                                DatabaseMetaData dbmd) 
 		throws SQLException, DuplicateColumnException, SQLObjectException {
 		ResultSet rs = null;
 		final ListMultimap<String, SQLColumn> multimap = ArrayListMultimap.create();
  		try {
 			logger.debug("SQLColumn.addColumnsToTables: catalog="+catalog+"; schema="+schema);
-			rs = dbmd.getColumns(catalog, schema, null, "%");
+			rs = dbmd.getColumns(catalog, schema, table, "%");
 			
 			int autoIncCol = SQL.findColumnIndex(rs, "is_autoincrement");
 			logger.debug("Auto-increment info column: " + autoIncCol);
