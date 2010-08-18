@@ -22,6 +22,7 @@ package ca.sqlpower.sqlobject;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import ca.sqlpower.dao.SPPersisterListener;
 import ca.sqlpower.dao.SPSessionPersister;
@@ -240,6 +241,13 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
 	@Override
 	protected SQLObject getSQLObjectUnderTest() throws SQLObjectException {
 		return typeProxy;
+	}
+	
+	@Override
+	public Set<String> getPropertiesToIgnoreForEvents() {
+		Set<String> ignored = super.getPropertiesToIgnoreForEvents();
+		ignored.add("description");
+		return ignored;
 	}
 	
 	/**
