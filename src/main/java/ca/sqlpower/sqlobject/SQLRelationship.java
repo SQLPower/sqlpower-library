@@ -690,7 +690,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
      *             if a database error occurs or if the given table's parent
      *             database is not marked as populated.
      */
-	static List<SQLRelationship> fetchExportedKeys(final SQLTable table)
+	static List<SQLRelationship> fetchExportedKeys(final SQLTable table, final SQLTable originalFkTable)
 	throws SQLObjectException {
 		final SQLDatabase db = table.getParentDatabase();
 		if (!db.isPopulated()) {
@@ -741,6 +741,11 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				final String fkTableName = crs.getString(7);
 				final String fkColName = crs.getString(8);
 				final SQLTable fkTable = db.getTableByName(fkCat,fkSchema,fkTableName);
+				//For performance we only care about the relationships that are being searched for 
+				//on this fk table.
+				if (originalFkTable != null && originalFkTable != fkTable) {
+					continue;
+				}
 				final int updateRule = crs.getInt(10);
 				final int deleteRule = crs.getInt(11);
 				final String fkName = crs.getString(12);

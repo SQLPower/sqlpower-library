@@ -648,7 +648,7 @@ public class SQLTable extends SQLObject {
 						}
 						pkTable.populateColumns();
 						pkTable.populateIndices();
-						pkTable.populateRelationships();
+						pkTable.populateRelationships(this);
 					}
 					setImportedKeysPopulated(true);
 				} catch (SQLException ex) {
@@ -680,6 +680,35 @@ public class SQLTable extends SQLObject {
 			}
 		}
 	}
+	
+	/**
+	 * Populates all the exported key relationships.  This has the
+	 * side effect of populating the imported key side of the
+	 * relationships for the exporting tables.
+	 * <p>
+	 * XXX This is a temporary patch to make relationship populating not cascade.
+	 * This can be improved upon.
+	 */
+    protected synchronized void populateRelationships(SQLTable fkTable) throws SQLObjectException {
+    	if (exportedKeysPopulated) {
+    		return;
+    	}
+
+		logger.debug("SQLTable: relationship populate starting");
+
+		final List<SQLRelationship> newKeys = SQLRelationship.fetchExportedKeys(this, fkTable);
+		runInForeground(new Runnable() {
+			public void run() {
+
+				//Someone beat us to populating the relationships
+				if (exportedKeysPopulated) return;
+				populateRelationshipsWithList(SQLTable.this, newKeys);
+			}
+		});
+
+		logger.debug("SQLTable: relationship populate finished");
+
+	}
 
 	/**
 	 * Populates all the exported key relationships.  This has the
@@ -693,7 +722,7 @@ public class SQLTable extends SQLObject {
 
 		logger.debug("SQLTable: relationship populate starting");
 
-		final List<SQLRelationship> newKeys = SQLRelationship.fetchExportedKeys(this);
+		final List<SQLRelationship> newKeys = SQLRelationship.fetchExportedKeys(this, null);
 		runInForeground(new Runnable() {
 			public void run() {
 
@@ -1912,7 +1941,7 @@ public class SQLTable extends SQLObject {
         try {
             if (type == SQLColumn.class) {
                 populateColumns();
-            } else if (type == SQLIndex.class) {
+            } else if (type == SQLIndex.class || type == SQLImportedKey.class) {
                 populateColumns();
                 populateIndices();
             } else {
@@ -1990,7 +2019,7 @@ public class SQLTable extends SQLObject {
             return;
         }
 
-        final List<SQLRelationship> newRels = SQLRelationship.fetchExportedKeys(this);
+        final List<SQLRelationship> newRels = SQLRelationship.fetchExportedKeys(this, null);
         if (logger.isDebugEnabled()) {
             logger.debug("New imported keys of " + getName() + ": " + newRels);
         }
