@@ -22,15 +22,14 @@ package ca.sqlpower.sqlobject;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import ca.sqlpower.dao.SPPersisterListener;
 import ca.sqlpower.dao.SPSessionPersister;
 import ca.sqlpower.object.CountingSPListener;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
-import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.SPChildEvent.EventType;
+import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
 import ca.sqlpower.testutil.GenericNewValueMaker;
