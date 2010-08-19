@@ -243,13 +243,6 @@ public class UserDefinedSQLTypeTest extends BaseSQLObjectTestCase {
 		return typeProxy;
 	}
 	
-	@Override
-	public Set<String> getPropertiesToIgnoreForEvents() {
-		Set<String> ignored = super.getPropertiesToIgnoreForEvents();
-		ignored.add("description");
-		return ignored;
-	}
-	
 	/**
 	 * Overriden because the superclass version does not account for the default
 	 * physical properties child, which must always exist and always be at index
