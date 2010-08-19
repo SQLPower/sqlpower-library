@@ -530,16 +530,11 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
         getOrCreatePhysicalProperties(platform).setScaleType(scaleType);
     }
     
-    @Mutator
+    @Transient @Mutator
     public void setMyDescription(String myDescription) {
     	String oldValue = this.description;
     	this.description = myDescription;
         firePropertyChange("myDescription", oldValue, description);
-    }
-
-    @Transient @Mutator
-    public void setDescription(String description) {
-        setMyDescription(description);
     }
 
     @Accessor
@@ -833,7 +828,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 			// values are null
 			target.setMyAutoIncrement(source.myAutoIncrement);
 			target.setBasicType(source.basicType);
-			target.setDescription(source.description);
+			target.setMyDescription(source.description);
 			target.setMyNullability(source.myNullability);
 			target.setType(source.type);
 			

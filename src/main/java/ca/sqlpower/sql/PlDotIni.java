@@ -694,7 +694,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 		} else if (key.equals("Basic Type")) {
 			sqlType.setBasicType(BasicSQLType.valueOf(value));
 		} else if (key.equals("Description")) {
-			sqlType.setDescription(value);
+			sqlType.setMyDescription(value);
 		} else if (key.equals("JDBC Type")) {
 			sqlType.setType(Integer.valueOf(value));
 		} else if (key.equals("Precision Type")) {
