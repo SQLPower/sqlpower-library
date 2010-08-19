@@ -37,6 +37,7 @@ import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -52,11 +53,11 @@ import org.apache.log4j.Logger;
 
 import ca.sqlpower.sqlobject.SQLIndex;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties;
-import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider;
-import ca.sqlpower.sqlobject.UserDefinedSQLType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
+import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.BasicSQLType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
+import ca.sqlpower.sqlobject.UserDefinedSQLType;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
@@ -640,6 +641,7 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
         int dbNum = 1;
         int typeNum = 1;
         int olapNum = 1;
+        int sqltypeNum = 1;
 
         Iterator<Object> it = fileSections.iterator();
 	    while (it.hasNext()) {
@@ -651,19 +653,47 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
                 writeSection(out, "Databases_"+dbNum, ((JDBCDataSource) next).getPropertiesMap());
                 dbNum++;
             } else if (next instanceof JDBCDataSourceType) {
-                writeSection(out, "Database Types_"+typeNum, ((JDBCDataSourceType) next).getProperties());
+            	List<SQLTypePhysicalProperties> properties = getPropertiesForDataSourceType((JDBCDataSourceType) next);
+            	Map<String, String> propMap = new LinkedHashMap<String,String>(((JDBCDataSourceType) next).getProperties());
+            	for (int i = 0 ; i < properties.size() ; i++) {
+            		SQLTypePhysicalProperties typeProp = properties.get(i);
+            		StringBuilder value = new StringBuilder();
+            		value.append(typeProp.getParent().getUUID()).append(",");
+            		value.append(typeProp.getName()).append(",");
+            		value.append(typeProp.getPrecisionType()).append(",");	
+            		value.append(typeProp.getScaleType());
+            		propMap.put("ca.sqlpower.sqlobject.SQLTypePhysicalProperties_" + i, value.toString());
+            	}
+                writeSection(out, "Database Types_"+typeNum, propMap);
                 typeNum++;
             } else if (next instanceof Olap4jDataSource) {
                 writeSection(out, "OLAP_databases_"+olapNum, ((Olap4jDataSource) next).getPropertiesMap());
                 olapNum++;
             } else if (next instanceof UserDefinedSQLType) {
-            	logger.debug("Skipping sql types");
+            	Map<String, String> typeProperties = getPropertiesFromSQLType((UserDefinedSQLType) next);
+            	writeSection(out, "Data Types_"+sqltypeNum, typeProperties);
+            	sqltypeNum++;
 	        } else if (next == null) {
 	            logger.error("write: Null section");
 	        } else {
 	            logger.error("write: Unknown section type: "+next.getClass().getName());
 	        }
 	    }
+	}
+	
+	private List<SQLTypePhysicalProperties> getPropertiesForDataSourceType(JDBCDataSourceType ds) {
+		List<SQLTypePhysicalProperties> propertiesList = new ArrayList<SQLTypePhysicalProperties>();
+		
+		for (Object o : fileSections) {
+			if (o instanceof UserDefinedSQLType) {
+				UserDefinedSQLType type = (UserDefinedSQLType) o;
+				SQLTypePhysicalProperties properties = type.getPhysicalProperties(ds.getName());
+				if (properties != null && properties.getPlatform().equals(ds.getName())) {
+					propertiesList.add(properties);
+				}
+			}
+		}
+		return propertiesList;
 	}
 
 	/**
@@ -673,7 +703,6 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 	 */
 	// Left this package private so that the PLDotIniTest can use it
 	Map<String,String> createSQLTypePropertiesMap(UserDefinedSQLType next) {
-		String platform = SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM;
 		Map<String, String> properties = new LinkedHashMap<String, String>();
 		properties.put("Name", next.getName());
 		properties.put("Basic Type", next.getBasicType().toString());
@@ -704,6 +733,21 @@ public class PlDotIni implements DataSourceCollection<SPDataSource> {
 		} else if (key.equals("UUID")) {
 			sqlType.setUUID(value);
 		}
+	}
+	
+	private Map<String,String> getPropertiesFromSQLType(UserDefinedSQLType sqlType) {
+		String platform = SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM;
+		
+		Map<String, String> typeProperties = new LinkedHashMap<String,String>();
+		typeProperties.put("Name", sqlType.getName());
+		typeProperties.put("UUID", sqlType.getUUID());
+		typeProperties.put("Basic Type", sqlType.getBasicType().toString());
+		typeProperties.put("Description", sqlType.getDescription());
+    	typeProperties.put("Precision Type", sqlType.getPrecisionType(platform).toString());
+    	typeProperties.put("Scale Type", sqlType.getScaleType(platform).toString());
+    	typeProperties.put("JDBC Type", sqlType.getType().toString());
+    	
+    	return typeProperties;
 	}
 	
 	/**
