@@ -530,7 +530,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
         getOrCreatePhysicalProperties(platform).setScaleType(scaleType);
     }
     
-    @Transient @Mutator
+    @Mutator
     public void setMyDescription(String myDescription) {
     	String oldValue = this.description;
     	this.description = myDescription;
