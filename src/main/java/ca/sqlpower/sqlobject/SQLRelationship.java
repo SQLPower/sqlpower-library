@@ -615,6 +615,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 */
 	private void realizeMapping() throws SQLObjectException {
 		for (ColumnMapping m : getChildren(ColumnMapping.class)) {
+			if (m.getFkColumn() == null) continue; //fk col has not yet been populated.
 			if (logger.isDebugEnabled()) {
 				logger.debug("realizeMapping: processing " + m);
 			}
@@ -751,10 +752,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				final String fkName = crs.getString(12);
 				final int deferrability = crs.getInt(14);
 				
-				if (!fkTable.isColumnsPopulated()) {
-					fkTable.populateColumns();
-				}
-					
 				if (currentKeySeq == 1) {
 					r = new SQLRelationship();
 					final SQLRelationship finalRelation = r;
@@ -786,10 +783,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 							throw new IllegalStateException("FK table " + parentTable + 
 									" is missing columns, cannot populate relationships.");
 						}
-						if (!fkTable.isColumnsPopulated()) {
-							throw new IllegalStateException("FK table " + fkTable + 
-									" is missing columns, cannot populate relationships.");
-						}
 						try {
 							relToModify.setMagicEnabled(false);
 							ColumnMapping m = new ColumnMapping();
@@ -807,9 +800,10 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 								throw new SQLObjectException("relationship.populate.nullPkColumn");
 							}
 							
-							m.fkColumn = relToModify.getFkTable().getColumnByName(fkColName);
+							m.fkColumn = relToModify.getFkTable().getColumnByName(fkColName, false, false);
 							if (m.fkColumn == null) {
-								throw new SQLObjectException("relationship.populate.nullFkColumn");
+								m.setFkColName(fkColName);
+								m.setFkTable(relToModify.getFkTable());
 							}
 							// column 9 (currentKeySeq) handled above
 							relToModify.updateRule = UpdateDeleteRule.ruleForCode(updateRule);
@@ -1572,6 +1566,37 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		protected SQLColumn pkColumn;
 		protected SQLColumn fkColumn;
 
+		/**
+		 * If the fk table has not been populated the column mapping will point
+		 * to the column in the fk table by table reference and column name.
+		 * Then when the table is actually populated the fkColumn property will
+		 * be set.
+		 * <p>
+		 * If the fkColumn is already populated it should be used over this value.
+		 */
+		private SQLTable fkTable;
+		
+		/**
+		 * Holds the name of the fk table column this mapping should connect if
+		 * the table does not have columns created yet. 
+		 * @see #fkTable
+		 */
+		private String fkColName;
+		
+		/**
+		 * This listener will be attached to the fkTable if the fkTable has not
+		 * had its columns populated yet. This will let the column mapping update
+		 * correctly when the fkTable gets populated.
+		 */
+		private final SPListener fkTableListener = new AbstractSPListener() {
+			
+			public void childAdded(SPChildEvent e) {
+				if (e.getChild() instanceof SQLColumn && e.getChild().getName().equals(fkColName)) {
+					setFkColumn((SQLColumn) e.getChild());
+				}
+			};
+		};
+
 		@Constructor
 		public ColumnMapping() {
 			setName("Column Mapping");
@@ -1620,6 +1645,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			SQLColumn oldFK = this.fkColumn;
 			this.fkColumn = argFkColumn;
 			firePropertyChange("fkColumn", oldFK, argFkColumn);
+			setFkTable(null);
+			setFkColName(null);
 		}
 
 		public String toString() {
@@ -1655,11 +1682,19 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			if (pkColumn == null || fkColumn == null) return "Incomplete mapping";
 			
 			String fkTableName = null;
-			if (fkColumn.getParent() != null) {
+			if (fkColumn == null && fkTable != null) {
+				fkTableName = fkTable.getName();
+			} else if (fkColumn.getParent() != null) {
 				fkTableName = fkColumn.getParent().getName();
 			}
+			String fkColumnName = null;
+			if (fkColumn == null && fkColName != null) {
+				fkColumnName = fkColName;
+			} else if (fkColumn != null) {
+				fkColumnName = fkColumn.getName();
+			}
 			return pkColumn.getName() + " - " +
-				fkTableName + "." + fkColumn.getName();
+				fkTableName + "." + fkColumnName;
 		}
 
 		/**
@@ -1682,7 +1717,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			if (obj instanceof ColumnMapping) {
 				ColumnMapping cmap = (ColumnMapping) obj;
 				return fkColumn == cmap.fkColumn &&
-						pkColumn == cmap.pkColumn;
+						pkColumn == cmap.pkColumn &&
+						fkTable == cmap.fkTable &&
+						fkColName == cmap.fkColName;
 			}
 			return false;
 		}
@@ -1692,6 +1729,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			int result = 17;
 			result = result * 31 + (fkColumn == null? 0 : fkColumn.hashCode());
 			result = result * 31 + (pkColumn == null? 0 :pkColumn.hashCode());
+			result = result * 31 + (fkTable == null? 0 : fkTable.hashCode());
+			result = result * 31 + (fkColName == null? 0 :fkColName.hashCode());
 			return result;
 		}
 
@@ -1720,6 +1759,36 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 		public List<Class<? extends SPObject>> getAllowedChildTypes() {
 			return allowedChildTypes;
+		}
+
+		@Mutator
+		public void setFkTable(SQLTable fkTable) {
+			SQLTable oldTable = this.fkTable;
+			this.fkTable = fkTable;
+			if (oldTable != null) {
+				oldTable.removeSPListener(fkTableListener);
+			}
+			if (fkTable != null) {
+				fkTable.addSPListener(fkTableListener);
+			}
+			firePropertyChange("fkTable", oldTable, fkTable);
+		}
+
+		@Accessor
+		public SQLTable getFkTable() {
+			return fkTable;
+		}
+
+		@Mutator
+		public void setFkColName(String fkColName) {
+			String oldName = this.fkColName;
+			this.fkColName = fkColName;
+			firePropertyChange("fkColName", oldName, fkColName);
+		}
+
+		@Accessor
+		public String getFkColName() {
+			return fkColName;
 		}
 
 	}
