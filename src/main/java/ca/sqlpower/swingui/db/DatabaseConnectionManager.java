@@ -480,7 +480,7 @@ public class DatabaseConnectionManager {
 
 		pb.add(new JLabel(message), cc.xyw(2, 2, 3)); //$NON-NLS-1$
 
-		TableModel tm = new ConnectionTableModel();
+		TableModel tm = new ConnectionTableModel(dsCollection);
 		dsTable = new EditableJTable(tm);
 		dsTable.setTableHeader(null);
 		dsTable.setShowGrid(false);
@@ -560,7 +560,7 @@ public class DatabaseConnectionManager {
 
 	}
 
-	private class ConnectionTableModel extends AbstractTableModel implements CleanupTableModel {
+	private static class ConnectionTableModel extends AbstractTableModel implements CleanupTableModel {
 
 		private final DatabaseListChangeListener databaseListChangeListener = new DatabaseListChangeListener(){
 			public void databaseAdded(DatabaseListChangeEvent e) {
@@ -572,8 +572,11 @@ public class DatabaseConnectionManager {
 			}
 		};
 		
-		public ConnectionTableModel() {
+		private final DataSourceCollection<SPDataSource> dsCollection;
+		
+		public ConnectionTableModel(DataSourceCollection<SPDataSource> dsCollection) {
 			super();
+			this.dsCollection = dsCollection;
 			dsCollection.addDatabaseListChangeListener(databaseListChangeListener);
 		}
 

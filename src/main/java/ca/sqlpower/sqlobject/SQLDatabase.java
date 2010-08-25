@@ -707,6 +707,9 @@ public class SQLDatabase extends SQLObject implements java.io.Serializable, Prop
 	 * by the connect() method.  Logs, but does not propogate, SQL exceptions.
 	 */
 	public void disconnect() {
+		if (dataSource != null) {
+			dataSource.removePropertyChangeListener(this);
+		}
 		try {
 			if (connectionPool != null){
 				connectionPool.close();
