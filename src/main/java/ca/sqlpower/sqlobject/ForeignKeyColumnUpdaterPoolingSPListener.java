@@ -90,7 +90,13 @@ class ForeignKeyColumnUpdaterPoolingSPListener extends
 					return;
 				}
 				if (m.getPkColumn() == null) throw new NullPointerException("Missing pk column in mapping");
-				if (m.getFkColumn() == null) throw new NullPointerException("Missing fk column in mapping");
+				//The fk column can be null in a mapping but the table and column name must
+				//exist. This is done to improve the speed of populating 1 table.
+				if (m.getFkColumn() == null) {
+					if (m.getFkColName() == null) throw new NullPointerException("Missing pk column name in mapping");
+					if (m.getFkTable() == null) throw new NullPointerException("Missing pk table in mapping");
+					return;
+				}
 
 				if (prop == null
 						|| prop.equals("parent")

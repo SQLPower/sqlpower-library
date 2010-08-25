@@ -1939,9 +1939,12 @@ public class SQLTable extends SQLObject {
     @Override
     public <T extends SPObject> List<T> getChildren(Class<T> type) {
         try {
-            if (type == SQLColumn.class) {
+        	if (type == SQLImportedKey.class) {
+        		//doing nothing because we can now populate imported keys without
+        		//needing columns.
+        	} else if (type == SQLColumn.class) {
                 populateColumns();
-            } else if (type == SQLIndex.class || type == SQLImportedKey.class) {
+            } else if (type == SQLIndex.class) {
                 populateColumns();
                 populateIndices();
             } else {
