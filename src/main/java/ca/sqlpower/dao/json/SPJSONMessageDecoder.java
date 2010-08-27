@@ -219,10 +219,9 @@ public class SPJSONMessageDecoder implements MessageDecoder<String> {
 			synchronized (persister) {
 				for (int i=0; i < json.length(); i++) {
 					jsonObject = json.getJSONObject(i);
-					uuid = jsonObject.getString("uuid");
 					logger.debug("Decoding Message: " + jsonObject);
+					uuid = jsonObject.getString("uuid");
 					decode(jsonObject);
-					json.put(i, (Object) null);
 				}
 			}
 		} catch (JSONException e) {
