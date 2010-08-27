@@ -697,17 +697,19 @@ public abstract class SPSessionPersister implements SPPersister {
 			try {
 				// We catch ANYTHING that comes out of here and rollback.
 				// Some exceptions are Runtimes, so we must catch those too.
+				workspace.setMagicEnabled(false);
 				workspace.begin("Rolling back changes.");
 				rollbackProperties();
 				rollbackCreations();
 				rollbackRemovals();
-				workspace.commit();
-			} catch (Throwable t) {
+				workspace.commit("Done Rolling back");
+			} catch (Exception e) {
 				// This is a major fuck up. We could not rollback so now we must restore
 				// by whatever means
-				logger.fatal("First try at restore failed.", t);
+				logger.fatal("First try at restore failed.", e);
 				// TODO Monitor this
 			} finally {
+				workspace.setMagicEnabled(true);
 				objectsToRemove.clear();
 				objectsToRemoveRollbackList.clear();
 				persistedObjects.clear();
@@ -1445,6 +1447,29 @@ public abstract class SPSessionPersister implements SPPersister {
 		persister.setPersistedObjectsRollbackList(creations);
 		persister.setPersistedPropertiesRollbackList(properties);
 		persister.rollback(true);
+	}
+	
+	public static void undoForSession(SPObject root,
+			List<PersistedSPObject> creations,
+			Multimap<String, PersistedSPOProperty> properties,
+			List<RemovedObjectEntry> removals,
+			SessionPersisterSuperConverter converter) throws SPPersistenceException {
+		
+		List<PersistedObjectEntry> c = new LinkedList<PersistedObjectEntry>();
+		List<PersistedPropertiesEntry> p = new LinkedList<PersistedPropertiesEntry>();
+		LinkedHashMap<String, RemovedObjectEntry> r = new LinkedHashMap<String, RemovedObjectEntry>();
+		
+		for (PersistedSPObject pso : creations) {
+			c.add(new PersistedObjectEntry(pso.getParentUUID(), pso.getUUID()));
+		}
+		for (PersistedSPOProperty property : properties.values()) {
+			p.add(new PersistedPropertiesEntry(property.getUUID(), property.getPropertyName(), property.getDataType(), property.getOldValue()));
+		}
+		for (RemovedObjectEntry removal : removals) {
+			r.put(removal.getRemovedChild().getUUID(), removal);
+		}
+		
+		undoForSession(root, c, p, r, converter);
 	}
 
 	public static void redoForSession(

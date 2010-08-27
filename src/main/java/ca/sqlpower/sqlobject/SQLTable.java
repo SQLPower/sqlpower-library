@@ -1938,6 +1938,9 @@ public class SQLTable extends SQLObject {
     
     @Override
     public <T extends SPObject> List<T> getChildren(Class<T> type) {
+    	if (!isMagicEnabled()) {
+    		return getChildrenWithoutPopulating(type);
+    	}
         try {
         	if (type == SQLImportedKey.class) {
         		//doing nothing because we can now populate imported keys without

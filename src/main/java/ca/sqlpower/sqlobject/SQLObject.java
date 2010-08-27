@@ -289,7 +289,9 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	@NonProperty
 	public <T extends SPObject> List<T> getChildren(Class<T> type) {
 		try {
-			populate();
+			if (isMagicEnabled()) {
+				populate();
+			}
 			return getChildrenWithoutPopulating(type);
 		} catch (SQLObjectException e) {
 			throw new RuntimeException("Could not populate " + getName(), e);
