@@ -115,7 +115,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
     //  user settings.
    	private static String defaultName = "New_Column";
     
-    private static int defaultType = Types.INTEGER;
+    private static int defaultType = Types.VARCHAR;
     
     private static int defaultPrec = 10;
     
