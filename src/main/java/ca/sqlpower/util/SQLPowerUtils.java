@@ -506,7 +506,8 @@ public class SQLPowerUtils {
 	 */
 	public static <T extends SPObject> T getAncestor(SPObject so, Class<T> ancestorType) {
 	    while (so != null) {
-	        if (so.getClass().equals(ancestorType)) return ancestorType.cast(so);
+	        if (so.getClass().equals(ancestorType) || ancestorType.isAssignableFrom(so.getClass())) 
+	        	return ancestorType.cast(so);
 	        so = so.getParent();
 	    }
 	    return null;
