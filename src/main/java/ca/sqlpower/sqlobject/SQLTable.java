@@ -1465,7 +1465,7 @@ public class SQLTable extends SQLObject {
         	} else {
         		oldName = getName();
         	}
-            
+        	
             begin("Table Name Change");
             super.setPhysicalName(argName);
             
@@ -1474,8 +1474,13 @@ public class SQLTable extends SQLObject {
             if (isColumnsPopulated()) {
                 for (SQLColumn col : getColumns()) {
                     if (col.isAutoIncrementSequenceNameSet()) {
-                        String newName = col.getAutoIncrementSequenceName().replace(oldName, argName);
-                        col.setAutoIncrementSequenceName(newName);
+                    	
+                    	String standardName = oldName+"_"+col.getPhysicalName()+"_seq";
+
+                    	if (standardName.equals(col.getAutoIncrementSequenceName())) {
+                    		col.setAutoIncrementSequenceName(
+                    				col.makeAutoIncrementSequenceName());
+                    	}
                     }
                 }
             }

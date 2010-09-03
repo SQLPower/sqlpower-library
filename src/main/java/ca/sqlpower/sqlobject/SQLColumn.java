@@ -1238,19 +1238,28 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	@Accessor
     public String getAutoIncrementSequenceName() {
         if (autoIncrementSequenceName == null) {
-        	String tableName;
-        	if (getParent() == null) {
-        		tableName = "";
-        	} else if (getParent().getPhysicalName() != null && !getPhysicalName().trim().equals("")) {
-        		tableName = getParent().getPhysicalName() + "_";
-        	} else {
-        		tableName = getParent().getName() +"_";
-        	}
-            return tableName + getName() + "_seq";
+        	return makeAutoIncrementSequenceName();
         } else {
             return autoIncrementSequenceName;
         }
     }
+
+	/**
+	 * Creates an auto-increment sequence name based on table and column names.
+	 * 
+	 * @return The properly formatted sequence name for the column.
+	 */
+	public String makeAutoIncrementSequenceName() {
+		String tableName;
+    	if (getParent() == null) {
+    		tableName = "";
+    	} else if (getParent().getPhysicalName() != null && !getPhysicalName().trim().equals("")) {
+    		tableName = getParent().getPhysicalName() + "_";
+    	} else {
+    		tableName = getParent().getName() +"_";
+    	}
+        return tableName + getPhysicalName() + "_seq";
+	}
     
     /**
      * Only sets the name if it is different from the default name.  This is important
