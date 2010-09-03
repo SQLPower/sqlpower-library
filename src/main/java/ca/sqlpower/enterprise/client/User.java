@@ -106,6 +106,7 @@ public class User extends AbstractSPObject implements UserDetails {
     }
     
     public void addGrant(Grant grant, int index) {
+    	childPositionOffset(grant.getClass());
         this.grants.add(index, grant);
         grant.setParent(this);
         fireChildAdded(Grant.class, grant, index);
@@ -124,7 +125,6 @@ public class User extends AbstractSPObject implements UserDetails {
     
     @Override
     protected void addChildImpl(SPObject child, int index) {
-    	childPositionOffset(child.getClass());
     	addGrant((Grant) child, index);
     }
     
