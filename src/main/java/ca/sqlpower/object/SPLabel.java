@@ -20,6 +20,7 @@
 package ca.sqlpower.object;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +44,20 @@ public abstract class SPLabel extends AbstractSPObject {
      */
 	private Color backgroundColour;
 	
+	/**
+	 * The foreground colour defined for this label.
+	 */
+	private Color foregroundColour;
+	
+	/**
+	 * The border colour defined for this label.
+	 */
+	private Color borderColour = Color.BLACK;
+	
+	/**
+	 * The padding width defined for this label.
+	 */
+	private Dimension padding;
 	
 	@Override
 	protected boolean removeChildImpl(SPObject child) {
@@ -122,6 +137,48 @@ public abstract class SPLabel extends AbstractSPObject {
 	public Color getBackgroundColour() {
 		return backgroundColour;
 	}
-
 	
+	@Mutator
+	public void setForegroundColour(Color foregroundColour) {
+		Color oldVal = getForegroundColour();
+		this.foregroundColour = foregroundColour;
+		firePropertyChange("foregroundColour", oldVal, foregroundColour);
+	}
+
+	@Accessor
+	public Color getForegroundColour() {
+		return foregroundColour;
+	}
+	
+	@Mutator
+	public void setBorderColour(Color borderColour) {
+		Color oldVal = getBorderColour();
+		this.borderColour = borderColour;
+		firePropertyChange("borderColour", oldVal, borderColour);
+	}
+
+	@Accessor
+	public Color getBorderColour() {
+		return borderColour;
+	}
+
+	@Mutator
+	public void setPadding(int x, int y) {
+		Dimension oldVal = getPadding();
+		this.padding = new Dimension(x, y);
+		firePropertyChange("padding", oldVal, this.padding);
+	}
+	
+	@Mutator
+	public void setPadding(Dimension pad) {
+		setPadding(pad.width, pad.height);
+	}
+	
+	@Accessor
+	public Dimension getPadding() {
+		
+		return (padding == null ? new Dimension(0,0) : padding);
+	}
 }
+
+

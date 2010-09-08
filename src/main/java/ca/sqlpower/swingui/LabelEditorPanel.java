@@ -19,7 +19,6 @@
 
 package ca.sqlpower.swingui;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -33,6 +32,7 @@ import javax.swing.Action;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -77,12 +77,23 @@ public abstract class LabelEditorPanel implements DataEntryPanel {
 	private JToggleButton middleAlign;
 	private JToggleButton bottomAlign;
 
-	private JComboBox colourCombo;
+	private JComboBox bgColor;
+	private JComboBox fgColor;
+	private JComboBox bdColor;
+	
+	private JCheckBox bgIsNull;
+	private JCheckBox borderIsNull;
+	
+	public abstract FontSelector getFontSelector();
+	public abstract SPVariableHelper getVariablesHelper();
+	public abstract List<Color> getBackgroundColours();
 	
 	public LabelEditorPanel(SPLabel label, boolean variables) {
 		this.label = label;
 		panel = new JPanel();
-		final DefaultFormBuilder fb = new DefaultFormBuilder(new FormLayout("pref, 4dlu, 250dlu:grow"), panel);
+		final DefaultFormBuilder fb = new DefaultFormBuilder(new FormLayout
+				("pref, 4dlu, pref, 4dlu, pref, 4dlu, pref, 4dlu, 100dlu:grow"), panel);
+		fb.getLayout().setColumnGroups(new int[][] { {1, 5}, {3, 7} });
         
         textArea = new JTextPane();
         textArea.setText(label.getText());
@@ -160,21 +171,68 @@ public abstract class LabelEditorPanel implements DataEntryPanel {
         	alignmentBox.add(Box.createHorizontalGlue());
         	alignmentBox.add(variableButton);
         }
-        fb.append("Alignment", alignmentBox);
-
+        
+        fb.append("Alignment", alignmentBox,7);
         fb.appendRelatedComponentsGapRow();
-        fb.nextLine();
+        fb.appendRow("pref");
+        fb.nextLine(2);
         
+        bgColor = new JComboBox(ColourScheme.BACKGROUND_COLOURS);
+        fb.append("Label Colour", bgColor);
+        ColorCellRenderer renderer = new ColorCellRenderer(40, 20);
+        bgColor.setRenderer(renderer);
+        bgColor.setSelectedItem(label.getBackgroundColour());
+        if (label.getBackgroundColour() == null) {
+        	bgColor.setSelectedIndex(0);
+        }
+        bgColor.addActionListener(new ActionListener() {
+    		public void actionPerformed(ActionEvent e) {
+    			bgIsNull.setSelected(false);
+    		}
+    	});
+        
+        bgIsNull = new JCheckBox("Transparent",label.getBackgroundColour() == null);
+        fb.append(bgIsNull);
+        fb.appendRelatedComponentsGapRow();
+        fb.appendRow("pref");
+        fb.nextLine(2);
+        
+        fgColor = new JComboBox(ColourScheme.FOREGROUND_COLOURS);
+        fb.append("Text Colour", fgColor);
+        fgColor.setRenderer(renderer);
+        fgColor.setSelectedItem(label.getForegroundColour());
+        
+        fb.appendRelatedComponentsGapRow();
+        fb.appendRow("pref");
+        fb.nextLine(2);
+        
+        bdColor = new JComboBox(ColourScheme.FOREGROUND_COLOURS);
+        fb.append("Border Colour", bdColor);
+        bdColor.setRenderer(renderer);
+        bdColor.setSelectedItem(label.getBorderColour());
+        if (label.getBorderColour() == null) {
+        	bdColor.setSelectedIndex(0);
+        }
+        bdColor.addActionListener(new ActionListener() {
+    		public void actionPerformed(ActionEvent e) {
+    			borderIsNull.setSelected(false);
+    		}
+    	});
+        
+        borderIsNull = new JCheckBox("No Border",label.getBorderColour() == null);
+        fb.append(borderIsNull);
+        
+        fb.appendRelatedComponentsGapRow();
         fb.appendRow("fill:90dlu:grow");
-        fb.nextLine();
-        textArea.setFont(label.getFont());
-        JLabel textLabel = fb.append("Text", new JScrollPane(textArea));
-        textLabel.setVerticalTextPosition(JLabel.TOP);
+        fb.nextLine(2);
         
+        textArea.setFont(label.getFont());
+        JLabel textLabel = fb.append("Text", new JScrollPane(textArea),7);
+        textLabel.setVerticalTextPosition(JLabel.TOP);
+        fb.appendRow("pref");
         fb.nextLine();
 
         fontSelector = getFontSelector();
-
         if (fontSelector != null) {
         	logger.debug("FontSelector got passed Font " + label.getFont());
         	fontSelector.setShowingPreview(false);
@@ -184,35 +242,10 @@ public abstract class LabelEditorPanel implements DataEntryPanel {
         			textArea.setFont(fontSelector.getSelectedFont());
         		}
         	});
-        	fb.append("Font", fontSelector.getPanel());
+        	fb.append("Font", fontSelector.getPanel(),5);
         }
 
-        	fb.nextLine();
-        	final JLabel colourLabel = new JLabel(" ");
-        	colourLabel.setBackground(label.getBackgroundColour());
-        	colourLabel.setOpaque(true);
-        	colourCombo = new JComboBox();
-        	colourCombo.setRenderer(new ColorCellRenderer(85, 30));
-        	for (Color bgColour : getBackgroundColours()) {
-        		colourCombo.addItem(bgColour);
-        	}
 
-        if (getBackgroundColours().size() > 1) {
-        	colourCombo.setSelectedItem(label.getBackgroundColour());
-        	colourCombo.addActionListener(new ActionListener() {
-        		public void actionPerformed(ActionEvent e) {
-        			Color colour = (Color) colourCombo.getSelectedItem();
-        			colourLabel.setBackground(colour);
-        		}
-        	});
-        	colourCombo.setSelectedItem(label.getBackgroundColour());
-        	JPanel colourPanel = new JPanel(new BorderLayout());
-        	colourPanel.add(colourLabel, BorderLayout.CENTER);
-        	colourPanel.add(colourCombo, BorderLayout.EAST);
-        	fb.append("Background", colourPanel);
-        } else {
-        	colourCombo.setSelectedIndex(0);
-        }
 	}
 	
 
@@ -243,8 +276,12 @@ public abstract class LabelEditorPanel implements DataEntryPanel {
             label.setVerticalAlignment(VerticalAlignment.BOTTOM);
         }
         
-        label.setBackgroundColour((Color) colourCombo.getSelectedItem());
-
+        label.setBackgroundColour((Color) (bgIsNull.isSelected() ? 
+        		null: bgColor.getSelectedItem()));
+        label.setForegroundColour((Color) fgColor.getSelectedItem());
+        label.setBorderColour((Color) (borderIsNull.isSelected() ? 
+        		null: bdColor.getSelectedItem()));
+        
         return true;
     }
 
@@ -267,8 +304,6 @@ public abstract class LabelEditorPanel implements DataEntryPanel {
 	    return label;
 	}
 	
-	public abstract FontSelector getFontSelector();
-	public abstract SPVariableHelper getVariablesHelper();
-	public abstract List<Color> getBackgroundColours();
+
 
 }
