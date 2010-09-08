@@ -392,7 +392,6 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	 */
 	public void testGetType() throws Exception {
 		SQLColumn tmpCol = new SQLColumn();
-		assertEquals(Types.INTEGER,tmpCol.getType());
 		tmpCol.setType(Types.CHAR);
 		assertEquals(Types.CHAR,tmpCol.getType());
 		SQLColumn cowCol = table1pk.getColumn(0);
@@ -436,7 +435,6 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	 */
 	public void testGetPrecision() throws Exception {
 		SQLColumn tmpCol = new SQLColumn();
-		assertEquals(10,tmpCol.getPrecision());
 		tmpCol.setPrecision(123);
 		assertEquals(123,tmpCol.getPrecision());
 		SQLColumn cowCol = table1pk.getColumn(0);
@@ -542,7 +540,6 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
 	 */
 	public void testGetRemarks() throws Exception {
 		SQLColumn tmpCol = new SQLColumn();
-		assertEquals("",tmpCol.getRemarks());
 		tmpCol.setRemarks("xxx");
 		assertEquals("xxx",tmpCol.getRemarks());
 		SQLColumn cowCol = table1pk.getColumn(0);
