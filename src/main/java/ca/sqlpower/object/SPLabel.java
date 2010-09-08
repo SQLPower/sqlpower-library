@@ -27,6 +27,7 @@ import java.util.List;
 
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.Transient;
 
 public abstract class SPLabel extends AbstractSPObject {
 
@@ -162,7 +163,7 @@ public abstract class SPLabel extends AbstractSPObject {
 		return borderColour;
 	}
 
-	@Mutator
+	@Mutator @Transient
 	public void setPadding(int x, int y) {
 		Dimension oldVal = getPadding();
 		this.padding = new Dimension(x, y);
@@ -176,7 +177,6 @@ public abstract class SPLabel extends AbstractSPObject {
 	
 	@Accessor
 	public Dimension getPadding() {
-		
 		return (padding == null ? new Dimension(0,0) : padding);
 	}
 }
