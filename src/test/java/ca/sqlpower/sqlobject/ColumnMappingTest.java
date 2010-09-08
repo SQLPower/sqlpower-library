@@ -20,6 +20,8 @@
 package ca.sqlpower.sqlobject;
 
 import java.sql.Types;
+import java.util.HashSet;
+import java.util.Set;
 
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
@@ -137,4 +139,16 @@ public class ColumnMappingTest extends BaseSQLObjectTestCase {
 		return columnMapping;
 	}
 
+	@Override
+	public Set<String> getRollbackTestIgnorePropertySet() {
+		Set<String> propertyIgnoreSet = new HashSet<String>();
+		//Skipping the fkTable and fkColName as they will be changed in the test by the
+		//fkColumn property. The rollback test would not make sense in normal use of
+		//these properties with the fkColumn property if all three were set at the same
+		//time so changing the ordering of the properties does not make a valid test.
+		propertyIgnoreSet.add("fkTable");
+		propertyIgnoreSet.add("fkColName");
+		return propertyIgnoreSet;
+	}
+	
 }

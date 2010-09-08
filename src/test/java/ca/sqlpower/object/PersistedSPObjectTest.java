@@ -648,6 +648,16 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	}
 
 	/**
+	 * This method can be overridden by extending classes to specify properties
+	 * that should not be written to by the roll back test. The properties put
+	 * in this list should have a good reason for not being used in the test as
+	 * skipping a property defeats the purpose of the test.
+	 */
+	public Set<String> getRollbackTestIgnorePropertySet() {
+		return new HashSet<String>();
+	}
+	
+	/**
 	 * This test will make changes to the {@link SPObject} under test and then
 	 * cause an exception forcing the persister to roll back the changes in the
 	 * object.
@@ -664,6 +674,8 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 				PropertyUtils.getPropertyDescriptors(objectUnderTest.getClass()));
 		
 		Set<String> propertiesToPersist = findPersistableBeanProperties(false, false);
+		
+		Set<String> ignorePropertySet = getRollbackTestIgnorePropertySet();
 		
 		NewValueMaker valueMaker = createNewValueMaker(getRootObject(), getPLIni());
 		
@@ -713,6 +725,8 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
             if (property.getName().equals("UUID")) continue;
             
             if (!propertiesToPersist.contains(property.getName())) continue;
+            
+            if (ignorePropertySet.contains(property.getName())) continue;
 
             try {
                 oldVal = PropertyUtils.getSimpleProperty(objectUnderTest, property.getName());
