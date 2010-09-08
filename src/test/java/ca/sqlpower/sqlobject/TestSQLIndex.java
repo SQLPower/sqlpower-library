@@ -196,7 +196,7 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     }
     
     public void testMakeColumnsLikeOtherIndexWhichHasNoColumns() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
-        SQLIndex i = new SQLIndex("Index",true,"", "BTREE","");
+    	SQLIndex i = new SQLIndex("Index",true,"", "BTREE","");
         SQLColumn col = new SQLColumn();
         i.addChild(new Column("index column",AscendDescend.UNSPECIFIED));
         i.addChild(new Column(col,AscendDescend.UNSPECIFIED));
@@ -220,15 +220,22 @@ public class TestSQLIndex extends BaseSQLObjectTestCase {
     }
     
     public void testMakeColumnsLikeOtherIndexReordersColumns() throws SQLObjectException, IllegalArgumentException, ObjectDependentException {
-        SQLIndex i = new SQLIndex("Index",true,"", "BTREE","");
-        SQLColumn col = new SQLColumn();
+    	SQLIndex i = new SQLIndex("Index",true,"", "BTREE","");
+    			
+        SQLColumn col = new SQLColumn(null,"New Column", Types.CHAR, null, 10, 0, 0, "", "", false);
         i.addChild(new Column(col,AscendDescend.UNSPECIFIED));
         i.addChild(new Column("index column",AscendDescend.UNSPECIFIED));
 
         SQLIndex i2 = new SQLIndex("Index2",false,"", "HASH","asdfa");
         i2.addChild(new Column("index column",AscendDescend.UNSPECIFIED));
         i2.addChild(new Column(col,AscendDescend.UNSPECIFIED));
-        i.makeColumnsLike(i2);
+        try
+        {
+        	i.makeColumnsLike(i2);
+        } catch (Exception e) {
+        	System.out.println("Exception: ");
+        	e.printStackTrace();
+        }
         assertEquals("Wrong number of children!",2,i.getChildCount());
         assertEquals("Oh no wrong child!",i2.getChild(0),i.getChild(0));
         assertEquals("Oh no wrong child!",i2.getChild(1),i.getChild(1));
