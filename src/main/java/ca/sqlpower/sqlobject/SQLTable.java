@@ -1474,10 +1474,9 @@ public class SQLTable extends SQLObject {
             if (isColumnsPopulated()) {
                 for (SQLColumn col : getColumns()) {
                     if (col.isAutoIncrementSequenceNameSet()) {
-                    	
-                    	String standardName = oldName+"_"+col.getPhysicalName()+"_seq";
+                    	String testingName = col.discoverSequenceNameFormat(oldName, col.getPhysicalName());
 
-                    	if (standardName.equals(col.getAutoIncrementSequenceName())) {
+                    	if (testingName.equals(col.getAutoIncrementSequenceName())) {
                     		col.setAutoIncrementSequenceName(
                     				col.makeAutoIncrementSequenceName());
                     	}

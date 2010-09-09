@@ -1261,6 +1261,29 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
         return tableName + getPhysicalName() + "_seq";
 	}
     
+	public String discoverSequenceNameFormat(String tableName, String colName) {
+		String seqName = getAutoIncrementSequenceName();
+		String seqNamePrefix, seqNameSuffix;
+		String newName = "";
+		int prefixEnd = seqName.indexOf(colName);
+		
+		if ((prefixEnd != -1 && seqName.substring
+                (prefixEnd + colName.length()).indexOf(colName) == -1)) {
+            seqNamePrefix = seqName.substring(0, prefixEnd);
+            seqNameSuffix = seqName.substring(prefixEnd + colName.length());
+        } else if (seqName.equals(tableName + "_" + colName + "_seq")) {
+            seqNamePrefix = tableName + "_";
+            seqNameSuffix = "_seq";
+        } else {
+            seqNamePrefix = null;
+            seqNameSuffix = null;
+        }
+		if (seqNamePrefix != null && seqNameSuffix != null) {
+            newName = seqNamePrefix + colName + seqNameSuffix;
+        }
+		return newName;
+	}
+	
     /**
      * Only sets the name if it is different from the default name.  This is important
      * in case the table name changes; the name should be expected to update.

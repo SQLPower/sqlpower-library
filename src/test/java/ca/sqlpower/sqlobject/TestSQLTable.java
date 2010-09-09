@@ -161,10 +161,11 @@ public class TestSQLTable extends BaseSQLObjectTestCase {
     
     public void testRenamePhysicalNameOfTableRenamesSequences() throws Exception {
         table.setPhysicalName("old name");
-        table.getColumn(0).setAutoIncrementSequenceName("moo_" + table.getPhysicalName() + "_cow");
+        table.getColumn(0).setPhysicalName("cow");
+        table.getColumn(0).setAutoIncrementSequenceName(table.getPhysicalName() + "_cow");
         table.setPhysicalName("new name");
         assertTrue(table.getColumn(0).isAutoIncrementSequenceNameSet());
-        assertEquals("moo_" + table.getPhysicalName() + "_cow", table.getColumn(0).getAutoIncrementSequenceName());
+        assertEquals(table.getPhysicalName() + "_cow_seq", table.getColumn(0).getAutoIncrementSequenceName());
     }
 
     public void testRenameTableDoesNotRenameUnnamedSequences() throws Exception {
