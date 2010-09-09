@@ -1138,7 +1138,8 @@ public class SQLIndex extends SQLObject {
     		if (c.getColumn() == null) {
     			currentIndex = -1;
     			for (int i = 0; i < originalCols.size(); i++) {
-    				if (originalCols.get(i).getName().equals(c.getName())) {
+    				Column t = originalCols.get(i);
+    				if (t.getName().equals(c.getName())) {
     					currentIndex = i;
     					break;
     				}
