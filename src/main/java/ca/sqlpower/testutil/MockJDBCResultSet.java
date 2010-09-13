@@ -407,7 +407,7 @@ public class MockJDBCResultSet implements ResultSet {
 	}
 
 	public void updateNull(int columnIndex) throws SQLException {
-		throw new UnsupportedOperationException("Not implemented");
+		setRowCol(columnIndex, null);
 	}
 
 	public void updateBoolean(int columnIndex, boolean x) throws SQLException {
