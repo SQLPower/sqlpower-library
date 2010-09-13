@@ -122,6 +122,9 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom instanceof Long) {
 			return convertFrom;
 			
+		} else if (convertFrom instanceof Short) {
+			return convertFrom;
+			
 		} else if (convertFrom instanceof BigDecimal) {
 		    return ((BigDecimal) convertFrom).toPlainString();
 		    
@@ -210,8 +213,12 @@ public class SessionPersisterSuperConverter {
 			
 		} else if (Boolean.class.isAssignableFrom(type)) {
 			return (Boolean) o;
+			
 		} else if (Long.class.isAssignableFrom(type)) {
 			return (Long) o;
+			
+		} else if (Short.class.isAssignableFrom(type)) {
+			return (Short) o;
 			
 		} else if (BigDecimal.class.isAssignableFrom(type)) {
 		    return new BigDecimal((String) o);
