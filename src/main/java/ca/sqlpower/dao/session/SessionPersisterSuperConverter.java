@@ -123,7 +123,7 @@ public class SessionPersisterSuperConverter {
 			return convertFrom;
 			
 		} else if (convertFrom instanceof Short) {
-			return convertFrom;
+			return ((Short) convertFrom).toString();
 			
 		} else if (convertFrom instanceof BigDecimal) {
 		    return ((BigDecimal) convertFrom).toPlainString();
