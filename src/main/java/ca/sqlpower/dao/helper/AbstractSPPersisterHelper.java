@@ -127,9 +127,10 @@ public abstract class AbstractSPPersisterHelper<T extends SPObject> implements S
 		for (PersistedSPObject pwo : persistedObjects) {
 			if (pwo.isLoaded())
 				continue;
-			if (pwo.getParentUUID().equals(parentUUID)
-					&& pwo.getUUID().equals(childUUID)) {
-				return pwo;
+			if (pwo.getParentUUID().equals(parentUUID)) {
+				if (pwo.getUUID().equals(childUUID)) {
+					return pwo;
+				}
 			}
 		}
 		return null;

@@ -258,6 +258,53 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 
         logger.debug("SQLColumn(.....) set ref count to 1");
         this.referenceCount = 1;
+	} /**
+     * A constructor for testing purposes, and reverse engineering. You normally do not want to call this
+     * constructor because it will override all of your domain or type values.
+     */
+	public SQLColumn(SQLTable parentTable,
+			String colName,
+			UserDefinedSQLType type,
+			int precision, 
+			int scale,
+			boolean isAutoIncrement) {
+
+		if (parentTable != null) {
+			setParent(parentTable);
+		}
+		this.userDefinedSQLType = new UserDefinedSQLType("UserDefinedSQLType",
+										DatabaseMetaData.columnNullable,
+										isAutoIncrement,
+										null,
+										type,
+										new SQLTypePhysicalProperties(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM));
+		userDefinedSQLType.setParent(this);
+		setPlatform(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
+		this.setName(colName);
+		setPopulated(true);
+		
+		// A scale/precision value of 0 does not mean anything, 
+		// which means the scale/precision type should be not applicable.
+		// Otherwise, set the scale/precision type to a default of variable.
+		// Reverse engineered tables will override the scale/precision types
+		// by looking through existing user types and inheriting their 
+		// scale/precision properties.
+		this.userDefinedSQLType.setScale(platform, scale);
+		if (scale > 0) {
+			this.userDefinedSQLType.setScaleType(platform, PropertyType.VARIABLE);
+		} else {
+			this.userDefinedSQLType.setScaleType(platform, PropertyType.NOT_APPLICABLE);
+		}
+		this.userDefinedSQLType.setPrecision(platform, precision);
+		if (precision > 0) {
+			this.userDefinedSQLType.setPrecisionType(platform, PropertyType.VARIABLE);
+		} else {
+			this.userDefinedSQLType.setPrecisionType(platform, PropertyType.NOT_APPLICABLE);
+		}
+		this.userDefinedSQLType.setMyNullability(DatabaseMetaData.columnNullable);
+
+        logger.debug("SQLColumn(.....) set ref count to 1");
+        this.referenceCount = 1;
 	}
 	
 	/**

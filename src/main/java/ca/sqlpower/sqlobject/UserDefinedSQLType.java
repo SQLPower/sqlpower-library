@@ -124,9 +124,21 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	 * {@link SQLTypePhysicalProperties} set with a platform of
 	 * {@link SQLTypePhysicalPropertiesProvider#GENERIC_PLATFORM}
 	 */
+    //TODO: remove this constructor since this uses the old heathen ways
     public UserDefinedSQLType() {
     	this("UserDefinedSQLType", null, null, null, null, new SQLTypePhysicalProperties(GENERIC_PLATFORM));
 	}
+    /**
+	 * Constructs a {@link UserDefinedSQLType} with the
+	 * {@link #defaultPhysicalProperties} set to the
+	 * {@link SQLTypePhysicalProperties} in the argument.
+	 * 
+	 * @param defaultPhysicalProperties
+	 *            Sets the defaultPhysicalProperties to this instance
+	 */
+    //XXX While not mandatory to match the default physical properties child object 
+    //could probably use a better name than "primaryKeyIndex" to be stored under in 
+    //the JCR as it is misleading.
     
 	/**
 	 * Constructs a {@link UserDefinedSQLType} with the
