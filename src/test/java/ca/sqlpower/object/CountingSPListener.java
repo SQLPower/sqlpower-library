@@ -30,12 +30,12 @@ import ca.sqlpower.util.TransactionEvent;
  */
 public class CountingSPListener implements SPListener {
 
-	private int childAddedCount = 0;
-	private int childRemovedCount = 0;
-	private int transactionEndedCount = 0;
-	private int transactionRollbackCount = 0;
-	private int transactionStartedCount = 0;
-	private int propertyChangedCount = 0;
+	protected int childAddedCount = 0;
+	protected int childRemovedCount = 0;
+	protected int transactionEndedCount = 0;
+	protected int transactionRollbackCount = 0;
+	protected int transactionStartedCount = 0;
+	protected int propertyChangedCount = 0;
 	
 	
 	public void childAdded(SPChildEvent e) {
