@@ -51,6 +51,14 @@ public class SQLPowerUtils {
 			}
 		}
 	}
+	
+	/**
+	 * Searches through the tree recursively to find if the spo 
+	 * is part of the hierarchy.
+	 */
+	public static boolean hierarchyContains(SPObject root, SPObject child) {
+		return SQLPowerUtils.getAncestorList(child).contains(root);
+	}
 
 	/**
 	 * Replaces double quotes, ampersands, and less-than signs with
@@ -258,6 +266,21 @@ public class SQLPowerUtils {
         	}
         }
     }
+
+	/**
+	 * This method is similar to listenToHierarchy but only listens to the 
+	 * first two levels in the tree, i.e. the listener is not added to the 
+	 * grand children of the root. See 
+	 * {@link #lisenToHierachy(MatchMakerListener listener, MatchMakerObject root)}
+	 */
+	public static void listenToShallowHierarchy(SPListener listener, SPObject root) {
+		root.addSPListener(listener);
+		logger.debug("listenToShallowHierarchy: \"" + root.getName() + "\" (" +
+				root.getClass().getName() + ") children: " + root.getChildren());
+		for (SPObject spo : root.getChildren()) {
+			spo.addSPListener(listener);
+		}
+	}
 
 	/**
 	 * Removes the given listeners from the hierarchy of {@link SPObject}s
