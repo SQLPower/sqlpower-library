@@ -105,6 +105,15 @@ public abstract class AbstractSPObject implements SPObject {
 		addChildImpl(child, index);
 	}
 	
+	public void addChild(SPObject child) throws IllegalArgumentException {
+		if (!allowsChildType(child.getClass())) {
+			throw new IllegalArgumentException(child.getClass() + " is not a valid child type of " + this.getClass());
+		}
+		
+		child.setParent(this);
+		addChild(child,getChildren(child.getClass()).size());
+	}
+	
     /**
      * This is the object specific implementation of
      * {@link #addChild(SPObject, int)}. There are checks in the
@@ -123,7 +132,7 @@ public abstract class AbstractSPObject implements SPObject {
 				"This class is " + getClass() + " and trying to add " + child.getName() + 
 				" of type " + child.getClass());
 	}
-
+	
 	public void addSPListener(SPListener l) {
     	if (l == null) {
     		throw new NullPointerException("Cannot add child listeners that are null.");
