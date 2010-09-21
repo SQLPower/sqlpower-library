@@ -6,8 +6,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -534,6 +536,44 @@ public class SQLPowerUtils {
 	        so = so.getParent();
 	    }
 	    return null;
+	}
+	
+    /**
+     * Follows the chain of exceptions (using the getCause() method) to find the
+     * root cause, which is the exception whose getCause() method returns null.
+     * 
+     * @param t The Throwable for which you want to know the root cause.  Must not
+     * be null.
+     * @return The ultimate cause of t.  This may be t itself.
+     */
+    public static Throwable rootCause(Throwable t) {
+        while (t.getCause() != null) t = t.getCause();
+        return t;
+    }
+    
+    /**
+     * Writes a stack trace to a string for user readability.
+     * @param throwable
+     * @return
+     */
+	public static String exceptionStackToString(final Throwable throwable) {
+		// Details information
+        Throwable t = throwable;
+        StringWriter stringWriter = new StringWriter();
+        final PrintWriter traceWriter = new PrintWriter(stringWriter);
+        do {
+            t.printStackTrace(traceWriter);
+            if (SQLPowerUtils.rootCause(t) instanceof SQLException) {
+                t = ((SQLException) SQLPowerUtils.rootCause(t)).getNextException();
+                if (t != null) {
+                    traceWriter.println("Next Exception:"); //$NON-NLS-1$
+                }
+            } else {
+                t = null;
+            }
+        } while (t != null);
+        traceWriter.close();
+		return stringWriter.toString();
 	}
     
 }

@@ -36,6 +36,7 @@ import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.SpecificDataSourceCollection;
+import ca.sqlpower.util.SQLPowerUtils;
 
 /**
  * Converts any known object into a simple type of object that can be
@@ -176,7 +177,8 @@ public class SessionPersisterSuperConverter {
 			String[] array = (String[]) convertFrom;
 			return stringArrayConverter.convertToSimpleType(array);
 		} else if (convertFrom instanceof Exception) {
-		    return ((Exception) convertFrom).getMessage();
+	        String exceptionString = SQLPowerUtils.exceptionStackToString((Exception) convertFrom);
+		    return exceptionString;
 		} else {
 		    throw new IllegalArgumentException("Cannot convert " + convertFrom + " of type " + 
 		            convertFrom.getClass());
@@ -270,7 +272,7 @@ public class SessionPersisterSuperConverter {
         } else if (String[].class.isAssignableFrom(type)) {
         	return stringArrayConverter.convertToComplexType((String) o);
         } else if (Exception.class.isAssignableFrom(type)) {
-            return new Exception((String) o);
+            return new Exception("Root Exception:\n" + (String) o);
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + o + " of type " + 
 					o.getClass() + " to the type " + type);
