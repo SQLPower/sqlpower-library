@@ -40,10 +40,10 @@ import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
-import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
+import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -1657,6 +1657,13 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		 */
 		@Accessor
 		public SQLColumn getFkColumn()  {
+			if (fkColumn == null && fkColName != null && fkTable != null) {
+				try {
+					setFkColumn(fkTable.getColumnByName(fkColName));
+				} catch (SQLObjectException e) {
+					throw new RuntimeException(e);
+				}
+			}
 			return this.fkColumn;
 		}
 
