@@ -25,6 +25,10 @@ import java.util.concurrent.Callable;
 
 import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Constructor;
+import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLTable;
 
@@ -36,7 +40,6 @@ public class FolderNode extends AbstractSPObject {
 
     protected final SPObject parentTable;
     protected final Class<? extends SPObject> containingChildType;
-    protected final Callable<Boolean> isPopulatedRunnable;
 
     /**
      * @param parentTable
@@ -45,19 +48,21 @@ public class FolderNode extends AbstractSPObject {
      *            The type of child of the SQLTable this folder is to
      *            contain. Must be a valid type of child in the table.
      */
-    public FolderNode(SPObject parentTable, Class<? extends SPObject> containingChildType,
-            Callable<Boolean> isPopulatedRunnable) {
+    @Constructor
+    public FolderNode(@ConstructorParameter(propertyName="parent") SPObject parentTable, 
+    			@ConstructorParameter(propertyName="containingChildType") Class<? extends SPObject> containingChildType) {
         this.parentTable = parentTable;
         if (!parentTable.getAllowedChildTypes().contains(containingChildType)) 
             throw new IllegalArgumentException(containingChildType + " is not a valid child type of " + parentTable);
         this.containingChildType = containingChildType;
-        this.isPopulatedRunnable = isPopulatedRunnable;
     }
     
+    @NonProperty
     public List<? extends SPObject> getChildren() {
         return parentTable.getChildren(containingChildType);
     }
     
+    @Accessor
     public Class<? extends SPObject> getContainingChildType() {
         return containingChildType;
     }
@@ -67,14 +72,7 @@ public class FolderNode extends AbstractSPObject {
         return parentTable;
     }
 
-    public List<? extends SPObject> getChildrenWithoutPopulating() {
-        if (parentTable instanceof SQLTable) {
-        	return ((SQLTable) parentTable).getChildrenWithoutPopulating(containingChildType);
-        } else {
-        	return getChildren();
-        }
-    }
-
+    @Accessor
     public String getShortDisplayName() {
         return getName();
     }
@@ -84,6 +82,7 @@ public class FolderNode extends AbstractSPObject {
         return getShortDisplayName();
     }
 
+    @NonProperty
     protected void populateImpl() throws SQLObjectException {
         //do nothing
     }
@@ -94,25 +93,18 @@ public class FolderNode extends AbstractSPObject {
         		"remove them from the table the folder is contained by.");
     }
 
+    @NonProperty
     public List<Class<? extends SPObject>> getAllowedChildTypes() {
         return Collections.<Class<? extends SPObject>>singletonList(containingChildType);
     }
 
+    @NonProperty
     public List<? extends SPObject> getDependencies() {
         return Collections.emptyList();
     }
 
+    @NonProperty
     public void removeDependency(SPObject dependency) {
         //do nothing
     }
-    
-    public boolean isPopulated() {
-        try {
-            return isPopulatedRunnable.call().booleanValue();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-    
-    
 }
