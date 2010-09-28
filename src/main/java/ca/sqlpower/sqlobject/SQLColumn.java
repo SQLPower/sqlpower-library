@@ -21,6 +21,7 @@ package ca.sqlpower.sqlobject;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -47,7 +48,6 @@ import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.SQL;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
-import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.BasicSQLType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
 import ca.sqlpower.util.UserPrompter;
 import ca.sqlpower.util.UserPrompterFactory;
@@ -258,9 +258,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 
         logger.debug("SQLColumn(.....) set ref count to 1");
         this.referenceCount = 1;
-	} 
-	
-	/**
+	} /**
      * A constructor for testing purposes, and reverse engineering. You normally do not want to call this
      * constructor because it will override all of your domain or type values.
      */
@@ -314,6 +312,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	 *
 	 * @param parentTable The table that this column will think it belongs to.
 	 * @param colName This column's name.
+	 * @param dataType The number that represents this column's type. See java.sql.Types.
 	 * @param nativeType The type as it is called in the source database.
 	 * @param scale The length of this column.  Size is type-dependant.
 	 * @param precision The number of places of precision after the decimal place for numeric types.
@@ -885,19 +884,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	 * @param argType Value to assign to this.type
 	 */
 	@Transient @Mutator
-	public void setType(UserDefinedSQLType type) {
-		userDefinedSQLType.setUpstreamType(type);
-		userDefinedSQLType.setBasicType(BasicSQLType.convertToBasicSQLType(type.getType()));
-	}
-
-	/**
-	 * Sets the value of type
-	 *
-	 * @param argType Value to assign to this.type
-	 */
-	@Transient @Mutator
-	public void setType(int type) {
-		userDefinedSQLType.setType(type);
+	public void setType(int argType) {
+		userDefinedSQLType.setType(argType);
 	}
 
 	/**
