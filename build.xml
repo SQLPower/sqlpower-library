@@ -187,6 +187,7 @@
 		    These classes need to be moved to a generated package like Architect in the future. -->
 		<delete dir="${src}/ca/sqlpower/object/generated"/>
 		<delete dir="${src}/ca/sqlpower/sqlobject/generated"/>
+		<delete dir="${src}/ca/sqlpower/swingui/generated"/>
 		<delete dir="${src}/ca/sqlpower/enterprise/client/generated"/>
 		<delete dir="${src}/ca/sqlpower/testutil/generated"/>
 	</target>
