@@ -495,11 +495,16 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
                 } else {
                     autoIncrement = false;
                 }
+                String nativeTypeName = rs.getString(6);
+
+				if(nativeTypeName.indexOf('(') >= 0) {
+					nativeTypeName = nativeTypeName.substring(0, nativeTypeName.indexOf('('));
+				}
                 
 				SQLColumn col = new SQLColumn(null,
 											  rs.getString(4),  // col name
 											  rs.getInt(5), // data type (from java.sql.Types)
-											  rs.getString(6), // native type name
+											  nativeTypeName, // native type name
 											  rs.getInt(7), // column size (precision)
 											  rs.getInt(9), // decimal size (scale)
 											  rs.getInt(11), // nullable
@@ -887,7 +892,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	@Transient @Mutator
 	public void setType(UserDefinedSQLType type) {
 		userDefinedSQLType.setUpstreamType(type);
-		userDefinedSQLType.setBasicType(BasicSQLType.convertToBasicSQLType(type.getType()));
 	}
 
 	/**
