@@ -31,6 +31,7 @@ import java.io.File;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -114,6 +115,12 @@ public class GenericNewValueMaker implements NewValueMaker {
             newVal = ((Integer) oldVal)+1;
         } else if (valueType == Long.TYPE) {
         	newVal = ((Long) oldVal) + 1;
+        } else if (valueType == Long.class) {
+        	if (oldVal == null) {
+        		newVal = 1L;
+        	} else {
+        		newVal = ((Long) oldVal) + 1;
+        	}
         } else if (valueType == Double.TYPE) {
             newVal = ((Double) oldVal)+1;
         } else if (valueType == Integer.class) {
@@ -139,6 +146,8 @@ public class GenericNewValueMaker implements NewValueMaker {
             } else {
                 newVal = new Boolean(! ((Boolean) oldVal).booleanValue());
             }
+        } else if (valueType == Date.class) {
+        	newVal = new Date(System.currentTimeMillis());
         } else if (valueType == File.class) {
             newVal = new File("temp" + System.currentTimeMillis());
         } else if (valueType == JDBCDataSource.class || valueType == SPDataSource.class) {

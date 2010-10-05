@@ -24,6 +24,7 @@ import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.Point2D;
+import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Date;
@@ -63,6 +64,8 @@ public class SessionPersisterSuperConverter {
 	private final StringArrayConverter stringArrayConverter = new StringArrayConverter();
 	
 	private final ClassConverter classConverter = new ClassConverter();
+	
+	private final FileConverter fileConverter = new FileConverter();
 	
 	protected final DataSourceCollection <JDBCDataSource> dsCollection;
 
@@ -172,7 +175,9 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom instanceof java.util.Date) {
 			java.util.Date d = (java.util.Date) convertFrom;
 		    return dateConverter.convertToSimpleType(d);
-
+		} else if (convertFrom instanceof File) {
+			File file = (File) convertFrom;
+			return fileConverter.convertToSimpleType(file);
 		} else if (convertFrom instanceof String[]) {
 			String[] array = (String[]) convertFrom;
 			return stringArrayConverter.convertToSimpleType(array);
@@ -266,6 +271,8 @@ public class SessionPersisterSuperConverter {
             
         } else if (java.util.Date.class.isAssignableFrom(type)) {
             return dateConverter.convertToComplexType((String) o);
+        } else if (File.class.isAssignableFrom(type)) {
+        	return fileConverter.convertToComplexType((String) o);
             
         } else if (Dimension.class.isAssignableFrom(type)) {
             return dimensionConverter.convertToComplexType((String) o);
