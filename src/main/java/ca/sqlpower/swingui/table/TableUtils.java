@@ -150,7 +150,7 @@ public class TableUtils {
      */
     public static void fitColumnWidths(JTable table, int minColumnWidth, int maxColumnWidth, int padding) {
         table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        int limit = table.getColumnCount()>5? 5: table.getColumnCount();
+        int limit = table.getColumnCount() > 5 ? 5 : table.getColumnCount();
         for (int colIndex = 0; colIndex < limit; colIndex++) {
             fitColumnWidth(table, colIndex, minColumnWidth, maxColumnWidth, padding);
         }
