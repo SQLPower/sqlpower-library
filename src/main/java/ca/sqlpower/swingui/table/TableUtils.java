@@ -92,7 +92,7 @@ public class TableUtils {
         // Headers need additional padding for some reason!
         cellWidth = comp.getPreferredSize().width + 2;
 
-        int limit = table.getRowCount()>100? 100: table.getRowCount();
+        int limit = table.getRowCount() > 100 ? 100 : table.getRowCount();
         
         for (int j = 0; j < limit; j++) {                
             final TableCellRenderer cellRenderer = table.getCellRenderer(j,colIndex);
