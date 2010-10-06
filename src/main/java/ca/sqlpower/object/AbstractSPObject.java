@@ -498,9 +498,7 @@ public abstract class AbstractSPObject implements SPObject {
 	 * 
 	 * @return The event that was fired or null if no event was fired, for
 	 *         testing purposes.
-	 * @deprecated Use {@link #fireTransactionEnded(String)} instead.
 	 */
-    @Deprecated
     protected TransactionEvent fireTransactionEnded() {
     	return fireTransactionEnded("Transaction Ended; Source: " + this);
     }
