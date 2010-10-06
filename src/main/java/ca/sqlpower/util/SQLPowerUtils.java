@@ -6,10 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,14 +50,6 @@ public class SQLPowerUtils {
 				return o1.equals(o2);
 			}
 		}
-	}
-	
-	/**
-	 * Searches through the tree recursively to find if the spo 
-	 * is part of the hierarchy.
-	 */
-	public static boolean hierarchyContains(SPObject root, SPObject child) {
-		return SQLPowerUtils.getAncestorList(child).contains(root);
 	}
 
 	/**
@@ -268,21 +258,6 @@ public class SQLPowerUtils {
         	}
         }
     }
-
-	/**
-	 * This method is similar to listenToHierarchy but only listens to the 
-	 * first two levels in the tree, i.e. the listener is not added to the 
-	 * grand children of the root. See 
-	 * {@link #lisenToHierachy(MatchMakerListener listener, MatchMakerObject root)}
-	 */
-	public static void listenToShallowHierarchy(SPListener listener, SPObject root) {
-		root.addSPListener(listener);
-		logger.debug("listenToShallowHierarchy: \"" + root.getName() + "\" (" +
-				root.getClass().getName() + ") children: " + root.getChildren());
-		for (SPObject spo : root.getChildren()) {
-			spo.addSPListener(listener);
-		}
-	}
 
 	/**
 	 * Removes the given listeners from the hierarchy of {@link SPObject}s
@@ -531,49 +506,10 @@ public class SQLPowerUtils {
 	 */
 	public static <T extends SPObject> T getAncestor(SPObject so, Class<T> ancestorType) {
 	    while (so != null) {
-	        if (so.getClass().equals(ancestorType) || ancestorType.isAssignableFrom(so.getClass())) 
-	        	return ancestorType.cast(so);
+	        if (so.getClass().equals(ancestorType)) return ancestorType.cast(so);
 	        so = so.getParent();
 	    }
 	    return null;
-	}
-	
-    /**
-     * Follows the chain of exceptions (using the getCause() method) to find the
-     * root cause, which is the exception whose getCause() method returns null.
-     * 
-     * @param t The Throwable for which you want to know the root cause.  Must not
-     * be null.
-     * @return The ultimate cause of t.  This may be t itself.
-     */
-    public static Throwable rootCause(Throwable t) {
-        while (t.getCause() != null) t = t.getCause();
-        return t;
-    }
-    
-    /**
-     * Writes a stack trace to a string for user readability.
-     * @param throwable
-     * @return
-     */
-	public static String exceptionStackToString(final Throwable throwable) {
-		// Details information
-        Throwable t = throwable;
-        StringWriter stringWriter = new StringWriter();
-        final PrintWriter traceWriter = new PrintWriter(stringWriter);
-        do {
-            t.printStackTrace(traceWriter);
-            if (SQLPowerUtils.rootCause(t) instanceof SQLException) {
-                t = ((SQLException) SQLPowerUtils.rootCause(t)).getNextException();
-                if (t != null) {
-                    traceWriter.println("Next Exception:"); //$NON-NLS-1$
-                }
-            } else {
-                t = null;
-            }
-        } while (t != null);
-        traceWriter.close();
-		return stringWriter.toString();
 	}
     
 }

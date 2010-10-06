@@ -88,15 +88,15 @@ public class SPObjectPropertyChangeUndoableEdit extends AbstractUndoableEdit {
 		} catch (IllegalAccessException e) {
 			logger.error("Couldn't access setter for "+
 					event.getPropertyName(), e);
-			throw (CannotUndoException) new CannotUndoException().initCause(e);
+			throw new CannotUndoException();
 		} catch (InvocationTargetException e) {
 			logger.error("Setter for "+event.getPropertyName()+
 					" on "+event.getSource()+" threw exception", e);
-			throw (CannotUndoException) new CannotUndoException().initCause(e);
+			throw new CannotUndoException();
 		} catch (IntrospectionException e) {
 			logger.error("Couldn't introspect source object "+
 					event.getSource(), e);
-			throw (CannotUndoException) new CannotUndoException().initCause(e);
+			throw new CannotUndoException();
 		} finally {
             ((SPObject) event.getSource()).setMagicEnabled(true);
         }

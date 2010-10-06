@@ -28,11 +28,9 @@ import java.awt.Rectangle;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -116,18 +114,6 @@ public class GenericNewValueMaker implements NewValueMaker {
             newVal = ((Integer) oldVal)+1;
         } else if (valueType == Long.TYPE) {
         	newVal = ((Long) oldVal) + 1;
-        } else if (valueType == Long.class) {
-        	if (oldVal == null) {
-        		newVal = 1L;
-        	} else {
-        		newVal = ((Long) oldVal) + 1;
-        	}
-        } else if (valueType == Short.class) {
-        	if (oldVal == null) {
-        		newVal = (short) 1;
-        	} else {
-        		newVal = ((Short) oldVal) + 1;
-        	}
         } else if (valueType == Double.TYPE) {
             newVal = ((Double) oldVal)+1;
         } else if (valueType == Integer.class) {
@@ -142,19 +128,6 @@ public class GenericNewValueMaker implements NewValueMaker {
             } else {
                 newVal = new Double((Double)oldVal+1);
             }
-        } else if (valueType == BigDecimal.class) {
-        	if (oldVal != null) {
-        		newVal = new BigDecimal(1).add((BigDecimal) oldVal);
-        	} else {
-        		return new BigDecimal(1);
-        	}
-        } else if (valueType == Character.TYPE || valueType == Character.class) {
-        	Character c = (Character) oldVal;
-        	if (c == null || c == 'a') {
-        		newVal = 'b';
-        	} else {
-        		newVal = 'a';
-        	}
         } else if (valueType == String.class) {
             // make sure it's unique
             newVal = "new " + oldVal;
@@ -166,8 +139,6 @@ public class GenericNewValueMaker implements NewValueMaker {
             } else {
                 newVal = new Boolean(! ((Boolean) oldVal).booleanValue());
             }
-        } else if (valueType == Date.class) {
-        	newVal = new Date(System.currentTimeMillis());
         } else if (valueType == File.class) {
             newVal = new File("temp" + System.currentTimeMillis());
         } else if (valueType == JDBCDataSource.class || valueType == SPDataSource.class) {

@@ -184,7 +184,8 @@ public class FancyExportableJTable extends EditableJTable {
 	 * of cells in the table to compare them against the text field used in searching.
 	 */
 	private TableTextConverter textConverter = new TableTextConverter() {
-		public String getTextForCell(Object cellValue) {
+		public String getTextForCell(int row, int col) {
+			Object cellValue = getModel().getValueAt(row, col);
 			if (cellValue != null) {
 				return cellValue.toString();
 			} else {

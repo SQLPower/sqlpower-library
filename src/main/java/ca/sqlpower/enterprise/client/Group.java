@@ -19,11 +19,6 @@
 
 package ca.sqlpower.enterprise.client;
 
-import java.io.IOException;
-import java.io.NotSerializableException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -203,10 +198,6 @@ public class Group extends AbstractSPObject implements GrantedAuthority {
         addMember(member, members.size());
     }
     
-    public void addUser(User user) {
-    	addMember(new GroupMember(user));
-    }
-    
     public boolean removeMember(GroupMember member) {
     	boolean wasRemoved = false;
         if (this.members.contains(member)) {
@@ -216,15 +207,6 @@ public class Group extends AbstractSPObject implements GrantedAuthority {
             member.setParent(null);
         }
         return wasRemoved;
-    }
-    
-    public boolean removeUser(User user) {
-    	for (GroupMember member : members) {
-    		if (member.getUser().getUUID().equals(user.getUUID())) {
-    			return removeMember(member);
-    		}
-    	}
-    	return false;
     }
 
 	public String getAuthority() {
@@ -257,38 +239,5 @@ public class Group extends AbstractSPObject implements GrantedAuthority {
 		childTypes.add(GroupMember.class);
 		childTypes.add(Grant.class);
 		return childTypes;
-	}
-
-	/**
-	 * Marking this class as not serializable. The {@link GrantedAuthority}
-	 * interface extends from {@link Serializable}, which makes this class also
-	 * {@link Serializable}. However, our object model does not use
-	 * serialization.
-	 * 
-	 * Followed the article written by Sun at
-	 * http://java.sun.com/developer/technicalArticles/ALT/serialization/
-	 * 
-	 * @param ois
-	 * @throws ClassNotFoundException
-	 * @throws IOException
-	 */
-	private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
-		throw new NotSerializableException();
-	}
-
-	/**
-	 * Marking this class as not serializable. The {@link GrantedAuthority}
-	 * interface extends from {@link Serializable}, which makes this class also
-	 * {@link Serializable}. However, our object model does not use
-	 * serialization.
-	 * 
-	 * Followed the article written by Sun at
-	 * http://java.sun.com/developer/technicalArticles/ALT/serialization/
-	 * 
-	 * @param ois
-	 * @throws IOException
-	 */
-	private void writeObject(ObjectOutputStream ois) throws IOException {
-		throw new NotSerializableException();
 	}
 }

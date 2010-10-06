@@ -353,16 +353,16 @@ public class SQLTable extends SQLObject {
 	 * @throws SQLObjectException
 	 */
     protected void populateColumns() throws SQLObjectException {
-    	if (columnsPopulated) return;
     	synchronized(getClass()) {
     		synchronized(this) {
+    			if (columnsPopulated) return;
     			if (columns.size() > 0) {
     				throw new IllegalStateException("Can't populate table because it already contains columns");
     			}
 
     			logger.debug("column folder populate starting for table " + getName());
 
-    			populateAllColumns(getCatalogName(), getSchemaName(), getName(), getParentDatabase(), getParent());
+    			populateAllColumns(getCatalogName(), getSchemaName(), getParentDatabase(), getParent());
 
     			logger.debug("column folder populate finished for table " + getName());
 
@@ -397,15 +397,14 @@ public class SQLTable extends SQLObject {
 	 *            The SQLObject that contains all of the tables in the system.
 	 * @throws SQLObjectException
 	 */
-    private synchronized static void populateAllColumns(String catalogName, String schemaName,
-    		String tableName,
+    private synchronized static void populateAllColumns(String catalogName, String schemaName, 
     		final SQLDatabase parentDB, final SQLObject tableContainer) throws SQLObjectException {
     	Connection con = null;
 		try {
 		    con = parentDB.getConnection();
 		    DatabaseMetaData dbmd = con.getMetaData();
 		    final ListMultimap<String, SQLColumn> cols = SQLColumn.fetchColumnsForTable(
-		    		catalogName, schemaName, tableName, dbmd);
+		    		catalogName, schemaName, dbmd);
 		    Runnable runner = new Runnable() {
 				public void run() {
 					try {
@@ -604,9 +603,9 @@ public class SQLTable extends SQLObject {
 	
 	protected void populateImportedKeys() throws SQLObjectException {
 		// Must synchronize on class before instance. See populateAllColumns
-		if (importedKeysPopulated) return;
 		synchronized(getClass()) {
 			synchronized(this) {
+				if (importedKeysPopulated) return;
 
 				CachedRowSet crs = null;
 				Connection con = null;
@@ -648,7 +647,7 @@ public class SQLTable extends SQLObject {
 						}
 						pkTable.populateColumns();
 						pkTable.populateIndices();
-						pkTable.populateRelationships(this);
+						pkTable.populateRelationships();
 					}
 					setImportedKeysPopulated(true);
 				} catch (SQLException ex) {
@@ -680,35 +679,6 @@ public class SQLTable extends SQLObject {
 			}
 		}
 	}
-	
-	/**
-	 * Populates all the exported key relationships.  This has the
-	 * side effect of populating the imported key side of the
-	 * relationships for the exporting tables.
-	 * <p>
-	 * XXX This is a temporary patch to make relationship populating not cascade.
-	 * This can be improved upon.
-	 */
-    protected synchronized void populateRelationships(SQLTable fkTable) throws SQLObjectException {
-    	if (exportedKeysPopulated) {
-    		return;
-    	}
-
-		logger.debug("SQLTable: relationship populate starting");
-
-		final List<SQLRelationship> newKeys = SQLRelationship.fetchExportedKeys(this, fkTable);
-		runInForeground(new Runnable() {
-			public void run() {
-
-				//Someone beat us to populating the relationships
-				if (exportedKeysPopulated) return;
-				populateRelationshipsWithList(SQLTable.this, newKeys);
-			}
-		});
-
-		logger.debug("SQLTable: relationship populate finished");
-
-	}
 
 	/**
 	 * Populates all the exported key relationships.  This has the
@@ -722,7 +692,7 @@ public class SQLTable extends SQLObject {
 
 		logger.debug("SQLTable: relationship populate starting");
 
-		final List<SQLRelationship> newKeys = SQLRelationship.fetchExportedKeys(this, null);
+		final List<SQLRelationship> newKeys = SQLRelationship.fetchExportedKeys(this);
 		runInForeground(new Runnable() {
 			public void run() {
 
@@ -1465,7 +1435,7 @@ public class SQLTable extends SQLObject {
         	} else {
         		oldName = getName();
         	}
-        	
+            
             begin("Table Name Change");
             super.setPhysicalName(argName);
             
@@ -1474,12 +1444,8 @@ public class SQLTable extends SQLObject {
             if (isColumnsPopulated()) {
                 for (SQLColumn col : getColumns()) {
                     if (col.isAutoIncrementSequenceNameSet()) {
-                    	String testingName = col.discoverSequenceNameFormat(oldName, col.getPhysicalName());
-
-                    	if (testingName.equals(col.getAutoIncrementSequenceName())) {
-                    		col.setAutoIncrementSequenceName(
-                    				col.makeAutoIncrementSequenceName());
-                    	}
+                        String newName = col.getAutoIncrementSequenceName().replace(oldName, argName);
+                        col.setAutoIncrementSequenceName(newName);
                     }
                 }
             }
@@ -1942,14 +1908,8 @@ public class SQLTable extends SQLObject {
     
     @Override
     public <T extends SPObject> List<T> getChildren(Class<T> type) {
-    	if (!isMagicEnabled()) {
-    		return getChildrenWithoutPopulating(type);
-    	}
         try {
-        	if (type == SQLImportedKey.class) {
-        		//doing nothing because we can now populate imported keys without
-        		//needing columns.
-        	} else if (type == SQLColumn.class) {
+            if (type == SQLColumn.class) {
                 populateColumns();
             } else if (type == SQLIndex.class) {
                 populateColumns();
@@ -2029,7 +1989,7 @@ public class SQLTable extends SQLObject {
             return;
         }
 
-        final List<SQLRelationship> newRels = SQLRelationship.fetchExportedKeys(this, null);
+        final List<SQLRelationship> newRels = SQLRelationship.fetchExportedKeys(this);
         if (logger.isDebugEnabled()) {
             logger.debug("New imported keys of " + getName() + ": " + newRels);
         }

@@ -40,10 +40,10 @@ import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
-import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -383,31 +383,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	        boolean foundColumn = false;
 	        for (int i = columnsToRemove.size() - 1; i >= 0; i--) {
 	            ColumnMapping existingMapping = columnsToRemove.get(i);
-	            SQLTable existingFKTable;
-	            String existingColName;
-	            if (existingMapping.getFkColumn() == null) {
-	            	existingFKTable = existingMapping.getFkTable();
-	            	existingColName = existingMapping.getFkColName();
-	            } else {
-	            	existingFKTable = existingMapping.getFkColumn().getParent();
-	            	existingColName = existingMapping.getFkColumn().getName();
-	            }
-	            SQLTable newColFKTable;
-	            String newColFKColName;
-	            if (newColMapping.getFkColumn() == null) {
-	            	newColFKTable = newColMapping.getFkTable();
-	            	newColFKColName = newColMapping.getFkColName();
-	            } else {
-	            	newColFKTable = newColMapping.getFkColumn().getParent();
-	            	newColFKColName = newColMapping.getFkColumn().getName();
-	            }
-	            
 	            if (existingMapping.getPkColumn().equals(newColMapping.getPkColumn())
-	                    && ((existingMapping.getFkColumn() != null && 
-	                    		newColMapping.getFkColumn() != null && 
-	                    		existingMapping.getFkColumn().equals(newColMapping.getFkColumn())
-	                    	|| (existingFKTable.equals(newColFKTable) && 
-	                    			existingColName.equals(newColFKColName))))) {
+	                    && existingMapping.getFkColumn().equals(newColMapping.getFkColumn())) {
 	                columnsToRemove.remove(existingMapping);
 	                foundColumn = true;
 	                break;
@@ -638,7 +615,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	 */
 	private void realizeMapping() throws SQLObjectException {
 		for (ColumnMapping m : getChildren(ColumnMapping.class)) {
-			if (m.getFkColumn() == null) continue; //fk col has not yet been populated.
 			if (logger.isDebugEnabled()) {
 				logger.debug("realizeMapping: processing " + m);
 			}
@@ -714,7 +690,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
      *             if a database error occurs or if the given table's parent
      *             database is not marked as populated.
      */
-	static List<SQLRelationship> fetchExportedKeys(final SQLTable table, final SQLTable originalFkTable)
+	static List<SQLRelationship> fetchExportedKeys(final SQLTable table)
 	throws SQLObjectException {
 		final SQLDatabase db = table.getParentDatabase();
 		if (!db.isPopulated()) {
@@ -765,16 +741,10 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				final String fkTableName = crs.getString(7);
 				final String fkColName = crs.getString(8);
 				final SQLTable fkTable = db.getTableByName(fkCat,fkSchema,fkTableName);
-				//For performance we only care about the relationships that are being searched for 
-				//on this fk table.
-				if (originalFkTable != null && originalFkTable != fkTable) {
-					continue;
-				}
 				final int updateRule = crs.getInt(10);
 				final int deleteRule = crs.getInt(11);
 				final String fkName = crs.getString(12);
 				final int deferrability = crs.getInt(14);
-				
 				if (currentKeySeq == 1) {
 					r = new SQLRelationship();
 					final SQLRelationship finalRelation = r;
@@ -806,6 +776,10 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 							throw new IllegalStateException("FK table " + parentTable + 
 									" is missing columns, cannot populate relationships.");
 						}
+						if (!fkTable.isColumnsPopulated()) {
+							throw new IllegalStateException("FK table " + fkTable + 
+									" is missing columns, cannot populate relationships.");
+						}
 						try {
 							relToModify.setMagicEnabled(false);
 							ColumnMapping m = new ColumnMapping();
@@ -823,10 +797,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 								throw new SQLObjectException("relationship.populate.nullPkColumn");
 							}
 							
-							m.fkColumn = relToModify.getFkTable().getColumnByName(fkColName, false, false);
+							m.fkColumn = relToModify.getFkTable().getColumnByName(fkColName);
 							if (m.fkColumn == null) {
-								m.setFkColName(fkColName);
-								m.setFkTable(relToModify.getFkTable());
+								throw new SQLObjectException("relationship.populate.nullFkColumn");
 							}
 							// column 9 (currentKeySeq) handled above
 							relToModify.updateRule = UpdateDeleteRule.ruleForCode(updateRule);
@@ -1048,9 +1021,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			Collections.sort(mappings, Collections.reverseOrder(new ColumnMappingFKColumnOrderComparator()));
 			for (ColumnMapping cm : mappings) {
 				logger.debug("Removing reference to fkcol "+ cm.getFkColumn());
-				if (cm.getFkColumn() != null) {
-					cm.getFkColumn().removeReference();
-				}
+				cm.getFkColumn().removeReference();
 			}
 		} finally {
 			isDisconnecting = false;
@@ -1591,37 +1562,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		protected SQLColumn pkColumn;
 		protected SQLColumn fkColumn;
 
-		/**
-		 * If the fk table has not been populated the column mapping will point
-		 * to the column in the fk table by table reference and column name.
-		 * Then when the table is actually populated the fkColumn property will
-		 * be set.
-		 * <p>
-		 * If the fkColumn is already populated it should be used over this value.
-		 */
-		private SQLTable fkTable;
-		
-		/**
-		 * Holds the name of the fk table column this mapping should connect if
-		 * the table does not have columns created yet. 
-		 * @see #fkTable
-		 */
-		private String fkColName;
-		
-		/**
-		 * This listener will be attached to the fkTable if the fkTable has not
-		 * had its columns populated yet. This will let the column mapping update
-		 * correctly when the fkTable gets populated.
-		 */
-		private final SPListener fkTableListener = new AbstractSPListener() {
-			
-			public void childAdded(SPChildEvent e) {
-				if (e.getChild() instanceof SQLColumn && e.getChild().getName().equals(fkColName)) {
-					setFkColumn((SQLColumn) e.getChild());
-				}
-			};
-		};
-
 		@Constructor
 		public ColumnMapping() {
 			setName("Column Mapping");
@@ -1657,13 +1597,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		 */
 		@Accessor
 		public SQLColumn getFkColumn()  {
-			if (fkColumn == null && fkColName != null && fkTable != null) {
-				try {
-					setFkColumn(fkTable.getColumnByName(fkColName));
-				} catch (SQLObjectException e) {
-					throw new RuntimeException(e);
-				}
-			}
 			return this.fkColumn;
 		}
 
@@ -1674,20 +1607,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		 */
 		@Mutator
 		public void setFkColumn(SQLColumn argFkColumn) {
-			try {
-				begin("Setting column mapping fk column.");
-				SQLColumn oldFK = this.fkColumn;
-				this.fkColumn = argFkColumn;
-				firePropertyChange("fkColumn", oldFK, argFkColumn);
-				if (fkColumn != null) {
-					setFkTable(null);
-					setFkColName(null);
-				}
-				commit();
-			} catch (RuntimeException e) {
-				rollback(e.getMessage());
-				throw e;
-			}
+			SQLColumn oldFK = this.fkColumn;
+			this.fkColumn = argFkColumn;
+			firePropertyChange("fkColumn", oldFK, argFkColumn);
 		}
 
 		public String toString() {
@@ -1723,19 +1645,11 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			if (pkColumn == null || fkColumn == null) return "Incomplete mapping";
 			
 			String fkTableName = null;
-			if (fkColumn == null && fkTable != null) {
-				fkTableName = fkTable.getName();
-			} else if (fkColumn.getParent() != null) {
+			if (fkColumn.getParent() != null) {
 				fkTableName = fkColumn.getParent().getName();
 			}
-			String fkColumnName = null;
-			if (fkColumn == null && fkColName != null) {
-				fkColumnName = fkColName;
-			} else if (fkColumn != null) {
-				fkColumnName = fkColumn.getName();
-			}
 			return pkColumn.getName() + " - " +
-				fkTableName + "." + fkColumnName;
+				fkTableName + "." + fkColumn.getName();
 		}
 
 		/**
@@ -1758,9 +1672,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			if (obj instanceof ColumnMapping) {
 				ColumnMapping cmap = (ColumnMapping) obj;
 				return fkColumn == cmap.fkColumn &&
-						pkColumn == cmap.pkColumn &&
-						fkTable == cmap.fkTable &&
-						fkColName == cmap.fkColName;
+						pkColumn == cmap.pkColumn;
 			}
 			return false;
 		}
@@ -1770,8 +1682,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			int result = 17;
 			result = result * 31 + (fkColumn == null? 0 : fkColumn.hashCode());
 			result = result * 31 + (pkColumn == null? 0 :pkColumn.hashCode());
-			result = result * 31 + (fkTable == null? 0 : fkTable.hashCode());
-			result = result * 31 + (fkColName == null? 0 :fkColName.hashCode());
 			return result;
 		}
 
@@ -1800,36 +1710,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 
 		public List<Class<? extends SPObject>> getAllowedChildTypes() {
 			return allowedChildTypes;
-		}
-
-		@Mutator
-		public void setFkTable(SQLTable fkTable) {
-			SQLTable oldTable = this.fkTable;
-			this.fkTable = fkTable;
-			if (oldTable != null) {
-				oldTable.removeSPListener(fkTableListener);
-			}
-			if (fkTable != null) {
-				fkTable.addSPListener(fkTableListener);
-			}
-			firePropertyChange("fkTable", oldTable, fkTable);
-		}
-
-		@Accessor
-		public SQLTable getFkTable() {
-			return fkTable;
-		}
-
-		@Mutator
-		public void setFkColName(String fkColName) {
-			String oldName = this.fkColName;
-			this.fkColName = fkColName;
-			firePropertyChange("fkColName", oldName, fkColName);
-		}
-
-		@Accessor
-		public String getFkColName() {
-			return fkColName;
 		}
 
 	}

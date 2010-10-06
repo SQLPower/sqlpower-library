@@ -26,7 +26,6 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
-import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sqlobject.UserDefinedSQLType;
 
 /**
@@ -44,8 +43,10 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 	
 	@Constructor
 	public SystemSPObjectSnapshot(
-			@ConstructorParameter(propertyName = "originalUUID") String originalUUID) {
+			@ConstructorParameter(propertyName = "originalUUID") String originalUUID,
+			@ConstructorParameter(propertyName = "workspaceRevision") int systemRevision) {
 		this.originalUUID = originalUUID;
+		this.workspaceRevision = systemRevision;
 	}
 
 	/**
@@ -54,19 +55,10 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 	private final String originalUUID;
 	
 	/**
-	 * Whether or not this snapshot is obsolete when compared to its original
-	 * (identified by {@link #getOriginalUUID()}) when most recently checked.
-	 * Note that since this is based on when it was most recently checked, it is
-	 * certainly possible that a snapshot can be obsolete and still return
-	 * false.
-	 */       
-	private boolean obsolete;
-
-	/**
-	 * Flag to signal that the original object has been deleted. If this is set,
-	 * we should not try to look up the original.
+	 * The revision number of the System workspace at the exact time the
+	 * snapshot was taken
 	 */
-	private boolean deleted = false;
+	private int workspaceRevision;
 	
 	@Accessor
 	public String getOriginalUUID() {
@@ -78,6 +70,18 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 		return SYSTEM_WORKSPACE_UUID;
 	}
 	
+	@Mutator
+	public void setWorkspaceRevision(int workspaceRevision) {
+		int oldValue = this.workspaceRevision;
+		this.workspaceRevision = workspaceRevision;
+		firePropertyChange("workspaceRevision", oldValue, workspaceRevision);
+	}
+
+	@Accessor
+	public int getWorkspaceRevision() {
+		return workspaceRevision;
+	}
+
 	@Override
 	protected boolean removeChildImpl(SPObject child) {
 		return false;
@@ -97,29 +101,5 @@ public abstract class SystemSPObjectSnapshot<T extends SPObject> extends
 
 	public void removeDependency(SPObject dependency) {
 		// no-op
-	}
-	
-	@Mutator
-	public void setObsolete(boolean isObsolete) {
-		boolean oldValue = this.obsolete;
-		this.obsolete = isObsolete;
-		firePropertyChange("obsolete", oldValue, isObsolete);
-	}
-	
-	@Accessor
-	public boolean isObsolete() {
-		return obsolete;
-	}
-	
-	@Transient @Mutator
-	public void setDeleted(boolean isDeleted) {
-		boolean oldValue = this.deleted;
-		this.deleted = isDeleted;
-		firePropertyChange("deleted", oldValue, isDeleted);
-	}
-	
-	@Transient @Accessor
-	public boolean isDeleted() {
-		return deleted;
 	}
 }

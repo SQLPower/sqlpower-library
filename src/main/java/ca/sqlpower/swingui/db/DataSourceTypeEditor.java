@@ -18,7 +18,6 @@
  */
 package ca.sqlpower.swingui.db;
 
-import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
@@ -201,7 +200,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
      * {@link #switchToDsType()} for that.
      */
     private JPanel createPanel() {
-        FormLayout layout = new FormLayout("fill:max(60dlu;pref), 6dlu, pref:grow", "pref, 6dlu, pref:grow, 3dlu, pref"); //$NON-NLS-1$ //$NON-NLS-2$
+        FormLayout layout = new FormLayout("60dlu, 6dlu, pref:grow", "pref, 6dlu, pref:grow, 3dlu, pref"); //$NON-NLS-1$ //$NON-NLS-2$
         DefaultFormBuilder fb = new DefaultFormBuilder(layout);
         fb.setDefaultDialogBorder();
         
@@ -209,11 +208,7 @@ public class DataSourceTypeEditor implements DataEntryPanel {
         addRemoveBar.add(addDsTypeButton);
         addRemoveBar.add(removeDsTypeButton);
         
-        JScrollPane dsTypePane = new JScrollPane(dsTypeList);
-        //Setting the preferred size to 0 so the add/remove bar and the default size
-        //set the width of the column and not the max type name width.
-        dsTypePane.setPreferredSize(new Dimension(0, 0));
-		fb.add(dsTypePane, "1, 1, 1, 3"); //$NON-NLS-1$
+        fb.add(new JScrollPane(dsTypeList), "1, 1, 1, 3"); //$NON-NLS-1$
         fb.add(addRemoveBar,                "1, 5"); //$NON-NLS-1$
         fb.add(dsTypePanel.getPanel(),      "3, 1"); //$NON-NLS-1$
         

@@ -115,7 +115,6 @@ public class SQLObjectRoot extends SQLObject {
 			databases.remove(index);			
 			fireChildRemoved(SQLDatabase.class, child, index);
 			child.setParent(null);
-			child.disconnect();
 			return true;
 		}
 		return false;

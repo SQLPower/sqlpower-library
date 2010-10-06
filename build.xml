@@ -134,7 +134,7 @@
 		<property name="reports.junit" value="${reports.dir}/junit"/>
 		<mkdir dir="${reports.junit}"/>
 		<!-- Output all System.out and System.err messages -->
-	   <junit printsummary="on" showoutput="no" maxmemory="1024m" dir=".">
+	   <junit printsummary="on" showoutput="no" maxmemory="1024m">
 	   		<sysproperty key="ca.sqlpower.architect.test.dir" value="${build.tests}"/>
 			<sysproperty key="ca.sqlpower.SKIP_DODGY_TESTS" value="${ca.sqlpower.SKIP_DODGY_TESTS}" />
 	   		<sysproperty key="java.util.prefs.PreferencesFactory" value="prefs.PreferencesFactory"/>
@@ -142,7 +142,7 @@
 	       		<path refid="test.classpath"/>
 	       		<path path="${build.tests}"/>
 	       </classpath>
-			<batchtest fork="yes" todir="${reports.junit}">
+			<batchtest fork="no" todir="${reports.junit}">
 				<fileset dir="${tests}">
 				    <include name="**/*Test*.java"/>
 				    <!-- Exclude abstract test classes and non-JUnit tests -->
@@ -187,7 +187,6 @@
 		    These classes need to be moved to a generated package like Architect in the future. -->
 		<delete dir="${src}/ca/sqlpower/object/generated"/>
 		<delete dir="${src}/ca/sqlpower/sqlobject/generated"/>
-		<delete dir="${src}/ca/sqlpower/swingui/generated"/>
 		<delete dir="${src}/ca/sqlpower/enterprise/client/generated"/>
 		<delete dir="${src}/ca/sqlpower/testutil/generated"/>
 	</target>

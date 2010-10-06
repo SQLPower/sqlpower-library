@@ -19,11 +19,6 @@
 
 package ca.sqlpower.enterprise.client;
 
-import java.io.IOException;
-import java.io.NotSerializableException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -106,7 +101,6 @@ public class User extends AbstractSPObject implements UserDetails {
     }
     
     public void addGrant(Grant grant, int index) {
-    	childPositionOffset(grant.getClass());
         this.grants.add(index, grant);
         grant.setParent(this);
         fireChildAdded(Grant.class, grant, index);
@@ -125,6 +119,7 @@ public class User extends AbstractSPObject implements UserDetails {
     
     @Override
     protected void addChildImpl(SPObject child, int index) {
+    	childPositionOffset(child.getClass());
     	addGrant((Grant) child, index);
     }
     
@@ -200,38 +195,5 @@ public class User extends AbstractSPObject implements UserDetails {
 		List<Class<? extends SPObject>> childTypes = new ArrayList<Class<? extends SPObject>>();
 		childTypes.add(Grant.class);
 		return childTypes;
-	}
-
-	/**
-	 * Marking this class as not serializable. The {@link UserDetails} interface
-	 * extends from {@link Serializable}, which makes this class also
-	 * {@link Serializable}. However, our object model does not use
-	 * serialization.
-	 * 
-	 * Followed the article written by Sun at
-	 * http://java.sun.com/developer/technicalArticles/ALT/serialization/
-	 * 
-	 * @param ois
-	 * @throws ClassNotFoundException
-	 * @throws IOException
-	 */
-	private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
-		throw new NotSerializableException();
-	}
-
-	/**
-	 * Marking this class as not serializable. The {@link UserDetails} interface
-	 * extends from {@link Serializable}, which makes this class also
-	 * {@link Serializable}. However, our object model does not use
-	 * serialization.
-	 * 
-	 * Followed the article written by Sun at
-	 * http://java.sun.com/developer/technicalArticles/ALT/serialization/
-	 * 
-	 * @param ois
-	 * @throws IOException
-	 */
-	private void writeObject(ObjectOutputStream ois) throws IOException {
-		throw new NotSerializableException();
 	}
 }

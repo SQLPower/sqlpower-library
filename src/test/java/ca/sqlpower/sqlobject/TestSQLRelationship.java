@@ -1331,14 +1331,14 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
     	fkTable.populateImportedKeys();
     	
     	System.out.println("Have exported keys " + pkTable.getExportedKeysWithoutPopulating());
-    	assertEquals(1, pkTable.getExportedKeysWithoutPopulating().size());
+    	assertEquals(2, pkTable.getExportedKeysWithoutPopulating().size());
     	assertEquals(0, pkTable.getImportedKeysWithoutPopulating().size());
     	assertEquals(0, fkTable.getExportedKeysWithoutPopulating().size());
     	assertEquals(2, fkTable.getImportedKeysWithoutPopulating().size());
     	assertEquals(1, dontConnectMe.getExportedKeysWithoutPopulating().size());
     	assertEquals(0, dontConnectMe.getImportedKeysWithoutPopulating().size());
     	assertEquals(0, anotherTable.getExportedKeysWithoutPopulating().size());
-    	assertEquals(0, anotherTable.getImportedKeysWithoutPopulating().size());
+    	assertEquals(1, anotherTable.getImportedKeysWithoutPopulating().size());
     	
     	try {
     		con = getDb().getConnection();

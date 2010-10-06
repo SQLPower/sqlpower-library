@@ -147,7 +147,7 @@ public class Grant extends AbstractSPObject {
     @Override
     @Mutator
     public void setName(String name) {
-    	// no op (to not use default setName() is SPObject) 
+    	// no op
     }
     
     @Override

@@ -21,6 +21,7 @@ package ca.sqlpower.sqlobject;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -47,7 +48,6 @@ import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.SQL;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
-import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.BasicSQLType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
 import ca.sqlpower.util.UserPrompter;
 import ca.sqlpower.util.UserPrompterFactory;
@@ -113,11 +113,11 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	
     //  These are not specific Column properties.Instead,they are default column
     //  user settings.
-   	private static String defaultName;
+   	private static String defaultName = "New_Column";
     
-    private static int defaultType;
+    private static int defaultType = Types.INTEGER;
     
-    private static int defaultPrec;
+    private static int defaultPrec = 10;
     
     private static int defaultScale;
     
@@ -127,7 +127,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
     
     private static boolean defaultAutoInc;
     
-    private static String defaultRemarks;
+    private static String defaultRemarks = "";
     
     private static String defaultForDefaultValue;   
     
@@ -258,55 +258,6 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 
         logger.debug("SQLColumn(.....) set ref count to 1");
         this.referenceCount = 1;
-	} 
-	
-	/**
-     * A constructor for testing purposes, and reverse engineering. You normally do not want to call this
-     * constructor because it will override all of your domain or type values.
-     */
-	public SQLColumn(SQLTable parentTable,
-			String colName,
-			UserDefinedSQLType type,
-			int precision, 
-			int scale,
-			boolean isAutoIncrement) {
-
-		if (parentTable != null) {
-			setParent(parentTable);
-		}
-		this.userDefinedSQLType = new UserDefinedSQLType("UserDefinedSQLType",
-										DatabaseMetaData.columnNullable,
-										isAutoIncrement,
-										null,
-										type,
-										new SQLTypePhysicalProperties(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM));
-		userDefinedSQLType.setParent(this);
-		setPlatform(SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM);
-		this.setName(colName);
-		setPopulated(true);
-		
-		// A scale/precision value of 0 does not mean anything, 
-		// which means the scale/precision type should be not applicable.
-		// Otherwise, set the scale/precision type to a default of variable.
-		// Reverse engineered tables will override the scale/precision types
-		// by looking through existing user types and inheriting their 
-		// scale/precision properties.
-		this.userDefinedSQLType.setScale(platform, scale);
-		if (scale > 0) {
-			this.userDefinedSQLType.setScaleType(platform, PropertyType.VARIABLE);
-		} else {
-			this.userDefinedSQLType.setScaleType(platform, PropertyType.NOT_APPLICABLE);
-		}
-		this.userDefinedSQLType.setPrecision(platform, precision);
-		if (precision > 0) {
-			this.userDefinedSQLType.setPrecisionType(platform, PropertyType.VARIABLE);
-		} else {
-			this.userDefinedSQLType.setPrecisionType(platform, PropertyType.NOT_APPLICABLE);
-		}
-		this.userDefinedSQLType.setMyNullability(DatabaseMetaData.columnNullable);
-
-        logger.debug("SQLColumn(.....) set ref count to 1");
-        this.referenceCount = 1;
 	}
 	
 	/**
@@ -314,6 +265,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	 *
 	 * @param parentTable The table that this column will think it belongs to.
 	 * @param colName This column's name.
+	 * @param dataType The number that represents this column's type. See java.sql.Types.
 	 * @param nativeType The type as it is called in the source database.
 	 * @param scale The length of this column.  Size is type-dependant.
 	 * @param precision The number of places of precision after the decimal place for numeric types.
@@ -472,14 +424,13 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	static ListMultimap<String, SQLColumn> fetchColumnsForTable(
 	                                String catalog,
 	                                String schema,
-	                                String table,
 	                                DatabaseMetaData dbmd) 
 		throws SQLException, DuplicateColumnException, SQLObjectException {
 		ResultSet rs = null;
 		final ListMultimap<String, SQLColumn> multimap = ArrayListMultimap.create();
  		try {
 			logger.debug("SQLColumn.addColumnsToTables: catalog="+catalog+"; schema="+schema);
-			rs = dbmd.getColumns(catalog, schema, table, "%");
+			rs = dbmd.getColumns(catalog, schema, null, "%");
 			
 			int autoIncCol = SQL.findColumnIndex(rs, "is_autoincrement");
 			logger.debug("Auto-increment info column: " + autoIncCol);
@@ -495,16 +446,11 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
                 } else {
                     autoIncrement = false;
                 }
-                String nativeTypeName = rs.getString(6);
-
-				if(nativeTypeName.indexOf('(') >= 0) {
-					nativeTypeName = nativeTypeName.substring(0, nativeTypeName.indexOf('('));
-				}
                 
 				SQLColumn col = new SQLColumn(null,
 											  rs.getString(4),  // col name
 											  rs.getInt(5), // data type (from java.sql.Types)
-											  nativeTypeName, // native type name
+											  rs.getString(6), // native type name
 											  rs.getInt(7), // column size (precision)
 											  rs.getInt(9), // decimal size (scale)
 											  rs.getInt(11), // nullable
@@ -890,18 +836,8 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	 * @param argType Value to assign to this.type
 	 */
 	@Transient @Mutator
-	public void setType(UserDefinedSQLType type) {
-		userDefinedSQLType.setUpstreamType(type);
-	}
-
-	/**
-	 * Sets the value of type
-	 *
-	 * @param argType Value to assign to this.type
-	 */
-	@Transient @Mutator
-	public void setType(int type) {
-		userDefinedSQLType.setType(type);
+	public void setType(int argType) {
+		userDefinedSQLType.setType(argType);
 	}
 
 	/**
@@ -1301,52 +1237,20 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	@Accessor
     public String getAutoIncrementSequenceName() {
         if (autoIncrementSequenceName == null) {
-        	return makeAutoIncrementSequenceName();
+        	String tableName;
+        	if (getParent() == null) {
+        		tableName = "";
+        	} else if (getParent().getPhysicalName() != null && !getPhysicalName().trim().equals("")) {
+        		tableName = getParent().getPhysicalName() + "_";
+        	} else {
+        		tableName = getParent().getName() +"_";
+        	}
+            return tableName + getName() + "_seq";
         } else {
             return autoIncrementSequenceName;
         }
     }
-
-	/**
-	 * Creates an auto-increment sequence name based on table and column names.
-	 * 
-	 * @return The properly formatted sequence name for the column.
-	 */
-	public String makeAutoIncrementSequenceName() {
-		String tableName;
-    	if (getParent() == null) {
-    		tableName = "";
-    	} else if (getParent().getPhysicalName() != null && !getPhysicalName().trim().equals("")) {
-    		tableName = getParent().getPhysicalName() + "_";
-    	} else {
-    		tableName = getParent().getName() +"_";
-    	}
-        return tableName + getPhysicalName() + "_seq";
-	}
     
-	public String discoverSequenceNameFormat(String tableName, String colName) {
-		String seqName = getAutoIncrementSequenceName();
-		String seqNamePrefix, seqNameSuffix;
-		String newName = "";
-		int prefixEnd = seqName.indexOf(colName);
-		
-		if ((prefixEnd != -1 && seqName.substring
-                (prefixEnd + colName.length()).indexOf(colName) == -1)) {
-            seqNamePrefix = seqName.substring(0, prefixEnd);
-            seqNameSuffix = seqName.substring(prefixEnd + colName.length());
-        } else if (seqName.equals(tableName + "_" + colName + "_seq")) {
-            seqNamePrefix = tableName + "_";
-            seqNameSuffix = "_seq";
-        } else {
-            seqNamePrefix = null;
-            seqNameSuffix = null;
-        }
-		if (seqNamePrefix != null && seqNameSuffix != null) {
-            newName = seqNamePrefix + colName + seqNameSuffix;
-        }
-		return newName;
-	}
-	
     /**
      * Only sets the name if it is different from the default name.  This is important
      * in case the table name changes; the name should be expected to update.

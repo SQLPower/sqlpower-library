@@ -172,8 +172,7 @@ public class TableModelSearchDecorator extends AbstractTableModel implements Cle
         				
         				match = false;
         				for ( int column = 0; column < tableModel.getColumnCount(); column++ ) {
-        					Object val = tableModel.getValueAt(row, column);
-        					String value = tableTextConverter.getTextForCell(val);
+        					String value = tableTextConverter.getTextForCell(row, column);
         					if ( value.toLowerCase().indexOf(searchWords[i].toLowerCase()) >= 0 ) {
         						match = true;
         						if (logger.isDebugEnabled()) {
@@ -190,7 +189,7 @@ public class TableModelSearchDecorator extends AbstractTableModel implements Cle
         				match = false;
         		}
         		if ( match ) {
-        			newRowMap.add(row);
+        			newRowMap.add(tableTextConverter.modelIndex(row));
         		}
         	}
 		}

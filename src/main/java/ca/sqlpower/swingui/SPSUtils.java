@@ -24,8 +24,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -68,7 +70,6 @@ import javax.swing.text.JTextComponent;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.util.BrowserUtil;
-import ca.sqlpower.util.SQLPowerUtils;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 import com.jgoodies.forms.layout.FormLayout;
@@ -671,7 +672,22 @@ public class SPSUtils {
         ((JComponent)dialog.getContentPane()).setBorder(
                 BorderFactory.createEmptyBorder(10, 10, 5, 5));
 
-        String exceptionString = SQLPowerUtils.exceptionStackToString(throwable);
+        // Details information
+        Throwable t = throwable;
+        StringWriter stringWriter = new StringWriter();
+        final PrintWriter traceWriter = new PrintWriter(stringWriter);
+        do {
+            t.printStackTrace(traceWriter);
+            if (rootCause(t) instanceof SQLException) {
+                t = ((SQLException) rootCause(t)).getNextException();
+                if (t != null) {
+                    traceWriter.println("Next Exception:"); //$NON-NLS-1$
+                }
+            } else {
+                t = null;
+            }
+        } while (t != null);
+        traceWriter.close();
 
         JPanel top = new JPanel(new GridLayout(0, 1, 5, 5));
 
@@ -716,7 +732,7 @@ public class SPSUtils {
 
         dialog.add(top, BorderLayout.NORTH);
         final JScrollPane detailScroller =
-            new JScrollPane(new JTextArea(exceptionString));
+            new JScrollPane(new JTextArea(stringWriter.toString()));
 
         final JPanel messageComponent = new JPanel(new BorderLayout());
         messageComponent.add(detailScroller, BorderLayout.CENTER);
@@ -784,7 +800,7 @@ public class SPSUtils {
         dialog.setVisible(true);
         return dialog;
     }
-
+    
     /**
      * Trims the given message if it's longer than the given limit by finding
      * the closest new line within the given offset.
@@ -827,6 +843,19 @@ public class SPSUtils {
     	return msg;
     }
     
+    /**
+     * Follows the chain of exceptions (using the getCause() method) to find the
+     * root cause, which is the exception whose getCause() method returns null.
+     * 
+     * @param t The Throwable for which you want to know the root cause.  Must not
+     * be null.
+     * @return The ultimate cause of t.  This may be t itself.
+     */
+    private static Throwable rootCause(Throwable t) {
+        while (t.getCause() != null) t = t.getCause();
+        return t;
+    }
+
     /**
      * Simple convenience routine to replace all \n's with <br>
      * @param s

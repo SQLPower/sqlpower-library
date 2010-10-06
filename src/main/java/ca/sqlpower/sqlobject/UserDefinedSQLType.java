@@ -124,21 +124,9 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	 * {@link SQLTypePhysicalProperties} set with a platform of
 	 * {@link SQLTypePhysicalPropertiesProvider#GENERIC_PLATFORM}
 	 */
-    //TODO: remove this constructor since this uses the old heathen ways
     public UserDefinedSQLType() {
     	this("UserDefinedSQLType", null, null, null, null, new SQLTypePhysicalProperties(GENERIC_PLATFORM));
 	}
-    /**
-	 * Constructs a {@link UserDefinedSQLType} with the
-	 * {@link #defaultPhysicalProperties} set to the
-	 * {@link SQLTypePhysicalProperties} in the argument.
-	 * 
-	 * @param defaultPhysicalProperties
-	 *            Sets the defaultPhysicalProperties to this instance
-	 */
-    //XXX While not mandatory to match the default physical properties child object 
-    //could probably use a better name than "primaryKeyIndex" to be stored under in 
-    //the JCR as it is misleading.
     
 	/**
 	 * Constructs a {@link UserDefinedSQLType} with the
@@ -355,10 +343,9 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     			precision = properties.getPrecision();
     			
     			// Get the precision property from the upstream type if this one 
-    			// does not exist or its precision type is constant.
-				if (getUpstreamType() != null
-						&& (precision == null || getUpstreamType()
-								.getPrecisionType(platform) == PropertyType.CONSTANT)) {
+    			// does not exist or this precision type is constant.
+    			if ((precision == null || getPrecisionType(platform) == PropertyType.CONSTANT) 
+    					&& getUpstreamType() != null) {
     				precision = getUpstreamType().getPrecision(platform);
     			}
     		} else if (getUpstreamType() != null) {
@@ -382,10 +369,9 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     			scale = properties.getScale();
     			
     			// Get the scale property from the upstream type if this one 
-    			// does not exist or its scale type is constant.
-				if (getUpstreamType() != null
-						&& (scale == null
-						|| getUpstreamType().getScaleType(platform) == PropertyType.CONSTANT)) {
+    			// does not exist or this scale type is constant.
+    			if ((scale == null || getScaleType(platform) == PropertyType.CONSTANT) 
+    					&& getUpstreamType() != null) {
     				scale = getUpstreamType().getScale(platform);
     			}
     		} else if (getUpstreamType() != null) {
@@ -541,20 +527,15 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     public void setScaleType(String platform, PropertyType scaleType) {
         getOrCreatePhysicalProperties(platform).setScaleType(scaleType);
     }
-    
+
     @Mutator
-    public void setMyDescription(String myDescription) {
-    	String oldValue = this.description;
-    	this.description = myDescription;
-        firePropertyChange("myDescription", oldValue, description);
+    public void setDescription(String description) {
+        String oldValue = this.description;
+    	this.description = description;
+        firePropertyChange("description", oldValue, description);
     }
 
     @Accessor
-    public String getMyDescription() {
-    	return this.description;
-    }
-    
-    @Transient @Accessor
     public String getDescription() {
     	if (description == null && upstreamType != null) {
     		return upstreamType.getDescription();
@@ -665,8 +646,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
     		if (newProperties == defaultPhysicalProperties) return;
 			if (index == 0) {
 				throw new IllegalArgumentException(
-						"Cannot insert child " + child.getName() + " at index 0 for " + getName() + ", " +
-								"as this is where the default physical properties must always be.");
+						"Cannot insert child at index 0, as this is where the default physical properties must always be.");
 			}
     		SQLTypePhysicalProperties oldProperties = getPhysicalProperties(newProperties.getPlatform());
 			// Add new properties. Insert at index - 1 is because
@@ -779,9 +759,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 				&& SQLPowerUtils.areEqual(udt1.myAutoIncrement, udt2.myAutoIncrement)
 				&& SQLPowerUtils.areEqual(udt1.description, udt2.description)
 				&& SQLPowerUtils.areEqual(udt1.basicType, udt2.basicType)
-				&& ((udt1.getUpstreamType() == null && udt2.getUpstreamType() == null)
-						|| (udt1.getUpstreamType() != null && udt2.getUpstreamType() != null &&
-								areEqual(udt1.getUpstreamType(), udt2.getUpstreamType())))
+				&& SQLPowerUtils.areEqual(udt1.getUpstreamType(), udt2.getUpstreamType())
 				&& SQLPowerUtils.areEqual(oldPlatforms.size(), newPlatforms.size())
 				&& oldPlatforms.containsAll(newPlatforms);
     	
@@ -830,7 +808,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	 * @param source
 	 *            The source {@link UserDefinedSQLType} to copy from.
 	 */
-	public static final void copyProperties(final UserDefinedSQLType target, final UserDefinedSQLType source) {
+	static final void copyProperties(final UserDefinedSQLType target, final UserDefinedSQLType source) {
 		if (!areEqual(target, source)) {
 			target.begin("Copying UserDefinedSQLType");
 			target.setUpstreamType(source.getUpstreamType());
@@ -840,7 +818,7 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 			// values are null
 			target.setMyAutoIncrement(source.myAutoIncrement);
 			target.setBasicType(source.basicType);
-			target.setMyDescription(source.description);
+			target.setDescription(source.description);
 			target.setMyNullability(source.myNullability);
 			target.setType(source.type);
 			

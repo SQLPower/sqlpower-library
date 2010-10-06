@@ -162,7 +162,7 @@ public class SPAnnotationProcessorUtils {
 	        }
 	    }
 	    throw new IllegalArgumentException("The class " + type + 
-	            " does not have an accessor for property \"" + propertyName +"\".");
+	            " does not have an accessor for " + propertyName);
 	}
 
 	/**

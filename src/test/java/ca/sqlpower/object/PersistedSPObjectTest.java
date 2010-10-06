@@ -41,9 +41,9 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.dao.PersistedSPOProperty;
 import ca.sqlpower.dao.PersistedSPObject;
 import ca.sqlpower.dao.PersisterUtils;
-import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.SPPersisterListener;
 import ca.sqlpower.dao.SPSessionPersister;
+import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPChildEvent.EventType;
 import ca.sqlpower.object.annotation.Accessor;
@@ -648,16 +648,6 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	}
 
 	/**
-	 * This method can be overridden by extending classes to specify properties
-	 * that should not be written to by the roll back test. The properties put
-	 * in this list should have a good reason for not being used in the test as
-	 * skipping a property defeats the purpose of the test.
-	 */
-	public Set<String> getRollbackTestIgnorePropertySet() {
-		return new HashSet<String>();
-	}
-	
-	/**
 	 * This test will make changes to the {@link SPObject} under test and then
 	 * cause an exception forcing the persister to roll back the changes in the
 	 * object.
@@ -674,8 +664,6 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 				PropertyUtils.getPropertyDescriptors(objectUnderTest.getClass()));
 		
 		Set<String> propertiesToPersist = findPersistableBeanProperties(false, false);
-		
-		Set<String> ignorePropertySet = getRollbackTestIgnorePropertySet();
 		
 		NewValueMaker valueMaker = createNewValueMaker(getRootObject(), getPLIni());
 		
@@ -725,8 +713,6 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
             if (property.getName().equals("UUID")) continue;
             
             if (!propertiesToPersist.contains(property.getName())) continue;
-            
-            if (ignorePropertySet.contains(property.getName())) continue;
 
             try {
                 oldVal = PropertyUtils.getSimpleProperty(objectUnderTest, property.getName());
@@ -1000,40 +986,6 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
     	assertEquals(childCount - 1, getSPObjectUnderTest().getChildren().size());
     	assertFalse(getSPObjectUnderTest().getChildren().contains(child));
 	}
-
-	/**
-	 * Tests that the parent property of a child is only and must set to null
-	 * after firing a child removed event. If the parent is set to null before
-	 * firing the child removed event,
-	 * {@link SPPersisterListener#propertyChanged(java.beans.PropertyChangeEvent)}
-	 * will throw an exception because its root object does not have a runnable
-	 * dispatcher reference. If the parent is not set to null after firing the
-	 * child removed event, anything that still has a reference to the child
-	 * could call getParent() and be returned a non-null value which is
-	 * incorrect and misleading.
-	 */
-    public void testNullParentSetAfterChildRemovedEvent() throws Exception {
-    	if (!getSPObjectUnderTest().allowsChildren()) return;
-		SPObject child = testSPPersisterAddsChild();
-		if (child == null) return;
-		
-		SPListener listener = new AbstractSPListener() {
-			@Override
-			public void childRemoved(SPChildEvent e) {
-				assertNotNull("Parent of " + e.getChildType() + 
-						" must not be set to null before calling removeChild.", 
-						e.getChild().getParent());
-			}
-		};
-		
-		getSPObjectUnderTest().addSPListener(listener);
-		
-		getSPObjectUnderTest().removeChild(child);
-		
-		assertNull("Parent of " + child.getClass() + 
-				" must be set to null after calling removeChild.", 
-				child.getParent());
-    }
     
     public void testRemoveChildFiresEvent() throws Exception {
     	if (!getSPObjectUnderTest().allowsChildren()) return;

@@ -24,7 +24,6 @@ import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.Point2D;
-import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Date;
@@ -37,7 +36,6 @@ import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.SpecificDataSourceCollection;
-import ca.sqlpower.util.SQLPowerUtils;
 
 /**
  * Converts any known object into a simple type of object that can be
@@ -64,8 +62,6 @@ public class SessionPersisterSuperConverter {
 	private final StringArrayConverter stringArrayConverter = new StringArrayConverter();
 	
 	private final ClassConverter classConverter = new ClassConverter();
-	
-	private final FileConverter fileConverter = new FileConverter();
 	
 	protected final DataSourceCollection <JDBCDataSource> dsCollection;
 
@@ -126,9 +122,6 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom instanceof Long) {
 			return convertFrom;
 			
-		} else if (convertFrom instanceof Short) {
-			return convertFrom;
-			
 		} else if (convertFrom instanceof BigDecimal) {
 		    return ((BigDecimal) convertFrom).toPlainString();
 		    
@@ -144,11 +137,6 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom instanceof Date) {
 		    return ((Date) convertFrom).toString();
 		    
-		} else if (convertFrom instanceof Character) {
-		    Character c = (Character) convertFrom;
-		    String s = new String(new char[]{c.charValue()});
-		    return s;
-			
 		} else if (convertFrom.getClass().isEnum()) {
 			return new EnumConverter(convertFrom.getClass()).convertToSimpleType((Enum) convertFrom);
 			
@@ -180,15 +168,12 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom instanceof java.util.Date) {
 			java.util.Date d = (java.util.Date) convertFrom;
 		    return dateConverter.convertToSimpleType(d);
-		} else if (convertFrom instanceof File) {
-			File file = (File) convertFrom;
-			return fileConverter.convertToSimpleType(file);
+
 		} else if (convertFrom instanceof String[]) {
 			String[] array = (String[]) convertFrom;
 			return stringArrayConverter.convertToSimpleType(array);
 		} else if (convertFrom instanceof Exception) {
-	        String exceptionString = SQLPowerUtils.exceptionStackToString((Exception) convertFrom);
-		    return exceptionString;
+		    return ((Exception) convertFrom).getMessage();
 		} else {
 		    throw new IllegalArgumentException("Cannot convert " + convertFrom + " of type " + 
 		            convertFrom.getClass());
@@ -225,15 +210,8 @@ public class SessionPersisterSuperConverter {
 			
 		} else if (Boolean.class.isAssignableFrom(type)) {
 			return (Boolean) o;
-			
 		} else if (Long.class.isAssignableFrom(type)) {
 			return (Long) o;
-			
-		} else if (Short.class.isAssignableFrom(type)) {
-			return (Short) o;
-			
-		} else if (Character.class.isAssignableFrom(type)) {
-			return ((String) o).charAt(0);
 			
 		} else if (BigDecimal.class.isAssignableFrom(type)) {
 		    return new BigDecimal((String) o);
@@ -279,15 +257,13 @@ public class SessionPersisterSuperConverter {
             
         } else if (java.util.Date.class.isAssignableFrom(type)) {
             return dateConverter.convertToComplexType((String) o);
-        } else if (File.class.isAssignableFrom(type)) {
-        	return fileConverter.convertToComplexType((String) o);
             
         } else if (Dimension.class.isAssignableFrom(type)) {
             return dimensionConverter.convertToComplexType((String) o);
         } else if (String[].class.isAssignableFrom(type)) {
         	return stringArrayConverter.convertToComplexType((String) o);
         } else if (Exception.class.isAssignableFrom(type)) {
-            return new Exception("Root Exception:\n" + (String) o);
+            return new Exception((String) o);
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + o + " of type " + 
 					o.getClass() + " to the type " + type);

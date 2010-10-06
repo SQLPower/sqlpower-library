@@ -335,8 +335,8 @@ public class SQLSchema extends SQLObject {
 		int index = tables.indexOf(table);
 		if (index != -1) {
 			 tables.remove(index);
-			 fireChildRemoved(SQLTable.class, table, index);
 			 table.setParent(null);
+			 fireChildRemoved(SQLTable.class, table, index);
 			 return true;
 		}
 		return false;

@@ -68,7 +68,6 @@ public class PLDotIniTest extends TestCase {
         buf.append("Name=my other db type" + DataSourceCollection.DOS_CR_LF);
         buf.append("silly property=fiddle" + DataSourceCollection.DOS_CR_LF);
         buf.append("Parent Type=my db type" + DataSourceCollection.DOS_CR_LF);
-        buf.append("ca.sqlpower.sqlobject.SQLTypePhysicalProperties_0=test,VARCHAR2,CONSTANT,NOT_APPLICABLE" + DataSourceCollection.DOS_CR_LF);
         buf.append("[random_crap]" + DataSourceCollection.DOS_CR_LF);
         buf.append("foo=bar" + DataSourceCollection.DOS_CR_LF);
         buf.append("fred=george" + DataSourceCollection.DOS_CR_LF);
@@ -86,11 +85,8 @@ public class PLDotIniTest extends TestCase {
         buf.append("JDBC URL=jdbc:postgresql://:5432/" + DataSourceCollection.DOS_CR_LF);
         buf.append("[Data Types_1]" + DataSourceCollection.DOS_CR_LF);
         buf.append("Name=VARCHAR" + DataSourceCollection.DOS_CR_LF);
-        buf.append("UUID=test" + DataSourceCollection.DOS_CR_LF);
         buf.append("Basic Type=TEXT" + DataSourceCollection.DOS_CR_LF);
         buf.append("Description=Test Type" + DataSourceCollection.DOS_CR_LF);
-        buf.append("Precision Type=VARIABLE" + DataSourceCollection.DOS_CR_LF);
-        buf.append("Scale Type=NOT_APPLICABLE" + DataSourceCollection.DOS_CR_LF);
         buf.append("JDBC Type=12" + DataSourceCollection.DOS_CR_LF);
         return buf.toString();
     }
@@ -98,7 +94,7 @@ public class PLDotIniTest extends TestCase {
 	 * Test method for 'ca.sqlpower.architect.PlDotIni.write(OutputStream)'
 	 */
 	public void testWriteOutputStream() throws IOException {
-        String orig = makePlIniString();
+        String orig = makePlIniString().split("\\[Data Types_")[0];
 		InputStream in = makeInputStream(orig);
 		target.read(in);
 		

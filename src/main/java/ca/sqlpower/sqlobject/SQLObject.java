@@ -289,9 +289,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 	@NonProperty
 	public <T extends SPObject> List<T> getChildren(Class<T> type) {
 		try {
-			if (isMagicEnabled()) {
-				populate();
-			}
+			populate();
 			return getChildrenWithoutPopulating(type);
 		} catch (SQLObjectException e) {
 			throw new RuntimeException("Could not populate " + getName(), e);
@@ -666,7 +664,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 
                 try {
                     final ListMultimap<String, SQLColumn> newCols = SQLColumn.fetchColumnsForTable(
-                            catName, schName, null, dbmd);
+                            catName, schName, dbmd);
                     
                     runInForeground(new Runnable() {
                         public void run() {

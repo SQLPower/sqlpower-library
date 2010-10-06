@@ -21,7 +21,6 @@ package ca.sqlpower.object;
 
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Mutator;
-import ca.sqlpower.object.annotation.Transient;
 
 /**
  * A 'snapshot' of an {@link SPObject} in the SPObject persistence mechanism in
@@ -49,6 +48,26 @@ public interface SPObjectSnapshot<T extends SPObject> extends SPObject {
 	public String getWorkspaceUUID();
 	
 	/**
+	 * Set the workspace revision number that this snapshot is based on. This
+	 * will be typically used when initially creating or updating the
+	 * snapshotted object
+	 * 
+	 * @param workspaceRevision
+	 *            The revision number of the workspace identified by the UUID
+	 *            given by {@link #getWorkspaceUUID()} at which this snapshot
+	 *            was taken.
+	 */
+	@Mutator
+	public void setWorkspaceRevision(int workspaceRevision);
+
+	/**
+	 * @return Returns the revision number of the original SPObject's workspace
+	 *         when the snapshot was taken.
+	 */
+	@Accessor
+	public int getWorkspaceRevision();
+
+	/**
 	 * Returns the {@link SPObject} that is a snapshot of another SPObject with
 	 * the UUID given by {@link #getOriginalUUID()}. The returned
 	 * {@link SPObject} should be in an identical state that the original was in
@@ -61,46 +80,4 @@ public interface SPObjectSnapshot<T extends SPObject> extends SPObject {
 	 */
 	@Accessor
 	public T getSPObject();
-
-	/**
-	 * Sets the value of the obsolete flag. Use this to mark this snapshot as
-	 * obsolete (the original SPObject identified by {@link #getOriginalUUID()}
-	 * has changed state since this snapshot was made).
-	 * 
-	 * @param isObsolete
-	 *            Set to true if the original SPObject has changed state since
-	 *            this snapshot was made. Otherwise, set to false.
-	 */
-	@Mutator
-	public void setObsolete(boolean isObsolete);
-
-	/**
-	 * Returns whether or not this snapshot is obsolete when compared to its
-	 * original (identified by {@link #getOriginalUUID()}) when most recently
-	 * checked. Note that since this is based on when it was most recently
-	 * checked, it is certainly possible that a snapshot can be obsolete and
-	 * still return false.
-	 * 
-	 * @return True if this snapshot is obsolete (the original SPObject has
-	 *         changed state). Return false if it is not obsolete as of the most
-	 *         recent check.
-	 */
-	@Accessor
-	public boolean isObsolete();
-
-	/**
-	 * Sets the value of the deleted flag. Use this to signal that the original
-	 * object associated with this snapshot has been deleted.
-	 * 
-	 * @param isDeleted
-	 */
-	@Transient @Mutator
-	void setDeleted(boolean isDeleted);
-
-	/**
-	 * Returns whether or not the original objects associated with this snapshot has been deleted.
-	 * @return
-	 */
-	@Transient @Accessor
-	boolean isDeleted();
 }

@@ -22,22 +22,17 @@ package ca.sqlpower.sqlobject;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.log4j.Logger;
-
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.SystemSPObjectSnapshot;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
-import ca.sqlpower.object.annotation.Mutator;
 
 /**
  * An {@link SystemSPObjectSnapshot} implementation specifically for {@link UserDefinedSQLType}
  */
 public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefinedSQLType> {
-	
-	private static final Logger logger = Logger.getLogger(UserDefinedSQLTypeSnapshot.class);
 
 	/**
 	 * The {@link UserDefinedSQLType} that is a copy of the original
@@ -50,13 +45,6 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 * domain {@link UserDefinedSQLTypeSnapshot}.
 	 */
 	private final boolean domainSnapshot;
-
-	/**
-	 * Counts the number of times the snapshot is used by a column in Architect.
-	 * When this number reaches 0 this type can be removed. Starts at 0 since it
-	 * starts not connected to a project. Cannot be null.
-	 */
-	private int snapshotUseCount = 0;
 
 	/**
 	 * This particular constructor is intended to be used by the SPObject
@@ -79,8 +67,9 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	public UserDefinedSQLTypeSnapshot(
 			@ConstructorParameter (propertyName = "spObject") UserDefinedSQLType spObject,
 			@ConstructorParameter (propertyName = "originalUUID") String originalUUID,
+			@ConstructorParameter (propertyName = "workspaceRevision") int systemWorkspaceRevision,
 			@ConstructorParameter (propertyName = "domainSnapshot") boolean isDomainSnapshot) {
-		super(originalUUID);
+		super(originalUUID, systemWorkspaceRevision);
 		this.spObject = spObject;
 		this.domainSnapshot = isDomainSnapshot;
 	}
@@ -110,8 +99,8 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 * @throws IllegalArgumentException
 	 * @throws ObjectDependentException
 	 */
-	public UserDefinedSQLTypeSnapshot(UserDefinedSQLType original, boolean isDomainSnapshot) {
-		super(original.getUUID());
+	public UserDefinedSQLTypeSnapshot(UserDefinedSQLType original, int systemRevision, boolean isDomainSnapshot) {
+		super(original.getUUID(), systemRevision);
 		setName(original.getName());
 		spObject = new UserDefinedSQLType();
 		UserDefinedSQLType.copyProperties(getSPObject(), original);
@@ -145,8 +134,8 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	 * @throws ObjectDependentException
 	 */
 	public UserDefinedSQLTypeSnapshot(UserDefinedSQLType original,
-			boolean isDomainSnapshot, UserDefinedSQLTypeSnapshot upstreamTypeSnapshot) {
-		this(original, isDomainSnapshot);
+			int systemRevision, boolean isDomainSnapshot, UserDefinedSQLTypeSnapshot upstreamTypeSnapshot) {
+		this(original, systemRevision, isDomainSnapshot);
 		spObject.setUpstreamType(upstreamTypeSnapshot.getSPObject());
 	}
 
@@ -172,23 +161,5 @@ public class UserDefinedSQLTypeSnapshot extends SystemSPObjectSnapshot<UserDefin
 	@Accessor
 	public boolean isDomainSnapshot() {
 		return domainSnapshot;
-	}
-
-	@Mutator
-	public void setSnapshotUseCount(int snapshotUseCount) {
-		if (snapshotUseCount < 0) throw new IllegalArgumentException(
-				"There cannot be a negative number of objects using the snapshot for " + 
-				getSPObject().getName() + ".");
-		if (getSPObject() != null) {
-			logger.debug("Setting snapshot use count of " + getSPObject().getName() + " to " + snapshotUseCount);
-		}
-		int oldCount = this.snapshotUseCount;
-		this.snapshotUseCount = snapshotUseCount;
-		firePropertyChange("snapshotUseCount", oldCount, snapshotUseCount);
-	}
-
-	@Accessor
-	public int getSnapshotUseCount() {
-		return snapshotUseCount;
 	}
 }

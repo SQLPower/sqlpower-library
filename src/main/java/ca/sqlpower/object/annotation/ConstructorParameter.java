@@ -81,7 +81,8 @@ public @interface ConstructorParameter {
 
 	/**
 	 * This will be the JavaBean property that will be set to the annotated
-	 * constructor parameter value.
+	 * constructor parameter value. Note that this field should only and must be
+	 * used if {@link #parameterType()} is true.
 	 */
 	String propertyName() default "";
 
