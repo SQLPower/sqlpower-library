@@ -428,6 +428,37 @@ public abstract class AbstractSPObject implements SPObject {
         }
         return evt;
     }
+    
+    /**
+     * Fires a property change on the foreground thread as defined by the
+     * current session being used.
+     * 
+     * @return The property change event that was fired or null if no event was
+     *         fired, for testing purposes.
+     */
+    protected PropertyChangeEvent firePropertyChange(final String propertyName, final char oldValue, 
+            final char newValue) {
+    	if (oldValue == newValue) return null;
+    	
+    	synchronized(listeners) {
+    		if (listeners.size() == 0) return null;
+    	}
+    	
+    	if (!isForegroundThread()) {
+    		throw new IllegalStateException("Event for property change " + propertyName + 
+    				" must fired on the foreground thread.");
+    	}
+    	
+        final PropertyChangeEvent evt = new PropertyChangeEvent(this, propertyName, oldValue, newValue);
+        synchronized(listeners) {
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		SPListener listener = staticListeners.get(i);
+        		listener.propertyChanged(evt);
+        	}
+        }
+        return evt;
+    }
 
     /**
      * Fires a property change on the foreground thread as defined by the

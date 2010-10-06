@@ -121,6 +121,12 @@ public class GenericNewValueMaker implements NewValueMaker {
         	} else {
         		newVal = ((Long) oldVal) + 1;
         	}
+        } else if (valueType == Short.class) {
+        	if (oldVal == null) {
+        		newVal = (short) 1;
+        	} else {
+        		newVal = ((Short) oldVal) + 1;
+        	}
         } else if (valueType == Double.TYPE) {
             newVal = ((Double) oldVal)+1;
         } else if (valueType == Integer.class) {
@@ -135,6 +141,13 @@ public class GenericNewValueMaker implements NewValueMaker {
             } else {
                 newVal = new Double((Double)oldVal+1);
             }
+        } else if (valueType == Character.TYPE || valueType == Character.class) {
+        	Character c = (Character) oldVal;
+        	if (c == null || c == 'a') {
+        		newVal = 'b';
+        	} else {
+        		newVal = 'a';
+        	}
         } else if (valueType == String.class) {
             // make sure it's unique
             newVal = "new " + oldVal;

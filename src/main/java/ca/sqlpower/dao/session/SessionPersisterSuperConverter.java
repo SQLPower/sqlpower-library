@@ -127,7 +127,7 @@ public class SessionPersisterSuperConverter {
 			return convertFrom;
 			
 		} else if (convertFrom instanceof Short) {
-			return ((Short) convertFrom).toString();
+			return convertFrom;
 			
 		} else if (convertFrom instanceof BigDecimal) {
 		    return ((BigDecimal) convertFrom).toPlainString();
@@ -144,6 +144,11 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom instanceof Date) {
 		    return ((Date) convertFrom).toString();
 		    
+		} else if (convertFrom instanceof Character) {
+		    Character c = (Character) convertFrom;
+		    String s = new String(new char[]{c.charValue()});
+		    return s;
+			
 		} else if (convertFrom.getClass().isEnum()) {
 			return new EnumConverter(convertFrom.getClass()).convertToSimpleType((Enum) convertFrom);
 			
@@ -226,6 +231,9 @@ public class SessionPersisterSuperConverter {
 			
 		} else if (Short.class.isAssignableFrom(type)) {
 			return (Short) o;
+			
+		} else if (Character.class.isAssignableFrom(type)) {
+			return ((String) o).charAt(0);
 			
 		} else if (BigDecimal.class.isAssignableFrom(type)) {
 		    return new BigDecimal((String) o);
