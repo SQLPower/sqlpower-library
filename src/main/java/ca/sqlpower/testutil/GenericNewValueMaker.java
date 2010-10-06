@@ -28,6 +28,7 @@ import java.awt.Rectangle;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -141,6 +142,12 @@ public class GenericNewValueMaker implements NewValueMaker {
             } else {
                 newVal = new Double((Double)oldVal+1);
             }
+        } else if (valueType == BigDecimal.class) {
+        	if (oldVal != null) {
+        		newVal = new BigDecimal(1).add((BigDecimal) oldVal);
+        	} else {
+        		return new BigDecimal(1);
+        	}
         } else if (valueType == Character.TYPE || valueType == Character.class) {
         	Character c = (Character) oldVal;
         	if (c == null || c == 'a') {
