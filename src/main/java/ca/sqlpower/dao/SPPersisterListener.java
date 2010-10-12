@@ -244,15 +244,34 @@ public class SPPersisterListener implements SPListener {
 		};
 		
 		try {
-			persistObject(o, index, includeRootPersistObject, poolingPersister);
+			persistObjectInterleaveProperties(o, index, includeRootPersistObject, poolingPersister);
 		} catch (SPPersistenceException e) {
 			throw new RuntimeException(e);
 		}
 			
 		this.transactionEnded(TransactionEvent.createEndTransactionEvent(this));
 	}
-	
-	public void persistObject(SPObject o, int index, boolean includeRootPersistObject, SPPersister localTarget) throws SPPersistenceException {
+
+	/**
+	 * The object and all of its descendants will be persisted to the given
+	 * persister. The difference from this method and
+	 * {@link #persistObject(SPObject, int, boolean)} is this method will
+	 * persist the objects and properties inter-leaved where each set of
+	 * properties will come after its persist object call.
+	 * 
+	 * @param o
+	 *            The object to persist and all of its descendants will be
+	 *            persisted as well.
+	 * @param index
+	 *            The index of the object in its parent list.
+	 * @param includeRootPersistObject
+	 *            If false the persist call for persisting object passed in as o
+	 *            will be skipped.
+	 * @param localTarget
+	 *            The persister to make all of the persist object calls to.
+	 * @throws SPPersistenceException
+	 */
+	public void persistObjectInterleaveProperties(SPObject o, int index, boolean includeRootPersistObject, SPPersister localTarget) throws SPPersistenceException {
 		final SPPersisterHelper<? extends SPObject> persisterHelper;
 		try {
 			persisterHelper = PersisterHelperFinder.findPersister(o.getClass());
@@ -278,7 +297,7 @@ public class SPPersisterListener implements SPListener {
 		for (SPObject child : children) {
 			int childIndex = 0;
 			childIndex = getIndexWithinSiblings(o, child);
-			persistObject(child, childIndex, true, localTarget);
+			persistObjectInterleaveProperties(child, childIndex, true, localTarget);
 		}
 		localTarget.commit();
 	}
