@@ -30,11 +30,14 @@ public class XMLPersisterReader {
 	private final SPPersister target;
 	private SPPersister upgradeTarget;
 	private UpgradePersisterManager upgradePersisterManager;
+	
+	public final String PROJECT_TAG;
 
-	public XMLPersisterReader(Reader in, SPPersister target, UpgradePersisterManager upgradePersisterManager) {
+	public XMLPersisterReader(Reader in, SPPersister target, UpgradePersisterManager upgradePersisterManager, String projectTag) {
 		this.in = in;
 		this.target = target;
 		this.upgradePersisterManager = upgradePersisterManager;
+		this.PROJECT_TAG = projectTag;
 	}
 	
 	public void read() throws SPPersistenceException {
@@ -43,7 +46,7 @@ public class XMLPersisterReader {
 		try {
 			reader.mark(200);
 			line = reader.readLine();
-			while (!line.contains("<architect-enterprise-project")) {
+			while (!line.contains("<" + PROJECT_TAG)) {
 				line = reader.readLine();
 			}
 			reader.reset();
@@ -118,7 +121,7 @@ public class XMLPersisterReader {
 					DataType type = DataType.valueOf(attributes.getValue("type"));
 					String value = attributes.getValue("value");
 					upgradeTarget.persistProperty(currentObject.peek(), name, type, castValue(type, value));
-				} else if (XMLPersister.PROJECT_TAG.equals(localName)) {
+				} else if (PROJECT_TAG.equals(localName)) {
 					// ignore
 				} else {
 					logger.debug("Reading element " + localName);
@@ -143,7 +146,7 @@ public class XMLPersisterReader {
 		@Override
 		public void endElement(String uri, String localName, String qName)
 				throws SAXException {
-			if (!"property".equals(localName) && !XMLPersister.PROJECT_TAG.equals(localName)) {
+			if (!"property".equals(localName) && !PROJECT_TAG.equals(localName)) {
 				currentObject.pop();
 			}
 		}

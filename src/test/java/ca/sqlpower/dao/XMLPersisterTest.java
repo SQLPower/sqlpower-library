@@ -30,7 +30,7 @@ public class XMLPersisterTest extends PersisterTest {
 			}
 		};
 		XMLPersister.setUpgradePersisterManager(upgradePersisterManager);
-		persister = new XMLPersister(out, "ca.sqlpower.testutil.SPObjectRoot");
+		persister = new XMLPersister(out, "ca.sqlpower.testutil.SPObjectRoot", "tester");
 		persister.begin();
 		persister.persistObject(null, "ca.sqlpower.testutil.SPObjectRoot", workspaceId, 0);
 		persister.persistProperty(workspaceId, "name", DataType.STRING, "rtObjName");
@@ -57,7 +57,7 @@ public class XMLPersisterTest extends PersisterTest {
 	@Override
 	protected void loadWorkspace() throws Exception {
 		persister.commit();
-		XMLPersisterReader reader = new XMLPersisterReader(new InputStreamReader(new ByteArrayInputStream(out.toByteArray())), receiver, upgradePersisterManager);
+		XMLPersisterReader reader = new XMLPersisterReader(new InputStreamReader(new ByteArrayInputStream(out.toByteArray())), receiver, upgradePersisterManager, "tester");
 		reader.read();
 	}
 	

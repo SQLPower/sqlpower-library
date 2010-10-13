@@ -27,7 +27,7 @@ import ca.sqlpower.util.SQLPowerUtils;
  */
 public class XMLPersister implements SPPersister {
 
-	public static final String PROJECT_TAG = "architect-enterprise-project";
+	public final String PROJECT_TAG;
 	
 	private static UpgradePersisterManager upgradePersisterManager;
 	
@@ -57,16 +57,17 @@ public class XMLPersister implements SPPersister {
 	
 	private int progress = 0;
 
-	public XMLPersister(OutputStream out, String rootObject) {
-		this(out, rootObject, null);
+	public XMLPersister(OutputStream out, String rootObject, String projectTag) {
+		this(out, rootObject, projectTag, null);
 	}
 	
-	public XMLPersister(OutputStream out, String rootObject, ProgressMonitor pm) {
+	public XMLPersister(OutputStream out, String rootObject, String projectTag, ProgressMonitor pm) {
 		bufferedOut = new ByteArrayOutputStream();
 		this.out = new PrintWriter(bufferedOut);
 		this.finalOut = out;
 		this.rootObject = rootObject;
 		this.pm = pm;
+		PROJECT_TAG = projectTag;
 	}
 	
 	@Override
