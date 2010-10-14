@@ -31,6 +31,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.Format;
+import java.util.List;
 
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.DataSourceCollection;
@@ -66,6 +67,8 @@ public class SessionPersisterSuperConverter {
 	private final ClassConverter classConverter = new ClassConverter();
 	
 	private final FileConverter fileConverter = new FileConverter();
+	
+	private final StringListConverter stringListConverter = new StringListConverter();
 	
 	protected final DataSourceCollection <JDBCDataSource> dsCollection;
 
@@ -189,6 +192,9 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom instanceof Exception) {
 	        String exceptionString = SQLPowerUtils.exceptionStackToString((Exception) convertFrom);
 		    return exceptionString;
+		} else if (convertFrom instanceof List<?>) {
+			List<String> list = (List<String>) convertFrom;
+			return stringListConverter.convertToSimpleType(list);
 		} else {
 		    throw new IllegalArgumentException("Cannot convert " + convertFrom + " of type " + 
 		            convertFrom.getClass());
@@ -288,6 +294,8 @@ public class SessionPersisterSuperConverter {
         	return stringArrayConverter.convertToComplexType((String) o);
         } else if (Exception.class.isAssignableFrom(type)) {
             return new Exception("Root Exception:\n" + (String) o);
+        } else if (List.class.isAssignableFrom(type)) {
+        	return stringListConverter.convertToComplexType((String) o);
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + o + " of type " + 
 					o.getClass() + " to the type " + type);
