@@ -55,18 +55,22 @@ public class XMLPersisterReader {
 		}
 		
 		int version = Integer.valueOf(line.substring(line.indexOf("file-version=") + "file-version=\"".length(), line.length()-2));
-		upgradeTarget = upgradePersisterManager.getUpgradePersister(version);
-		if (upgradeTarget == null) {
-			upgradeTarget = target;
-		}
 		
-		
-		SPUpgradePersister latest = upgradePersisterManager.getUpgradePersister(upgradePersisterManager.getStateVersion()-1);
-		
+		SPUpgradePersister latest = null;
 		SPPersister previousTarget = null;
-		if (latest != null) {
-			previousTarget = latest.getNextPersister();
-			latest.setNextPersister(target, false);
+		upgradeTarget = target;
+		if (version != upgradePersisterManager.getStateVersion()) {
+			SPUpgradePersister newUpgradeTarget = upgradePersisterManager.getUpgradePersister(version);
+			if (newUpgradeTarget != null) {
+				upgradeTarget = newUpgradeTarget;
+			}
+			
+			latest = upgradePersisterManager.getUpgradePersister(upgradePersisterManager.getStateVersion()-1);
+			
+			if (latest != null) {
+				previousTarget = latest.getNextPersister();
+				latest.setNextPersister(target, false);
+			}
 		}
 		
 		try {
