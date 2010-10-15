@@ -53,7 +53,10 @@ import ca.sqlpower.dao.SPPersistenceException;
 import ca.sqlpower.dao.json.SPJSONMessageDecoder;
 import ca.sqlpower.enterprise.client.ProjectLocation;
 import ca.sqlpower.enterprise.client.SPServerInfo;
-import ca.sqlpower.util.UserPrompter;
+import ca.sqlpower.util.UserPrompterFactory;
+import ca.sqlpower.util.UserPrompter.UserPromptOptions;
+import ca.sqlpower.util.UserPrompter.UserPromptResponse;
+import ca.sqlpower.util.UserPrompterFactory.UserPromptType;
 
 /**
  * This class contains static methods mainly for posting different things to the server using the resources.
@@ -81,7 +84,8 @@ public class ClientSideSessionUtils {
         return httpClient;
 	}
     
-    public static ProjectLocation createNewServerSession(SPServerInfo serviceInfo, String name, CookieStore cookieStore, UserPrompter userPrompter)
+    public static ProjectLocation createNewServerSession(SPServerInfo serviceInfo, String name, 
+    		CookieStore cookieStore, UserPrompterFactory userPrompterFactory)
     throws URISyntaxException, ClientProtocolException, IOException, JSONException {
         
     	HttpClient httpClient = ClientSideSessionUtils.createHttpClient(serviceInfo, cookieStore);
@@ -94,7 +98,11 @@ public class ClientSideSessionUtils {
     					response.getString("name"),
     					serviceInfo);
     	} catch (AccessDeniedException e) {
-    	    userPrompter.promptUser("");
+    		userPrompterFactory.createUserPrompter("You do not have sufficient privileges to create a new workspace.", 
+                    UserPromptType.MESSAGE, 
+                    UserPromptOptions.OK, 
+                    UserPromptResponse.OK, 
+                    "OK", "OK").promptUser("");
     	    return null;
     	} finally {
     		httpClient.getConnectionManager().shutdown();
@@ -133,7 +141,8 @@ public class ClientSideSessionUtils {
         return transactions;
 	}
 	
-	public static void deleteServerWorkspace(ProjectLocation projectLocation, CookieStore cookieStore, UserPrompter userPrompter) throws URISyntaxException, ClientProtocolException, IOException {
+	public static void deleteServerWorkspace(ProjectLocation projectLocation, CookieStore cookieStore, 
+			UserPrompterFactory userPrompterFactory) throws URISyntaxException, ClientProtocolException, IOException {
     	SPServerInfo serviceInfo = projectLocation.getServiceInfo();
     	HttpClient httpClient = ClientSideSessionUtils.createHttpClient(serviceInfo, cookieStore);
     	
@@ -141,8 +150,12 @@ public class ClientSideSessionUtils {
     		executeServerRequest(httpClient, projectLocation.getServiceInfo(),
     		        "/" + ClientSideSessionUtils.REST_TAG + "/jcr/" + projectLocation.getUUID() + "/delete", 
     				new JSONResponseHandler());
-    	} catch (AccessDeniedException e) { 
-    	    userPrompter.promptUser(""); 
+    	} catch (AccessDeniedException e) {
+    		userPrompterFactory.createUserPrompter("You do not have sufficient privileges to delete the selected workspace.", 
+                    UserPromptType.MESSAGE, 
+                    UserPromptOptions.OK, 
+                    UserPromptResponse.OK, 
+                    "OK", "OK").promptUser("");
     	} finally {
     		httpClient.getConnectionManager().shutdown();
     	}
@@ -249,7 +262,10 @@ public class ClientSideSessionUtils {
         } finally {
             httpClient.getConnectionManager().shutdown();
         }
-	}public static ProjectLocation uploadProject(SPServerInfo serviceInfo, String name, File project, UserPrompter userPrompter, CookieStore cookieStore) 
+	}
+	
+	
+	public static ProjectLocation uploadProject(SPServerInfo serviceInfo, String name, File project, UserPrompterFactory session, CookieStore cookieStore) 
     throws URISyntaxException, ClientProtocolException, IOException, JSONException {
         HttpClient httpClient = ClientSideSessionUtils.createHttpClient(serviceInfo, cookieStore);
         try {
@@ -268,7 +284,11 @@ public class ClientSideSessionUtils {
                     response.getString("name"),
                     serviceInfo);
         } catch (AccessDeniedException e) {
-            userPrompter.promptUser("");
+            session.createUserPrompter("You do not have sufficient privileges to create a new workspace.", 
+                       UserPromptType.MESSAGE, 
+                       UserPromptOptions.OK, 
+                       UserPromptResponse.OK, 
+                       "OK", "OK").promptUser("");
             return null;
         } finally {
             httpClient.getConnectionManager().shutdown();
