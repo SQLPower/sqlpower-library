@@ -19,6 +19,7 @@
 
 package ca.sqlpower.enterprise;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -33,7 +34,12 @@ import org.apache.http.client.CookieStore;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.ContentBody;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
@@ -51,6 +57,8 @@ import ca.sqlpower.util.UserPrompter;
 
 /**
  * This class contains static methods mainly for posting different things to the server using the resources.
+ * Any method in this class that requires a cookieStore should be called from {programName}ClientSideSession.
+ * That is where the cookieStore comes from.
  */
 public class ClientSideSessionUtils {
 
@@ -211,4 +219,59 @@ public class ClientSideSessionUtils {
             httpClient.getConnectionManager().shutdown();
         }   
 	}
+	
+	/**
+	 * This method reverts the server workspace specified by the given project location
+	 * to the specified revision number.
+	 * 
+	 * All sessions should automatically update to the reverted revision due to their Updater.
+	 * 
+	 * @returns The new global revision number, right after the reversion, or -1 if the server did not revert.
+	 * @throws IOException
+	 * @throws URISyntaxException
+	 * @throws JSONException 
+	 */
+	public static int revertServerWorkspace(ProjectLocation projectLocation, int revisionNo, CookieStore cookieStore)
+	throws IOException, URISyntaxException, JSONException {
+        SPServerInfo serviceInfo = projectLocation.getServiceInfo();
+        HttpClient httpClient = ClientSideSessionUtils.createHttpClient(serviceInfo, cookieStore);
+        
+        try {
+            JSONMessage message = ClientSideSessionUtils.executeServerRequest(httpClient, projectLocation.getServiceInfo(),
+                    "/" + ClientSideSessionUtils.REST_TAG + "/project/" + projectLocation.getUUID() + "/revert",
+                    "revisionNo=" + revisionNo, 
+                    new JSONResponseHandler());    
+            if (message.isSuccessful()) {
+                return new JSONObject(message.getBody()).getInt("currentRevision");
+            } else {
+                return -1;
+            }
+        } finally {
+            httpClient.getConnectionManager().shutdown();
+        }
+	}public static ProjectLocation uploadProject(SPServerInfo serviceInfo, String name, File project, UserPrompter userPrompter, CookieStore cookieStore) 
+    throws URISyntaxException, ClientProtocolException, IOException, JSONException {
+        HttpClient httpClient = ClientSideSessionUtils.createHttpClient(serviceInfo, cookieStore);
+        try {
+            MultipartEntity entity = new MultipartEntity();
+            ContentBody fileBody = new FileBody(project);
+            ContentBody nameBody = new StringBody(name);
+            entity.addPart("file", fileBody);
+            entity.addPart("name", nameBody);
+            
+            HttpPost request = new HttpPost(ClientSideSessionUtils.getServerURI(serviceInfo, "/" + ClientSideSessionUtils.REST_TAG + "/jcr", "name=" + name));
+            request.setEntity(entity);
+            JSONMessage message = httpClient.execute(request, new JSONResponseHandler());
+            JSONObject response = new JSONObject(message.getBody());
+            return new ProjectLocation(
+                    response.getString("uuid"),
+                    response.getString("name"),
+                    serviceInfo);
+        } catch (AccessDeniedException e) {
+            userPrompter.promptUser("");
+            return null;
+        } finally {
+            httpClient.getConnectionManager().shutdown();
+        }
+    }
 }

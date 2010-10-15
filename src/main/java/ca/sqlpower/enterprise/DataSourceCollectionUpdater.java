@@ -125,6 +125,8 @@ public abstract class DataSourceCollectionUpdater implements DatabaseListChangeL
         for (Map.Entry<String, String> ent : source.getPropertiesMap().entrySet()) {
             properties.add(new BasicNameValuePair(ent.getKey(), ent.getValue()));
         }
+        
+        databaseAdded(e, source, properties);
     }
     
     public void databaseAdded(DatabaseListChangeEvent e, SPDataSource source, List<NameValuePair> properties) {
