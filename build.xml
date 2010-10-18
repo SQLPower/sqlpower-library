@@ -167,7 +167,7 @@
 		</junitreport>
 	</target>
 	
-	<target name="jar" depends="compile-with-annotations, test" description="Generates JAR archives.">
+	<target name="jar" depends="compile-with-annotations, compile-tests" description="Generates JAR archives.">
 		<jar jarfile="${dist.dir}/${dist.jar}" basedir="${build}" />
 		<jar jarfile="${dist.dir}/${test.jar}" basedir="${build.tests}" />
 		<jar jarfile="${dist.dir}/${apt.jar}" basedir="${build.apt}" />
