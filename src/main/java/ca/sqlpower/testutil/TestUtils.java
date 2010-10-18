@@ -21,14 +21,27 @@ package ca.sqlpower.testutil;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.beanutils.PropertyUtils;
 
-public class TestUtils {
+import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
+import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonBound;
+import ca.sqlpower.object.annotation.NonProperty;
+import ca.sqlpower.object.annotation.Transient;
+
+import junit.framework.TestCase;
+
+public class TestUtils extends TestCase {
 	
     public static void testPropertiesFireEvents(Object target, Collection<String> propertiesToIgnore, NewValueMaker valueMaker) {
         
@@ -98,4 +111,84 @@ public class TestUtils {
     	}
     	return newDescription;
     }
+    
+    
+    public static Set<String> findPersistableBeanProperties(SPObject objectUnderTest, boolean includeTransient, boolean includeConstructorMutators) throws Exception {
+		Set<String> getters = new HashSet<String>();
+		Set<String> setters = new HashSet<String>();
+		for (Method m : objectUnderTest.getClass().getMethods()) {
+			if (m.getName().equals("getClass")) continue;
+			
+			//skip non-public methods as they are not visible for persisting anyways.
+			if (!Modifier.isPublic(m.getModifiers())) continue;
+			//skip static methods
+			if (Modifier.isStatic(m.getModifiers())) continue;
+			
+			if (m.getName().startsWith("get") || m.getName().startsWith("is")) {
+				Class<?> parentClass = objectUnderTest.getClass();
+				boolean accessor = false;
+				boolean ignored = false;
+				boolean isTransient = false;
+				parentClass.getMethod(m.getName(), m.getParameterTypes());//test
+				while (parentClass != null) {
+					Method parentMethod;
+					try {
+						parentMethod = parentClass.getMethod(m.getName(), m.getParameterTypes());
+					} catch (NoSuchMethodException e) {
+						parentClass = parentClass.getSuperclass();
+						continue;
+					}
+					if (parentMethod.getAnnotation(Accessor.class) != null) {
+						accessor = true;
+						if (parentMethod.getAnnotation(Transient.class) != null) {
+							isTransient = true;
+						}
+						break;
+					} else if (parentMethod.getAnnotation(NonProperty.class) != null ||
+							parentMethod.getAnnotation(NonBound.class) != null) {
+						ignored = true;
+						break;
+					}
+					parentClass = parentClass.getSuperclass();
+				}
+				if (accessor) {
+					if (includeTransient || !isTransient) {
+						if (m.getName().startsWith("get")) {
+							getters.add(m.getName().substring(3));
+						} else if (m.getName().startsWith("is")) {
+							getters.add(m.getName().substring(2));
+						}
+					}
+				} else if (ignored) {
+					//ignored so skip
+				} else {
+					fail("The method " + m.getName() + " of " + objectUnderTest.toString() + " is a getter that is not annotated " +
+							"to be an accessor or transient. The exiting annotations are " + 
+							Arrays.toString(m.getAnnotations()));
+				}
+			} else if (m.getName().startsWith("set")) {
+				if (m.getAnnotation(Mutator.class) != null) {
+					if ((includeTransient || m.getAnnotation(Transient.class) == null)
+							&& (includeConstructorMutators || !m.getAnnotation(Mutator.class).constructorMutator())) {
+						setters.add(m.getName().substring(3));
+					}
+				} else if (m.getAnnotation(NonProperty.class) != null ||
+						m.getAnnotation(NonBound.class) != null) {
+					//ignored so skip and pass
+				} else {
+					fail("The method " + m.getName() + " is a setter that is not annotated " +
+							"to be a mutator or transient.");
+				}
+			}
+		}
+		
+		Set<String> beanNames = new HashSet<String>();
+		for (String beanName : getters) {
+			if (setters.contains(beanName)) {
+				String firstLetter = new String(new char[]{beanName.charAt(0)});
+				beanNames.add(beanName.replaceFirst(firstLetter, firstLetter.toLowerCase()));
+			}
+		}
+		return beanNames;
+	}
 }

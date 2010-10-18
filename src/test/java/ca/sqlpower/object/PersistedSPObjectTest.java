@@ -58,6 +58,7 @@ import ca.sqlpower.sqlobject.SQLObjectRoot;
 import ca.sqlpower.testutil.GenericNewValueMaker;
 import ca.sqlpower.testutil.NewValueMaker;
 import ca.sqlpower.testutil.SPObjectRoot;
+import ca.sqlpower.testutil.TestUtils;
 import ca.sqlpower.util.RunnableDispatcher;
 import ca.sqlpower.util.StubWorkspaceContainer;
 import ca.sqlpower.util.TransactionEvent;
@@ -834,107 +835,9 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		findPersistableBeanProperties(false, false);
 	}
 
-	/**
-	 * This method will iterate through all of the methods in a class and
-	 * collect all of the methods defined as setters and getters. The list will
-	 * then be filtered out to only contain the bean property names of those
-	 * setters and getters where each property has both a getter and setter.
-	 * This will also fail if a getter or setter is found that is not properly
-	 * annotated.
-	 * 
-	 * @param includeTransient
-	 *            If true the transient properties will be included in the
-	 *            resulting list. If false only the property names that are to
-	 *            be persisted will be included.
-	 * @param includeConstructorMutators
-	 *            If true mutators that can only be set shortly after the object
-	 *            has been created will be included. These mutators are normally
-	 *            used for objects that cannot be given in the constructor but
-	 *            should be treated as though they were final.
-	 * 
-	 * @return A list of bean property names that have both a getter and setter.
-	 *         The transient bean properties will be included if the transient
-	 *         flag is set to true.
-	 * 
-	 */
+	
 	private Set<String> findPersistableBeanProperties(boolean includeTransient, boolean includeConstructorMutators) throws Exception {
-		SPObject objectUnderTest = getSPObjectUnderTest();
-		Set<String> getters = new HashSet<String>();
-		Set<String> setters = new HashSet<String>();
-		for (Method m : objectUnderTest.getClass().getMethods()) {
-			if (m.getName().equals("getClass")) continue;
-			
-			//skip non-public methods as they are not visible for persisting anyways.
-			if (!Modifier.isPublic(m.getModifiers())) continue;
-			//skip static methods
-			if (Modifier.isStatic(m.getModifiers())) continue;
-			
-			if (m.getName().startsWith("get") || m.getName().startsWith("is")) {
-				Class<?> parentClass = objectUnderTest.getClass();
-				boolean accessor = false;
-				boolean ignored = false;
-				boolean isTransient = false;
-				parentClass.getMethod(m.getName(), m.getParameterTypes());//test
-				while (parentClass != null) {
-					Method parentMethod;
-					try {
-						parentMethod = parentClass.getMethod(m.getName(), m.getParameterTypes());
-					} catch (NoSuchMethodException e) {
-						parentClass = parentClass.getSuperclass();
-						continue;
-					}
-					if (parentMethod.getAnnotation(Accessor.class) != null) {
-						accessor = true;
-						if (parentMethod.getAnnotation(Transient.class) != null) {
-							isTransient = true;
-						}
-						break;
-					} else if (parentMethod.getAnnotation(NonProperty.class) != null ||
-							parentMethod.getAnnotation(NonBound.class) != null) {
-						ignored = true;
-						break;
-					}
-					parentClass = parentClass.getSuperclass();
-				}
-				if (accessor) {
-					if (includeTransient || !isTransient) {
-						if (m.getName().startsWith("get")) {
-							getters.add(m.getName().substring(3));
-						} else if (m.getName().startsWith("is")) {
-							getters.add(m.getName().substring(2));
-						}
-					}
-				} else if (ignored) {
-					//ignored so skip
-				} else {
-					fail("The method " + m.getName() + " is a getter that is not annotated " +
-							"to be an accessor or transient. The exiting annotations are " + 
-							Arrays.toString(m.getAnnotations()));
-				}
-			} else if (m.getName().startsWith("set")) {
-				if (m.getAnnotation(Mutator.class) != null) {
-					if ((includeTransient || m.getAnnotation(Transient.class) == null)
-							&& (includeConstructorMutators || !m.getAnnotation(Mutator.class).constructorMutator())) {
-						setters.add(m.getName().substring(3));
-					}
-				} else if (m.getAnnotation(NonProperty.class) != null ||
-						m.getAnnotation(NonBound.class) != null) {
-					//ignored so skip and pass
-				} else {
-					fail("The method " + m.getName() + " is a setter that is not annotated " +
-							"to be a mutator or transient.");
-				}
-			}
-		}
-		
-		Set<String> beanNames = new HashSet<String>();
-		for (String beanName : getters) {
-			if (setters.contains(beanName)) {
-				String firstLetter = new String(new char[]{beanName.charAt(0)});
-				beanNames.add(beanName.replaceFirst(firstLetter, firstLetter.toLowerCase()));
-			}
-		}
-		return beanNames;
+		return TestUtils.findPersistableBeanProperties(getSPObjectUnderTest(), includeTransient, includeConstructorMutators);
 	}
 
 	/**
