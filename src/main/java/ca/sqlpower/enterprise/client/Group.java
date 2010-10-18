@@ -35,8 +35,11 @@ import org.springframework.security.GrantedAuthority;
 
 import ca.sqlpower.object.AbstractSPObject;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.NonProperty;
+import ca.sqlpower.object.annotation.Transient;
 
 public class Group extends AbstractSPObject implements GrantedAuthority {
 
@@ -144,6 +147,7 @@ public class Group extends AbstractSPObject implements GrantedAuthority {
         }
     }
 
+    @NonProperty
     public List<SPObject> getChildren() {
         List<SPObject> children = new ArrayList<SPObject>();
         children.addAll(this.members);
@@ -151,6 +155,7 @@ public class Group extends AbstractSPObject implements GrantedAuthority {
         return children;
     }
     
+    @NonProperty
     @SuppressWarnings("unchecked")
 	@Override
     public <T extends SPObject> List<T> getChildren(Class<T> type) {
@@ -164,6 +169,7 @@ public class Group extends AbstractSPObject implements GrantedAuthority {
     	return children;
     }
 
+    @NonProperty
     public List<SPObject> getDependencies() {
         return Collections.emptyList();
     }
@@ -227,6 +233,7 @@ public class Group extends AbstractSPObject implements GrantedAuthority {
     	return false;
     }
 
+    @Transient @Accessor
 	public String getAuthority() {
 		return super.getName();
 	}
@@ -252,6 +259,7 @@ public class Group extends AbstractSPObject implements GrantedAuthority {
 		}
 	}
 
+	@NonProperty
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		List<Class<? extends SPObject>> childTypes = new ArrayList<Class<? extends SPObject>>();
 		childTypes.add(GroupMember.class);

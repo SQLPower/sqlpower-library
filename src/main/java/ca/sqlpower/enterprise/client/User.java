@@ -1,14 +1,14 @@
 /*
  * Copyright (c) 2009, SQL Power Group Inc.
  *
- * This file is part of Wabit.
+ * This file is part of SQL Power Library.
  *
- * Wabit is free software; you can redistribute it and/or modify
+ * SQL Power Library is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * Wabit is distributed in the hope that it will be useful,
+ * SQL Power Library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -37,6 +37,8 @@ import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
 import ca.sqlpower.object.annotation.Mutator;
+import ca.sqlpower.object.annotation.NonProperty;
+import ca.sqlpower.object.annotation.Transient;
 
 public class User extends AbstractSPObject implements UserDetails {
 
@@ -67,10 +69,12 @@ public class User extends AbstractSPObject implements UserDetails {
     	}
     }
 
+    @NonProperty
     public List<Grant> getChildren() {
         return this.grants;
     }
     
+    @NonProperty
     @SuppressWarnings("unchecked")
     @Override
 	public <T extends SPObject> List<T> getChildren(Class<T> type) {
@@ -81,6 +85,7 @@ public class User extends AbstractSPObject implements UserDetails {
     	}
     }
 
+    @NonProperty
     public List<SPObject> getDependencies() {
         return Collections.emptyList();
     }
@@ -155,10 +160,12 @@ public class User extends AbstractSPObject implements UserDetails {
     /**
      * The returned list is mutable. Beware.
      */
+	@Transient @Accessor
     public List<Grant> getGrants() {
 		return grants;
 	}
 
+    @Transient @Accessor
 	public GrantedAuthority[] getAuthorities() {
 		if (this.authorities==null) {
 			throw new RuntimeException("Programmatic error. The user manager has to fill in this user's groups before passing back to the security framework.");
@@ -167,26 +174,32 @@ public class User extends AbstractSPObject implements UserDetails {
 		}
 	}
 	
+    @Transient @Mutator
 	public void setAuthorities(GrantedAuthority[] authorities) {
 		this.authorities = authorities;
 	}
 
+	@Transient @Accessor
 	public String getUsername() {
 		return super.getName();
 	}
 
+	@Transient @Accessor
 	public boolean isAccountNonExpired() {
 		return true;
 	}
 
+	@Transient @Accessor
 	public boolean isAccountNonLocked() {
 		return true;
 	}
 
+	@Transient @Accessor
 	public boolean isCredentialsNonExpired() {
 		return true;
 	}
 
+	@Transient @Accessor
 	public boolean isEnabled() {
 		return true;
 	}
@@ -196,6 +209,7 @@ public class User extends AbstractSPObject implements UserDetails {
 		return getName();
 	}
 
+	@NonProperty
 	public List<Class<? extends SPObject>> getAllowedChildTypes() {
 		List<Class<? extends SPObject>> childTypes = new ArrayList<Class<? extends SPObject>>();
 		childTypes.add(Grant.class);

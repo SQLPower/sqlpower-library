@@ -20,6 +20,7 @@
 package ca.sqlpower.dao.session;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.beanutils.ConversionException;
@@ -33,23 +34,35 @@ public class StringListConverter implements BidirectionalConverter<String, List<
 	@Override
 	public List<String> convertToComplexType(String convertFrom)
 			throws ConversionException {
-		String[] split = convertFrom.split(DELIMITER);
-		List<String> ls = new ArrayList<String>(split.length);
-		for (String s : split) {
-			ls.add(s);
+		if(convertFrom.length() > 0) {
+			convertFrom = convertFrom.substring(1, convertFrom.length()-1);
+			String[] split = convertFrom.split(DELIMITER);
+			List<String> ls = new ArrayList<String>(split.length);
+			for (String s : split) {
+				ls.add(s);
+			}
+			return ls;
+		} else {
+			return Collections.emptyList();
 		}
-		return ls;
+		
 	}
 
 	@Override
 	public String convertToSimpleType(List<String> convertFrom,
 			Object... additionalInfo) {
 		StringBuilder returnString = new StringBuilder();
+		if(!convertFrom.isEmpty()) {
+			returnString.append("[");
+		}
 		boolean first = true;
 		for (String s : convertFrom) {
 			if (!first) returnString.append(DELIMITER);
 			first = false;
 			returnString.append(s);
+		}
+		if(!convertFrom.isEmpty()) {
+			returnString.append("]");
 		}
 		return returnString.toString();
 	}
