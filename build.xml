@@ -173,7 +173,7 @@
 		<jar jarfile="${dist.dir}/${apt.jar}" basedir="${build.apt}" />
 	</target>
 
-	<target name="dist" depends="jar, pmd, pmd-cpd, findbugs, javadoc">
+	<target name="dist" depends="jar, test, pmd, pmd-cpd, findbugs, javadoc">
 		<!-- just a metatarget that brings the dependencies together -->
 	</target>
 
