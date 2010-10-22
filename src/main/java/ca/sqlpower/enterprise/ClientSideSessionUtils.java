@@ -73,6 +73,11 @@ public class ClientSideSessionUtils {
      */
 	public static final String REST_TAG = "rest";
 	
+	/**
+	 * The UUID of the system workspace.
+	 */
+	public static final String SYSTEM_UUID = "system";
+	
 	public static HttpClient createHttpClient(SPServerInfo serviceInfo, CookieStore cookieStore) {
 		HttpParams params = new BasicHttpParams();
         HttpConnectionParams.setConnectionTimeout(params, 2000);
