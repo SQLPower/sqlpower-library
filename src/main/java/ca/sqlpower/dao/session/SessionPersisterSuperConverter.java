@@ -68,7 +68,7 @@ public class SessionPersisterSuperConverter {
 	
 	private final FileConverter fileConverter = new FileConverter();
 	
-	private final StringListConverter stringListConverter = new StringListConverter();
+	private final ListConverter listConverter = new ListConverter();
 	
 	protected final DataSourceCollection <JDBCDataSource> dsCollection;
 
@@ -193,8 +193,7 @@ public class SessionPersisterSuperConverter {
 	        String exceptionString = SQLPowerUtils.exceptionStackToString((Exception) convertFrom);
 		    return exceptionString;
 		} else if (convertFrom instanceof List<?>) {
-			List<String> list = (List<String>) convertFrom;
-			return stringListConverter.convertToSimpleType(list);
+			return listConverter.convertToSimpleType((List<Object>)convertFrom);
 		} else {
 		    throw new IllegalArgumentException("Cannot convert " + convertFrom + " of type " + 
 		            convertFrom.getClass());
@@ -295,7 +294,7 @@ public class SessionPersisterSuperConverter {
         } else if (Exception.class.isAssignableFrom(type)) {
             return new Exception("Root Exception:\n" + (String) o);
         } else if (List.class.isAssignableFrom(type)) {
-        	return stringListConverter.convertToComplexType((String) o);
+        	return listConverter.convertToComplexType((String) o);
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + o + " of type " + 
 					o.getClass() + " to the type " + type);
