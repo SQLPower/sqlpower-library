@@ -782,12 +782,22 @@ public abstract class SPSessionPersister implements SPPersister {
 	}
 	
 	/**
+	 * We do this because we override this in MMSessionPersister which needs to do some work after sorting
+	 * the list, then calling commitSortObjects
+	 * @throws SPPersistenceException
+	 */
+	protected void commitObjects() throws SPPersistenceException {
+
+		Collections.sort(persistedObjects, persistedObjectComparator);
+		commitSortedObjects();
+	}
+	
+	/**
 	 * Commits the persisted {@link SPObject}s
 	 * 
 	 * @throws SPPersistenceException
 	 */
-	private void commitObjects() throws SPPersistenceException {
-		Collections.sort(persistedObjects, persistedObjectComparator);
+	protected void commitSortedObjects() throws SPPersistenceException {
 		
 		// importedKeys must be persisted after relationships. This is a bit of a ridiculous hack, so
 		// we may want to change it!
