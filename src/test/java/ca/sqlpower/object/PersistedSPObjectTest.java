@@ -41,16 +41,14 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.dao.PersistedSPOProperty;
 import ca.sqlpower.dao.PersistedSPObject;
 import ca.sqlpower.dao.PersisterUtils;
-import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.SPPersisterListener;
 import ca.sqlpower.dao.SPSessionPersister;
+import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPChildEvent.EventType;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Mutator;
-import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
-import ca.sqlpower.object.annotation.Transient;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.DatabaseConnectedTestCase;
@@ -497,8 +495,11 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
         int childCount = newParent.getChildren().size();
         
 		//persist the object to the new target root
-        new SPPersisterListener(persister, getConverter()).persistObject(objectUnderTest, 
-        		objectUnderTest.getParent().getChildren(objectUnderTest.getClass()).indexOf(objectUnderTest));
+        Class<? extends SPObject> classChildType = PersisterUtils.getParentAllowedChildType(
+				objectUnderTest.getClass().getName(), 
+				objectUnderTest.getParent().getClass().getName());
+		new SPPersisterListener(persister, getConverter()).persistObject(objectUnderTest, 
+        		objectUnderTest.getParent().getChildren(classChildType).indexOf(objectUnderTest));
 		
 		//check object exists
         assertEquals(childCount + 1, newParent.getChildren().size());
