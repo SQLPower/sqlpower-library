@@ -816,6 +816,10 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		if (Image.class.isAssignableFrom(valueType)) {
 			assertTrue(Arrays.equals(PersisterUtils.convertImageToStreamAsPNG((Image) valueBeforePersist).toByteArray(),
 					PersisterUtils.convertImageToStreamAsPNG((Image) valueAfterPersist).toByteArray()));
+		} else if (Exception.class.isAssignableFrom(valueType)) {
+			//Comparing only the first part of the exception strings as the new exception created by the persistence class
+			//will have the converter after the original stack trace since that is where the exception was made.
+			assertTrue("Persist failed for type " + valueType, ((String) basicValueAfterPersist).startsWith((String) basicValueBeforePersist));
 		} else {
 
 			//Not all new values are equivalent to their old values so we are

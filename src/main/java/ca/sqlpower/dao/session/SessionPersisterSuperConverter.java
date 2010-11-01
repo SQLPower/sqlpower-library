@@ -191,6 +191,8 @@ public class SessionPersisterSuperConverter {
 			return stringArrayConverter.convertToSimpleType(array);
 		} else if (convertFrom instanceof Exception) {
 	        String exceptionString = SQLPowerUtils.exceptionStackToString((Exception) convertFrom);
+	        //This exception name will be placed back on when the string is converted back to an object.
+	        exceptionString = exceptionString.replace(Exception.class.getName() + ": ", "");
 		    return exceptionString;
 		} else if (convertFrom instanceof List<?>) {
 			return listConverter.convertToSimpleType((List<Object>)convertFrom);
@@ -292,7 +294,7 @@ public class SessionPersisterSuperConverter {
         } else if (String[].class.isAssignableFrom(type)) {
         	return stringArrayConverter.convertToComplexType((String) o);
         } else if (Exception.class.isAssignableFrom(type)) {
-            return new Exception("Root Exception:\n" + (String) o);
+            return new Exception((String) o);
         } else if (List.class.isAssignableFrom(type)) {
         	return listConverter.convertToComplexType((String) o);
 		} else {
