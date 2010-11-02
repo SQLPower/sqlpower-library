@@ -106,6 +106,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
                 if (node.getUserObject() instanceof Throwable) {
                     setForeground(Color.RED);
                     setIcon(driverErrorIcon);
+                    setText(Messages.getString("JDBCDriverPanel.jarFileNotFound"));
                 } else {
                     setIcon(driverIcon);
                 }
