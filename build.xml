@@ -146,6 +146,7 @@
 				<fileset dir="${tests}">
 				    <include name="**/*Test*.java"/>
 				    <!-- Exclude abstract test classes and non-JUnit tests -->
+					<exclude name="ca/sqlpower/dao/PersisterTest.java"/>
 					<exclude name="ca/sqlpower/sqlobject/BaseSQLObjectTestCase.java"/>
 					<exclude name="ca/sqlpower/sqlobject/DatabaseConnectedTestCase.java"/>
 					<exclude name="ca/sqlpower/sqlobject/TestingSQLObjectListener.java"/>
