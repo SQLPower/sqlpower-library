@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -444,6 +445,7 @@ public class JDBCDataSourceType {
      * a future revision hopefully will.
      */
     public void setJdbcJarList(List<String> jdbcJarList) {
+    	clearJdbcJarList();
         int count = jdbcJarList.size();
         setJdbcJarCount(count);
         int i = 0;
@@ -453,6 +455,17 @@ public class JDBCDataSourceType {
             i++;
         }
         classLoader = getClassLoaderFromCache();
+    }
+    
+    private void clearJdbcJarList() {
+    	Set<String> keys = properties.keySet();
+    	Iterator<String> it = keys.iterator();
+    	while (it.hasNext()) {
+    		String key = it.next();
+    		if (key.startsWith(JDBC_JAR_BASE)) {
+    			it.remove(); 
+    		}
+    	}
     }
     
     /**

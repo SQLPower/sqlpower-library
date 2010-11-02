@@ -224,6 +224,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 		for (int i = 0, n = dtm.getChildCount(dtm.getRoot()); i < n; i++) {
 			driverList.add(((DefaultMutableTreeNode) dtm.getChild(dtm.getRoot(), i)).getUserObject().toString());
 		}
+		if (dataSourceType != null) dataSourceType.setJdbcJarList(driverList);
 		return true;
 	}
 
