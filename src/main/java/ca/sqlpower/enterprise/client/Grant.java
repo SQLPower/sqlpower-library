@@ -229,7 +229,7 @@ public class Grant extends AbstractSPObject {
         return subject;
     }
     
-    private String getPermsString() {
+    public String getPermsString() {
         StringBuilder sb = new StringBuilder("");
         if (this.createPrivilege) {
             sb.append("C");
