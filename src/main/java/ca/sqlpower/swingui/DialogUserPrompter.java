@@ -27,10 +27,12 @@ import java.util.Arrays;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JDialog;
+import javax.swing.JEditorPane;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
+import javax.swing.text.JTextComponent;
 
 import org.apache.log4j.Logger;
 
@@ -61,7 +63,7 @@ public class DialogUserPrompter implements UserPrompter {
      * time {@link #promptUser(Object[])} gets called, based on the format
      * arguments provided.
      */
-    private final JTextArea questionField;
+    private final JTextComponent questionField;
     
     /**
      * The formatter responsible for doing formatting and parameter substitution
@@ -123,7 +125,17 @@ public class DialogUserPrompter implements UserPrompter {
         confirmDialog.setTitle(""); //$NON-NLS-1$
         
         // this is just filled with the message pattern template to help with sizing
-        questionField = new JTextArea(questionMessage);
+        //Using JEditorPane for html messages as JTextAreas do not respect html tags.
+        //Using JTextArea for the rest of the messages as JEditorPane does not support
+        //new line characters and to keep font consistent.
+        if (questionMessage.startsWith("<html>")) {
+        	questionField = new JEditorPane();
+        	questionField.setText(questionMessage);
+        	((JEditorPane) questionField).setContentType("text/html");
+        	questionField.setFont(new JTextArea().getFont());
+        } else {
+        	questionField = new JTextArea(questionMessage);
+        }
         questionField.setEditable(false);
         questionField.setBackground(null);
         

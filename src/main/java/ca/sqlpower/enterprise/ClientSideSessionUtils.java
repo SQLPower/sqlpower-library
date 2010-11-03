@@ -177,12 +177,17 @@ public class ClientSideSessionUtils {
 	    return httpClient.execute(request, responseHandler);
 	}
 	
-	public static List<ProjectLocation> getWorkspaceNames(SPServerInfo serviceInfo, CookieStore cookieStore) 
+	public static List<ProjectLocation> getWorkspaceNames(SPServerInfo serviceInfo, 
+			CookieStore cookieStore, UserPrompterFactory upf) 
 	throws IOException, URISyntaxException, JSONException {
     	HttpClient httpClient = ClientSideSessionUtils.createHttpClient(serviceInfo, cookieStore);
     	try {
     		HttpUriRequest request = new HttpGet(getServerURI(serviceInfo, "/" + ClientSideSessionUtils.REST_TAG + "/jcr/projects"));
     		JSONMessage message = httpClient.execute(request, new JSONResponseHandler());
+    		if (message.getStatusCode() == 412) { //precondition failed
+    			upf.createUserPrompter(message.getBody(), UserPromptType.MESSAGE, 
+    					UserPromptOptions.OK, UserPromptResponse.OK, null, "OK").promptUser();
+    		}
     		List<ProjectLocation> workspaces = new ArrayList<ProjectLocation>();
     		JSONArray response = new JSONArray(message.getBody());
     		for (int i = 0; i < response.length(); i++) {

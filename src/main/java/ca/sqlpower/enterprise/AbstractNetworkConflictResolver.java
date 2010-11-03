@@ -424,7 +424,11 @@ public abstract class AbstractNetworkConflictResolver extends Thread {
                        }
                        updateListeners.clear();
                        interrupt();
-                   }                   
+                   } else if (message.getStatusCode() == 412) { //Precondition failed
+                	   upf.createUserPrompter(message.getBody(), UserPromptType.MESSAGE, UserPromptOptions.OK, 
+                			   UserPromptResponse.OK, null, "OK").promptUser();
+                	   continue;
+                   }
                    // The updater may have been interrupted/closed/deleted while waiting for an update.
                    if (this.isInterrupted() || cancelled) break;
                    

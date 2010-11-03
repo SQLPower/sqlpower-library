@@ -151,7 +151,7 @@ public abstract class ServerInfoProvider {
 			watermarkMessages.put(generateServerKey(url, username, password), watermarkMessage);
 			
 			// Notify the user if the server is not licensed.
-			if (!licensedServer) {
+			if (!licensedServer || (watermarkMessage != null && watermarkMessage.trim().length() > 0)) {
 				SwingUtilities.invokeLater(new Runnable() {
 					public void run() {
 					    HyperlinkListener hyperlinkListener = new HyperlinkListener() {
