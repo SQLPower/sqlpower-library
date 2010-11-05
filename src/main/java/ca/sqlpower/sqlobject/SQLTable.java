@@ -1458,7 +1458,6 @@ public class SQLTable extends SQLObject {
         if ( (!isMagicEnabled()) || (indices == null) || (columns == null) ) {
             super.setPhysicalName(argName);
         } else try {
-        	logger.info("The physical name of the table is: " + getPhysicalName());
         	String oldName;
         	if (getPhysicalName() != null) {
         		oldName = getPhysicalName();

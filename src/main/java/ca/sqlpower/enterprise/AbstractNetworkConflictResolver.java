@@ -305,7 +305,7 @@ public abstract class AbstractNetworkConflictResolver extends Thread {
                 return (String) p.getNewValue();
             }
         }
-        throw new IllegalArgumentException("Persisted Object with UUID " + o.getUUID() + " has no name property");
+        throw new IllegalArgumentException("Persisted Object with UUID " + o.getUUID() + " and type " + o.getType() + " has no name property");
     }
 
     public void clear() {
@@ -800,4 +800,12 @@ public abstract class AbstractNetworkConflictResolver extends Thread {
     protected abstract void flush(boolean reflush);
     protected abstract List<ConflictMessage> detectConflicts();
     protected abstract SPObject getWorkspace();
+
+	/**
+	 * Returns the persister listener used to send changes to the server. This
+	 * is mainly used for testing.
+	 */
+    public SPPersisterListener getPersisterListener() {
+    	return listener;
+    }
 }

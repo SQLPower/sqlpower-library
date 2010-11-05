@@ -551,10 +551,7 @@ public class SPPersisterListener implements SPListener {
 				this.rollback();
 				throw new SPPersistenceException(null,t);
 			} finally {
-				this.objectsToRemove.clear();
-				this.removedObjectsUUIDs.clear();
-				this.persistedObjects.clear();
-				this.persistedProperties.clear();
+				clear();
 				this.transactionCount = 0;
 			}
 		} else {
@@ -743,5 +740,18 @@ public class SPPersisterListener implements SPListener {
             uuids.addAll(getDescendantUUIDs(child));
         }
         return uuids;
+    }
+    
+    /**
+     * This method can be used to reset the listener back to an initial state.
+     * The ability to reset the listener is useful if we are trying to re-apply
+     * changes such as in the network conflict resolver but the listener is already
+     * in a transaction.
+     */
+    public void clear() {
+		this.objectsToRemove.clear();
+		this.removedObjectsUUIDs.clear();
+		this.persistedObjects.clear();
+		this.persistedProperties.clear();
     }
 }

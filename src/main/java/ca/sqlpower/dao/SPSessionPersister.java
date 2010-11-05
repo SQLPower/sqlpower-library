@@ -25,10 +25,12 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
@@ -1196,9 +1198,16 @@ public abstract class SPSessionPersister implements SPPersister {
 	 */
 	private void rollbackProperties() {
 		Collections.reverse(persistedPropertiesRollbackList);
+		Set<String> objectCreationRollbackUUIDs = new HashSet<String>();
+		for (PersistedObjectEntry entry : persistedObjectsRollbackList) {
+			objectCreationRollbackUUIDs.add(entry.getChildId());
+		}
 		for (PersistedPropertiesEntry entry : persistedPropertiesRollbackList) {
 			try {
 				final String parentUUID = entry.getUUID();
+				//These objects will be removed and we cannot roll back final properties so we
+				//will skip them.
+				if (objectCreationRollbackUUIDs.contains(parentUUID)) continue;
 				final String propertyName = entry.getPropertyName();
 				final Object rollbackValue = entry.getRollbackValue();
 				final SPObject parent = SQLPowerUtils.findByUuid(root, parentUUID, SPObject.class);

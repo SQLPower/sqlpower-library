@@ -36,18 +36,17 @@ import ca.sqlpower.object.SPVariableResolverProvider;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
-import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonBound;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
+import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.DataSourceCollection;
 import ca.sqlpower.sql.JDBCDataSourceType;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sql.SQL;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
-import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.BasicSQLType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
 import ca.sqlpower.util.UserPrompter;
 import ca.sqlpower.util.UserPrompterFactory;
@@ -61,7 +60,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 	private static Logger logger = Logger.getLogger(SQLColumn.class);
 	
     public static final List<Class<? extends SPObject>> allowedChildTypes = 
-        Collections.<Class<? extends SPObject>>singletonList(SQLTypePhysicalPropertiesProvider.class);
+        Collections.<Class<? extends SPObject>>singletonList(UserDefinedSQLType.class);
 
 	protected final UserDefinedSQLType userDefinedSQLType;
 	protected String platform;
@@ -1443,7 +1442,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 
 	@Override
 	protected boolean removeChildImpl(SPObject child) {
-		throw new IllegalStateException("Cannot remove children!!!");
+		return false;
 	}
 
 	@NonProperty
