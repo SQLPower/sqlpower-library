@@ -72,6 +72,8 @@ public class SQLPowerUtils {
 	 * and other delimiters. A set of general entities (amp, lt, gt, apos, quot) is specified for this purpose...]
 	 * All XML processors must recognize these entities whether they are declared or not. For interoperability,
 	 * valid XML documents should declare these entities..."
+	 * 
+	 * Also escapes newlines because we need to preserve them in remarks.
 	 */
 	public static String escapeXML(String src) {
 	    if (src == null) return "";
@@ -95,6 +97,36 @@ public class SQLPowerUtils {
 	        }
 	        else if (ch == '>') {
 				sb.append("&gt;");
+	        }
+	        else if (ch == '\n') {
+				sb.append("&amp;crlf;");
+	        }
+	        else {
+				sb.append(ch);
+			}
+		}
+		return sb.toString();
+	}
+	
+	/**
+	 * Unescapes the clrf entities put in by the escapeXML function.
+	 */
+	public static String unEscapeNewLines(String src) {
+	    if (src == null) return "";
+		StringBuffer sb = new StringBuffer(src.length()+10);  // arbitrary amount of extra space
+		char ch;
+	    
+		for (int i = 0, n = src.length(); i < n; i++) {
+			ch = src.charAt(i);
+	        
+	        if (ch == '&') {
+	        	if (src.length() - i > 6 && "&crlf;".equals(src.substring(i,i+6))) {
+	        		sb.append("\n");
+	        		i += 5;
+				}
+	        	else {
+					sb.append(ch);
+	        	}
 	        }
 	        else {
 				sb.append(ch);

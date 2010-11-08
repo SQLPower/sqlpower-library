@@ -20,6 +20,7 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.upgrade.UpgradePersisterManager;
+import ca.sqlpower.util.SQLPowerUtils;
 
 public class XMLPersisterReader {
 
@@ -124,6 +125,7 @@ public class XMLPersisterReader {
 					String name = attributes.getValue("name");
 					DataType type = DataType.valueOf(attributes.getValue("type"));
 					String value = attributes.getValue("value");
+					value = SQLPowerUtils.unEscapeNewLines(value);
 					upgradeTarget.persistProperty(currentObject.peek(), name, type, castValue(type, value));
 				} else if (PROJECT_TAG.equals(localName)) {
 					// ignore
@@ -146,6 +148,8 @@ public class XMLPersisterReader {
 				throw new RuntimeException(e);
 			}
 		}
+		
+		
 
 		@Override
 		public void endElement(String uri, String localName, String qName)
