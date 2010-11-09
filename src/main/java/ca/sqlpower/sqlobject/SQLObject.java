@@ -268,8 +268,7 @@ public abstract class SQLObject extends AbstractSPObject implements java.io.Seri
 		}
 		
 	    if (!getChildrenWithoutPopulating().contains(child)) {
-	        throw new IllegalArgumentException("Child object " + child.getName() + " of type " + child.getClass()
-	                + " is not a child of " + getName() + " of type " + getClass());
+	    	return false;
 	    }
 	    
 	    return removeChildImpl(child);
