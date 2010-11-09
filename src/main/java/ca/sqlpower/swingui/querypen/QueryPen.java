@@ -77,12 +77,13 @@ import ca.sqlpower.query.SQLJoin;
 import ca.sqlpower.query.TableContainer;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator;
 import ca.sqlpower.sql.jdbcwrapper.DatabaseMetaDataDecorator.CacheType;
+import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.sqlobject.SQLObjectException;
 import ca.sqlpower.sqlobject.SQLRelationship;
-import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.SQLRelationship.ColumnMapping;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
+import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.swingui.CursorManager;
 import ca.sqlpower.swingui.dbtree.SQLObjectSelection;
 import ca.sqlpower.swingui.querypen.event.CreateJoinEventHandler;
@@ -113,8 +114,6 @@ public class QueryPen implements MouseState {
     private static final String ZOOM_OUT_ACTION = "Zoom Out";
 
     private static final String JOIN_ACTION = "Create Join";
-    
-    private static final int TABLE_SPACE = 5;
     
 	public static final Color SELECTED_CONTAINER_COLOUR = new Color(0xff9900);
 	
@@ -168,114 +167,151 @@ public class QueryPen implements MouseState {
 				throw new RuntimeException(e);
 			}
 			
+			SQLDatabase tableDatabase = null;
+
+			int response = 0;
+			
 			for (Object draggedSQLObject : draggedObjects) {
-				
 				if (draggedSQLObject instanceof SQLTable) {
-				    try {
-				    	cursorManager.startWaitMode();
-				    	SQLTable table = (SQLTable) draggedSQLObject;
-				    	model.startCompoundEdit("Table " + table.getName() + " was dropped " +
-				    			"on the query pen, adding it to the mode.");
-				    	DatabaseMetaDataDecorator.putHint(DatabaseMetaDataDecorator.CACHE_TYPE, CacheType.EAGER_CACHE);
-    					TableContainer tableModel = new TableContainer(QueryPen.this.model.getDatabase(), table);
-    
-    					Point location = dtde.getLocation();
-    					Point2D movedLoc = canvas.getCamera().localToView(location);
-    					tableModel.setPosition(movedLoc);
-    					
-    					int aliasCounter = 0;
-    					ArrayList<String> aliasNames = new ArrayList<String>();
-    					
-    					// This basically check if there exist a table with the same name as the one being dropped
-    					// compare all the alias names to see which number it needs to not create a duplicate table name.
-    					for (Container existingTable: model.getFromTableList()) {
-    						if (tableModel.getName().equals(existingTable.getName())){
-    							logger.debug("Found same tableName, going to alias");
-    							aliasNames.add(existingTable.getAlias());
-    						}
-    					}
-    					Collections.sort(aliasNames);
-    					for(String alias : aliasNames) {
-    						if(alias.equals(tableModel.getName()+ "_"+ aliasCounter)
-    								|| alias.equals("")) {
-    							aliasCounter++;
-    						}
-    					}
-    					if(aliasCounter != 0) {
-    						tableModel.setAlias(tableModel.getName()+ "_"+ aliasCounter);
-    					}
-    					
-    					QueryPen.this.model.addTable(tableModel);
-    					
-    					try {
-    						for (SQLRelationship relation : table.getExportedKeys()) {
-    							List<Container> fkContainers = getContainerPane(relation.getFkTable());
-    							for (Container fkContainer : fkContainers) {
-    								for (ColumnMapping mapping : relation.getChildren(ColumnMapping.class)) {
-    									logger.debug("PK container has model name " + tableModel.getName() + 
-    											" looking for col named " + mapping.getPkColumn().getName());
-    									Item pkItemNode = tableModel.getItem(mapping.getPkColumn());
-    									Item fkItemNode = fkContainer.getItem(mapping.getFkColumn());
-    									logger.debug("FK item node is " + fkItemNode);
-    									if (pkItemNode != null && fkItemNode != null) {
-    										if (pkItemNode.getParent() != fkItemNode.getParent()) {
-    										    SQLJoin join = new SQLJoin(pkItemNode, fkItemNode);
-    											join.addJoinChangeListener(queryChangeListener);
-    											QueryPen.this.model.addJoin(join);
-    										} else {
-    											logger.debug("we don't allow items joining on the same table");
-    										}
-    									} else {
-    										throw new IllegalStateException("Trying to join two columns, one of which does not exist");
-    									}
-    								}
-    							}
-    						}
-    						
-    						for (SQLImportedKey key : table.getImportedKeys()) {
-    							SQLRelationship relation = key.getRelationship();
-    							List<Container> pkContainers = getContainerPane(relation.getParent());
-    							for (Container pkContainer : pkContainers) {
-    								for (ColumnMapping mapping : relation.getChildren(ColumnMapping.class)) {
-    									Item fkItemNode = pkContainer.getItem(mapping.getPkColumn());
-    									Item pkItemNode = tableModel.getItem(mapping.getFkColumn());
-    									if (pkItemNode != null && fkItemNode != null) {
-    										if (pkItemNode.getParent() != fkItemNode.getParent()) {
-    											SQLJoin join = new SQLJoin(fkItemNode, pkItemNode);
-    											join.addJoinChangeListener(queryChangeListener);
-    											QueryPen.this.model.addJoin(join);
-    										} else {
-    											logger.debug("we don't allow items joining on the same table");
-    										}
-    									} else {
-    										throw new IllegalStateException("Trying to join two columns, one of which does not exist");
-    									}
-    								}
-    							}
-    						}
-    					} catch (SQLObjectException e) {
-    						throw new RuntimeException(e);
-    					}
-    					
-                        for (Item itemNode : tableModel.getItems()) {
-                            model.selectItem(itemNode);
-                        }
-    
-    					dtde.acceptDrop(dtde.getDropAction());
-    					dtde.dropComplete(true);
-    					    			    					
-				    } finally {
-				    	cursorManager.finishWaitMode();
-				    	DatabaseMetaDataDecorator.putHint(DatabaseMetaDataDecorator.CACHE_TYPE, CacheType.NO_CACHE);
-				    	model.endCompoundEdit();
-					}
-					
+			    	SQLTable table = (SQLTable) draggedSQLObject;
+			    	if(tableDatabase != null) {
+			    		if(!tableDatabase.equals(table.getParentDatabase())) {
+			    			JOptionPane.showMessageDialog(null, "The tables your are adding are from different database connections. " +
+			    					"This will cause errors in your query.", "Error", JOptionPane.ERROR_MESSAGE);
+			    			response = 1;
+			    		}
+			    	}
+					tableDatabase = table.getParentDatabase();
 				} else {
 					logger.debug("Rejecting drop of non-SQLTable SQLObject: " + draggedSQLObject);
 					dtde.rejectDrop();
 				}
 			}
 			
+			//Check to see if the table being dragged in the selected database or not
+			if(!getModel().getDatabase().equals(tableDatabase) && response == 0) {
+				
+				String message;
+				if(draggedObjects.length == 1) { 
+					message = "The table being added is not from \"" + getModel().getDatabase() + "\".";
+				} else {
+					message = "The tables being added are not from \"" + getModel().getDatabase() +  "\".";
+				}
+				
+				message += "\nDo you want to change your connection to \"" + tableDatabase + "\"?\n" +
+						"If so, your current query will be cleared and the new tables added.";
+				
+				String options[] = {"YES","NO"};
+				response = JOptionPane.showOptionDialog(null, message, "Warning",
+						JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, 
+						null, options, options[1]);
+				if(response == 0) {
+					model.setDataSource(tableDatabase.getDataSource());
+					model.reset();
+				}
+			}
+			
+			if(response == 0) {
+				for (Object draggedSQLObject : draggedObjects) {
+				    try {
+				    	cursorManager.startWaitMode();
+				    	SQLTable table = (SQLTable) draggedSQLObject;
+				    	model.startCompoundEdit("Table " + table.getName() + " was dropped " +
+				    			"on the query pen, adding it to the mode.");
+				    	DatabaseMetaDataDecorator.putHint(DatabaseMetaDataDecorator.CACHE_TYPE, CacheType.EAGER_CACHE);
+						TableContainer tableModel = new TableContainer(QueryPen.this.model.getDatabase(), table);
+						
+						Point location = dtde.getLocation();
+						Point2D movedLoc = canvas.getCamera().localToView(location);
+						tableModel.setPosition(movedLoc);
+						
+						int aliasCounter = 0;
+						ArrayList<String> aliasNames = new ArrayList<String>();
+						
+						// This basically check if there exist a table with the same name as the one being dropped
+						// compare all the alias names to see which number it needs to not create a duplicate table name.
+						for (Container existingTable: model.getFromTableList()) {
+							if (tableModel.getName().equals(existingTable.getName())){
+								logger.debug("Found same tableName, going to alias");
+								aliasNames.add(existingTable.getAlias());
+							}
+						}
+						Collections.sort(aliasNames);
+						for(String alias : aliasNames) {
+							if(alias.equals(tableModel.getName()+ "_"+ aliasCounter)
+									|| alias.equals("")) {
+								aliasCounter++;
+							}
+						}
+						if(aliasCounter != 0) {
+							tableModel.setAlias(tableModel.getName()+ "_"+ aliasCounter);
+						}
+						
+						QueryPen.this.model.addTable(tableModel);
+						
+						try {
+							for (SQLRelationship relation : table.getExportedKeys()) {
+								List<Container> fkContainers = getContainerPane(relation.getFkTable());
+								for (Container fkContainer : fkContainers) {
+									for (ColumnMapping mapping : relation.getChildren(ColumnMapping.class)) {
+										logger.debug("PK container has model name " + tableModel.getName() + 
+												" looking for col named " + mapping.getPkColumn().getName());
+										Item pkItemNode = tableModel.getItem(mapping.getPkColumn());
+										Item fkItemNode = fkContainer.getItem(mapping.getFkColumn());
+										logger.debug("FK item node is " + fkItemNode);
+										if (pkItemNode != null && fkItemNode != null) {
+											if (pkItemNode.getParent() != fkItemNode.getParent()) {
+											    SQLJoin join = new SQLJoin(pkItemNode, fkItemNode);
+												join.addJoinChangeListener(queryChangeListener);
+												QueryPen.this.model.addJoin(join);
+											} else {
+												logger.debug("we don't allow items joining on the same table");
+											}
+										} else {
+											throw new IllegalStateException("Trying to join two columns, one of which does not exist");
+										}
+									}
+								}
+							}
+							
+							for (SQLImportedKey key : table.getImportedKeys()) {
+								SQLRelationship relation = key.getRelationship();
+								List<Container> pkContainers = getContainerPane(relation.getParent());
+								for (Container pkContainer : pkContainers) {
+									for (ColumnMapping mapping : relation.getChildren(ColumnMapping.class)) {
+										Item fkItemNode = pkContainer.getItem(mapping.getPkColumn());
+										Item pkItemNode = tableModel.getItem(mapping.getFkColumn());
+										if (pkItemNode != null && fkItemNode != null) {
+											if (pkItemNode.getParent() != fkItemNode.getParent()) {
+												SQLJoin join = new SQLJoin(fkItemNode, pkItemNode);
+												join.addJoinChangeListener(queryChangeListener);
+												QueryPen.this.model.addJoin(join);
+											} else {
+												logger.debug("we don't allow items joining on the same table");
+											}
+										} else {
+											throw new IllegalStateException("Trying to join two columns, one of which does not exist");
+										}
+									}
+								}
+							}
+						} catch (SQLObjectException e) {
+							throw new RuntimeException(e);
+						}
+						
+	                    for (Item itemNode : tableModel.getItems()) {
+	                        model.selectItem(itemNode);
+	                    }
+	
+						dtde.acceptDrop(dtde.getDropAction());
+						dtde.dropComplete(true);
+				    } finally {
+				    	cursorManager.finishWaitMode();
+				    	DatabaseMetaDataDecorator.putHint(DatabaseMetaDataDecorator.CACHE_TYPE, CacheType.NO_CACHE);
+				    	model.endCompoundEdit();
+					}
+				}
+			}
 		}
 
 		public void dragOver(DropTargetDragEvent dtde) {

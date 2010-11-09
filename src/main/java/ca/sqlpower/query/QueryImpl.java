@@ -1288,8 +1288,10 @@ public class QueryImpl implements Query {
 	
 	public boolean setDataSourceWithoutSideEffects(JDBCDataSource dataSource) {
 	    final SQLDatabase newDatabase = dbMapping.getDatabase(dataSource);
+		SQLDatabase old = database;
 	    if (database != null && database == newDatabase) return false;
 	    this.database = newDatabase;
+        firePropertyChangeEvent(new PropertyChangeEvent(this, "database", old, newDatabase));
 	    return true;
 	}
 	
