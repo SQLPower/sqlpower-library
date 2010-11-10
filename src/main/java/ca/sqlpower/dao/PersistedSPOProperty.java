@@ -31,7 +31,7 @@ import ca.sqlpower.util.SQLPowerUtils;
  * A class representing an individual persisted {@link SPObject}
  * property.
  */
-public class PersistedSPOProperty implements Comparable<PersistedSPOProperty> {
+public class PersistedSPOProperty implements PersistedTransactionElement, Comparable<PersistedSPOProperty> {
 
 	private final String uuid;
 	private final String propertyName;
