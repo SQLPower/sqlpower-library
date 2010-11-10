@@ -397,8 +397,8 @@ public class SQLTable extends SQLObject {
 	 *            The SQLObject that contains all of the tables in the system.
 	 * @throws SQLObjectException
 	 */
-    private synchronized static void populateAllColumns(String catalogName, String schemaName,
-    		String tableName,
+    private synchronized static void populateAllColumns(final String catalogName, final String schemaName,
+    		final String tableName,
     		final SQLDatabase parentDB, final SQLObject tableContainer) throws SQLObjectException {
     	Connection con = null;
 		try {
@@ -410,6 +410,12 @@ public class SQLTable extends SQLObject {
 				public void run() {
 					try {
 						parentDB.begin("Populating all columns");
+						if (cols.isEmpty()) {
+							SQLTable t = parentDB.getTableByName(catalogName, schemaName, tableName);
+							if (t != null) {
+								t.setColumnsPopulated(true);
+							}
+						}
 						for (String tableName : cols.keySet()) {
 						    SQLTable table = tableContainer.getChildByName(tableName, SQLTable.class);
 						    //The multimap will contain table names of system tables 
