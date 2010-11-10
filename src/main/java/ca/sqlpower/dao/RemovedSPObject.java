@@ -25,7 +25,7 @@ import ca.sqlpower.object.SPObject;
 /**
  * This class represents an individual removed {@link SPObject} in a {@link SPPersister}. 
  */
-public class RemovedSPObject {
+public class RemovedSPObject implements PersistedTransactionElement {
 	
 	private final String parentUUID;
 	private final String uuid;
