@@ -24,7 +24,7 @@ import ca.sqlpower.object.SPObject;
 /**
  * A class representing an individual persisted {@link SPObject}.
  */
-public class PersistedSPObject implements PersistedTransactionElement, Comparable<PersistedSPObject> {
+public class PersistedSPObject implements SPTransactionElement, Comparable<PersistedSPObject> {
 	private final String parentUUID;
 	private final String type;
 	private final String uuid;

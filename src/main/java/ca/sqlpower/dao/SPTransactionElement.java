@@ -22,10 +22,8 @@ package ca.sqlpower.dao;
 /**
  * Marker interface for items which can make up a transaction, such as {@link PersistedSPObject}
  * and {@link PersistedSPOProperty}
- * 
- * @author vwilliam
  *
  */
-public interface PersistedTransactionElement {
+public interface SPTransactionElement {
 
 }
