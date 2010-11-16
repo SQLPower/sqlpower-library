@@ -53,6 +53,7 @@ import ca.sqlpower.dao.json.SPJSONMessageDecoder;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.enterprise.client.ProjectLocation;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.util.RunnableDispatcher;
 import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.UserPrompter.UserPromptOptions;
@@ -777,7 +778,13 @@ public abstract class AbstractNetworkConflictResolver extends Thread {
             }
             
             // Cannot change the property of a parent whose direct child was either:
-            for (SPObject child : changedObject.getChildren()) {                                        
+            List<SPObject> children = new ArrayList<SPObject>();
+            if (changedObject instanceof SQLObject) {
+            	children.addAll(((SQLObject) changedObject).getChildrenWithoutPopulating());
+            } else {
+            	children.addAll(changedObject.getChildren());
+            }
+            for (SPObject child : children) {                                        
                 // also changed
                 if (inboundChangedObjects.contains(child.getUUID())) {
                     conflicts.add(new ConflictMessage(ConflictCase.CHANGE_UNDER_CHANGE,
