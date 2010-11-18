@@ -1306,7 +1306,9 @@ public abstract class SPSessionPersister implements SPPersister {
 				rollback(true);
 				throw new RuntimeException("A call from two different threads was detected. " +
 						"Callers of a sessionPersister should synchronize prior to " +
-						"opening transactions.");
+						"opening transactions. The thread " + Thread.currentThread().getName() + 
+						" tried to access the persister while the thread " + currentThread.getName() + 
+						" was already using it.");
 			}
 		}
 	}
