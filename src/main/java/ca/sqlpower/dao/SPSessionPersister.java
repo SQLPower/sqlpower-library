@@ -736,24 +736,23 @@ public abstract class SPSessionPersister implements SPPersister {
 	 *             parent.
 	 */
 	private void commitRemovals() throws SPPersistenceException {
-		for (String uuid : objectsToRemove.keySet()) {
-			SPObject spo = SQLPowerUtils.findByUuid(root, uuid,
+		for (Map.Entry<String, String> removeEntry : objectsToRemove.entrySet()) {
+			SPObject spo = SQLPowerUtils.findByUuid(root, removeEntry.getKey(),
 					SPObject.class);
 			
 			//The ancestor of this object has been deleted by this transaction
 			//already so we don't need to delete the object again.
 			if (spo == null) {
 			    boolean descendantRemoved = false;
-			    for (RemovedObjectEntry removedEntry : objectsToRemoveRollbackList.values()) {
-			        if (SQLPowerUtils.findByUuid(removedEntry.getRemovedChild(), uuid, SPObject.class) != null) {
+			    for (RemovedObjectEntry removedRollbackEntry : objectsToRemoveRollbackList.values()) {
+			        if (SQLPowerUtils.findByUuid(removedRollbackEntry.getRemovedChild(), removeEntry.getKey(), SPObject.class) != null) {
 			            descendantRemoved = true;
 			            break;
 			        }
 			    }
 			    if (descendantRemoved) continue;
 			}
-			
-			SPObject parent = SQLPowerUtils.findByUuid(root, objectsToRemove.get(uuid), 
+			SPObject parent = SQLPowerUtils.findByUuid(root, removeEntry.getValue(), 
 					SPObject.class);
 			try {
 				List<? extends SPObject> siblings;
@@ -772,9 +771,9 @@ public abstract class SPSessionPersister implements SPPersister {
 						spo,
 						index));
 			} catch (IllegalArgumentException e) {
-				throw new SPPersistenceException(uuid, e);
+				throw new SPPersistenceException(removeEntry.getKey(), e);
 			} catch (ObjectDependentException e) {
-				throw new SPPersistenceException(uuid, e);
+				throw new SPPersistenceException(removeEntry.getKey(), e);
 			}
 		}
 		if (objectsToRemoveRollbackList.size() != objectsToRemove.size()) {
