@@ -239,6 +239,7 @@ public abstract class AbstractNetworkConflictResolver extends Thread {
     protected UserPrompterFactory upf;
     
     protected int currentRevision = 0;
+    protected long serverTimestamp = 0;
     
     protected long retryDelay = 1000;
 
@@ -294,6 +295,10 @@ public abstract class AbstractNetworkConflictResolver extends Thread {
     
     public int getRevision() {
         return currentRevision;
+    }
+    
+    public long getServerTimestamp() {
+    	return serverTimestamp;
     }
     
     public void addListener(UpdateListener listener) {
@@ -364,7 +369,7 @@ public abstract class AbstractNetworkConflictResolver extends Thread {
      *            The new revision number.
      * @throws SPPersistenceException
      */
-    protected void decodeMessage(JSONTokener tokener, int newRevision) {
+    protected void decodeMessage(JSONTokener tokener, int newRevision, long timestamp) {
         try {
             if (currentRevision < newRevision) {
                 List<UpdateListener> updateListenersCopy = new ArrayList<UpdateListener>(updateListeners);
@@ -374,6 +379,11 @@ public abstract class AbstractNetworkConflictResolver extends Thread {
                 // Now we can apply the update ...
                 jsonDecoder.decode(tokener);
                 currentRevision = newRevision;
+                serverTimestamp = timestamp;
+                
+                if (logger.isDebugEnabled())
+                	logger.debug("Setting currentRevision to: " + currentRevision + 
+                				" and serverTimestamp to: " + serverTimestamp);
                 
                 for (UpdateListener listener : updateListenersCopy) {
                     if (listener.updatePerformed(this)) {
@@ -429,19 +439,41 @@ public abstract class AbstractNetworkConflictResolver extends Thread {
                 	   upf.createUserPrompter(message.getBody(), UserPromptType.MESSAGE, UserPromptOptions.OK, 
                 			   UserPromptResponse.OK, null, "OK").promptUser();
                 	   continue;
+                   } else if (message.getStatusCode() == 403) { // FORBIDDEN, timestamp is older than server
+            		   updateListeners.clear();
+            		   interrupt();
+                	   if (projectLocation.getUUID().equals("system")) {
+                		   upf.createUserPrompter("Server at " + projectLocation.getServiceInfo().getServerAddress() + "has failed since your session began." +
+                    			   " Please restart the program to synchronize the system workspace with the server." , 
+                    			   UserPromptType.MESSAGE, 
+                    			   UserPromptOptions.OK, 
+                    			   UserPromptResponse.OK, 
+                    			   null, "OK").promptUser();                		   
+                	   } else {
+                		   upf.createUserPrompter("Server at "  + projectLocation.getServiceInfo().getServerAddress() + 
+                				   " has failed since your session began." +
+                				   " Please use the refresh button to synchronize workspace " + projectLocation.getName() + 
+                				   " with the server.", 
+                				   UserPromptType.MESSAGE, 
+                				   UserPromptOptions.OK, 
+                				   UserPromptResponse.OK, 
+                				   null, "OK").promptUser();
+                	   }
                    }
+                   
                    // The updater may have been interrupted/closed/deleted while waiting for an update.
                    if (this.isInterrupted() || cancelled) break;
                    
                    JSONObject json = new JSONObject(message.getBody());
                    final JSONTokener tokener = new JSONTokener(json.getString("data"));
                    final int jsonRevision = json.getInt("currentRevision");
+                   final long jsonTimestamp = json.getLong("serverTimestamp");
                    
                    runnable.runInForeground(new Runnable() {
                        public void run() {
                            try {
                                if (!postingJSON.get()) {
-                                   decodeMessage(tokener, jsonRevision);
+                                   decodeMessage(tokener, jsonRevision, jsonTimestamp);
                                }
                            } catch (AccessDeniedException e) {
                                interrupt();
@@ -504,7 +536,8 @@ public abstract class AbstractNetworkConflictResolver extends Thread {
                     projectLocation.getServiceInfo().getServerAddress(), 
                     projectLocation.getServiceInfo().getPort(),
                     projectLocation.getServiceInfo().getPath() + contextRelativePath, 
-                    "oldRevisionNo=" + currentRevision, null);
+                    "oldRevisionNo=" + currentRevision + "&serverTimestamp=" + serverTimestamp, null);
+            logger.debug("GETting URI: " + uri.toString());
             HttpUriRequest request = new HttpGet(uri);
             return client.execute(request, new JSONResponseHandler());
         } catch (AccessDeniedException ade) {
@@ -527,7 +560,8 @@ public abstract class AbstractNetworkConflictResolver extends Thread {
                     projectLocation.getServiceInfo().getPort(),
                     projectLocation.getServiceInfo().getPath() + 
                     "/" + ClientSideSessionUtils.REST_TAG + "/project/" + projectLocation.getUUID(), 
-                    "currentRevision=" + currentRevision, null);
+                    "currentRevision=" + currentRevision + "&serverTimestamp=" + serverTimestamp, null);
+            logger.debug("POSTing URI: " + serverURI.toString());
             HttpPost postRequest = new HttpPost(serverURI);
             postRequest.setEntity(new StringEntity(jsonArray)); 
             postRequest.setHeader("Content-Type", "application/json");
