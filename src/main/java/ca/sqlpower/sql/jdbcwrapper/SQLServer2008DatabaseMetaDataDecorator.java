@@ -23,6 +23,9 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
+
+import org.apache.log4j.Logger;
 
 import ca.sqlpower.sql.CachedRowSet;
 
@@ -31,6 +34,8 @@ import ca.sqlpower.sql.CachedRowSet;
  * method of retrieving schema names on SQL Server 2008.
  */
 public class SQLServer2008DatabaseMetaDataDecorator extends SQLServerDatabaseMetaDataDecorator {
+	
+	private static final Logger logger = Logger.getLogger(SQLServer2008DatabaseMetaDataDecorator.class);
 
     public SQLServer2008DatabaseMetaDataDecorator(DatabaseMetaData delegate, ConnectionDecorator connectionDecorator) {
         super(delegate, connectionDecorator);
@@ -70,6 +75,38 @@ public class SQLServer2008DatabaseMetaDataDecorator extends SQLServerDatabaseMet
             if (rs != null) rs.close();
             if (stmt != null) stmt.close();
         }
+    }
+    
+    @Override
+    public ResultSet getColumns(String catalog, String schemaPattern,
+    		String tableNamePattern, String columnNamePattern)
+    		throws SQLException {
+    	ResultSet rs = null;
+    	CachedRowSet crs = new CachedRowSet();
+    	try {
+    		rs = super.getColumns(catalog, schemaPattern, tableNamePattern,
+    				columnNamePattern);
+    		crs.populate(rs);
+    	} finally {
+    		if (rs != null) {
+    			try {
+    				rs.close();
+    			} catch (SQLException e) {
+    				logger.error(e);
+    			}
+    		}
+    	}
+    	while (crs.next()) {
+    		if (crs.getInt(5) == -9) {
+    			if (crs.getString(6).equalsIgnoreCase("date")) {
+    				crs.updateInt(5, Types.DATE);
+    			} else if (crs.getString(6).equalsIgnoreCase("time")) {
+    				crs.updateInt(5, Types.TIME);
+    			}
+    		}
+    	}
+    	crs.beforeFirst();
+    	return crs;
     }
     
 }
