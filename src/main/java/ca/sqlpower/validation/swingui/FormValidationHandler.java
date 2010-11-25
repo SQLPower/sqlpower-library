@@ -292,16 +292,27 @@ public class FormValidationHandler implements ValidationHandler {
         }
         performFormValidation();
     }
-    
     /**
      * Add a JtextComponent and JCheckBox and the validator to the List.
-     * Only validates the JtextComponent when JCheckBox is selected
+     * Only validates the JtextComponent when JCheckBox isSelected agrees
+     * with the selected argument.
+     * @param textComponent The component you want to validate
+     * @param checkBox The checkbox the check for validation
+     * @param validator The validator that will validate. duh.
+     * @param selected This flag indicates if you want to validate when the checkbox
+     * is selected or when it isn't selected
+     * @param defaultValid This is a string to provide that will make the validator
+     * send back an OK message.
      */
-    public void addValidateObject(final JTextComponent textComponent, final JCheckBox checkBox, final Validator validator) {
+    public void addValidateObject(final JTextComponent textComponent,
+    		final JCheckBox checkBox,
+    		final Validator validator,
+    		final boolean selected,
+    		final String defaultValid) {
         final ValidateObject validateObject = new ValidateObject(textComponent,validator);
         objects.add(validateObject);
         validateObject.setObject(textComponent.getText());
-        textComponent.getDocument().addDocumentListener(new DocumentListener(){
+        textComponent.getDocument().addDocumentListener(new DocumentListener() {
         	public void insertUpdate(DocumentEvent e) {
         		doStuff();
         	}
@@ -312,10 +323,10 @@ public class FormValidationHandler implements ValidationHandler {
         		doStuff();
         	}
         	private void doStuff() {
-        		if (checkBox.isSelected()) {
+        		if (selected == checkBox.isSelected()) {
         			validateObject.setObject(((JTextComponent)textComponent).getText());
         		} else {
-        			validateObject.setObject("");
+        			validateObject.setObject(defaultValid);
         		}
         		performFormValidation();
         	}
@@ -323,10 +334,10 @@ public class FormValidationHandler implements ValidationHandler {
         checkBox.addActionListener(new ActionListener() {
 		
 			public void actionPerformed(ActionEvent e) {
-				if (checkBox.isSelected()) {
+				if (selected == checkBox.isSelected()) {
 					validateObject.setObject(((JTextComponent)textComponent).getText());
 				} else {
-        			validateObject.setObject("");
+        			validateObject.setObject(defaultValid);
         		}
 				performFormValidation();
 			}
