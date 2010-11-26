@@ -631,6 +631,20 @@ public class JSONObject {
                 ((Number)o).longValue() : (long)getDouble(key);
     }
 
+    /**
+     * Get the short value associated with a key. If the number value is too
+     * long for a short, it will be clipped.
+     *
+     * @param key   A key string.
+     * @return      The long value.
+     * @throws   JSONException if the key is not found or if the value cannot
+     *  be converted to a long.
+     */
+    public short getShort(String key) throws JSONException {
+        Object o = get(key);
+        return o instanceof Number ?
+                ((Number)o).shortValue() : (short)getDouble(key);
+    }
 
     /**
      * Get an array of field names from a JSONObject.

@@ -213,6 +213,8 @@ public class PersisterUtils {
     		return DataType.INTEGER;
     	} else if (Long.class.isAssignableFrom(classForDataType)) {
     	    return DataType.LONG;
+    	}  else if (Short.class.isAssignableFrom(classForDataType)) {
+    		return DataType.SHORT;
     	} else if (Boolean.class.isAssignableFrom(classForDataType)) {
     		return DataType.BOOLEAN;
     	} else if (Double.class.isAssignableFrom(classForDataType)) {

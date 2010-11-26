@@ -38,6 +38,7 @@ public interface SPPersister {
 		INTEGER("Integer", Integer.class),
 		DOUBLE("Double", Double.class),
 		BOOLEAN("Boolean", Boolean.class),
+		SHORT("Long", Short.class),
 		LONG("Long", Long.class),
 		
 		/**
