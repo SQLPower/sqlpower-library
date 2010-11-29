@@ -21,12 +21,15 @@ package ca.sqlpower.enterprise;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.springframework.security.AccessDeniedException;
 
 public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
@@ -48,13 +51,7 @@ public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
             
             BufferedReader reader = new BufferedReader(
                     new InputStreamReader(response.getEntity().getContent()));
-            StringBuffer buffer = new StringBuffer();
-            
-            String line;
-            while ((line = reader.readLine()) != null) {
-                buffer.append(line).append("\n");
-            }
-            return handleResponse(buffer.toString(), status);
+            return handleResponse(reader, status);
         } catch (AccessDeniedException e) {
             throw e;
         } catch (Exception ex) {
@@ -63,12 +60,17 @@ public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
     }
     
     public JSONMessage handleResponse(String json, int status) {
+    	return handleResponse(new StringReader(json), status);
+    }
+    
+    public JSONMessage handleResponse(Reader reader, int status) {
         if (status == 404) {
             throw new RuntimeException("Server resource is not available.");
         }
         
+        JSONTokener tokener = new JSONTokener(reader);
         try {
-            JSONObject message = new JSONObject(json);
+        	JSONObject message = (JSONObject) tokener.nextValue();
             
             // Does the response contain data? If so, return it. Communication
             // with the resource has been successful.
@@ -98,7 +100,7 @@ public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
                 }
             }
         } catch (Exception ex) {
-            throw new RuntimeException("Server returned status " + status + "\n" + json, ex);
+            throw new RuntimeException("Server returned status " + status + "\n" + tokener, ex);
         }
     }
 }
