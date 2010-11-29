@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -90,14 +91,36 @@ public abstract class SPSessionPersister implements SPPersister {
 	 */
 	private List<PersistedPropertiesEntry> persistedPropertiesRollbackList = 
 		new LinkedList<PersistedPropertiesEntry>();
-	
+
 	/**
-	 * Persisted {@link SPObject} buffer, contains all the data that was
-	 * passed into the persistedObject call in the order of insertion
+	 * Persisted {@link SPObject} buffer, contains all the data that was passed
+	 * into the persistedObject call in the order of insertion. Note that this
+	 * list must be kept consistent with persistedObjectsMap.
 	 */
 	protected List<PersistedSPObject> persistedObjects = 
 		new LinkedList<PersistedSPObject>();
 
+	/**
+	 * This map stores values looked up by findByUUID and allows them to be
+	 * looked up faster to improve performance. This cache should be cleared
+	 * regularly before and after each transaction so the values in it stay
+	 * consistent with what actually exists in the client model.
+	 */
+	private final Map<String, SPObject> lookupCache = new HashMap<String, SPObject>();
+	
+	/**
+	 * This map allows for fast lookups of persisted objects by their UUID.
+	 * <p>
+	 * Note that the entries in this map must be kept consistent with those in
+	 * persistedObjects.
+	 * <p>
+	 * Changing persistedObjects to be an ordered map may be more sensible then
+	 * using this map in the future but we will see how much this improves
+	 * performance.
+	 */
+	private Map<String, PersistedSPObject> persistedObjectsMap = 
+		new HashMap<String, PersistedSPObject>();
+	
 	/**
 	 * This will be the list we use to rollback persisted objects.
 	 * It contains UUIDs of objects that were created.
@@ -226,8 +249,8 @@ public abstract class SPSessionPersister implements SPPersister {
 	 */
 	protected final Comparator<String> removedObjectComparator = new Comparator<String>() {
 		public int compare(String uuid1, String uuid2) {
-			SPObject spo1 = SQLPowerUtils.findByUuid(root, uuid1, SPObject.class);
-			SPObject spo2 = SQLPowerUtils.findByUuid(root, uuid2, SPObject.class);
+			SPObject spo1 = findByUuid(root, uuid1, SPObject.class);
+			SPObject spo2 = findByUuid(root, uuid2, SPObject.class);
 			
 			if (uuid1.equals(uuid2)) {
 				return 0;
@@ -333,6 +356,10 @@ public abstract class SPSessionPersister implements SPPersister {
 
 	private void setPersistedObjects(List<PersistedSPObject> persistedObjects) {
 		this.persistedObjects = persistedObjects;
+		persistedObjectsMap.clear();
+		for (PersistedSPObject pso : persistedObjects) {
+			persistedObjectsMap.put(pso.getUUID(), pso);
+		}
 	}
 
 	private void setObjectsToRemove(Map<String, String> objectsToRemove) {
@@ -402,6 +429,10 @@ public abstract class SPSessionPersister implements SPPersister {
 	public void begin() throws SPPersistenceException {
 		synchronized (getWorkspaceContainer()) {
 			enforceThreadSafety();
+			if (transactionCount == 0) {
+				lookupCache.clear();
+				converter.setUUIDCache(lookupCache);
+			}
 			transactionCount++;
 			
 			if (logger.isDebugEnabled()) {
@@ -464,9 +495,12 @@ public abstract class SPSessionPersister implements SPPersister {
 							objectsToRemove.clear();
 							objectsToRemoveRollbackList.clear();
 							persistedObjects.clear();
+							persistedObjectsMap.clear();
 							persistedObjectsRollbackList.clear();
 							persistedProperties.clear();
 							persistedPropertiesRollbackList.clear();
+							lookupCache.clear();
+							converter.removeUUIDCache();
 							currentThread = null;
 						}
 					}
@@ -494,7 +528,7 @@ public abstract class SPSessionPersister implements SPPersister {
 				throw new SPPersistenceException("Cannot persist objects while outside " +
 						"a transaction.");
 			}
-			SPObject objectToPersist = SQLPowerUtils.findByUuid(root, uuid, SPObject.class);
+			SPObject objectToPersist = findByUuid(root, uuid, SPObject.class);
 			if (exists(uuid) && objectToPersist.getClass() != root.getClass()) {
 				rollback();
 				throw new SPPersistenceException(uuid,
@@ -506,6 +540,7 @@ public abstract class SPSessionPersister implements SPPersister {
 			PersistedSPObject pso = new PersistedSPObject(parentUUID,
 					type, uuid, index);
 			persistedObjects.add(pso);
+			persistedObjectsMap.put(pso.getUUID(), pso);
 		}
 	}
 
@@ -608,7 +643,7 @@ public abstract class SPSessionPersister implements SPPersister {
 		}
 		
 		Object propertyValue = null;
-		SPObject spo = SQLPowerUtils.findByUuid(root, uuid,
+		SPObject spo = findByUuid(root, uuid,
 				SPObject.class);
 		
 		if (lastPropertyValueFound != null) {
@@ -670,7 +705,7 @@ public abstract class SPSessionPersister implements SPPersister {
 			}
 			//Now that we allow remove persist calls on objects that are children of
 			//objects being removed the persister needs to handle them.
-			SPObject spo = SQLPowerUtils.findByUuid(root, uuid, SPObject.class);
+			SPObject spo = findByUuid(root, uuid, SPObject.class);
 			if (spo == null) {
 			    rollback();
 			    throw new SPPersistenceException(uuid,
@@ -715,9 +750,12 @@ public abstract class SPSessionPersister implements SPPersister {
 				objectsToRemove.clear();
 				objectsToRemoveRollbackList.clear();
 				persistedObjects.clear();
+				persistedObjectsMap.clear();
 				persistedObjectsRollbackList.clear();
 				persistedProperties.clear();
 				persistedPropertiesRollbackList.clear();
+				lookupCache.clear();
+				converter.removeUUIDCache();
 				transactionCount = 0;
 				headingToWisconsin = false;
 				
@@ -737,7 +775,7 @@ public abstract class SPSessionPersister implements SPPersister {
 	 */
 	private void commitRemovals() throws SPPersistenceException {
 		for (Map.Entry<String, String> removeEntry : objectsToRemove.entrySet()) {
-			SPObject spo = SQLPowerUtils.findByUuid(root, removeEntry.getKey(),
+			SPObject spo = findByUuid(root, removeEntry.getKey(),
 					SPObject.class);
 			
 			//The ancestor of this object has been deleted by this transaction
@@ -745,14 +783,14 @@ public abstract class SPSessionPersister implements SPPersister {
 			if (spo == null) {
 			    boolean descendantRemoved = false;
 			    for (RemovedObjectEntry removedRollbackEntry : objectsToRemoveRollbackList.values()) {
-			        if (SQLPowerUtils.findByUuid(removedRollbackEntry.getRemovedChild(), removeEntry.getKey(), SPObject.class) != null) {
+			        if (findByUuid(removedRollbackEntry.getRemovedChild(), removeEntry.getKey(), SPObject.class) != null) {
 			            descendantRemoved = true;
 			            break;
 			        }
 			    }
 			    if (descendantRemoved) continue;
 			}
-			SPObject parent = SQLPowerUtils.findByUuid(root, removeEntry.getValue(), 
+			SPObject parent = findByUuid(root, removeEntry.getValue(), 
 					SPObject.class);
 			try {
 				List<? extends SPObject> siblings;
@@ -770,6 +808,7 @@ public abstract class SPSessionPersister implements SPPersister {
 						parent.getUUID(), 
 						spo,
 						index));
+				lookupCache.remove(spo.getUUID());
 			} catch (IllegalArgumentException e) {
 				throw new SPPersistenceException(removeEntry.getKey(), e);
 			} catch (ObjectDependentException e) {
@@ -788,7 +827,6 @@ public abstract class SPSessionPersister implements SPPersister {
 	 * @throws SPPersistenceException
 	 */
 	protected void commitObjects() throws SPPersistenceException {
-
 		Collections.sort(persistedObjects, persistedObjectComparator);
 		commitSortedObjects();
 	}
@@ -816,12 +854,14 @@ public abstract class SPSessionPersister implements SPPersister {
 		    logger.debug("Persisting " + pso);
 			if (pso.isLoaded())
 				continue;
-			SPObject parent = SQLPowerUtils.findByUuid(root, pso.getParentUUID(), 
+			SPObject parent = findByUuid(root, pso.getParentUUID(), 
 					SPObject.class);
 			SPObject spo = null;
 			
 			if (parent == null && pso.getType().equals(root.getClass().getName())) {
+				lookupCache.clear();
                 refreshRootNode(pso);
+                lookupCache.clear();
                 continue;
             } else if (parent == null) {
                 throw new IllegalStateException("Missing parent with uuid " + pso.getParentUUID() + 
@@ -931,9 +971,11 @@ public abstract class SPSessionPersister implements SPPersister {
 					new PersistedObjectEntry(
 						parent.getUUID(), 
 						spo.getUUID()));
+				lookupCache.put(spo.getUUID(), spo);
 			}
 		}
 		persistedObjects.clear();
+		persistedObjectsMap.clear();
 	}
 
     /**
@@ -1136,7 +1178,7 @@ public abstract class SPSessionPersister implements SPPersister {
 		Object newValue;
 
 		for (String uuid : persistedProperties.keySet()) {
-			spo = SQLPowerUtils.findByUuid(root, uuid, SPObject.class);
+			spo = findByUuid(root, uuid, SPObject.class);
 			if (spo == null) {
 				throw new IllegalStateException("Couldn't locate object "
 						+ uuid + " in session");
@@ -1182,7 +1224,7 @@ public abstract class SPSessionPersister implements SPPersister {
 			final String parentUuid = entry.getParentUUID();
 			final SPObject objectToRestore = entry.getRemovedChild();
 			final int index = entry.getIndex();
-			final SPObject parent = SQLPowerUtils.findByUuid(root, parentUuid, SPObject.class);
+			final SPObject parent = findByUuid(root, parentUuid, SPObject.class);
 			try {
 				parent.addChild(objectToRestore, index);
 			} catch (Throwable t) {
@@ -1209,7 +1251,7 @@ public abstract class SPSessionPersister implements SPPersister {
 				if (objectCreationRollbackUUIDs.contains(parentUUID)) continue;
 				final String propertyName = entry.getPropertyName();
 				final Object rollbackValue = entry.getRollbackValue();
-				final SPObject parent = SQLPowerUtils.findByUuid(root, parentUUID, SPObject.class);
+				final SPObject parent = findByUuid(root, parentUUID, SPObject.class);
 				if (parent != null) {
 					PersisterHelperFinder.findPersister(parent.getClass()).commitProperty(
 							parent, propertyName, rollbackValue, entry.getPropertyType(), converter);
@@ -1233,9 +1275,9 @@ public abstract class SPSessionPersister implements SPPersister {
 				// We need to verify if the entry specifies a parent.
 				// Root objects don't have parents so we can't remove them really...
 				if (entry.getParentId() != null) {
-					final SPObject parent = SQLPowerUtils.findByUuid(root, 
+					final SPObject parent = findByUuid(root, 
 							entry.getParentId(), SPObject.class);
-					final SPObject child = SQLPowerUtils.findByUuid(root, 
+					final SPObject child = findByUuid(root, 
 							entry.getChildId(), SPObject.class);
 					parent.removeChild(child);
 				}
@@ -1254,12 +1296,8 @@ public abstract class SPSessionPersister implements SPPersister {
 	 * @return Whether or not the {@link SPObject} exists
 	 */
 	private boolean exists(String uuid) {
-        for (PersistedSPObject pso : persistedObjects) {
-            if (uuid.equals(pso.getUUID())) {
-                return true;
-            }
-        }
-        SPObject spo = SQLPowerUtils.findByUuid(root, uuid, SPObject.class);
+		if (persistedObjectsMap.get(uuid) != null) return true;
+        SPObject spo = findByUuid(root, uuid, SPObject.class);
         if (spo != null) {
             List<SPObject> ancestors = SQLPowerUtils.getAncestorList(spo);
             ancestors.add(spo);
@@ -1353,23 +1391,23 @@ public abstract class SPSessionPersister implements SPPersister {
 		// list from objects that do not exist in the root yet.
 		String uuid = child.getParentUUID();
 		PersistedSPObject pso;
-		while ((pso = findPersistedObjectByUUID(uuid)) != null) {
+		while ((pso = persistedObjectsMap.get(uuid)) != null) {
 			resultList.add(0, pso);
 			uuid = pso.getParentUUID();
 		}
 
-		// Iterate through list of existing SPObjects in the root and
-		// build the rest of the ancestor list.
-		SPObject spo = SQLPowerUtils.findByUuid(root, uuid, SPObject.class);
+		SPObject spo = findByUuid(root, uuid, SPObject.class);
+		List<PersistedSPObject> existingAncestorList = new ArrayList<PersistedSPObject>();
 		if (spo != null) {
-			resultList.add(0, createPersistedObjectFromSPObject(spo));
+			existingAncestorList.add(0, createPersistedObjectFromSPObject(spo));
 			List<SPObject> ancestorList = SQLPowerUtils.getAncestorList(spo);
 			Collections.reverse(ancestorList);
 
 			for (SPObject ancestor : ancestorList) {
-				resultList.add(0, createPersistedObjectFromSPObject(ancestor));
+				existingAncestorList.add(0, createPersistedObjectFromSPObject(ancestor));
 			}
 		}
+		resultList.addAll(0, existingAncestorList);
 		
 		return resultList;
 	}
@@ -1396,22 +1434,6 @@ public abstract class SPSessionPersister implements SPPersister {
 		
 		return new PersistedSPObject(parentUUID, spo.getClass().getName(), 
 				spo.getUUID(), index);
-	}
-
-	/**
-	 * Returns an existing {@link PersistedSPObject} in the
-	 * {@link #persistedObjects} list given by the UUID. If it does not exist,
-	 * null is returned.
-	 */
-	private PersistedSPObject findPersistedObjectByUUID(String uuid) {
-		if (uuid != null) {
-			for (PersistedSPObject pso : persistedObjects) {
-				if (uuid.equals(pso.getUUID())) {
-					return pso;
-				}
-			}
-		}
-		return null;
 	}
 
 	public void setWorkspaceContainer(WorkspaceContainer workspaceContainer) {
@@ -1519,5 +1541,21 @@ public abstract class SPSessionPersister implements SPPersister {
 
 		persister.begin();
 		persister.commit();
+	}
+	
+	public <T extends SPObject> T findByUuid(SPObject root, String uuid, Class<T> expectedType) {
+		if (lookupCache.get(uuid) != null) {
+			SPObject foundObject = lookupCache.get(uuid);
+			if (!expectedType.isAssignableFrom(foundObject.getClass())) {
+				throw new IllegalStateException("The object " + foundObject + " is not of type " + 
+						expectedType + " from the cache.");
+			}
+			return expectedType.cast(foundObject);
+		}
+		if (uuid == null || uuid.trim().isEmpty()) return null;
+		
+		T foundObject = SQLPowerUtils.findByUuid(root, uuid, expectedType);
+		lookupCache.put(uuid, foundObject);
+		return foundObject;
 	}
 }

@@ -32,6 +32,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.Format;
 import java.util.List;
+import java.util.Map;
 
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sql.DataSourceCollection;
@@ -48,7 +49,7 @@ import ca.sqlpower.util.SQLPowerUtils;
  */
 public class SessionPersisterSuperConverter {
 	
-	private final SPObjectConverter spObjectConverter;
+	protected final SPObjectConverter spObjectConverter;
 	
 	private final FormatConverter formatConverter = new FormatConverter();
 	
@@ -303,4 +304,12 @@ public class SessionPersisterSuperConverter {
 		}
 	}
 
+	public void setUUIDCache(Map<String, SPObject> lookupCache) {
+		spObjectConverter.setUUIDCache(lookupCache);
+	}
+	
+	public void removeUUIDCache() {
+		spObjectConverter.removeUUIDCache();
+	}
+	
 }

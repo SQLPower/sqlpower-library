@@ -19,6 +19,8 @@
 
 package ca.sqlpower.dao.session;
 
+import java.util.Map;
+
 import org.apache.commons.beanutils.ConversionException;
 
 import ca.sqlpower.object.SPObject;
@@ -36,6 +38,12 @@ public class SPObjectConverter implements BidirectionalConverter<String, SPObjec
 	 * will be searched for the given object by unique id.
 	 */
 	private final SPObject root;
+	
+	/**
+	 * If this cache is not null it will be used to find objects by
+	 * uuid before iterating over the tree of objects.
+	 */
+	private Map<String, SPObject> lookupCache = null;
 
 	public SPObjectConverter(SPObject root) {
 		this.root = root;
@@ -43,11 +51,20 @@ public class SPObjectConverter implements BidirectionalConverter<String, SPObjec
 
 	public SPObject convertToComplexType(String convertFrom)
 			throws ConversionException {
+		if (lookupCache != null && lookupCache.get(convertFrom) != null) return lookupCache.get(convertFrom);
 		return SQLPowerUtils.findByUuid(root, convertFrom, SPObject.class); 
 	}
 
 	public String convertToSimpleType(SPObject convertFrom, Object ... additionalValues) {
 		return convertFrom.getUUID();
+	}
+	
+	public void setUUIDCache(Map<String, SPObject> lookupCache) {
+		this.lookupCache = lookupCache;
+	}
+	
+	public void removeUUIDCache() {
+		this.lookupCache = null;
 	}
 
 }
