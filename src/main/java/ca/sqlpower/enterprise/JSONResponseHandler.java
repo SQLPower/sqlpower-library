@@ -32,6 +32,8 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.springframework.security.AccessDeniedException;
 
+import ca.sqlpower.dao.SPPersistenceException;
+
 public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
     
     private static final Logger logger = Logger.getLogger(JSONResponseHandler.class);
@@ -91,7 +93,7 @@ public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
                             stackTraceMessage.append("\n").append(stackTraceStrings.get(i));
                         }
                         
-                        throw new Exception(stackTraceMessage.toString());
+                        throw new SPPersistenceException(null, stackTraceMessage.toString());
                         
                     } else {
                         // This exception represents a(n epic) client-server miscommunication

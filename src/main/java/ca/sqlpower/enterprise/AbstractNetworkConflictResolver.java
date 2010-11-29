@@ -514,7 +514,17 @@ public abstract class AbstractNetworkConflictResolver extends Thread {
                            }
                        }
                    });
-               } catch (Exception ex) {    
+               } catch (Exception ex) {
+            	   Throwable root = ex;
+            	   while (root != null) {
+            		   if (root instanceof SPPersistenceException) {
+            			   getUserPrompterFactory().createUserPrompter(
+            					   "An exception occurred while updating from the server. See logs for more details.", 
+            					   UserPromptType.MESSAGE, UserPromptOptions.OK, UserPromptResponse.OK, true, "OK").promptUser();
+            			   break;
+            		   }
+            		   root = root.getCause();
+            	   }
                    logger.error("Failed to contact server. Will retry in " + retryDelay + " ms.", ex);
                    Thread.sleep(retryDelay);
                }
@@ -543,7 +553,7 @@ public abstract class AbstractNetworkConflictResolver extends Thread {
         } catch (AccessDeniedException ade) {
             throw new AccessDeniedException("Access Denied");
         } catch (Exception ex) {
-            throw new RuntimeException("Unable to get json from server: " + ex.getMessage());
+            throw new RuntimeException("Unable to get json from server", ex);
         }
     }
     
