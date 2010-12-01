@@ -157,7 +157,7 @@ public class GenericNewValueMaker implements NewValueMaker {
         	}
         } else if (valueType == String.class) {
             // make sure it's unique
-            newVal = "new " + oldVal;
+            newVal = "new" + oldVal;
         } else if (valueType == Boolean.TYPE){
             newVal = new Boolean(! ((Boolean) oldVal).booleanValue());
         } else if (valueType == Boolean.class) {
