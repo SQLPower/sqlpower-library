@@ -840,14 +840,6 @@ public class TestSQLColumn extends BaseSQLObjectTestCase {
     		cannotAddChild = e;
     	}
     	assertNotNull(cannotAddChild);
-    	
-    	Exception cannotRemoveChild = null;
-    	try {
-    		col.removeChild(col.getChildren().get(0));
-    	} catch (Exception e) {
-    		cannotRemoveChild = e;
-    	}
-    	assertNotNull(cannotRemoveChild);
     }
 
     /**
