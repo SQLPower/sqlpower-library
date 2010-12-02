@@ -53,7 +53,7 @@ public abstract class SPLabel extends AbstractSPObject {
 	/**
 	 * The border colour defined for this label.
 	 */
-	private Color borderColour = Color.BLACK;
+	private Color borderColour;
 	
 	/**
 	 * The padding width defined for this label.
