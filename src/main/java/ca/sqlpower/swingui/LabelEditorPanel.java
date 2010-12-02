@@ -88,6 +88,22 @@ public abstract class LabelEditorPanel implements DataEntryPanel {
 	public abstract SPVariableHelper getVariablesHelper();
 	public abstract List<Color> getBackgroundColours();
 	
+	/**
+	 * A constructor with the option to override the panel's initial selections
+	 * (taken from the label's values) with presets. This is useful for newly
+	 * created labels.
+	 */
+	public LabelEditorPanel(SPLabel label, boolean variables, boolean override) {
+		this(label, variables);
+		if (override) {
+			bgIsNull.setSelected(false);
+			borderIsNull.setSelected(false);
+			bdColor.setSelectedIndex(0);
+			bgColor.setSelectedIndex(0);
+			fgColor.setSelectedIndex(0);
+		}
+	}
+	
 	public LabelEditorPanel(SPLabel label, boolean variables) {
 		this.label = label;
 		panel = new JPanel();
