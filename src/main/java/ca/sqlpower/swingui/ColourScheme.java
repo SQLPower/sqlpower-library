@@ -44,7 +44,8 @@ public class ColourScheme {
         new WebColour("#e6d794"),
         new WebColour("#e4e4b8"),
         new WebColour("#dfedce"),
-        new WebColour("#c8dccc")
+        new WebColour("#c8dccc"),
+        new WebColour("#ffffff")
     };
     
     public static final WebColour[] FOREGROUND_COLOURS = {
