@@ -38,5 +38,6 @@
 	<classpathentry exported="true" kind="lib" path="lib/main/apache-mime4j-0.6.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/main/spring-core.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/main/junit-3.8.2.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/commons-httpclient-3.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

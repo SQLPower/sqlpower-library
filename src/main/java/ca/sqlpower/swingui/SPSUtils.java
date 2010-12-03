@@ -20,6 +20,7 @@ import java.awt.event.InputEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -30,11 +31,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Properties;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ActionMap;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.InputMap;
 import javax.swing.JButton;
@@ -61,14 +64,21 @@ import javax.swing.Scrollable;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.BevelBorder;
+import javax.swing.border.Border;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
 
+import net.miginfocom.swing.MigLayout;
+
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.http.params.BasicHttpParams;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.util.BrowserUtil;
 import ca.sqlpower.util.SQLPowerUtils;
+import ca.sqlpower.util.Version;
 
 import com.jgoodies.forms.builder.DefaultFormBuilder;
 import com.jgoodies.forms.layout.FormLayout;
@@ -1369,4 +1379,115 @@ public class SPSUtils {
 
         return convertToHex(sha1hash);
     }
+    
+    /**
+	 * Checks for a newer version of the product.
+	 * 
+	 * @param owner
+	 *            A parent for any dialog we create.
+	 * @param version
+	 *            The current version of the product.
+	 * @param latestVersionUrl
+	 *            A URL to a file location that we can retrieve the latest
+	 *            version of this product from. The URL must return some kind of
+	 *            XML in the body of the response. The XML must contain the
+	 *            following properties.
+	 *            <ul>
+	 *            <li>currentVersion - The latest version of the product that
+	 *            has been released</li>
+	 *            <li>downloadUrl - The location of where to download the latest
+	 *            version</li>
+	 *            <li>releaseNotes - The changes made in the last release</li>
+	 *            </ul>
+	 * @param silent
+	 *            If false the user will be notified if there are no updates
+	 *            available. If true the user will be notified if no updates are
+	 *            available. If there is an update available the user will be
+	 *            notified regardless of this flag.
+	 */
+	public static void checkForUpdate(JFrame owner, String productName, Version version, 
+			String latestVersionUrl, boolean silent, boolean setTimeout) {
+		try {
+			GetMethod request = new GetMethod(latestVersionUrl);
+			if (setTimeout) {
+				BasicHttpParams params = new BasicHttpParams();
+				params.setIntParameter("http.socket.timeout", new Integer(1000));
+			}
+			HttpClient connection = new HttpClient();
+			connection.executeMethod(request);
+
+			final Properties results = new Properties();
+			results.loadFromXML(
+					new ByteArrayInputStream(
+							request.getResponseBody()));
+			
+			Version currentVersion = new Version(
+					results.getProperty("currentVersion"));
+			
+			if (currentVersion.compareTo(version) > 0) {
+				
+				final JDialog dialog = new JDialog(owner, "New " + productName + " version available!");
+				dialog.setAlwaysOnTop(true);
+				dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+				
+				JPanel panel = new JPanel(new MigLayout("fill", "[grow]", "[shrink][grow][shrink]"));
+				dialog.setContentPane(panel);
+				
+				JLabel title = new JLabel("A new version of " + productName + " is available for download.");
+				title.setFont(title.getFont().deriveFont(16f));
+				panel.add(
+						title,
+						"wrap, gapbottom 10px, center");
+				
+				JLabel notes = new JLabel(results.getProperty("releaseNotes"));
+				notes.setBackground(Color.WHITE);
+				notes.setOpaque(true);
+				Border gap = BorderFactory.createEmptyBorder(4, 4, 4, 4);
+			    Border blackline = BorderFactory.createLineBorder(Color.black);
+			    Border compound = BorderFactory.createCompoundBorder(blackline, gap);
+				notes.setBorder(compound);
+				panel.add(notes, "wrap, center, grow");
+				
+				Box buttons = Box.createHorizontalBox();
+				JButton downloadButton = new JButton(new AbstractAction("Download Now") {
+					public void actionPerformed(ActionEvent event) {
+						try {
+							BrowserUtil.launch(results.getProperty("downloadUrl"));
+						} catch (IOException e) {
+							throw new RuntimeException("Error attempting to launch web browser", e);
+						} finally {
+							dialog.dispose();
+						}
+					}
+				});
+				JButton cancelButton = new JButton(new AbstractAction("No thanks") {
+					public void actionPerformed(ActionEvent e) {
+						dialog.dispose();
+					}
+				});
+				buttons.add(downloadButton);
+				buttons.add(cancelButton);
+				panel.add(buttons, "center");
+				
+				dialog.pack();
+				dialog.setLocationRelativeTo(owner);
+				dialog.setVisible(true);
+			} else if (!silent) {
+				JOptionPane.showMessageDialog(
+						owner, 
+						"No updates available.", 
+						"Update checker", 
+						JOptionPane.INFORMATION_MESSAGE);
+			}
+		} catch (Exception ex) {
+			logger.warn("Failed to check for update.", ex);
+			if (!silent) {
+				JOptionPane.showMessageDialog(
+						owner, 
+						"Failed to check for updates. Are you connected to the internet?", 
+						"Update checker", 
+						JOptionPane.INFORMATION_MESSAGE);
+			}
+		}
+	}
 }
