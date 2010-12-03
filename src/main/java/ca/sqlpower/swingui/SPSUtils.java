@@ -41,6 +41,7 @@ import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.InputMap;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
@@ -1379,8 +1380,8 @@ public class SPSUtils {
 
         return convertToHex(sha1hash);
     }
-    
-    /**
+
+	/**
 	 * Checks for a newer version of the product.
 	 * 
 	 * @param owner
@@ -1404,9 +1405,15 @@ public class SPSUtils {
 	 *            available. If true the user will be notified if no updates are
 	 *            available. If there is an update available the user will be
 	 *            notified regardless of this flag.
+	 * @param stopAutoChecking
+	 *            If the user checks the 'stop automatically checking for
+	 *            updates' box and this runnable is not null the runnable will
+	 *            be called to set the necessary parameters to stop the auto
+	 *            check feature when the dialog closes. This value can be null
+	 *            if there is no way to stop the auto check.
 	 */
 	public static void checkForUpdate(JFrame owner, String productName, Version version, 
-			String latestVersionUrl, boolean silent, boolean setTimeout) {
+			String latestVersionUrl, boolean silent, boolean setTimeout, final Runnable stopAutoChecking) {
 		try {
 			GetMethod request = new GetMethod(latestVersionUrl);
 			if (setTimeout) {
@@ -1430,7 +1437,7 @@ public class SPSUtils {
 				dialog.setAlwaysOnTop(true);
 				dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 				
-				JPanel panel = new JPanel(new MigLayout("fill", "[grow]", "[shrink][grow][shrink]"));
+				JPanel panel = new JPanel(new MigLayout("fill", "[grow]", "[shrink][grow][shrink][shrink]"));
 				dialog.setContentPane(panel);
 				
 				JLabel title = new JLabel("A new version of " + productName + " is available for download.");
@@ -1448,6 +1455,11 @@ public class SPSUtils {
 				notes.setBorder(compound);
 				panel.add(notes, "wrap, center, grow");
 				
+				final JCheckBox autoCheckCheckBox = new JCheckBox("Stop automatic updates");
+				if (stopAutoChecking != null) {
+					panel.add(autoCheckCheckBox, "wrap, left");
+				}
+				
 				Box buttons = Box.createHorizontalBox();
 				JButton downloadButton = new JButton(new AbstractAction("Download Now") {
 					public void actionPerformed(ActionEvent event) {
@@ -1457,12 +1469,18 @@ public class SPSUtils {
 							throw new RuntimeException("Error attempting to launch web browser", e);
 						} finally {
 							dialog.dispose();
+							if (stopAutoChecking != null && autoCheckCheckBox.isSelected()) {
+								stopAutoChecking.run();
+							}
 						}
 					}
 				});
 				JButton cancelButton = new JButton(new AbstractAction("No thanks") {
 					public void actionPerformed(ActionEvent e) {
 						dialog.dispose();
+						if (stopAutoChecking != null && autoCheckCheckBox.isSelected()) {
+							stopAutoChecking.run();
+						}
 					}
 				});
 				buttons.add(downloadButton);
