@@ -234,8 +234,8 @@ public abstract class PersisterTest extends TestCase {
 		persister.begin();
 		persister.persistProperty("child", "name", DataType.STRING, "Chart Name", "Another Name");
 		persister.persistProperty("child", "integer", DataType.INTEGER, 42);
-		loadWorkspace();
 		persister.commit();
+		loadWorkspace();
 		assertEquals("Another Name", receivedString);
 		assertEquals(42, receivedInt);
 		
