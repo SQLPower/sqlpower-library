@@ -210,6 +210,15 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	public SPObject getRootObject() {
 		return root;
 	}
+	
+	/**
+	 * This function is here to be overidden in special cases. eg = MungeProcess.
+	 * Since there is a final child of ResultStep and the child type, you need to
+	 * offset the index you add the child add by 1.
+	 */
+	public int getIndexToInsertChildAt() {
+		return 0;
+	}
 
     /**
      * All persistable {@link SPObject} implementations must define a static
@@ -870,10 +879,10 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
     	SPObject newChild = (SPObject) valueMaker.makeNewValue(childClassType, null, "child");
     	newChild.setParent(spObject);
     	
-    	listener.childAdded(new SPChildEvent(spObject, childClassType, newChild, 0, EventType.ADDED));
+    	listener.childAdded(new SPChildEvent(spObject, childClassType, newChild, getIndexToInsertChildAt(), EventType.ADDED));
     	
     	assertEquals(oldChildCount + 1, spObject.getChildren().size());
-    	assertEquals(newChild, spObject.getChildren(childClassType).get(0));
+    	assertEquals(newChild, spObject.getChildren(childClassType).get(getIndexToInsertChildAt()));
     	
     	newChild.removeSPListener(listener);
     	
@@ -903,7 +912,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
     	
     	int childCount = getSPObjectUnderTest().getChildren().size();
     	
-    	listener.childRemoved(new SPChildEvent(getSPObjectUnderTest(), child.getClass(), child, 0, EventType.REMOVED));
+    	listener.childRemoved(new SPChildEvent(getSPObjectUnderTest(), child.getClass(), child, getIndexToInsertChildAt(), EventType.REMOVED));
     	
     	assertEquals(childCount - 1, getSPObjectUnderTest().getChildren().size());
     	assertFalse(getSPObjectUnderTest().getChildren().contains(child));
@@ -972,7 +981,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
     	NewValueMaker valueMaker = createNewValueMaker(root, getPLIni());
     	SPObject newChild = (SPObject) valueMaker.makeNewValue(childClassType, null, "child");
     	
-    	o.addChild(newChild, 0);
+    	o.addChild(newChild, getIndexToInsertChildAt());
     	
     	assertEquals(1, listener.getChildAddedCount());
     }
