@@ -302,9 +302,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
      */
 	protected boolean identifying;
 
-
-	protected String physicalName;
-
     /**
      * This is the text for parent label of relationship.
      */
@@ -319,6 +316,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     	pkCardinality = ONE;
 		fkCardinality = ZERO | ONE | MANY;
 		setName("New SQL Relationship");
+		setPhysicalName("New SQL Relationship");
 		setPopulated(true);
 		foreignKey = new SQLImportedKey(this);
 	}
@@ -337,6 +335,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		pkCardinality = ONE;
 		fkCardinality = ZERO | ONE | MANY;
 		setName("New SQL Relationship");
+		setPhysicalName("New SQL Relationship");
 		setPopulated(true);
         setParent(pkTable);
     }
@@ -1883,7 +1882,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	    return true;
 	}
 
-    public static SQLRelationship createRelationship(SQLTable pkTable, SQLTable fkTable, boolean identifying)
+	public static SQLRelationship createRelationship(SQLTable pkTable, SQLTable fkTable, boolean identifying)
             throws SQLObjectException {
         SQLRelationship model = new SQLRelationship();
         // XXX: need to ensure uniqueness of setName(), but 
@@ -1901,7 +1900,23 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
         	sb.append(fkTable.getPhysicalName());
         }
         sb.append("_fk");
+        boolean ok = false;
+        int i = 0;
+        while(!ok) {
+        	ok = true;
+	        SPObject tableParent = pkTable.getParent();
+	        for(SQLTable tbl : tableParent.getChildren(SQLTable.class)) {
+	        	for(SQLRelationship r : tbl.getChildren(SQLRelationship.class)) {
+	        		if(sb.toString().equals(r.getPhysicalName())) {
+	        			sb.append(i++);
+	        			ok = false;
+	        		}
+	        	}
+	        }
+        }
         model.setName(sb.toString());  //$NON-NLS-1$ //$NON-NLS-2$
+        model.setPhysicalName(sb.toString());  //$NON-NLS-1$ //$NON-NLS-2$
+        model.getForeignKey().setName(sb.toString());
         model.setIdentifying(identifying);
         model.attachRelationship(pkTable,fkTable,true);
         return model;
@@ -1916,8 +1931,8 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     				fkCardinality == rel.fkCardinality &&
     				getFkTable() == rel.getFkTable() &&
     				identifying == rel.identifying &&
-    				((physicalName == null && rel.physicalName == null) || 
-    						physicalName.equals(rel.physicalName)) &&
+    				((getPhysicalName() == null && rel.getPhysicalName() == null) || 
+    						getPhysicalName().equals(rel.getPhysicalName())) &&
     				pkCardinality == rel.pkCardinality &&
     				getParent() == rel.getParent() &&
     				updateRule == rel.updateRule) {
@@ -1935,7 +1950,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     	result = 31 * result + fkCardinality;
     	result = 31 * result + ((foreignKey == null || getFkTable() == null) ? 0 : getFkTable().hashCode());
     	result = 31 * result + (identifying?1:0);
-    	result = 31 * result + (physicalName == null? 0 : physicalName.hashCode());
+    	result = 31 * result + (getPhysicalName() == null? 0 : getPhysicalName().hashCode());
     	result = 31 * result + pkCardinality;
     	result = 31 * result + (getParent() == null? 0 : getParent().hashCode());
     	result = 31 * result + (updateRule == null? 0 : updateRule.hashCode());
