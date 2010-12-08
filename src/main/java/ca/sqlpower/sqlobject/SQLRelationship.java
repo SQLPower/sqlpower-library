@@ -26,9 +26,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -40,10 +42,10 @@ import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
 import ca.sqlpower.object.annotation.ConstructorParameter;
+import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.object.annotation.Mutator;
 import ca.sqlpower.object.annotation.NonProperty;
 import ca.sqlpower.object.annotation.Transient;
-import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import ca.sqlpower.sql.CachedRowSet;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.util.SQLPowerUtils;
@@ -1900,22 +1902,20 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
         	sb.append(fkTable.getPhysicalName());
         }
         sb.append("_fk");
-        boolean ok = false;
-        int i = 0;
-        while(!ok) {
-        	ok = true;
-	        SPObject tableParent = pkTable.getParent();
-	        for(SQLTable tbl : tableParent.getChildren(SQLTable.class)) {
-	        	for(SQLRelationship r : tbl.getChildren(SQLRelationship.class)) {
-	        		if(sb.toString().equals(r.getPhysicalName())) {
-	        			sb.append(i++);
-	        			ok = false;
-	        		}
-	        	}
-	        }
+        Set<String> rel = new HashSet<String>();
+        SPObject tableParent = pkTable.getParent();
+        for(SQLTable tbl : tableParent.getChildren(SQLTable.class)) {
+        	for(SQLRelationship r : tbl.getChildren(SQLRelationship.class)) {
+        		rel.add(r.getPhysicalName());
+        	}
         }
-        model.setName(sb.toString());  //$NON-NLS-1$ //$NON-NLS-2$
-        model.setPhysicalName(sb.toString());  //$NON-NLS-1$ //$NON-NLS-2$
+        int i = 0;
+	    while(rel.contains(sb.toString() + Integer.toString(i))) {
+	    	i++;
+        }
+	    sb.append(i);
+        model.setName(sb.toString());
+        model.setPhysicalName(sb.toString());
         model.getForeignKey().setName(sb.toString());
         model.setIdentifying(identifying);
         model.attachRelationship(pkTable,fkTable,true);
