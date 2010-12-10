@@ -318,7 +318,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     	pkCardinality = ONE;
 		fkCardinality = ZERO | ONE | MANY;
 		setName("New SQL Relationship");
-		setPhysicalName("New SQL Relationship");
 		setPopulated(true);
 		foreignKey = new SQLImportedKey(this);
 	}
@@ -337,7 +336,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		pkCardinality = ONE;
 		fkCardinality = ZERO | ONE | MANY;
 		setName("New SQL Relationship");
-		setPhysicalName("New SQL Relationship");
 		setPopulated(true);
         setParent(pkTable);
     }
@@ -357,6 +355,12 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	public SQLRelationship(SQLRelationship relationshipToCopy) throws SQLObjectException {
 	    this();
 	    updateToMatch(relationshipToCopy);
+	}
+	
+	@Override
+	public void setName(String name) {
+		super.setName(name);
+		setPhysicalName(name);
 	}
 	
 	@Override
@@ -1909,13 +1913,14 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
         		rel.add(r.getPhysicalName());
         	}
         }
-        int i = 0;
-	    while(rel.contains(sb.toString() + Integer.toString(i))) {
-	    	i++;
+        if (rel.contains(sb.toString())) {
+        	int i = 1;
+        	while (rel.contains(sb.toString() + Integer.toString(i))) {
+        		i++;
+        	}
+        	sb.append(i);
         }
-	    sb.append(i);
         model.setName(sb.toString());
-        model.setPhysicalName(sb.toString());
         model.getForeignKey().setName(sb.toString());
         model.setIdentifying(identifying);
         model.attachRelationship(pkTable,fkTable,true);
