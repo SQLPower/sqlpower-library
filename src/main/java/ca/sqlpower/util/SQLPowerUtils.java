@@ -85,25 +85,35 @@ public class SQLPowerUtils {
 	        
 	        if (ch == '\'') {
 				sb.append("&apos;");
-	        }
-	        else if (ch == '"') {
+	        } else if (ch == '"') {
 				sb.append("&quot;");
-	        }
-	        else if (ch == '&') {
+	        } else if (ch == '&') {
 				sb.append("&amp;");
-	        }
-	        else if (ch == '<') {
+	        } else if (ch == '<') {
 				sb.append("&lt;");
-	        }
-	        else if (ch == '>') {
+	        } else if (ch == '>') {
 				sb.append("&gt;");
-	        }
-	        else if (ch == '\n') {
-				sb.append("&amp;crlf;");
-	        }
-	        else {
+	        } else {
 				sb.append(ch);
 			}
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * Escapes newlines because we need to preserve them in remarks and can be used elsewhere.
+	 */
+	public static String escapeNewLines(String src) {
+	    if (src == null) return "";
+		StringBuffer sb = new StringBuffer(src.length()+10);  // arbitrary amount of extra space
+		char ch;
+	    
+		for (int i = 0, n = src.length(); i < n; i++) {
+			ch = src.charAt(i);
+	        
+	        if (ch == '\n') {
+				sb.append("&amp;crlf;");
+	        }
 		}
 		return sb.toString();
 	}

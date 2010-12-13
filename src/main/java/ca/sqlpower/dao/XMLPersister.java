@@ -157,7 +157,7 @@ public class XMLPersister implements SPPersister {
 							+ currentObject.peek() + "]");
 		}
 		if (propertyType != DataType.NULL && newValue != null) {
-			out.print(tab() + "<property name=\"" + SQLPowerUtils.escapeXML(propertyName) + "\" type=\"" + propertyType.toString() + "\"");
+			out.print(tab() + "<property name=\"" + SQLPowerUtils.escapeNewLines(SQLPowerUtils.escapeXML(propertyName)) + "\" type=\"" + propertyType.toString() + "\"");
 			if (propertyType == DataType.PNG_IMG) {
 				try {
 					out.print(" value=\"");
