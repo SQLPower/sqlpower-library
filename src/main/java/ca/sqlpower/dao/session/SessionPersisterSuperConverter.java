@@ -133,6 +133,9 @@ public class SessionPersisterSuperConverter {
 		} else if (convertFrom instanceof Short) {
 			return convertFrom;
 			
+		} else if (convertFrom instanceof Float) {
+			return convertFrom;
+			
 		} else if (convertFrom instanceof BigDecimal) {
 		    return ((BigDecimal) convertFrom).toPlainString();
 		    
@@ -239,6 +242,9 @@ public class SessionPersisterSuperConverter {
 			
 		} else if (Short.class.isAssignableFrom(type)) {
 			return (Short) o;
+			
+		} else if (Float.class.isAssignableFrom(type)) {
+			return (Float) o;
 			
 		} else if (Character.class.isAssignableFrom(type)) {
 			return ((String) o).charAt(0);

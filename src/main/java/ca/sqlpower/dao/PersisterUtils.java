@@ -219,6 +219,8 @@ public class PersisterUtils {
     		return DataType.BOOLEAN;
     	} else if (Double.class.isAssignableFrom(classForDataType)) {
     		return DataType.DOUBLE;
+    	} else if (Float.class.isAssignableFrom(classForDataType)) {
+    		return DataType.FLOAT;
     	} else if (String.class.isAssignableFrom(classForDataType)) {
     		return DataType.STRING;
     	} else if (Image.class.isAssignableFrom(classForDataType)) {

@@ -636,14 +636,29 @@ public class JSONObject {
      * long for a short, it will be clipped.
      *
      * @param key   A key string.
-     * @return      The long value.
+     * @return      The short value.
      * @throws   JSONException if the key is not found or if the value cannot
-     *  be converted to a long.
+     *  be converted to a short.
      */
     public short getShort(String key) throws JSONException {
         Object o = get(key);
         return o instanceof Number ?
                 ((Number)o).shortValue() : (short)getDouble(key);
+    }
+    
+    /**
+     * Get the float value associated with a key. If the number value is too
+     * long for a float, it will be clipped.
+     *
+     * @param key   A key string.
+     * @return      The float value.
+     * @throws   JSONException if the key is not found or if the value cannot
+     *  be converted to a float.
+     */
+    public float getFloat(String key) throws JSONException {
+        Object o = get(key);
+        return o instanceof Number ?
+                ((Number)o).floatValue() : (float)getDouble(key);
     }
 
     /**

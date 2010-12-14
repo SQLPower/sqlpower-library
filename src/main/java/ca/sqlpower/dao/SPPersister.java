@@ -40,6 +40,7 @@ public interface SPPersister {
 		BOOLEAN("Boolean", Boolean.class),
 		SHORT("Short", Short.class),
 		LONG("Long", Long.class),
+		FLOAT("Float", Float.class),
 		
 		/**
 		 * This is an {@link SPObject} reference.
