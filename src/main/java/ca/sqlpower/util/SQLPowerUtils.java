@@ -111,9 +111,7 @@ public class SQLPowerUtils {
 		for (int i = 0, n = src.length(); i < n; i++) {
 			ch = src.charAt(i);
 	        
-	        if (ch == '\n') {
-				sb.append("&amp;crlf;");
-	        }
+	        sb.append(ch == '\n' ? "&amp;crlf;" : ch);
 		}
 		return sb.toString();
 	}
