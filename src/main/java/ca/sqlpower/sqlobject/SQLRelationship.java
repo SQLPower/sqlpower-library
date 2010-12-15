@@ -1926,42 +1926,6 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
         model.attachRelationship(pkTable,fkTable,true);
         return model;
     }
-    
-    @Override
-    public boolean equals(Object obj) {
-    	if (obj instanceof SQLRelationship) {
-    		SQLRelationship rel = (SQLRelationship) obj;
-    		if (deferrability == rel.deferrability &&
-    				deleteRule == rel.deleteRule &&
-    				fkCardinality == rel.fkCardinality &&
-    				getFkTable() == rel.getFkTable() &&
-    				identifying == rel.identifying &&
-    				((getPhysicalName() == null && rel.getPhysicalName() == null) || 
-    						getPhysicalName().equals(rel.getPhysicalName())) &&
-    				pkCardinality == rel.pkCardinality &&
-    				getParent() == rel.getParent() &&
-    				updateRule == rel.updateRule) {
-    			return getChildren().equals(rel.getChildren());
-    		}
-    	}
-    	return false;
-    }
-    
-    @Override
-    public int hashCode() {
-    	int result = 17;
-    	result = 31 * result + (deferrability == null? 0 : deferrability.hashCode());
-    	result = 31 * result + (deleteRule == null? 0 : deleteRule.hashCode());
-    	result = 31 * result + fkCardinality;
-    	result = 31 * result + ((foreignKey == null || getFkTable() == null) ? 0 : getFkTable().hashCode());
-    	result = 31 * result + (identifying?1:0);
-    	result = 31 * result + (getPhysicalName() == null? 0 : getPhysicalName().hashCode());
-    	result = 31 * result + pkCardinality;
-    	result = 31 * result + (getParent() == null? 0 : getParent().hashCode());
-    	result = 31 * result + (updateRule == null? 0 : updateRule.hashCode());
-    	result = 31 * result + getChildren().hashCode();
-    	return result;
-    }
 
     @Mutator
 	public void setTextForParentLabel(String textForParentLabel) {
