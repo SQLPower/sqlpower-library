@@ -185,6 +185,7 @@ public class QueryPen implements MouseState {
 				} else {
 					logger.debug("Rejecting drop of non-SQLTable SQLObject: " + draggedSQLObject);
 					dtde.rejectDrop();
+					return;
 				}
 			}
 			
