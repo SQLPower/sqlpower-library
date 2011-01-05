@@ -389,11 +389,7 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
                 Object o2 = tableModel.getValueAt(row2, column);
                 int comparison = 0;
                 // Define null less than everything, except null.
-                if (o1 instanceof String && "Other Values".equals((String)o1)) {
-                	return 1;
-                } else if (o2 instanceof String && "Other Values".equals((String)o2)) {
-                	return -1;
-            	} else if (o1 == null && o2 == null) {
+                if (o1 == null && o2 == null) {
                     comparison = 0;
                 } else if (o1 == null) {
                     comparison = -1;
