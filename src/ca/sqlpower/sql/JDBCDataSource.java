@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.sql.Connection;
@@ -106,11 +107,16 @@ public class JDBCDataSource extends SPDataSource {
                 location = new URL(URLDecoder.decode(serverBaseURI.toString(), "UTF-8"));
                 
                 location = new URL(location, jarFilePath);
+			} else if (jarFileName.startsWith("file:")) {
+				// this spec has already been turned into a file: url
+				location = new URI(jarFileName).toURL();
             } else {
-                location = new File(jarFileName).toURL();
+            	location = new File(jarFileName).toURI().toURL();
             }
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
         } catch (UnsupportedEncodingException e) {
         	throw new RuntimeException(e);
 		}
