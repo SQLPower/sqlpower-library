@@ -233,7 +233,8 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 	 * Does nothing.
 	 */
 	public void discardChanges() {
-		editDsType(dataSourceType);
+		// really do nothing! 
+		//editDsType(dataSourceType);
 	}
 
     /**
