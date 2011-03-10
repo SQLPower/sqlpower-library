@@ -93,6 +93,9 @@ public class SQLPowerUtils {
 				sb.append("&lt;");
 	        } else if (ch == '>') {
 				sb.append("&gt;");
+	        } else if (ch == 0x03 || ch == 0x1a) {
+	        	logger.info("Stripping out illegal characters from " + src + 
+	        			" as it will cause the XML to fail.");
 	        } else {
 				sb.append(ch);
 			}
