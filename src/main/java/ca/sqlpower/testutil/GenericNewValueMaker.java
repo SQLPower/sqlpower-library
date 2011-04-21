@@ -256,6 +256,10 @@ public class GenericNewValueMaker implements NewValueMaker {
         	mapping.setName("Generated testing mapping");
         	SQLRelationship rel = (SQLRelationship) makeNewValue(SQLRelationship.class, null, "parent of column mapping");
         	rel.addMapping(mapping);
+        	SQLColumn pkCol = (SQLColumn) makeNewValue(SQLColumn.class, null, "pk column");
+        	SQLColumn fkCol = (SQLColumn) makeNewValue(SQLColumn.class, null, "pk column");
+        	mapping.setPkColumn(pkCol);
+        	mapping.setFkColumn(fkCol);
         	newVal = mapping;
         } else if (valueType == SQLRelationship.class) {
         	SQLRelationship rel = new SQLRelationship();

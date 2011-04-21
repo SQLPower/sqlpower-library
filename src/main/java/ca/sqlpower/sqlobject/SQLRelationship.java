@@ -1613,6 +1613,15 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 		 * @see #fkTable
 		 */
 		private String fkColName;
+
+		/**
+		 * A temporary hack to signal that the column mapping is being loaded
+		 * and it should add a reference to the fkColumn when it is set on this
+		 * object to properly complete the loading. It would be better if we
+		 * changed how columns signaled that they had multiple references
+		 * rather than properly maintaining the reference count.
+		 */
+		private boolean loading;
 		
 		/**
 		 * This listener will be attached to the fkTable if the fkTable has not
@@ -1628,10 +1637,17 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 			};
 		};
 
-		@Constructor
 		public ColumnMapping() {
 			setName("Column Mapping");
 			setPopulated(true);
+		}
+		
+		@Constructor
+		public ColumnMapping(@ConstructorParameter(parameterType=ParameterType.PROPERTY, propertyName="pkColumn") SQLColumn pkColumn) {
+			this();
+			setPkColumn(pkColumn);
+			pkColumn.addReference();
+			loading = true;
 		}
 
 		/**
@@ -1688,6 +1704,10 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 				if (fkColumn != null) {
 					setFkTable(null);
 					setFkColName(null);
+				}
+				if (loading) {
+					fkColumn.addReference();
+					loading = false;
 				}
 				commit();
 			} catch (RuntimeException e) {

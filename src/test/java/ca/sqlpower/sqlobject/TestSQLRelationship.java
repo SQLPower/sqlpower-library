@@ -25,11 +25,17 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
+import ca.sqlpower.dao.SPPersisterListener;
+import ca.sqlpower.dao.SPSessionPersister;
 import ca.sqlpower.object.ObjectDependentException;
+import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.SPChildEvent.EventType;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.sqlobject.SQLRelationship.ColumnMapping;
+import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
+import ca.sqlpower.util.TransactionEvent;
 
 
 public class TestSQLRelationship extends BaseSQLObjectTestCase {
@@ -1445,6 +1451,53 @@ public class TestSQLRelationship extends BaseSQLObjectTestCase {
     	}
 
     	
+    }
+
+	/**
+	 * Test to verify loading a relationship that is attached to two columns
+	 * will update the column reference value correctly.
+	 */
+    public void testLoadingRelationshipUpdatesColumnRefCount() throws Exception {
+    	SQLDatabase db = new SQLDatabase();
+    	getRootObject().addChild(db, 0);
+    	
+    	SQLTable pkTable = new SQLTable(db, true);
+    	SQLColumn pkCol = new SQLColumn();
+    	pkTable.addColumn(pkCol, true, 0);
+    	db.addTable(pkTable);
+    	
+    	SQLTable fkTable = new SQLTable(db, true);
+    	SQLColumn fkCol = new SQLColumn();
+    	fkTable.addColumn(fkCol, true, 0);
+    	db.addTable(fkTable);
+    	
+    	assertEquals(1, pkCol.getReferenceCount());
+    	assertEquals(1, fkCol.getReferenceCount());
+    	
+    	SQLRelationship rel = new SQLRelationship();
+    	SQLImportedKey iKey = new SQLImportedKey(rel);
+    	rel.setForeignKey(iKey);
+    	rel.setPopulated(true);
+    	ColumnMapping mapping = new ColumnMapping();
+    	mapping.setPkColumn(pkCol);
+    	mapping.setFkColumn(fkCol);
+    	rel.addMapping(mapping);
+    	iKey.setParent(fkTable);
+    	rel.setMagicEnabled(false);
+    	rel.setParent(pkTable);
+    	rel.setMagicEnabled(true);
+    	
+    	SPSessionPersister persister = new TestingSessionPersister("testPersister", getRootObject(), getConverter());
+    	persister.setWorkspaceContainer(getRootObject().getWorkspaceContainer());
+    	SPPersisterListener listener = new SPPersisterListener(persister, getConverter());
+    	
+    	listener.transactionStarted(TransactionEvent.createStartTransactionEvent(getRootObject(), "Start test transaction"));
+    	listener.childAdded(new SPChildEvent(pkTable, SQLRelationship.class, rel, 0, EventType.ADDED));
+    	listener.childAdded(new SPChildEvent(fkTable, SQLImportedKey.class, iKey, 0, EventType.ADDED));
+    	listener.transactionEnded(TransactionEvent.createEndTransactionEvent(getRootObject(), "Why does the end have a message?"));
+    	
+    	assertEquals(2, pkCol.getReferenceCount());
+    	assertEquals(2, fkCol.getReferenceCount());
     }
     
     @Override
