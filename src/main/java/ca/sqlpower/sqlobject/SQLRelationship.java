@@ -358,6 +358,7 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 	}
 	
 	@Override
+	@Mutator
 	public void setName(String name) {
 		super.setName(name);
 		setPhysicalName(name);
