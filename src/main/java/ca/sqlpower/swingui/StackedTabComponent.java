@@ -25,11 +25,13 @@ import java.awt.Dimension;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
@@ -266,6 +268,42 @@ public class StackedTabComponent extends JComponent {
 		tabs.add(tab);
 		add(tab.tabComponent, "grow 100 0, push 100 0");
 		add(tab.subComponent, "grow 100 100, push 100 100");
+		return tab;
+	}
+
+	/**
+	 * Adds a new tab to the bottom of the stack.
+	 * 
+	 * @param title
+	 *            The label to display on the tab itself.
+	 * @param comp
+	 *            The component to display beneath the tab when the tab is
+	 *            selected.
+	 * @param closeable
+	 *            If not null the tab added will have a close icon displayed
+	 *            when it is hovered over and the action will be run when the
+	 *            close button is clicked. If the action is performed and
+	 *            returns true the tab will be removed from this stacked tab
+	 *            component. If the action returns false the tab will not be
+	 *            removed.
+	 * @return The newly created tab object.
+	 */
+	public StackedTab addTab(String title, Component comp, final Callable<Boolean> closeAction) {
+		final StackedTab tab = addTab(title, comp, closeAction != null);
+		tab.getTabComponent().addMouseListener(new MouseAdapter() {
+            public void mousePressed(MouseEvent e) {
+                if (tab.isCloseable() && tab.closeButtonContains(e.getX(), e.getY())) {
+                    try {
+						if (closeAction.call() && indexOfTab(tab) >= 0) {
+							removeTabAt(indexOfTab(tab));
+							revalidate();
+						}
+					} catch (Exception ex) {
+						throw new RuntimeException(ex);
+					}
+                }
+            }
+        });
 		return tab;
 	}
 	
