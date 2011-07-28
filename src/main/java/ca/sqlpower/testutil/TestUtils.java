@@ -46,24 +46,40 @@ public class TestUtils extends TestCase {
     public static void testPropertiesFireEvents(Object target, Collection<String> propertiesToIgnore, NewValueMaker valueMaker) {
         
     }
-    
-    /**
-     * Sets all the settable properties on the given target object
-     * which are not in the given ignore set.
-     * <p>
-     * XXX This method is taken from Architect's TestUtils class for use with
-     * SQLObjects. To merge these two methods back together a ValueMaker would
-     * need to be passed into the method to allow Architect to specify additional
-     * values for ETL functions and to prevent ETL classes from needing to be in 
-     * the library.
-     * 
-     * @param target The object to change the properties of
-     * @param propertiesToIgnore The properties of target not to modify or read
-     * @return A Map describing the new values of all the non-ignored, readable 
-     * properties in target.
-     */
+
+	/**
+	 * Sets all the settable properties on the given target object which are not
+	 * in the given ignore set.
+	 * 
+	 * @param target
+	 *            The object to change the properties of
+	 * @param propertiesToIgnore
+	 *            The properties of target not to modify or read
+	 * @return A Map describing the new values of all the non-ignored, readable
+	 *         properties in target.
+	 */
     public static Map<String,Object> setAllInterestingProperties(Object target,
     		Set<String> propertiesToIgnore) throws Exception {
+    	return setAllInterestingProperties(target, propertiesToIgnore, 
+    			new GenericNewValueMaker(new SPObjectRoot()));
+    }
+
+	/**
+	 * Sets all the settable properties on the given target object which are not
+	 * in the given ignore set.
+	 * <p>
+	 * TODO merge this with what is in Architect's TestUtils class. This was
+	 * originally refactored out of there.
+	 * 
+	 * @param target
+	 *            The object to change the properties of
+	 * @param propertiesToIgnore
+	 *            The properties of target not to modify or read
+	 * @return A Map describing the new values of all the non-ignored, readable
+	 *         properties in target.
+	 */
+    public static Map<String,Object> setAllInterestingProperties(Object target,
+    		Set<String> propertiesToIgnore, NewValueMaker valueMaker) throws Exception {
     	
     	PropertyDescriptor props[] = PropertyUtils.getPropertyDescriptors(target);
     	for (int i = 0; i < props.length; i++) {
@@ -77,7 +93,6 @@ public class TestUtils extends TestCase {
     				props[i].getWriteMethod() != null &&
     				!propertiesToIgnore.contains(props[i].getName())) {
     		
-    		    NewValueMaker valueMaker = new GenericNewValueMaker(new SPObjectRoot());
     		    Object newVal = valueMaker.makeNewValue(props[i].getPropertyType(), oldVal, props[i].getName());
 
     		    System.out.println("Changing property \""+props[i].getName()+"\" to \""+newVal+"\"");
