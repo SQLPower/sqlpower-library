@@ -43,6 +43,11 @@ import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.TransactionEvent;
 
+/**
+ * 
+ * test commit!
+ *
+ */
 public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoManager {
 
     private static final Logger logger = Logger.getLogger(SQLObjectUndoManager.class);
