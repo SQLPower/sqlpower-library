@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-package ca.sqlpower.sqlobject.undo;
+package ca.sqlpower.object.undo;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -39,7 +39,6 @@ import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPListener;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.sqlobject.SQLDatabase;
-import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.TransactionEvent;
 
@@ -48,15 +47,15 @@ import ca.sqlpower.util.TransactionEvent;
  * test commit!
  *
  */
-public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoManager {
+public class SPObjectUndoManager extends UndoManager implements NotifyingUndoManager {
 
-    private static final Logger logger = Logger.getLogger(SQLObjectUndoManager.class);
+    private static final Logger logger = Logger.getLogger(SPObjectUndoManager.class);
 
     /**
      * Converts received SQLObjectEvents into UndoableEdits, PropertyChangeEvents
      * into specific edits and adds them to an UndoManager.
      */
-    public class SQLObjectUndoableEventAdapter implements SPListener, PropertyChangeListener {
+    public class SPObjectUndoableEventAdapter implements SPListener, PropertyChangeListener {
 
         private final class CompEdit extends CompoundEdit {
 
@@ -105,10 +104,10 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
             
             @Override
             public void undo() throws CannotUndoException {
-                List<SPObject> ancestorList = SQLPowerUtils.getAncestorList(sqlObjectRoot);
+                List<SPObject> ancestorList = SQLPowerUtils.getAncestorList(spObjectRoot);
                 SPObject absoluteRoot;
                 if (ancestorList.isEmpty()) {
-                    absoluteRoot = sqlObjectRoot;
+                    absoluteRoot = spObjectRoot;
                 } else {
                     absoluteRoot = ancestorList.get(0);
                 }
@@ -124,10 +123,10 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
             
             @Override
             public void redo() throws CannotRedoException {
-                List<SPObject> ancestorList = SQLPowerUtils.getAncestorList(sqlObjectRoot);
+                List<SPObject> ancestorList = SQLPowerUtils.getAncestorList(spObjectRoot);
                 SPObject absoluteRoot;
                 if (ancestorList.isEmpty()) {
-                    absoluteRoot = sqlObjectRoot;
+                    absoluteRoot = spObjectRoot;
                 } else {
                     absoluteRoot = ancestorList.get(0);
                 }
@@ -176,7 +175,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
          * constructor has been called to ensure the ancestors are correctly
          * listened to.
          */
-        public SQLObjectUndoableEventAdapter() {
+        public SPObjectUndoableEventAdapter() {
 
             ce = null;
             compoundEditStackCount = 0;
@@ -187,7 +186,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
          * constructor has been called to ensure the ancestors are correctly
          * listened to.
          */
-        public SQLObjectUndoableEventAdapter(boolean addListenerToChildren) {
+        public SPObjectUndoableEventAdapter(boolean addListenerToChildren) {
             this();
             this.addListenerToChildren = addListenerToChildren;
         }
@@ -232,7 +231,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
          * fires a state changed event when a new compound edit is created
          */
         private void compoundGroupStart(String toolTip) {
-            if (SQLObjectUndoManager.this.isUndoOrRedoing())
+            if (SPObjectUndoManager.this.isUndoOrRedoing())
                 return;
             compoundEditStackCount++;
             if (compoundEditStackCount == 1) {
@@ -253,7 +252,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
          *             if there wasn't already a compound edit in progress.
          */
         private void compoundGroupEnd() {
-            if (SQLObjectUndoManager.this.isUndoOrRedoing())
+            if (SPObjectUndoManager.this.isUndoOrRedoing())
                 return;
             if (compoundEditStackCount <= 0) {
                 throw new IllegalStateException("No compound edit in progress");
@@ -274,7 +273,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
             // if we are not in a compound edit
             if (compoundEditStackCount == 0) {
                 if (!loading) {
-                    SQLObjectUndoManager.this.addEdit(undoEdit);
+                    SPObjectUndoManager.this.addEdit(undoEdit);
                 }
             } else {
                 ce.addEdit(undoEdit);
@@ -282,10 +281,10 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
         }
 
         public void childAdded(SPChildEvent e) {
-            if (SQLObjectUndoManager.this.isUndoOrRedoing())
+            if (SPObjectUndoManager.this.isUndoOrRedoing())
                 return;
 
-            addEdit(new SQLObjectChildEdit(e));
+            addEdit(new SPObjectChildEdit(e));
 
             if (addListenerToChildren) {
             	SQLPowerUtils.listenToHierarchy(e.getChild(), this);
@@ -294,17 +293,17 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
         }
 
         public void childRemoved(SPChildEvent e) {
-            if (SQLObjectUndoManager.this.isUndoOrRedoing())
+            if (SPObjectUndoManager.this.isUndoOrRedoing())
                 return;
 
-            addEdit(new SQLObjectChildEdit(e));
+            addEdit(new SPObjectChildEdit(e));
         }
         
         /**
          * XXX This should take an event of a type specific to SPObjects.
          */
         public void propertyChanged(PropertyChangeEvent e) {
-            if (SQLObjectUndoManager.this.isUndoOrRedoing())
+            if (SPObjectUndoManager.this.isUndoOrRedoing())
                 return;
             if (!loading && e.getPropertyName().equals("UUID")) {
                 throw new IllegalStateException("Cannot undo UUID changes. " +
@@ -325,7 +324,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
          * to the undo manager.
          */
         public void propertyChange(PropertyChangeEvent evt) {
-            if (SQLObjectUndoManager.this.isUndoOrRedoing()) {
+            if (SPObjectUndoManager.this.isUndoOrRedoing()) {
                 return;
             }
             if (!loading && evt.getPropertyName().equals("UUID")) {
@@ -348,7 +347,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
                 if (ce.canUndo() && !loading) {
                     if (logger.isDebugEnabled())
                         logger.debug("Adding compound edit " + ce + " to undo manager");
-                    SQLObjectUndoManager.this.addEdit(ce);
+                    SPObjectUndoManager.this.addEdit(ce);
                 } else {
                     if (logger.isDebugEnabled())
                         logger.debug("Compound edit " + ce + " is not undoable so we are not adding it");
@@ -373,7 +372,7 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
         }
     }
 
-    protected final SQLObjectUndoableEventAdapter eventAdapter = new SQLObjectUndoableEventAdapter();
+    protected final SPObjectUndoableEventAdapter eventAdapter = new SPObjectUndoableEventAdapter();
 
     private boolean undoing;
 
@@ -395,16 +394,16 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
      * may be listened to by undo managers that extend this class so this
      * may not be the only 'root'.
      */
-    private final SQLObject sqlObjectRoot;
+    private final SPObject spObjectRoot;
 
-    public SQLObjectUndoManager(SQLObject sqlObjectRoot) {
-        this.sqlObjectRoot = sqlObjectRoot;
-        init(sqlObjectRoot);
+    public SPObjectUndoManager(SPObject objectRoot) {
+        this.spObjectRoot = objectRoot;
+        init(spObjectRoot);
     }
 
-    private final void init(SQLObject sqlObjectRoot) {
-        SQLPowerUtils.listenToHierarchy(sqlObjectRoot, eventAdapter);
-        eventAdapter.attachToObject(sqlObjectRoot);
+    private final void init(SPObject objectRoot) {
+        SQLPowerUtils.listenToHierarchy(objectRoot, eventAdapter);
+        eventAdapter.attachToObject(objectRoot);
     }
 
     /**
@@ -497,11 +496,11 @@ public class SQLObjectUndoManager extends UndoManager implements NotifyingUndoMa
     }
 
     /**
-     * Returns the event adapter for SQLObjects and compound events. This
+     * Returns the event adapter for SPObjects and compound events. This
      * is an implementation detail specific to undo/redo on the relational
      * play pen, and it will be going away soon.
      */
-    public SQLObjectUndoableEventAdapter getEventAdapter() {
+    public SPObjectUndoableEventAdapter getEventAdapter() {
         return eventAdapter;
     }
 

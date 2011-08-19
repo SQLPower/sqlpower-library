@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
-package ca.sqlpower.sqlobject.undo;
+package ca.sqlpower.object.undo;
 
 import javax.swing.undo.AbstractUndoableEdit;
 import javax.swing.undo.CannotRedoException;
@@ -35,19 +35,16 @@ import ca.sqlpower.sqlobject.SQLTable;
 
 /**
  * This is an edit for SPObject events involving children.
- * <p>
- * TODO This class requires a rename to be SPObjectChildEdit but Luc
- * demands no more API changes for today.
  */
-public class SQLObjectChildEdit extends AbstractUndoableEdit {
+public class SPObjectChildEdit extends AbstractUndoableEdit {
 
 	private static final Logger logger = Logger
-			.getLogger(SQLObjectChildEdit.class);
+			.getLogger(SPObjectChildEdit.class);
 	
 	protected final SPChildEvent e;
 	protected String toolTip;
 	
-	public SQLObjectChildEdit(SPChildEvent e) {
+	public SPObjectChildEdit(SPChildEvent e) {
 		super();
 		this.e = e;
 		createToolTip();

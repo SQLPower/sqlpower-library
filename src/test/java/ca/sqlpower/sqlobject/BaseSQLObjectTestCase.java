@@ -33,12 +33,12 @@ import org.apache.commons.beanutils.PropertyUtils;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.PersistedSPObjectTest;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.undo.SPObjectUndoManager;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sql.SPDataSource;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.BasicSQLType;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
-import ca.sqlpower.sqlobject.undo.SQLObjectUndoManager;
 import ca.sqlpower.testutil.GenericNewValueMaker;
 import ca.sqlpower.testutil.MockJDBCDriver;
 import ca.sqlpower.testutil.NewValueMaker;
@@ -319,7 +319,7 @@ public abstract class BaseSQLObjectTestCase extends PersistedSPObjectTest {
 			propertiesToIgnoreForUndo.add("name");
 		}
 		
-		SQLObjectUndoManager undoManager= new SQLObjectUndoManager(so);
+		SPObjectUndoManager undoManager= new SPObjectUndoManager(so);
 		List<PropertyDescriptor> settableProperties;
 		settableProperties = Arrays.asList(PropertyUtils.getPropertyDescriptors(so.getClass()));
 		if(so instanceof SQLDatabase)

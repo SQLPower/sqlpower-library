@@ -22,7 +22,7 @@ import java.beans.PropertyChangeEvent;
 
 import ca.sqlpower.object.AbstractPoolingSPListener;
 import ca.sqlpower.object.SPChildEvent;
-import ca.sqlpower.sqlobject.undo.CompoundEvent;
+import ca.sqlpower.object.undo.CompoundEvent;
 import ca.sqlpower.util.TransactionEvent;
 
 public class CountingCompoundEventListener extends AbstractPoolingSPListener {

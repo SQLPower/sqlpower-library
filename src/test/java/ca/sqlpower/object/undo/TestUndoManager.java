@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
-package ca.sqlpower.sqlobject.undo;
+package ca.sqlpower.object.undo;
 
 import java.beans.PropertyChangeEvent;
 import java.sql.Types;
@@ -28,6 +28,8 @@ import javax.swing.undo.CompoundEdit;
 import javax.swing.undo.UndoableEdit;
 
 import junit.framework.TestCase;
+import ca.sqlpower.object.undo.SPObjectUndoManager;
+import ca.sqlpower.object.undo.SPObjectUndoManager.SPObjectUndoableEventAdapter;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLObjectException;
@@ -36,7 +38,6 @@ import ca.sqlpower.sqlobject.SQLRelationship;
 import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.StubSQLObject;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
-import ca.sqlpower.sqlobject.undo.SQLObjectUndoManager.SQLObjectUndoableEventAdapter;
 import ca.sqlpower.util.TransactionEvent;
 
 public class TestUndoManager extends TestCase {
@@ -52,7 +53,7 @@ public class TestUndoManager extends TestCase {
 
     }
 
-	SQLObjectUndoManager undoManager;
+	SPObjectUndoManager undoManager;
 	SQLTable fkTable;
 	SQLTable pkTable;
 	
@@ -67,7 +68,7 @@ public class TestUndoManager extends TestCase {
 		pkTable = new SQLTable(db,true);
 		pkTable.setName("parent");
 		root.addChild(pkTable);
-		undoManager = new SQLObjectUndoManager(root);
+		undoManager = new SPObjectUndoManager(root);
 		pkTable.begin("Setting up test");
 		pkTable.addColumn(new SQLColumn());
 		pkTable.addColumn(new SQLColumn());
@@ -144,7 +145,7 @@ public class TestUndoManager extends TestCase {
      */
     public void testCompoundEditsUndoInCorrectOrder() {
         UndoTester myTester = new UndoTester();
-        SQLObjectUndoableEventAdapter adapter = undoManager.getEventAdapter();
+        SPObjectUndoableEventAdapter adapter = undoManager.getEventAdapter();
         myTester.addSPListener(adapter);
         myTester.begin("Test Compound undo");
         adapter.propertyChanged(

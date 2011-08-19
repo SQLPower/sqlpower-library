@@ -16,32 +16,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
-package ca.sqlpower.sqlobject.undo;
+package ca.sqlpower.object.undo;
 
+import java.util.EventListener;
 
-public class CompoundEvent {
+import ca.sqlpower.util.TransactionEvent;
 
-	public enum EventTypes {
-		COMPOUND_EDIT_START,COMPOUND_EDIT_END;
-		
-		public boolean isStartEvent() {
-			return (this == COMPOUND_EDIT_START);
-		}
-	}
-	
-	private EventTypes type;
-	private String message;
-	
-	public CompoundEvent(EventTypes id, String message) {
-		this.message = message;
-		this.type = id;
-	}
+public interface CompoundEventListener extends EventListener {
 
-	public EventTypes getType() {
-		return type;
-	}
-	
-	public String getMessage() {
-		return message;
-	}
+	public void transactionStarted(TransactionEvent e);
+	public void transactionEnded(TransactionEvent e);
+
 }

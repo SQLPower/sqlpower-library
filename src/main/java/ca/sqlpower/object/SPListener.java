@@ -21,7 +21,7 @@ package ca.sqlpower.object;
 
 import java.beans.PropertyChangeEvent;
 
-import ca.sqlpower.sqlobject.undo.CompoundEventListener;
+import ca.sqlpower.object.undo.CompoundEventListener;
 import ca.sqlpower.util.TransactionEvent;
 
 /**

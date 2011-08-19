@@ -38,12 +38,12 @@ import org.apache.commons.beanutils.BeanUtils;
 import ca.sqlpower.object.AbstractPoolingSPListener;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPObject;
+import ca.sqlpower.object.undo.CompoundEvent;
 import ca.sqlpower.sql.JDBCDataSource;
 import ca.sqlpower.sqlobject.SQLIndex.AscendDescend;
 import ca.sqlpower.sqlobject.SQLIndex.Column;
 import ca.sqlpower.sqlobject.SQLTable.TransferStyles;
 import ca.sqlpower.sqlobject.TestSQLTable.EventLogger.SQLObjectSnapshot;
-import ca.sqlpower.sqlobject.undo.CompoundEvent;
 import ca.sqlpower.testutil.MockJDBCDriver;
 import ca.sqlpower.util.SQLPowerUtils;
 

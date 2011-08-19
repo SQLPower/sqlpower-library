@@ -17,13 +17,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-package ca.sqlpower.sqlobject.undo;
+package ca.sqlpower.object.undo;
 
 import javax.swing.undo.CompoundEdit;
 
 import junit.framework.TestCase;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPChildEvent.EventType;
+import ca.sqlpower.object.undo.SPObjectChildEdit;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.sqlobject.StubSQLObject;
@@ -49,7 +50,7 @@ public class SQLObjectChildrenTest extends TestCase {
     	SQLColumn col = new SQLColumn();
     	col.setName("cow");
     	
-    	SQLObjectChildEdit edit = new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, col, 0, EventType.ADDED));
+    	SPObjectChildEdit edit = new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, col, 0, EventType.ADDED));
     	edit.addChild();
     	
     	assertEquals(childCount + 1, table.getChildCount());
@@ -64,31 +65,31 @@ public class SQLObjectChildrenTest extends TestCase {
     	
         SQLColumn column1 = new SQLColumn();
         column1.setName("cow");
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column1, 0, EventType.ADDED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column1, 0, EventType.ADDED)));
         
         SQLColumn column2 = new SQLColumn();
         column2.setName("chicken");
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column2, 1, EventType.ADDED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column2, 1, EventType.ADDED)));
         
         SQLColumn column3 = new SQLColumn();
         column3.setName("fish");
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column3, 2, EventType.ADDED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column3, 2, EventType.ADDED)));
         
         SQLColumn column4 = new SQLColumn();
         column4.setName("sheep");
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column4, 3, EventType.ADDED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column4, 3, EventType.ADDED)));
         
         SQLColumn column5 = new SQLColumn();
         column5.setName("dog");
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column5, 4, EventType.ADDED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column5, 4, EventType.ADDED)));
         
         SQLColumn column6 = new SQLColumn();
         column6.setName("cat");
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column6, 5, EventType.ADDED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column6, 5, EventType.ADDED)));
         
         SQLColumn column7 = new SQLColumn();
         column7.setName("bear");
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column7, 6, EventType.ADDED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column7, 6, EventType.ADDED)));
         transaction.redo();
         
         assertEquals(childCount + 7, table.getChildCount());
@@ -103,7 +104,7 @@ public class SQLObjectChildrenTest extends TestCase {
     	SQLColumn col = new SQLColumn();
     	col.setName("cow");
     	
-    	SQLObjectChildEdit edit = new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, col, 0, EventType.ADDED));
+    	SPObjectChildEdit edit = new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, col, 0, EventType.ADDED));
     	edit.addChild();
     	
     	assertEquals(childCount + 1, table.getChildCount());
@@ -122,36 +123,36 @@ public class SQLObjectChildrenTest extends TestCase {
     	
         SQLColumn column1 = new SQLColumn();
         column1.setName("cow");
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column1, 0, EventType.ADDED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column1, 0, EventType.ADDED)));
         
         SQLColumn column2 = new SQLColumn();
         column2.setName("chicken");
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column2, 1, EventType.ADDED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column2, 1, EventType.ADDED)));
         
         SQLColumn column3 = new SQLColumn();
         column3.setName("fish");
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column3, 2, EventType.ADDED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column3, 2, EventType.ADDED)));
         
         SQLColumn column4 = new SQLColumn();
         column4.setName("sheep");
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column4, 3, EventType.ADDED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column4, 3, EventType.ADDED)));
         
         SQLColumn column5 = new SQLColumn();
         column5.setName("dog");
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column5, 4, EventType.ADDED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column5, 4, EventType.ADDED)));
         
         SQLColumn column6 = new SQLColumn();
         column6.setName("cat");
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column6, 5, EventType.ADDED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column6, 5, EventType.ADDED)));
         
         SQLColumn column7 = new SQLColumn();
         column7.setName("bear");
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column7, 6, EventType.ADDED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column7, 6, EventType.ADDED)));
         
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column2, 1, EventType.REMOVED)));
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column3, 1, EventType.REMOVED)));
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column6, 3, EventType.REMOVED)));
-        transaction.addEdit(new SQLObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column7, 3, EventType.REMOVED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column2, 1, EventType.REMOVED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column3, 1, EventType.REMOVED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column6, 3, EventType.REMOVED)));
+        transaction.addEdit(new SPObjectChildEdit(new SPChildEvent(table, SQLColumn.class, column7, 3, EventType.REMOVED)));
         
         transaction.redo();
         

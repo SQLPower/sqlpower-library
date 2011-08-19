@@ -16,12 +16,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
-package ca.sqlpower.sqlobject.undo;
+package ca.sqlpower.object.undo;
 
 import junit.framework.TestCase;
 import ca.sqlpower.object.SPChildEvent;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.SPChildEvent.EventType;
+import ca.sqlpower.object.undo.SPObjectChildEdit;
+import ca.sqlpower.object.undo.SPObjectUndoManager;
 import ca.sqlpower.sqlobject.SQLColumn;
 import ca.sqlpower.sqlobject.SQLDatabase;
 import ca.sqlpower.sqlobject.SQLIndex;
@@ -50,7 +52,7 @@ public class TestSQLObjectChildrenInsert extends TestCase {
 		
 		// setup a playpen like database
 		SQLDatabase db = new SQLDatabase();
-		SQLObjectUndoManager undoManager = new SQLObjectUndoManager(db);
+		SPObjectUndoManager undoManager = new SPObjectUndoManager(db);
 		db.setPlayPenDatabase(true);
 		SQLTable table1 = new SQLTable(db,"table1","remark1","TABLE",true);
 		SQLTable table2 = new SQLTable(db,"table2","remark2","TABLE",true);
@@ -82,7 +84,7 @@ public class TestSQLObjectChildrenInsert extends TestCase {
         StubSQLObject child = new StubSQLObject();
         parent.addChild(child);
         SPChildEvent evt = new SPChildEvent(parent, StubSQLObject.class, child, 0, EventType.ADDED);
-        SQLObjectChildEdit edit = new SQLObjectChildEdit(evt);
+        SPObjectChildEdit edit = new SPObjectChildEdit(evt);
         assertEquals("Add child", edit.getPresentationName());
     }
 
@@ -91,7 +93,7 @@ public class TestSQLObjectChildrenInsert extends TestCase {
         SQLTable child = new SQLTable();
         parent.addChild(child);
         SPChildEvent evt = new SPChildEvent(parent, SQLTable.class, child, 0, EventType.ADDED);
-        SQLObjectChildEdit edit = new SQLObjectChildEdit(evt);
+        SPObjectChildEdit edit = new SPObjectChildEdit(evt);
         assertEquals("Add table", edit.getPresentationName());
     }
     
@@ -101,7 +103,7 @@ public class TestSQLObjectChildrenInsert extends TestCase {
         SQLColumn child = new SQLColumn();
         table.addChild(child);
         SPChildEvent evt = new SPChildEvent(parent, SQLColumn.class, child, 0, EventType.ADDED);
-        SQLObjectChildEdit edit = new SQLObjectChildEdit(evt);
+        SPObjectChildEdit edit = new SPObjectChildEdit(evt);
         assertEquals("Add column", edit.getPresentationName());
     }
     
@@ -115,7 +117,7 @@ public class TestSQLObjectChildrenInsert extends TestCase {
         };
         parent.addChild(child);
         SPChildEvent evt = new SPChildEvent(parent, SQLIndex.class, child, 0, EventType.ADDED);
-        SQLObjectChildEdit edit = new SQLObjectChildEdit(evt);
+        SPObjectChildEdit edit = new SPObjectChildEdit(evt);
         assertEquals("Add index", edit.getPresentationName());
     }
     
@@ -124,7 +126,7 @@ public class TestSQLObjectChildrenInsert extends TestCase {
         SQLRelationship child = makeSQLRelationship();
         parent.addChild(child);
         SPChildEvent evt = new SPChildEvent(parent, SQLRelationship.class, child, 0, EventType.ADDED);
-        SQLObjectChildEdit edit = new SQLObjectChildEdit(evt);
+        SPObjectChildEdit edit = new SPObjectChildEdit(evt);
         assertEquals("Add relationship", edit.getPresentationName());
     }
     

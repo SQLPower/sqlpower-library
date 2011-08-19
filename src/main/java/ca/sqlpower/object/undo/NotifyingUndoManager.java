@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-package ca.sqlpower.sqlobject.undo;
+package ca.sqlpower.object.undo;
 
 import javax.swing.event.ChangeListener;
 import javax.swing.undo.CannotUndoException;

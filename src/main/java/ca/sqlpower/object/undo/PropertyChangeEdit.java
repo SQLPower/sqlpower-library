@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-package ca.sqlpower.sqlobject.undo;
+package ca.sqlpower.object.undo;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyDescriptor;
@@ -29,8 +29,6 @@ import javax.swing.undo.CannotUndoException;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.log4j.Logger;
-
-import ca.sqlpower.object.SPObject;
 
 /**
  * This is the generic edit class that dynamically modifies bean properties

@@ -16,22 +16,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
-package ca.sqlpower.sqlobject.undo;
+package ca.sqlpower.object.undo;
 
 import junit.framework.TestCase;
+import ca.sqlpower.object.undo.SPObjectUndoManager;
 import ca.sqlpower.sqlobject.StubSQLObject;
 
 
 public class ArchitectPropertyChangeUndoableEditTest extends TestCase {
     
-	private SQLObjectUndoManager undoManager;
+	private SPObjectUndoManager undoManager;
 	
 	private TestSQLObject testObject;
 	
 	protected void setUp() throws Exception {
 		super.setUp();
 		testObject = new TestSQLObject();
-		undoManager = new SQLObjectUndoManager(testObject);
+		undoManager = new SPObjectUndoManager(testObject);
 		
 	}
 
