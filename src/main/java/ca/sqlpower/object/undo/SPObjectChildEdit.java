@@ -141,6 +141,8 @@ public class SPObjectChildEdit extends AbstractUndoableEdit {
 				toolTip = "Remove column";
 			} else if (e.getChild() instanceof SQLRelationship) {
 				toolTip = "Remove relation";
+			} else {
+				toolTip = "Remove child";
 			}
 		}
 	}
