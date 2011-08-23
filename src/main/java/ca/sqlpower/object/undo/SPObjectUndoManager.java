@@ -44,7 +44,6 @@ import ca.sqlpower.util.TransactionEvent;
 
 /**
  * 
- * test commit!
  *
  */
 public class SPObjectUndoManager extends UndoManager implements NotifyingUndoManager {
