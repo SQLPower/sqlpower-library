@@ -41,13 +41,25 @@ public abstract class DatabaseConnectedTestCase extends TestCase {
 
     private DataSourceCollection<SPDataSource> plini = new PlDotIni();
     protected SQLDatabase db;
-
+    
+    /**
+     * If set to false the database will not be setup and left as null.
+     * This is for products that don't connect to databases. (Mainly our
+     * XBRL stuff.)
+     */
+    protected final boolean setupDB;
+    
     public DatabaseConnectedTestCase() {
-        super();
+        this("", true);
+    }
+
+    public DatabaseConnectedTestCase(String name, boolean setupDB) {
+        super(name);
+		this.setupDB = setupDB;
     }
     
     public DatabaseConnectedTestCase(String name) {
-        super(name);
+        this(name, true);
     }
     
     /**
@@ -75,26 +87,33 @@ public abstract class DatabaseConnectedTestCase extends TestCase {
      */
     @Override
     protected void setUp() throws Exception {
-        db = new SQLDatabase(new JDBCDataSource(getJDBCDataSource()));
-        db.setParent(new StubSQLObject());
-        assertNotNull(db.getDataSource().getParentType());
+    	if (setupDB) {
+    		db = new SQLDatabase(new JDBCDataSource(getJDBCDataSource()));
+    		db.setParent(new StubSQLObject());
+    		assertNotNull(db.getDataSource().getParentType());
+    	} else {
+    		db = null;
+    		plini = null;
+    	}
     }
     
     @Override
     protected void tearDown() throws Exception {
-        try {
-            sqlx("SHUTDOWN");
-            db.disconnect();
-            db = null;
-        } catch (Exception ex) {
-            System.err.println("Shutdown failed. Test case probably modified the database connection! Retrying...");
-            DataSourceCollection<SPDataSource> dscol = new PlDotIni();
-            dscol.read(new File("pl.regression.ini"));
-            db.setDataSource(dscol.getDataSource("regression_test", JDBCDataSource.class));
-            sqlx("SHUTDOWN");
-            db.disconnect();
-            db = null;
-        }
+    	if (setupDB) {
+    		try {
+    			sqlx("SHUTDOWN");
+    			db.disconnect();
+    			db = null;
+    		} catch (Exception ex) {
+    			System.err.println("Shutdown failed. Test case probably modified the database connection! Retrying...");
+    			DataSourceCollection<SPDataSource> dscol = new PlDotIni();
+    			dscol.read(new File("pl.regression.ini"));
+    			db.setDataSource(dscol.getDataSource("regression_test", JDBCDataSource.class));
+    			sqlx("SHUTDOWN");
+    			db.disconnect();
+    			db = null;
+    		}
+    	}
     }
 
     public SQLDatabase getDb() {

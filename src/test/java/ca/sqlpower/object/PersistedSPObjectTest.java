@@ -162,6 +162,10 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		super(name);
 	}
 	
+	public PersistedSPObjectTest(String name, boolean setupDB) {
+		super(name, setupDB);
+	}
+	
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
@@ -176,7 +180,9 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		root.setParent(stub.getWorkspace());
 		SQLObjectRoot sqlRoot = new SQLObjectRoot();
 		root.addChild(sqlRoot, 0);
-		sqlRoot.addDatabase(db, 0);
+		if (setupDB) {
+			sqlRoot.addDatabase(db, 0);
+		}
 		
 		converter = new SessionPersisterSuperConverter(
 				getPLIni(), root);
