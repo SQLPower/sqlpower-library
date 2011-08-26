@@ -156,7 +156,7 @@ public class SessionPersisterSuperConverter {
 		    String s = new String(new char[]{c.charValue()});
 		    return s;
 			
-		} else if (convertFrom.getClass().isEnum()) {
+		} else if (convertFrom.getClass().isEnum() || (convertFrom.getClass().isAnonymousClass() && convertFrom.getClass().getSuperclass().isEnum())) {
 			return new EnumConverter(convertFrom.getClass()).convertToSimpleType((Enum) convertFrom);
 			
 		} else if (convertFrom instanceof JDBCDataSource) {
