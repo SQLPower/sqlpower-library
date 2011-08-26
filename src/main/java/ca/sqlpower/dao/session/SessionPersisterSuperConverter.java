@@ -265,7 +265,11 @@ public class SessionPersisterSuperConverter {
 		    return Date.valueOf((String) o);
 			
 		} else if (Enum.class.isAssignableFrom(type)) {
-			return new EnumConverter(type).convertToComplexType((String) o);
+			if (type.isAnonymousClass() && Enum.class.isAssignableFrom(type.getSuperclass())) {
+				return new EnumConverter(type.getSuperclass()).convertToComplexType((String) o);
+			} else {
+				return new EnumConverter(type).convertToComplexType((String) o);
+			}
 			
 		} else if (JDBCDataSource.class.isAssignableFrom(type)) {
 			if (((String) o).equals("PlayPen Database")) {
