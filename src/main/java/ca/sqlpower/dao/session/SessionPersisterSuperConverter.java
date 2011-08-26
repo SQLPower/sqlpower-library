@@ -32,6 +32,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.Format;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import ca.sqlpower.object.SPObject;
@@ -70,6 +71,8 @@ public class SessionPersisterSuperConverter {
 	private final FileConverter fileConverter = new FileConverter();
 	
 	private final ListConverter listConverter = new ListConverter();
+	
+	private final LocaleConverter localeConverter = new LocaleConverter();
 	
 	protected final DataSourceCollection <JDBCDataSource> dsCollection;
 
@@ -200,6 +203,8 @@ public class SessionPersisterSuperConverter {
 		    return exceptionString;
 		} else if (convertFrom instanceof List<?>) {
 			return listConverter.convertToSimpleType((List<Object>)convertFrom);
+		} else if (convertFrom instanceof Locale) {
+			return localeConverter.convertToSimpleType((Locale) convertFrom);
 		} else {
 		    throw new IllegalArgumentException("Cannot convert " + convertFrom + " of type " + 
 		            convertFrom.getClass());
@@ -308,6 +313,8 @@ public class SessionPersisterSuperConverter {
             return new Exception((String) o);
         } else if (List.class.isAssignableFrom(type)) {
         	return listConverter.convertToComplexType((String) o);
+        } else if (Locale.class.isAssignableFrom(type)) {
+        	return localeConverter.convertToComplexType((String) o);
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + o + " of type " + 
 					o.getClass() + " to the type " + type);
