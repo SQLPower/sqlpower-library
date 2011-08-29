@@ -20,6 +20,7 @@
 package ca.sqlpower.dao;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.json.JSONArray;
@@ -36,23 +37,23 @@ public class JsonMessageSender implements MessageSender<JSONObject> {
         jsonObjects = new ArrayList<JSONObject>();
     }
     
-    public void clear() {
+    public synchronized void clear() {
         jsonObjects.clear();
     }
 
-    public void flush() throws SPPersistenceException {
+    public synchronized void flush() throws SPPersistenceException {
         // no-op
     }
 
-    public void send(JSONObject content) throws SPPersistenceException {
+    public synchronized void send(JSONObject content) throws SPPersistenceException {
         jsonObjects.add(content);
     }
     
-    public List<JSONObject> getJsonObjects() {
-        return jsonObjects;
+    public synchronized List<JSONObject> getJsonObjects() {
+        return Collections.unmodifiableList(jsonObjects);
     }
     
-    public JSONArray getJsonArray() {
+    public synchronized JSONArray getJsonArray() {
         JSONArray jsonArray = new JSONArray();
         for (JSONObject object : jsonObjects) {
             jsonArray.put(object);
@@ -60,7 +61,7 @@ public class JsonMessageSender implements MessageSender<JSONObject> {
         return jsonArray;
     }
 
-    public String getJsonString() {
+    public synchronized String getJsonString() {
         return getJsonArray().toString();
     }
     
