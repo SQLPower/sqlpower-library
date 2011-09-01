@@ -60,6 +60,12 @@ public class JsonMessageSender implements MessageSender<JSONObject> {
         }
         return jsonArray;
     }
+    
+    public synchronized JSONArray getAndClear() {
+    	JSONArray jsonArray = getJsonArray();
+    	clear();
+    	return jsonArray;
+    }
 
     public synchronized String getJsonString() {
         return getJsonArray().toString();
