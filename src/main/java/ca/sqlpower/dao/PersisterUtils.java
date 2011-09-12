@@ -320,6 +320,15 @@ public class PersisterUtils {
         }
         return null;
     }
+    
+    /**
+     * A way to get the allowed child list from a class object that is an SPObject.
+     */
+    @SuppressWarnings("unchecked")
+    public static List<Class<? extends SPObject>> getAllowedChildTypes(Class<? extends SPObject> parentClass) 
+    		throws IllegalArgumentException, SecurityException, IllegalAccessException, NoSuchFieldException {
+		return (List<Class<? extends SPObject>>) parentClass.getDeclaredField("allowedChildTypes").get(null);
+    }
 
     /**
      * Returns true if there is a boolean property persisted on the given UUID
