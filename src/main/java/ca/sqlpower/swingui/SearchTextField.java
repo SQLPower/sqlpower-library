@@ -77,7 +77,7 @@ public class SearchTextField {
 	 * The search object that doSearch will be called on every time the search text
 	 * changes.
 	 */
-	private Search search;
+	private final Search search;
 	
 	/**
 	 * This JLabel can be clicked on to display a pop-up to change how the search is
@@ -204,7 +204,4 @@ public class SearchTextField {
 		return new ComposedIcon(Arrays.asList(new Icon[]{baseIcon, DOWN_ARROW_ICON}));
 	}
 
-	public void setSearch(Search search) {
-		this.search = search;
-	}
 }
