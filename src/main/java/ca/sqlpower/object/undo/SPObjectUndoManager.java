@@ -294,6 +294,10 @@ public class SPObjectUndoManager extends UndoManager implements NotifyingUndoMan
         public void childRemoved(SPChildEvent e) {
             if (SPObjectUndoManager.this.isUndoOrRedoing())
                 return;
+            
+            if (addListenerToChildren) {
+            	SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
+            }
 
             addEdit(new SPObjectChildEdit(e));
         }
