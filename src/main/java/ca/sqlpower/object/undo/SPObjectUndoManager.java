@@ -169,6 +169,13 @@ public class SPObjectUndoManager extends UndoManager implements NotifyingUndoMan
          */
         protected boolean addListenerToChildren = true;
 
+		/**
+		 * If we are in a compound edit the removed objects will be stored here
+		 * so this listener can be removed from the objects when the transaction
+		 * completes.
+		 */
+        private final List<SPObject> removedObjects = new ArrayList<SPObject>();
+
         /**
          * {@link #attachToObject(SPObject)} must be called after this
          * constructor has been called to ensure the ancestors are correctly
@@ -287,6 +294,7 @@ public class SPObjectUndoManager extends UndoManager implements NotifyingUndoMan
 
             if (addListenerToChildren) {
             	SQLPowerUtils.listenToHierarchy(e.getChild(), this);
+            	removedObjects.remove(e.getChild());
             }
 
         }
@@ -296,7 +304,11 @@ public class SPObjectUndoManager extends UndoManager implements NotifyingUndoMan
                 return;
             
             if (addListenerToChildren) {
-            	SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
+            	if (compoundEditStackCount == 0) {
+            		SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
+            	} else {
+            		removedObjects.add(e.getChild());
+            	}
             }
 
             addEdit(new SPObjectChildEdit(e));
@@ -346,6 +358,10 @@ public class SPObjectUndoManager extends UndoManager implements NotifyingUndoMan
                 throw new IllegalStateException("The compound edit stack (" + compoundEditStackCount + ") should be 0");
             }
             if (ce != null) {
+            	for (SPObject removedChild : removedObjects) {
+            		removedChild.removeSPListener(this);
+            	}
+            	removedObjects.clear();
                 ce.end();
                 if (ce.canUndo() && !loading) {
                     if (logger.isDebugEnabled())
