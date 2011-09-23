@@ -77,7 +77,7 @@ public class WorkspaceGraphTreeModel implements TreeModel {
      *         method. If the node cannot be made as it would make an infinite
      *         cycle in the tree null is returned.
      */
-    private WorkspaceGraphTreeNodeWrapper addNodeToTree(
+    protected WorkspaceGraphTreeNodeWrapper addNodeToTree(
             WorkspaceGraphTreeNodeWrapper parent, 
             SPObject nodeToAdd, WorkspaceGraphModel graph) {
         
