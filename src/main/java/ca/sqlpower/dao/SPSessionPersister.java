@@ -757,6 +757,7 @@ public abstract class SPSessionPersister implements SPPersister {
 				lookupCache.clear();
 				converter.removeUUIDCache();
 				transactionCount = 0;
+				currentThread = null;
 				headingToWisconsin = false;
 				
 				if (logger.isDebugEnabled()) {
