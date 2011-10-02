@@ -27,6 +27,7 @@ import java.awt.geom.Point2D;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URI;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -77,6 +78,8 @@ public class SessionPersisterSuperConverter {
 	private final LocaleConverter localeConverter = new LocaleConverter();
 	
 	private final QNameConverter qnameConverter = new QNameConverter();
+	
+	private final URIConverter uriConverter = new URIConverter();
 	
 	protected final DataSourceCollection <JDBCDataSource> dsCollection;
 
@@ -211,6 +214,8 @@ public class SessionPersisterSuperConverter {
 			return localeConverter.convertToSimpleType((Locale) convertFrom);
 		} else if (convertFrom instanceof QName) {
 			return qnameConverter.convertToSimpleType((QName) convertFrom);
+		} else if (convertFrom instanceof URI) {
+			return uriConverter.convertToSimpleType((URI) convertFrom);
 		} else {
 		    throw new IllegalArgumentException("Cannot convert " + convertFrom + " of type " + 
 		            convertFrom.getClass());
@@ -323,6 +328,8 @@ public class SessionPersisterSuperConverter {
         	return localeConverter.convertToComplexType((String) o);
         } else if (QName.class.isAssignableFrom(type)) {
         	return qnameConverter.convertToComplexType((String) o);
+		} else if (URI.class.isAssignableFrom(type)) {
+			return uriConverter.convertToComplexType((String) o);
 		} else {
 			throw new IllegalArgumentException("Cannot convert " + o + " of type " + 
 					o.getClass() + " to the type " + type);
