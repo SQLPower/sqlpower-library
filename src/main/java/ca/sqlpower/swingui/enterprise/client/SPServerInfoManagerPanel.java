@@ -57,6 +57,9 @@ public class SPServerInfoManagerPanel {
 	private final JPanel panel;
 	private JList serverInfos;
 	private final JButton connectButton;
+	private final String boxLable;
+	private final String addOrEditDialogLabel;
+	
 	private ConnectionTestAction testAction = new ConnectionTestAction() {
 		public void actionPerformed(ActionEvent e) {
 			JOptionPane.showMessageDialog(null, "Testing not implemented");
@@ -89,7 +92,12 @@ public class SPServerInfoManagerPanel {
 			editSelectedServer();
 		}
 	};
-
+	
+	public SPServerInfoManagerPanel(SPServerInfoManager manager,
+			Component dialogOwner, Action closeAction) {
+		this(manager, dialogOwner, closeAction, "Available Server Connections:" , "Server Connection Properties");
+	}
+	
 	/**
 	 * Creates a panel that displays the currently configured server
 	 * connections. New connections can be added from this panel and existing
@@ -103,11 +111,17 @@ public class SPServerInfoManagerPanel {
 	 * @param closeAction
 	 *            An action that will properly close the object displaying the
 	 *            panel.
+	 * @param boxLabel
+	 *  			Label of the server information box
+	 * @param addOrEditDialogLable
+	 * 				Label of the Add/Edit panel
 	 */
 	public SPServerInfoManagerPanel(SPServerInfoManager manager,
-			Component dialogOwner, Action closeAction) {
+			Component dialogOwner, Action closeAction, String boxLabel, String addOrEditDialogLable) {
 		this.manager = manager;
 		this.dialogOwner = dialogOwner;
+		this.boxLable = boxLabel;
+		this.addOrEditDialogLabel = addOrEditDialogLable;
 		DefaultFormBuilder builder = new DefaultFormBuilder(new FormLayout(
 				"pref:grow, 5dlu, pref", "pref, pref, pref"));
 
@@ -131,7 +145,7 @@ public class SPServerInfoManagerPanel {
 		// Build the GUI
 		refreshInfoList();
 		CellConstraints cc = new CellConstraints();
-		builder.add(new JLabel("Available Server Connections:"), cc
+		builder.add(new JLabel(boxLable), cc
 				.xyw(1, 1, 3));
 		builder.nextLine();
 		builder.add(scrollPane, cc.xywh(1, 2, 1, 2));
@@ -201,7 +215,7 @@ public class SPServerInfoManagerPanel {
 		};
 
 		JDialog dialog = DataEntryPanelBuilder.createDataEntryPanelDialog(
-				infoPanel, dialogOwner, "Server Connection Properties", "OK",
+				infoPanel, dialogOwner, addOrEditDialogLabel, "OK",
 				okCall, cancelCall);
 
 		dialog.setVisible(true);
