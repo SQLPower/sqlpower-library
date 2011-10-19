@@ -80,8 +80,7 @@ public class ClientSideSessionUtils {
 	
 	public static HttpClient createHttpClient(SPServerInfo serviceInfo, CookieStore cookieStore) {
 		HttpParams params = new BasicHttpParams();
-        HttpConnectionParams.setConnectionTimeout(params, 5000);
-        HttpConnectionParams.setSoTimeout(params, 5000);
+        HttpConnectionParams.setConnectionTimeout(params, 2000);
         DefaultHttpClient httpClient = new DefaultHttpClient(params);
         httpClient.setCookieStore(cookieStore);
         httpClient.getCredentialsProvider().setCredentials(
