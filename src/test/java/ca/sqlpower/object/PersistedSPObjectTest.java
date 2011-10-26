@@ -856,7 +856,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	}
 
 	
-	private Set<String> findPersistableBeanProperties(boolean includeTransient, boolean includeConstructorMutators) throws Exception {
+	protected Set<String> findPersistableBeanProperties(boolean includeTransient, boolean includeConstructorMutators) throws Exception {
 		return TestUtils.findPersistableBeanProperties(getSPObjectUnderTest(), includeTransient, includeConstructorMutators);
 	}
 
