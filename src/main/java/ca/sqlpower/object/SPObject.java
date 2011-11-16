@@ -205,9 +205,7 @@ public interface SPObject {
     
     /**
      * Signals the end of a transaction of a compound event.
-     * @deprecated Use {@link #commit(String)} instead.
      */
-    @Deprecated
     void commit();
     
     /**
