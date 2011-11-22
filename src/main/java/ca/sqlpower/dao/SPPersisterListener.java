@@ -330,7 +330,7 @@ public class SPPersisterListener implements SPListener {
 		SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
 		if (wouldEcho()) return;
 		String uuid = e.getChild().getUUID();
-		if (getRemovedObject(uuid) != null) {
+		if (getRemovedObject(uuid) != null && getPersistedObject(uuid) == null) {
 		    throw new IllegalStateException("Cannot add object of type " 
                     + e.getChildType() + " with UUID " + uuid + " because an object with "
                     + " the same UUID has already been removed");     
