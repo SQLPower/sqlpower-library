@@ -132,7 +132,11 @@ public class PersistedSPOProperty implements SPTransactionElement, Comparable<Pe
             if (getDataType().equals(DataType.PNG_IMG)) {
                 return imageObjectsAreEqual(getNewValue(), wop.getNewValue());
             } else {
-                return getNewValue().equals(wop.getNewValue());
+            	if (getNewValue() == null) {
+            		return wop.getNewValue() == null;
+            	} else {
+            		return getNewValue().equals(wop.getNewValue());
+            	}
             }
             
         } else {
