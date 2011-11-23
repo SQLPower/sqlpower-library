@@ -51,9 +51,7 @@ public class TransactionEvent {
      * 
      * @param source
      *            The source of the event.
-     * @deprecated Use {@link #createEndTransactionEvent(Object, String)} instead.
      */
-    @Deprecated
     public static TransactionEvent createEndTransactionEvent(Object source) {
         return new TransactionEvent(source);
     }
