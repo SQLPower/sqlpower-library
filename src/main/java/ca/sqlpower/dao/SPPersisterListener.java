@@ -754,4 +754,12 @@ public class SPPersisterListener implements SPListener {
 		this.persistedObjects.clear();
 		this.persistedProperties.clear();
     }
+
+	/**
+	 * Returns true if the listener is in a transaction. False if the listener
+	 * is not in a transaction.
+	 */
+    public boolean isInTransaction() {
+    	return transactionCount > 0;
+    }
 }
