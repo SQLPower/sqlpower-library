@@ -47,6 +47,7 @@ import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.TransactionEvent;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 
@@ -89,6 +90,8 @@ public class SPPersisterListener implements SPListener {
 	 * passed into the persistedObject call in the order of insertion
 	 */
 	private List<PersistedSPObject> persistedObjects = new LinkedList<PersistedSPObject>();
+	
+	private Multimap<String, PersistedSPObject> parentPeristedObjects = ArrayListMultimap.create();
 	
 	/**
 	 * {@link WabitObject} removal buffer, mapping of {@link WabitObject} UUIDs
@@ -139,11 +142,30 @@ public class SPPersisterListener implements SPListener {
 			    if (!e.getSource().getRunnableDispatcher().isForegroundThread()) {
             throw new RuntimeException("New child event " + e + " not fired on the foreground.");
         }
+		String parentUUID = e.getSource().getUUID();
+		int index = e.getIndex();
+		List<PersistedSPObject> toBeUpdated = new ArrayList<PersistedSPObject>();
+		// Get all the sibling under the same parent
+		for (PersistedSPObject persisterSibling : parentPeristedObjects.get(parentUUID)) {
+			
+			if (persisterSibling.getIndex() >= index && persisterSibling.getType().equals(e.getChildType().getName())) {
+				toBeUpdated.add(persisterSibling);
+			}
+		}
 		
+		for (PersistedSPObject psp : toBeUpdated) {
+			// Update the sibling's index
+			PersistedSPObject newIndexedSibling = new PersistedSPObject(psp.getParentUUID(), psp.getType(), psp.getUUID(), psp.getIndex()+1);
+			persistedObjects.remove(psp);
+			persistedObjects.add(newIndexedSibling);
+			parentPeristedObjects.remove(parentUUID, psp);
+			parentPeristedObjects.put(parentUUID, newIndexedSibling);
+		} 
+			    
 		SQLPowerUtils.listenToHierarchy(e.getChild(), this);
 		if (wouldEcho()) return;
 		logger.debug("Child added: " + e);
-		persistObject(e.getChild(), e.getIndex());
+		persistObject(e.getChild(), index);
 		removedObjectsUUIDs.removeAll(getDescendantUUIDs(e.getChild()));
 	}
 
@@ -231,7 +253,9 @@ public class SPPersisterListener implements SPListener {
                                 + type + " with UUID " + uuid + " because an object with "
                                 + " the same UUID has already been added");                    
                 }
-				persistedObjects.add(new PersistedSPObject(parentUUID, type, uuid, index));
+				PersistedSPObject pspo = new PersistedSPObject(parentUUID, type, uuid, index);
+				persistedObjects.add(pspo);
+				parentPeristedObjects.put(parentUUID, pspo);
 			}
 		
 			public void commit() throws SPPersistenceException {
@@ -327,6 +351,29 @@ public class SPPersisterListener implements SPListener {
        if (!e.getSource().getRunnableDispatcher().isForegroundThread()) {
             throw new RuntimeException("Removed child event " + e + " not fired on the foreground.");
         }
+       
+       String parentUUID = e.getSource().getUUID();
+		int index = e.getIndex();
+		List<PersistedSPObject> toBeUpdated = new ArrayList<PersistedSPObject>();
+		// Get all the sibling under the same parent
+		for (PersistedSPObject persisterSibling : parentPeristedObjects.get(parentUUID)) {
+			
+			if (persisterSibling.getIndex() > index && persisterSibling.getType().equals(e.getChildType().getName())) {
+				toBeUpdated.add(persisterSibling);
+			}
+		}
+		
+		for (PersistedSPObject psp : toBeUpdated) {
+			// Update the sibling's index
+			PersistedSPObject newIndexedSibling = new PersistedSPObject(psp.getParentUUID(), psp.getType(), psp.getUUID(), psp.getIndex()-1);
+			persistedObjects.remove(psp);
+			persistedObjects.add(newIndexedSibling);
+			parentPeristedObjects.remove(parentUUID, psp);
+			parentPeristedObjects.put(parentUUID, newIndexedSibling);
+		} 
+       
+       
+       
 		SQLPowerUtils.unlistenToHierarchy(e.getChild(), this);
 		if (wouldEcho()) return;
 		String uuid = e.getChild().getUUID();
@@ -350,6 +397,7 @@ public class SPPersisterListener implements SPListener {
 		        for (PersistedSPObject childPSO : persistedObjects) {
 		            if (childPSO.getUUID().equals(uuidToRemove)) {
 		                persistedObjects.remove(childPSO);
+		                parentPeristedObjects.remove(childPSO.getParentUUID(), childPSO);
 		                break;
 		            }
 		        }
@@ -574,6 +622,7 @@ public class SPPersisterListener implements SPListener {
 			this.objectsToRemove.clear();
 			this.removedObjectsUUIDs.clear();
 			this.persistedObjects.clear();
+			this.parentPeristedObjects.clear();
 			this.persistedProperties.clear();
 			this.transactionCount = 0;
 			target.rollback();
@@ -610,6 +659,7 @@ public class SPPersisterListener implements SPListener {
 			this.objectsToRemove.clear();
 			this.removedObjectsUUIDs.clear();
 			this.persistedObjects.clear();
+			this.parentPeristedObjects.clear();
 			this.persistedProperties.clear();
 			this.transactionCount = 0;
 			rollingBack = false;
@@ -752,6 +802,7 @@ public class SPPersisterListener implements SPListener {
 		this.objectsToRemove.clear();
 		this.removedObjectsUUIDs.clear();
 		this.persistedObjects.clear();
+		this.parentPeristedObjects.clear();
 		this.persistedProperties.clear();
     }
 
