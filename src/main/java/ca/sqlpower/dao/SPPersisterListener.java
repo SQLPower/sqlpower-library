@@ -383,26 +383,7 @@ public class SPPersisterListener implements SPListener {
                     + " the same UUID has already been removed");     
 		}
 		PersistedSPObject pso = getPersistedObject(uuid);
-		if (pso != null) {
-		    // Remove the object from the list of objects to be persisted
-		    // This way, addition-removal sequences are cancelled out.
-		    if (!persistedObjects.remove(pso)) {
-		        throw new RuntimeException("This shouldn't have happened");
-		    }
-		    persistedProperties.removeAll(uuid);
-		    List<String> descendantUUIDs = new ArrayList<String>(getDescendantUUIDs(e.getChild()));
-		    descendantUUIDs.remove(uuid);
-		    for (String uuidToRemove : descendantUUIDs) {
-		        persistedProperties.removeAll(uuidToRemove);
-		        for (PersistedSPObject childPSO : persistedObjects) {
-		            if (childPSO.getUUID().equals(uuidToRemove)) {
-		                persistedObjects.remove(childPSO);
-		                parentPeristedObjects.remove(childPSO.getParentUUID(), childPSO);
-		                break;
-		            }
-		        }
-		    }
-		} else {
+		if (pso == null) {
 		    transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
 		    "Start of transaction triggered by childRemoved event"));
 		    objectsToRemove.put(e.getChild().getUUID(),
@@ -413,6 +394,22 @@ public class SPPersisterListener implements SPListener {
 		    removedObjectsUUIDs.addAll(getDescendantUUIDs(e.getChild()));
 		    transactionEnded(TransactionEvent.createEndTransactionEvent(this));
 		}
+		//When a remove comes in we need to remove all of the persist calls for the
+		//object being removed and its descendants regardless if a remove event is included.
+	    persistedObjects.remove(pso);
+	    persistedProperties.removeAll(uuid);
+	    List<String> descendantUUIDs = new ArrayList<String>(getDescendantUUIDs(e.getChild()));
+	    descendantUUIDs.remove(uuid);
+	    for (String uuidToRemove : descendantUUIDs) {
+	        persistedProperties.removeAll(uuidToRemove);
+	        for (PersistedSPObject childPSO : persistedObjects) {
+	            if (childPSO.getUUID().equals(uuidToRemove)) {
+	                persistedObjects.remove(childPSO);
+	                parentPeristedObjects.remove(childPSO.getParentUUID(), childPSO);
+	                break;
+	            }
+	        }
+	    }
 	}
 
 	public void transactionEnded(TransactionEvent e) {
