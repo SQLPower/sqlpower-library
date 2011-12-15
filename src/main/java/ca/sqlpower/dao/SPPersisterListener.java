@@ -91,6 +91,11 @@ public class SPPersisterListener implements SPListener {
 	 */
 	private List<PersistedSPObject> persistedObjects = new LinkedList<PersistedSPObject>();
 	
+	/**
+	 * Keep track of the SPObjects that exist under the same parent. 
+	 * Key - the UUID of the parent.
+	 * Value - the PersistedSPObject that is a child of parent with (parentUUID = key)
+	 */
 	private Multimap<String, PersistedSPObject> parentPeristedObjects = ArrayListMultimap.create();
 	
 	/**
@@ -398,6 +403,7 @@ public class SPPersisterListener implements SPListener {
 		//object being removed and its descendants regardless if a remove event is included.
 	    persistedObjects.remove(pso);
 	    persistedProperties.removeAll(uuid);
+	    parentPeristedObjects.remove(pso.getParentUUID(), pso);
 	    List<String> descendantUUIDs = new ArrayList<String>(getDescendantUUIDs(e.getChild()));
 	    descendantUUIDs.remove(uuid);
 	    for (String uuidToRemove : descendantUUIDs) {
