@@ -561,6 +561,70 @@ public class SQLPowerUtils {
             return file;
         }
     }
+
+	/**
+	 * This method mirrors the
+	 * {@link #resolveConfiguredPath(ServletContext, String)} except it
+	 * takes a file that is the existing directory that contains the file we are
+	 * resolving. This allows us to translate files normally using the webapp:
+	 * file type when we do not have a servlet context.
+	 * 
+	 * @param rootFile
+	 * @param path
+	 * @return
+	 */
+    public static URI resolveConfiguredPath(File rootFile, String path) {
+        if (path.contains("://")) {
+            try {
+                return new URI(path);
+            } catch (URISyntaxException e) {
+                throw new IllegalArgumentException(
+                        "Configured path " + path + " looks like a URI, but isn't. " +
+                        "Check your typing.", e);
+            }
+        } else {
+            return resolveConfiguredFilePath(rootFile, path).toURI();
+        }
+    }
+
+    /**
+	 * This method mirrors the
+	 * {@link #resolveConfiguredFilePath(ServletContext, String)} except it
+	 * takes a file that is the existing directory that contains the file we are
+	 * resolving. This allows us to translate files normally using the webapp:
+	 * file type when we do not have a servlet context.
+	 * 
+	 * @param rootFile
+	 * @param path
+	 * @return
+	 */
+    public static File resolveConfiguredFilePath(File rootFile, String path) {
+        if (path.startsWith("webapp:")) {
+            if (rootFile == null) {
+                throw new IllegalArgumentException(
+                        "Path specifications starting with 'webapp:' must have a root" +
+                        " file specified");
+            }
+            if (!rootFile.exists()) {
+            	throw new IllegalArgumentException("The root directory " + rootFile + " does not exist.");
+            }
+            if (!rootFile.isDirectory()) {
+            	throw new IllegalStateException("The root directory " + rootFile + " is not a directory.");
+            }
+            String contextPath = path.substring("webapp:".length());
+            File file = new File(rootFile, contextPath);
+            if (!file.exists()) {
+                throw new IllegalArgumentException(
+                        "Webapp path " + path + " resolved to " + file.getAbsolutePath() +
+                        ", which does not exist. Check that the path is valid, " +
+                        "and ensure this webapp has been deployed in \"exploded\" mode.");
+            }
+            return file;
+        } else {
+            File file = new File(path);
+            return file;
+        }
+    }
     
 	/**
 	 * Returns the first ancestor of <tt>so</tt> which is of the given type, or
