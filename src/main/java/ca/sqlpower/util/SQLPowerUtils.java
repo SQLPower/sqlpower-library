@@ -574,7 +574,7 @@ public class SQLPowerUtils {
 	 * @return
 	 */
     public static URI resolveConfiguredPath(File rootFile, String path) {
-        if (path.contains("://")) {
+        if (path.contains("://") || path.startsWith("file:")) {
             try {
                 return new URI(path);
             } catch (URISyntaxException e) {
