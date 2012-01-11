@@ -53,6 +53,17 @@ public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
             
             BufferedReader reader = new BufferedReader(
                     new InputStreamReader(response.getEntity().getContent()));
+            if (status == 500) {
+            	StringBuffer sb = new StringBuffer();
+            	sb.append("Internal server error. Server responded with the following.\n");
+            	String line = reader.readLine();
+            	while (line != null) {
+            		sb.append(line).append("\n");
+            		line = reader.readLine();
+            	}
+            	logger.error(sb.toString());
+            	throw new RuntimeException("Server error. " + response.getStatusLine().toString() + ". See logs or server logs for more details.");
+            }
             return handleResponse(reader, status);
         } catch (AccessDeniedException e) {
             throw e;
