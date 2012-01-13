@@ -20,6 +20,7 @@
 package ca.sqlpower.enterprise;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
@@ -28,6 +29,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.apache.log4j.Logger;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.springframework.security.AccessDeniedException;
@@ -53,17 +55,6 @@ public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
             
             BufferedReader reader = new BufferedReader(
                     new InputStreamReader(response.getEntity().getContent()));
-            if (status == 500) {
-            	StringBuffer sb = new StringBuffer();
-            	sb.append("Internal server error. Server responded with the following.\n");
-            	String line = reader.readLine();
-            	while (line != null) {
-            		sb.append(line).append("\n");
-            		line = reader.readLine();
-            	}
-            	logger.error(sb.toString());
-            	throw new RuntimeException("Server error. " + response.getStatusLine().toString() + ". See logs or server logs for more details.");
-            }
             return handleResponse(reader, status);
         } catch (AccessDeniedException e) {
             throw e;
@@ -83,7 +74,24 @@ public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
         
         JSONTokener tokener = new JSONTokener(reader);
         try {
-        	JSONObject message = (JSONObject) tokener.nextValue();
+        	JSONObject message;
+        	try {
+        		message = (JSONObject) tokener.nextValue();
+        	} catch (ClassCastException ex) {
+            	StringBuffer sb = new StringBuffer();
+            	sb.append("Internal server error. Server responded with the following.\n");
+            	try {
+            		int charAsInt = reader.read();
+            		while (charAsInt != -1) {
+            			sb.append((char) charAsInt);
+            			charAsInt = reader.read();
+            		}
+            		logger.error(sb.toString());
+            	} catch (IOException e) {
+            		logger.error("Failed to parse the root exception. The following was received " + sb.toString());
+            	}
+            	throw new RuntimeException("Server error. See logs or server logs for more details.");
+        	}
             
             // Does the response contain data? If so, return it. Communication
             // with the resource has been successful.
@@ -112,6 +120,20 @@ public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
                     }
                 }
             }
+        } catch (JSONException ex) {
+        	StringBuffer sb = new StringBuffer();
+        	sb.append("Internal server error. Server responded with the following.\n");
+        	try {
+        		int charAsInt = reader.read();
+        		while (charAsInt != -1) {
+        			sb.append(charAsInt);
+        			charAsInt = reader.read();
+        		}
+        		logger.error(sb.toString());
+        	} catch (IOException e) {
+        		logger.error("Failed to parse the root exception. The following was received " + sb.toString());
+        	}
+        	throw new RuntimeException("Server error. See logs or server logs for more details.");
         } catch (Exception ex) {
             throw new RuntimeException("Server returned status " + status + "\n" + tokener, ex);
         }
