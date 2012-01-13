@@ -121,6 +121,14 @@ public class SPPersisterListener implements SPListener {
 	 * If true the current persist calls in the roll back lists are being undone.
 	 */
 	private boolean rollingBack;
+
+	/**
+	 * If true this listener will roll back changes it heard when rollback is
+	 * performed. Rollback is normally performed when either explicitly called
+	 * or when an exception occurs in a later persister. If false the listener
+	 * will reset but it will not update the workspace it is listening to.
+	 */
+	private final boolean rollbackWorkspaceUpdates;
 	
 	/**
 	 * This listener can be attached to a hierarchy of objects to persist events
@@ -136,10 +144,36 @@ public class SPPersisterListener implements SPListener {
 		this(target, null, converter);
 	}
 
+	/**
+	 * For the rest of the parameters see
+	 * {@link #SPPersisterListener(SPPersister, SessionPersisterSuperConverter)}
+	 * .
+	 * 
+	 * @param dontEcho
+	 *            If this persister is specified the listener will not collect
+	 *            events when the persister is updating the model.
+	 */
 	public SPPersisterListener(SPPersister target, SPSessionPersister dontEcho, SessionPersisterSuperConverter converter) {
+		this(target, dontEcho, converter, true);
+	}
+
+	/**
+	 * For the rest of the parameters see
+	 * {@link #SPPersisterListener(SPPersister, SPSessionPersister, SessionPersisterSuperConverter)}
+	 * 
+	 * @param rollbackUpdatesWorkspace
+	 *            If true this listener will roll back changes it heard when
+	 *            rollback is performed. Rollback is normally performed when
+	 *            either explicitly called or when an exception occurs in a
+	 *            later persister. If false the listener will reset but it will
+	 *            not update the workspace it is listening to.
+	 */
+	public SPPersisterListener(SPPersister target, SPSessionPersister dontEcho, 
+			SessionPersisterSuperConverter converter, boolean rollbackUpdatesWorkspace) {
 		this.target = target;
 		this.converter = converter;
 		this.eventSource = dontEcho;
+		this.rollbackWorkspaceUpdates = rollbackUpdatesWorkspace;
 	}
 	
 	
@@ -640,24 +674,26 @@ public class SPPersisterListener implements SPListener {
 		    workspace.setMagicEnabled(false);
 		}
 		try {
-		    List<PersistedObjectEntry> rollbackObjects = new LinkedList<PersistedObjectEntry>();
-		    List<PersistedPropertiesEntry> rollbackProperties = new LinkedList<PersistedPropertiesEntry>();
-		    
-		    for (PersistedSPObject o : persistedObjects) {
-		        rollbackObjects.add(new PersistedObjectEntry(o.getParentUUID(), o.getUUID()));
-		    }
-		    
-		    for (PersistedSPOProperty p : persistedProperties.values()) {
-		        rollbackProperties.add(new PersistedPropertiesEntry(
-		                p.getUUID(), p.getPropertyName(), p.getDataType(), p.getOldValue()));
-		    }
-		    
-			SPSessionPersister.undoForSession(
-				eventSource.getWorkspaceContainer().getWorkspace(), 
-				rollbackObjects,
-				rollbackProperties, 
-				objectsToRemove,
-				converter);
+			if (rollbackWorkspaceUpdates) {
+				List<PersistedObjectEntry> rollbackObjects = new LinkedList<PersistedObjectEntry>();
+				List<PersistedPropertiesEntry> rollbackProperties = new LinkedList<PersistedPropertiesEntry>();
+
+				for (PersistedSPObject o : persistedObjects) {
+					rollbackObjects.add(new PersistedObjectEntry(o.getParentUUID(), o.getUUID()));
+				}
+
+				for (PersistedSPOProperty p : persistedProperties.values()) {
+					rollbackProperties.add(new PersistedPropertiesEntry(
+							p.getUUID(), p.getPropertyName(), p.getDataType(), p.getOldValue()));
+				}
+
+				SPSessionPersister.undoForSession(
+						eventSource.getWorkspaceContainer().getWorkspace(), 
+						rollbackObjects,
+						rollbackProperties, 
+						objectsToRemove,
+						converter);
+			}
 		} catch (SPPersistenceException e) {
 			logger.error(e);
 		} finally {
