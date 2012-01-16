@@ -123,12 +123,15 @@ public class SPPersisterListener implements SPListener {
 	private boolean rollingBack;
 
 	/**
-	 * If true this listener will roll back changes it heard when rollback is
-	 * performed. Rollback is normally performed when either explicitly called
-	 * or when an exception occurs in a later persister. If false the listener
-	 * will reset but it will not update the workspace it is listening to.
+	 * If defined this listener will not roll back changes to the workspace it
+	 * is listening to. Instead it will still reset itself but it will rely on
+	 * this persister to perform the rollback. This listener will also not
+	 * forward changes while this persister is rolling back.
+	 * <p>
+	 * If this value is null a rollback on this listener will undo the changes
+	 * it received from the model.
 	 */
-	private final boolean rollbackWorkspaceUpdates;
+	private final SPSessionPersister rollbackPersister;
 	
 	/**
 	 * This listener can be attached to a hierarchy of objects to persist events
@@ -154,7 +157,7 @@ public class SPPersisterListener implements SPListener {
 	 *            events when the persister is updating the model.
 	 */
 	public SPPersisterListener(SPPersister target, SPSessionPersister dontEcho, SessionPersisterSuperConverter converter) {
-		this(target, dontEcho, converter, true);
+		this(target, dontEcho, converter, null);
 	}
 
 	/**
@@ -169,11 +172,11 @@ public class SPPersisterListener implements SPListener {
 	 *            not update the workspace it is listening to.
 	 */
 	public SPPersisterListener(SPPersister target, SPSessionPersister dontEcho, 
-			SessionPersisterSuperConverter converter, boolean rollbackUpdatesWorkspace) {
+			SessionPersisterSuperConverter converter, SPSessionPersister rollbackPersister) {
 		this.target = target;
 		this.converter = converter;
 		this.eventSource = dontEcho;
-		this.rollbackWorkspaceUpdates = rollbackUpdatesWorkspace;
+		this.rollbackPersister = rollbackPersister;
 	}
 	
 	
@@ -589,6 +592,7 @@ public class SPPersisterListener implements SPListener {
 	 */
 	private boolean wouldEcho() {
 		if (rollingBack) return true;
+		if (rollbackPersister != null && rollbackPersister.isHeadingToWisconsin()) return true;
 		return eventSource != null && eventSource.isUpdatingWorkspace();
 	}
 
@@ -674,7 +678,7 @@ public class SPPersisterListener implements SPListener {
 		    workspace.setMagicEnabled(false);
 		}
 		try {
-			if (rollbackWorkspaceUpdates) {
+			if (rollbackPersister == null) {
 				List<PersistedObjectEntry> rollbackObjects = new LinkedList<PersistedObjectEntry>();
 				List<PersistedPropertiesEntry> rollbackProperties = new LinkedList<PersistedPropertiesEntry>();
 
