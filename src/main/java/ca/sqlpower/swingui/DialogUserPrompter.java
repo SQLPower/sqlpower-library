@@ -245,8 +245,8 @@ public class DialogUserPrompter implements UserPrompter {
         Runnable promptUser = new Runnable() {
             public void run() {
                 questionField.setText(questionFormat.format(formatArgs));
+                confirmDialog.pack();
                 if (firstPrompt) {
-                    confirmDialog.pack();
                     confirmDialog.setLocationRelativeTo(owner);
                     firstPrompt = false;
                 }
