@@ -22,6 +22,7 @@ package ca.sqlpower.dao;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyDescriptor;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -47,9 +48,10 @@ import ca.sqlpower.sqlobject.SQLObject;
 import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.TransactionEvent;
 
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.SortedSetMultimap;
+import com.google.common.collect.TreeMultimap;
 
 /**
  * This generic listener will use the persister helper factory given to it to
@@ -96,7 +98,29 @@ public class SPPersisterListener implements SPListener {
 	 * Key - the UUID of the parent.
 	 * Value - the PersistedSPObject that is a child of parent with (parentUUID = key)
 	 */
-	private Multimap<String, PersistedSPObject> parentPeristedObjects = ArrayListMultimap.create();
+	private SortedSetMultimap<String, PersistedSPObject> parentPeristedObjects = TreeMultimap.create(new Comparator<String>() {
+
+		@Override
+		public int compare(String o1, String o2) {
+			if (o1 == null && o2 == null) return 0;
+			if (o1 == null) return -1;
+			if (o2 == null) return 1;
+			return o1.compareTo(o2);
+		}
+		
+	}, new Comparator<PersistedSPObject>() {
+
+		@Override
+		public int compare(PersistedSPObject o1, PersistedSPObject o2) {
+			if (o1 == null && o2 == null) return 0;
+			if (o1 == null) return -1;
+			if (o2 == null) return 1;
+			int typeComparision = o1.getType().compareTo(o2.getType());
+			if (typeComparision != 0) return typeComparision;
+			return o1.getIndex() - o2.getIndex();
+		}
+		
+	});
 	
 	/**
 	 * {@link WabitObject} removal buffer, mapping of {@link WabitObject} UUIDs
@@ -186,14 +210,10 @@ public class SPPersisterListener implements SPListener {
         }
 		String parentUUID = e.getSource().getUUID();
 		int index = e.getIndex();
-		List<PersistedSPObject> toBeUpdated = new ArrayList<PersistedSPObject>();
 		// Get all the sibling under the same parent
-		for (PersistedSPObject persisterSibling : parentPeristedObjects.get(parentUUID)) {
-			
-			if (persisterSibling.getIndex() >= index && persisterSibling.getType().equals(e.getChildType().getName())) {
-				toBeUpdated.add(persisterSibling);
-			}
-		}
+		PersistedSPObject persistRepresentation = new PersistedSPObject(
+				e.getSource().getUUID(), e.getClass().getName(), e.getChild().getUUID(), index);
+		Set<PersistedSPObject> toBeUpdated = new HashSet<PersistedSPObject>(parentPeristedObjects.get(parentUUID).tailSet(persistRepresentation));
 		
 		for (PersistedSPObject psp : toBeUpdated) {
 			// Update the sibling's index
