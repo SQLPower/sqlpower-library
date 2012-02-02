@@ -211,9 +211,11 @@ public class SPPersisterListener implements SPListener {
 		String parentUUID = e.getSource().getUUID();
 		int index = e.getIndex();
 		// Get all the sibling under the same parent
-		PersistedSPObject persistRepresentation = new PersistedSPObject(
-				e.getSource().getUUID(), e.getClass().getName(), e.getChild().getUUID(), index);
-		Set<PersistedSPObject> toBeUpdated = new HashSet<PersistedSPObject>(parentPeristedObjects.get(parentUUID).tailSet(persistRepresentation));
+		PersistedSPObject minValue = new PersistedSPObject(
+				e.getSource().getUUID(), e.getChildType().getName(), e.getChild().getUUID(), index);
+		PersistedSPObject maxValue = new PersistedSPObject(
+				e.getSource().getUUID(), e.getChildType().getName(), e.getChild().getUUID(), Integer.MAX_VALUE);
+		Set<PersistedSPObject> toBeUpdated = new HashSet<PersistedSPObject>(parentPeristedObjects.get(parentUUID).subSet(minValue, maxValue));
 		
 		for (PersistedSPObject psp : toBeUpdated) {
 			// Update the sibling's index
