@@ -28,7 +28,14 @@ public class PersistedSPObject implements SPTransactionElement, Comparable<Persi
 	private final String parentUUID;
 	private final String type;
 	private final String uuid;
-	private final int index;
+	/**
+	 * The index where the SPObject is stored compared to its siblings in the
+	 * parent list. This value is modifiable so the persist object can be
+	 * corrected in cases where objects are inserted or removed before it in the
+	 * list in the same transaction but the action is done after this persist.
+	 * This helps performance instead of removing and adding a new persist call.
+	 */
+	private int index;
 
 	/**
 	 * XXX If set to true this object has been loaded and does not need to
@@ -104,6 +111,10 @@ public class PersistedSPObject implements SPTransactionElement, Comparable<Persi
 
 	public boolean isLoaded() {
 		return loaded;
+	}
+	
+	public void setIndex(int index) {
+		this.index = index;
 	}
 	
 	@Override
