@@ -91,7 +91,7 @@ public class SPPersisterListener implements SPListener {
 	 * Persisted {@link WabitObject} buffer, contains all the data that was
 	 * passed into the persistedObject call in the order of insertion
 	 */
-	private List<PersistedSPObject> persistedObjects = new LinkedList<PersistedSPObject>();
+	private LinkedHashMap<String, PersistedSPObject> persistedObjects = new LinkedHashMap<String, PersistedSPObject>();
 	
 	/**
 	 * Keep track of the SPObjects that exist under the same parent. 
@@ -309,7 +309,7 @@ public class SPPersisterListener implements SPListener {
                                 + " the same UUID has already been added");                    
                 }
 				PersistedSPObject pspo = new PersistedSPObject(parentUUID, type, uuid, index);
-				persistedObjects.add(pspo);
+				persistedObjects.put(uuid, pspo);
 				parentPeristedObjects.put(getParentPersistedObjectsId(pspo), pspo);
 			}
 		
@@ -402,8 +402,8 @@ public class SPPersisterListener implements SPListener {
 		for (PersistedSPObject psp : toBeUpdated) {
 			// Update the sibling's index
 			PersistedSPObject newIndexedSibling = new PersistedSPObject(psp.getParentUUID(), psp.getType(), psp.getUUID(), psp.getIndex()-1);
-			persistedObjects.remove(psp);
-			persistedObjects.add(newIndexedSibling);
+			persistedObjects.remove(psp.getUUID());
+			persistedObjects.put(psp.getUUID(), newIndexedSibling);
 			parentPeristedObjects.remove(getParentPersistedObjectsId(psp), psp);
 			parentPeristedObjects.put(getParentPersistedObjectsId(newIndexedSibling), newIndexedSibling);
 		} 
@@ -432,7 +432,7 @@ public class SPPersisterListener implements SPListener {
 		}
 		//When a remove comes in we need to remove all of the persist calls for the
 		//object being removed and its descendants regardless if a remove event is included.
-	    persistedObjects.remove(pso);
+	    persistedObjects.remove(pso.getUUID());
 	    persistedProperties.removeAll(uuid);
 	    if (pso != null) {
 	    	 parentPeristedObjects.remove(getParentPersistedObjectsId(pso), pso);
@@ -441,12 +441,10 @@ public class SPPersisterListener implements SPListener {
 	    descendantUUIDs.remove(uuid);
 	    for (String uuidToRemove : descendantUUIDs) {
 	        persistedProperties.removeAll(uuidToRemove);
-	        for (PersistedSPObject childPSO : persistedObjects) {
-	            if (childPSO.getUUID().equals(uuidToRemove)) {
-	                persistedObjects.remove(childPSO);
-	                parentPeristedObjects.remove(getParentPersistedObjectsId(childPSO), childPSO);
-	                break;
-	            }
+	        PersistedSPObject childPSO = persistedObjects.get(uuidToRemove);
+	        persistedObjects.remove(uuidToRemove);
+	        if (childPSO != null) {
+	        	parentPeristedObjects.remove(getParentPersistedObjectsId(childPSO), childPSO);
 	        }
 	    }
 	}
@@ -676,7 +674,7 @@ public class SPPersisterListener implements SPListener {
 				List<PersistedObjectEntry> rollbackObjects = new LinkedList<PersistedObjectEntry>();
 				List<PersistedPropertiesEntry> rollbackProperties = new LinkedList<PersistedPropertiesEntry>();
 
-				for (PersistedSPObject o : persistedObjects) {
+				for (PersistedSPObject o : persistedObjects.values()) {
 					rollbackObjects.add(new PersistedObjectEntry(o.getParentUUID(), o.getUUID()));
 				}
 
@@ -718,7 +716,7 @@ public class SPPersisterListener implements SPListener {
 	 */
 	private void commitObjects() throws SPPersistenceException {
 		logger.debug("Committing objects");
-		for (PersistedSPObject pwo : persistedObjects) {
+		for (PersistedSPObject pwo : persistedObjects.values()) {
 			logger.debug("Commiting persist call: " + pwo);
 			target.persistObject(
 				pwo.getParentUUID(), 
@@ -778,7 +776,7 @@ public class SPPersisterListener implements SPListener {
 	}
 
 	public List<PersistedSPObject> getPersistedObjects() {
-		return persistedObjects;
+		return new ArrayList<PersistedSPObject>(persistedObjects.values());
 	}
 
 	public LinkedHashMap<String, RemovedObjectEntry> getObjectsToRemove() {
@@ -792,12 +790,7 @@ public class SPPersisterListener implements SPListener {
 	 * @return The object with the given uuid, or null if it cannot be found
 	 */
 	public PersistedSPObject getPersistedObject(String uuid) {
-        for (PersistedSPObject o : persistedObjects) {
-            if (o.getUUID().equals(uuid)) {
-                return o;
-            }
-        }
-        return null;
+        return persistedObjects.get(uuid);
 	}
 	
 	/**
