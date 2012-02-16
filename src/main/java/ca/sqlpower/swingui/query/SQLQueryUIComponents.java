@@ -1236,8 +1236,8 @@ public class SQLQueryUIComponents {
         rowLimitSpinner = new JSpinner(new SpinnerNumberModel(Integer.MAX_VALUE, 0, Integer.MAX_VALUE, 1));
         
         queryArea = new RSyntaxTextArea();
-        queryArea.restoreDefaultSyntaxHighlightingColorScheme();
-        queryArea.setSyntaxEditingStyle(RSyntaxTextArea.SQL_SYNTAX_STYLE);
+        queryArea.restoreDefaultSyntaxScheme();
+        queryArea.setSyntaxEditingStyle(RSyntaxTextArea.SYNTAX_STYLE_SQL);
         
         
         undoManager = new UndoManager();
@@ -1511,7 +1511,7 @@ public class SQLQueryUIComponents {
         rowlimitSpinner.setValue(new Integer(1000));
         textAreaBuilder.append(rowlimitSpinner);
         textAreaBuilder.nextLine();
-        textAreaBuilder.append(new RTextScrollPane(300,200, queryParts.getQueryArea(), true), 7);
+        textAreaBuilder.append(new RTextScrollPane(queryParts.getQueryArea(), true), 7);
         
         
         JSplitPane queryPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
