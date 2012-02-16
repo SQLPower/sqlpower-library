@@ -432,10 +432,10 @@ public class SPPersisterListener implements SPListener {
 		}
 		//When a remove comes in we need to remove all of the persist calls for the
 		//object being removed and its descendants regardless if a remove event is included.
-	    persistedObjects.remove(pso.getUUID());
 	    persistedProperties.removeAll(uuid);
 	    if (pso != null) {
-	    	 parentPeristedObjects.remove(getParentPersistedObjectsId(pso), pso);
+	    	persistedObjects.remove(pso.getUUID());
+	    	parentPeristedObjects.remove(getParentPersistedObjectsId(pso), pso);
 	    }
 	    List<String> descendantUUIDs = new ArrayList<String>(getDescendantUUIDs(e.getChild()));
 	    descendantUUIDs.remove(uuid);
