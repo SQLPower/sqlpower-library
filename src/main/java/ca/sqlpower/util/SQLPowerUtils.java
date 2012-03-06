@@ -102,6 +102,38 @@ public class SQLPowerUtils {
 		}
 		return sb.toString();
 	}
+	
+	/**
+	 * Replaces double quotes, ampersands, less-than and greater-than signs with
+	 * their character reference equivalents. This makes the returned string be
+	 * safe for use as an HTML content data.
+	 * 
+	 */
+	public static String escapeHTML(String src) {
+	    if (src == null) return "";
+		StringBuffer sb = new StringBuffer(src.length()+10);  // arbitrary amount of extra space
+		char ch;
+	    
+		for (int i = 0, n = src.length(); i < n; i++) {
+			ch = src.charAt(i);
+	        
+	        if (ch == '"') {
+				sb.append("&quot;");
+	        } else if (ch == '&') {
+				sb.append("&amp;");
+	        } else if (ch == '<') {
+				sb.append("&lt;");
+	        } else if (ch == '>') {
+				sb.append("&gt;");
+	        } else if (ch == 0x03 || ch == 0x1a) {
+	        	logger.info("Stripping out illegal characters from " + src + 
+	        			" as it will cause the XML to fail.");
+	        } else {
+				sb.append(ch);
+			}
+		}
+		return sb.toString();
+	}
 
 	/**
 	 * Escapes newlines because we need to preserve them in remarks and can be used elsewhere.
