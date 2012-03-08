@@ -330,14 +330,16 @@ public class Differ implements SPPersister {
         List<PersistedSPObject> ancestors = new LinkedList<PersistedSPObject>();
         PersistedSPObject ancestor = object;
 
-        while (!treeMap.containsKey(ancestor.getUUID())) {
+        while (ancestor != null && !treeMap.containsKey(ancestor.getUUID())) {
             ancestors.add(0, ancestor);
             ancestor = newObjectMap.get(ancestor.getParentUUID());
         }
 
         for (PersistedSPObject o : ancestors) {
             PersistedObjectTreeNode node = new PersistedObjectTreeNode(o);
-            treeMap.get(o.getParentUUID()).addNode(node);
+            if (treeMap.get(o.getParentUUID()) != null) {
+            	treeMap.get(o.getParentUUID()).addNode(node);
+            }
             treeMap.put(o.getUUID(), node);
         }
     }
