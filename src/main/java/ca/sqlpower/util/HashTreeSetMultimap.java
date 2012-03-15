@@ -150,6 +150,7 @@ public class HashTreeSetMultimap<K, V> implements SortedSetMultimap<K, V> {
 
 	@Override
 	public boolean remove(Object k, Object v) {
+		if (map.get(k) == null) return false;
 		boolean removed = map.get(k).remove(v);
 		if (map.get(k).isEmpty()) {
 			map.remove(k);
