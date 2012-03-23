@@ -11,7 +11,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -315,6 +317,26 @@ public class SQLPowerUtils {
             }
         }
         return null;
+    }
+    
+    public static Map<String, SPObject> buildIdMap(SPObject startWith) {
+    	Map<String, SPObject> idMap = new HashMap<String, SPObject>();
+    	if (startWith == null) {
+    		throw new IllegalArgumentException("Root object is null");
+    	}
+    	idMap.put(startWith.getUUID(), startWith);
+        
+        List<? extends SPObject> children;
+        if (startWith instanceof SQLObject) {
+        	children = ((SQLObject) startWith).getChildrenWithoutPopulating();
+        } else {
+        	children = startWith.getChildren();
+        }
+        
+        for (SPObject child : children) {
+        	idMap.putAll(buildIdMap(child));
+        }
+        return idMap;
     }
 
 	/**

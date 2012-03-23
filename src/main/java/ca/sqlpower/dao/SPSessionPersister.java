@@ -1555,8 +1555,7 @@ public abstract class SPSessionPersister implements SPPersister {
 		}
 		if (uuid == null || uuid.trim().isEmpty()) return null;
 		
-		T foundObject = SQLPowerUtils.findByUuid(root, uuid, expectedType);
-		lookupCache.put(uuid, foundObject);
-		return foundObject;
+		lookupCache.putAll(SQLPowerUtils.buildIdMap(this.root));
+		return expectedType.cast(lookupCache.get(uuid));
 	}
 }
