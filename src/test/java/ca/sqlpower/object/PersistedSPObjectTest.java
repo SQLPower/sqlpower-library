@@ -560,6 +560,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 */
 	private void copyToRoot(SPObject child, NewValueMaker newValueMaker) {
 		if (child != getSPObjectUnderTest()) {
+			if (getSPObjectUnderTest().getParent() != null && child == getSPObjectUnderTest().getParent()) return;
 			SPObject newValue = (SPObject) newValueMaker.makeNewValue(child.getClass(), child, "Duplicated child");
 			newValue.setUUID(child.getUUID());
 			for (SPObject descendant : child.getChildren()) { 
