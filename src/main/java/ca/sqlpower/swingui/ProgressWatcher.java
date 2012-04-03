@@ -47,6 +47,12 @@ public class ProgressWatcher implements ActionListener {
 
     private static final Logger logger = Logger.getLogger(ProgressWatcher.class);
 
+	/**
+	 * This runnable can be set to some operation that is to be performed when
+	 * the progress bar has completed successfully.
+	 */
+	private Runnable finishedAction;
+
     /**
      * Create a ProgressWatcher with the given progress bar and Monitorable.
      * It will leave the progress bar label blank. The label and progress bar will 
@@ -232,6 +238,8 @@ public class ProgressWatcher implements ActionListener {
             logger.debug("trying to stop timer thread..."); //$NON-NLS-1$
             timer.stop();
             logger.debug("did the timer thread stop???"); //$NON-NLS-1$
+            
+            finishedAction.run();
         }
     }
 
@@ -267,6 +275,11 @@ public class ProgressWatcher implements ActionListener {
      */
 	public void setHideLabelWhenFinished(boolean hideLabelWhenFinished) {
 		this.hideLabelWhenFinished = hideLabelWhenFinished;
+	}
+	
+	public void setFinishedAction(Runnable finishedAction) {
+		this.finishedAction = finishedAction;
+		
 	}
 }
 	
