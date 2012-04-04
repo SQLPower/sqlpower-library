@@ -590,6 +590,10 @@ public class Differ implements SPPersister {
         
     }
     
+    public boolean hasDifferences() {
+    	return !persistCalls.persistedSPOsToRemove.isEmpty() || !persistCalls.persistedSPOsToAdd.isEmpty() || ! persistCalls.propertyDiffPersists.isEmpty();
+    }
+    
     /**
      * This method will sort the Differ's persisted object list so that
      * no parents come after their children in the list. It will also make
