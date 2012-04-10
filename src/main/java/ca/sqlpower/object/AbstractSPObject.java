@@ -27,6 +27,8 @@ import java.util.UUID;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.dao.SPObjectVetoException;
+import ca.sqlpower.dao.VetoableSPListener;
 import ca.sqlpower.object.SPChildEvent.EventType;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Constructor;
@@ -550,6 +552,22 @@ public abstract class AbstractSPObject implements SPObject {
     	}
     	logger.debug(getName() + "[" + getUUID() + "]: Firing transaction ended to " + listeners.size() + " listeners");
         final TransactionEvent evt = TransactionEvent.createEndTransactionEvent(this, message);
+        
+        synchronized (listeners) {
+        	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
+        	for (int i = staticListeners.size() - 1; i >= 0; i--) {
+        		if (staticListeners.get(i) instanceof VetoableSPListener) {
+        			final VetoableSPListener vetoableListener = (VetoableSPListener) staticListeners.get(i);
+        			try {
+						vetoableListener.vetoableChange();
+					} catch (SPObjectVetoException e) {
+						rollback(e.getMessage());
+						throw new RuntimeException(e.getMessage());
+					}
+        		}
+        	}
+        }
+        
         synchronized (listeners) {
         	List<SPListener> staticListeners = new ArrayList<SPListener>(listeners);
         	for (int i = staticListeners.size() - 1; i >= 0; i--) {

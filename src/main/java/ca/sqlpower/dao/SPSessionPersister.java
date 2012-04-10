@@ -806,11 +806,9 @@ public abstract class SPSessionPersister implements SPPersister {
 				int index = siblings.indexOf(spo);
 				index -= parent.childPositionOffset(spo.getClass());
 				parent.removeChild(spo);
-				objectsToRemoveRollbackList.put(spo.getUUID(),
-					new RemovedObjectEntry(
-						parent.getUUID(), 
-						spo,
-						index));
+				// Add spo and hierarchy of its children to the remove-roll-back-list
+				removeRollBackList(spo, parent, index);
+				
 				lookupCache.remove(spo.getUUID());
 			} catch (IllegalArgumentException e) {
 				throw new SPPersistenceException(removeEntry.getKey(), e);
@@ -822,6 +820,17 @@ public abstract class SPSessionPersister implements SPPersister {
 		    logger.warn("Skipped some objects");
 		}
 		objectsToRemove.clear();
+	}
+	
+	private void removeRollBackList(SPObject object, SPObject parent, int index) {
+		
+		if (!object.getChildren().isEmpty()) {
+			for (int i = object.getChildren().size()-1 ; i >= 0 ; i--) {
+				removeRollBackList(object.getChildren().get(i), object, i);
+			}
+		}
+		objectsToRemoveRollbackList.put(object.getUUID(),
+				new RemovedObjectEntry(parent.getUUID(), object, index));
 	}
 	
 	/**
@@ -1229,7 +1238,9 @@ public abstract class SPSessionPersister implements SPPersister {
 			final int index = entry.getIndex();
 			final SPObject parent = findByUuid(root, parentUuid, SPObject.class);
 			try {
-				parent.addChild(objectToRestore, index);
+				if (!parent.getChildren().contains(objectToRestore)) {
+					parent.addChild(objectToRestore, index);
+				}
 			} catch (Throwable t) {
 				// Keep going. We need to rollback as much as we can.
 				logger.error("Cannot rollback " + entry.getRemovedChild() + " child removal", t);
