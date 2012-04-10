@@ -632,6 +632,8 @@ public class SPPersisterListener implements SPListener {
 			} catch (Throwable t) {
 			    logger.warn("Rolling back due to " + t, t);
 				this.rollback();
+				if (t instanceof SPPersistenceException) throw (SPPersistenceException) t;
+				if (t instanceof FriendlyRuntimeSPPersistenceException) throw (FriendlyRuntimeSPPersistenceException) t;
 				throw new SPPersistenceException(null,t);
 			} finally {
 				clear();

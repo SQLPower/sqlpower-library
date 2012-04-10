@@ -34,6 +34,8 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.springframework.security.AccessDeniedException;
 
+import ca.sqlpower.dao.FriendlyRuntimeSPPersistenceException;
+import ca.sqlpower.dao.FriendlySPPersistenceException;
 import ca.sqlpower.dao.SPPersistenceException;
 
 public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
@@ -58,6 +60,8 @@ public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
             return handleResponse(reader, status);
         } catch (AccessDeniedException e) {
             throw e;
+        } catch (RuntimeException ex) {
+        	throw ex;
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -108,6 +112,26 @@ public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
 
                         JSONArray stackTraceStrings = new JSONArray(message.getString("data"));
                         StringBuffer stackTraceMessage = new StringBuffer();
+                        
+                        if (stackTraceStrings.length() > 0) {
+                        	String firstLine = stackTraceStrings.getString(0);
+                        	String userMessage = null;
+							if (firstLine.contains(FriendlyRuntimeSPPersistenceException.class.getName())) {
+								userMessage = firstLine.substring(firstLine.indexOf(FriendlyRuntimeSPPersistenceException.class.getName()) + FriendlyRuntimeSPPersistenceException.class.getName().length() + 2);
+							} else if (firstLine.contains(FriendlySPPersistenceException.class.getName())) {
+								userMessage = firstLine.substring(firstLine.indexOf(FriendlySPPersistenceException.class.getName()) + FriendlySPPersistenceException.class.getName().length() + 2);
+							}
+							
+							if (userMessage != null) {
+								for (int i = 0; i < stackTraceStrings.length(); i++) {
+									stackTraceMessage.append("\n").append(stackTraceStrings.get(i));
+								}
+								logger.info(stackTraceMessage.toString());
+
+								throw new FriendlyRuntimeSPPersistenceException(userMessage);
+							}
+                        }
+                        
                         for (int i = 0; i < stackTraceStrings.length(); i++) {
                             stackTraceMessage.append("\n").append(stackTraceStrings.get(i));
                         }
@@ -134,6 +158,8 @@ public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
         		logger.error("Failed to parse the root exception. The following was received " + sb.toString());
         	}
         	throw new RuntimeException("Server error. See logs or server logs for more details.");
+        } catch (RuntimeException ex) {
+        	throw ex;
         } catch (Exception ex) {
             throw new RuntimeException("Server returned status " + status + "\n" + tokener, ex);
         }

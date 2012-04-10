@@ -487,6 +487,8 @@ public abstract class SPSessionPersister implements SPPersister {
 					logger.error("SPSessionPersister caught an exception while " +
 							"performing a commit operation. Will try to rollback...", t);
 					rollback();
+					if (t instanceof SPPersistenceException) throw (SPPersistenceException) t;
+					if (t instanceof FriendlyRuntimeSPPersistenceException) throw (FriendlyRuntimeSPPersistenceException) t;
 					throw new SPPersistenceException(null, t);
 				} finally {
 					if (transactionCount > 0) {
