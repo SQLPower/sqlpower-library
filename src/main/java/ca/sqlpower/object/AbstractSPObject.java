@@ -562,7 +562,7 @@ public abstract class AbstractSPObject implements SPObject {
 						vetoableListener.vetoableChange();
 					} catch (SPObjectVetoException e) {
 						rollback(e.getMessage());
-						throw new RuntimeException(e.getMessage());
+						throw new RuntimeException(e);
 					}
         		}
         	}
