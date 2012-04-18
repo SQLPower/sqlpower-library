@@ -809,7 +809,10 @@ public abstract class SPSessionPersister implements SPPersister {
 				// Add spo and hierarchy of its children to the remove-roll-back-list
 				removeRollBackList(spo, parent, index);
 				
-				lookupCache.remove(spo.getUUID());
+				Set<String> removedKeys = SQLPowerUtils.buildIdMap(spo).keySet();
+				for (String removedKey : removedKeys) {
+					lookupCache.remove(removedKey);
+				}
 			} catch (IllegalArgumentException e) {
 				throw new SPPersistenceException(removeEntry.getKey(), e);
 			} catch (ObjectDependentException e) {
@@ -983,7 +986,7 @@ public abstract class SPSessionPersister implements SPPersister {
 					new PersistedObjectEntry(
 						parent.getUUID(), 
 						spo.getUUID()));
-				lookupCache.put(spo.getUUID(), spo);
+				lookupCache.putAll(SQLPowerUtils.buildIdMap(spo));
 			}
 		}
 		persistedObjects.clear();
@@ -1566,7 +1569,7 @@ public abstract class SPSessionPersister implements SPPersister {
 			}
 			return expectedType.cast(foundObject);
 		}
-		if (uuid == null || uuid.trim().isEmpty()) return null;
+		if (uuid == null || uuid.trim().isEmpty() || !lookupCache.isEmpty()) return null;
 		
 		lookupCache.putAll(SQLPowerUtils.buildIdMap(this.root));
 		return expectedType.cast(lookupCache.get(uuid));
