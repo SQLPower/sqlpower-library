@@ -173,7 +173,40 @@ public class WorkspaceGraphModel implements GraphModel<SPObject, WorkspaceGraphM
     	inboundEdges = new HashMap<SPObject, Set<WorkspaceGraphModelEdge>>();
     	
         this.graphStartNode = graphStartNode;
-        Queue<SPObject> adjacentNodes = new LinkedList<SPObject>();
+        createGraph(root, showOnlyDependencies, reversePolarity);
+
+        BreadthFirstSearch<SPObject, WorkspaceGraphModelEdge> bfs = 
+            new BreadthFirstSearch<SPObject, WorkspaceGraphModelEdge>();
+        Set<SPObject> connectedObjects = new HashSet<SPObject>(bfs.performSearch(this, graphStartNode));
+
+        restrictGraph(connectedObjects);
+        
+    }
+
+	void restrictGraph(Set<SPObject> connectedObjects) {
+		List<SPObject> removedObjects = new ArrayList<SPObject>();
+        for (SPObject node : nodes) {
+            if (!connectedObjects.contains(node)) {
+                removedObjects.add(node);
+            }
+        }
+        nodes.removeAll(removedObjects);
+        for (SPObject removedNode : removedObjects) {
+            inboundEdges.remove(removedNode);
+            if (outboundEdges.get(removedNode) != null) {
+                for (WorkspaceGraphModelEdge edge : outboundEdges.get(removedNode)) {
+                    if (inboundEdges.get(edge.getChild()) != null) {
+                        inboundEdges.get(edge.getChild()).remove(edge);
+                    }
+                }
+            }
+            outboundEdges.remove(removedNode);
+        }
+	}
+
+	void createGraph(SPObject root, boolean showOnlyDependencies,
+			boolean reversePolarity) {
+		Queue<SPObject> adjacentNodes = new LinkedList<SPObject>();
         Map<SPObject, SPObject> childParentMap = new HashMap<SPObject, SPObject>();
         adjacentNodes.add(root);
         
@@ -235,31 +268,7 @@ public class WorkspaceGraphModel implements GraphModel<SPObject, WorkspaceGraphM
                 }
             }
         }
-
-        BreadthFirstSearch<SPObject, WorkspaceGraphModelEdge> bfs = 
-            new BreadthFirstSearch<SPObject, WorkspaceGraphModelEdge>();
-        List<SPObject> connectedObjects = bfs.performSearch(this, graphStartNode);
-
-        List<SPObject> removedObjects = new ArrayList<SPObject>();
-        for (SPObject node : nodes) {
-            if (!connectedObjects.contains(node)) {
-                removedObjects.add(node);
-            }
-        }
-        nodes.removeAll(removedObjects);
-        for (SPObject removedNode : removedObjects) {
-            inboundEdges.remove(removedNode);
-            if (outboundEdges.get(removedNode) != null) {
-                for (WorkspaceGraphModelEdge edge : outboundEdges.get(removedNode)) {
-                    if (inboundEdges.get(edge.getChild()) != null) {
-                        inboundEdges.get(edge.getChild()).remove(edge);
-                    }
-                }
-            }
-            outboundEdges.remove(removedNode);
-        }
-        
-    }
+	}
 
     public Collection<SPObject> getAdjacentNodes(SPObject node) {
         Collection<SPObject> adjacentNodes = new HashSet<SPObject>();
