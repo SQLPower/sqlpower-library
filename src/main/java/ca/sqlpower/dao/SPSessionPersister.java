@@ -1560,7 +1560,11 @@ public abstract class SPSessionPersister implements SPPersister {
 		persister.commit();
 	}
 	
-	public <T extends SPObject> T findByUuid(SPObject root, String uuid, Class<T> expectedType) {
+	protected void clearUUIDCache() {
+		lookupCache.clear();
+	}
+	
+	protected <T extends SPObject> T findByUuid(SPObject root, String uuid, Class<T> expectedType) {
 		if (lookupCache.get(uuid) != null) {
 			SPObject foundObject = lookupCache.get(uuid);
 			if (!expectedType.isAssignableFrom(foundObject.getClass())) {
