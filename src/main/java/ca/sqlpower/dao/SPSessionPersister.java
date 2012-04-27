@@ -536,7 +536,12 @@ public abstract class SPSessionPersister implements SPPersister {
 				throw new SPPersistenceException(uuid,
 						"An SPObject with UUID " + uuid + " and type " + type
 						+ " under parent with UUID " + parentUUID
-						+ " already exists.");
+						+ " already exists.\n"
+						+ " The object exists in the root already? " + (objectToPersist != null) + "\n"
+						+ " The persisted objects map contains keys: " + persistedObjectsMap.keySet() + "\n"
+						+ " The persisted properties map contains values for this object? " 
+						+ (persistedProperties.get(uuid) != null && !persistedProperties.get(uuid).isEmpty()) + "\n"
+						+ " The removed set contains the object? " + (objectsToRemove.containsKey(uuid)));
 			}
 
 			PersistedSPObject pso = new PersistedSPObject(parentUUID,
