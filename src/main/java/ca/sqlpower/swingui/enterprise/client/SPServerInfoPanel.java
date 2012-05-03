@@ -63,6 +63,8 @@ public class SPServerInfoPanel implements DataEntryPanel {
      */
     private final Version clientVersion;
     
+    private final boolean passwordAllowed;
+    
 	/**
 	 * Create a {@link SPServerInfoPanel} populated with the given default
 	 * settings
@@ -80,6 +82,7 @@ public class SPServerInfoPanel implements DataEntryPanel {
     public SPServerInfoPanel(Component dialogOwner, Version clientVersion, SPServerInfo defaultSettings) {
         this.dialogOwner = dialogOwner;
         panel = buildUI(defaultSettings);
+        passwordAllowed = defaultSettings.isPasswordAllowed();
         this.clientVersion = clientVersion;
     }
     
@@ -91,7 +94,9 @@ public class SPServerInfoPanel implements DataEntryPanel {
         builder.append(Messages.getString("SPServerInfoPanel.portField"), port = new JTextField(String.valueOf(si.getPort()))); //$NON-NLS-1$
         builder.append(Messages.getString("SPServerInfoPanel.pathField"), path = new JTextField(si.getPath())); //$NON-NLS-1$
         builder.append(Messages.getString("SPServerInfoPanel.usernameField"), username = new JTextField(si.getUsername())); //$NON-NLS-1$
-        builder.append(Messages.getString("SPServerInfoPanel.passwordField"), password = new JPasswordField(si.getPassword())); //$NON-NLS-1$
+        if (si.isPasswordAllowed()) {
+        	builder.append(Messages.getString("SPServerInfoPanel.passwordField"), password = new JPasswordField(si.getPassword())); //$NON-NLS-1$
+        }
         
         builder.append(testButton = new JButton(Messages.getString("SPServerInfoPanel.testConnectionButton"))); //$NON-NLS-1$
         builder.appendParagraphGapRow();
@@ -110,9 +115,16 @@ public class SPServerInfoPanel implements DataEntryPanel {
     public SPServerInfo getServerInfo() {
 //    	lookupServerInfo(false); TODO: re-enable/replace when connection testing is implemented
         int port = Integer.parseInt(this.port.getText());
-        SPServerInfo si = new SPServerInfo(
+        SPServerInfo si;
+        if (passwordAllowed) {
+        	si = new SPServerInfo(
                 name.getText(), host.getText(), port, path.getText(), 
                 username.getText(), new String(password.getPassword()));
+        } else {
+        	si = new SPServerInfo(
+                    name.getText(), host.getText(), port, path.getText(), 
+                    username.getText());
+        }
         return si;
     }
     

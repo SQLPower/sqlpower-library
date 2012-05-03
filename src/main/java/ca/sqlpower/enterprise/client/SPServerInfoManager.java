@@ -86,13 +86,22 @@ public class SPServerInfoManager {
 		this.defaultSettings = defaultSettings;
         for (String nodeName : serverPrefs.childrenNames()) {
             Preferences serverNode = serverPrefs.node(nodeName);
-            servers.add(new SPServerInfo(
-                    serverNode.get("name", null),
-                    serverNode.get("serverAddress", null),
-                    serverNode.getInt("port", 0),
-                    serverNode.get("path", null),
-                    serverNode.get("username", ""),
-                    serverNode.get("password", "")));
+            if (defaultSettings.isPasswordAllowed()) {
+            	servers.add(new SPServerInfo(
+            			serverNode.get("name", null),
+            			serverNode.get("serverAddress", null),
+            			serverNode.getInt("port", 0),
+            			serverNode.get("path", null),
+            			serverNode.get("username", ""),
+            			serverNode.get("password", "")));
+            } else {
+            	servers.add(new SPServerInfo(
+                        serverNode.get("name", null),
+                        serverNode.get("serverAddress", null),
+                        serverNode.getInt("port", 0),
+                        serverNode.get("path", null),
+                        serverNode.get("username", "")));
+            }
         }
 	}
 

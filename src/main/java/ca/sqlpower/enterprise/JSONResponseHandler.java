@@ -75,6 +75,9 @@ public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
         if (status == 404) {
             throw new RuntimeException("Server resource is not available.");
         }
+        if (status == 403) {
+        	throw new AccessDeniedException("Insufficient priviledges");
+        }
         
         JSONTokener tokener = new JSONTokener(reader);
         try {

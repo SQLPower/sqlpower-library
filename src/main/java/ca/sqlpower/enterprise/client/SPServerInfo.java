@@ -39,6 +39,13 @@ public class SPServerInfo {
     private final String path;
 	private final String username;
 	private final String password;
+
+	/**
+	 * If true then we allow users to specify and store a password for their
+	 * connection. If false we will not store the password and instead prompt
+	 * for it on every connect attempt.
+	 */
+	private final boolean passwordAllowed;
 	
     /**
      * 
@@ -54,10 +61,51 @@ public class SPServerInfo {
         this.path = path;
 		this.username = username;
 		this.password = password;
+		passwordAllowed = true;
         
         if (path == null || path.length() < 1 || path.charAt(0) != '/') {
             throw new IllegalArgumentException("path must begin with a /");
         }
+    }
+
+	/**
+	 * This version of the server info does not store a password for the user.
+	 * 
+	 * @param name
+	 *            The user-visible name for this server
+	 * @param serverAddress
+	 *            The address for the server (numeric or DNS name)
+	 * @param port
+	 *            The port number the server listens on
+	 * @param path
+	 *            The path to the enterprise server. Must begin with a '/'.
+	 */
+    public SPServerInfo(String name, String serverAddress, int port, String path, String username) {
+    	this.name = name;
+        this.serverAddress = serverAddress;
+        this.port = port;
+        this.path = path;
+		this.username = username;
+		this.password = "";
+		passwordAllowed = false;
+        
+        if (path == null || path.length() < 1 || path.charAt(0) != '/') {
+            throw new IllegalArgumentException("path must begin with a /");
+        }
+    }
+
+	/**
+	 * Clones a server info object but allows us to specify the password for the
+	 * new instance.
+	 */
+    public SPServerInfo(SPServerInfo info, String password) {
+    	this.name = info.name;
+        this.serverAddress = info.serverAddress;
+        this.port = info.port;
+        this.path = info.path;
+		this.username = info.username;
+		this.password = password;
+		passwordAllowed = true;
     }
     
     public SPServerInfo(ServiceInfo si) {
@@ -67,6 +115,7 @@ public class SPServerInfo {
         path = si.getPropertyString("path");
         username = null;
         password = null;
+        passwordAllowed = true;
     }
 
     public String getName() {
@@ -145,4 +194,9 @@ public class SPServerInfo {
 	public String getPassword() {
 		return password;
 	}
+
+	public boolean isPasswordAllowed() {
+		return passwordAllowed;
+	}
+	
 }
