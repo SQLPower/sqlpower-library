@@ -65,6 +65,8 @@ public class SPServerInfoPanel implements DataEntryPanel {
     
     private final boolean passwordAllowed;
     
+    private final String defaultScheme;
+    
 	/**
 	 * Create a {@link SPServerInfoPanel} populated with the given default
 	 * settings
@@ -82,6 +84,7 @@ public class SPServerInfoPanel implements DataEntryPanel {
     public SPServerInfoPanel(Component dialogOwner, Version clientVersion, SPServerInfo defaultSettings) {
         this.dialogOwner = dialogOwner;
         panel = buildUI(defaultSettings);
+        defaultScheme = defaultSettings.getScheme();
         passwordAllowed = defaultSettings.isPasswordAllowed();
         this.clientVersion = clientVersion;
     }
@@ -121,7 +124,7 @@ public class SPServerInfoPanel implements DataEntryPanel {
                 name.getText(), host.getText(), port, path.getText(), 
                 username.getText(), new String(password.getPassword()));
         } else {
-        	si = new SPServerInfo(
+        	si = new SPServerInfo(defaultScheme,
                     name.getText(), host.getText(), port, path.getText(), 
                     username.getText());
         }

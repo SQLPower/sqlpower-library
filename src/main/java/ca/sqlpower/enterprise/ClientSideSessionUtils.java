@@ -53,9 +53,9 @@ import ca.sqlpower.dao.SPPersistenceException;
 import ca.sqlpower.dao.json.SPJSONMessageDecoder;
 import ca.sqlpower.enterprise.client.ProjectLocation;
 import ca.sqlpower.enterprise.client.SPServerInfo;
-import ca.sqlpower.util.UserPrompterFactory;
 import ca.sqlpower.util.UserPrompter.UserPromptOptions;
 import ca.sqlpower.util.UserPrompter.UserPromptResponse;
+import ca.sqlpower.util.UserPrompterFactory;
 import ca.sqlpower.util.UserPrompterFactory.UserPromptType;
 
 /**
@@ -120,7 +120,7 @@ public class ClientSideSessionUtils {
 	
 	public static URI getServerURI(SPServerInfo serviceInfo, String contextRelativePath, String query) throws URISyntaxException {
         String contextPath = serviceInfo.getPath();
-        URI serverURI = new URI("http", null, serviceInfo.getServerAddress(), serviceInfo.getPort(),
+        URI serverURI = new URI(serviceInfo.getScheme(), null, serviceInfo.getServerAddress(), serviceInfo.getPort(),
                 contextPath + contextRelativePath, query, null);
         return serverURI;
     }

@@ -96,6 +96,7 @@ public class SPServerInfoManager {
             			serverNode.get("password", "")));
             } else {
             	servers.add(new SPServerInfo(
+            			serverNode.get("scheme", "https"),
                         serverNode.get("name", null),
                         serverNode.get("serverAddress", null),
                         serverNode.getInt("port", 0),
@@ -114,6 +115,7 @@ public class SPServerInfoManager {
 	public void add(SPServerInfo server) {
 		servers.add(server);
 		Preferences thisServer = serverPrefs.node(server.getName());
+		thisServer.put("scheme", server.getScheme());
         thisServer.put("name", server.getName());
         thisServer.put("serverAddress", server.getServerAddress());
         thisServer.putInt("port", server.getPort());

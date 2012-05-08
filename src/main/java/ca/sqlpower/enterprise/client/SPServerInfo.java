@@ -33,6 +33,14 @@ import javax.jmdns.ServiceInfo;
 @Immutable
 public class SPServerInfo {
 
+	/**
+	 * The scheme to use for the connection, normally "http" or "https".
+	 * <p>
+	 * The scheme is set to "http" when a password is specified and "https" when
+	 * a password is not specified for historical reasons to prevent having to
+	 * change the SQL products.
+	 */
+	private final String scheme;
     private final String name;
     private final String serverAddress;
     private final int port;
@@ -55,6 +63,7 @@ public class SPServerInfo {
      * @param path The path to the enterprise server. Must begin with a '/'.
      */
     public SPServerInfo(String name, String serverAddress, int port, String path, String username, String password) {
+    	this.scheme = "http";
         this.name = name;
         this.serverAddress = serverAddress;
         this.port = port;
@@ -80,7 +89,8 @@ public class SPServerInfo {
 	 * @param path
 	 *            The path to the enterprise server. Must begin with a '/'.
 	 */
-    public SPServerInfo(String name, String serverAddress, int port, String path, String username) {
+    public SPServerInfo(String scheme, String name, String serverAddress, int port, String path, String username) {
+    	this.scheme = scheme;
     	this.name = name;
         this.serverAddress = serverAddress;
         this.port = port;
@@ -99,6 +109,7 @@ public class SPServerInfo {
 	 * new instance.
 	 */
     public SPServerInfo(SPServerInfo info, String password) {
+    	this.scheme = info.scheme;
     	this.name = info.name;
         this.serverAddress = info.serverAddress;
         this.port = info.port;
@@ -109,6 +120,7 @@ public class SPServerInfo {
     }
     
     public SPServerInfo(ServiceInfo si) {
+    	scheme = "http";
         name = si.getName();
         serverAddress = si.getHostAddress();
         port = si.getPort();
@@ -197,6 +209,10 @@ public class SPServerInfo {
 
 	public boolean isPasswordAllowed() {
 		return passwordAllowed;
+	}
+	
+	public String getScheme() {
+		return scheme;
 	}
 	
 }
