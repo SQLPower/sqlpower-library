@@ -346,8 +346,7 @@ public abstract class SPSessionPersister implements SPPersister {
 	 * {@link SPObject} removal buffer, mapping of {@link SPObject} UUIDs
 	 * to their parents
 	 */
-	protected Map<String, String> objectsToRemove = 
-		new TreeMap<String, String>(removedObjectComparator);
+	protected Map<String, String> objectsToRemove = new HashMap<String, String>();
 	
 	private void setPersistedProperties(
 			Multimap<String, PersistedSPOProperty> persistedProperties) {
@@ -782,7 +781,10 @@ public abstract class SPSessionPersister implements SPPersister {
 	 *             parent.
 	 */
 	private void commitRemovals() throws SPPersistenceException {
-		for (Map.Entry<String, String> removeEntry : objectsToRemove.entrySet()) {
+		Map<String, String> sortedObjectsToRemove = 
+			new TreeMap<String, String>(removedObjectComparator);
+		sortedObjectsToRemove.putAll(objectsToRemove);
+		for (Map.Entry<String, String> removeEntry : sortedObjectsToRemove.entrySet()) {
 			SPObject spo = findByUuid(root, removeEntry.getKey(),
 					SPObject.class);
 			
