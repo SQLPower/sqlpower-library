@@ -123,5 +123,6 @@ public class PoolingPersisterEnterprise implements SPPersister {
     public void clear() {
         spoPropertyList.clear();
         spObjectList.clear();
+        spObjectMapToRemove.clear();
     }
 }
