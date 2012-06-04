@@ -79,7 +79,7 @@ public class SPPersisterListener implements SPListener {
 	 * If this persister is currently changing the object model we should not
 	 * send new persist calls.
 	 */
-	private final SPSessionPersister eventSource;
+	private SPSessionPersister eventSource;
 	
 	/**
 	 * Persisted property buffer, mapping a {@link SPObject} uuid 
@@ -847,4 +847,14 @@ public class SPPersisterListener implements SPListener {
     public boolean isInTransaction() {
     	return transactionCount > 0;
     }
+
+	/**
+	 * The event source of a listener can be changed so the listener does not
+	 * echo events. This can only be done when the listener is not in a
+	 * transaction.
+	 */
+    public void setEventSource(SPSessionPersister eventSource) {
+    	if (isInTransaction()) throw new IllegalStateException("Cannot set the event source when in a transaction!");
+		this.eventSource = eventSource;
+	}
 }
