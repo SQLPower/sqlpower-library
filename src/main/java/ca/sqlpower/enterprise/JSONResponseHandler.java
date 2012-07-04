@@ -97,7 +97,7 @@ public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
             	} catch (IOException e) {
             		logger.error("Failed to parse the root exception. The following was received " + sb.toString());
             	}
-            	throw new RuntimeException("Server error. See logs or server logs for more details.");
+            	throw new RuntimeException("Server error " + status + ". See logs or server logs for more details.");
         	}
             
             // Does the response contain data? If so, return it. Communication
