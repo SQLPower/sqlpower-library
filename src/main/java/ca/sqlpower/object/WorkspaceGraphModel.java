@@ -161,6 +161,16 @@ public class WorkspaceGraphModel implements GraphModel<SPObject, WorkspaceGraphM
      */
     public WorkspaceGraphModel(SPObject root, SPObject graphStartNode, 
             boolean showOnlyDependencies, boolean reversePolarity) {
+    	this(root, graphStartNode, showOnlyDependencies, reversePolarity, false);
+    }
+
+	/**
+	 * @param includeChildren
+	 *            If true the children of the {@link #graphStartNode} will be
+	 *            included in the graph, even if the relationships are inverted.
+	 */
+    public WorkspaceGraphModel(SPObject root, SPObject graphStartNode, 
+            boolean showOnlyDependencies, boolean reversePolarity, boolean includeChildren) {
         
         //The graph made by this constructor is done in two steps:
         //1) create an initial graph of the whole workspace and if necessary reverse 
@@ -178,9 +188,42 @@ public class WorkspaceGraphModel implements GraphModel<SPObject, WorkspaceGraphM
         BreadthFirstSearch<SPObject, WorkspaceGraphModelEdge> bfs = 
             new BreadthFirstSearch<SPObject, WorkspaceGraphModelEdge>();
         Set<SPObject> connectedObjects = new HashSet<SPObject>(bfs.performSearch(this, graphStartNode));
+        
+        if (includeChildren) {
+        	connectedObjects.addAll(performChildSearch(graphStartNode, connectedObjects));
+        }
 
         restrictGraph(connectedObjects);
         
+    }
+
+	/**
+	 * @param parent
+	 *            The parent that we want to ensure its children are included in
+	 *            the graph.
+	 * @param existingChildren
+	 *            The set of objects already to be included in the graph. This
+	 *            set exists for performance reasons in case the child is
+	 *            already included.
+	 */
+    private Set<SPObject> performChildSearch(SPObject parent, Set<SPObject> existingObjects) {
+    	Set<SPObject> connectedObjects = new HashSet<SPObject>();
+    	BreadthFirstSearch<SPObject, WorkspaceGraphModelEdge> bfs = 
+            new BreadthFirstSearch<SPObject, WorkspaceGraphModelEdge>();
+    	//Merges the existing objects with the recently found objects to pass the correct found
+    	//collection to the recursive call.
+    	Set<SPObject> foundObjects = new HashSet<SPObject>(existingObjects);
+    	for (SPObject child : parent.getChildren()) {
+    		if (!foundObjects.contains(child)) {
+    			List<SPObject> newNodes = bfs.performSearch(this, child);
+    			connectedObjects.addAll(newNodes);
+    			foundObjects.addAll(newNodes);
+    		}
+    		Set<SPObject> newNodes = performChildSearch(child, foundObjects);
+    		connectedObjects.addAll(newNodes);
+    		foundObjects.addAll(newNodes);
+    	}
+    	return connectedObjects;
     }
 
 	void restrictGraph(Set<SPObject> connectedObjects) {
