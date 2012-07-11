@@ -69,7 +69,7 @@ public class PoolingPersisterEnterprise implements SPPersister {
             throws SPPersistenceException {
         
         spoPropertyList.add(new PersistedSPOProperty(uuid, propertyName, 
-                propertyType, newValue, newValue, false));
+                propertyType, oldValue, newValue, false));
         
     }
 
@@ -78,7 +78,7 @@ public class PoolingPersisterEnterprise implements SPPersister {
             throws SPPersistenceException {
         
         spoPropertyList.add(new PersistedSPOProperty(uuid, propertyName, 
-                propertyType, newValue, newValue, false));
+                propertyType, newValue, newValue, true));
         
     }
 
