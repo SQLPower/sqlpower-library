@@ -201,6 +201,14 @@ public abstract class SPSessionPersister implements SPPersister {
 			if (ancestor1.getType().equals(ancestor2.getType())) {
 				c = ancestor1.getIndex() - ancestor2.getIndex();
 			} else {
+				if (previousAncestor == null) {
+					if (ancestorList1.isEmpty()) throw new IllegalStateException("The object represented by " + o1 + 
+							" is not correctly connected to the model");
+					if (ancestorList2.isEmpty()) throw new IllegalStateException("The object represented by " + o2 + 
+							" is not correctly connected to the model");
+					throw new NullPointerException("There was an issue comparing " + o1 + " and " + o2 + " which is " +
+							"normally caused by the objects not being in the same tree.");
+				}
 				//Looking at the highest ancestor that is different in the list and finding the order
 				//of these ancestors based on the absolute ordering defined in their shared parent class type.
 				try {
