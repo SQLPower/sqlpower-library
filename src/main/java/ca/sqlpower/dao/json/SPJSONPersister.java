@@ -109,8 +109,8 @@ public class SPJSONPersister implements SPPersister {
 				for (JSONObject obj: messageBuffer) {
 					messageSender.send(obj);
 				}
-				messageSender.flush();
 				messageBuffer.clear();
+				messageSender.flush();
 				transactionCount = 0;
 			} else {
 				transactionCount--;
