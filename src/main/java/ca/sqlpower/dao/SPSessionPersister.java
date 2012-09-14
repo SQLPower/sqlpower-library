@@ -1456,10 +1456,16 @@ public abstract class SPSessionPersister implements SPPersister {
 			parentUUID = parent.getUUID();
 			
 			List<? extends SPObject> siblings;
+			Class<? extends SPObject> siblingClass;
+			try {
+				siblingClass = PersisterUtils.getParentAllowedChildType(spo.getClass().getName(), parent.getClass().getName());
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
 			if (parent instanceof SQLObject) {
-				siblings = ((SQLObject) parent).getChildrenWithoutPopulating(spo.getClass());
+				siblings = ((SQLObject) parent).getChildrenWithoutPopulating(siblingClass);
 			} else {
-				siblings = parent.getChildren(spo.getClass());
+				siblings = parent.getChildren(siblingClass);
 			}
 			index = siblings.indexOf(spo);
 		}
