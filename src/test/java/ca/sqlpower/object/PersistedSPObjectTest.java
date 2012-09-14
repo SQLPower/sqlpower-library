@@ -25,7 +25,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,9 +40,9 @@ import org.apache.log4j.Logger;
 import ca.sqlpower.dao.PersistedSPOProperty;
 import ca.sqlpower.dao.PersistedSPObject;
 import ca.sqlpower.dao.PersisterUtils;
+import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.SPPersisterListener;
 import ca.sqlpower.dao.SPSessionPersister;
-import ca.sqlpower.dao.SPPersister.DataType;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.SPChildEvent.EventType;
 import ca.sqlpower.object.annotation.Accessor;
@@ -61,6 +60,8 @@ import ca.sqlpower.util.RunnableDispatcher;
 import ca.sqlpower.util.StubWorkspaceContainer;
 import ca.sqlpower.util.TransactionEvent;
 import ca.sqlpower.util.WorkspaceContainer;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * Classes that implement SPObject and need to be persisted must implement
@@ -97,14 +98,22 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	 * for connecting the root to a session in setup. If a formal root object
 	 * for a session gets created in the library it can replace this stub version. 
 	 */
-	private class StubWorkspace extends AbstractSPObject {
+	public static class StubWorkspace extends AbstractSPObject {
+		
+		public static final List<Class<? extends SPObject>> allowedChildTypes =
+			new ImmutableList.Builder<Class<? extends SPObject>>()
+				.add(SPObject.class)
+				.build();
 		
 		private final WorkspaceContainer workspaceContainer;
 		private final RunnableDispatcher dispatcher;
 
-		public StubWorkspace(WorkspaceContainer workspaceContainer, RunnableDispatcher dispatcher) {
+		private final SPObjectRoot root;
+
+		public StubWorkspace(WorkspaceContainer workspaceContainer, RunnableDispatcher dispatcher, SPObjectRoot root) {
 			this.workspaceContainer = workspaceContainer;
 			this.dispatcher = dispatcher;
+			this.root = root;
 		}
 
 		@Override
@@ -113,9 +122,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		}
 
 		public List<Class<? extends SPObject>> getAllowedChildTypes() {
-			List<Class<? extends SPObject>> list = new ArrayList<Class<? extends SPObject>>();
-			list.add(SPObjectRoot.class);
-			return list;
+			return allowedChildTypes;
 		}
 
 		public List<? extends SPObject> getChildren() {
@@ -171,7 +178,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		super.setUp();
 		root = new SPObjectRoot();
 		StubWorkspaceContainer stub = new StubWorkspaceContainer() {
-			private final SPObject workspace = new StubWorkspace(this, this);
+			private final SPObject workspace = new StubWorkspace(this, this, root);
 			@Override
 			public SPObject getWorkspace() {
 				return workspace;
@@ -434,7 +441,7 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 	public void testPersisterCreatesNewObjects() throws Exception {
 		SPObjectRoot newRoot = new SPObjectRoot();
 		WorkspaceContainer stub = new StubWorkspaceContainer() {
-			private final SPObject workspace = new StubWorkspace(this, this);
+			private final SPObject workspace = new StubWorkspace(this, this, root);
 			@Override
 			public SPObject getWorkspace() {
 				return workspace;
