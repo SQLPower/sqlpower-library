@@ -309,7 +309,15 @@ public class PersisterUtils {
         }
         
         Class<? extends SPObject> parentType = (Class<? extends SPObject>) PersisterUtils.class.getClassLoader().loadClass(parentClassName);
-        List<Class<? extends SPObject>> allowedChildTypes = (List<Class<? extends SPObject>>) 
+        return getParentAllowedChildType(childType, parentType);
+    }
+
+	@SuppressWarnings("unchecked")
+	public static Class<? extends SPObject> getParentAllowedChildType(
+			Class<? extends SPObject> childType,
+			Class<? extends SPObject> parentType)
+			throws IllegalAccessException, NoSuchFieldException {
+		List<Class<? extends SPObject>> allowedChildTypes = (List<Class<? extends SPObject>>) 
             parentType.getDeclaredField("allowedChildTypes").get(null);
         if (allowedChildTypes.contains(childType)) return childType;
         for (int i = 0; i < allowedChildTypes.size(); i++) {
@@ -319,7 +327,7 @@ public class PersisterUtils {
             }
         }
         return null;
-    }
+	}
     
     /**
      * A way to get the allowed child list from a class object that is an SPObject.

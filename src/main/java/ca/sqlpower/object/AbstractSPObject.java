@@ -27,6 +27,7 @@ import java.util.UUID;
 
 import org.apache.log4j.Logger;
 
+import ca.sqlpower.dao.PersisterUtils;
 import ca.sqlpower.dao.SPObjectVetoException;
 import ca.sqlpower.dao.VetoableSPListener;
 import ca.sqlpower.object.SPChildEvent.EventType;
@@ -113,7 +114,15 @@ public abstract class AbstractSPObject implements SPObject {
 		}
 		
 		child.setParent(this);
-		addChild(child,getChildren(child.getClass()).size());
+		Class<? extends SPObject> childClass;
+		try {
+			childClass = PersisterUtils.getParentAllowedChildType(child.getClass(), this.getClass());
+		} catch (IllegalAccessException e) {
+			throw new RuntimeException("The allowedChildTypes field must be accessible", e);
+		} catch (NoSuchFieldException e) {
+			throw new RuntimeException("The allowedChildTypes field must exist", e);
+		}
+		addChild(child,getChildren(childClass).size());
 	}
 	
     /**
