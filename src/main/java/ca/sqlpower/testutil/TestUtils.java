@@ -32,6 +32,7 @@ import java.util.Set;
 
 import org.apache.commons.beanutils.PropertyUtils;
 
+import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.object.SPObject;
 import ca.sqlpower.object.annotation.Accessor;
 import ca.sqlpower.object.annotation.Mutator;
@@ -126,8 +127,24 @@ public class TestUtils extends TestCase {
     	}
     	return newDescription;
     }
-    
-    
+
+	/**
+	 * Returns the set of property names which have both a getter and a setter
+	 * method and are annotated to be persisted through the {@link SPPersister}
+	 * classes.
+	 * 
+	 * @param objectUnderTest
+	 *            The object that contains the persistable properties we want to
+	 *            find.
+	 * @param includeTransient
+	 *            If true the properties marked as transient will also be
+	 *            included. If false only the properties that are persisted and
+	 *            not transient are returned.
+	 * @param includeConstructorMutators
+	 *            If true the properties that have getters but can only be set
+	 *            through a constructor due to being final will be included. If
+	 *            false the persisted properties provided must have a setter.
+	 */
     public static Set<String> findPersistableBeanProperties(SPObject objectUnderTest, boolean includeTransient, boolean includeConstructorMutators) throws Exception {
 		Set<String> getters = new HashSet<String>();
 		Set<String> setters = new HashSet<String>();
