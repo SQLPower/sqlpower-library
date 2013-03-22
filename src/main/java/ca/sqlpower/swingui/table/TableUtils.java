@@ -20,6 +20,7 @@ package ca.sqlpower.swingui.table;
 
 import java.awt.Component;
 
+import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -185,4 +186,28 @@ public class TableUtils {
         }
         return m;
     }
+   
+
+    /**
+     * Makes each column of the given table exactly the right width, so that the first and the last columns may have width 
+     * values different from the middle ones. 
+     * @param table the table that will have its columns adjust to appropriate size
+     * @param firstColumnWidth specifies the width of the first column
+     * @param middleColumnWidth specifies the width of the columns located between the first and the last ones
+     * @param lastColumnWidth specifies the width of the last column
+     * @param padding 
+     * 			  the number of pixels of extra space to leave (the actual
+     *            column width will be the maximum width of any value in the
+     *            column, plus this padding amount)
+     */
+    public static void adjustColWidth(JTable table, int firstColumnWidth, int middleColumnWidth, int lastColumnWidth, int padding) {
+		int colCount = table.getColumnCount();
+		
+		fitColumnWidth(table, 0, firstColumnWidth, firstColumnWidth, padding);
+		for(int i = 1; i < colCount-1; i++){
+			fitColumnWidth(table, i, middleColumnWidth, middleColumnWidth, padding);
+		}
+		fitColumnWidth(table, colCount-1, lastColumnWidth, lastColumnWidth, padding);
+		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);		
+	}
 }
