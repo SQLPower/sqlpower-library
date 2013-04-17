@@ -22,6 +22,8 @@ package ca.sqlpower.dao;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyDescriptor;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -330,6 +332,12 @@ public class SPPersisterListener implements SPListener {
 			
 		this.transactionEnded(TransactionEvent.createEndTransactionEvent(this));
 	}
+	
+	public void persistObjectInterleaveProperties(SPObject o, int index, 
+			boolean includeRootPersistObject, SPPersister localTarget) throws SPPersistenceException {
+		persistObjectInterleaveProperties(o, index, includeRootPersistObject, localTarget, 
+				Collections.<Class<? extends SPObject>>emptySet());
+	}
 
 	/**
 	 * The object and all of its descendants will be persisted to the given
@@ -348,9 +356,15 @@ public class SPPersisterListener implements SPListener {
 	 *            will be skipped.
 	 * @param localTarget
 	 *            The persister to make all of the persist object calls to.
+	 * @param skipList
+	 *            The classes in the given list will be skipped for the first
+	 *            call to this method. The classes in this list must be allowed
+	 *            child types of the object o.
 	 * @throws SPPersistenceException
 	 */
-	public void persistObjectInterleaveProperties(SPObject o, int index, boolean includeRootPersistObject, SPPersister localTarget) throws SPPersistenceException {
+	public void persistObjectInterleaveProperties(SPObject o, int index, 
+			boolean includeRootPersistObject, SPPersister localTarget, Collection<Class<? extends SPObject>> skipList) 
+					throws SPPersistenceException {
 		final SPPersisterHelper<? extends SPObject> persisterHelper;
 		try {
 			persisterHelper = PersisterHelperFinder.findPersister(o.getClass());
@@ -367,6 +381,7 @@ public class SPPersisterListener implements SPListener {
 		}
 
 		for (Class<? extends SPObject> childType : o.getAllowedChildTypes()) {
+			if (skipList.contains(childType)) continue;
 			List<? extends SPObject> children;
 			if (o instanceof SQLObject) {
 				children = ((SQLObject) o).getChildrenWithoutPopulating(childType);

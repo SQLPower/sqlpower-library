@@ -356,6 +356,12 @@ public abstract class SPSessionPersister implements SPPersister {
 	 */
 	protected Map<String, String> objectsToRemove = new HashMap<String, String>();
 	
+	/**
+	 * For some uses of the session persister we don't want to disable magic.
+	 * By default we do want to disable magic.
+	 */
+	private boolean disableMagic = true;
+	
 	private void setPersistedProperties(
 			Multimap<String, PersistedSPOProperty> persistedProperties) {
 		this.persistedProperties = persistedProperties;
@@ -459,7 +465,9 @@ public abstract class SPSessionPersister implements SPPersister {
 			final SPObject workspace = getWorkspaceContainer().getWorkspace();
 			synchronized (workspace) {
 				try {
-					workspace.setMagicEnabled(false);
+					if (disableMagic) {
+						workspace.setMagicEnabled(false);
+					}
 					if (transactionCount == 0) {
 						throw new SPPersistenceException(null,
 							"Commit attempted while not in a transaction");
@@ -514,7 +522,9 @@ public abstract class SPSessionPersister implements SPPersister {
 						}
 					}
 					
-					workspace.setMagicEnabled(true);
+					if (disableMagic) {
+						workspace.setMagicEnabled(true);
+					}
 				}
 			}
 		}
@@ -748,7 +758,9 @@ public abstract class SPSessionPersister implements SPPersister {
 			try {
 				// We catch ANYTHING that comes out of here and rollback.
 				// Some exceptions are Runtimes, so we must catch those too.
-				workspace.setMagicEnabled(false);
+				if (disableMagic) {
+					workspace.setMagicEnabled(false);
+				}
 				workspace.begin("Rolling back changes.");
 				rollbackProperties();
 				rollbackCreations();
@@ -760,7 +772,9 @@ public abstract class SPSessionPersister implements SPPersister {
 				logger.fatal("First try at restore failed.", e);
 				// TODO Monitor this
 			} finally {
-				workspace.setMagicEnabled(true);
+				if (disableMagic) {
+					workspace.setMagicEnabled(true);
+				}
 				objectsToRemove.clear();
 				objectsToRemoveRollbackList.clear();
 				persistedObjects.clear();
@@ -1598,5 +1612,9 @@ public abstract class SPSessionPersister implements SPPersister {
 		
 		lookupCache.putAll(SQLPowerUtils.buildIdMap(this.root));
 		return expectedType.cast(lookupCache.get(uuid));
+	}
+	
+	public void setDisableMagic(boolean disableMagic) {
+		this.disableMagic = disableMagic;
 	}
 }
