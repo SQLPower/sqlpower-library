@@ -90,7 +90,7 @@ public class PoolingPersisterEnterprise implements SPPersister {
     }
 
     public void rollback() {
-        throw new IllegalStateException("JCR Persistor rolled back when creating revision.");
+    	// don't need to do anything
     }
     
     /**
