@@ -4,7 +4,7 @@ package ca.sqlpower.dao;
  * A veto exception that indicates one of the {@link VetoableSPListener}
  * listeners vetoed the change.
  */
-public class SPObjectVetoException extends Exception {
+public class SPObjectVetoException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
 	
