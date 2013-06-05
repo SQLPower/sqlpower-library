@@ -55,6 +55,7 @@ import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.TransactionEvent;
 import ca.sqlpower.util.WorkspaceContainer;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 
@@ -151,7 +152,7 @@ public abstract class SPSessionPersister implements SPPersister {
 					o1.getType().equals(o2.getType())) {
 				return Integer.signum(o1.getIndex() - o2.getIndex());
 			}
-			
+						
 			List<PersistedSPObject> ancestorList1 = buildAncestorListFromPersistedObjects(o1);
 			List<PersistedSPObject> ancestorList2 = buildAncestorListFromPersistedObjects(o2);
 			
@@ -409,6 +410,24 @@ public abstract class SPSessionPersister implements SPPersister {
 	 * representation back into the complex object.
 	 */
 	protected final SessionPersisterSuperConverter converter;
+	
+	/**
+	 * This map contains class types that exist in the object tree to be
+	 * persisted. The ordering provides a way for this class to ensure classes
+	 * that connect different branches of a tree are added after both branches
+	 * are created. Normally when calling {@link #commitSortedObjects()} each
+	 * object is created in full before creating the next. However, some
+	 * objects, like SQLTable or XBRL Taxonomy, have children that link to
+	 * another object of the same type, like SQLRelationship or TaxonomyImport.
+	 * In these cases we need to make sure the connecting class gets created
+	 * after the other side of the relationship. To ensure both sides are
+	 * created we create all value classes after all objects of the
+	 * corresponding key are created. 
+	 * <p>
+	 * The values in this map are the fully qualified class names where the keys
+	 * must always be persisted before their values.
+	 */
+	private final Multimap<String, String> forcedOrderList = ArrayListMultimap.create();
 
 	/**
 	 * Creates a session persister that can update an object at or a descendant
@@ -872,6 +891,37 @@ public abstract class SPSessionPersister implements SPPersister {
 	 */
 	protected void commitObjects() throws SPPersistenceException {
 		Collections.sort(persistedObjects, persistedObjectComparator);
+		
+		if (!forcedOrderList.isEmpty()) {
+			//The last position in the persisted objects list where this class type exists.
+			Map<String, Integer> classInsertPoint = new HashMap<String, Integer>();
+			//The classes we need to move based on the parent class that is closest to the end of the list.
+			Map<String, String> moveClasses = new HashMap<String, String>();
+			//The objects we need to move based on the above maps and the forcedOrderList
+			List<PersistedSPObject> objectsToMove = new ArrayList<PersistedSPObject>();
+			for (int i = persistedObjects.size() - 1; i >= 0; i--) {
+				String persistType = persistedObjects.get(i).getType();
+				if (forcedOrderList.containsKey(persistType) && !classInsertPoint.containsKey(persistType)) {
+					classInsertPoint.put(persistType, i);
+					for (String clazz : forcedOrderList.get(persistType)) {
+						if (!moveClasses.containsKey(clazz)) {
+							moveClasses.put(clazz, persistType);
+						}
+					}
+				}
+				if (moveClasses.containsKey(persistType)) {
+					objectsToMove.add(persistedObjects.get(i));
+				}
+			}
+
+			for (PersistedSPObject moveMe : objectsToMove) {
+				String parentType = moveClasses.get(moveMe.getType());
+				Integer parentPoint = classInsertPoint.get(parentType);
+				persistedObjects.remove(moveMe);
+				persistedObjects.add(parentPoint, moveMe);
+			}
+		}
+		
 		commitSortedObjects();
 	}
 	
@@ -1616,5 +1666,21 @@ public abstract class SPSessionPersister implements SPPersister {
 	
 	public void setDisableMagic(boolean disableMagic) {
 		this.disableMagic = disableMagic;
+	}
+	
+	/**
+	 * This method allows extending persisters to force an order between two
+	 * arbitrary classes to allow us to correct issues where some child types
+	 * need to be created after all of a parent type objects have been created.
+	 * 
+	 * @param beforeClass
+	 *            All objects of this class will be created before the
+	 *            afterClass.
+	 * @param afterClass
+	 *            All objects of this type will be created sometime after all
+	 *            objects of the beforeClass have been created.
+	 */
+	protected void forcePersistOrder(Class<? extends SPObject> beforeClass, Class<? extends SPObject> afterClass) {
+		forcedOrderList.put(beforeClass.getName(), afterClass.getName());
 	}
 }
