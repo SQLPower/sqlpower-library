@@ -164,7 +164,17 @@ public class JSONResponseHandler implements ResponseHandler<JSONMessage> {
         } catch (RuntimeException ex) {
         	throw ex;
         } catch (Exception ex) {
-            throw new RuntimeException("Server returned status " + status + "\n" + tokener, ex);
+        	String message = ex.getMessage();
+        	if (message.contains("\n")) {
+        		String[] messages = message.split("\n");
+        		for (String serverMsg : messages) {
+        			if (serverMsg.trim().length() > 0) {
+        				message = serverMsg.trim();
+        				break;
+        			}
+        		}
+        	}
+            throw new RuntimeException("Server returned status " + status + "\n" + message, ex);
         }
     }
 }
