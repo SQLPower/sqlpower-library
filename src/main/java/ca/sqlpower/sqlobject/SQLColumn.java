@@ -48,6 +48,7 @@ import ca.sqlpower.sql.SQL;
 import ca.sqlpower.sqlobject.SQLRelationship.SQLImportedKey;
 import ca.sqlpower.sqlobject.SQLTypePhysicalProperties.SQLTypeConstraint;
 import ca.sqlpower.sqlobject.SQLTypePhysicalPropertiesProvider.PropertyType;
+import ca.sqlpower.swingui.ModalDialogListUserPrompter;
 import ca.sqlpower.util.UserPrompter;
 import ca.sqlpower.util.UserPrompterFactory;
 
@@ -646,6 +647,10 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
             		UserPrompter prompt;
             		if (userPrompters.containsKey(nativeType)) {
             			prompt = userPrompters.get(nativeType);
+            			if(prompt instanceof ModalDialogListUserPrompter) {
+            				((ModalDialogListUserPrompter<?>) prompt).setQuestionField("Choose a type for " + column.getShortDisplayName());
+            			}
+            			
             		} else {
             			prompt = upf.createListUserPrompter("Choose a type for " + column.getShortDisplayName(), upstreamTypes, upstreamTypes.get(0));
             			userPrompters.put(nativeType, prompt);

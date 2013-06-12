@@ -151,4 +151,11 @@ public class ModalDialogListUserPrompter<T> implements UserPrompter {
         }
         return responseButton;
 	}
+
+	/**
+	 * @param questionText the questionField to set
+	 */
+	public void setQuestionField(String questionText) {
+		this.questionField.setText(questionText);
+	}
 }
