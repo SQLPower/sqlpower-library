@@ -788,17 +788,17 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
 						public void run() {
 							if (fkTable == null) {
 								// In case of cross-schema relationship fkTable is null as related schema populated later
-								// so get the forignKey table again
-								SQLTable forignKeyTable;
+								// so get the foreignKey table again
+								SQLTable foreignKeyTable;
 								try {
-									forignKeyTable = db.getTableByName(fkCat,fkSchema,fkTableName);
+									foreignKeyTable = db.getTableByName(fkCat,fkSchema,fkTableName);
 								} catch (NullPointerException e) {
 									logger.error("FK table "+fkTableName +" of "+fkSchema+" is not populated yet.", e);
 									throw e;
 								} catch (SQLObjectException e) {
 									throw new RuntimeException(e);
 								}
-								finalRelation.setFkTable(forignKeyTable);
+								finalRelation.setFkTable(foreignKeyTable);
 							} else {
 								finalRelation.setFkTable(fkTable);
 							}
