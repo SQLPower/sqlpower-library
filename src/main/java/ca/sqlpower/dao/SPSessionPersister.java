@@ -363,6 +363,16 @@ public abstract class SPSessionPersister implements SPPersister {
 	 */
 	private boolean disableMagic = true;
 	
+	/**
+	 * In most cases we want the persister to rollback changes it made to the
+	 * model as it is normally the responsibility of the persister to perform
+	 * this action. However, in some cases we have another mechanism to undo the
+	 * changes as there may be more changes in the transaction that is outside
+	 * of this persister. For these cases we will disable the rollback for this
+	 * class when committing fails.
+	 */
+	private boolean rollbackOnCommitError = true;
+	
 	private void setPersistedProperties(
 			Multimap<String, PersistedSPOProperty> persistedProperties) {
 		this.persistedProperties = persistedProperties;
@@ -520,7 +530,9 @@ public abstract class SPSessionPersister implements SPPersister {
 				} catch (Throwable t) {
 					logger.error("SPSessionPersister caught an exception while " +
 							"performing a commit operation. Will try to rollback...", t);
-					rollback();
+					if (rollbackOnCommitError) {
+						rollback();
+					}
 					if (t instanceof SPPersistenceException) throw (SPPersistenceException) t;
 					if (t instanceof FriendlyRuntimeSPPersistenceException) throw (FriendlyRuntimeSPPersistenceException) t;
 					throw new SPPersistenceException(null, t);
@@ -1682,5 +1694,9 @@ public abstract class SPSessionPersister implements SPPersister {
 	 */
 	protected void forcePersistOrder(Class<? extends SPObject> beforeClass, Class<? extends SPObject> afterClass) {
 		forcedOrderList.put(beforeClass.getName(), afterClass.getName());
+	}
+	
+	public void setRollbackOnCommitError(boolean rollbackOnCommitError) {
+		this.rollbackOnCommitError = rollbackOnCommitError;
 	}
 }
