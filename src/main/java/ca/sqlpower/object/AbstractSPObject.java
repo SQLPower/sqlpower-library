@@ -28,7 +28,6 @@ import java.util.UUID;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.dao.PersisterUtils;
-import ca.sqlpower.dao.SPObjectVetoException;
 import ca.sqlpower.dao.VetoableSPListener;
 import ca.sqlpower.object.SPChildEvent.EventType;
 import ca.sqlpower.object.annotation.Accessor;
@@ -569,7 +568,7 @@ public abstract class AbstractSPObject implements SPObject {
         			final VetoableSPListener vetoableListener = (VetoableSPListener) staticListeners.get(i);
         			try {
 						vetoableListener.vetoableChange();
-					} catch (SPObjectVetoException e) {
+					} catch (Exception e) {
 						rollback(e.getMessage());
 						throw new RuntimeException(e);
 					}
