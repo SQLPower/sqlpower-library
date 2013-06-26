@@ -369,4 +369,33 @@ public class PersisterUtils {
         return null;
     }
 
+    /**
+	 * Returns a new {@link PersistedSPObject} based on a given {@link SPObject}.
+	 */
+	public static PersistedSPObject createPersistedObjectFromSPObject(SPObject spo) {
+		String parentUUID = null;
+		int index = 0;
+		
+		SPObject parent = spo.getParent();
+		if (parent != null) {
+			parentUUID = parent.getUUID();
+			
+			List<? extends SPObject> siblings;
+			Class<? extends SPObject> siblingClass;
+			try {
+				siblingClass = PersisterUtils.getParentAllowedChildType(spo.getClass().getName(), parent.getClass().getName());
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			if (parent instanceof SQLObject) {
+				siblings = ((SQLObject) parent).getChildrenWithoutPopulating(siblingClass);
+			} else {
+				siblings = parent.getChildren(siblingClass);
+			}
+			index = siblings.indexOf(spo);
+		}
+		
+		return new PersistedSPObject(parentUUID, spo.getClass().getName(), 
+				spo.getUUID(), index);
+	}
 }

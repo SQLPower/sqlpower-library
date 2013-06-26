@@ -119,7 +119,7 @@ public abstract class SPSessionPersister implements SPPersister {
 	 * using this map in the future but we will see how much this improves
 	 * performance.
 	 */
-	private Map<String, PersistedSPObject> persistedObjectsMap = 
+	protected Map<String, PersistedSPObject> persistedObjectsMap = 
 		new HashMap<String, PersistedSPObject>();
 	
 	/**
@@ -128,125 +128,6 @@ public abstract class SPSessionPersister implements SPPersister {
 	 */
 	private List<PersistedObjectEntry> persistedObjectsRollbackList = 
 		new LinkedList<PersistedObjectEntry>();
-
-	/**
-	 * {@link Comparator} for comparing {@link PersistedSPObject}s, to be used
-	 * before committing persisted objects.
-	 */
-	protected final Comparator<PersistedSPObject> persistedObjectComparator = 
-		new Comparator<PersistedSPObject>() {
-
-		// If the two objects being compared are of the same type and are
-		// children of the same parent, the one with the lower index should go
-		// first. Otherwise, the one with the smaller ancestor tree should go first
-		// (e.g. Report should go before Page).
-		public int compare(PersistedSPObject o1, PersistedSPObject o2) {
-
-			if (o1.getParentUUID() == null && o2.getParentUUID() == null) {
-				return 0;
-			} else if (o1.getParentUUID() == null) {
-				return -1;
-			} else if (o2.getParentUUID() == null) {
-				return 1;
-			} else if (o1.getParentUUID().equals(o2.getParentUUID()) && 
-					o1.getType().equals(o2.getType())) {
-				return Integer.signum(o1.getIndex() - o2.getIndex());
-			}
-						
-			List<PersistedSPObject> ancestorList1 = buildAncestorListFromPersistedObjects(o1);
-			List<PersistedSPObject> ancestorList2 = buildAncestorListFromPersistedObjects(o2);
-			
-			if (ancestorList1.contains(o2)) {
-			    return 1;
-			} else if (ancestorList2.contains(o1)) {
-			    return -1;
-			}
-			
-			PersistedSPObject previousAncestor = null;
-			PersistedSPObject ancestor1 = null;
-			PersistedSPObject ancestor2 = null;
-			boolean compareWithAncestor = false;
-			
-			//Looking at the highest ancestor that is different in the list
-			for (int i = 0, j = 0; i < ancestorList1.size() && j < ancestorList2.size(); i++, j++) {
-				ancestor1 = ancestorList1.get(i);
-				ancestor2 = ancestorList2.get(j);
-				
-				if (previousAncestor != null && !ancestor1.equals(ancestor2)) {
-					compareWithAncestor = true;
-					break;
-				}
-				
-				previousAncestor = ancestor1;
-			}
-			
-			if (!compareWithAncestor) {
-				if (ancestorList1.size() < ancestorList2.size()) {
-					ancestor1 = o1;
-					ancestor2 = ancestorList2.get(ancestorList1.size());
-				} else if (ancestorList1.size() > ancestorList2.size()) {
-					ancestor1 = ancestorList1.get(ancestorList2.size());
-					ancestor2 = o2;
-				} else {
-					ancestor1 = o1;
-					ancestor2 = o2;
-				}
-			}
-			if (ancestor1.equals(ancestor2)) {
-			    throw new IllegalStateException("The ancestors of " + o1 + " and " + o2 + 
-			            " is the same object but should not be by checks above. The ancestor is " + ancestor1);
-			}
-			
-			int c;
-			
-			if (ancestor1.getType().equals(ancestor2.getType())) {
-				c = ancestor1.getIndex() - ancestor2.getIndex();
-			} else {
-				if (previousAncestor == null) {
-					if (ancestorList1.isEmpty()) throw new IllegalStateException("The object represented by " + o1 + 
-							" is not correctly connected to the model");
-					if (ancestorList2.isEmpty()) throw new IllegalStateException("The object represented by " + o2 + 
-							" is not correctly connected to the model");
-					throw new NullPointerException("There was an issue comparing " + o1 + " and " + o2 + " which is " +
-							"normally caused by the objects not being in the same tree.");
-				}
-				//Looking at the highest ancestor that is different in the list and finding the order
-				//of these ancestors based on the absolute ordering defined in their shared parent class type.
-				try {
-					
-					int ancestorType1Index = PersisterUtils.getTypePosition(ancestor1.getType(),
-					        previousAncestor.getType());
-					if (ancestorType1Index == -1) {
-					    throw new IllegalStateException("Allowed child types for " + previousAncestor + 
-					            " does not contain " + ancestor1);
-					}
-					int ancestorType2Index = PersisterUtils.getTypePosition(ancestor2.getType(),
-					        previousAncestor.getType());
-                    if (ancestorType2Index == -1) {
-                        throw new IllegalStateException("Allowed child types for " + previousAncestor + 
-                                " does not contain " + ancestor2);
-                    }
-					c = ancestorType1Index - ancestorType2Index;
-
-					if (c == 0 && ancestor1.getParentUUID().equals(ancestor2.getParentUUID())) {
-					    //If you reach this point the two objects are subclasses of the same
-					    //object type contained in the allowedChildTypes list and their order
-					    //is decided by their index locations.
-					    c = ancestor1.getIndex() - ancestor2.getIndex();
-					    if (c == 0) {
-					        throw new IllegalStateException("The objects " + ancestor1 + " and " + 
-					                ancestor2 + " are defined as equal but shouldn't be.");
-					    }
-					} else if (c == 0) {
-					    throw new IllegalStateException("Error comparing " + o1 + " to " + o2);
-					}
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			}
-			return Integer.signum(c);
-		}
-	};
 
 	/**
 	 * This comparator sorts buffered removeObject calls by each
@@ -902,7 +783,7 @@ public abstract class SPSessionPersister implements SPPersister {
 	 * @throws SPPersistenceException
 	 */
 	protected void commitObjects() throws SPPersistenceException {
-		Collections.sort(persistedObjects, persistedObjectComparator);
+		Collections.sort(persistedObjects, getComparator());
 		
 		if (!forcedOrderList.isEmpty()) {
 			//The last position in the persisted objects list where this class type exists.
@@ -937,6 +818,15 @@ public abstract class SPSessionPersister implements SPPersister {
 		commitSortedObjects();
 	}
 	
+	/**
+	 * Returns a comparator that can be used to sort the
+	 * {@link PersistedSPObject} events so the objects in the tree are created
+	 * in an order that does not cause them to cause exceptions.
+	 */
+	protected Comparator<? super PersistedSPObject> getComparator() {
+		return new PersistedObjectComparator(root, persistedObjectsMap);
+	}
+
 	/**
 	 * Commits the persisted {@link SPObject}s
 	 * 
@@ -1482,72 +1372,6 @@ public abstract class SPSessionPersister implements SPPersister {
 	private void setPersistedPropertiesRollbackList(
 			List<PersistedPropertiesEntry> persistedPropertiesRollbackList) {
 		this.persistedPropertiesRollbackList = persistedPropertiesRollbackList;
-	}
-
-	/**
-	 * Returns an ancestor list of {@link PersistedSPObject}s from a given child
-	 * {@link PersistedSPObject}. The list holds persist objects starting from
-	 * the root and going to the parent's persist call. This list does not hold
-	 * the persist call for the persist passed in. This list holds persist calls
-	 * that are outside of the current transaction of persist calls, it will
-	 * create persist calls as necessary.
-	 */
-	private List<PersistedSPObject> buildAncestorListFromPersistedObjects(PersistedSPObject child) {
-		List<PersistedSPObject> resultList = new ArrayList<PersistedSPObject>();
-
-		// Iterate through list of persisted SPObjects to build an ancestor
-		// list from objects that do not exist in the root yet.
-		String uuid = child.getParentUUID();
-		PersistedSPObject pso;
-		while ((pso = persistedObjectsMap.get(uuid)) != null) {
-			resultList.add(0, pso);
-			uuid = pso.getParentUUID();
-		}
-
-		SPObject spo = findByUuid(root, uuid, SPObject.class);
-		List<PersistedSPObject> existingAncestorList = new ArrayList<PersistedSPObject>();
-		if (spo != null) {
-			existingAncestorList.add(0, createPersistedObjectFromSPObject(spo));
-			List<SPObject> ancestorList = SQLPowerUtils.getAncestorList(spo);
-			Collections.reverse(ancestorList);
-
-			for (SPObject ancestor : ancestorList) {
-				existingAncestorList.add(0, createPersistedObjectFromSPObject(ancestor));
-			}
-		}
-		resultList.addAll(0, existingAncestorList);
-		
-		return resultList;
-	}
-	
-	/**
-	 * Returns a new {@link PersistedSPObject} based on a given {@link SPObject}.
-	 */
-	private PersistedSPObject createPersistedObjectFromSPObject(SPObject spo) {
-		String parentUUID = null;
-		int index = 0;
-		
-		SPObject parent = spo.getParent();
-		if (parent != null) {
-			parentUUID = parent.getUUID();
-			
-			List<? extends SPObject> siblings;
-			Class<? extends SPObject> siblingClass;
-			try {
-				siblingClass = PersisterUtils.getParentAllowedChildType(spo.getClass().getName(), parent.getClass().getName());
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-			if (parent instanceof SQLObject) {
-				siblings = ((SQLObject) parent).getChildrenWithoutPopulating(siblingClass);
-			} else {
-				siblings = parent.getChildren(siblingClass);
-			}
-			index = siblings.indexOf(spo);
-		}
-		
-		return new PersistedSPObject(parentUUID, spo.getClass().getName(), 
-				spo.getUUID(), index);
 	}
 
 	public void setWorkspaceContainer(WorkspaceContainer workspaceContainer) {
