@@ -357,9 +357,7 @@ public class SPPersisterListener implements SPListener {
 	 * @param localTarget
 	 *            The persister to make all of the persist object calls to.
 	 * @param skipList
-	 *            The classes in the given list will be skipped for the first
-	 *            call to this method. The classes in this list must be allowed
-	 *            child types of the object o.
+	 *            The classes in the given list will be skipped.
 	 * @throws SPPersistenceException
 	 */
 	public void persistObjectInterleaveProperties(SPObject o, int index, 
@@ -390,7 +388,7 @@ public class SPPersisterListener implements SPListener {
 			}
 			logger.debug("Persisting children " + children + " of " + o);
 			for (int i = 0; i < children.size(); i++) {
-				persistObjectInterleaveProperties(children.get(i), i, true, localTarget);
+				persistObjectInterleaveProperties(children.get(i), i, true, localTarget, skipList);
 			}
 		}
 		
