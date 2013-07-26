@@ -19,7 +19,6 @@
 
 package ca.sqlpower.swingui;
 
-import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.lang.reflect.InvocationTargetException;
@@ -39,9 +38,7 @@ import ca.sqlpower.util.UserPrompter;
 
 import com.jgoodies.forms.builder.ButtonBarBuilder;
 import com.jgoodies.forms.builder.DefaultFormBuilder;
-import com.jgoodies.forms.debug.FormDebugPanel;
 import com.jgoodies.forms.layout.FormLayout;
-import com.jgoodies.forms.layout.RowSpec;
 
 
 public class ModalDialogListUserPrompter<T> implements UserPrompter {
@@ -55,6 +52,7 @@ public class ModalDialogListUserPrompter<T> implements UserPrompter {
 	private T response;
 	private UserPromptResponse responseButton;
 	private boolean firstPrompt = true;
+	private MessageFormat questionFormat;
 
 	public ModalDialogListUserPrompter(JFrame parentFrame, String question, List<T> responses, T defaultResponse) {
 		this.parentFrame = parentFrame;
@@ -70,6 +68,8 @@ public class ModalDialogListUserPrompter<T> implements UserPrompter {
         questionField = new JTextArea(question);
         questionField.setEditable(false);
         questionField.setBackground(null);
+        
+        questionFormat = new MessageFormat(question);
         
         JPanel confirmPanel = new JPanel();
         FormLayout formLayout = new FormLayout("pref:grow" //$NON-NLS-1$
@@ -122,15 +122,16 @@ public class ModalDialogListUserPrompter<T> implements UserPrompter {
 		return response;
 	}
 
-	public UserPromptResponse promptUser(Object... formatArgs) {
+	public UserPromptResponse promptUser(final Object... formatArgs) {
 		try {
 			if (applyToAll.isSelected()) {
 				return UserPromptResponse.OK;
 			}
 			Runnable runner = new Runnable() {
 			    public void run() {
+			    	questionField.setText(questionFormat.format(formatArgs));
+			    	confirmDialog.pack();
 			        if (firstPrompt) {
-			            confirmDialog.pack();
 			            confirmDialog.setLocationRelativeTo(parentFrame);
 			            firstPrompt = false;
 			        }
