@@ -19,13 +19,13 @@
 
 package ca.sqlpower.swingui;
 
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.lang.reflect.InvocationTargetException;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
@@ -66,7 +66,7 @@ public class TextUserPrompter implements UserPrompter {
     /**
      * The owner of the dialog made by this prompter.
      */
-    private final JFrame owner;
+    private final Window owner;
 
     /**
      * @param question
@@ -83,7 +83,7 @@ public class TextUserPrompter implements UserPrompter {
      * @param cancelName
      *            The text that goes on the cancel button.
      */
-    public TextUserPrompter(JFrame owner, String question, UserPromptResponse defaultResponseType, 
+    public TextUserPrompter(Window owner, String question, UserPromptResponse defaultResponseType, 
             Object defaultResponse, String okName, String cancelName) {
         this.owner = owner;
         this.defaultResponseType = defaultResponseType;
