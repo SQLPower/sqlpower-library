@@ -35,6 +35,11 @@ public class EditableJTable extends JTable implements TableTextConverter {
 	}
 	
 	@Override
+	public boolean getScrollableTracksViewportWidth() {
+		return getPreferredSize().width < getParent().getWidth();
+	}
+
+	@Override
 	public void removeNotify() {
 		super.removeNotify();
 		logger.debug("Table removed from hierarchy.  Cleaning up model...");
