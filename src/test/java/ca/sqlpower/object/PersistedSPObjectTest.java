@@ -959,7 +959,9 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		
 		getSPObjectUnderTest().addSPListener(listener);
 		
+		getSPObjectUnderTest().setMagicEnabled(false);
 		getSPObjectUnderTest().removeChild(child);
+		getSPObjectUnderTest().setMagicEnabled(true);
 		
 		assertNull("Parent of " + child.getClass() + 
 				" must be set to null after calling removeChild.", 
@@ -975,7 +977,9 @@ public abstract class PersistedSPObjectTest extends DatabaseConnectedTestCase {
 		
 		getSPObjectUnderTest().addSPListener(listener);
 		
+		getSPObjectUnderTest().setMagicEnabled(false);
 		getSPObjectUnderTest().removeChild(child);
+		getSPObjectUnderTest().setMagicEnabled(true);
 		
 		assertEquals(1, listener.getChildRemovedCount());
 	}
