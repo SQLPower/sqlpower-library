@@ -21,14 +21,21 @@ package ca.sqlpower.object;
 
 import java.beans.PropertyChangeEvent;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
+
 import ca.sqlpower.object.SPChildEvent.EventType;
+import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.TransactionEvent;
+import ca.sqlpower.util.TransactionEvent.TransactionState;
 
 /**
  * Extend this class to add the behaviour to not respond to events when in a
@@ -51,62 +58,149 @@ public abstract class AbstractPoolingSPListener implements SPListener {
      */
     private final Map<SPObject, Integer> inTransactionMap = 
         new IdentityHashMap<SPObject, Integer>();
+    
+    /**
+	 * This creation counter is used for the creation time of the
+	 * {@link EventObject}s so we can provide a specific order. There shouldn't
+	 * be the case where two threads are firing events to the listener at the
+	 * same time. If this case should arise it shouldn't matter who is first for
+	 * the counter as it would end in a race condition in other locations.
+	 */
+    private long creationCounter = 0;
+    
+    /**
+	 * This object stores the events (child added, removed, or property change)
+	 * and the index of when the change occurred. We need to store when the
+	 * change occurred in the unusual case where we have a parent and child both
+	 * in a transaction and operations are occuring to both objects. In this
+	 * case we want to preserve the order as we can't say all parent events must
+	 * come before the child events (cases where the child has a descendant
+	 * added then the parent refers to the descendant) nor can we say the child
+	 * events come before the parents (a sibling of the child is added to the
+	 * parent and the child refers to its new sibling).
+	 */
+    private class EventObject {
+    	
+    	private final Object event;
+    	private final long creationTime;
 
+		public EventObject(Object event) {
+			this.event = event;
+			creationTime = getCurrentCreationTime();
+    	}
+		
+		public Object getEvent() {
+			return event;
+		}
+		
+		public long getCreationTime() {
+			return creationTime;
+		}
+		
+    }
+    
     /**
      * Tracks the e that occur while an object is in a transaction state. These
      * events will be acted on when the transaction ends or are removed when the
      * transaction rolls back. The events can be {@link PropertyChangeEvent}s or
      * {@link SPChildEvent}s.
      */
-    private final Map<SPObject, List<Object>> eventMap = 
-        new IdentityHashMap<SPObject, List<Object>>();
+    private final Map<SPObject, List<EventObject>> eventMap = 
+        new IdentityHashMap<SPObject, List<EventObject>>();
+    
+    private final Multimap<SPObject, SPObject> ancestorTransactionMap = 
+    		ArrayListMultimap.create();
+    
+    private long getCurrentCreationTime() {
+    	creationCounter++;
+    	return creationCounter;
+    }
 
     public final void transactionEnded(TransactionEvent e) {
     	Integer lastTransactionCount;
-        if (errorOnDanglingCommit && inTransactionMap.get(e.getSource()) == null) {
-            throw new IllegalStateException("An end transaction for object " + e.getSource() 
-                    + " of type " + e.getSource().getClass() + " was called while it was " +
+        SPObject source = (SPObject) e.getSource();
+		if (errorOnDanglingCommit && inTransactionMap.get(source) == null) {
+            throw new IllegalStateException("An end transaction for object " + source 
+                    + " of type " + source.getClass() + " was called while it was " +
             		"not in a transaction.");
-        } else if (!errorOnDanglingCommit && inTransactionMap.get(e.getSource()) == null) {
+        } else if (!errorOnDanglingCommit && inTransactionMap.get(source) == null) {
             return;
         } else {
-        	lastTransactionCount = inTransactionMap.get(e.getSource());
-        	logger.debug("Transaction count on " + this +  " for:" + e.getSource() + ": " + inTransactionMap.get((SPObject) e.getSource()));
+        	lastTransactionCount = inTransactionMap.get(source);
+        	logger.debug("Transaction count on " + this +  " for:" + source + ": " + inTransactionMap.get(source));
         }
         Integer nestedTransactionCount = lastTransactionCount - 1;
         if (nestedTransactionCount < 0) {
             throw new IllegalStateException("The transaction count was not removed properly.");
         } else if (nestedTransactionCount > 0) {
-            inTransactionMap.put((SPObject) e.getSource(), nestedTransactionCount);
+            inTransactionMap.put(source, nestedTransactionCount);
             transactionEndedImpl(e);
         } else {
-            inTransactionMap.remove(e.getSource());
-            if (eventMap.get(e.getSource()) != null) {
-            	//Copy of event list in case listener receiving events causes other events.
-            	List<Object> eventsForSource = new ArrayList<Object>(eventMap.get(e.getSource()));
-            	eventMap.remove(e.getSource());
-                for (Object evt : eventsForSource) {
-                    if (evt instanceof PropertyChangeEvent) {
-                        propertyChangeImpl((PropertyChangeEvent) evt);
-                    } else if (evt instanceof SPChildEvent) {
-                        SPChildEvent childEvent = (SPChildEvent) evt;
-                        if (childEvent.getType().equals(EventType.ADDED)) {
-                            childAddedImpl(childEvent);
-                        } else if (childEvent.getType().equals(EventType.REMOVED)) {
-                            childRemovedImpl(childEvent);
-                        } else {
-                            throw new IllegalStateException("Unknown wabit child event of type " + childEvent.getType());
-                        }
-                    } else {
-                        throw new IllegalStateException("Unknown event type " + evt.getClass());
-                    }
-                }
+            inTransactionMap.remove(source);
+            
+            if (!ancestorInTransaction(source)) {
+            	handlePooledEvents(source);
+            	transactionEndedImpl(e);
+            } else {
+            	addEventToMap(e, source);
             }
             
-            transactionEndedImpl(e);
             finalCommitImpl(e);
         }
     }
+
+	private void handlePooledEvents(SPObject source) {
+		List<EventObject> eventsForSource = collectPooledEvents(source);
+		Collections.sort(eventsForSource, new Comparator<EventObject>() {
+			@Override
+			public int compare(EventObject e1, EventObject e2) {
+				return Long.valueOf(e1.getCreationTime()).compareTo(Long.valueOf(e2.getCreationTime()));
+			}
+		});
+		
+		for (EventObject event : eventsForSource) {
+			Object evt = event.getEvent();
+			if (evt instanceof PropertyChangeEvent) {
+				propertyChangeImpl((PropertyChangeEvent) evt);
+			} else if (evt instanceof SPChildEvent) {
+				SPChildEvent childEvent = (SPChildEvent) evt;
+				if (childEvent.getType().equals(EventType.ADDED)) {
+					childAddedImpl(childEvent);
+				} else if (childEvent.getType().equals(EventType.REMOVED)) {
+					childRemovedImpl(childEvent);
+				} else {
+					throw new IllegalStateException("Unknown child event of type " + childEvent.getType());
+				}
+			} else if (evt instanceof TransactionEvent) {
+				TransactionEvent transEvt = (TransactionEvent) evt;
+				if (transEvt.getState().equals(TransactionState.END)) {
+					transactionEndedImpl(transEvt);
+				} else {
+					throw new IllegalStateException("Unknown transaction event of type " + transEvt.getState());
+				}
+			} else {
+				throw new IllegalStateException("Unknown event type " + evt.getClass());
+			}
+		}
+	}
+
+	private List<EventObject> collectPooledEvents(SPObject source) {
+		List<EventObject> eventsForSource = new ArrayList<EventObject>();
+		if (eventMap.get(source) != null) {
+			//Copy of event list in case listener receiving events causes other events.
+			eventsForSource.addAll(eventMap.get(source));
+			eventMap.remove(source);
+		}
+		if (ancestorTransactionMap.get(source) != null) {
+			for (SPObject childSource : ancestorTransactionMap.get(source)) {
+				if (!isInTransaction(childSource)) {
+					eventsForSource.addAll(collectPooledEvents(childSource));
+				}
+			}
+			ancestorTransactionMap.removeAll(source);
+		}
+		return eventsForSource;
+	}
     
     /**
      * For almost all pooling listeners we want an error to occur if there
@@ -147,7 +241,38 @@ public abstract class AbstractPoolingSPListener implements SPListener {
     public final void transactionRollback(TransactionEvent e) {
         inTransactionMap.remove(e.getSource());
         eventMap.remove(e.getSource());
+        ancestorTransactionMap.removeAll(e.getSource());
         transactionRollbackImpl(e);
+    }
+    
+    /**
+     * Returns true if at least one ancestor is in a transaction.
+     */
+    private boolean ancestorInTransaction(SPObject obj) {
+    	List<SPObject> ancestors = SQLPowerUtils.getAncestorList(obj);
+    	for (SPObject ancestor : ancestors) {
+    		if (isInTransaction(ancestor)) return true;
+    	}
+    	return false;
+    }
+
+	private boolean isInTransaction(SPObject ancestor) {
+		return inTransactionMap.get(ancestor) != null 
+		    && inTransactionMap.get(ancestor) > 0;
+	}
+
+    /**
+     * Connects the given object to it's closest's ancestor's transaction.
+     */
+    private void addAncestorTransaction(SPObject obj) {
+    	List<SPObject> ancestors = SQLPowerUtils.getAncestorList(obj);
+    	Collections.reverse(ancestors);
+    	for (SPObject ancestor : ancestors) {
+    		if (isInTransaction(ancestor)) {
+    			ancestorTransactionMap.put(ancestor, obj);
+    			return;
+    		}
+    	}
     }
     
     /**
@@ -159,12 +284,16 @@ public abstract class AbstractPoolingSPListener implements SPListener {
 
     public final void transactionStarted(TransactionEvent e) {
         Integer transactionCount = inTransactionMap.get(e.getSource());
-        if (transactionCount == null) {
-            inTransactionMap.put((SPObject) e.getSource(), 1);
+        SPObject source = (SPObject) e.getSource();
+		if (transactionCount == null) {
+            inTransactionMap.put(source, 1);
         } else {
-            inTransactionMap.put((SPObject) e.getSource(), transactionCount + 1);
+            inTransactionMap.put(source, transactionCount + 1);
         }
-        logger.debug("Transaction count on " + this +  " for:" + e.getSource() + ": " + inTransactionMap.get((SPObject) e.getSource()));
+		if (ancestorInTransaction(source)) {
+			addAncestorTransaction(source);
+		}
+        logger.debug("Transaction count on " + this +  " for:" + e.getSource() + ": " + inTransactionMap.get(source));
         transactionStartedImpl(e);
     }
     
@@ -178,14 +307,13 @@ public abstract class AbstractPoolingSPListener implements SPListener {
     }
 
     public final void childAdded(SPChildEvent e) {
-        if (inTransactionMap.get(e.getSource()) != null 
-                && inTransactionMap.get(e.getSource()) > 0) {
-            List<Object> events = eventMap.get(e.getSource());
-            if (events == null) {
-                events = new ArrayList<Object>();
-                eventMap.put(e.getSource(), events);
-            }
-            events.add(e);
+        SPObject source = e.getSource();
+        boolean ancestorTrans = ancestorInTransaction(source);
+		if (ancestorTrans || isInTransaction(source)) {
+			if (ancestorTrans) {
+				addAncestorTransaction(source);
+			}
+            addEventToMap(e, source);
         } else {
             childAddedImpl(e);
         }
@@ -200,18 +328,26 @@ public abstract class AbstractPoolingSPListener implements SPListener {
     }
 
     public final void childRemoved(SPChildEvent e) {
-        if (inTransactionMap.get(e.getSource()) != null 
-                && inTransactionMap.get(e.getSource()) > 0) {
-            List<Object> events = eventMap.get(e.getSource());
-            if (events == null) {
-                events = new ArrayList<Object>();
-                eventMap.put(e.getSource(), events);
-            }
-            events.add(e);
+        SPObject source = e.getSource();
+        boolean ancestorTrans = ancestorInTransaction(source);
+		if (ancestorTrans || isInTransaction(source)) {
+			if (ancestorTrans) {
+				addAncestorTransaction(source);
+			}
+            addEventToMap(e, source);
         } else {
             childRemovedImpl(e);
         }
     }
+
+	private void addEventToMap(Object e, SPObject source) {
+		List<EventObject> events = eventMap.get(source);
+		if (events == null) {
+		    events = new ArrayList<EventObject>();
+		    eventMap.put(source, events);
+		}
+		events.add(new EventObject(e));
+	}
     
     /**
      * Override this method if an action is required when a child removed event is
@@ -222,14 +358,13 @@ public abstract class AbstractPoolingSPListener implements SPListener {
     }
 
     public final void propertyChanged(PropertyChangeEvent evt) {
-        if (inTransactionMap.get(evt.getSource()) != null 
-                && inTransactionMap.get(evt.getSource()) > 0) {
-            List<Object> events = eventMap.get(evt.getSource());
-            if (events == null) {
-                events = new ArrayList<Object>();
-                eventMap.put((SPObject) evt.getSource(), events);
-            }
-            events.add(evt);
+        SPObject source = (SPObject) evt.getSource();
+        boolean ancestorTrans = ancestorInTransaction(source);
+		if (ancestorTrans || isInTransaction(source)) {
+			if (ancestorTrans) {
+				addAncestorTransaction(source);
+			}
+            addEventToMap(evt, source);
         } else {
             propertyChangeImpl(evt);
         }
