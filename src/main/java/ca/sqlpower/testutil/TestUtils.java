@@ -146,9 +146,30 @@ public class TestUtils extends TestCase {
 	 *            false the persisted properties provided must have a setter.
 	 */
     public static Set<String> findPersistableBeanProperties(SPObject objectUnderTest, boolean includeTransient, boolean includeConstructorMutators) throws Exception {
+    	return findPersistableBeanProperties(objectUnderTest.getClass(), includeTransient, includeConstructorMutators);
+    }
+    
+    /**
+	 * Returns the set of property names which have both a getter and a setter
+	 * method and are annotated to be persisted through the {@link SPPersister}
+	 * classes.
+	 * 
+	 * @param objectUnderTest
+	 *            The object that contains the persistable properties we want to
+	 *            find.
+	 * @param includeTransient
+	 *            If true the properties marked as transient will also be
+	 *            included. If false only the properties that are persisted and
+	 *            not transient are returned.
+	 * @param includeConstructorMutators
+	 *            If true the properties that have getters but can only be set
+	 *            through a constructor due to being final will be included. If
+	 *            false the persisted properties provided must have a setter.
+	 */
+    public static Set<String> findPersistableBeanProperties(Class<? extends SPObject> objectUnderTest, boolean includeTransient, boolean includeConstructorMutators) throws Exception {
 		Set<String> getters = new HashSet<String>();
 		Set<String> setters = new HashSet<String>();
-		for (Method m : objectUnderTest.getClass().getMethods()) {
+		for (Method m : objectUnderTest.getMethods()) {
 			if (m.getName().equals("getClass")) continue;
 			
 			//skip non-public methods as they are not visible for persisting anyways.
@@ -157,7 +178,7 @@ public class TestUtils extends TestCase {
 			if (Modifier.isStatic(m.getModifiers())) continue;
 			
 			if (m.getName().startsWith("get") || m.getName().startsWith("is")) {
-				Class<?> parentClass = objectUnderTest.getClass();
+				Class<?> parentClass = objectUnderTest;
 				boolean accessor = false;
 				boolean ignored = false;
 				boolean isTransient = false;
