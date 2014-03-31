@@ -147,7 +147,7 @@ public class SearchTextField {
 		});
 	}
 	
-	private void doSearch() {
+	public void doSearch() {
 		Pattern p;
 		boolean matchExactly;
 		try {
