@@ -248,7 +248,11 @@ public class SessionPersisterSuperConverter {
 			return (Integer) o;
 			
 		} else if (Double.class.isAssignableFrom(type)) {
-			return (Double) o;
+			if (o instanceof BigDecimal) {
+				return ((BigDecimal) o).doubleValue();
+			} else {
+				return (Double) o;
+			}
 			
 		} else if (Boolean.class.isAssignableFrom(type)) {
 			return (Boolean) o;
