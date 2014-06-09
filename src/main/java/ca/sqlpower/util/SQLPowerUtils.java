@@ -555,10 +555,16 @@ public class SQLPowerUtils {
      * sequence of characters in it.
      * 
      * @param context
+	 *            If the path starts with webapp: this context will be used to
+	 *            find where the file is located.
+	 * @param relativeDir
+	 *            If the path is a relative one we will look for the path
+	 *            starting from this directory. If this directory is not
+	 *            specified then the default execution directory will be used.
      * @param path
      * @return
      */
-    public static URI resolveConfiguredPath(ServletContext context, String path) {
+    public static URI resolveConfiguredPath(ServletContext context, File relativeDir, String path) {
         if (path.contains("://")) {
             try {
                 return new URI(path);
@@ -568,26 +574,39 @@ public class SQLPowerUtils {
                         "Check your typing.", e);
             }
         } else {
-            return resolveConfiguredFilePath(context, path).toURI();
+            return resolveConfiguredFilePath(context, relativeDir, path).toURI();
         }
+    }
+    
+    /**
+	 * @see #resolveConfiguredPath(ServletContext, File, String)
+	 */
+    public static URI resolveConfiguredPath(ServletContext context, String path) {
+    	return resolveConfiguredPath(context, null, path);
     }
 
     /**
-     * Resolves/decodes a path that can be any kind of URI, including a local
-     * file reference. Compared with
-     * {@link #resolveConfiguredPath(ServletContext, String)}, this method
-     * recognizes the subset of path specs that refer to the local filesystem
-     * and do not contain the substring "://" (so file:// URIs are not
-     * recognized by this method).
-     * <p>
-     * The syntax for the path argument is documented in detail on
-     * {@link #resolveConfiguredPath(ServletContext, String)}.
-     * 
-     * @param context
-     * @param path
-     * @return
-     */
-    public static File resolveConfiguredFilePath(ServletContext context, String path) {
+	 * Resolves/decodes a path that can be any kind of URI, including a local
+	 * file reference. Compared with
+	 * {@link #resolveConfiguredPath(ServletContext, String)}, this method
+	 * recognizes the subset of path specs that refer to the local filesystem
+	 * and do not contain the substring "://" (so file:// URIs are not
+	 * recognized by this method).
+	 * <p>
+	 * The syntax for the path argument is documented in detail on
+	 * {@link #resolveConfiguredPath(ServletContext, String)}.
+	 * 
+	 * @param context
+	 *            If the path starts with webapp: this context will be used to
+	 *            find where the file is located.
+	 * @param relativeDir
+	 *            If the path is a relative one we will look for the path
+	 *            starting from this directory. If this directory is not
+	 *            specified then the default execution directory will be used.
+	 * @param path
+	 * @return
+	 */
+    public static File resolveConfiguredFilePath(ServletContext context, File relativeDir, String path) {
         if (path.startsWith("webapp:")) {
             if (context == null) {
                 throw new IllegalArgumentException(
@@ -612,6 +631,9 @@ public class SQLPowerUtils {
             return file;
         } else {
             File file = new File(path);
+            if (relativeDir != null && !file.isAbsolute()) {
+            	file = new File(relativeDir, path);
+            }
             return file;
         }
     }
