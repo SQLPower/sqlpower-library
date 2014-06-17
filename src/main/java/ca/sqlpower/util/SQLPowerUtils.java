@@ -698,6 +698,9 @@ public class SQLPowerUtils {
             return file;
         } else {
             File file = new File(path);
+            if (rootFile != null && !file.isAbsolute()) {
+            	file = new File(rootFile, path);
+            }
             return file;
         }
     }
