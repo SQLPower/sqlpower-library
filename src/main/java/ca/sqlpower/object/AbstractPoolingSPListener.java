@@ -239,13 +239,30 @@ public abstract class AbstractPoolingSPListener implements SPListener {
     }
 
     public final void transactionRollback(TransactionEvent e) {
-        inTransactionMap.remove(e.getSource());
-        eventMap.remove(e.getSource());
-        ancestorTransactionMap.removeAll(e.getSource());
+    	removePooledEvents((SPObject)e.getSource());
         transactionRollbackImpl(e);
     }
     
     /**
+     * Removing all pooled events when doing rollback
+     * @param source
+     */
+    private void removePooledEvents(SPObject source) {
+    	inTransactionMap.remove(source);
+    	if (eventMap.get(source) != null) {
+    		eventMap.remove(source);
+    	}
+    	if (ancestorTransactionMap.get(source) != null) {
+    		for (SPObject childSource : ancestorTransactionMap.get(source)) {
+    			if (!isInTransaction(childSource)) {
+    				removePooledEvents(childSource);
+    			}
+    		}
+    		ancestorTransactionMap.removeAll(source);
+    	}
+    }
+
+	/**
      * Returns true if at least one ancestor is in a transaction.
      */
     private boolean ancestorInTransaction(SPObject obj) {
