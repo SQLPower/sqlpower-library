@@ -409,11 +409,9 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
     private class TableModelHandler implements TableModelListener {
         public void tableChanged(TableModelEvent e) {
         	
-        	arraysUpToDate.set(false);
         	
             // If we're not sorting by anything, just pass the event along.
             if (!isSorting()) {
-                clearSortingState();
                 fireTableChanged(e);
                 return;
             }
@@ -458,7 +456,6 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
             }
 
             // Something has happened to the data that may have invalidated the row order.
-            clearSortingState();
             fireTableDataChanged();
             return;
         }

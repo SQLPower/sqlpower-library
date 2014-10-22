@@ -142,8 +142,7 @@ public class TableModelSearchDecorator extends AbstractTableModel implements Cle
     
     @Override
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-     
-       tableModel.setValueAt(aValue, rowIndex, columnIndex);
+    	 tableModel.setValueAt(aValue, rowToModel(rowIndex),columnIndex);
     }
 
     public TableModelSearchDecorator(TableModel model) {
