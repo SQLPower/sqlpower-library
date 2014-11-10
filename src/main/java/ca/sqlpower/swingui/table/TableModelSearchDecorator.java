@@ -220,7 +220,7 @@ public class TableModelSearchDecorator extends AbstractTableModel implements Cle
     }
 
     private int rowToModel(int rowIndex) {
-        int modelRow = (rowMapping == null ? rowIndex : rowMapping.get(rowIndex));
+        int modelRow = ((rowMapping != null && rowIndex< rowMapping.size()) ?  rowMapping.get(rowIndex) : rowIndex);
         return modelRow;
     }
 

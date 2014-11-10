@@ -303,21 +303,22 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
 			
 			int tableModelRowCount = tableModel.getRowCount();
 			viewToModel = new Row[tableModelRowCount];
-			for (int row = 0; row < tableModelRowCount; row++) {
-				viewToModel[row] = new Row(row);
+			if (viewToModel != null) {
+				for (int row = 0; row < tableModelRowCount; row++) {
+					viewToModel[row] = new Row(row);
+				}
+
+				if (isSorting()) {
+					Arrays.sort(viewToModel);
+				}
+
+				int n = viewToModel.length;
+				modelToView = new int[n];
+				for (int i = 0; i < n; i++) {
+					modelToView[viewToModel[i].modelIndex] = i;
+				}
+				arraysUpToDate.set(true);
 			}
-			
-			if (isSorting()) {
-				Arrays.sort(viewToModel);
-			}
-			
-			int n = viewToModel.length;
-			modelToView = new int[n];
-			for (int i = 0; i < n; i++) {
-				modelToView[viewToModel[i].modelIndex] = i;
-			}
-		
-			arraysUpToDate.set(true);
 		}
     }
 
@@ -412,6 +413,10 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
         	
             // If we're not sorting by anything, just pass the event along.
             if (!isSorting()) {
+            	// if adding new
+            	if (e.getType() == TableModelEvent.INSERT) {
+            		 clearSortingState();
+            	}
                 fireTableChanged(e);
                 return;
             }
@@ -456,6 +461,10 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
             }
 
             // Something has happened to the data that may have invalidated the row order.
+         // if adding new
+            if (e.getType() == TableModelEvent.INSERT) {
+        		 clearSortingState();
+        	}
             fireTableDataChanged();
             return;
         }
