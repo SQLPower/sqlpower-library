@@ -23,7 +23,7 @@ package ca.sqlpower.object;
  * Special exception type that defines an object to still be depended on by
  * another object.
  */
-public class ObjectDependentException extends Exception {
+public class ObjectDependentException extends RuntimeException {
 
     public ObjectDependentException(String message) {
         super(message);

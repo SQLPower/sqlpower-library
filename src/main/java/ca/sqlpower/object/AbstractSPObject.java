@@ -576,6 +576,9 @@ public abstract class AbstractSPObject implements SPObject {
         			} catch (SPObjectVetoException e) {
         				rollback(e.getMessage());
         				throw new SPObjectVetoException(e.getMessage());
+        			} catch (ObjectDependentException e) {
+        				rollback(e.getMessage());
+        				throw new ObjectDependentException(e.getMessage());
         			} catch (Exception e) {
         				rollback(e.getMessage());
         				throw new RuntimeException(e);
