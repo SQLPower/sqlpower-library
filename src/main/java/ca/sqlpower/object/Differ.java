@@ -24,6 +24,7 @@ import ca.sqlpower.diff.DiffInfo;
 import ca.sqlpower.diff.DiffType;
 import ca.sqlpower.diff.PropertyChange;
 import ca.sqlpower.sqlobject.SQLObjectException;
+import ca.sqlpower.util.MonitorableImpl;
 
 /**
  * XXX This is a copy of the Differ class from the enterprise library. Some methods for calculating diffs has been removed
@@ -227,6 +228,34 @@ public class Differ implements SPPersister {
             List<PersistedSPObject> newPersistedSPOs,
             List<PersistedSPOProperty> oldPersistedSPOPs,
             List<PersistedSPOProperty> newPersistedSPOPs) {
+    	calcDiff(oldPersistedSPOs, newPersistedSPOs, oldPersistedSPOPs, newPersistedSPOPs, null);
+    }
+    
+    /**
+	 * Calculates the lists of {@link PersistedSPObjects} that need to be
+	 * added/removed to/from the old list to make it the same as the new list.
+	 * 
+	 * <p>
+	 * HashMaps are used to map the both the old and new objects and properties,
+	 * and using a set of all these map keys, each object/property can be looked
+	 * up in both the old and new revision to see if they exist and/or have been
+	 * changed. This is done in private methods {@link calcObjectDiff} and
+	 * {@link calcPropertyDiff}.
+	 * 
+	 * <p>
+	 * Diffs are stored in list-of-persist-calls fields and can be retrieved by
+	 * {@link getPersistedSPOsToAdd()}, {@link getPersistedSPOsToRemove()}, and
+	 * {@link getPropertyDiffPersists()}.
+	 * 
+	 * @param monitor
+	 *            An optional monitor to help us tell what the progress is of
+	 *            the diff. Handy for large diffs.
+	 */    
+    public synchronized void calcDiff(List<PersistedSPObject> oldPersistedSPOs, 
+            List<PersistedSPObject> newPersistedSPOs,
+            List<PersistedSPOProperty> oldPersistedSPOPs,
+            List<PersistedSPOProperty> newPersistedSPOPs,
+            MonitorableImpl monitor) {
         
         if (diffCalculated) throw new IllegalStateException("This differ has already calculated its diff. " +
         		"Calling this method again will cause the previous diff to enter an invalid state.");
@@ -247,9 +276,15 @@ public class Differ implements SPPersister {
         propertyKeys.addAll(oldPropertyMap.keySet());
         propertyKeys.addAll(newPropertyMap.keySet());
         
-        calcObjectDiff(oldObjectMap, newObjectMap, objectKeys);
+        if (monitor != null) {
+        	monitor.setJobSize(objectKeys.size() + propertyKeys.size());
+        	monitor.setProgress(0);
+        }
+        calcObjectDiff(oldObjectMap, newObjectMap, objectKeys, monitor);
         calcPropertyDiff(oldPersistedSPOPs, newPersistedSPOPs, 
-                oldPropertyMap, newPropertyMap, propertyKeys); 
+                oldPropertyMap, newPropertyMap, propertyKeys, monitor); 
+        monitor.setJobSize(null);
+        monitor.setProgress(0);
         
         if (logger.isDebugEnabled()) {
         	logger.debug("Differ found " + oldPersistedSPOs.size() + " objects in old revision, " + newPersistedSPOs.size() + " objects in new revision");
@@ -352,7 +387,8 @@ public class Differ implements SPPersister {
     private void calcObjectDiff(
             HashMap<String, PersistedSPObject> oldObjectMap,
             HashMap<String, PersistedSPObject> newObjectMap,
-            HashSet<String> objectKeys) {           
+            HashSet<String> objectKeys,
+            MonitorableImpl monitor) {           
         
         Iterator<String> keyIterator = objectKeys.iterator();
         HashMap<String, PersistedSPObject> objectsToRemove = new HashMap<String, PersistedSPObject>();
@@ -394,6 +430,10 @@ public class Differ implements SPPersister {
                 }
                 needToAddProperties.addAll(descendants);
             }
+            
+            if (monitor != null) {
+            	monitor.incrementProgress();
+            }
         }                      
         
         keyIterator = objectsToRemove.keySet().iterator();
@@ -430,7 +470,8 @@ public class Differ implements SPPersister {
             List<PersistedSPOProperty> newPersistedSPOPs,
             HashMap<String, PersistedSPOProperty> oldPropertyMap,
             HashMap<String, PersistedSPOProperty> newPropertyMap,
-            HashSet<String> propertyKeys) { 
+            HashSet<String> propertyKeys,
+            MonitorableImpl monitor) { 
         
         // Iterate through all the pairs of properties, and determine changes.
         
@@ -477,6 +518,10 @@ public class Differ implements SPPersister {
                         newProperty.getUUID(), newProperty.getPropertyName(),
                         newProperty.getDataType(), newProperty.getNewValue(), 
                         newProperty.getNewValue(), true)); 
+            }
+            
+            if (monitor != null) {
+            	monitor.incrementProgress();
             }
         }
     }
