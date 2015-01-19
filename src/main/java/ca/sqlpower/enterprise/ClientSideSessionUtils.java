@@ -79,13 +79,17 @@ public class ClientSideSessionUtils {
 	public static final String SYSTEM_UUID = "system";
 	
 	public static HttpClient createHttpClient(SPServerInfo serviceInfo, CookieStore cookieStore) {
+		return createHttpClient(serviceInfo.getServerAddress(), serviceInfo.getUsername(), serviceInfo.getPassword(), cookieStore);
+	}
+	
+	public static HttpClient createHttpClient(String host, String username, String password, CookieStore cookieStore) {
 		HttpParams params = new BasicHttpParams();
         HttpConnectionParams.setConnectionTimeout(params, 2000);
         DefaultHttpClient httpClient = new DefaultHttpClient(params);
         httpClient.setCookieStore(cookieStore);
         httpClient.getCredentialsProvider().setCredentials(
-            new AuthScope(serviceInfo.getServerAddress(), AuthScope.ANY_PORT), 
-            new UsernamePasswordCredentials(serviceInfo.getUsername(), serviceInfo.getPassword()));
+            new AuthScope(host, AuthScope.ANY_PORT), 
+            new UsernamePasswordCredentials(username, password));
         return httpClient;
 	}
     
