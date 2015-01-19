@@ -282,9 +282,11 @@ public class Differ implements SPPersister {
         }
         calcObjectDiff(oldObjectMap, newObjectMap, objectKeys, monitor);
         calcPropertyDiff(oldPersistedSPOPs, newPersistedSPOPs, 
-                oldPropertyMap, newPropertyMap, propertyKeys, monitor); 
-        monitor.setJobSize(null);
-        monitor.setProgress(0);
+                oldPropertyMap, newPropertyMap, propertyKeys, monitor);
+        if (monitor != null) {
+        	monitor.setJobSize(null);
+        	monitor.setProgress(0);
+        }
         
         if (logger.isDebugEnabled()) {
         	logger.debug("Differ found " + oldPersistedSPOs.size() + " objects in old revision, " + newPersistedSPOs.size() + " objects in new revision");
