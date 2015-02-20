@@ -177,4 +177,11 @@ public class SQLObjectSelection implements Transferable {
     public void setLocal(boolean isLocal) {
         this.isLocal = isLocal;
     }
+
+	/**
+	 * @return the sqlObjects
+	 */
+	public SQLObject[] getSqlObjects() {
+		return sqlObjects;
+	}
 }
