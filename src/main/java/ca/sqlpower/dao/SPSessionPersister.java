@@ -722,7 +722,17 @@ public abstract class SPSessionPersister implements SPPersister {
 		Map<String, String> sortedObjectsToRemove = 
 			new TreeMap<String, String>(removedObjectComparator);
 		sortedObjectsToRemove.putAll(objectsToRemove);
+		/*
+		 * Tracking which objects are removed as we can't remove their
+		 * descendants again since the parent would no longer be part of the
+		 * tree. #1947
+		 */
+		Set<String> removedObjects = new HashSet<String>();
 		for (Map.Entry<String, String> removeEntry : sortedObjectsToRemove.entrySet()) {
+			if (removedObjects.contains(removeEntry.getValue())) {
+				removedObjects.add(removeEntry.getKey());
+				continue;
+			}
 			SPObject spo = findByUuid(root, removeEntry.getKey(),
 					SPObject.class);
 			
@@ -751,6 +761,7 @@ public abstract class SPSessionPersister implements SPPersister {
 				int index = siblings.indexOf(spo);
 				index -= parent.childPositionOffset(spo.getClass());
 				parent.removeChild(spo);
+				removedObjects.add(removeEntry.getKey());
 				// Add spo and hierarchy of its children to the remove-roll-back-list
 				removeRollBackList(spo, parent, index);
 				
