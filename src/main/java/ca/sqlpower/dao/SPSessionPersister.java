@@ -722,17 +722,7 @@ public abstract class SPSessionPersister implements SPPersister {
 		Map<String, String> sortedObjectsToRemove = 
 			new TreeMap<String, String>(removedObjectComparator);
 		sortedObjectsToRemove.putAll(objectsToRemove);
-		/*
-		 * Tracking which objects are removed as we can't remove their
-		 * descendants again since the parent would no longer be part of the
-		 * tree. #1947
-		 */
-		Set<String> removedObjects = new HashSet<String>();
 		for (Map.Entry<String, String> removeEntry : sortedObjectsToRemove.entrySet()) {
-			if (removedObjects.contains(removeEntry.getValue())) {
-				removedObjects.add(removeEntry.getKey());
-				continue;
-			}
 			SPObject spo = findByUuid(root, removeEntry.getKey(),
 					SPObject.class);
 			
@@ -741,7 +731,8 @@ public abstract class SPSessionPersister implements SPPersister {
 			if (spo == null) {
 			    boolean descendantRemoved = false;
 			    for (RemovedObjectEntry removedRollbackEntry : objectsToRemoveRollbackList.values()) {
-			        if (findByUuid(removedRollbackEntry.getRemovedChild(), removeEntry.getKey(), SPObject.class) != null) {
+			    	//Can't use the cache as these objects are removed.
+			        if (SQLPowerUtils.findByUuid(removedRollbackEntry.getRemovedChild(), removeEntry.getKey(), SPObject.class) != null) {
 			            descendantRemoved = true;
 			            break;
 			        }
@@ -755,13 +746,17 @@ public abstract class SPSessionPersister implements SPPersister {
 				if (parent instanceof SQLObject) {
 					siblings = ((SQLObject) parent).getChildrenWithoutPopulating();
 				} else {
+					if (parent == null) {
+						throw new NullPointerException("The parent with id " + removeEntry.getValue() + 
+								" is missing. However, to get here the spo with id " + removeEntry.getKey() + 
+								" must not have been null. The spo is " + spo);
+					}
 					siblings = parent.getChildren();
 				}
 				
 				int index = siblings.indexOf(spo);
 				index -= parent.childPositionOffset(spo.getClass());
 				parent.removeChild(spo);
-				removedObjects.add(removeEntry.getKey());
 				// Add spo and hierarchy of its children to the remove-roll-back-list
 				removeRollBackList(spo, parent, index);
 				
