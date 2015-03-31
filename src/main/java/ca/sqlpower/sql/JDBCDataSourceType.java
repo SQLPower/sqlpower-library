@@ -311,6 +311,11 @@ public class JDBCDataSourceType {
     public static final String KETTLE_DB_TYPES = "ca.sqlpower.architect.etl.kettle.connectionType";
     public static final String SUPPORTS_UPDATEABLE_RESULT_SETS = "Supports Updatable Result Sets";
     public static final String SUPPORTS_STREAM_QUERIES = "Supports Stream Queries";
+    /**
+     * This property is used for Postgres database to quotes the physical name (name of table/column/sequences etc.)
+     * during 'Forward engineering' in a 'SQL Power Architect'.
+     */
+    public static final String SUPPORTS_QUOTING_NAME = "Supports Quoting Name";
     
     /**
      * This type's parent type.  This value will be null if this type has no
@@ -600,6 +605,18 @@ public class JDBCDataSourceType {
         return true;
     }
 
+    /**
+     * Returns true if and only if the platform supports quoting 
+     * physical name of table/column name/sequence name etc.
+     * @return
+     */
+    public boolean getSupportsQuotingName() {
+        String ret = getProperty(SUPPORTS_QUOTING_NAME);
+        if (ret == null || !Boolean.parseBoolean(ret)) {
+            return false;
+        }
+        return true;
+    }
     /**
      * Returns true if and only if the platform supports the SELECT STREAM syntax.
      */
