@@ -50,6 +50,7 @@ public class SPObjectRoot extends AbstractSPObject {
 	@Override
 	protected void addChildImpl(SPObject child, int index) {
 		children.add(index, child);
+		fireChildAdded(child.getClass(), child, index);
 	}
 
 	@NonProperty

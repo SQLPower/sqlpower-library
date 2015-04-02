@@ -37,6 +37,7 @@ import java.util.TreeMap;
 import org.apache.log4j.Logger;
 
 import ca.sqlpower.dao.helper.PersisterHelperFinder;
+import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
 import ca.sqlpower.object.ObjectDependentException;
 import ca.sqlpower.object.SPChildEvent;
@@ -777,12 +778,6 @@ public abstract class SPSessionPersister implements SPPersister {
 	}
 	
 	private void removeRollBackList(SPObject object, SPObject parent, int index) {
-		
-		if (!object.getChildren().isEmpty()) {
-			for (int i = object.getChildren().size()-1 ; i >= 0 ; i--) {
-				removeRollBackList(object.getChildren().get(i), object, i);
-			}
-		}
 		objectsToRemoveRollbackList.put(object.getUUID(),
 				new RemovedObjectEntry(parent.getUUID(), object, index));
 	}
@@ -921,10 +916,6 @@ public abstract class SPSessionPersister implements SPPersister {
 			    //This is done above.
 			    
 			    removeFinalPersistProperties(pso);
-			    persistedObjectsRollbackList.add(
-			            new PersistedObjectEntry(
-			                    parent.getUUID(), 
-			                    spo.getUUID()));
 			    continue;
 			} else if (objectsToRemoveRollbackList.get(pso.getUUID()) != null) {
 			    //Object was removed and added back in. This is the current way a 'move' of a 
@@ -966,18 +957,35 @@ public abstract class SPSessionPersister implements SPPersister {
 						//do nothing
 					}
 				};
-				parent.addSPListener(removeChildOnAddListener);
 				
-				// FIXME Terrible hack, see bug 2326
-				//XXX This appears to shuffle columns up which will cause columns to be rearranged
-				parent.addChild(spo, Math.min(pso.getIndex(), siblings.size()));
-				
-				parent.removeSPListener(removeChildOnAddListener);
-				persistedObjectsRollbackList.add(
-					new PersistedObjectEntry(
-						parent.getUUID(), 
-						spo.getUUID()));
-				lookupCache.putAll(SQLPowerUtils.buildIdMap(spo));
+				try {
+					parent.addSPListener(removeChildOnAddListener);
+
+					try {
+						// FIXME Terrible hack, see bug 2326
+						//XXX This appears to shuffle columns up which will cause columns to be rearranged
+						parent.addChild(spo, Math.min(pso.getIndex(), siblings.size()));
+
+						persistedObjectsRollbackList.add(
+								new PersistedObjectEntry(
+										parent.getUUID(), 
+										spo.getUUID()));
+						lookupCache.putAll(SQLPowerUtils.buildIdMap(spo));
+					} catch (RuntimeException e) {
+						if (parent.getChildren().contains(spo)) {
+							try {
+								parent.removeChild(spo);
+							} catch (RuntimeException ex) {
+								logger.error("Failed to add the child and now cannot remove the child.", ex);
+							} catch (ObjectDependentException ex) {
+								logger.error("Failed to add the child and now cannot remove the child.", ex);
+							}
+						}
+						throw e;
+					}
+				} finally {
+					parent.removeSPListener(removeChildOnAddListener);
+				}
 			}
 		}
 		persistedObjects.clear();
@@ -1005,10 +1013,6 @@ public abstract class SPSessionPersister implements SPPersister {
         }
         for (PersistedSPOProperty spoProperty : propertiesToRemove) {
             persistedProperties.get(pso.getUUID()).remove(spoProperty);
-            //Using the new value as this property is a final field.
-            persistedPropertiesRollbackList.add(new PersistedPropertiesEntry(
-                    spoProperty.getUUID(), spoProperty.getPropertyName(), 
-                    spoProperty.getDataType(), spoProperty.getNewValue()));
         }
     }
 
@@ -1200,19 +1204,25 @@ public abstract class SPSessionPersister implements SPPersister {
 							spo.getClass().getSimpleName() + " at " + spo.getUUID());
 				}
 				
+				Object oldValue;
 				try {
-					PersisterHelperFinder.findPersister(spo.getClass()).commitProperty(
+					SPPersisterHelper<? extends SPObject> persisterHelper = PersisterHelperFinder.findPersister(spo.getClass());
+					oldValue = persisterHelper.findProperty(spo, propertyName, converter);
+					persisterHelper.commitProperty(
 							spo, propertyName, newValue, persistedProperty.getDataType(), converter);
 				} catch (Exception e) {
 					throw new SPPersistenceException("Could not find the persister helper for " + spo.getClass(), e);
 				}
 				
+				if (!persistedProperty.isUnconditional()) {
+					oldValue = persistedProperty.getOldValue();
+				}
 				persistedPropertiesRollbackList.add(
 					new PersistedPropertiesEntry(
 						spo.getUUID(), //The uuid can be changed so using the currently set one.
 						persistedProperty.getPropertyName(), 
 						persistedProperty.getDataType(), 
-						persistedProperty.getOldValue()));
+						oldValue));
 			}
 		}
 		persistedProperties.clear();
