@@ -105,6 +105,58 @@ public class SQLPowerUtils {
 		return sb.toString();
 	}
 	
+	public static String unescapeXML(String src) {
+	    if (src == null) return "";
+		StringBuffer sb = new StringBuffer(src.length()+10);  // arbitrary amount of extra space
+		char ch;
+	    
+		StringBuffer encoding = null;
+		for (int i = 0, n = src.length(); i < n; i++) {
+			ch = src.charAt(i);
+	        
+			if (ch == '&') {
+				encoding = new StringBuffer("&");
+			} else if (encoding != null && ch == ';') {
+				encoding.append(ch);
+				if (encoding.toString().equals("&apos;")) {
+					sb.append('\'');
+				} else if (encoding.toString().equals("&quot;")) {
+					sb.append('"');
+				} else if (encoding.toString().equals("&amp;")) {
+					sb.append('&');
+				} else if (encoding.toString().equals("&lt;")) {
+					sb.append('<');
+				} else if (encoding.toString().equals("&gt;")) {
+					sb.append('>');
+				} else {
+					logger.info("Could not find an encoding for " + encoding.toString());
+				}
+				encoding = null;
+			} else if (encoding != null) {
+				encoding.append(ch);
+			} else {
+				sb.append(ch);
+			}
+//	        if (ch == '\'') {
+//				sb.append("&apos;");
+//	        } else if (ch == '"') {
+//				sb.append("&quot;");
+//	        } else if (ch == '&') {
+//				sb.append("&amp;");
+//	        } else if (ch == '<') {
+//				sb.append("&lt;");
+//	        } else if (ch == '>') {
+//				sb.append("&gt;");
+//	        } else if (ch == 0x03 || ch == 0x1a) {
+//	        	logger.info("Stripping out illegal characters from " + src + 
+//	        			" as it will cause the XML to fail.");
+//	        } else {
+//				sb.append(ch);
+//			}
+		}
+		return sb.toString();
+	}
+	
 	/**
 	 * Replaces double quotes, ampersands, less-than and greater-than signs with
 	 * their character reference equivalents. This makes the returned string be
