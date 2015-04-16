@@ -26,17 +26,11 @@ import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.JarURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.jar.JarFile;
-import java.util.zip.ZipEntry;
 
 import javax.swing.AbstractAction;
 import javax.swing.Icon;
@@ -67,6 +61,7 @@ import ca.sqlpower.swingui.DataEntryPanel;
 import ca.sqlpower.swingui.Messages;
 import ca.sqlpower.swingui.ProgressWatcher;
 import ca.sqlpower.swingui.SPSUtils;
+import ca.sqlpower.util.JarScanClassLoader;
 import ca.sqlpower.util.Monitorable;
 
 public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
@@ -446,12 +441,7 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
 	/**
 	 * Scans a jar file for instances of java.sql.Driver.
 	 */
-	private class JDBCScanClassLoader extends ClassLoader {
-
-		private List drivers;
-		private int count = 0;
-        private JarURLConnection jarConnection;
-        private JarFile jf;
+	private class JDBCScanClassLoader extends JarScanClassLoader {
 
         /**
          * Creates a class loader that can scan the given JAR for JDBC drivers.
@@ -463,98 +453,14 @@ public class JDBCDriverPanel extends JPanel implements DataEntryPanel {
          * @throws IOException
          */
 		public JDBCScanClassLoader(URL jarLocation) throws IOException {
-			super();
-			URL jarURL = new URL("jar:" + jarLocation + "!/");
-            jarConnection = (JarURLConnection) jarURL.openConnection();
-            jf = jarConnection.getJarFile();
+			super(jarLocation);
 		}
 
-		public synchronized double getFraction() {
-			double retval = 0.0;
-			if (jf != null) {
-				retval = (double)count/(double)jf.size();
-			}
-			return retval;
-		}
 
-		/**
-		 * Returns a list of Strings naming the subclasses of
-		 * java.sql.Driver which exist in this class loader's jar
-		 * file.
-		 */
-		public List scanForDrivers() {
-			drivers = new LinkedList();
-			logger.debug("********* " + jf.getName() + " has " + jf.size() + " files."); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			for (Enumeration entries = jf.entries(); entries.hasMoreElements(); ) {
-				count++;
-				ZipEntry ent = (ZipEntry) entries.nextElement();
-				if (ent.getName().endsWith(".class")) { //$NON-NLS-1$
-					try {
-						// drop the .class from the name
-						String [] s = ent.getName().split("\\."); //$NON-NLS-1$
-						// look for the class using dots instead of slashes
-						findClass(s[0].replace('/','.'));
-					} catch (ClassFormatError ex) {
-						logger.warn("JAR entry "+ent.getName()+" ends in .class but is not a class", ex); //$NON-NLS-1$ //$NON-NLS-2$
-					} catch (NoClassDefFoundError ex) {
-						logger.warn("JAR does not contain dependency needed by: " + ent.getName()); //$NON-NLS-1$
-					} catch (Throwable ex) {
-						logger.warn("Unexpected exception while scanning JAR file "+jf.getName(), ex); //$NON-NLS-1$
-					}
-				}
-			}
-			//jf.close();
-			return drivers;
+		@Override
+		protected boolean checkClass(Class<?> clazz) {
+			return java.sql.Driver.class.isAssignableFrom(clazz);
 		}
-
-		/**
-		 * Searches this ClassLoader's jar file for the given class.
-		 *
-		 * @throws ClassNotFoundException if the class can't be
-		 * located.
-		 */
-		protected Class findClass(String name)
-			throws ClassNotFoundException {
-			//logger.debug("Looking for class "+name);
-			try {
-				ZipEntry ent = jf.getEntry(name.replace('.', '/')+".class"); //$NON-NLS-1$
-				if (ent == null) {
-					throw new ClassNotFoundException("No class file "+name+" is in my jar file"); //$NON-NLS-1$ //$NON-NLS-2$
-				}
-				// can we find out here if it was already loaded???
-				Class clazz = findLoadedClass(name);
-				if (clazz != null) {
-					return clazz;
-				}
-				// haven't seen this before, so go get it...
-				InputStream is = jf.getInputStream(ent);
-				return readAndCheckClass(is, (int) ent.getSize(), name);
-			} catch (IOException ex) {
-				throw new ClassNotFoundException("IO Exception reading class from jar file", ex); //$NON-NLS-1$
-			}
-		}
-
-		private Class readAndCheckClass(InputStream is, int size, String expectedName)
-			throws IOException, ClassFormatError {
-			byte[] buf = new byte[size];
-			int offs = 0, n;
-            
-			while ( (n = is.read(buf, offs, size-offs)) >= 0 && offs < size) {
-				offs += n;
-			}
-            final int total = offs;
-			if (total != size) {
-				logger.warn("Only read "+total+" bytes of class " //$NON-NLS-1$ //$NON-NLS-2$
-							+expectedName+" from JAR file; exptected "+size); //$NON-NLS-1$
-			}
-			Class clazz = defineClass(expectedName, buf, 0, total);
-			if (java.sql.Driver.class.isAssignableFrom(clazz)) {
-				logger.info("Found jdbc driver "+clazz.getName()); //$NON-NLS-1$
-				drivers.add(clazz.getName());
-			}
-			return clazz;
-		}
-
 	}
 
 	public JPanel getPanel() {
