@@ -693,7 +693,11 @@ public class UserDefinedSQLType extends SQLObject implements SQLTypePhysicalProp
 	public Integer getNullability() {
     	if (myNullability == null && upstreamType != null) {
     		return upstreamType.getNullability();
-    	} else {
+    	} else if (myNullability == null && upstreamType == null) {
+    		// to avoid NullPointer Exception
+    		return DatabaseMetaData.columnNullableUnknown;
+    	}
+    	else {
     		return myNullability;
     	}
 	}
