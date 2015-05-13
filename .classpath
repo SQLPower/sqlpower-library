@@ -30,7 +30,6 @@
 	<classpathentry exported="true" kind="lib" path="lib/main/piccolo.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/main/piccolox.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/main/rsyntaxtextarea.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/main/servlet-api-2.5.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/main/spring-security-core-2.0.5.RELEASE.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/main/xercesImpl-2.9.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/main/apache-mime4j-0.6.jar"/>
@@ -40,5 +39,6 @@
 	<classpathentry exported="true" kind="lib" path="lib/main/commons-io-1.4.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/main/guava-11.0.2.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/main/commons-codec-1.10.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/main/servlet-api-3.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
