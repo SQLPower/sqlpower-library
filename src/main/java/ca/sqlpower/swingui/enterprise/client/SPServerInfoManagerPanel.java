@@ -80,6 +80,14 @@ public class SPServerInfoManagerPanel {
 		}
 
 	};
+	
+	private Action removeKeystoreAction = new AbstractAction("Remove KeyStore") {
+		
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			removeKeyStore();
+		}
+	};
 
 	private Action addAction = new AbstractAction("Add...") {
 		public void actionPerformed(ActionEvent e) {
@@ -154,6 +162,7 @@ public class SPServerInfoManagerPanel {
 				new FormLayout("pref"));
 		buttonBarBuilder.append(new JButton(addAction));
 		buttonBarBuilder.append(new JButton(editAction));
+		buttonBarBuilder.append(new JButton(removeKeystoreAction));
 		buttonBarBuilder.append(new JButton(removeAction));
 		buttonBarBuilder.append(connectButton);
 		buttonBarBuilder.append(new JButton(closeAction));
@@ -201,7 +210,10 @@ public class SPServerInfoManagerPanel {
 				if (serverInfo != null) {
 					manager.remove(serverInfo);
 				}
-				manager.add(infoPanel.getServerInfo());
+
+				SPServerInfo server = infoPanel.getServerInfo();
+				server.setKeyStoreRemoval(true);
+				manager.add(server);
 				refreshInfoList();
 				testAction.removePanel(infoPanel);
 				return true;
@@ -229,6 +241,20 @@ public class SPServerInfoManagerPanel {
 		SPServerInfo selectedItem = getSelectedServer();
 		if (selectedItem != null) {
 			showAddOrEditDialog(selectedItem);
+		}
+	}
+	
+	public void removeKeyStore() {
+		SPServerInfo selectedItem = getSelectedServer();
+		if (selectedItem != null) {
+			int response = JOptionPane.showConfirmDialog(null, "Remove keystore from " +
+					selectedItem.getName() + '?', "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+			if (response == 0) {
+				selectedItem.setKeyStoreRemoval(true);
+				JOptionPane.showMessageDialog(null, "Keytore has been removed from " + selectedItem.getName() + '.');
+			}
+		} else {
+			JOptionPane.showMessageDialog(null, "Please select a server.");
 		}
 	}
 	
