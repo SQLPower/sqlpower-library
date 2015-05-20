@@ -65,29 +65,6 @@ public class SPServerInfoManagerPanel {
 			JOptionPane.showMessageDialog(null, "Testing not implemented");
 		}
 	};
-	
-	
-	private Action removeAction = new AbstractAction("Remove") {
-
-		public void actionPerformed(ActionEvent e) {
-			Object[] selectedValues = serverInfos.getSelectedValues();
-			for (Object o : selectedValues) {
-				SPServerInfo si = (SPServerInfo) o;
-				manager.remove(si);
-			}
-
-			refreshInfoList();
-		}
-
-	};
-	
-	private Action removeKeystoreAction = new AbstractAction("Remove KeyStore") {
-		
-		@Override
-		public void actionPerformed(ActionEvent e) {
-			removeKeyStore();
-		}
-	};
 
 	private Action addAction = new AbstractAction("Add...") {
 		public void actionPerformed(ActionEvent e) {
@@ -102,8 +79,8 @@ public class SPServerInfoManagerPanel {
 	};
 	
 	public SPServerInfoManagerPanel(SPServerInfoManager manager,
-			Component dialogOwner, Action closeAction) {
-		this(manager, dialogOwner, closeAction, "Available Server Connections:" , "Server Connection Properties");
+			Component dialogOwner, Action closeAction, Action ... extraButtons) {
+		this(manager, dialogOwner, closeAction, "Available Server Connections:" , "Server Connection Properties", extraButtons);
 	}
 	
 	/**
@@ -125,7 +102,7 @@ public class SPServerInfoManagerPanel {
 	 * 				Label of the Add/Edit panel
 	 */
 	public SPServerInfoManagerPanel(SPServerInfoManager manager,
-			Component dialogOwner, Action closeAction, String boxLabel, String addOrEditDialogLable) {
+			Component dialogOwner, Action closeAction, String boxLabel, String addOrEditDialogLable, Action ... extraButtons) {
 		this.manager = manager;
 		this.dialogOwner = dialogOwner;
 		this.boxLable = boxLabel;
@@ -162,16 +139,17 @@ public class SPServerInfoManagerPanel {
 				new FormLayout("pref"));
 		buttonBarBuilder.append(new JButton(addAction));
 		buttonBarBuilder.append(new JButton(editAction));
-		buttonBarBuilder.append(new JButton(removeKeystoreAction));
-		buttonBarBuilder.append(new JButton(removeAction));
 		buttonBarBuilder.append(connectButton);
+		for (Action a : extraButtons) {
+			buttonBarBuilder.append(new JButton(a));
+		}
 		buttonBarBuilder.append(new JButton(closeAction));
 		builder.add(buttonBarBuilder.getPanel(), cc.xy(3, 2));
 		builder.setDefaultDialogBorder();
 		panel = builder.getPanel();
 	}
 
-	private void refreshInfoList() {
+	public void refreshInfoList() {
 		DefaultListModel model = (DefaultListModel) serverInfos.getModel();
 		model.removeAllElements();
 		for (SPServerInfo si : manager.getServers(false)) {
@@ -212,7 +190,6 @@ public class SPServerInfoManagerPanel {
 				}
 
 				SPServerInfo server = infoPanel.getServerInfo();
-				server.setKeyStoreRemoval(true);
 				manager.add(server);
 				refreshInfoList();
 				testAction.removePanel(infoPanel);
@@ -241,20 +218,6 @@ public class SPServerInfoManagerPanel {
 		SPServerInfo selectedItem = getSelectedServer();
 		if (selectedItem != null) {
 			showAddOrEditDialog(selectedItem);
-		}
-	}
-	
-	public void removeKeyStore() {
-		SPServerInfo selectedItem = getSelectedServer();
-		if (selectedItem != null) {
-			int response = JOptionPane.showConfirmDialog(null, "Remove keystore from " +
-					selectedItem.getName() + '?', "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-			if (response == 0) {
-				selectedItem.setKeyStoreRemoval(true);
-				JOptionPane.showMessageDialog(null, "Keytore has been removed from " + selectedItem.getName() + '.');
-			}
-		} else {
-			JOptionPane.showMessageDialog(null, "Please select a server.");
 		}
 	}
 	

@@ -171,23 +171,6 @@ public class SPServerInfo {
         result = prime * result + ((serverAddress == null) ? 0 : serverAddress.hashCode());
         return result;
     }
-
-    /**
-     * This is used to set whether the keystore needs to be removed for.
-     * @param remove is set to true if the keystore needs to be removed. 
-     * Otherwise it is set to false.
-     */
-	public void setKeyStoreRemoval(Boolean remove) {
-		removeKeyStore = remove;
-	}
-
-	/**
-	 * Returns the boolean value used to determine whether the keystore for
-	 * the server needs to be removed
-	 */
-	public Boolean getKeyStoreRemoval() {
-		return removeKeyStore;
-	}
     
     /**
      * Determines equality based on name, path, port and server address.
