@@ -59,10 +59,22 @@ public class SPServerInfoManagerPanel {
 	private final JButton connectButton;
 	private final String boxLable;
 	private final String addOrEditDialogLabel;
+	private Boolean overrideRemoveAction = false;
 	
 	private ConnectionTestAction testAction = new ConnectionTestAction() {
 		public void actionPerformed(ActionEvent e) {
 			JOptionPane.showMessageDialog(null, "Testing not implemented");
+		}
+	};
+	
+	private Action removeAction = new AbstractAction("Remove") {
+		public void actionPerformed(ActionEvent e) {
+			Object[] selectedValues = serverInfos.getSelectedValues();
+			for (Object o : selectedValues) {
+				SPServerInfo si = (SPServerInfo) o;
+				manager.remove(si);
+			}
+			refreshInfoList();
 		}
 	};
 
@@ -142,6 +154,17 @@ public class SPServerInfoManagerPanel {
 		buttonBarBuilder.append(connectButton);
 		for (Action a : extraButtons) {
 			buttonBarBuilder.append(new JButton(a));
+			Object obj = a.getValue("Override Remove Action Boolean");
+			if (obj != null && obj.getClass().equals(Boolean.class)) {
+				Boolean bool = (Boolean) obj;
+				if (bool) {
+					overrideRemoveAction = true;
+				}
+			}
+		}
+		
+		if (!overrideRemoveAction) {
+			buttonBarBuilder.append(new JButton(removeAction));
 		}
 		buttonBarBuilder.append(new JButton(closeAction));
 		builder.add(buttonBarBuilder.getPanel(), cc.xy(3, 2));
