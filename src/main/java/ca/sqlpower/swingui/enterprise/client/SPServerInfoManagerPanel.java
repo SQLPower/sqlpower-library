@@ -24,6 +24,8 @@ import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import javax.swing.AbstractAction;
@@ -51,6 +53,15 @@ import com.jgoodies.forms.layout.FormLayout;
  * A GUI for maintaining the manually-configured server info objects.
  */
 public class SPServerInfoManagerPanel {
+	
+	/**
+	 * Implement this interface if you want to provide an extra operation on one
+	 * of the existing buttons in the manager panel.
+	 */
+	public static interface ExtraButtonAction {
+		
+		public void performAction(SPServerInfo info);
+	}
 
 	private final SPServerInfoManager manager;
 	private final Component dialogOwner;
@@ -59,7 +70,7 @@ public class SPServerInfoManagerPanel {
 	private final JButton connectButton;
 	private final String boxLable;
 	private final String addOrEditDialogLabel;
-	private Boolean overrideRemoveAction = false;
+	private final List<ExtraButtonAction> extraRemovalActions = new ArrayList<SPServerInfoManagerPanel.ExtraButtonAction>();
 	
 	private ConnectionTestAction testAction = new ConnectionTestAction() {
 		public void actionPerformed(ActionEvent e) {
@@ -73,6 +84,9 @@ public class SPServerInfoManagerPanel {
 			for (Object o : selectedValues) {
 				SPServerInfo si = (SPServerInfo) o;
 				manager.remove(si);
+				for (ExtraButtonAction action : extraRemovalActions) {
+					action.performAction(si);
+				}
 			}
 			refreshInfoList();
 		}
@@ -154,18 +168,9 @@ public class SPServerInfoManagerPanel {
 		buttonBarBuilder.append(connectButton);
 		for (Action a : extraButtons) {
 			buttonBarBuilder.append(new JButton(a));
-			Object obj = a.getValue("Override Remove Action Boolean");
-			if (obj != null && obj.getClass().equals(Boolean.class)) {
-				Boolean bool = (Boolean) obj;
-				if (bool) {
-					overrideRemoveAction = true;
-				}
-			}
 		}
 		
-		if (!overrideRemoveAction) {
-			buttonBarBuilder.append(new JButton(removeAction));
-		}
+		buttonBarBuilder.append(new JButton(removeAction));
 		buttonBarBuilder.append(new JButton(closeAction));
 		builder.add(buttonBarBuilder.getPanel(), cc.xy(3, 2));
 		builder.setDefaultDialogBorder();
@@ -182,6 +187,10 @@ public class SPServerInfoManagerPanel {
 
 	public JPanel getPanel() {
 		return panel;
+	}
+	
+	public void addExtraRemovalAction(ExtraButtonAction action) {
+		extraRemovalActions.add(action);
 	}
 
 	/**
