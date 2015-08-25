@@ -683,6 +683,7 @@ public abstract class SPSessionPersister implements SPPersister {
 				rollbackCreations();
 				rollbackRemovals();
 				workspace.commit("Done Rolling back");
+				workspace.rollback("Rolling back all listeners on the workspace as they should have any transaction counters reset.");
 			} catch (Exception e) {
 				// This is a major fuck up. We could not rollback so now we must restore
 				// by whatever means

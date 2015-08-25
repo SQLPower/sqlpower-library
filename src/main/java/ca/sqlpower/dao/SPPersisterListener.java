@@ -473,7 +473,6 @@ public class SPPersisterListener implements SPListener {
 	}
 
 	public void transactionRollback(TransactionEvent e) {
-		if (wouldEcho()) return;
 		logger.debug("transactionRollback " + ((e == null) ? null : e.getMessage()));
 		rollback();
 	}
@@ -661,11 +660,7 @@ public class SPPersisterListener implements SPListener {
 	 * Performs the rollback if a problem occurred during the persist call.
 	 */
 	public void rollback() {
-		if (rollingBack) {
-			// This happens when we pick up our own events.
-			return;
-		}
-		if (eventSource == null ||
+		if (wouldEcho() || eventSource == null ||
 				eventSource.isHeadingToWisconsin()) {
 			// This means that the SessionPersister is cleaning his stuff and
 			// we need to do the same. Close all current transactions... bla bla bla.
