@@ -221,7 +221,9 @@ public class SPPersisterListener implements SPListener {
 			    
 		SQLPowerUtils.listenToHierarchy(e.getChild(), this);
 		if (wouldEcho()) return;
-		logger.debug("Child added: " + e);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Child added: " + e);
+		}
 		persistObject(e.getChild(), index);
 		removedObjectsUUIDs.removeAll(getDescendantUUIDs(e.getChild()));
 	}
@@ -303,7 +305,7 @@ public class SPPersisterListener implements SPListener {
 		
 			public void persistObject(String parentUUID, String type, String uuid,
 					int index) throws SPPersistenceException {
-				logger.debug("Adding a " + type + " with UUID: " + uuid + " to persistedObjects");
+				if (logger.isDebugEnabled()) logger.debug("Adding a " + type + " with UUID: " + uuid + " to persistedObjects");
 				// Check to see this object has not already been added.
 				if (getPersistedObject(uuid) != null) {
                     throw new SPPersistenceException(uuid, "Cannot add object of type " 
@@ -386,7 +388,9 @@ public class SPPersisterListener implements SPListener {
 			} else {
 				children = o.getChildren(childType);
 			}
-			logger.debug("Persisting children " + children + " of " + o);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Persisting children " + children + " of " + o);
+			}
 			for (int i = 0; i < children.size(); i++) {
 				persistObjectInterleaveProperties(children.get(i), i, true, localTarget, skipList);
 			}
@@ -465,7 +469,7 @@ public class SPPersisterListener implements SPListener {
 	public void transactionEnded(TransactionEvent e) {
 		if (wouldEcho()) return;
 		try {
-			logger.debug("transactionEnded " + ((e == null) ? null : e.getMessage()));
+			if (logger.isDebugEnabled()) logger.debug("transactionEnded " + ((e == null) ? null : e.getMessage()));
 			commit();
 		} catch (SPPersistenceException e1) {
 			throw new RuntimeException(e1);
@@ -473,13 +477,13 @@ public class SPPersisterListener implements SPListener {
 	}
 
 	public void transactionRollback(TransactionEvent e) {
-		logger.debug("transactionRollback " + ((e == null) ? null : e.getMessage()));
+		if (logger.isDebugEnabled()) logger.debug("transactionRollback " + ((e == null) ? null : e.getMessage()));
 		rollback();
 	}
 
 	public void transactionStarted(TransactionEvent e) {
 		if (wouldEcho()) return;
-		logger.debug("transactionStarted " + ((e == null) ? null : e.getMessage()));
+		if (logger.isDebugEnabled()) logger.debug("transactionStarted " + ((e == null) ? null : e.getMessage()));
 		transactionCount++;
 	}
 
@@ -494,7 +498,7 @@ public class SPPersisterListener implements SPListener {
 	        if (!PersisterHelperFinder.findPersister(source.getClass())
 	                .getPersistedProperties()
 	                .contains(propertyName)) {
-	            logger.debug("Tried to persist a property that shouldn't be. Ignoring the property: " + propertyName);
+	        	if (logger.isDebugEnabled()) logger.debug("Tried to persist a property that shouldn't be. Ignoring the property: " + propertyName);
 	            return;
 	        }
 	    } catch (Exception e) {
@@ -578,7 +582,7 @@ public class SPPersisterListener implements SPListener {
             unconditional = property.isUnconditional();
             persistedProperties.remove(uuid, property);
         }
-        logger.debug("persistProperty(" + uuid + ", " + propertyName + ", " + 
+        if (logger.isDebugEnabled()) logger.debug("persistProperty(" + uuid + ", " + propertyName + ", " + 
                 typeForClass.name() + ", " + oldValue + ", " + newValue + ")");
         persistedProperties.put(uuid, new PersistedSPOProperty(
                 uuid, propertyName, typeForClass, oldBasicType, newBasicType, unconditional));
@@ -609,10 +613,10 @@ public class SPPersisterListener implements SPListener {
 	 * @throws SPPersistenceException
 	 */
 	private void commit() throws SPPersistenceException {
-		logger.debug("commit(): transactionCount = " + transactionCount);
+		if (logger.isDebugEnabled()) logger.debug("commit(): transactionCount = " + transactionCount);
 		if (transactionCount==1) {
 			try {
-				logger.debug("Calling commit...");
+				if (logger.isDebugEnabled()) logger.debug("Calling commit...");
 				//If nothing actually changed in the transaction do not send
 				//the begin and commit to reduce server traffic.
 				if (objectsToRemove.isEmpty() && persistedObjects.isEmpty() && 
@@ -622,7 +626,7 @@ public class SPPersisterListener implements SPListener {
 				commitObjects();
 				commitProperties();
 				target.commit();
-				logger.debug("...commit completed.");
+				if (logger.isDebugEnabled()) logger.debug("...commit completed.");
 				if (logger.isDebugEnabled()) {
 			        try {
 			            final Clip clip = AudioSystem.getClip();
@@ -725,9 +729,9 @@ public class SPPersisterListener implements SPListener {
 	 * @throws SPPersistenceException
 	 */
 	private void commitObjects() throws SPPersistenceException {
-		logger.debug("Committing objects");
+		if (logger.isDebugEnabled()) logger.debug("Committing objects");
 		for (PersistedSPObject pwo : persistedObjects.values()) {
-			logger.debug("Commiting persist call: " + pwo);
+			if (logger.isDebugEnabled()) logger.debug("Commiting persist call: " + pwo);
 			target.persistObject(
 				pwo.getParentUUID(), 
 				pwo.getType(),
@@ -743,7 +747,7 @@ public class SPPersisterListener implements SPListener {
 	 * @throws SPPersistenceException
 	 */
 	private void commitProperties() throws SPPersistenceException {
-        logger.debug("commitProperties()");
+		if (logger.isDebugEnabled()) logger.debug("commitProperties()");
         for (PersistedSPOProperty property : persistedProperties.values()) {
             if (removedObjectsUUIDs.contains(property.getUUID())) continue;
             if (property.isUnconditional()) {
@@ -768,12 +772,12 @@ public class SPPersisterListener implements SPListener {
 	 * updates the roll back list.
 	 */
 	private void commitRemovals() throws SPPersistenceException {
-		logger.debug("commitRemovals()");
+		if (logger.isDebugEnabled()) logger.debug("commitRemovals()");
 		for (RemovedObjectEntry entry: this.objectsToRemove.values()) {
 		    // Don't make removal persist calls for children of
 		    // objects that are also being removed, since the JCR handles that.
 		    if (removedObjectsUUIDs.contains(entry.getParentUUID())) continue;
-			logger.debug("target.removeObject(" + entry.getParentUUID() + ", " + 
+		    if (logger.isDebugEnabled()) logger.debug("target.removeObject(" + entry.getParentUUID() + ", " + 
 					entry.getRemovedChild().getUUID() + ")");
 			target.removeObject(
 				entry.getParentUUID(), 

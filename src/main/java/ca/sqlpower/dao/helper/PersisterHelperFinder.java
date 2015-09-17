@@ -19,6 +19,9 @@
 
 package ca.sqlpower.dao.helper;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import ca.sqlpower.object.SPObject;
 
 /**
@@ -32,6 +35,14 @@ public class PersisterHelperFinder {
 	 * this name under the package where the class the helper makes.
 	 */
 	public static final String GENERATED_PACKAGE_NAME = "generated";
+	
+	/**
+	 * The persister helpers won't change at runtime and there is a limited
+	 * number of them, one per SPObject class, so this cache can help speed up
+	 * performance, with little memory consumption, for large object trees.
+	 */
+	private static final Map<Class<? extends SPObject>,  SPPersisterHelper<? extends SPObject>> cache = 
+			new HashMap<Class<? extends SPObject>, SPPersisterHelper<? extends SPObject>>();
 
 	/**
 	 * Returns a new instance of the persister helper for the given class. At
@@ -57,6 +68,9 @@ public class PersisterHelperFinder {
 	public static SPPersisterHelper<? extends SPObject> findPersister(
 			Class<? extends SPObject> persistClass) 
 			throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+		if (cache.get(persistClass) != null) {
+			return cache.get(persistClass);
+		}
 		String className;
 		if (persistClass.getSimpleName().indexOf("$") == -1) {
 			className = persistClass.getSimpleName();
@@ -65,7 +79,9 @@ public class PersisterHelperFinder {
 		}
 		String persisterClassName = persistClass.getPackage().getName() + "." + GENERATED_PACKAGE_NAME + "." + className + "PersisterHelper";
 		Class<?> persisterClass = PersisterHelperFinder.class.getClassLoader().loadClass(persisterClassName);
-		return (SPPersisterHelper<? extends SPObject>) persisterClass.newInstance();
+		SPPersisterHelper<? extends SPObject> newPersister = (SPPersisterHelper<? extends SPObject>) persisterClass.newInstance();
+		cache.put(persistClass, newPersister);
+		return newPersister;
 	}
 	
 	/**
