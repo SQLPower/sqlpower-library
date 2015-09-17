@@ -304,23 +304,14 @@ public abstract class SPSessionPersister implements SPPersister {
 	protected final SessionPersisterSuperConverter converter;
 	
 	/**
-	 * This map contains class types that exist in the object tree to be
-	 * persisted. The ordering provides a way for this class to ensure classes
-	 * that connect different branches of a tree are added after both branches
-	 * are created. Normally when calling {@link #commitSortedObjects()} each
-	 * object is created in full before creating the next. However, some
-	 * objects, like SQLTable or XBRL Taxonomy, have children that link to
-	 * another object of the same type, like SQLRelationship or TaxonomyImport.
-	 * In these cases we need to make sure the connecting class gets created
-	 * after the other side of the relationship. To ensure both sides are
-	 * created we create all value classes after all objects of the
-	 * corresponding key are created. 
-	 * <p>
-	 * The values in this map are the fully qualified class names where the keys
-	 * must always be persisted before their values.
+	 * A long time ago we had to put a hack in this class to move the SQLImports
+	 * at the end of the object list. However, now that we can extend the
+	 * comparator the correct implementation is to extend the comparator and
+	 * include this logic there. In some cases we need to disable this current
+	 * hack due to performance issues.
 	 */
-	private final Multimap<String, String> forcedOrderList = ArrayListMultimap.create();
-
+	protected boolean correctSQLImportOrder = true;
+	
 	/**
 	 * Creates a session persister that can update an object at or a descendant
 	 * of the given root now. If the persist call involves an object that is
@@ -445,7 +436,7 @@ public abstract class SPSessionPersister implements SPPersister {
 
 	public void persistObject(String parentUUID, String type, String uuid,
 			int index) throws SPPersistenceException {
-		logger.debug("Persisting object " + uuid + " of type " + type + " as a child to " + parentUUID);
+		if (logger.isDebugEnabled()) logger.debug("Persisting object " + uuid + " of type " + type + " as a child to " + parentUUID);
 		synchronized (getWorkspaceContainer()) {
 			enforceThreadSafety();
 			
@@ -515,7 +506,7 @@ public abstract class SPSessionPersister implements SPPersister {
 	public void persistProperty(String uuid, String propertyName,
 			DataType propertyType, Object newValue)
 			throws SPPersistenceException {
-		logger.debug("Persisting property " + propertyName + ", changing to " + newValue);
+		if (logger.isDebugEnabled()) logger.debug("Persisting property " + propertyName + ", changing to " + newValue);
 		if (transactionCount <= 0) {
 			rollback();
 			throw new SPPersistenceException("Cannot persist objects while outside " +
@@ -791,39 +782,23 @@ public abstract class SPSessionPersister implements SPPersister {
 	protected void commitObjects() throws SPPersistenceException {
 		Collections.sort(persistedObjects, getComparator());
 		
-		if (!forcedOrderList.isEmpty()) {
-			//The last position in the persisted objects list where this class type exists.
-			Map<String, Integer> classInsertPoint = new HashMap<String, Integer>();
-			//The classes we need to move based on the parent class that is closest to the end of the list.
-			Map<String, String> moveClasses = new HashMap<String, String>();
-			//The objects we need to move based on the above maps and the forcedOrderList
-			List<PersistedSPObject> objectsToMove = new ArrayList<PersistedSPObject>();
-			for (int i = persistedObjects.size() - 1; i >= 0; i--) {
-				String persistType = persistedObjects.get(i).getType();
-				if (forcedOrderList.containsKey(persistType) && !classInsertPoint.containsKey(persistType)) {
-					classInsertPoint.put(persistType, i);
-					for (String clazz : forcedOrderList.get(persistType)) {
-						if (!moveClasses.containsKey(clazz)) {
-							moveClasses.put(clazz, persistType);
-						}
-					}
-				}
-				if (moveClasses.containsKey(persistType)) {
-					objectsToMove.add(persistedObjects.get(i));
+		if (correctSQLImportOrder) {
+			// importedKeys must be persisted after relationships. This is a bit of a ridiculous hack, so
+			// we may want to change it!
+			List<PersistedSPObject> rImportedKeys = new ArrayList<PersistedSPObject>();
+			for (int i = 0; i < persistedObjects.size(); i++) {
+				if (persistedObjects.get(i).getType().equals(SQLRelationship.SQLImportedKey.class.getName())) {
+					rImportedKeys.add(persistedObjects.get(i));
 				}
 			}
-
-			for (PersistedSPObject moveMe : objectsToMove) {
-				String parentType = moveClasses.get(moveMe.getType());
-				Integer parentPoint = classInsertPoint.get(parentType);
-				persistedObjects.remove(moveMe);
-				persistedObjects.add(parentPoint, moveMe);
-			}
+			persistedObjects.removeAll(rImportedKeys);
+			persistedObjects.addAll(rImportedKeys);
+			// --------------------------------------------------------------------------------------------
 		}
 		
 		commitSortedObjects();
 	}
-	
+
 	/**
 	 * Returns a comparator that can be used to sort the
 	 * {@link PersistedSPObject} events so the objects in the tree are created
@@ -840,20 +815,8 @@ public abstract class SPSessionPersister implements SPPersister {
 	 */
 	protected void commitSortedObjects() throws SPPersistenceException {
 		
-		// importedKeys must be persisted after relationships. This is a bit of a ridiculous hack, so
-		// we may want to change it!
-		List<PersistedSPObject> rImportedKeys = new ArrayList<PersistedSPObject>();
-		for (int i = 0; i < persistedObjects.size(); i++) {
-			if (persistedObjects.get(i).getType().equals(SQLRelationship.SQLImportedKey.class.getName())) {
-				rImportedKeys.add(persistedObjects.get(i));
-			}
-		}
-		persistedObjects.removeAll(rImportedKeys);
-		persistedObjects.addAll(rImportedKeys);
-		// --------------------------------------------------------------------------------------------
-		
 		for (PersistedSPObject pso : persistedObjects) {
-		    logger.debug("Persisting " + pso);
+			if (logger.isDebugEnabled()) logger.debug("Persisting " + pso);
 			if (pso.isLoaded())
 				continue;
 			SPObject parent = findByUuid(root, pso.getParentUUID(), 
@@ -1523,22 +1486,6 @@ public abstract class SPSessionPersister implements SPPersister {
 	
 	public void setDisableMagic(boolean disableMagic) {
 		this.disableMagic = disableMagic;
-	}
-	
-	/**
-	 * This method allows extending persisters to force an order between two
-	 * arbitrary classes to allow us to correct issues where some child types
-	 * need to be created after all of a parent type objects have been created.
-	 * 
-	 * @param beforeClass
-	 *            All objects of this class will be created before the
-	 *            afterClass.
-	 * @param afterClass
-	 *            All objects of this type will be created sometime after all
-	 *            objects of the beforeClass have been created.
-	 */
-	protected void forcePersistOrder(Class<? extends SPObject> beforeClass, Class<? extends SPObject> afterClass) {
-		forcedOrderList.put(beforeClass.getName(), afterClass.getName());
 	}
 	
 	public void setRollbackOnCommitError(boolean rollbackOnCommitError) {

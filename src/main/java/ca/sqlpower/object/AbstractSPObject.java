@@ -170,8 +170,12 @@ public abstract class AbstractSPObject implements SPObject {
 
 	@NonProperty
 	public <T extends SPObject> List<T> getChildren(Class<T> type) {
+		return getChildren(type, getChildren());
+	}
+	
+	protected <T extends SPObject> List<T> getChildren(Class<T> type, List<? extends SPObject> childList) {
 		List<T> children = new ArrayList<T>();
-		for (SPObject child : getChildren()) {
+		for (SPObject child : childList) {
 			if (type.isAssignableFrom(child.getClass())) {
 				children.add(type.cast(child));
 			}
