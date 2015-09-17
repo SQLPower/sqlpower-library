@@ -71,7 +71,7 @@ public class SPJSONMessageDecoderTest extends TestCase {
 		};
 
 		JSONObject json = new JSONObject();
-		json.put("method", SPPersistMethod.begin);
+		json.put(SPJSONPersister.METHOD, SPPersistMethod.begin.getCode());
 		json.put("uuid", JSONObject.NULL);
 		JSONArray messages = new JSONArray();
 		messages.put(json);
@@ -119,7 +119,7 @@ public class SPJSONMessageDecoderTest extends TestCase {
 		};
 
 		JSONObject json = new JSONObject();
-		json.put("method", SPPersistMethod.commit);
+		json.put(SPJSONPersister.METHOD, SPPersistMethod.commit.getCode());
 		json.put("uuid", JSONObject.NULL);
 		JSONArray messages = new JSONArray();
 		messages.put(json);
@@ -167,9 +167,9 @@ public class SPJSONMessageDecoderTest extends TestCase {
 		};
 
 		JSONObject json = new JSONObject();
-		json.put("method", SPPersistMethod.persistObject);
+		json.put(SPJSONPersister.METHOD, SPPersistMethod.persistObject.getCode());
 		json.put("uuid", "uuid");
-		json.put("parentUUID", "parent");
+		json.put(SPJSONPersister.PARENT_UUID, "parent");
 		json.put("type", "type");
 		json.put("index", 0);
 		JSONArray messages = new JSONArray();
@@ -217,11 +217,11 @@ public class SPJSONMessageDecoderTest extends TestCase {
 		};
 
 		JSONObject json = new JSONObject();
-		json.put("method", SPPersistMethod.changeProperty);
+		json.put(SPJSONPersister.METHOD, SPPersistMethod.changeProperty.getCode());
 		json.put("uuid", "uuid");
 		json.put("type", DataType.BOOLEAN);
-		json.put("propertyName", "property");
-		json.put("newValue", true);
+		json.put(SPJSONPersister.PROPERTY_NAME, "property");
+		json.put(SPJSONPersister.NEW_VALUE, true);
 		json.put("oldValue", false);
 		JSONArray messages = new JSONArray();
 		messages.put(json);
@@ -268,11 +268,11 @@ public class SPJSONMessageDecoderTest extends TestCase {
 		};
 
 		JSONObject json = new JSONObject();
-		json.put("method", SPPersistMethod.persistProperty);
+		json.put(SPJSONPersister.METHOD, SPPersistMethod.persistProperty.getCode());
 		json.put("uuid", "uuid");
 		json.put("type", DataType.BOOLEAN);
-		json.put("propertyName", "property");
-		json.put("newValue", true);
+		json.put(SPJSONPersister.PROPERTY_NAME, "property");
+		json.put(SPJSONPersister.NEW_VALUE, true);
 		JSONArray messages = new JSONArray();
 		messages.put(json);
 		
@@ -318,9 +318,9 @@ public class SPJSONMessageDecoderTest extends TestCase {
 		};
 
 		JSONObject json = new JSONObject();
-		json.put("method", SPPersistMethod.removeObject);
+		json.put(SPJSONPersister.METHOD, SPPersistMethod.removeObject.getCode());
 		json.put("uuid", "uuid");
-		json.put("parentUUID", "parent");
+		json.put(SPJSONPersister.PARENT_UUID, "parent");
 		JSONArray messages = new JSONArray();
 		messages.put(json);
 		
@@ -367,7 +367,7 @@ public class SPJSONMessageDecoderTest extends TestCase {
 		};
 
 		JSONObject json = new JSONObject();
-		json.put("method", SPPersistMethod.rollback);
+		json.put(SPJSONPersister.METHOD, SPPersistMethod.rollback.getCode());
 		json.put("uuid", JSONObject.NULL);
 		JSONArray messages = new JSONArray();
 		messages.put(json);

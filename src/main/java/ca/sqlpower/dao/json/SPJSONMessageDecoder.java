@@ -312,7 +312,7 @@ public class SPJSONMessageDecoder implements MessageDecoder<String> {
 		String uuid = null;
 		try {
 			uuid = jsonObject.getString("uuid");
-			SPPersistMethod method = SPPersistMethod.valueOf(jsonObject.getString("method"));
+			SPPersistMethod method = SPPersistMethod.getMethodForCode(jsonObject.getString(SPJSONPersister.METHOD));
 			String parentUUID;
 			String propertyName;
 			DataType propertyType;
@@ -325,7 +325,7 @@ public class SPJSONMessageDecoder implements MessageDecoder<String> {
 				persister.commit();
 				break;
 			case persistObject:
-				parentUUID = jsonObject.getString("parentUUID");
+				parentUUID = jsonObject.getString(SPJSONPersister.PARENT_UUID);
 				if (parentUUID.equals("")) {
 					//throw new SPPersistenceException(null, "Cannot persist object with null UUID, json is " + jsonObject);
 				}
@@ -334,23 +334,23 @@ public class SPJSONMessageDecoder implements MessageDecoder<String> {
 				persister.persistObject(parentUUID, type, uuid, index);
 				break;
 			case changeProperty:
-				propertyName = jsonObject.getString("propertyName");
+				propertyName = jsonObject.getString(SPJSONPersister.PROPERTY_NAME);
 				propertyType = DataType.valueOf(jsonObject.getString("type"));
-				newValue = getWithType(jsonObject, propertyType, "newValue");
+				newValue = getWithType(jsonObject, propertyType, SPJSONPersister.NEW_VALUE);
 				Object oldValue = getWithType(jsonObject, propertyType, "oldValue");
 				persister.persistProperty(uuid, propertyName,
 						propertyType, oldValue, newValue);
 				break;
 			case persistProperty:
-				propertyName = jsonObject.getString("propertyName");
+				propertyName = jsonObject.getString(SPJSONPersister.PROPERTY_NAME);
 				propertyType = DataType.valueOf(jsonObject.getString("type"));
-				newValue = getWithType(jsonObject, propertyType, "newValue");
+				newValue = getWithType(jsonObject, propertyType, SPJSONPersister.NEW_VALUE);
 				if (newValue == null) logger.debug("newValue was null for propertyName " + propertyName);
 				persister.persistProperty(uuid, propertyName,
 						propertyType, newValue);
 				break;
 			case removeObject:			
-				parentUUID = jsonObject.getString("parentUUID");
+				parentUUID = jsonObject.getString(SPJSONPersister.PARENT_UUID);
 				if (parentUUID.equals("")) {
 					throw new SPPersistenceException(null, "Cannot persist object with null UUID");
 				}

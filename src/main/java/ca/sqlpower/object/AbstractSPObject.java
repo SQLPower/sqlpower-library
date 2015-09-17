@@ -322,7 +322,7 @@ public abstract class AbstractSPObject implements SPObject {
      *         testing purposes.
      */
     protected SPChildEvent fireChildAdded(Class<? extends SPObject> type, SPObject child, int index) {
-    	logger.debug("Child Added: " + type + " notifying " + listeners.size() + " listeners");
+    	if (logger.isDebugEnabled()) logger.debug("Child Added: " + type + " notifying " + listeners.size() + " listeners");
     	
     	synchronized(listeners) {
     		if (listeners.isEmpty()) return null;

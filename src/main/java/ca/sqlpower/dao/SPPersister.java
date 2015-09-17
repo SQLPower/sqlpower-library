@@ -89,13 +89,35 @@ public interface SPPersister {
 	 * sent through messages.
 	 */
 	public enum SPPersistMethod {
-		begin,
-		commit,
-		persistObject,
-		persistProperty,
-		changeProperty, // Actually refers to persistPropety with old and new values
-		removeObject,
-		rollback
+		persistProperty("pp"),
+		persistObject("po"),
+		removeObject("ro"),
+		changeProperty("cp"), // Actually refers to persistPropety with old and new values
+		begin("b"),
+		commit("c"),
+		rollback("r");
+		
+		/**
+		 * This is a code that can be used to define the method. If the persists
+		 * are used to write large object trees to text the text can get very
+		 * large so these codes help reduce that text.
+		 */
+		private final String code;
+
+		private SPPersistMethod(String code) {
+			this.code = code;
+		}
+		
+		public String getCode() {
+			return code;
+		}
+		
+		public static SPPersistMethod getMethodForCode(String code) {
+			for (SPPersistMethod method : values()) {
+				if (method.getCode().equals(code)) return method;
+			}
+			return null;
+		}
 	}
 	
 	/**

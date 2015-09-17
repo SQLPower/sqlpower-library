@@ -45,6 +45,30 @@ import ca.sqlpower.util.SQLPowerUtils;
  */
 public class SPJSONPersister implements SPPersister {
 
+	/**
+	 * The JSON parameter representing the method of the persist call. Value can be
+	 * any of the ones defined at {@link SPPersistMethod}.
+	 */
+	static final String METHOD = "M";
+
+	/**
+	 * The JSON parameter representing the new value field of a persist
+	 * property event.
+	 */
+	static final String NEW_VALUE = "NV";
+
+	/**
+	 * The JSON parameter representing the property name field of a persist
+	 * property event.
+	 */
+	static final String PROPERTY_NAME = "PN";
+
+	/**
+	 * The JSON parameter representing the parent UUID for child add and remove
+	 * events.
+	 */
+	static final String PARENT_UUID = "pID";
+
 	private static final Logger logger = Logger
 			.getLogger(SPJSONPersister.class);
 	
@@ -73,7 +97,7 @@ public class SPJSONPersister implements SPPersister {
 	public void begin() throws SPPersistenceException{
 		JSONObject jsonObject = new JSONObject();
 		try {
-			jsonObject.put("method", SPPersistMethod.begin);
+			jsonObject.put(METHOD, SPPersistMethod.begin.getCode());
 			// Need to put this in or anything calling get on the key "uuid"
 			// will throw a JSONException
 			jsonObject.put("uuid", JSONObject.NULL);
@@ -93,7 +117,7 @@ public class SPJSONPersister implements SPPersister {
 		}
 		JSONObject jsonObject = new JSONObject();
 		try {
-			jsonObject.put("method", SPPersistMethod.commit);
+			jsonObject.put(METHOD, SPPersistMethod.commit.getCode());
 			// Need to put this in or anything calling get on the key "uuid"
 			// will throw a JSONException
 			jsonObject.put("uuid", JSONObject.NULL);
@@ -146,11 +170,11 @@ public class SPJSONPersister implements SPPersister {
 		}
 		JSONObject jsonObject = new JSONObject();
 		try {
-			jsonObject.put("method", SPPersistMethod.persistObject.toString());
+			jsonObject.put(METHOD, SPPersistMethod.persistObject.getCode());
 			if (parentUUID == null) {
-				jsonObject.put("parentUUID", JSONObject.NULL);
+				jsonObject.put(PARENT_UUID, JSONObject.NULL);
 			} else {
-				jsonObject.put("parentUUID", parentUUID);
+				jsonObject.put(PARENT_UUID, parentUUID);
 			}
 			jsonObject.put("type", type);
 			jsonObject.put("uuid", uuid);
@@ -171,12 +195,12 @@ public class SPJSONPersister implements SPPersister {
 		}
 		JSONObject jsonObject = new JSONObject();
 		try {
-			jsonObject.put("method", SPPersistMethod.changeProperty);
+			jsonObject.put(METHOD, SPPersistMethod.changeProperty.getCode());
 			jsonObject.put("uuid", uuid);
-			jsonObject.put("propertyName", propertyName);
+			jsonObject.put(PROPERTY_NAME, propertyName);
 			jsonObject.put("type", type.toString());
 			setValueInJSONObject(jsonObject, "oldValue", type, oldValue);
-			setValueInJSONObject(jsonObject, "newValue", type, newValue);
+			setValueInJSONObject(jsonObject, NEW_VALUE, type, newValue);
 		} catch (JSONException e) {
 			logger.error(e);
 			rollback();
@@ -196,11 +220,11 @@ public class SPJSONPersister implements SPPersister {
 		}
 		JSONObject jsonObject = new JSONObject();
 		try {
-			jsonObject.put("method", SPPersistMethod.persistProperty);
+			jsonObject.put(METHOD, SPPersistMethod.persistProperty.getCode());
 			jsonObject.put("uuid", uuid);
-			jsonObject.put("propertyName", propertyName);
+			jsonObject.put(PROPERTY_NAME, propertyName);
 			jsonObject.put("type", type.toString());
-			setValueInJSONObject(jsonObject, "newValue", type, newValue);
+			setValueInJSONObject(jsonObject, NEW_VALUE, type, newValue);
 		} catch (JSONException e) {
 			logger.error(e);
 			rollback();
@@ -250,8 +274,8 @@ public class SPJSONPersister implements SPPersister {
 		}
 		JSONObject jsonObject = new JSONObject();
 		try {
-			jsonObject.put("method", SPPersistMethod.removeObject);
-			jsonObject.put("parentUUID", parentUUID);
+			jsonObject.put(METHOD, SPPersistMethod.removeObject.getCode());
+			jsonObject.put(PARENT_UUID, parentUUID);
 			jsonObject.put("uuid", uuid);
 		} catch (JSONException e) {
 			logger.error(e);

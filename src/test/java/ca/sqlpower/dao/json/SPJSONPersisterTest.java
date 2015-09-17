@@ -39,7 +39,7 @@ public class SPJSONPersisterTest extends TestCase {
 		MessageSender<JSONObject> messagePasser = new MessageSender<JSONObject>() {
 			public void send(JSONObject content) throws SPPersistenceException {
 				try {
-					assertEquals(content.getString("method"), SPPersistMethod.begin.toString());
+					assertEquals(content.getString(SPJSONPersister.METHOD), SPPersistMethod.begin.getCode());
 				} catch (JSONException e) {
 					throw new RuntimeException(e);
 				}
@@ -62,9 +62,9 @@ public class SPJSONPersisterTest extends TestCase {
 		MessageSender<JSONObject> messagePasser = new MessageSender<JSONObject>() {
 			public void send(JSONObject content) throws SPPersistenceException {
 				try {
-					String method = content.getString("method");
-					if (!method.equals(SPPersistMethod.begin.toString())) {
-						assertEquals(method, SPPersistMethod.commit.toString());
+					String method = content.getString(SPJSONPersister.METHOD);
+					if (!method.equals(SPPersistMethod.begin.getCode())) {
+						assertEquals(method, SPPersistMethod.commit.getCode());
 					}
 				} catch (JSONException e) {
 					throw new RuntimeException(e);
@@ -98,12 +98,12 @@ public class SPJSONPersisterTest extends TestCase {
 		MessageSender<JSONObject> messagePasser = new MessageSender<JSONObject>() {
 			public void send(JSONObject content) throws SPPersistenceException {
 				try {
-					if (content.getString("method").equals(SPPersistMethod.persistObject.toString())) {						
-						assertEquals(content.getString("parentUUID"), "parent");
+					if (content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.persistObject.getCode())) {						
+						assertEquals(content.getString(SPJSONPersister.PARENT_UUID), "parent");
 						assertEquals(content.getString("uuid"), "uuid");
 						assertEquals(content.getString("type"), "type");
 						assertEquals(content.getInt("index"), 0);
-					} else if (!content.getString("method").equals(SPPersistMethod.commit.toString()) && !content.getString("method").equals(SPPersistMethod.begin.toString())) {
+					} else if (!content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.commit.getCode()) && !content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.begin.getCode())) {
 						fail();
 					}
 				} catch (JSONException e) {
@@ -129,12 +129,12 @@ public class SPJSONPersisterTest extends TestCase {
 		MessageSender<JSONObject> messagePasser = new MessageSender<JSONObject>() {
 			public void send(JSONObject content) throws SPPersistenceException {
 				try {
-					if (content.getString("method").equals(SPPersistMethod.changeProperty.toString())) {
-						assertEquals(content.getString("propertyName"), "property");
+					if (content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.changeProperty.getCode())) {
+						assertEquals(content.getString(SPJSONPersister.PROPERTY_NAME), "property");
 						assertEquals(content.getString("type"), DataType.STRING.name());
 						assertEquals(content.getString("oldValue"), "old");
-						assertEquals(content.getString("newValue"), "new");
-					} else if (!content.getString("method").equals(SPPersistMethod.commit.toString()) && !content.getString("method").equals(SPPersistMethod.begin.toString())) {
+						assertEquals(content.getString(SPJSONPersister.NEW_VALUE), "new");
+					} else if (!content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.commit.getCode()) && !content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.begin.getCode())) {
 						fail();
 					}
 				} catch (JSONException e) {
@@ -163,13 +163,13 @@ public class SPJSONPersisterTest extends TestCase {
 		MessageSender<JSONObject> messagePasser = new MessageSender<JSONObject>() {
 			public void send(JSONObject content) throws SPPersistenceException {
 				try {
-					if (content.getString("method").equals(SPPersistMethod.changeProperty.toString())) {
-						assertEquals(content.getString("propertyName"), "property");
+					if (content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.changeProperty.getCode())) {
+						assertEquals(content.getString(SPJSONPersister.PROPERTY_NAME), "property");
 						assertEquals(content.getString("type"), DataType.PNG_IMG.name());
 						assertSame(content.get("oldValue"), JSONObject.NULL);
-						assertEquals(content.getString("newValue"), binaryDataBase64);
-					} else if (!content.getString("method").equals(SPPersistMethod.commit.toString()) && !content.getString("method").equals(SPPersistMethod.begin.toString())) {
-						fail("Unexpected method \""+content.getString("method")+"\"");
+						assertEquals(content.getString(SPJSONPersister.NEW_VALUE), binaryDataBase64);
+					} else if (!content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.commit.getCode()) && !content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.begin.getCode())) {
+						fail("Unexpected method \""+content.getString(SPJSONPersister.METHOD)+"\"");
 					}
 				} catch (JSONException e) {
 					throw new RuntimeException(e);
@@ -197,12 +197,12 @@ public class SPJSONPersisterTest extends TestCase {
 		MessageSender<JSONObject> messagePasser = new MessageSender<JSONObject>() {
 			public void send(JSONObject content) throws SPPersistenceException {
 				try {
-					if (content.getString("method").equals(SPPersistMethod.persistProperty.toString())) {
-						assertEquals(content.getString("propertyName"), "property");
+					if (content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.persistProperty.getCode())) {
+						assertEquals(content.getString(SPJSONPersister.PROPERTY_NAME), "property");
 						assertEquals(content.getString("type"), DataType.PNG_IMG.name());
-						assertEquals(content.getString("newValue"), binaryDataBase64);
-					} else if (!content.getString("method").equals(SPPersistMethod.commit.toString()) && !content.getString("method").equals(SPPersistMethod.begin.toString())) {
-						fail("Unexpected method \""+content.getString("method")+"\"");
+						assertEquals(content.getString(SPJSONPersister.NEW_VALUE), binaryDataBase64);
+					} else if (!content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.commit.getCode()) && !content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.begin.getCode())) {
+						fail("Unexpected method \""+content.getString(SPJSONPersister.METHOD)+"\"");
 					}
 				} catch (JSONException e) {
 					throw new RuntimeException(e);
@@ -227,11 +227,11 @@ public class SPJSONPersisterTest extends TestCase {
 		MessageSender<JSONObject> messagePasser = new MessageSender<JSONObject>() {
 			public void send(JSONObject content) throws SPPersistenceException {
 				try {
-					if (content.getString("method").equals(SPPersistMethod.persistProperty.toString())) {
-						assertEquals(content.getString("propertyName"), "property");
+					if (content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.persistProperty.getCode())) {
+						assertEquals(content.getString(SPJSONPersister.PROPERTY_NAME), "property");
 						assertEquals(content.getString("type"), DataType.STRING.name());
-						assertEquals(content.getString("newValue"), "new");
-					} else if (!content.getString("method").equals(SPPersistMethod.commit.toString()) && !content.getString("method").equals(SPPersistMethod.begin.toString())) {
+						assertEquals(content.getString(SPJSONPersister.NEW_VALUE), "new");
+					} else if (!content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.commit.getCode()) && !content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.begin.getCode())) {
 						fail();
 					}
 				} catch (JSONException e) {
@@ -257,10 +257,10 @@ public class SPJSONPersisterTest extends TestCase {
 		MessageSender<JSONObject> messagePasser = new MessageSender<JSONObject>() {
 			public void send(JSONObject content) throws SPPersistenceException {
 				try {
-					if (content.getString("method").equals(SPPersistMethod.removeObject.toString())) {
-						assertEquals(content.getString("parentUUID"), "parent");
+					if (content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.removeObject.getCode())) {
+						assertEquals(content.getString(SPJSONPersister.PARENT_UUID), "parent");
 						assertEquals(content.getString("uuid"), "uuid");
-					} else if (!content.getString("method").equals(SPPersistMethod.commit.toString()) && !content.getString("method").equals(SPPersistMethod.begin.toString())) {
+					} else if (!content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.commit.getCode()) && !content.getString(SPJSONPersister.METHOD).equals(SPPersistMethod.begin.getCode())) {
 						fail();
 					}
 				} catch (JSONException e) {
@@ -286,9 +286,9 @@ public class SPJSONPersisterTest extends TestCase {
 		MessageSender<JSONObject> messagePasser = new MessageSender<JSONObject>() {
 			public void send(JSONObject content) throws SPPersistenceException {
 				try {
-					String method = content.getString("method");
-					if (!method.equals(SPPersistMethod.begin.toString())) {
-						assertEquals(method, SPPersistMethod.rollback.toString());
+					String method = content.getString(SPJSONPersister.METHOD);
+					if (!method.equals(SPPersistMethod.begin.getCode())) {
+						assertEquals(method, SPPersistMethod.rollback.getCode());
 					}
 				} catch (JSONException e) {
 					throw new RuntimeException(e);
@@ -323,8 +323,8 @@ public class SPJSONPersisterTest extends TestCase {
 		
 		public void send(JSONObject content) throws SPPersistenceException {
 			try {
-				String method = content.getString("method");
-				if (!method.equals(SPPersistMethod.commit.toString())) {
+				String method = content.getString(SPJSONPersister.METHOD);
+				if (!method.equals(SPPersistMethod.commit.getCode())) {
 					assertEquals("SPJSONPersister sent calls to the message sender in a transaction before commit got called!", true, commitCalled);
 				} else {
 					commitCalled = true;
@@ -347,10 +347,10 @@ public class SPJSONPersisterTest extends TestCase {
 		persister = new SPJSONPersister(messageSender);
 		
 		persister.begin();
-		persister.persistObject("parentUUID", "type", "uuid", 0);
-		persister.persistProperty("uuid", "propertyName", DataType.STRING, "old");
-		persister.persistProperty("uuid", "propertyName", DataType.STRING, "old", "new");
-		persister.removeObject("parentUUID", "uuid");
+		persister.persistObject(SPJSONPersister.PARENT_UUID, "type", "uuid", 0);
+		persister.persistProperty("uuid", SPJSONPersister.PROPERTY_NAME, DataType.STRING, "old");
+		persister.persistProperty("uuid", SPJSONPersister.PROPERTY_NAME, DataType.STRING, "old", "new");
+		persister.removeObject(SPJSONPersister.PARENT_UUID, "uuid");
 		messageSender.commitCalled = true;
 		persister.commit();
 	}
