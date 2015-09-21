@@ -548,9 +548,9 @@ public class SPPersisterListener implements SPListener {
             return;
         }
         
-		transactionStarted(TransactionEvent.createStartTransactionEvent(this, 
-				"Creating start transaction event from propertyChange on object " + 
-				evt.getSource().getClass().getSimpleName() + " and property name " + evt.getPropertyName()));
+		transactionStarted(TransactionEvent.createStartTransactionEvent(this, String.format(
+				"Creating start transaction event from propertyChange on object %s and property name %s", 
+				evt.getSource().getClass().getSimpleName(), evt.getPropertyName())));
 		
 		//Not persisting non-settable properties.
 		//TODO A method in the persister helpers would make more sense than
