@@ -1237,6 +1237,14 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		final String ppaField = "persistedPropertiesArray";
 		final String pplField = "persistedPropertiesList";
 		
+		// private List<String> persistedPropertiesList = null;
+		// We are storing the persisted properties list here to save time and
+		// memory on recreating and destroying this list repeatedly. 
+		println(sb, tabs, String.format("private %s<%s> %s = null;",
+				List.class.getSimpleName(),
+				String.class.getSimpleName(),
+				pplField));
+		
 		// public List<String> getPersistedProperties() throws SPPersistenceException {
 		println(sb, tabs, 
 				String.format("public %s<%s> %s() throws %s {",
@@ -1244,9 +1252,15 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 						String.class.getSimpleName(),
 						GET_PERSISTED_PROPERTIES_METHOD_NAME,
 						SPPersistenceException.class.getSimpleName()));
+		tabs++;
+		
+		// If we have already created a list holding the properties return that
+		// instead of creating a new one.
+		println(sb, tabs, String.format("if (%s != null) return %s;",
+				pplField,
+				pplField));
 		
 		// Create array of strings holding persisted properties
-		tabs++;
 		// String[] persistedPropertiesArray = {
 		println(sb, tabs, 
 				String.format("%s[] %s = {",
@@ -1268,12 +1282,10 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		}
 		println(sb, tabs, "};");
 		// Put properties into list, along with the parent's persisted properties
-		// List<String> persistedPropertiesList = 
+		// persistedPropertiesList = 
 		// 		new ArrayList<String>(Arrays.asList(persistedPropertiesArray));
 		println(sb, tabs, 
-				String.format("%s<%s> %s = new %s<%s>(%s.asList(%s));",
-						List.class.getSimpleName(),
-						String.class.getSimpleName(),
+				String.format("%s = new %s<%s>(%s.asList(%s));",
 						pplField,
 						ArrayList.class.getSimpleName(),
 						String.class.getSimpleName(),
