@@ -61,6 +61,8 @@ import com.google.common.collect.SortedSetMultimap;
  */
 public class SPPersisterListener implements SPListener {
 	
+	private static final String PROPERTY_CHANGED_MSG = "Start event: propertyChange";
+
 	private static final Logger logger = Logger.getLogger(SPPersisterListener.class);
 	
 	/**
@@ -548,9 +550,7 @@ public class SPPersisterListener implements SPListener {
             return;
         }
         
-		transactionStarted(TransactionEvent.createStartTransactionEvent(this, String.format(
-				"Creating start transaction event from propertyChange on object %s and property name %s", 
-				evt.getSource().getClass().getSimpleName(), evt.getPropertyName())));
+		transactionStarted(TransactionEvent.createStartTransactionEvent(this, PROPERTY_CHANGED_MSG));
 		
 		//Not persisting non-settable properties.
 		//TODO A method in the persister helpers would make more sense than
