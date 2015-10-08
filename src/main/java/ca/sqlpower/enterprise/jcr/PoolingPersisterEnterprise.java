@@ -35,19 +35,19 @@ public class PoolingPersisterEnterprise implements SPPersister {
      * Stores all of the persist object calls received since this object was
      * created or the last call to clear.
      */
-    private final List<PersistedSPObject> spObjectList = new ArrayList<PersistedSPObject>();
+    protected final List<PersistedSPObject> spObjectList = new ArrayList<PersistedSPObject>();
     /**
      * Stores all of the persist property calls received since this object was
      * created or the last call to clear. 
      */
-    private final List<PersistedSPOProperty> spoPropertyList = new ArrayList<PersistedSPOProperty>();
+    protected final List<PersistedSPOProperty> spoPropertyList = new ArrayList<PersistedSPOProperty>();
     
     /**
      * Stores all of the remove object calls received since this object was
      * created or the last call to clear. Each call is represented by a mapping
      * of the child's UUID to the parent's UUID of the child that was removed.
      */
-    private Map<String, String> spObjectMapToRemove = new HashMap<String, String>();
+    protected Map<String, String> spObjectMapToRemove = new HashMap<String, String>();
 
     public void begin() {
         // don't need to do anything
