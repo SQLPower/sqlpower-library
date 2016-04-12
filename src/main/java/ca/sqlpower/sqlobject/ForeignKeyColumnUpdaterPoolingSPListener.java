@@ -20,6 +20,7 @@
 package ca.sqlpower.sqlobject;
 
 import java.beans.PropertyChangeEvent;
+import java.sql.DatabaseMetaData;
 
 import javax.annotation.Nonnull;
 
@@ -140,8 +141,15 @@ class ForeignKeyColumnUpdaterPoolingSPListener extends
 				fkType.setType((Integer) e.getNewValue());
 			} else if (prop.equals("name")) {
 				fkType.setName((String) e.getNewValue());
-			} else if (prop.equals("myNullability")) {
-				fkType.setMyNullability((Integer) e.getNewValue());
+			} else if (prop.equals("myNullability")) { 
+				// if ForeignKey Column is nullable then set it's nullability to DatabaseMetaData.columnNullable
+				if (fkCol.getUserDefinedSQLType().getNullability() == DatabaseMetaData.columnNullable) {
+					logger.debug("setting nullability for foreign column:"+ fkCol + " to "+DatabaseMetaData.columnNullable);
+					fkType.setMyNullability(DatabaseMetaData.columnNullable);
+				} else {
+					logger.debug("setting nullability for foreign column:"+ fkCol + " new val :"+(Integer) e.getNewValue());
+					fkType.setMyNullability((Integer) e.getNewValue());
+				}
 			} else if (prop.equals("upstreamType")) {
 				fkType.setUpstreamType((UserDefinedSQLType) e.getNewValue());
 			} else if (prop.equals("basicType")) {
