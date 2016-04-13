@@ -129,7 +129,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
     
     private static String defaultRemarks;
     
-    private static String defaultForDefaultValue;   
+    private static String defaultForDefaultValue;
+
+	private static String dbType;   
     
 	/**
 	 * referenceCount is meant to keep track of how many containers (i.e. 
@@ -500,7 +502,7 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 				if(nativeTypeName.indexOf('(') >= 0) {
 					nativeTypeName = nativeTypeName.substring(0, nativeTypeName.indexOf('('));
 				}
-                
+                setDbType(dbmd.getDatabaseProductName());
 				SQLColumn col = new SQLColumn(null,
 											  rs.getString(4),  // col name
 											  rs.getInt(5), // data type (from java.sql.Types)
@@ -738,15 +740,17 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 		UserDefinedSQLType upstreamType = userDefinedSQLType.getUpstreamType();
 
 		StringBuilder name;
-		
+		String datatype;
 		if (upstreamType == null) {
 			if (userDefinedSQLType.getName() == null) {
 				return "";
 			} else {
 				name = new StringBuilder(userDefinedSQLType.getName());
+				datatype = userDefinedSQLType.getName();
 			}
 		} else {
 			name = new StringBuilder(upstreamType.getName());
+			datatype = upstreamType.getName();
 		}
 
 		String defaultPlatform = SQLTypePhysicalPropertiesProvider.GENERIC_PLATFORM;
@@ -761,8 +765,14 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 			name.append("(" + userDefinedSQLType.getPrecision(defaultPlatform)
 					+ ", " + userDefinedSQLType.getScale(defaultPlatform) + ")");
 		} else if (precisionType != PropertyType.NOT_APPLICABLE && precision > 0) {
-			name.append("(" + userDefinedSQLType.getPrecision(defaultPlatform)
-					+ ")");
+			// In Microsoft SQL Server varchar(Max) limit is '2147483647', so its write it as varchar(2147483647) instead of varchar(Max)
+			if (datatype.equalsIgnoreCase("varchar") && precision > 8000 && getDbType().equals("Microsoft SQL Server")) {
+				name.append("(MAX)");
+				logger.debug("Precision changed for the column " + name + " from varchar(" + precision + ") to  varchar(Max)");
+			} else {
+				name.append("(" + userDefinedSQLType.getPrecision(defaultPlatform)
+						+ ")");
+			}
 		} else if (scaleType != PropertyType.NOT_APPLICABLE && scale > 0) {
 			name.append("(" + userDefinedSQLType.getScale(defaultPlatform)
 					+ ")");
@@ -1233,6 +1243,13 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 		SQLColumn.defaultForDefaultValue = defaultForDefaultValue;
 	}
 
+	public static String getDbType() {
+		return dbType;
+	}
+
+	public static void setDbType(String dbType) {
+		SQLColumn.dbType = dbType;
+	}
 	/**
 	 * Get the comment/remark defined for this column.
 	 *
