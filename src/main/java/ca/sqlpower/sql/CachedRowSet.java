@@ -2091,4 +2091,18 @@ public class CachedRowSet implements ResultSet, java.io.Serializable {
 		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
 	}
 
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T> T getObject(int columnIndex, Class<T> type) throws SQLException {
+		curCol = columnIndex - 1;
+		return (T) curRow[columnIndex - 1];
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T> T getObject(String columnLabel, Class<T> type)
+			throws SQLException {
+		return (T) getObject(findColumn(columnLabel));
+	}
+
 }

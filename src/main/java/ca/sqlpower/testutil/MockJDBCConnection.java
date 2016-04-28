@@ -36,6 +36,7 @@ import java.sql.Struct;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
+import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
@@ -57,6 +58,8 @@ public class MockJDBCConnection implements Connection {
 	private String url;
 	private Properties properties;
 	private MockJDBCDatabaseMetaData metaData;
+	private String schema;
+	private int networkTimeout = -1;
 	
     private Map<String, MockJDBCResultSet> resultSets = new TreeMap<String, MockJDBCResultSet>();
     
@@ -342,6 +345,32 @@ public class MockJDBCConnection implements Connection {
 
 	public <T> T unwrap(Class<T> iface) throws SQLException {
 		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
+	}
+
+	@Override
+	public void setSchema(String schema) throws SQLException {
+		this.schema = schema;
+	}
+
+	@Override
+	public String getSchema() throws SQLException {
+		return schema;
+	}
+
+	@Override
+	public void abort(Executor executor) throws SQLException {
+		//do nothing
+	}
+
+	@Override
+	public void setNetworkTimeout(Executor executor, int milliseconds)
+			throws SQLException {
+		networkTimeout = milliseconds;
+	}
+
+	@Override
+	public int getNetworkTimeout() throws SQLException {
+		return networkTimeout;
 	}
 
 }

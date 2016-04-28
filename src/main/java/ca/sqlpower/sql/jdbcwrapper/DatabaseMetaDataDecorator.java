@@ -1522,4 +1522,16 @@ public abstract class DatabaseMetaDataDecorator implements DatabaseMetaData {
     
     protected abstract ResultSetDecorator wrap (ResultSet rs) throws SQLException ;
     protected abstract StatementDecorator wrap (Statement statement) throws SQLException ;
+    
+    @Override
+	public ResultSet getPseudoColumns(String catalog, String schemaPattern,
+			String tableNamePattern, String columnNamePattern)
+			throws SQLException {
+		return databaseMetaData.getPseudoColumns(catalog, schemaPattern, tableNamePattern, columnNamePattern);
+	}
+
+	@Override
+	public boolean generatedKeyAlwaysReturned() throws SQLException {
+		return databaseMetaData.generatedKeyAlwaysReturned();
+	}
 }

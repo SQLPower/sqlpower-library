@@ -220,4 +220,14 @@ public abstract class StatementDecorator implements Statement {
 	public void setQueryTimeout(int seconds) throws SQLException {
 		stmt.setQueryTimeout(seconds);
 	}
+	
+	@Override
+	public void closeOnCompletion() throws SQLException {
+		stmt.closeOnCompletion();
+	}
+
+	@Override
+	public boolean isCloseOnCompletion() throws SQLException {
+		return stmt.isCloseOnCompletion();
+	}
 }

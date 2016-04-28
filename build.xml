@@ -286,7 +286,7 @@
 		<taskdef name="pmd" classname="net.sourceforge.pmd.ant.PMDTask"
 			classpath="${pmd.jar}"/>
 		<property name="pmd-results" value="${reports.dir}/pmd.${pmd.report.format}"/>
-		<pmd shortFilenames="true" targetjdk="1.6">
+		<pmd shortFilenames="true" targetjdk="1.7">
 			<ruleset>basic,imports</ruleset>
 			<formatter type="${pmd.report.format}" toFile="${pmd-results}"/>
 			<fileset dir="${src}">

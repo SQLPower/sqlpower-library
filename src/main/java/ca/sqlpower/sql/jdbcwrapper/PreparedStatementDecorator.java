@@ -497,5 +497,13 @@ public abstract class PreparedStatementDecorator implements PreparedStatement{
 		preparedStatement.setURL(parameterIndex, x);
 	}
 	
-	
+	@Override
+	public void closeOnCompletion() throws SQLException {
+		preparedStatement.closeOnCompletion();
+	}
+
+	@Override
+	public boolean isCloseOnCompletion() throws SQLException {
+		return preparedStatement.isCloseOnCompletion();
+	}
 }

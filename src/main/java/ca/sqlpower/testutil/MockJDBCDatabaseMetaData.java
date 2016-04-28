@@ -1220,4 +1220,16 @@ public class MockJDBCDatabaseMetaData implements DatabaseMetaData {
 		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
 	}
 
+	@Override
+	public ResultSet getPseudoColumns(String catalog, String schemaPattern,
+			String tableNamePattern, String columnNamePattern)
+			throws SQLException {
+		throw new UnsupportedOperationException("Not implemented");
+	}
+
+	@Override
+	public boolean generatedKeyAlwaysReturned() throws SQLException {
+		throw new UnsupportedOperationException("Not implemented");
+	}
+
 }

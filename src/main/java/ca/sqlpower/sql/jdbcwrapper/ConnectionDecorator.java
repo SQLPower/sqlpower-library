@@ -40,6 +40,7 @@ import java.sql.Statement;
 import java.sql.Struct;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Executor;
 
 import org.apache.log4j.Logger;
 
@@ -533,5 +534,31 @@ public abstract class ConnectionDecorator implements Connection {
 	 */
 	public String toString() {
 		return connection.toString();
+	}
+	
+	@Override
+	public void setSchema(String schema) throws SQLException {
+		connection.setSchema(schema);
+	}
+
+	@Override
+	public String getSchema() throws SQLException {
+		return connection.getSchema();
+	}
+
+	@Override
+	public void abort(Executor executor) throws SQLException {
+		connection.abort(executor);
+	}
+
+	@Override
+	public void setNetworkTimeout(Executor executor, int milliseconds)
+			throws SQLException {
+		connection.setNetworkTimeout(executor, milliseconds);
+	}
+
+	@Override
+	public int getNetworkTimeout() throws SQLException {
+		return connection.getNetworkTimeout();
 	}
 }

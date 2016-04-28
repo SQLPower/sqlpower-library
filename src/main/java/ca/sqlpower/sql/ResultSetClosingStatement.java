@@ -308,4 +308,14 @@ public class ResultSetClosingStatement implements Statement {
 		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
 	}
 
+	@Override
+	public void closeOnCompletion() throws SQLException {
+		actualStatement.closeOnCompletion();
+	}
+
+	@Override
+	public boolean isCloseOnCompletion() throws SQLException {
+		return actualStatement.isCloseOnCompletion();
+	}
+
 }	

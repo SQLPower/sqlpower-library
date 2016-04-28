@@ -523,4 +523,14 @@ public class MockJDBCPreparedStatement implements PreparedStatement {
 		throw new UnsupportedOperationException("Currently it is only possible to wrap JDBC 3.");
 	}
 
+	@Override
+	public void closeOnCompletion() throws SQLException {
+		throw new UnsupportedOperationException("Not implemented");		
+	}
+
+	@Override
+	public boolean isCloseOnCompletion() throws SQLException {
+		throw new UnsupportedOperationException("Not implemented");
+	}
+
 }

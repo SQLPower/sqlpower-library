@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -124,5 +125,11 @@ public class MockJDBCDriver implements Driver {
      */
 	public static MockJDBCConnection getConnection(String name) {
 	    return namedConnections.get(name);
+	}
+
+	@Override
+	public java.util.logging.Logger getParentLogger()
+			throws SQLFeatureNotSupportedException {
+		throw new UnsupportedOperationException("Not implemented");
 	}
 }
