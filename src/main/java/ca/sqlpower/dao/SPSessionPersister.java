@@ -452,7 +452,12 @@ public abstract class SPSessionPersister implements SPPersister {
 						"a transaction.");
 			}
 			SPObject objectToPersist = findByUuid(root, uuid, SPObject.class);
-			if (exists(uuid) && objectToPersist.getClass() != root.getClass()) {
+			boolean exists = exists(uuid);
+			if (exists && objectToPersist == null) {
+				throw new NullPointerException("The following object exists and doesn't exist: parent " + 
+						parentUUID + ", id " + uuid + ", type " + type);
+			}
+			if (exists && objectToPersist.getClass() != root.getClass()) {
 				//If the object was already created by a different process we will continue
 				//if we are in god mode.
 				if (godMode) return;
