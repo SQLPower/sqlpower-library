@@ -766,9 +766,9 @@ public class SQLColumn extends SQLObject implements java.io.Serializable, SPVari
 					+ ", " + userDefinedSQLType.getScale(defaultPlatform) + ")");
 		} else if (precisionType != PropertyType.NOT_APPLICABLE && precision > 0) {
 			// In Microsoft SQL Server varchar(Max) limit is '2147483647', so its write it as varchar(2147483647) instead of varchar(Max)
-			if (datatype.equalsIgnoreCase("varchar") && precision > 8000 && getDbType().equals("Microsoft SQL Server")) {
+			if ((datatype.equalsIgnoreCase("varchar") || datatype.equalsIgnoreCase("nvarchar")) && precision > 8000 && getDbType().equals("Microsoft SQL Server")) {
 				name.append("(MAX)");
-				logger.debug("Precision changed for the column " + name + " from varchar(" + precision + ") to  varchar(Max)");
+				logger.debug("Precision changed for the column " + name + " from "+datatype+"(" + precision + ") to"+datatype+"(Max)");
 			} else {
 				name.append("(" + userDefinedSQLType.getPrecision(defaultPlatform)
 						+ ")");
