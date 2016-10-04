@@ -134,7 +134,23 @@ public class SPServerInfo {
         username = null;
         password = null;
         passwordAllowed = true;
+    }   
+    
+	/**
+	 * Clones a server info object but allows us to specify the username and password for the
+	 * new instance.
+	 */
+    public SPServerInfo(SPServerInfo info, String username, String password) {
+    	this.scheme = info.scheme;
+    	this.name = info.name;
+        this.serverAddress = info.serverAddress;
+        this.port = info.port;
+        this.path = info.path;
+		this.username = username;
+		this.password = password;
+		passwordAllowed = true;
     }
+
 
     public String getName() {
         return name;
