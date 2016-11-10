@@ -14,7 +14,10 @@ public class WorkspaceGraphModelEdge {
     private final SPObject child;
 
     public WorkspaceGraphModelEdge(SPObject parent, SPObject child) {
-        this.parent = parent;
+    	// See ticket #2660 if issues with edge being formed between parent and a null child (out of the blues..?) arise.   
+    	if (child == null) throw new IllegalArgumentException("Cannot form an edge between parent [" + parent.toString() + "] and null");
+        
+    	this.parent = parent;
         this.child = child;
     }
     
