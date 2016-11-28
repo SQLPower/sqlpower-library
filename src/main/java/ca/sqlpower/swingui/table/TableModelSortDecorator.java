@@ -569,4 +569,10 @@ public class TableModelSortDecorator extends AbstractTableModel implements Clean
 			((CleanupTableModel) tableModel).cleanup();
 		}
 	}
+	
+	@Override
+	public void fireTableDataChanged() {
+		arraysUpToDate.set(false);
+		super.fireTableDataChanged();
+	}
 }
