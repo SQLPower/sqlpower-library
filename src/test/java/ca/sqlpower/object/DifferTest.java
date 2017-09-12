@@ -521,4 +521,63 @@ public static class DiffTestClass2 extends AbstractSPObject {
         assertEquals(0, diff.getPersistedSPOsToRemove().size());
         assertEquals(1, diff.getPersistedSPOsToAdd().size());
 	}
+    
+    /**
+	 * A regression test for #2708 where a child was moved but its parent was
+	 * deleted. The problem that was occurring was the child would be moved but
+	 * its properties would not be defined.
+	 */
+	public void testMoveChildParentDeleted() throws Exception {
+		List<PersistedSPObject> oldList = new ArrayList<PersistedSPObject>();
+        oldList.add(new PersistedSPObject(null, DiffTestClass.class.getName(), "1", 0));        
+        oldList.add(new PersistedSPObject("1", DiffTestClass.class.getName(), "2", 0));
+        oldList.add(new PersistedSPObject("1", DiffTestClass.class.getName(), "3", 1));
+        oldList.add(new PersistedSPObject("3", DiffTestClass.class.getName(), "4", 0));
+        List<PersistedSPOProperty> oldListProperties = new ArrayList<>();
+        oldListProperties.add(new PersistedSPOProperty("4", "name", DataType.STRING, "A1", "A1", false));
+        List<PersistedSPObject> newList = new ArrayList<PersistedSPObject>();
+        newList.add(new PersistedSPObject(null, DiffTestClass.class.getName(), "1", 0));
+        newList.add(new PersistedSPObject("1", DiffTestClass.class.getName(), "2", 0));
+        newList.add(new PersistedSPObject("2", DiffTestClass.class.getName(), "4", 0));
+        List<PersistedSPOProperty> newListProperties = new ArrayList<>();
+        newListProperties.add(new PersistedSPOProperty("4", "name", DataType.STRING, "A1", "A1", false));
+        diff.calcDiff(oldList, newList, oldListProperties, newListProperties);
+        
+        assertEquals(1, diff.getPersistedSPOsToRemove().size());
+        assertEquals("3", diff.getPersistedSPOsToRemove().get(0).getUUID());
+        
+        assertEquals(1, diff.getPersistedSPOsToAdd().size());
+        assertEquals("4", diff.getPersistedSPOsToAdd().get(0).getUUID());
+        
+        assertEquals(1, diff.getPropertyDiffPersists().size());
+        PersistedSPOProperty nameProperty = diff.getPropertyDiffPersists().get(0);
+		assertEquals("name", nameProperty.getPropertyName());
+		assertEquals("4", nameProperty.getUUID());
+		assertEquals("A1", nameProperty.getNewValue());
+	}
+	
+	public void testAddChildWithProperties() throws Exception {
+		List<PersistedSPObject> oldList = new ArrayList<PersistedSPObject>();
+        oldList.add(new PersistedSPObject(null, DiffTestClass.class.getName(), "1", 0));        
+        oldList.add(new PersistedSPObject("1", DiffTestClass.class.getName(), "2", 0));
+        List<PersistedSPOProperty> oldListProperties = new ArrayList<>();
+        List<PersistedSPObject> newList = new ArrayList<PersistedSPObject>();
+        newList.add(new PersistedSPObject(null, DiffTestClass.class.getName(), "1", 0));
+        newList.add(new PersistedSPObject("1", DiffTestClass.class.getName(), "2", 0));
+        newList.add(new PersistedSPObject("2", DiffTestClass.class.getName(), "4", 0));
+        List<PersistedSPOProperty> newListProperties = new ArrayList<>();
+        newListProperties.add(new PersistedSPOProperty("4", "name", DataType.STRING, "A1", "A1", false));
+        diff.calcDiff(oldList, newList, oldListProperties, newListProperties);
+        
+        assertEquals(0, diff.getPersistedSPOsToRemove().size());
+        
+        assertEquals(1, diff.getPersistedSPOsToAdd().size());
+        assertEquals("4", diff.getPersistedSPOsToAdd().get(0).getUUID());
+        
+        assertEquals(1, diff.getPropertyDiffPersists().size());
+        PersistedSPOProperty nameProperty = diff.getPropertyDiffPersists().get(0);
+		assertEquals("name", nameProperty.getPropertyName());
+		assertEquals("4", nameProperty.getUUID());
+		assertEquals("A1", nameProperty.getNewValue());
+	}
 }

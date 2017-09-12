@@ -635,6 +635,7 @@ public class Differ implements SPPersister {
     private void addPersistsRecursively(PersistedSPObject object, Map<PersistedSPObject, Multimap<String, PersistedSPObject>> newObjectTree) {
     	if (!persistCalls.persistedSPOsToAdd.contains(object)) {
     		persistCalls.persistedSPOsToAdd.add(object);
+    		needToAddProperties.add(object.getUUID());
     	}
     	Multimap<String, PersistedSPObject> typeMap = newObjectTree.get(object);
     	if (typeMap != null) {
