@@ -20,6 +20,7 @@
 package ca.sqlpower.dao;
 
 import java.io.InputStream;
+import java.sql.Blob;
 
 import ca.sqlpower.object.SPObject;
 
@@ -47,7 +48,8 @@ public interface SPPersister {
 		 */
 		REFERENCE("Reference", String.class),
 		PNG_IMG("PNG_IMG", InputStream.class),
-		NULL("Null", null);
+		NULL("Null", null),
+		BLOB("Blob", Blob.class);
 		
 		private final String name;
 		private final Class<?> representation;
