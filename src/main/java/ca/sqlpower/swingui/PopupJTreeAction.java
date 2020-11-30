@@ -154,10 +154,10 @@ public class PopupJTreeAction extends AbstractAction {
             Point windowLocation = new Point(0, 0);
             SwingUtilities.convertPointToScreen(windowLocation, button);
             windowLocation.y += button.getHeight();
-            
+           // tree.setMinimumSize(new Dimension(panel.getWidth(), tree.getHeight()));
             // Popup the JTree and attach the popup listener handler to the tree
             popupListenerHandler = 
-                SPSUtils.popupComponent(panel, tree, windowLocation);
+                SPSUtils.popupComponent(panel, tree, windowLocation,true);
             popupConnect();
         }
     }

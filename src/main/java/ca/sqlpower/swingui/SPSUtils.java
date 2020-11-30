@@ -1275,13 +1275,15 @@ public class SPSUtils {
 	 *            The {@link JComponent} to display.
 	 * @param windowLocation
 	 *            The location of where the popup should be displayed.
+	 * @param isMaxWidth
+	 * 			does populated component has the maximum width of owningFrame or not    
 	 * @return The {@link PopupListenerHandler} that handles the created
 	 *         {@link Popup} window.
 	 */
     public static PopupListenerHandler popupComponent(
     		final Component owningFrame, 
     		final JComponent componentToEmbed, 
-    		final Point windowLocation) {
+    		final Point windowLocation, final boolean isMaxWidth) {
         JScrollPane treeScroll = new JScrollPane(componentToEmbed);
         treeScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         treeScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
