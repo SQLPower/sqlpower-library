@@ -23,16 +23,15 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.PrimitiveType;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+
 import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.object.SPObject;
-
-import com.sun.mirror.declaration.TypeDeclaration;
-import com.sun.mirror.type.ClassType;
-import com.sun.mirror.type.InterfaceType;
-import com.sun.mirror.type.PrimitiveType;
-import com.sun.mirror.type.TypeMirror;
-import com.sun.mirror.type.PrimitiveType.Kind;
-import com.sun.mirror.type.ArrayType;
 
 public class SPAnnotationProcessorUtils {
 	
@@ -47,22 +46,22 @@ public class SPAnnotationProcessorUtils {
 	 *            The {@link PrimitiveType.Kind} to convert.
 	 * @return The equivalent {@link Class} of the primitive type.
 	 */
-	public static Class<?> convertPrimitiveToClass(Kind kind) {
-		if (kind.equals(Kind.BOOLEAN)) {
+	public static Class<?> convertPrimitiveToClass(TypeKind kind) {
+		if (kind.equals(TypeKind.BOOLEAN)) {
 			return Boolean.class;
-		} else if (kind.equals(Kind.BYTE)) {
+		} else if (kind.equals(TypeKind.BYTE)) {
 			return Byte.class;
-		} else if (kind.equals(Kind.CHAR)) {
+		} else if (kind.equals(TypeKind.CHAR)) {
 			return Character.class;
-		} else if (kind.equals(Kind.DOUBLE)) {
+		} else if (kind.equals(TypeKind.DOUBLE)) {
 			return Double.class;
-		} else if (kind.equals(Kind.FLOAT)) {
+		} else if (kind.equals(TypeKind.FLOAT)) {
 			return Float.class;
-		} else if (kind.equals(Kind.INT)) {
+		} else if (kind.equals(TypeKind.INT)) {
 			return Integer.class;
-		} else if (kind.equals(Kind.LONG)) {
+		} else if (kind.equals(TypeKind.LONG)) {
 			return Long.class;
-		} else if (kind.equals(Kind.SHORT)) {
+		} else if (kind.equals(TypeKind.SHORT)) {
 			return Short.class;
 		} else {
 			throw new IllegalStateException("The PrimitiveType Kind " + 
@@ -85,13 +84,9 @@ public class SPAnnotationProcessorUtils {
 	public static Class<?> convertTypeMirrorToClass(TypeMirror type) throws ClassNotFoundException {
 		if (type instanceof PrimitiveType) {
 			return convertPrimitiveToClass(((PrimitiveType) type).getKind());
-		} else if (type instanceof ClassType) {
-			String qualifiedName = 
-				convertTypeDeclarationToQualifiedName(((ClassType) type).getDeclaration());
-			return Class.forName(qualifiedName);
-		} else if (type instanceof InterfaceType) {
-			String qualifiedName = 
-				convertTypeDeclarationToQualifiedName(((InterfaceType) type).getDeclaration());
+		} else if (type instanceof DeclaredType) {
+			TypeElement td = (TypeElement) ((DeclaredType) type).asElement();
+			String qualifiedName = convertTypeDeclarationToQualifiedName(td);
 			return Class.forName(qualifiedName);
 		} else if (type instanceof ArrayType) {
 			String qualifiedName = "[L" + convertTypeMirrorToClass(((ArrayType) type).getComponentType()).getName() + ";";
@@ -186,18 +181,18 @@ public class SPAnnotationProcessorUtils {
 	 *            The {@link TypeDeclaration} to convert.
 	 * @return The qualified name of the given {@link TypeDeclaration}.
 	 */
-	public static String convertTypeDeclarationToQualifiedName(TypeDeclaration td) {
-		TypeDeclaration declaringType = td;
-		while (declaringType.getDeclaringType() != null) {
-			declaringType = declaringType.getDeclaringType();
+	public static String convertTypeDeclarationToQualifiedName(TypeElement td) {
+		TypeElement declaringType = td;
+		while (declaringType.getEnclosingElement() != null && declaringType.getEnclosingElement() instanceof TypeElement) {
+			declaringType = (TypeElement) declaringType.getEnclosingElement();
 		}
 		
-		String topLevelName = declaringType.getQualifiedName();
+		String topLevelName = declaringType.getQualifiedName().toString();
 		String qualifiedName;
 		if (td == declaringType) {
 			qualifiedName = topLevelName;
 		} else {
-			String suffix = td.getQualifiedName().substring(topLevelName.length());
+			String suffix = td.getQualifiedName().toString().substring(topLevelName.length());
 			qualifiedName = topLevelName + suffix.replaceAll("\\.", "\\$");
 		}
 		

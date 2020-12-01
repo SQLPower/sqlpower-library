@@ -35,6 +35,17 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 
+import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.Filer;
+import javax.annotation.processing.RoundEnvironment;
+import javax.annotation.processing.SupportedAnnotationTypes;
+import javax.annotation.processing.SupportedSourceVersion;
+import javax.lang.model.SourceVersion;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.TypeElement;
+
+import org.apache.log4j.Logger;
+
 import ca.sqlpower.dao.PersistedSPOProperty;
 import ca.sqlpower.dao.PersistedSPObject;
 import ca.sqlpower.dao.PersisterUtils;
@@ -52,19 +63,17 @@ import ca.sqlpower.object.annotation.ConstructorParameter.ParameterType;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
-import com.sun.mirror.apt.AnnotationProcessor;
-import com.sun.mirror.apt.AnnotationProcessorEnvironment;
-import com.sun.mirror.apt.Filer;
-import com.sun.mirror.declaration.TypeDeclaration;
-import com.sun.mirror.util.DeclarationVisitors;
 
 /**
  * This {@link AnnotationProcessor} processes the annotations in
  * {@link SPObject}s to generate {@link SPPersisterHelper} classes to be used in
  * a session {@link SPPersister}.
  */
-public class SPAnnotationProcessor implements AnnotationProcessor {
+@SupportedAnnotationTypes("ca.sqlpower.object.annotation.Persistable")
+@SupportedSourceVersion(SourceVersion.RELEASE_8)
+public class SPAnnotationProcessor extends AbstractProcessor {
 
+	private static final Logger logger = Logger.getLogger(SPAnnotationProcessor.class);
 	/**
 	 * The license file contents to prepend to a generated
 	 * {@link SPPersisterHelper}.
@@ -155,12 +164,6 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 */
 	private final static String PERSIST_PROPERTY_METHOD_NAME = "persistProperty";
 	
-	/**
-	 * The {@link AnnotationProcessorEnvironment} this
-	 * {@link AnnotationProcessor} will work with. The environment will give
-	 * useful information about classes annotated with {@link Persistable}.
-	 */
-	private final AnnotationProcessorEnvironment environment;
 	
 	/**
 	 * This contains the additional fully qualified class names that need to be
@@ -176,27 +179,17 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 	 */
 	private final String TYPE_GENERIC_PARAMETER = "T";
 
-	/**
-	 * Creates a new {@link SPAnnotationProcessor} that deals exclusively with
-	 * annotations used in {@link SPObject}s which can generate
-	 * {@link SPPersisterHelper} classes for session {@link SPPersister}s.
-	 * 
-	 * @param environment
-	 *            The {@link AnnotationProcessorEnvironment} this processor will
-	 *            work with.
-	 */
-	public SPAnnotationProcessor(AnnotationProcessorEnvironment environment) {
-		this.environment = environment;
-	}
-
-	public void process() {
-		Map<Class<? extends SPObject>, SPClassVisitor> visitors = new HashMap<Class<? extends SPObject>, SPClassVisitor>();
-		
-		for (TypeDeclaration typeDecl : environment.getTypeDeclarations()) {
-			SPClassVisitor visitor = new SPClassVisitor(typeDecl);
-			typeDecl.accept(DeclarationVisitors.getDeclarationScanner(DeclarationVisitors.NO_OP, visitor));
-			if (visitor.isValid() && visitor.getVisitedClass() != null) {
-				visitors.put(visitor.getVisitedClass(), visitor);
+	@Override
+	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+		Set<SPClassVisitor> visitors = new HashSet<>();
+		for (TypeElement annotation : annotations) {
+			Set<? extends Element> annotatedElements = roundEnv.getElementsAnnotatedWith(annotation);
+			for (Element e : annotatedElements) {
+				SPClassVisitor visitor = new SPClassVisitor();
+				visitor.visit(e);
+				if(visitor.isValid()) {
+					visitors.add(visitor);
+				}
 			}
 		}
 		
@@ -204,9 +197,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 		// contain persistable properties. If so, they should inherit those
 		// persistable properties. Any additional packages should be
 		// imported as well.
-		for (Entry<Class<? extends SPObject>, SPClassVisitor> e : visitors.entrySet()) {
-			Class<? extends SPObject> superClass = e.getKey();
-			SPClassVisitor visitor = e.getValue();
+		for (SPClassVisitor visitor : visitors) {
+			Class<? extends SPObject> superClass = visitor.getVisitedClass();
 			
 			Multimap<String, String> mutatorImports = HashMultimap.create(visitor.getMutatorImports());
 			Map<String, Class<?>> propertiesToAccess = 
@@ -250,6 +242,7 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 						propertiesToPersistOnlyIfNonNull);
 			}
 		}
+		return true;
 	}
 
 	/**
@@ -313,8 +306,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			final Class<?> superclass = visitedClass.getSuperclass();
 			int tabs = 0;
 			
-			Filer f = environment.getFiler();
-			PrintWriter pw = f.createSourceFile(helperPackage + "." + simpleClassName);
+			Filer f = processingEnv.getFiler();
+			PrintWriter pw = new PrintWriter(f.createSourceFile(helperPackage + "." + simpleClassName).openWriter());
 			
 			tabs++;
 			final String commitObjectMethod = generateCommitObjectMethod(visitedClass, constructorParameters, tabs);
@@ -440,8 +433,8 @@ public class SPAnnotationProcessor implements AnnotationProcessor {
 			final Class<?> superclass = visitedClass.getSuperclass();
 			int tabs = 0;
 			
-			Filer f = environment.getFiler();
-			PrintWriter pw = f.createSourceFile(helperPackage + "." + simpleClassName);
+			Filer f = processingEnv.getFiler();
+			PrintWriter pw = new PrintWriter(f.createSourceFile(helperPackage + "." + simpleClassName).openWriter());
 			tabs++;
 			final String commitPropertyMethod = generateCommitPropertyMethod(visitedClass, propertiesToMutate, 
 					mutatorExtraParameters, mutatorThrownTypes, tabs);

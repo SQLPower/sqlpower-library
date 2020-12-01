@@ -28,6 +28,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.PrimitiveType;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.AbstractElementVisitor8;
+
+import org.apache.log4j.Logger;
+
 import ca.sqlpower.dao.SPPersister;
 import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.object.SPObject;
@@ -37,28 +51,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
-import com.sun.mirror.declaration.AnnotationTypeDeclaration;
-import com.sun.mirror.declaration.AnnotationTypeElementDeclaration;
-import com.sun.mirror.declaration.ClassDeclaration;
-import com.sun.mirror.declaration.ConstructorDeclaration;
-import com.sun.mirror.declaration.Declaration;
-import com.sun.mirror.declaration.EnumConstantDeclaration;
-import com.sun.mirror.declaration.EnumDeclaration;
-import com.sun.mirror.declaration.ExecutableDeclaration;
-import com.sun.mirror.declaration.FieldDeclaration;
-import com.sun.mirror.declaration.InterfaceDeclaration;
-import com.sun.mirror.declaration.MemberDeclaration;
-import com.sun.mirror.declaration.MethodDeclaration;
-import com.sun.mirror.declaration.PackageDeclaration;
-import com.sun.mirror.declaration.ParameterDeclaration;
-import com.sun.mirror.declaration.TypeDeclaration;
-import com.sun.mirror.declaration.TypeParameterDeclaration;
-import com.sun.mirror.type.ClassType;
-import com.sun.mirror.type.InterfaceType;
-import com.sun.mirror.type.PrimitiveType;
-import com.sun.mirror.type.ReferenceType;
-import com.sun.mirror.type.TypeMirror;
-import com.sun.mirror.util.DeclarationVisitor;
 
 /**
  * This {@link DeclarationVisitor} is used to visit {@link SPObject} classes
@@ -68,8 +60,10 @@ import com.sun.mirror.util.DeclarationVisitor;
  * required by the {@link SPAnnotationProcessor} to generate
  * {@link SPPersisterHelper} classes.
  */
-public class SPClassVisitor implements DeclarationVisitor {
+public class SPClassVisitor extends AbstractElementVisitor8<Void, Void> {
 	
+	
+	private static final Logger logger = Logger.getLogger(SPClassVisitor.class);
 	/**
 	 * @see #isValid()
 	 */
@@ -131,16 +125,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 */
 	private boolean constructorFound = false;
 
-	/**
-	 * The type of object this visitor will walk through. If the type has inner classes
-	 * they will not be considered.
-	 */
-	private final TypeDeclaration typeDecl;
-	
-	public SPClassVisitor(TypeDeclaration typeDecl) {
-		this.typeDecl = typeDecl;
-	}
- 	
 	/**
 	 * Returns whether the visited class along with all its annotated elements is valid.
 	 */
@@ -241,40 +225,6 @@ public class SPClassVisitor implements DeclarationVisitor {
 	}
 
 	/**
-	 * Stores the class reference of a {@link Persistable} {@link SPObject} for
-	 * use in annotation processing in the {@link SPAnnotationProcessor}. The
-	 * processor takes this information to generate {@link SPPersisterHelper}s.
-	 * 
-	 * @param d
-	 *            The {@link ClassDeclaration} of the class to visit.
-	 */
-	public void visitClassDeclaration(ClassDeclaration d) {
-	    for (TypeDeclaration nestedType : typeDecl.getNestedTypes()) {
-	        if (nestedType.getQualifiedName().equals(d.getQualifiedName())) {
-	            return;
-	        }
-	    }
-		if (d.getAnnotation(Persistable.class) != null) {
-		    if (d.getAnnotation(Persistable.class).isTransient()) {
-		        valid = false;
-		        return;
-		    }
-			try {
-				String qualifiedName = 
-					SPAnnotationProcessorUtils.convertTypeDeclarationToQualifiedName(d);
-				visitedClass = (Class<? extends SPObject>) Class.forName(qualifiedName);
-				
-				if (java.lang.reflect.Modifier.isPrivate(visitedClass.getModifiers())) {
-					valid = false;
-				}
-			} catch (ClassNotFoundException e) {
-				valid = false;
-				e.printStackTrace();
-			}
-		}
-	}
-
-	/**
 	 * Stores information about constructors annotated with {@link Constructor},
 	 * particularly with the {@link ConstructorParameter} annotated parameters
 	 * and their required imports. The {@link SPAnnotationProcessor} takes this
@@ -288,32 +238,38 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 *            The {@link ConstructorDeclaration} of the constructor to
 	 *            visit.
 	 */
-	public void visitConstructorDeclaration(ConstructorDeclaration d) {
-		
-		if (!constructorFound && d.getAnnotation(Constructor.class) != null 
-				&& d.getSimpleName().equals(typeDecl.getSimpleName())) {
-			
-			for (ParameterDeclaration pd : d.getParameters()) {
-				ConstructorParameter cp = pd.getAnnotation(ConstructorParameter.class);
-				if (cp != null) {
-					try {
-						TypeMirror type = pd.getType();
-						Class<?> c = SPAnnotationProcessorUtils.convertTypeMirrorToClass(type);
-						
-						ParameterType property = cp.parameterType();
-						String name;
-						
-						if (property.equals(ParameterType.PROPERTY)) {
-							name = cp.propertyName();
-						} else {
-							name = pd.getSimpleName();
-						}
+	public void visitConstructorDeclaration(ExecutableElement d) {
+		/*Using d.getEnclosingElement().getSimpleName() to get the correct name because d.getSimpleName() return <init> for each  constructor
+		 * which never match with rootElement.getSimpleName() and it will call a default constructor in generator method gives error for not matching constructor with parameter */
+		logger.debug(" name :[ "+d.getSimpleName()+"] getEnclosingElement name:["+d.getEnclosingElement().getSimpleName()+ "] and parameter : ["+d.getParameters()+" ] roorElement name: "+rootElement.getSimpleName());
 
+		if (!constructorFound && d.getAnnotation(Constructor.class) != null
+				&& d.getEnclosingElement().getSimpleName().equals(rootElement.getSimpleName())) {
+			for (VariableElement pd : d.getParameters()) {
+				/**
+				 * Using getAnnotation to get the parameter of Construction.
+				 * Do not use getAnnotationsByType it just simply return  'ca.sqlpower.object.annotation.ConstructorParameter'
+				 */
+				ConstructorParameter param = pd.getAnnotation(ConstructorParameter.class);
+				//logger.debug("param: "+param);
+				if (param != null) {
+					try {
+						TypeMirror type = pd.asType();
+						Class<?> c = SPAnnotationProcessorUtils.convertTypeMirrorToClass(type);
+
+						ParameterType property = param.parameterType();
+						String name;
+
+						if (property.equals(ParameterType.PROPERTY)) {
+							name = param.propertyName();
+						} else {
+							name = pd.getSimpleName().toString();
+						}
 						if (type instanceof PrimitiveType) {
 							constructorParameters.add(
 									new ConstructorParameterObject(property, c, name));
 
-						} else if (type instanceof ClassType || type instanceof InterfaceType) {
+						} else if (type instanceof DeclaredType) {
 							constructorParameters.add(
 									new ConstructorParameterObject(property, c, name));
 							constructorImports.add(c.getName());
@@ -322,7 +278,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 						valid = false;
 						e.printStackTrace();
 					}
-				}
+				} 
 			}
 			constructorFound = true;
 		}
@@ -342,23 +298,23 @@ public class SPClassVisitor implements DeclarationVisitor {
 	 * @param d
 	 *            The {@link MethodDeclaration} of the method to visit.
 	 */
-	public void visitMethodDeclaration(MethodDeclaration d) {
+	public void visitMethodDeclaration(ExecutableElement d) {
 		Accessor accessorAnnotation = d.getAnnotation(Accessor.class);
 		Mutator mutatorAnnotation = d.getAnnotation(Mutator.class);
 		Transient transientAnnotation = d.getAnnotation(Transient.class);
 		TypeMirror type = null;
 		
-		if (!d.getDeclaringType().equals(typeDecl)) return;
+		if (!d.getEnclosingElement().equals(rootElement)) return;
 
 		if (accessorAnnotation != null && transientAnnotation == null) {
 			type = d.getReturnType();
 		} else if (mutatorAnnotation != null && transientAnnotation == null) {
-			type = d.getParameters().iterator().next().getType();
+			type = d.getParameters().iterator().next().asType();
 		} else {
 			return;
 		}
 		
-		String methodName = d.getSimpleName();
+		String methodName = d.getSimpleName().toString();
 		Class<?> c = null;
 		
 		try {
@@ -376,7 +332,7 @@ public class SPClassVisitor implements DeclarationVisitor {
 						methodName, Arrays.asList(accessorAnnotation.additionalInfo()));
 				
 			} else if (!propertiesToMutate.containsKey(methodName) && mutatorAnnotation != null) {
-				for (ReferenceType refType : d.getThrownTypes()) {
+				for (TypeMirror refType : d.getThrownTypes()) {
 					Class<? extends Exception> thrownType = 
 						(Class<? extends Exception>) Class.forName(refType.toString());
 					mutatorThrownTypes.put(methodName, thrownType);
@@ -386,17 +342,17 @@ public class SPClassVisitor implements DeclarationVisitor {
 				propertiesToMutate.put(methodName, c);
 				mutatorImports.put(methodName, c.getName());
 				
-				for (ParameterDeclaration pd : d.getParameters()) {
+				for (TypeParameterElement pd : d.getTypeParameters()) {
 					MutatorParameter mutatorParameterAnnotation = 
 						pd.getAnnotation(MutatorParameter.class);
 					
 					if (mutatorParameterAnnotation != null) {
 						Class<?> extraParamType = 
-							SPAnnotationProcessorUtils.convertTypeMirrorToClass(pd.getType());
+							SPAnnotationProcessorUtils.convertTypeMirrorToClass(pd.asType());
 						mutatorExtraParameters.put(methodName, 
 								new MutatorParameterObject(
 										extraParamType,
-										pd.getSimpleName(), 
+										pd.getSimpleName().toString(), 
 										mutatorParameterAnnotation.value()));
 						mutatorImports.put(methodName, extraParamType.getName());
 					}
@@ -409,56 +365,76 @@ public class SPClassVisitor implements DeclarationVisitor {
 		}
 	}
 
-	public void visitAnnotationTypeDeclaration(AnnotationTypeDeclaration d) {
+	@Override
+	public Void visitPackage(PackageElement e, Void p) {
 		// no-op
+		return null;
 	}
 
-	public void visitAnnotationTypeElementDeclaration(AnnotationTypeElementDeclaration d) {
-		// no-op
+	private TypeElement rootElement = null;
+	
+	/**
+	 * Stores the class reference of a {@link Persistable} {@link SPObject} for
+	 * use in annotation processing in the {@link SPAnnotationProcessor}. The
+	 * processor takes this information to generate {@link SPPersisterHelper}s.
+	 * 
+	 * @param d
+	 *            The {@link ClassDeclaration} of the class to visit.
+	 */
+	//This is the method that visits classes
+	@Override
+	public Void visitType(TypeElement e, Void p) {
+		if (rootElement == null) {
+			rootElement = e;
+		} else {
+			return null;
+		}
+		if (e.getAnnotation(Persistable.class) != null) {
+			if (e.getAnnotation(Persistable.class).isTransient()) {
+				valid = false;
+				return null;
+			}
+			try {
+				String qualifiedName = 
+						SPAnnotationProcessorUtils.convertTypeDeclarationToQualifiedName(e);
+				visitedClass = (Class<? extends SPObject>) Class.forName(qualifiedName);
+				
+				if (java.lang.reflect.Modifier.isPrivate(visitedClass.getModifiers())) {
+					valid = false;
+				}
+			} catch (ClassNotFoundException ex) {
+				valid = false;
+				ex.printStackTrace();
+			}
+		}
+		for (Element innerElement : e.getEnclosedElements()) {
+			visit(innerElement);
+		}
+		return null;
+	}
+	
+
+	@Override
+	public Void visitVariable(VariableElement e, Void p) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
-	public void visitDeclaration(Declaration d) {
-		// no-op
+	//This method is for methods and constructors
+	@Override
+	public Void visitExecutable(ExecutableElement e, Void p) {
+		if (e.getKind() == ElementKind.CONSTRUCTOR && valid) {
+			visitConstructorDeclaration(e);
+		} else if (e.getKind() == ElementKind.METHOD) {
+			visitMethodDeclaration(e);
+		}
+		return null;
 	}
 
-	public void visitEnumConstantDeclaration(EnumConstantDeclaration d) {
-		// no-op
-	}
-
-	public void visitEnumDeclaration(EnumDeclaration d) {
-		// no-op
-	}
-
-	public void visitExecutableDeclaration(ExecutableDeclaration d) {
-		// no-op
-	}
-
-	public void visitFieldDeclaration(FieldDeclaration d) {
-		// no-op		
-	}
-
-	public void visitInterfaceDeclaration(InterfaceDeclaration d) {
-		// no-op		
-	}
-
-	public void visitMemberDeclaration(MemberDeclaration d) {
-		// no-op		
-	}
-
-	public void visitPackageDeclaration(PackageDeclaration d) {
-		// no-op		
-	}
-
-	public void visitParameterDeclaration(ParameterDeclaration d) {
-		// no-op		
-	}
-
-	public void visitTypeDeclaration(TypeDeclaration d) {
-		// no-op		
-	}
-
-	public void visitTypeParameterDeclaration(TypeParameterDeclaration d) {
-		// no-op		
+	@Override
+	public Void visitTypeParameter(TypeParameterElement e, Void p) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

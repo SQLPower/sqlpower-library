@@ -1,40 +1,21 @@
-<project name="sqlpower_library" default="dist" basedir=".">
-
-	<!-- $Id$ -->
+<project name="sqlpower_library" default="jar" basedir=".">
+	
 	<property name="dist.dir" value="dist"/>
 	<property name="src" value="src/main/java"/>
 	<property name="resources" value="src/main/resources"/>
 	<property name="src.apt" value="src/apt/java"/>
 	<property name="build" value="build"/>
-	<property name="build.tests" value="build_tests"/>
 	<property name="build.apt" value="build_apt"/>
 	<property name="build_tmp" value="build_tmp"/>
-	<property name="build.compiler" value="modern"/>
+	<property name="build.tests" value="build_tests"/>
 	<property name="lib" value="lib"/>
+	<property name="generated" value="generated"/>
 	<property name="dist.jar" value="sqlpower_library.jar"/>
 	<property name="test.jar" value="sqlpower_library-tests.jar"/>
 	<property name="apt.jar" value="sqlpower_library-apt.jar"/>
 	<property name="tests" value="src/test/java"/>
 	<property name="tests-resources" value="src/test/resources"/>
 	<property name="reports.dir" value="${dist.dir}/reports"/>
-	<property name="ca.sqlpower.SKIP_DODGY_TESTS" value="false"/>
-	<!--
-		Set the format of the findbugs report to xml by default
-	-->
-	<condition property="findbugs.report.format" value="xml">
-		<not>
-			<isset property="findbugs.report.format"/>
-		</not>
-	</condition>
-	
-	<!--
-		Set the format of the pmd report to xml by default
-	-->
-	<condition property="pmd.report.format" value="xml">
-		<not>
-			<isset property="pmd.report.format"/>
-		</not>
-	</condition>
 	
 	<path id="compile.classpath">
 		<fileset dir="${lib}/main">
@@ -58,257 +39,105 @@
 		</fileset>
 	</path>
 	
-	<target name="init">
-		<tstamp/>
+	<target name="init">		
 		<mkdir dir="${build}"/>
-		<mkdir dir="${build_tmp}"/>
-		<mkdir dir="${build.tests}"/>
 		<mkdir dir="${build.apt}"/>
+		<mkdir dir="${build_tmp}"/>
+		<mkdir dir="${generated}"/>
+		<mkdir dir="${build.tests}"/>
 		<mkdir dir="${dist.dir}"/>
 	</target>
 	
-	<target name="compile" depends="init">
-		
+	<target name="clean" description="Cleans...">
+		<delete dir="${build}" includeemptydirs="true"/>
+		<delete dir="${build.apt}" includeemptydirs="true"/>
+		<delete dir="${build_tmp}" includeemptydirs="true"/>
+		<delete dir="${dist.dir}" includeemptydirs="true"/>
+		<delete dir="${generated}" includeemptydirs="true"/>
+		<delete dir="${build.tests}" includeemptydirs="true"/>
+	</target>
+
+	<target name="compile"  depends="init">
 		<javac srcdir="${src}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
 		
-		<copy flatten="false" todir="${build}">
-			<fileset dir="${resources}">
-				<include name="**/*"/>
-			</fileset>
-		</copy>
-		
-	</target>
-	
-	
-	<target name="compile-with-annotations" depends="clean, init">
-		
 		<javac 
-				srcdir="${src}" 
-				destdir="${build}" 
-				classpathref="compile.classpath" 
-				debug="true"/>
+			srcdir="${src.apt}" 
+			destdir="${build.apt}" 
+			classpathref="apt.classpath" 
+			debug="true"/>
 		
-		<javac 
-				srcdir="${src.apt}" 
-				destdir="${build.apt}" 
-				classpathref="apt.classpath" 
-				debug="true"/>
+		<javac srcdir="${src}" destdir="${build_tmp}" classpathref="apt.classpath" debug="true">
+			<compilerarg value="-proc:only" />
+			<compilerarg value="-processor" />
+			<compilerarg value="ca.sqlpower.object.annotation.SPAnnotationProcessor" />
+			<compilerarg value="-s" />
+			<compilerarg value="${generated}" />
+		</javac>
 		
-		<apt srcdir="${src}"
-			destdir="${build_tmp}"
-			classpathref="apt.classpath"
-			debug="true"
-			compile="true"
-			factory="ca.sqlpower.object.annotation.SPAnnotationProcessorFactory"
-			preprocessdir="${src}">
-		</apt>
-		
-		<delete dir="${build}"/>
-		
-		<move todir="${build}">
-			<fileset dir="${build_tmp}"/>
-		</move>
+		<javac srcdir="${generated}" destdir="${build}" classpathref="compile.classpath" debug="true"/>
 
 		<copy flatten="false" todir="${build}">
-			<fileset dir="${resources}">
-				<include name="**/*"/>
-			</fileset>
-		</copy>
-		
-	</target>
-
-	
-	<target name="compile-tests" depends="compile-with-annotations">
-		
-		<javac srcdir="${tests}" destdir="${build.tests}" classpathref="test.classpath" debug="true"/>
-		
-		<copy flatten="false" todir="${build.tests}">
-			<fileset dir="${tests-resources}">
-				<include name="**/*"/>
-			</fileset>
-		</copy>
-		
-	</target>
-	
-	<target name="test" depends="compile-tests" description="Runs the test suite.">
-		<property name="reports.junit" value="${reports.dir}/junit"/>
-		<mkdir dir="${reports.junit}"/>
-		<!-- Output all System.out and System.err messages -->
-	   <junit printsummary="on" showoutput="no" maxmemory="1024m" dir=".">
-	   		<sysproperty key="ca.sqlpower.architect.test.dir" value="${build.tests}"/>
-			<sysproperty key="ca.sqlpower.SKIP_DODGY_TESTS" value="${ca.sqlpower.SKIP_DODGY_TESTS}" />
-	   		<sysproperty key="java.util.prefs.PreferencesFactory" value="prefs.PreferencesFactory"/>
-	       <classpath>
-	       		<path refid="test.classpath"/>
-	       		<path path="${build.tests}"/>
-	       </classpath>
-			<batchtest fork="yes" todir="${reports.junit}">
-				<fileset dir="${tests}">
-				    <include name="**/*Test*.java"/>
-				    <!-- Exclude abstract test classes and non-JUnit tests -->
-					<exclude name="ca/sqlpower/dao/PersisterTest.java"/>
-					<exclude name="ca/sqlpower/sqlobject/BaseSQLObjectTestCase.java"/>
-					<exclude name="ca/sqlpower/sqlobject/DatabaseConnectedTestCase.java"/>
-					<exclude name="ca/sqlpower/sqlobject/TestingSQLObjectListener.java"/>
-					<exclude name="ca/sqlpower/object/PersistedSPObjectTest.java"/>
-					<exclude name="ca/sqlpower/swingui/table/BaseRendererTest.java"/>
-			  		<exclude name="ca/sqlpower/util/CacheTest.java"/>
-					<exclude name="ca/sqlpower/util/ZealousURLEncoderTest.java"/>
-					<exclude name="ca/sqlpower/util/reservoir/TestingReservoirDataSource.java"/>
+				<fileset dir="${resources}">
+					<include name="**/*"/>
 				</fileset>
-			</batchtest>
-	   	   <formatter type="xml"/>
-	   </junit>
-		<!-- Generate HTML report -->
-		<junitreport todir="${reports.junit}">
-		  <fileset dir="${reports.junit}">
-		    <include name="TEST-*.xml" />
-		  </fileset>
-		  <report todir="${reports.junit}" />
-		</junitreport>
+		</copy>
+		<delete dir="${build_tmp}"/>
 	</target>
 	
-	<target name="jar" depends="compile-with-annotations, compile-tests" description="Generates JAR archives.">
+	<target name="jar" depends="compile-tests" description="Generates JAR archives.">
 		<jar jarfile="${dist.dir}/${dist.jar}" basedir="${build}" />
 		<jar jarfile="${dist.dir}/${test.jar}" basedir="${build.tests}" />
 		<jar jarfile="${dist.dir}/${apt.jar}" basedir="${build.apt}" />
 	</target>
 
-	<target name="dist" depends="jar, test, pmd, pmd-cpd, findbugs, javadoc">
-		<!-- just a metatarget that brings the dependencies together -->
-	</target>
-
-	<target name="clean" description="Cleans...">
-		<delete dir="${build}" includeemptydirs="true"/>
-		<delete dir="${build.tests}" includeemptydirs="true"/>
-		<delete dir="${build.apt}" includeemptydirs="true"/>
-		<delete dir="${build_tmp}" includeemptydirs="true"/>
-		<delete dir="${dist.dir}" includeemptydirs="true"/>
-		<!-- Temporary to remove the classes generated by annotation processors.
-		    These classes need to be moved to a generated package like Architect in the future. -->
-		<delete dir="${src}/ca/sqlpower/object/generated"/>
-		<delete dir="${src}/ca/sqlpower/sqlobject/generated"/>
-		<delete dir="${src}/ca/sqlpower/swingui/generated"/>
-		<delete dir="${src}/ca/sqlpower/enterprise/client/generated"/>
-		<delete dir="${src}/ca/sqlpower/testutil/generated"/>
-	</target>
-
-	<target name="dist-clean" depends="clean">
-		<delete dir="${dist.dir}"/>
-	</target>
+	<target name="compile-tests" depends="compile">
+				
+				<javac srcdir="${tests}" destdir="${build.tests}" classpathref="test.classpath" debug="true"/>
+				
+				<copy flatten="false" todir="${build.tests}">
+					<fileset dir="${tests-resources}">
+						<include name="**/*"/>
+					</fileset>
+				</copy>
+				
+	  </target>
 	
-	<target name="javadoc" 
-		description="Generate the Javadoc documentation for the SQL Power Library API"
-		depends="compile-with-annotations">
-		<mkdir dir="${dist.dir}/doc/api"/>
-		<javadoc sourcepath="${src}" destdir="${dist.dir}/doc/api"
-			packagenames="ca.sqlpower.*"
-			maxmemory="100m"
-			windowtitle="ca.sqlpower.* SQL Power Library"
-			Version="true" Author="true" Use="true"
-			Overview="html/overview.html"
-			classpathref="test.classpath"
-			>
-			<packageset dir="${src}" defaultexcludes="yes">
-				<include name="ca/sqlpower/**" />
-				<exclude name="${tests}/**"/>
-			</packageset>
-			<bottom><![CDATA[<i>Copyright &#169; 2003-2008 SQL Power Group Inc. <a href="http://www.sqlpower.ca/">www.sqlpower.ca</a>]]></bottom>
-		</javadoc>
-	</target>
+	<target name="test" depends="compile-tests" description="Runs the test suite.">
+			<property name="reports.junit" value="${reports.dir}/junit"/>
+			<mkdir dir="${reports.junit}"/>
+			<!-- Output all System.out and System.err messages -->
+		   <junit printsummary="on" showoutput="no" maxmemory="1024m" dir=".">
+		   		<sysproperty key="ca.sqlpower.architect.test.dir" value="${build.tests}"/>
+				<sysproperty key="ca.sqlpower.SKIP_DODGY_TESTS" value="${ca.sqlpower.SKIP_DODGY_TESTS}" />
+		   		<sysproperty key="java.util.prefs.PreferencesFactory" value="prefs.PreferencesFactory"/>
+		       <classpath>
+		       		<path refid="test.classpath"/>
+		       		<path path="${build.tests}"/>
+		       </classpath>
+				<batchtest fork="yes" todir="${reports.junit}">
+					<fileset dir="${tests}">
+					    <include name="**/*Test*.java"/>
+					    <!-- Exclude abstract test classes and non-JUnit tests -->
+						<exclude name="ca/sqlpower/dao/PersisterTest.java"/>
+						<exclude name="ca/sqlpower/sqlobject/BaseSQLObjectTestCase.java"/>
+						<exclude name="ca/sqlpower/sqlobject/DatabaseConnectedTestCase.java"/>
+						<exclude name="ca/sqlpower/sqlobject/TestingSQLObjectListener.java"/>
+						<exclude name="ca/sqlpower/object/PersistedSPObjectTest.java"/>
+						<exclude name="ca/sqlpower/swingui/table/BaseRendererTest.java"/>
+				  		<exclude name="ca/sqlpower/util/CacheTest.java"/>
+						<exclude name="ca/sqlpower/util/ZealousURLEncoderTest.java"/>
+						<exclude name="ca/sqlpower/util/reservoir/TestingReservoirDataSource.java"/>
+					</fileset>
+				</batchtest>
+		   	   <formatter type="xml"/>
+		   </junit>
+			<!-- Generate HTML report -->
+			<junitreport todir="${reports.junit}">
+			  <fileset dir="${reports.junit}">
+			    <include name="TEST-*.xml" />
+			  </fileset>
+			  <report todir="${reports.junit}" />
+			</junitreport>
+		</target>
 	
-	<target name="javadoc.with.umlgraph" 
-		description="Generate the Javadoc documentation for the SQL Power Library API along with UML diagrams generated using UMLGraph"
-		depends="compile-with-annotations">
-		<mkdir dir="${dist.dir}/doc/api"/>
-		<javadoc sourcepath="${src}" destdir="${dist.dir}/doc/api"
-			packagenames="ca.sqlpower.*"
-			maxmemory="100m"
-			windowtitle="ca.sqlpower.* SQL Power Library"
-			Version="true" Author="true" Use="true"
-			Overview="html/overview.html"
-			classpathref="test.classpath"
-			>
-			<doclet name="gr.spinellis.umlgraph.doclet.UmlGraphDoc"
-    		  path="buildlib/UmlGraph.jar">
-    	        <param name="-attributes" />
-    	        <param name="-operations" />
-    	        <param name="-qualify" />
-    	        <param name="-types" />
-    	        <param name="-visibility" />
-    	    </doclet>
-			<packageset dir="${src}" defaultexcludes="yes">
-				<include name="ca/sqlpower/**" />
-				<exclude name="${tests}/**"/>
-			</packageset>
-			<bottom><![CDATA[<i>Copyright &#169; 2003-2008 SQL Power Group Inc. <a href="http://www.sqlpower.ca/">www.sqlpower.ca</a>]]></bottom>
-		</javadoc>
-		
-		<apply executable="dot" dest="${dist.dir}/doc" parallel="false">
-			<arg value="-Tpng"/>
-			<arg value="-o"/>
-			<targetfile/>
-			<srcfile/>
-			<fileset dir="${dist.dir}/doc" includes="*.dot"/>
-			<mapper type="glob" from="*.dot" to="*.png"/>
-		</apply>
-	</target>
-	
-	<!-- findbugs code checking tool -->
-	<property name="findbugs.home" value="ext-tools/findbugs"/>
-	<property name="findbugs-ant.jar" value="${findbugs.home}/lib/findbugs-ant.jar"/>
-	
-	<target name="findbugs"
-		description="Runs the FindBugs tool, outputs results to a text file"
-		depends="compile-with-annotations">
-		<mkdir dir="${reports.dir}"/>
-		<taskdef name="findbugs" classname="edu.umd.cs.findbugs.anttask.FindBugsTask"
-			classpath="${findbugs-ant.jar}"/>
-		<findbugs home="${findbugs.home}"
-			output="${findbugs.report.format}"
-			outputFile="${reports.dir}/findbugs.${findbugs.report.format}"
-			reportLevel="low"
-			jvmargs="-Xmx512m">  <!-- FindBugs can use up a lot of memory, so adjust the JVM memory here-->
-			<class location="${build}" />
-			<sourcePath path="${src}" />
-			<!-- Classes needed by our code but that we don't want tested -->
-			<systemProperty name="findbugs.maskedfields.locals" value='true'/>
-		</findbugs>
-	</target>
-	
-	<property name="pmd.home" value="ext-tools/pmd"/>
-	<property name="pmd.jar" value="${pmd.home}/lib/pmd-4.2.3.jar"/>
-	
-	<target name="pmd"
-		description="Runs the PMD code checking tool, saving results to a file."
-		>
-	 	<mkdir dir="${reports.dir}"/>
-		<taskdef name="pmd" classname="net.sourceforge.pmd.ant.PMDTask"
-			classpath="${pmd.jar}"/>
-		<property name="pmd-results" value="${reports.dir}/pmd.${pmd.report.format}"/>
-		<pmd shortFilenames="true" targetjdk="1.7">
-			<ruleset>basic,imports</ruleset>
-			<formatter type="${pmd.report.format}" toFile="${pmd-results}"/>
-			<fileset dir="${src}">
-				<include name="ca/sqlpower/**/*.java"/>
-			</fileset>
-		</pmd>
-		<echo message="PMD completed, output is in ${pmd-results}."/>
-	</target>
-	
-	<target name="pmd-cpd"
-		description="Runs the PMD Copy/Paste Detection tool, and saves results to a file">
-	 	<mkdir dir="${reports.dir}"/>
-		<taskdef name="cpd" classname="net.sourceforge.pmd.cpd.CPDTask"
-			classpath="${pmd.jar}"/>
-		<property name="cpd-results" value="${reports.dir}/pmd-cpd.xml"/>
-		<cpd encoding="UTF-8" minimumTokenCount="120" format="xml" outputfile="${cpd-results}">
-			<fileset dir="${src}">
-				<include name="ca/sqlpower/**/*.java"/>
-				<exclude name="generated/**.java"/>
-			</fileset>
-		</cpd>
-		<xslt in="${cpd-results}" style="${pmd.home}/etc/xslt/cpdhtml.xslt" out="${reports.dir}/pmd-cpd.html" />
-		<echo message="CPD completed, output is in ${reports.dir}/cpd-ant-results.html."/>
-	</target>
 </project>
