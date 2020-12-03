@@ -1296,6 +1296,10 @@ public class SPSUtils {
         
         int width = (int) Math.min(treeScroll.getPreferredSize().getWidth(), owningFrame.getSize().getWidth());
         int height = (int) Math.min(treeScroll.getPreferredSize().getHeight(), maxHeight);
+        
+        if(isMaxWidth) {
+        	width = (int) Math.max(treeScroll.getPreferredSize().getWidth(), owningFrame.getSize().getWidth());
+        }
         treeScroll.setPreferredSize(new java.awt.Dimension(width, height));
         
         double popupWidth = treeScroll.getPreferredSize().getWidth();
