@@ -80,9 +80,9 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     
     private List<ColumnMapping> mappings = new ArrayList<ColumnMapping>();
     
-//    public List<ColumnMapping> getMappings() {
-//		return mappings;
-//	}
+    public List<ColumnMapping> getMappings() {
+		return mappings;
+	}
 
 	/**
 	 * If true then one side of this relationship is being disconnected from
