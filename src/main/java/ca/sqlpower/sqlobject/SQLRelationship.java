@@ -80,7 +80,11 @@ public class SQLRelationship extends SQLObject implements java.io.Serializable {
     
     private List<ColumnMapping> mappings = new ArrayList<ColumnMapping>();
     
-    /**
+//    public List<ColumnMapping> getMappings() {
+//		return mappings;
+//	}
+
+	/**
 	 * If true then one side of this relationship is being disconnected from
 	 * its parent table and the manager is making a call to remove the
 	 * relationship from the other parent. Then this relationship should not
