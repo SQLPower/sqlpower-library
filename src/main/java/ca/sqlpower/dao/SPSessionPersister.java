@@ -36,6 +36,9 @@ import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
 
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
+
 import ca.sqlpower.dao.helper.PersisterHelperFinder;
 import ca.sqlpower.dao.helper.SPPersisterHelper;
 import ca.sqlpower.dao.session.SessionPersisterSuperConverter;
@@ -55,10 +58,6 @@ import ca.sqlpower.sqlobject.SQLTable;
 import ca.sqlpower.util.SQLPowerUtils;
 import ca.sqlpower.util.TransactionEvent;
 import ca.sqlpower.util.WorkspaceContainer;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
 
 public abstract class SPSessionPersister implements SPPersister {
 	

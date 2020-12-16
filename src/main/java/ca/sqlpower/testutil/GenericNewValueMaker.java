@@ -33,7 +33,9 @@ import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import ca.sqlpower.object.SPObject;
@@ -158,9 +160,7 @@ public class GenericNewValueMaker implements NewValueMaker {
         } else if (valueType == String.class) {
             // make sure it's unique
             newVal = "new" + oldVal;
-        } else if (valueType == Boolean.TYPE){
-            newVal = new Boolean(! ((Boolean) oldVal).booleanValue());
-        } else if (valueType == Boolean.class) {
+        } else if (valueType == Boolean.class || valueType == Boolean.TYPE) {
             if (oldVal == null) {
                 newVal = Boolean.TRUE;
             } else {
@@ -442,6 +442,8 @@ public class GenericNewValueMaker implements NewValueMaker {
         	newVal = new Exception("Testing Exception");
         } else if (valueType == List.class) {
         	newVal = Arrays.asList("one","two","three");
+        } else if (valueType == Map.class) {
+        	newVal = new HashMap<Object, Object>();
         } else {
             throw new RuntimeException(
                     "This new value maker doesn't handle type " + valueType.getName() +
