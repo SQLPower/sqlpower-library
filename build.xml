@@ -16,7 +16,8 @@
 	<property name="tests" value="src/test/java"/>
 	<property name="tests-resources" value="src/test/resources"/>
 	<property name="reports.dir" value="${dist.dir}/reports"/>
-	
+	<property name="build.compiler" value="modern"/>
+
 	<path id="compile.classpath">
 		<fileset dir="${lib}/main">
 			<include name="*.jar"/>
