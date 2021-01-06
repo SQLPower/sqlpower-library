@@ -49,6 +49,10 @@
 		<mkdir dir="${dist.dir}"/>
 	</target>
 	
+	<target name="dist" depends="jar, test">
+		<!-- just a metatarget that brings the dependencies together -->
+	</target>
+	
 	<target name="clean" description="Cleans...">
 		<delete dir="${build}" includeemptydirs="true"/>
 		<delete dir="${build.apt}" includeemptydirs="true"/>
