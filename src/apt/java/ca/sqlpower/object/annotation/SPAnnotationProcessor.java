@@ -70,7 +70,7 @@ import com.google.common.collect.Multimap;
  * a session {@link SPPersister}.
  */
 @SupportedAnnotationTypes("ca.sqlpower.object.annotation.Persistable")
-@SupportedSourceVersion(SourceVersion.RELEASE_8)
+@SupportedSourceVersion(SourceVersion.RELEASE_11)
 public class SPAnnotationProcessor extends AbstractProcessor {
 
 	private static final Logger logger = Logger.getLogger(SPAnnotationProcessor.class);
